@@ -15,6 +15,18 @@ import { cn } from "@/lib/cn";
 /** Semantic cell alignment for ExitsTable (pages should prefer this over raw Tailwind). */
 export type ExitsTableAlign = "text" | "numeric" | "money" | "actions" | "center";
 
+/**
+ * Optional column sizing hints (EXTENSION PILOT).
+ * Prefer semantic sizes; pages may still pass explicit width/min/max.
+ */
+export type ExitsTableColSize =
+  | "checkbox"
+  | "flex"
+  | "sku"
+  | "numeric"
+  | "money"
+  | "actions";
+
 export type ExitsTableSortDirection = "asc" | "desc" | null;
 
 const alignClass: Record<ExitsTableAlign, string> = {
@@ -24,6 +36,20 @@ const alignClass: Record<ExitsTableAlign, string> = {
   actions: "exits-table__cell--actions",
   center: "exits-table__cell--center",
 };
+
+const colSizeClass: Record<ExitsTableColSize, string> = {
+  checkbox: "exits-table__col--checkbox",
+  flex: "exits-table__col--flex",
+  sku: "exits-table__col--sku",
+  numeric: "exits-table__col--numeric",
+  money: "exits-table__col--money",
+  actions: "exits-table__col--actions",
+};
+
+function toCssSize(value: string | number | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  return typeof value === "number" ? `${value}px` : value;
+}
 
 export type ExitsTableContainerProps = HTMLAttributes<HTMLDivElement>;
 
@@ -338,6 +364,12 @@ export type ExitsTableHeadProps = ThHTMLAttributes<HTMLTableCellElement> & {
    * SPECIAL USE / CANDIDATE — typically Actions. Not default.
    */
   stickyEnd?: boolean;
+  /** Semantic column sizing hint (EXTENSION PILOT). */
+  colSize?: ExitsTableColSize;
+  /** Explicit width override (number = px). */
+  colWidth?: string | number;
+  colMinWidth?: string | number;
+  colMaxWidth?: string | number;
 };
 
 export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadProps>(
@@ -349,6 +381,11 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
       sortDirection = null,
       onSort,
       stickyEnd = false,
+      colSize,
+      colWidth,
+      colMinWidth,
+      colMaxWidth,
+      style,
       children,
       ...props
     },
@@ -367,13 +404,21 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
         className={cn(
           "exits-table__head",
           alignClass[cellAlign],
+          colSize && colSizeClass[colSize],
           sortable && "exits-table__head--sortable",
           sortDirection && "exits-table__head--sorted",
           stickyEnd && "exits-table__cell--sticky-end",
           className,
         )}
         data-align={cellAlign}
+        data-col-size={colSize}
         data-sticky-end={stickyEnd ? "true" : undefined}
+        style={{
+          ...style,
+          width: toCssSize(colWidth) ?? style?.width,
+          minWidth: toCssSize(colMinWidth) ?? style?.minWidth,
+          maxWidth: toCssSize(colMaxWidth) ?? style?.maxWidth,
+        }}
         aria-sort={
           sortable
             ? sortDirection === "asc"
@@ -415,28 +460,64 @@ export type ExitsTableCellProps = TdHTMLAttributes<HTMLTableCellElement> & {
   emphasis?: "normal" | "semibold" | "bold";
   /** Stick Actions (or similar) to inline-end while scrolling. SPECIAL USE. */
   stickyEnd?: boolean;
+  /** Semantic column sizing hint (EXTENSION PILOT). */
+  colSize?: ExitsTableColSize;
+  colWidth?: string | number;
+  colMinWidth?: string | number;
+  colMaxWidth?: string | number;
+  /** Ellipsis overflow for long code/reference values. */
+  truncate?: boolean;
 };
 
 export const ExitsTableCell = forwardRef<HTMLTableCellElement, ExitsTableCellProps>(
   function ExitsTableCell(
-    { className, cellAlign = "text", emphasis = "normal", stickyEnd = false, ...props },
+    {
+      className,
+      cellAlign = "text",
+      emphasis = "normal",
+      stickyEnd = false,
+      colSize,
+      colWidth,
+      colMinWidth,
+      colMaxWidth,
+      truncate = false,
+      style,
+      title,
+      children,
+      ...props
+    },
     ref,
   ) {
+    const truncateTitle =
+      truncate && title === undefined && typeof children === "string" ? children : title;
+
     return (
       <td
         ref={ref}
         className={cn(
           "exits-table__cell",
           alignClass[cellAlign],
+          colSize && colSizeClass[colSize],
           emphasis === "semibold" && "exits-table__cell--semibold",
           emphasis === "bold" && "exits-table__cell--bold",
           stickyEnd && "exits-table__cell--sticky-end",
+          truncate && "exits-table__cell--truncate",
           className,
         )}
         data-align={cellAlign}
+        data-col-size={colSize}
         data-sticky-end={stickyEnd ? "true" : undefined}
+        title={truncateTitle}
+        style={{
+          ...style,
+          width: toCssSize(colWidth) ?? style?.width,
+          minWidth: toCssSize(colMinWidth) ?? style?.minWidth,
+          maxWidth: toCssSize(colMaxWidth) ?? style?.maxWidth,
+        }}
         {...props}
-      />
+      >
+        {children}
+      </td>
     );
   },
 );

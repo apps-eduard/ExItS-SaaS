@@ -39,6 +39,7 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { MoneyInput, QuantityInput } from "@/components/exits/MoneyQuantityInputs";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { Input } from "@/components/ui/input";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -58,7 +59,7 @@ type DemoLine = {
   lineTotal: number;
 };
 
-const DEMO_LINES: DemoLine[] = [
+const DEMO_LINES_SEED: DemoLine[] = [
   {
     id: "apple",
     name: "Apple",
@@ -88,8 +89,13 @@ const DEMO_LINES: DemoLine[] = [
   },
 ];
 
-const DEMO_ORDER_TOTAL = 649.75;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+type EditErrors = {
+  sku?: string;
+  qty?: string;
+  unitCost?: string;
+};
 
 function qtyLabel(line: DemoLine): string {
   const uom = formatUnitOfMeasureLabel(line.unitOfMeasureCode);
@@ -209,6 +215,7 @@ type DisclosureProps = {
 
 export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   const { t } = useI18n();
+  const [lines, setLines] = useState<DemoLine[]>(() => DEMO_LINES_SEED.map((line) => ({ ...line })));
   const [searchInput, setSearchInput] = useState("");
   const [skuFilter, setSkuFilter] = useState<DemoSkuFilter>("all");
   const [sortKey, setSortKey] = useState<DemoSortKey | null>(null);
@@ -217,18 +224,20 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editSku, setEditSku] = useState("");
   const [editQty, setEditQty] = useState("2");
   const [editUnitCost, setEditUnitCost] = useState("180.00");
+  const [editErrors, setEditErrors] = useState<EditErrors>({});
   const [cellEditValue, setCellEditValue] = useState("180.00");
   const [cellEditing, setCellEditing] = useState(false);
-  const [mobileEditing, setMobileEditing] = useState(false);
-  const [mobileQty, setMobileQty] = useState("2");
-  const [mobileCost, setMobileCost] = useState("180.00");
+  const [mobileEditingId, setMobileEditingId] = useState<string | null>(null);
   const qtyErrorId = useId();
+  const skuErrorId = useId();
+  const unitCostErrorId = useId();
 
   const filteredSortedLines = useMemo(() => {
     const queryText = searchInput.trim().toLowerCase();
-    let rows = DEMO_LINES.filter((line) => {
+    let rows = lines.filter((line) => {
       if (skuFilter === "hasSku" && !line.sku.trim()) return false;
       if (skuFilter === "noSku" && line.sku.trim()) return false;
       if (!queryText) return true;
@@ -257,7 +266,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       });
     }
     return rows;
-  }, [searchInput, skuFilter, sortKey, sortDirection]);
+  }, [lines, searchInput, skuFilter, sortKey, sortDirection]);
 
   const pageCount = Math.max(1, Math.ceil(filteredSortedLines.length / pageSize) || 1);
   const safePage = Math.min(page, pageCount);
@@ -271,6 +280,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
   const someVisibleSelected = visibleIds.some((id) => selectedIds.has(id));
 
+  const orderTotal = useMemo(
+    () => lines.reduce((sum, line) => sum + line.lineTotal, 0),
+    [lines],
+  );
+
   const editLineTotal = (Number(editQty) || 0) * (Number(editUnitCost) || 0);
 
   useEffect(() => {
@@ -278,6 +292,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setEditingId(null);
+        setEditErrors({});
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -314,8 +329,99 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
 
   function startRowEdit(line: DemoLine) {
     setEditingId(line.id);
+    setMobileEditingId(null);
+    setEditSku(line.sku);
     setEditQty(String(line.qty));
     setEditUnitCost(line.unitCost.toFixed(2));
+    setEditErrors({});
+  }
+
+  function cancelRowEdit() {
+    setEditingId(null);
+    setEditErrors({});
+  }
+
+  function validateEdit(lineId: string): EditErrors {
+    const sku = editSku.trim();
+    const qty = Number(editQty);
+    const unitCost = Number(editUnitCost);
+    const errors: EditErrors = {};
+    if (!sku) {
+      errors.sku = "SKU is required.";
+    } else if (
+      lines.some(
+        (line) => line.id !== lineId && line.sku.trim().toLowerCase() === sku.toLowerCase(),
+      )
+    ) {
+      errors.sku = "SKU already exists.";
+    }
+    if (!(qty > 0) || Number.isNaN(qty)) {
+      errors.qty = "Quantity must be greater than zero.";
+    }
+    if (Number.isNaN(unitCost) || unitCost < 0) {
+      errors.unitCost = "Unit cost must be a valid amount.";
+    }
+    return errors;
+  }
+
+  function saveRowEdit(lineId: string) {
+    const errors = validateEdit(lineId);
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      return;
+    }
+    const qty = Number(editQty);
+    const unitCost = Number(editUnitCost);
+    const sku = editSku.trim();
+    setLines((prev) =>
+      prev.map((line) =>
+        line.id === lineId
+          ? {
+              ...line,
+              sku,
+              qty,
+              unitCost,
+              lineTotal: Number((qty * unitCost).toFixed(2)),
+            }
+          : line,
+      ),
+    );
+    setEditingId(null);
+    setEditErrors({});
+  }
+
+  function startMobileEdit(line: DemoLine) {
+    setEditingId(null);
+    setMobileEditingId(line.id);
+    setEditSku(line.sku);
+    setEditQty(String(line.qty));
+    setEditUnitCost(line.unitCost.toFixed(2));
+    setEditErrors({});
+  }
+
+  function saveMobileEdit(lineId: string) {
+    const errors = validateEdit(lineId);
+    if (Object.keys(errors).length > 0) {
+      setEditErrors(errors);
+      return;
+    }
+    const qty = Number(editQty);
+    const unitCost = Number(editUnitCost);
+    setLines((prev) =>
+      prev.map((line) =>
+        line.id === lineId
+          ? {
+              ...line,
+              sku: editSku.trim(),
+              qty,
+              unitCost,
+              lineTotal: Number((qty * unitCost).toFixed(2)),
+            }
+          : line,
+      ),
+    );
+    setMobileEditingId(null);
+    setEditErrors({});
   }
 
   function noopOutput() {
@@ -332,7 +438,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.demo"
         title={t("uiStandards.tabTables")}
         description={t("uiStandards.tableDemoLede")}
-        summary="FULL TABLE · ACTIONS ON · demo rows"
+        summary="FULL TABLE · ACTIONS ON · INLINE EDIT ON · demo rows"
         open={isOpen("tables.demo")}
         onOpenChange={(open) => setOpen("tables.demo", open)}
         testId="ui-standards-table-demo"
@@ -406,10 +512,10 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             }
           />
 
-          <ExitsTable>
+          <ExitsTable data-testid="ui-standards-table-grid">
             <ExitsTableHeader>
               <ExitsTableRow>
-                <ExitsTableHead cellAlign="center">
+                <ExitsTableHead cellAlign="center" colSize="checkbox">
                   <ExitsTableCheckbox
                     checked={allVisibleSelected}
                     indeterminate={someVisibleSelected && !allVisibleSelected}
@@ -420,6 +526,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="text"
+                  colSize="flex"
                   sortable
                   sortDirection={sortKey === "product" ? sortDirection : null}
                   onSort={() => toggleSort("product")}
@@ -428,14 +535,17 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="text"
+                  colSize="sku"
                   sortable
                   sortDirection={sortKey === "sku" ? sortDirection : null}
                   onSort={() => toggleSort("sku")}
+                  data-testid="ui-standards-table-sku-head"
                 >
                   {t("catalog.sku")}
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="numeric"
+                  colSize="numeric"
                   sortable
                   sortDirection={sortKey === "quantity" ? sortDirection : null}
                   onSort={() => toggleSort("quantity")}
@@ -445,6 +555,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="money"
+                  colSize="money"
                   sortable
                   sortDirection={sortKey === "unitCost" ? sortDirection : null}
                   onSort={() => toggleSort("unitCost")}
@@ -453,28 +564,35 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                 </ExitsTableHead>
                 <ExitsTableHead
                   cellAlign="money"
+                  colSize="money"
                   sortable
                   sortDirection={sortKey === "lineTotal" ? sortDirection : null}
                   onSort={() => toggleSort("lineTotal")}
+                  data-testid="ui-standards-table-total-head"
                 >
                   {t("purchasing.lineTotal")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                <ExitsTableHead cellAlign="actions" colSize="actions">
+                  Actions
+                </ExitsTableHead>
               </ExitsTableRow>
             </ExitsTableHeader>
             <ExitsTableBody>
               {pagedLines.map((line) => {
                 const selected = selectedIds.has(line.id);
+                const editing = editingId === line.id;
                 return (
                   <ExitsTableRow
                     key={line.id}
                     selected={selected}
-                    interactive
+                    editing={editing}
+                    interactive={!editing}
+                    data-testid={`ui-standards-main-row-${line.id}`}
                     onClick={() => {
                       // Row click = primary view navigation (demo no-op).
                     }}
                   >
-                    <ExitsTableCell cellAlign="center">
+                    <ExitsTableCell cellAlign="center" colSize="checkbox">
                       <ExitsTableCheckbox
                         checked={selected}
                         onChange={() => toggleSelectOne(line.id)}
@@ -482,28 +600,130 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                         onClick={(e) => e.stopPropagation()}
                       />
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text" className="font-medium">
+                    <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
                       {line.name}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text" className="text-muted">
-                      {line.sku}
-                    </ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric">{qtyLabel(line)}</ExitsTableCell>
-                    <ExitsTableCell cellAlign="money">
-                      <MoneyDisplay amount={line.unitCost} />
-                    </ExitsTableCell>
-                    <ExitsTableCell cellAlign="money" emphasis="semibold">
-                      <MoneyDisplay amount={line.lineTotal} />
-                    </ExitsTableCell>
-                    <ExitsTableCell cellAlign="actions">
-                      <ExitsTableActions data-testid={`ui-standards-table-row-actions-${line.id}`}>
-                        <IconAction
-                          label={`Edit ${line.name}`}
-                          onClick={() => startRowEdit(line)}
+                    <ExitsTableCell
+                      cellAlign="text"
+                      colSize="sku"
+                      truncate={!editing}
+                      title={line.sku}
+                      className={editing ? undefined : "text-muted"}
+                    >
+                      {editing ? (
+                        <ExitsTableInlineEditor
+                          align="start"
+                          error={editErrors.sku}
+                          errorId={`${skuErrorId}-${line.id}`}
                         >
-                          <Pencil className="size-4" aria-hidden />
-                        </IconAction>
-                        <MoreActionsMenu productName={line.name} />
+                          <Input
+                            label={`SKU for ${line.name}`}
+                            value={editSku}
+                            onChange={(e) => {
+                              setEditSku(e.target.value);
+                              setEditErrors((prev) => ({ ...prev, sku: undefined }));
+                            }}
+                            aria-invalid={Boolean(editErrors.sku)}
+                            aria-describedby={
+                              editErrors.sku ? `${skuErrorId}-${line.id}` : undefined
+                            }
+                            data-testid={`ui-standards-edit-sku-${line.id}`}
+                          />
+                        </ExitsTableInlineEditor>
+                      ) : (
+                        line.sku
+                      )}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric" colSize="numeric">
+                      {editing ? (
+                        <div className="exits-table__qty-edit">
+                          <ExitsTableInlineEditor
+                            error={editErrors.qty}
+                            errorId={`${qtyErrorId}-${line.id}`}
+                          >
+                            <QuantityInput
+                              label={`Quantity for ${line.name}`}
+                              value={editQty}
+                              onChange={(e) => {
+                                setEditQty(e.target.value);
+                                setEditErrors((prev) => ({ ...prev, qty: undefined }));
+                              }}
+                              aria-invalid={Boolean(editErrors.qty)}
+                              aria-describedby={
+                                editErrors.qty ? `${qtyErrorId}-${line.id}` : undefined
+                              }
+                              data-testid={`ui-standards-edit-qty-${line.id}`}
+                            />
+                          </ExitsTableInlineEditor>
+                          <span className="exits-table__uom">
+                            {formatUnitOfMeasureLabel(line.unitOfMeasureCode)}
+                          </span>
+                        </div>
+                      ) : (
+                        qtyLabel(line)
+                      )}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" colSize="money">
+                      {editing ? (
+                        <ExitsTableInlineEditor
+                          error={editErrors.unitCost}
+                          errorId={`${unitCostErrorId}-${line.id}`}
+                        >
+                          <MoneyInput
+                            label={`Unit cost for ${line.name}`}
+                            value={editUnitCost}
+                            onChange={(e) => {
+                              setEditUnitCost(e.target.value);
+                              setEditErrors((prev) => ({ ...prev, unitCost: undefined }));
+                            }}
+                            aria-invalid={Boolean(editErrors.unitCost)}
+                            aria-describedby={
+                              editErrors.unitCost ? `${unitCostErrorId}-${line.id}` : undefined
+                            }
+                            data-testid={`ui-standards-edit-unit-cost-${line.id}`}
+                          />
+                        </ExitsTableInlineEditor>
+                      ) : (
+                        <MoneyDisplay amount={line.unitCost} />
+                      )}
+                    </ExitsTableCell>
+                    <ExitsTableCell
+                      cellAlign="money"
+                      colSize="money"
+                      emphasis="semibold"
+                      data-testid={`ui-standards-line-total-${line.id}`}
+                    >
+                      <MoneyDisplay amount={editing ? editLineTotal : line.lineTotal} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="actions" colSize="actions">
+                      <ExitsTableActions data-testid={`ui-standards-table-row-actions-${line.id}`}>
+                        {editing ? (
+                          <>
+                            <IconAction
+                              label={`Save ${line.name} changes`}
+                              variant="success"
+                              onClick={() => saveRowEdit(line.id)}
+                            >
+                              <Check className="size-4" aria-hidden />
+                            </IconAction>
+                            <IconAction
+                              label={`Cancel ${line.name} editing`}
+                              onClick={() => cancelRowEdit()}
+                            >
+                              <CircleX className="size-4" aria-hidden />
+                            </IconAction>
+                          </>
+                        ) : (
+                          <>
+                            <IconAction
+                              label={`Edit ${line.name}`}
+                              onClick={() => startRowEdit(line)}
+                            >
+                              <Pencil className="size-4" aria-hidden />
+                            </IconAction>
+                            <MoreActionsMenu productName={line.name} />
+                          </>
+                        )}
                       </ExitsTableActions>
                     </ExitsTableCell>
                   </ExitsTableRow>
@@ -512,13 +732,19 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             </ExitsTableBody>
             <ExitsTableFooter>
               <ExitsTableRow>
+                {/* checkbox + product + sku + qty + unit cost = 5 */}
                 <ExitsTableCell cellAlign="actions" colSpan={5} emphasis="bold">
                   {t("incomingOrders.orderTotal")}
                 </ExitsTableCell>
-                <ExitsTableCell cellAlign="money" emphasis="bold">
-                  <MoneyDisplay amount={DEMO_ORDER_TOTAL} />
+                <ExitsTableCell
+                  cellAlign="money"
+                  colSize="money"
+                  emphasis="bold"
+                  data-testid="ui-standards-order-total"
+                >
+                  <MoneyDisplay amount={orderTotal} />
                 </ExitsTableCell>
-                <ExitsTableCell cellAlign="actions" aria-hidden />
+                <ExitsTableCell cellAlign="actions" colSize="actions" aria-hidden />
               </ExitsTableRow>
             </ExitsTableFooter>
           </ExitsTable>
@@ -526,8 +752,14 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           <ExitsTableMobile>
             {pagedLines.map((line) => {
               const selected = selectedIds.has(line.id);
+              const mobileEditing = mobileEditingId === line.id;
               return (
-                <ExitsTableMobileRow key={line.id} selected={selected}>
+                <ExitsTableMobileRow
+                  key={line.id}
+                  selected={selected}
+                  editing={mobileEditing}
+                  data-testid={`ui-standards-mobile-row-${line.id}`}
+                >
                   <div className="exits-table-mobile__lead">
                     <ExitsTableCheckbox
                       checked={selected}
@@ -537,21 +769,114 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                     <div className="exits-table-mobile__lead-body">
                       <div className="exits-table-mobile__title-row">
                         <p className="exits-table-mobile__title">{line.name}</p>
-                        <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                        {!mobileEditing ? (
+                          <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                        ) : null}
                       </div>
-                      <p className="exits-table-mobile__meta">{line.sku}</p>
-                      <p className="exits-table-mobile__math">
-                        {qtyLabel(line)} × {formatPeso(line.unitCost)}
-                      </p>
-                      <div className="exits-table-mobile__actions">
-                        <Button type="button" variant="outline" shape="soft">
-                          View
-                        </Button>
-                        <Button type="button" variant="ghost" shape="soft">
-                          Edit
-                        </Button>
-                        <MoreActionsMenu productName={line.name} />
-                      </div>
+                      {!mobileEditing ? (
+                        <>
+                          <p className="exits-table-mobile__meta">SKU: {line.sku}</p>
+                          <p className="exits-table-mobile__math">
+                            Quantity: {qtyLabel(line)}
+                          </p>
+                          <p className="exits-table-mobile__math">
+                            Unit cost: {formatPeso(line.unitCost)}
+                          </p>
+                          <p className="exits-table-mobile__total">
+                            Line total: {formatPeso(line.lineTotal)}
+                          </p>
+                          <div className="exits-table-mobile__actions">
+                            <Button type="button" variant="outline" shape="soft">
+                              View
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              shape="soft"
+                              onClick={() => startMobileEdit(line)}
+                            >
+                              Edit
+                            </Button>
+                            <MoreActionsMenu productName={line.name} />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="exits-table-mobile__edit-form">
+                          <label>
+                            SKU
+                            <input
+                              value={editSku}
+                              onChange={(e) => setEditSku(e.target.value)}
+                              aria-label={`SKU for ${line.name}`}
+                              aria-invalid={Boolean(editErrors.sku)}
+                            />
+                          </label>
+                          {editErrors.sku ? (
+                            <p className="exits-table__editor-error m-0" role="alert">
+                              {editErrors.sku}
+                            </p>
+                          ) : null}
+                          <label>
+                            Quantity
+                            <input
+                              value={editQty}
+                              onChange={(e) => setEditQty(e.target.value)}
+                              inputMode="decimal"
+                              aria-label={`Quantity for ${line.name}`}
+                              aria-invalid={Boolean(editErrors.qty)}
+                            />
+                          </label>
+                          <span className="exits-table__uom">
+                            {formatUnitOfMeasureLabel(line.unitOfMeasureCode)}
+                          </span>
+                          {editErrors.qty ? (
+                            <p className="exits-table__editor-error m-0" role="alert">
+                              {editErrors.qty}
+                            </p>
+                          ) : null}
+                          <label>
+                            Unit cost
+                            <input
+                              value={editUnitCost}
+                              onChange={(e) => setEditUnitCost(e.target.value)}
+                              inputMode="decimal"
+                              aria-label={`Unit cost for ${line.name}`}
+                              aria-invalid={Boolean(editErrors.unitCost)}
+                            />
+                          </label>
+                          {editErrors.unitCost ? (
+                            <p className="exits-table__editor-error m-0" role="alert">
+                              {editErrors.unitCost}
+                            </p>
+                          ) : null}
+                          <p className="exits-table-mobile__total m-0">
+                            Line total: {formatPeso(editLineTotal)}
+                          </p>
+                          <div className="exits-table-mobile__edit-actions">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              shape="soft"
+                              onClick={() => {
+                                setMobileEditingId(null);
+                                setEditErrors({});
+                              }}
+                            >
+                              <CircleX className="size-4" aria-hidden />
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="success"
+                              shape="soft"
+                              onClick={() => saveMobileEdit(line.id)}
+                            >
+                              <Check className="size-4" aria-hidden />
+                              Save
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </ExitsTableMobileRow>
@@ -559,7 +884,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             })}
             <li className="exits-table-mobile__footer">
               <span>{t("incomingOrders.orderTotal")}</span>
-              <MoneyDisplay amount={DEMO_ORDER_TOTAL} />
+              <MoneyDisplay amount={orderTotal} />
             </li>
           </ExitsTableMobile>
 
@@ -580,8 +905,9 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           />
         </ExitsTableContainer>
         <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-          Row click → view. Explicit action controls stop row activation. MULTI SELECT and INLINE
-          EDIT remain independent.
+          Pencil enters ROW EDIT for SKU, Quantity, and Unit Cost. Product and Line Total stay
+          read-only; Line Total recalculates locally. MULTI SELECT remains independent. Quantity here
+          is sample data — real inventory stock changes use audited movements, not free overwrite.
         </p>
       </UiStandardsSection>
 
@@ -797,7 +1123,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
               </ExitsTableRow>
             </ExitsTableHeader>
             <ExitsTableBody>
-              {DEMO_LINES.slice(0, 2).map((line) => {
+              {lines.slice(0, 2).map((line) => {
                 const editing = editingId === line.id;
                 return (
                   <ExitsTableRow key={line.id} editing={editing} data-testid={`ui-standards-inline-row-${line.id}`}>
@@ -1130,75 +1456,99 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <ExitsTableContainer>
           <ExitsTableMobile className="!flex md:!flex">
-            <ExitsTableMobileRow editing={mobileEditing}>
-              <p className="exits-table-mobile__title">Apple</p>
-              <p className="exits-table-mobile__meta">SKU: PH-FRU-APPLE</p>
-              {!mobileEditing ? (
-                <>
-                  <p className="exits-table-mobile__math">Quantity: 2 Kg</p>
-                  <p className="exits-table-mobile__math">Unit cost: {formatPeso(180)}</p>
-                  <p className="exits-table-mobile__total">Line total: {formatPeso(360)}</p>
-                  <div className="exits-table-mobile__actions">
-                    <Button type="button" variant="outline" shape="soft">
-                      View
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      shape="soft"
-                      onClick={() => setMobileEditing(true)}
-                    >
-                      Edit
-                    </Button>
-                    <MoreActionsMenu productName="Apple" />
-                  </div>
-                </>
-              ) : (
-                <div className="exits-table-mobile__edit-form">
-                  <label>
-                    Quantity
-                    <input
-                      value={mobileQty}
-                      onChange={(e) => setMobileQty(e.target.value)}
-                      inputMode="decimal"
-                      aria-label="Quantity for Apple"
-                    />
-                  </label>
-                  <label>
-                    Unit cost
-                    <input
-                      value={mobileCost}
-                      onChange={(e) => setMobileCost(e.target.value)}
-                      inputMode="decimal"
-                      aria-label="Unit cost for Apple"
-                    />
-                  </label>
-                  <p className="exits-table-mobile__total m-0">
-                    Line total: {formatPeso((Number(mobileQty) || 0) * (Number(mobileCost) || 0))}
-                  </p>
-                  <div className="exits-table-mobile__edit-actions">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      shape="soft"
-                      onClick={() => setMobileEditing(false)}
-                    >
-                      <CircleX className="size-4" aria-hidden />
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="success"
-                      shape="soft"
-                      onClick={() => setMobileEditing(false)}
-                    >
-                      <Check className="size-4" aria-hidden />
-                      Save
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </ExitsTableMobileRow>
+            {(() => {
+              const apple = lines.find((line) => line.id === "apple") ?? DEMO_LINES_SEED[0];
+              const mobileEditing = mobileEditingId === apple.id;
+              return (
+                <ExitsTableMobileRow editing={mobileEditing}>
+                  <p className="exits-table-mobile__title">{apple.name}</p>
+                  {!mobileEditing ? (
+                    <>
+                      <p className="exits-table-mobile__meta">SKU: {apple.sku}</p>
+                      <p className="exits-table-mobile__math">Quantity: {qtyLabel(apple)}</p>
+                      <p className="exits-table-mobile__math">
+                        Unit cost: {formatPeso(apple.unitCost)}
+                      </p>
+                      <p className="exits-table-mobile__total">
+                        Line total: {formatPeso(apple.lineTotal)}
+                      </p>
+                      <div className="exits-table-mobile__actions">
+                        <Button type="button" variant="outline" shape="soft">
+                          View
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          shape="soft"
+                          onClick={() => startMobileEdit(apple)}
+                        >
+                          Edit
+                        </Button>
+                        <MoreActionsMenu productName={apple.name} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="exits-table-mobile__edit-form">
+                      <label>
+                        SKU
+                        <input
+                          value={editSku}
+                          onChange={(e) => setEditSku(e.target.value)}
+                          aria-label={`SKU for ${apple.name}`}
+                        />
+                      </label>
+                      <label>
+                        Quantity
+                        <input
+                          value={editQty}
+                          onChange={(e) => setEditQty(e.target.value)}
+                          inputMode="decimal"
+                          aria-label={`Quantity for ${apple.name}`}
+                        />
+                      </label>
+                      <span className="exits-table__uom">
+                        {formatUnitOfMeasureLabel(apple.unitOfMeasureCode)}
+                      </span>
+                      <label>
+                        Unit cost
+                        <input
+                          value={editUnitCost}
+                          onChange={(e) => setEditUnitCost(e.target.value)}
+                          inputMode="decimal"
+                          aria-label={`Unit cost for ${apple.name}`}
+                        />
+                      </label>
+                      <p className="exits-table-mobile__total m-0">
+                        Line total: {formatPeso(editLineTotal)}
+                      </p>
+                      <div className="exits-table-mobile__edit-actions">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          shape="soft"
+                          onClick={() => {
+                            setMobileEditingId(null);
+                            setEditErrors({});
+                          }}
+                        >
+                          <CircleX className="size-4" aria-hidden />
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="success"
+                          shape="soft"
+                          onClick={() => saveMobileEdit(apple.id)}
+                        >
+                          <Check className="size-4" aria-hidden />
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </ExitsTableMobileRow>
+              );
+            })()}
           </ExitsTableMobile>
         </ExitsTableContainer>
       </UiStandardsSection>
@@ -1232,26 +1582,33 @@ ROW EDIT
 CELL EDIT
 STICKY ACTIONS
 
+EDITABLE:
+  SKU
+  QUANTITY
+  UNIT COST
+
 OUTPUT ICONS = CSV + XLSX + PDF + Print
 PAGE SIZE = 10 / 25 / 50 / 100 (default 25)
 
 Examples:
 FULL TABLE
 ACTIONS ON
+INLINE EDIT ON
+ROW EDIT
+EDITABLE: SKU, QUANTITY, UNIT COST
 
 FULL TABLE
 MULTI SELECT OFF
 ACTIONS ON
-
-FULL TABLE
 INLINE EDIT ON
-ACTIONS ON
+EDITABLE: PRICE
 
 Inventory adjustment:
 EXITS TABLE
 INLINE EDIT ON
 ROW EDIT
 ACTIONS ON
+(note: real stock qty uses audited movements)
 
 Reference list:
 EXITS TABLE

@@ -211,6 +211,7 @@ describe("ExitsTable foundation", () => {
             <ExitsTableRow>
               <ExitsTableHead
                 cellAlign="numeric"
+                colSize="numeric"
                 sortable
                 sortDirection={null}
                 onSort={onSort}
@@ -218,19 +219,25 @@ describe("ExitsTable foundation", () => {
               >
                 Quantity
               </ExitsTableHead>
-              <ExitsTableHead cellAlign="actions" stickyEnd>
+              <ExitsTableHead cellAlign="text" colSize="sku" data-testid="sku-head">
+                SKU
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="actions" colSize="actions" stickyEnd>
                 Actions
               </ExitsTableHead>
             </ExitsTableRow>
           </ExitsTableHeader>
           <ExitsTableBody>
             <ExitsTableRow interactive editing onClick={onRowClick} data-testid="editing-row">
-              <ExitsTableCell cellAlign="numeric">
+              <ExitsTableCell cellAlign="numeric" colSize="numeric">
                 <ExitsTableInlineEditor error="Quantity must be greater than zero." errorId="qty-err">
                   <span>editor</span>
                 </ExitsTableInlineEditor>
               </ExitsTableCell>
-              <ExitsTableCell cellAlign="actions" stickyEnd>
+              <ExitsTableCell cellAlign="text" colSize="sku" truncate title="PH-FRU-APPLE">
+                PH-FRU-APPLE
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="actions" colSize="actions" stickyEnd>
                 <ExitsTableActions data-testid="row-actions">
                   <button type="button" aria-label="Edit row" onClick={onAction}>
                     Edit
@@ -245,7 +252,10 @@ describe("ExitsTable foundation", () => {
 
     const qtyHead = screen.getByTestId("sort-qty");
     expect(qtyHead).toHaveAttribute("data-align", "numeric");
+    expect(qtyHead).toHaveAttribute("data-col-size", "numeric");
     expect(qtyHead.className).toMatch(/exits-table__cell--numeric/);
+    expect(qtyHead.className).toMatch(/exits-table__col--numeric/);
+    expect(screen.getByTestId("sku-head")).toHaveAttribute("data-col-size", "sku");
     expect(screen.getByRole("columnheader", { name: "Actions" })).toHaveAttribute(
       "data-sticky-end",
       "true",

@@ -73,10 +73,26 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-table-actions")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-table-inline-row-edit")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-table-qty-head")).toHaveAttribute("data-align", "numeric");
+    expect(screen.getByTestId("ui-standards-table-sku-head")).toHaveAttribute("data-col-size", "sku");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("FULL TABLE");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("ACTIONS ON");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("INLINE EDIT ON");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("EDITABLE:");
     expect(screen.getAllByText("Apple").length).toBeGreaterThanOrEqual(1);
+
+    const appleRow = screen.getByTestId("ui-standards-main-row-apple");
+    await user.click(within(appleRow).getByRole("button", { name: "Edit Apple" }));
+    expect(appleRow).toHaveAttribute("data-editing", "true");
+    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-edit-qty-apple")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-edit-unit-cost-apple")).toBeInTheDocument();
+    await user.clear(screen.getByTestId("ui-standards-edit-qty-apple"));
+    await user.type(screen.getByTestId("ui-standards-edit-qty-apple"), "3");
+    expect(screen.getByTestId("ui-standards-line-total-apple")).toHaveTextContent("540");
+    await user.click(within(appleRow).getByRole("button", { name: "Save Apple changes" }));
+    expect(screen.getByTestId("ui-standards-main-row-apple")).not.toHaveAttribute("data-editing");
+    expect(screen.getByTestId("ui-standards-line-total-apple")).toHaveTextContent("540");
+    expect(screen.getByTestId("ui-standards-order-total")).toHaveTextContent("829.75");
 
     await user.click(screen.getByTestId("ui-standards-tab-buttons"));
     expect(screen.getByTestId("ui-standards-buttons-section")).toBeInTheDocument();

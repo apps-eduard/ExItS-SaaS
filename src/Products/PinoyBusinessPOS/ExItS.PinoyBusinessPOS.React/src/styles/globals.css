@@ -470,7 +470,8 @@ html {
 
 .exits-table {
   width: 100%;
-  min-width: 40rem;
+  min-width: 52rem;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: var(--exits-table-font-size);
   color: var(--exits-foreground, inherit);
@@ -545,13 +546,72 @@ html {
 .exits-table__cell--actions,
 .exits-table__head.exits-table__cell--actions {
   text-align: end;
-  width: 1%;
   white-space: nowrap;
 }
 
 .exits-table__cell--center,
 .exits-table__head.exits-table__cell--center {
   text-align: center;
+}
+
+/* Column sizing hints — EXTENSION PILOT (opt-in via colSize). */
+.exits-table__col--checkbox {
+  width: 3rem;
+  min-width: 2.75rem;
+  max-width: 3.25rem;
+}
+
+.exits-table__col--flex {
+  width: auto;
+  min-width: 10.625rem;
+}
+
+.exits-table__col--sku {
+  width: 12.5rem;
+  min-width: 11.25rem;
+  max-width: 16rem;
+}
+
+.exits-table__col--numeric {
+  width: 7.5rem;
+  min-width: 6.875rem;
+  max-width: 8.125rem;
+}
+
+.exits-table__col--money {
+  width: 9rem;
+  min-width: 8.125rem;
+  max-width: 10rem;
+}
+
+.exits-table__col--actions {
+  width: 5.75rem;
+  min-width: 5rem;
+  max-width: 6.5rem;
+  white-space: nowrap;
+}
+
+.exits-table__cell--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exits-table__col--sku .exits-table__editor {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.exits-table__col--numeric .exits-table__editor,
+.exits-table__col--money .exits-table__editor {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.exits-table__editor--start input {
+  text-align: start;
 }
 
 /* Sticky Actions — SPECIAL USE / CANDIDATE (inline-end). */
