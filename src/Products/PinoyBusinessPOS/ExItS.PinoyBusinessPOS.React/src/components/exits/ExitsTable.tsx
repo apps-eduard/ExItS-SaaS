@@ -607,6 +607,9 @@ export function ExitsTableEditMenu({
       onOpenChange={menu.setOpen}
       menuLabel={ariaLabel}
       className={className}
+      menuClassName="w-[12.5rem] min-w-[11.25rem] max-w-[13.75rem]"
+      portal
+      collisionPadding={10}
       trigger={(triggerProps) =>
         trigger === "button" ? (
           <Button

@@ -306,4 +306,49 @@ describe("ExitsTable foundation", () => {
     await user.click(screen.getByRole("menuitem", { name: /Edit all/i }));
     expect(onEditAll).toHaveBeenCalledTimes(1);
   });
+
+  it("portals the edit field menu outside the table scroll viewport", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <ExitsTableContainer data-testid="portal-table-wrap">
+        <div className="exits-table-scroll" data-testid="portal-table-scroll" style={{ overflow: "auto", maxHeight: 120 }}>
+          <ExitsTable>
+            <ExitsTableBody>
+              <ExitsTableRow>
+                <ExitsTableCell cellAlign="actions">
+                  <ExitsTableActions>
+                    <ExitsTableEditMenu
+                      fields={[
+                        { key: "sku", label: "SKU" },
+                        { key: "quantity", label: "Quantity" },
+                        { key: "unitCost", label: "Unit cost" },
+                      ]}
+                      ariaLabel="Edit Apple"
+                      onSelectField={() => undefined}
+                      onEditAll={() => undefined}
+                    />
+                  </ExitsTableActions>
+                </ExitsTableCell>
+              </ExitsTableRow>
+            </ExitsTableBody>
+          </ExitsTable>
+        </div>
+      </ExitsTableContainer>,
+    );
+
+    const scroll = screen.getByTestId("portal-table-scroll");
+    const beforeHeight = scroll.scrollHeight;
+    const beforeClient = scroll.clientHeight;
+
+    await user.click(screen.getByRole("button", { name: "Edit Apple" }));
+    const menu = screen.getByRole("menu");
+    expect(menu).toHaveAttribute("data-exits-dropdown-portal", "true");
+    expect(scroll.contains(menu)).toBe(false);
+    expect(document.body.contains(menu)).toBe(true);
+    expect(scroll.scrollHeight).toBe(beforeHeight);
+    expect(scroll.clientHeight).toBe(beforeClient);
+    expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /Edit all/i })).toBeInTheDocument();
+  });
 });
