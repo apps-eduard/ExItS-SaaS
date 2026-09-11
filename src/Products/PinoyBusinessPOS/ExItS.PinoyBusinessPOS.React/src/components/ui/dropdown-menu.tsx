@@ -119,7 +119,7 @@ export function DropdownMenu({
           aria-label={menuLabel}
           className={cn(
             "absolute top-[calc(100%+0.35rem)] z-40 min-w-[14rem] max-w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--exits-radius-md)] border border-[var(--exits-border-strong)] bg-[var(--exits-surface-elevated)] py-1 shadow-[var(--exits-shadow-md)]",
-            align === "end" ? "right-0" : "left-0",
+            align === "end" ? "inset-inline-end-0" : "inset-inline-start-0",
           )}
         >
           {children}
@@ -178,5 +178,9 @@ export function MenuSeparator() {
 }
 
 export function MenuHeader({ children }: { children: ReactNode }) {
-  return <div className="border-b border-border px-3 py-2.5">{children}</div>;
+  return (
+    <div className="border-b border-border px-3 py-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+      {children}
+    </div>
+  );
 }

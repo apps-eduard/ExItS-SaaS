@@ -9,6 +9,7 @@ import {
   ExitsTableCell,
   ExitsTableCheckbox,
   ExitsTableContainer,
+  ExitsTableEditMenu,
   ExitsTableFooter,
   ExitsTableHead,
   ExitsTableHeader,
@@ -230,7 +231,12 @@ describe("ExitsTable foundation", () => {
           <ExitsTableBody>
             <ExitsTableRow interactive editing onClick={onRowClick} data-testid="editing-row">
               <ExitsTableCell cellAlign="numeric" colSize="numeric">
-                <ExitsTableInlineEditor error="Quantity must be greater than zero." errorId="qty-err">
+                <ExitsTableInlineEditor
+                  stealth
+                  invalid
+                  error="Quantity must be greater than zero."
+                  errorId="qty-err"
+                >
                   <span>editor</span>
                 </ExitsTableInlineEditor>
               </ExitsTableCell>
@@ -262,6 +268,7 @@ describe("ExitsTable foundation", () => {
     );
     expect(screen.getByTestId("editing-row")).toHaveAttribute("data-editing", "true");
     expect(screen.getByRole("alert")).toHaveTextContent("Quantity must be greater than zero.");
+    expect(screen.getByText("editor").parentElement).toHaveAttribute("data-stealth", "true");
 
     await user.click(screen.getByTestId("sort-qty-sort"));
     expect(onSort).toHaveBeenCalledTimes(1);
@@ -269,5 +276,34 @@ describe("ExitsTable foundation", () => {
     await user.click(screen.getByRole("button", { name: "Edit row" }));
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(onRowClick).not.toHaveBeenCalled();
+  });
+
+  it("renders edit field menu from configured column labels", async () => {
+    const user = userEvent.setup();
+    const onSelectField = vi.fn();
+    const onEditAll = vi.fn();
+
+    render(
+      <ExitsTableEditMenu
+        fields={[
+          { key: "sku", label: "SKU" },
+          { key: "quantity", label: "Quantity" },
+          { key: "unitCost", label: "Unit cost" },
+        ]}
+        ariaLabel="Edit Apple"
+        onSelectField={onSelectField}
+        onEditAll={onEditAll}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit Apple" }));
+    expect(screen.getByText("Edit field")).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "unitCost" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Unit cost" }));
+    expect(onSelectField).toHaveBeenCalledWith("unitCost");
+
+    await user.click(screen.getByRole("button", { name: "Edit Apple" }));
+    await user.click(screen.getByRole("menuitem", { name: /Edit all/i }));
+    expect(onEditAll).toHaveBeenCalledTimes(1);
   });
 });

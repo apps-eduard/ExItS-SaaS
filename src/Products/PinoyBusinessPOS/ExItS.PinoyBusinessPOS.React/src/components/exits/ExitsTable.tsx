@@ -8,8 +8,19 @@ import {
   type TdHTMLAttributes,
   type ThHTMLAttributes,
 } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, Printer } from "lucide-react";
-import { DropdownMenu, MenuItem, useDismissibleOpen } from "@/components/ui/dropdown-menu";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ListChecks,
+  Pencil,
+  Printer,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
 
 /** Semantic cell alignment for ExitsTable (pages should prefer this over raw Tailwind). */
@@ -546,20 +557,145 @@ export function ExitsTableActions({
   );
 }
 
+/** Page-owned editable column metadata for the Edit field menu (EXTENSION PILOT). */
+export type ExitsTableEditableField = {
+  /** Stable column key — not shown to users. */
+  key: string;
+  /** Human-facing header/menu label. */
+  label: string;
+};
+
+export type ExitsTableEditMenuProps = {
+  fields: ReadonlyArray<ExitsTableEditableField>;
+  /** Accessible name for the Pencil / Edit trigger. */
+  ariaLabel: string;
+  onSelectField: (key: string) => void;
+  onEditAll: () => void;
+  menuHeader?: string;
+  editAllLabel?: string;
+  /** Dense tables: icon pencil. Less-dense comparison: labeled button. */
+  trigger?: "icon" | "button";
+  className?: string;
+  "data-testid"?: string;
+};
+
+/**
+ * Pencil → field picker dropdown.
+ * Menu items come from page-configured editable columns — never hardcode domain fields here.
+ */
+export function ExitsTableEditMenu({
+  fields,
+  ariaLabel,
+  onSelectField,
+  onEditAll,
+  menuHeader = "Edit field",
+  editAllLabel = "Edit all",
+  trigger = "icon",
+  className,
+  "data-testid": testId,
+}: ExitsTableEditMenuProps) {
+  const menu = useDismissibleOpen(false);
+
+  if (fields.length === 0) {
+    return null;
+  }
+
+  return (
+    <DropdownMenu
+      align="end"
+      open={menu.open}
+      onOpenChange={menu.setOpen}
+      menuLabel={ariaLabel}
+      className={className}
+      trigger={(triggerProps) =>
+        trigger === "button" ? (
+          <Button
+            type="button"
+            variant="ghost"
+            shape="soft"
+            id={triggerProps.id}
+            aria-haspopup="menu"
+            aria-expanded={triggerProps.expanded}
+            aria-controls={triggerProps.controls}
+            aria-label={ariaLabel}
+            title={ariaLabel}
+            data-testid={testId}
+            onClick={triggerProps.onClick}
+            onKeyDown={triggerProps.onKeyDown}
+          >
+            <Pencil className="size-4" aria-hidden />
+            Edit
+            <ChevronDown className="size-3.5 opacity-70" aria-hidden />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            shape="round"
+            id={triggerProps.id}
+            aria-haspopup="menu"
+            aria-expanded={triggerProps.expanded}
+            aria-controls={triggerProps.controls}
+            aria-label={ariaLabel}
+            title="Edit"
+            data-testid={testId}
+            onClick={triggerProps.onClick}
+            onKeyDown={triggerProps.onKeyDown}
+          >
+            <Pencil className="size-4" aria-hidden />
+          </Button>
+        )
+      }
+    >
+      <MenuHeader>{menuHeader}</MenuHeader>
+      {fields.map((field) => (
+        <MenuItem
+          key={field.key}
+          data-testid={testId ? `${testId}-field-${field.key}` : undefined}
+          onSelect={() => {
+            menu.close();
+            onSelectField(field.key);
+          }}
+        >
+          {field.label}
+        </MenuItem>
+      ))}
+      <MenuSeparator />
+      <MenuItem
+        data-testid={testId ? `${testId}-edit-all` : undefined}
+        onSelect={() => {
+          menu.close();
+          onEditAll();
+        }}
+      >
+        <ListChecks className="size-4 shrink-0 opacity-70" aria-hidden />
+        {editAllLabel}
+      </MenuItem>
+    </DropdownMenu>
+  );
+}
+
 export type ExitsTableInlineEditorProps = HTMLAttributes<HTMLDivElement> & {
   /** Numeric editors default to end alignment. */
   align?: "start" | "end";
+  /** Restrained table-native chrome (EXTENSION PILOT default for inline edit). */
+  stealth?: boolean;
+  /** Danger border without injecting tall inline copy (prefer row-level message). */
+  invalid?: boolean;
   error?: string;
   errorId?: string;
 };
 
 /**
- * Presentation wrapper for compact inline editors inside table cells.
- * Page supplies Input / MoneyInput / QuantityInput and owns validation state.
+ * Presentation wrapper for compact / stealth inline editors inside table cells.
+ * Page supplies the control and owns validation state.
  */
 export function ExitsTableInlineEditor({
   className,
   align = "end",
+  stealth = true,
+  invalid = false,
   error,
   errorId,
   children,
@@ -570,10 +706,12 @@ export function ExitsTableInlineEditor({
       className={cn(
         "exits-table__editor",
         align === "end" ? "exits-table__editor--end" : "exits-table__editor--start",
-        error && "exits-table__editor--error",
+        stealth && "exits-table__editor--stealth",
+        (error || invalid) && "exits-table__editor--error",
         className,
       )}
       data-align={align}
+      data-stealth={stealth ? "true" : undefined}
       {...props}
     >
       {children}

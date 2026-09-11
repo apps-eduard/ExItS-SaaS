@@ -77,15 +77,22 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("FULL TABLE");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("ACTIONS ON");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("INLINE EDIT ON");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("EDIT MODE:");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("FIELD MENU");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("EDITABLE:");
     expect(screen.getAllByText("Apple").length).toBeGreaterThanOrEqual(1);
 
     const appleRow = screen.getByTestId("ui-standards-main-row-apple");
     await user.click(within(appleRow).getByRole("button", { name: "Edit Apple" }));
+    expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Quantity" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Unit cost" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /Edit all/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitem", { name: "Quantity" }));
     expect(appleRow).toHaveAttribute("data-editing", "true");
-    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-edit-sku-apple")).not.toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-edit-qty-apple")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-edit-unit-cost-apple")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-edit-unit-cost-apple")).not.toBeInTheDocument();
     await user.clear(screen.getByTestId("ui-standards-edit-qty-apple"));
     await user.type(screen.getByTestId("ui-standards-edit-qty-apple"), "3");
     expect(screen.getByTestId("ui-standards-line-total-apple")).toHaveTextContent("540");
@@ -93,6 +100,21 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-main-row-apple")).not.toHaveAttribute("data-editing");
     expect(screen.getByTestId("ui-standards-line-total-apple")).toHaveTextContent("540");
     expect(screen.getByTestId("ui-standards-order-total")).toHaveTextContent("829.75");
+
+    await user.click(
+      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+        name: "Edit Apple",
+      }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: /Edit all/i }));
+    expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-edit-qty-apple")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-edit-unit-cost-apple")).toBeInTheDocument();
+    await user.click(
+      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+        name: "Cancel Apple editing",
+      }),
+    );
 
     await user.click(screen.getByTestId("ui-standards-tab-buttons"));
     expect(screen.getByTestId("ui-standards-buttons-section")).toBeInTheDocument();

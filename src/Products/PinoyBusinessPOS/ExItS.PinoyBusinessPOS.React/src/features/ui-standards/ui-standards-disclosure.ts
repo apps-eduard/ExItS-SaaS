@@ -3,9 +3,9 @@ export const UI_STANDARDS_SECTIONS_STORAGE_KEY = "exits.uiStandards.sections.v1"
 /** Recommended first-load open/closed map (UI Standards). */
 export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tables.demo": true,
-  "tables.alignment": true,
-  "tables.actions": true,
-  "tables.inline-row-edit": true,
+  "tables.alignment": false,
+  "tables.actions": false,
+  "tables.inline-row-edit": false,
   "tables.inline-cell-edit": false,
   "tables.validation": false,
   "tables.sticky-actions": false,
