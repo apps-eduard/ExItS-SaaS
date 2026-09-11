@@ -143,6 +143,8 @@
 :root {
   --exits-radius-sm: 0.375rem;
   --exits-radius-md: 0.5rem;
+  /** Soft button shape pilot (~11px) — between md and lg; not a pill. */
+  --exits-radius-soft: 0.6875rem;
   --exits-radius-lg: 0.75rem;
   --exits-space-1: 0.25rem;
   --exits-space-2: 0.5rem;

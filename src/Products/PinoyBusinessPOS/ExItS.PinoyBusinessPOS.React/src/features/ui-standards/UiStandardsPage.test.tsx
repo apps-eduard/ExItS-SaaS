@@ -38,9 +38,17 @@ describe("UiStandardsPage", () => {
 
     await user.click(screen.getByTestId("ui-standards-tab-buttons"));
     expect(screen.getByTestId("ui-standards-buttons-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-button-shapes")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-button-treatments")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-primary-standard")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-primary-soft")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-shape-primary-pill")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-treatment-primary-flat")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-treatment-primary-elevated")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-treatment-primary-gradient")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-primary")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-success")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-btn-group-secondary-muted")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-btn-group-muted")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-outline")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-ghost")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-info")).toBeInTheDocument();
@@ -48,9 +56,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-btn-group-danger")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-danger-strong")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-icon-only")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent(
-      "BUTTON STANDARD",
-    );
+    expect(screen.getByTestId("ui-standards-btn-group-states")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("SHAPE");
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("TREATMENT");
     expect(screen.getByLabelText("Edit")).toBeInTheDocument();
   });
 });

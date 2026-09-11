@@ -3,8 +3,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-[var(--exits-radius-md)] text-[length:var(--exits-text-sm)] font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)] disabled:pointer-events-none disabled:opacity-50",
+/**
+ * Shared Button — shape/treatment are opt-in pilots.
+ * Defaults (standard + flat) preserve existing visual appearance.
+ */
+export const buttonVariants = cva(
+  [
+    "inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
+    "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
+    "disabled:pointer-events-none disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none",
+  ].join(" "),
   {
     variants: {
       variant: {
@@ -39,10 +48,46 @@ const buttonVariants = cva(
         large:
           "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
+      /** Pilot — default matches historical ExItS button radius. */
+      shape: {
+        standard: "rounded-[var(--exits-radius-md)]",
+        soft: "rounded-[var(--exits-radius-soft)]",
+        pill: "rounded-full",
+      },
+      /** Pilot — default flat preserves historical treatment. */
+      treatment: {
+        flat: "",
+        elevated:
+          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px hover:shadow-[var(--exits-shadow-md)] active:translate-y-0 active:scale-[0.99]",
+        gradient:
+          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99]",
+      },
     },
+    compoundVariants: [
+      {
+        variant: "default",
+        treatment: "gradient",
+        class:
+          "bg-gradient-to-b from-[var(--exits-primary)] to-[var(--exits-primary-hover)] hover:from-[var(--exits-primary)] hover:to-[var(--exits-primary-hover)] hover:brightness-[1.02]",
+      },
+      {
+        variant: "dangerStrong",
+        treatment: "gradient",
+        class:
+          "bg-gradient-to-b from-[var(--exits-danger)] to-[color-mix(in_srgb,var(--exits-danger)_78%,#000)] hover:brightness-100",
+      },
+      {
+        variant: "success",
+        treatment: "gradient",
+        class:
+          "bg-gradient-to-b from-[var(--exits-success-soft)] to-[color-mix(in_srgb,var(--exits-success)_18%,var(--exits-success-soft))] hover:brightness-100",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",
+      shape: "standard",
+      treatment: "flat",
     },
   },
 );
@@ -52,7 +97,20 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
     asChild?: boolean;
   };
 
-export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant,
+  size,
+  shape,
+  treatment,
+  asChild = false,
+  ...props
+}: ButtonProps) {
   const Comp = asChild ? Slot : "button";
-  return <Comp className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+  return (
+    <Comp
+      className={cn(buttonVariants({ variant, size, shape, treatment }), className)}
+      {...props}
+    />
+  );
 }

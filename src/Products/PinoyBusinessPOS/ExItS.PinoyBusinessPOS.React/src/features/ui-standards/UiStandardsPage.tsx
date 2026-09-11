@@ -6,10 +6,9 @@ import {
   Ban,
   Check,
   CheckCircle2,
-  CirclePause,
   ExternalLink,
   Eye,
-  Info,
+  Loader2,
   MoreHorizontal,
   Pause,
   Pencil,
@@ -19,7 +18,6 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
-  Send,
   Trash2,
   X,
   XCircle,
@@ -482,6 +480,130 @@ OUTPUT ICONS ON.`}
 
       {tab === "buttons" ? (
         <div className="grid gap-3" data-testid="ui-standards-buttons-section">
+          <Card className="grid gap-4 p-3" data-testid="ui-standards-button-shapes">
+            <div>
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("uiStandards.buttonShapesTitle")}
+              </h2>
+              <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                {t("uiStandards.buttonShapesLede")}
+              </p>
+            </div>
+
+            {(
+              [
+                {
+                  label: "PRIMARY / Save",
+                  render: (shape: "standard" | "soft" | "pill") => (
+                    <Button type="button" shape={shape}>
+                      <Save className="size-4" aria-hidden />
+                      Save
+                    </Button>
+                  ),
+                },
+                {
+                  label: "SUCCESS / Approve",
+                  render: (shape: "standard" | "soft" | "pill") => (
+                    <Button type="button" variant="success" shape={shape}>
+                      <Check className="size-4" aria-hidden />
+                      Approve
+                    </Button>
+                  ),
+                },
+                {
+                  label: "WARNING / Deactivate",
+                  render: (shape: "standard" | "soft" | "pill") => (
+                    <Button type="button" variant="warning" shape={shape}>
+                      <Power className="size-4" aria-hidden />
+                      Deactivate
+                    </Button>
+                  ),
+                },
+                {
+                  label: "DANGER / Delete",
+                  render: (shape: "standard" | "soft" | "pill") => (
+                    <Button type="button" variant="destructive" shape={shape}>
+                      <Trash2 className="size-4" aria-hidden />
+                      Delete
+                    </Button>
+                  ),
+                },
+                {
+                  label: "MUTED / Cancel",
+                  render: (shape: "standard" | "soft" | "pill") => (
+                    <Button type="button" variant="secondary" shape={shape}>
+                      <X className="size-4" aria-hidden />
+                      Cancel
+                    </Button>
+                  ),
+                },
+              ] as const
+            ).map((row) => (
+              <div key={row.label} className="grid gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">{row.label}</p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {(["standard", "soft", "pill"] as const).map((shape) => (
+                    <div
+                      key={shape}
+                      className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
+                      data-testid={`ui-standards-shape-${row.label.split(" / ")[0]?.toLowerCase()}-${shape}`}
+                    >
+                      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
+                        {shape}
+                      </span>
+                      {row.render(shape)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </Card>
+
+          <Card className="grid gap-4 p-3" data-testid="ui-standards-button-treatments">
+            <div>
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("uiStandards.buttonTreatmentsTitle")}
+              </h2>
+              <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                {t("uiStandards.buttonTreatmentsLede")}
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(["flat", "elevated", "gradient"] as const).map((treatment) => (
+                <div
+                  key={treatment}
+                  className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
+                  data-testid={`ui-standards-treatment-primary-${treatment}`}
+                >
+                  <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
+                    {treatment}
+                  </span>
+                  <Button type="button" shape="soft" treatment={treatment}>
+                    <Save className="size-4" aria-hidden />
+                    Save
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-2 border-t border-border pt-3 sm:grid-cols-3">
+              {(["flat", "elevated", "gradient"] as const).map((treatment) => (
+                <div
+                  key={treatment}
+                  className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
+                  data-testid={`ui-standards-treatment-danger-strong-${treatment}`}
+                >
+                  <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
+                    DANGER STRONG · {treatment}
+                  </span>
+                  <Button type="button" variant="dangerStrong" shape="soft" treatment={treatment}>
+                    <Trash2 className="size-4" aria-hidden />
+                    Delete permanently
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Card>
+
           <Card className="grid gap-4 p-3" data-testid="ui-standards-button-showcase">
             <div>
               <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
@@ -494,80 +616,126 @@ OUTPUT ICONS ON.`}
 
             <SampleGroup title="PRIMARY">
               <SampleRow>
-                <Button type="button"><Save className="size-4" aria-hidden />Save</Button>
-                <Button type="button"><Plus className="size-4" aria-hidden />Create</Button>
-                <Button type="button"><Plus className="size-4" aria-hidden />Add product</Button>
-                <Button type="button"><Send className="size-4" aria-hidden />Submit</Button>
-                <Button type="button">Continue<ArrowRight className="size-4" aria-hidden /></Button>
+                <Button type="button" shape="soft">
+                  <Save className="size-4" aria-hidden />
+                  Save
+                </Button>
+                <Button type="button" shape="soft">
+                  <Plus className="size-4" aria-hidden />
+                  Add product
+                </Button>
+                <Button type="button" shape="soft">
+                  Continue
+                  <ArrowRight className="size-4" aria-hidden />
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="SUCCESS">
               <SampleRow>
-                <Button type="button" variant="success"><Check className="size-4" aria-hidden />Approve</Button>
-                <Button type="button" variant="success"><Check className="size-4" aria-hidden />Accept order</Button>
-                <Button type="button" variant="success"><CheckCircle2 className="size-4" aria-hidden />Complete</Button>
-                <Button type="button" variant="success"><CheckCircle2 className="size-4" aria-hidden />Mark paid</Button>
+                <Button type="button" variant="success" shape="soft">
+                  <Check className="size-4" aria-hidden />
+                  Approve
+                </Button>
+                <Button type="button" variant="success" shape="soft">
+                  <Check className="size-4" aria-hidden />
+                  Accept order
+                </Button>
+                <Button type="button" variant="success" shape="soft">
+                  <CheckCircle2 className="size-4" aria-hidden />
+                  Mark paid
+                </Button>
               </SampleRow>
             </SampleGroup>
 
-            <SampleGroup title="SECONDARY / MUTED">
+            <SampleGroup title="MUTED">
               <SampleRow>
-                <Button type="button" variant="secondary">Cancel</Button>
-                <Button type="button" variant="secondary">Close</Button>
-                <Button type="button" variant="secondary">Duplicate</Button>
-                <Button type="button" variant="secondary">View history</Button>
-                <Button type="button" variant="ghost"><X className="size-4" aria-hidden />Cancel editing</Button>
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
+                <Button type="button" variant="secondary">
+                  Close
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="OUTLINE">
               <SampleRow>
-                <Button type="button" variant="outline">Change branch</Button>
-                <Button type="button" variant="outline">Filter</Button>
-                <Button type="button" variant="outline">Download</Button>
-                <Button type="button" variant="outline">Secondary action</Button>
+                <Button type="button" variant="outline">
+                  Change branch
+                </Button>
+                <Button type="button" variant="outline">
+                  Download
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="GHOST">
               <SampleRow>
-                <Button type="button" variant="ghost"><ArrowLeft className="size-4" aria-hidden />Back</Button>
-                <Button type="button" variant="ghost"><X className="size-4" aria-hidden />Close</Button>
-                <Button type="button" variant="ghost"><MoreHorizontal className="size-4" aria-hidden />More</Button>
+                <Button type="button" variant="ghost">
+                  <ArrowLeft className="size-4" aria-hidden />
+                  Back
+                </Button>
+                <Button type="button" variant="ghost">
+                  <MoreHorizontal className="size-4" aria-hidden />
+                  More
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="INFO">
               <SampleRow>
-                <Button type="button" variant="info"><Eye className="size-4" aria-hidden />View details</Button>
-                <Button type="button" variant="info"><Info className="size-4" aria-hidden />Information</Button>
-                <Button type="button" variant="info"><ExternalLink className="size-4" aria-hidden />Preview</Button>
+                <Button type="button" variant="info">
+                  <Eye className="size-4" aria-hidden />
+                  View details
+                </Button>
+                <Button type="button" variant="info">
+                  Preview
+                  <ExternalLink className="size-4" aria-hidden />
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="WARNING">
               <SampleRow>
-                <Button type="button" variant="warning"><Power className="size-4" aria-hidden />Deactivate</Button>
-                <Button type="button" variant="warning"><Pause className="size-4" aria-hidden />Pause</Button>
-                <Button type="button" variant="warning"><RotateCcw className="size-4" aria-hidden />Reset</Button>
-                <Button type="button" variant="warning"><CirclePause className="size-4" aria-hidden />Suspend</Button>
+                <Button type="button" variant="warning">
+                  <Power className="size-4" aria-hidden />
+                  Deactivate
+                </Button>
+                <Button type="button" variant="warning">
+                  <Pause className="size-4" aria-hidden />
+                  Pause
+                </Button>
+                <Button type="button" variant="warning">
+                  <RotateCcw className="size-4" aria-hidden />
+                  Reset
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="DANGER">
               <SampleRow>
-                <Button type="button" variant="destructive"><XCircle className="size-4" aria-hidden />Decline</Button>
-                <Button type="button" variant="destructive"><Trash2 className="size-4" aria-hidden />Delete</Button>
-                <Button type="button" variant="destructive"><X className="size-4" aria-hidden />Remove</Button>
-                <Button type="button" variant="destructive"><Ban className="size-4" aria-hidden />Void</Button>
+                <Button type="button" variant="destructive">
+                  <XCircle className="size-4" aria-hidden />
+                  Decline
+                </Button>
+                <Button type="button" variant="destructive">
+                  <Trash2 className="size-4" aria-hidden />
+                  Delete
+                </Button>
+                <Button type="button" variant="destructive">
+                  <Ban className="size-4" aria-hidden />
+                  Void
+                </Button>
               </SampleRow>
             </SampleGroup>
 
             <SampleGroup title="DANGER STRONG">
               <SampleRow>
-                <Button type="button" variant="dangerStrong"><Trash2 className="size-4" aria-hidden />Delete permanently</Button>
-                <Button type="button" variant="dangerStrong"><Ban className="size-4" aria-hidden />Permanently remove</Button>
+                <Button type="button" variant="dangerStrong" shape="soft">
+                  <Trash2 className="size-4" aria-hidden />
+                  Delete permanently
+                </Button>
               </SampleRow>
             </SampleGroup>
 
@@ -576,29 +744,68 @@ OUTPUT ICONS ON.`}
                 <Button type="button" variant="outline" size="icon" title="Edit" aria-label="Edit">
                   <Pencil className="size-4" aria-hidden />
                 </Button>
-                <Button type="button" variant="destructive" size="icon" title="Delete" aria-label="Delete">
-                  <Trash2 className="size-4" aria-hidden />
-                </Button>
-                <Button type="button" variant="outline" size="icon" title="Refresh" aria-label="Refresh">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  shape="soft"
+                  title="Refresh"
+                  aria-label="Refresh"
+                >
                   <RefreshCw className="size-4" aria-hidden />
                 </Button>
                 <Button type="button" variant="outline" size="icon" title="Print" aria-label="Print">
                   <Printer className="size-4" aria-hidden />
                 </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  title="Delete"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
                 <Button type="button" variant="ghost" size="icon" title="More" aria-label="More">
                   <MoreHorizontal className="size-4" aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  shape="pill"
+                  title="Print (pill pilot)"
+                  aria-label="Print (pill pilot)"
+                >
+                  <Printer className="size-4" aria-hidden />
                 </Button>
               </SampleRow>
             </SampleGroup>
 
-            <SampleGroup title="ICON PLACEMENT">
+            <SampleGroup title="STATES">
               <SampleRow>
-                <Button type="button"><Plus className="size-4" aria-hidden />Add product</Button>
-                <Button type="button"><Save className="size-4" aria-hidden />Save</Button>
-                <Button type="button" variant="destructive"><Trash2 className="size-4" aria-hidden />Delete</Button>
-                <Button type="button">Continue<ArrowRight className="size-4" aria-hidden /></Button>
-                <Button type="button" variant="info">Open<ExternalLink className="size-4" aria-hidden /></Button>
+                <Button type="button" shape="soft">
+                  <Save className="size-4" aria-hidden />
+                  Normal
+                </Button>
+                <Button type="button" shape="soft" treatment="elevated">
+                  <Save className="size-4" aria-hidden />
+                  Hover / lift
+                </Button>
+                <Button type="button" shape="soft" treatment="elevated">
+                  Pressed (try)
+                </Button>
+                <Button type="button" shape="soft" disabled>
+                  Disabled
+                </Button>
+                <Button type="button" shape="soft" disabled aria-busy="true">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Saving...
+                </Button>
               </SampleRow>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("uiStandards.buttonStatesHint")}
+              </p>
             </SampleGroup>
           </Card>
 
@@ -610,7 +817,10 @@ OUTPUT ICONS ON.`}
               {t("uiStandards.buttonPilotBadge")}
             </p>
             <pre className="m-0 overflow-x-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] leading-relaxed">
-{`PRIMARY
+{`BUTTON STANDARD — PILOT / NOT LOCKED
+
+INTENT:
+PRIMARY
 SUCCESS
 MUTED
 OUTLINE
@@ -619,17 +829,30 @@ INFO
 WARNING
 DANGER
 DANGER STRONG
-ICON ONLY
+
+SHAPE:
+STANDARD
+SOFT
+PILL
+
+TREATMENT:
+FLAT
+ELEVATED
+GRADIENT
+
+OTHER:
 WITH ICON
 NO ICON
+ICON ONLY
 
 Examples:
-Save: PRIMARY + WITH ICON
-Cancel: GHOST + WITH ICON
-Approve: SUCCESS + WITH ICON
-Deactivate: WARNING + WITH ICON
-Delete: DANGER + WITH ICON
-Delete permanently: DANGER STRONG + WITH ICON`}
+Save: PRIMARY + SOFT + ELEVATED + WITH ICON
+Cancel: GHOST + STANDARD + WITH ICON
+Approve: SUCCESS + SOFT + WITH ICON
+Deactivate: WARNING + STANDARD + WITH ICON
+Delete: DANGER + STANDARD + WITH ICON
+Delete permanently: DANGER STRONG + SOFT + WITH ICON
+Main CTA: PRIMARY + SOFT + GRADIENT + WITH ICON`}
             </pre>
           </Card>
         </div>
