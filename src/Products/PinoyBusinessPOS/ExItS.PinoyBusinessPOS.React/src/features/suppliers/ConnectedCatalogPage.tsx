@@ -257,7 +257,12 @@ export function ConnectedCatalogPage() {
     }
   }
 
-  async function doCreateAndLink(exposureId: string, name: string, uom: string) {
+  async function doCreateAndLink(
+    exposureId: string,
+    name: string,
+    uom: string,
+    supplierPoPrice: number,
+  ) {
     if (!workspace || !relationshipId || !allowCreate) {
       return;
     }
@@ -268,8 +273,9 @@ export function ConnectedCatalogPage() {
         exposureId,
         name,
         unitOfMeasure: uom,
-        // Buyer selling price is independent of supplier purchase price.
-        sellingPrice: 0,
+        // Seed a starting sell price from the shared PO price so the product is sellable;
+        // buyer can change it later in catalog.
+        sellingPrice: Number.isFinite(supplierPoPrice) && supplierPoPrice > 0 ? supplierPoPrice : 0,
         businessUsage: "Resale",
       });
       setMessage(t("connected.createAndLinkSucceeded"));
@@ -346,7 +352,8 @@ export function ConnectedCatalogPage() {
           exposureId: item.exposureId,
           name: item.supplierName,
           unitOfMeasure: item.unitOfMeasureCode,
-          sellingPrice: 0,
+          sellingPrice:
+            Number.isFinite(item.poPrice) && item.poPrice > 0 ? item.poPrice : 0,
           businessUsage: "Resale",
         });
         ok += 1;
@@ -634,7 +641,7 @@ export function ConnectedCatalogPage() {
                       {formatUnitOfMeasureLabel(item.unitOfMeasureCode)}
                     </span>
                     <span className="po-order-table__price tabular-nums">
-                      {formatPeso(item.poPrice)}
+                      {Number.isFinite(item.poPrice) ? formatPeso(item.poPrice) : "—"}
                     </span>
                     <span className="po-order-table__status">
                       <StatusChip tone={statusTone(state)}>{statusLabel(t, state)}</StatusChip>
@@ -658,6 +665,7 @@ export function ConnectedCatalogPage() {
                               item.exposureId,
                               item.supplierName,
                               item.unitOfMeasureCode,
+                              item.poPrice,
                             )
                           }
                         >
@@ -692,6 +700,7 @@ export function ConnectedCatalogPage() {
                               item.exposureId,
                               item.supplierName,
                               item.unitOfMeasureCode,
+                              item.poPrice,
                             )
                           }
                         >
@@ -724,6 +733,7 @@ export function ConnectedCatalogPage() {
                               item.exposureId,
                               item.supplierName,
                               item.unitOfMeasureCode,
+                              item.poPrice,
                             )
                           }
                         >

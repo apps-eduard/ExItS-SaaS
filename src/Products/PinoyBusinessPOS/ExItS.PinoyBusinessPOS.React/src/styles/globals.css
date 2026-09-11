@@ -4463,8 +4463,8 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1.2fr)
     9rem
-    3.25rem
-    5.5rem
+    3.5rem
+    6.5rem
     minmax(5.5rem, max-content)
     9.75rem;
 }
@@ -4475,8 +4475,8 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1.2fr)
     9rem
-    3.25rem
-    5.5rem
+    3.5rem
+    6.5rem
     minmax(5.5rem, max-content)
     16rem;
 }
@@ -4510,9 +4510,13 @@ html:has(.admin-shell) #root {
   box-sizing: border-box;
   display: block;
   width: 100%;
+  min-width: 0;
+  overflow: visible;
   text-align: right;
   font-variant-numeric: tabular-nums;
   padding-right: 0.65rem;
+  color: var(--exits-text);
+  font-weight: var(--exits-font-weight-semibold);
 }
 
 .po-order-table--setup .po-order-table__sku {
@@ -4765,7 +4769,12 @@ html:has(.admin-shell) #root {
     grid-template-areas:
       "check product price"
       "check sku unit"
+      "status status status"
       "action action action";
+  }
+
+  .po-order-table--catalog .po-order-table__status {
+    grid-area: status;
   }
 
   .po-order-table--linked .po-order-table__row {

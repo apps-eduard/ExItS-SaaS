@@ -418,7 +418,7 @@ export function PurchaseOrderCreatePage() {
         exposureId: item.exposureId,
         name: item.supplierName,
         unitOfMeasure: item.unitOfMeasureCode,
-        sellingPrice: 0,
+        sellingPrice: Number.isFinite(item.poPrice) && item.poPrice > 0 ? item.poPrice : 0,
         businessUsage: "Resale",
       });
       setSetupSelected((current) => {
@@ -496,7 +496,7 @@ export function PurchaseOrderCreatePage() {
           exposureId: item.exposureId,
           name: item.supplierName,
           unitOfMeasure: item.unitOfMeasureCode,
-          sellingPrice: 0,
+          sellingPrice: Number.isFinite(item.poPrice) && item.poPrice > 0 ? item.poPrice : 0,
           businessUsage: "Resale",
         });
         ok += 1;

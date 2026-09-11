@@ -282,7 +282,10 @@ describe("ConnectedCatalogPage readiness UX", () => {
       expect(createBuyerProductAndLink).toHaveBeenCalledWith(
         expect.anything(),
         relationshipId,
-        expect.objectContaining({ exposureId: exposureNew }),
+        expect.objectContaining({
+          exposureId: exposureNew,
+          sellingPrice: 12,
+        }),
       ),
     );
   });

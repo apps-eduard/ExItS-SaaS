@@ -360,7 +360,11 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       expect(createBuyerProductAndLink).toHaveBeenCalledWith(
         expect.anything(),
         relationshipId,
-        expect.objectContaining({ exposureId: exposureId2, name: "Snack Mix" }),
+        expect.objectContaining({
+          exposureId: exposureId2,
+          name: "Snack Mix",
+          sellingPrice: 20,
+        }),
       ),
     );
   });
@@ -382,7 +386,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       expect(createBuyerProductAndLink).toHaveBeenCalledWith(
         expect.anything(),
         relationshipId,
-        expect.objectContaining({ exposureId: exposureId2 }),
+        expect.objectContaining({ exposureId: exposureId2, sellingPrice: 20 }),
       ),
     );
   });
