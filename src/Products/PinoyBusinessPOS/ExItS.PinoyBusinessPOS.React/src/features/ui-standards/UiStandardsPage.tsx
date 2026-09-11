@@ -29,6 +29,9 @@ export function UiStandardsPage() {
       <PageHeader title={t("uiStandards.title")} description={t("uiStandards.description")} />
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("uiStandards.prefsHint")}</p>
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="ui-standards-copy-hint">
+        {t("uiStandards.copyCommandsHint")}
+      </p>
 
       <div
         className="sticky top-0 z-20 -mx-1 flex flex-col gap-2 border-b border-border bg-[color-mix(in_srgb,var(--exits-bg)_92%,transparent)] px-1 py-2 backdrop-blur-md"

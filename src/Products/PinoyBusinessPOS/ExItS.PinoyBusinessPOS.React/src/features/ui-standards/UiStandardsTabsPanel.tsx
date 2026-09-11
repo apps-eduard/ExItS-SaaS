@@ -17,29 +17,31 @@ import {
 import { ExitsTabs, type ExitsTabItem } from "@/components/exits/ExitsTabs";
 import { useI18n } from "@/i18n/I18nProvider";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
 
 function SampleCard({
   label,
   children,
   testId,
   hint,
+  command,
 }: {
   label: string;
   children: ReactNode;
   testId?: string;
   hint?: string;
+  command?: string;
 }) {
   return (
-    <div
-      className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-      data-testid={testId}
+    <UiStandardsSampleCard
+      label={label}
+      testId={testId}
+      hint={hint}
+      standard="Tabs"
+      command={command}
     >
-      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
-      <div className="min-w-0">{children}</div>
-      {hint ? (
-        <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span>
-      ) : null}
-    </div>
+      {children}
+    </UiStandardsSampleCard>
   );
 }
 
@@ -159,7 +161,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="UNDERLINE">
-            <SampleCard label="Page-level navigation" hint="Primary bottom indicator · ~2px">
+            <SampleCard label="Page-level navigation" hint="Primary bottom indicator · ~2px" command="UNDERLINE TABS">
               <ExitsTabs
                 variant="underline"
                 ariaLabel="Underline demo"
@@ -178,7 +180,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SOFT">
-            <SampleCard label="Content tabs" hint="Selected soft primary surface — not a Primary Button">
+            <SampleCard label="Content tabs" hint="Selected soft primary surface — not a Primary Button" command="SOFT TABS">
               <ExitsTabs
                 variant="soft"
                 ariaLabel="Soft demo"
@@ -203,6 +205,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard
               label="Independent pills · gaps · not segmented"
               hint="Selected uses Primary tokens — not a giant Primary Button"
+              command="PILL TABS"
             >
               <ExitsTabs
                 variant="pill"
@@ -222,7 +225,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 }}
               />
             </SampleCard>
-            <SampleCard label="Pill + counts (neutral)">
+            <SampleCard label="Pill + counts (neutral)" command="PILL TABS + WITH COUNT + NEUTRAL COUNT">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Pill counts neutral"
@@ -270,7 +273,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="Pill + semantic warning/danger count">
+            <SampleCard label="Pill + semantic warning/danger count" command="PILL TABS + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Pill semantic counts"
@@ -297,7 +300,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="Pill + icon + count">
+            <SampleCard label="Pill + icon + count" command="PILL TABS + WITH ICON + WITH COUNT">
               <ExitsTabs
                 variant="pill"
                 ariaLabel="Pill icon count"
@@ -342,6 +345,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard
               label="Continuous outer bar · inner active pill"
               hint="Distinct from PILL (gaps) and SEGMENTED (segment control) — APPROVED"
+              command="PILL BAR TABS + EQUAL WIDTH"
             >
               <ExitsTabs
                 variant="pillBar"
@@ -367,7 +371,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="SEGMENTED">
-            <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps">
+            <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps" command="SEGMENTED TABS">
               <ExitsTabs
                 variant="segmented"
                 ariaLabel="Segmented demo"
@@ -389,7 +393,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ENCLOSED">
-            <SampleCard label="Detail panel" hint="Selected tab connects to content border">
+            <SampleCard label="Detail panel" hint="Selected tab connects to content border" command="ENCLOSED TABS">
               <ExitsTabs
                 variant="enclosed"
                 ariaLabel="Enclosed demo"
@@ -411,7 +415,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="VERTICAL">
-            <SampleCard label="Settings / admin" hint="Side indicator + soft selected surface">
+            <SampleCard label="Settings / admin" hint="Side indicator + soft selected surface" command="VERTICAL TABS">
               <ExitsTabs
                 variant="vertical"
                 ariaLabel="Vertical demo"
@@ -487,7 +491,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PILL BAR — COUNT">
-            <SampleCard label="CountBadge · neutral inactive">
+            <SampleCard label="CountBadge · neutral inactive" command="PILL BAR TABS + EQUAL WIDTH + WITH COUNT + NEUTRAL COUNT">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -503,7 +507,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                 ]}
               />
             </SampleCard>
-            <SampleCard label="Semantic counts" hint="Completed stays neutral — not bright Success green">
+            <SampleCard label="Semantic counts" hint="Completed stays neutral — not bright Success green" command="PILL BAR TABS + EQUAL WIDTH + WITH COUNT + SEMANTIC COUNT">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"
@@ -521,7 +525,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="PILL BAR — ICON + TEXT + COUNT">
-            <SampleCard label="Full composition">
+            <SampleCard label="Full composition" command="PILL BAR TABS + WITH ICON + WITH COUNT">
               <ExitsTabs
                 variant="pillBar"
                 layout="content"
@@ -599,7 +603,7 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ACTIVE TREATMENTS — APPROVED (default SOLID)">
-            <SampleCard label="A — SOLID PRIMARY" hint="Default for Pill Bar">
+            <SampleCard label="A — SOLID PRIMARY" hint="Default for Pill Bar" command="PILL BAR TABS + EQUAL WIDTH + WITH COUNT + SOLID PRIMARY ACTIVE">
               <ExitsTabs
                 variant="pillBar"
                 layout="equal"

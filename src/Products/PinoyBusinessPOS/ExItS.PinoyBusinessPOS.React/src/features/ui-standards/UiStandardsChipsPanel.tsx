@@ -23,28 +23,32 @@ import { TagChip } from "@/components/exits/TagChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
 
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
+
 function SampleCard({
   label,
   children,
   testId,
   hint,
+  command,
 }: {
   label: string;
   children: ReactNode;
   testId?: string;
   hint?: string;
+  command?: string;
 }) {
   return (
-    <div
-      className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-      data-testid={testId}
+    <UiStandardsSampleCard
+      label={label}
+      testId={testId}
+      hint={hint}
+      contentClassName="flex flex-wrap items-center justify-start gap-1.5"
+      standard="Chip"
+      command={command}
     >
-      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
-      <div className="flex flex-wrap items-center justify-start gap-1.5">{children}</div>
-      {hint ? (
-        <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span>
-      ) : null}
-    </div>
+      {children}
+    </UiStandardsSampleCard>
   );
 }
 
@@ -161,7 +165,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
                 Beta
               </TagChip>
             </SampleCard>
-            <SampleCard label="SQUARE">
+            <SampleCard label="SQUARE" command="TAG CHIP INFO SQUARE">
               <TagChip tone="info" shape="square">
                 Beta
               </TagChip>
@@ -179,7 +183,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
                 B2B
               </TagChip>
             </SampleCard>
-            <SampleCard label="SQUARE">
+            <SampleCard label="SQUARE" command="TAG CHIP INFO">
               <TagChip tone="info" shape="square">
                 B2B
               </TagChip>
@@ -333,7 +337,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard label="Active">
               <StatusChip tone="success">Active</StatusChip>
             </SampleCard>
-            <SampleCard label="Approved">
+            <SampleCard label="Approved" command="STATUS CHIP SUCCESS">
               <StatusChip tone="success">Approved</StatusChip>
             </SampleCard>
             <SampleCard label="Paid">
@@ -345,7 +349,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="WARNING">
-            <SampleCard label="Pending">
+            <SampleCard label="Pending" command="STATUS CHIP WARNING">
               <StatusChip tone="warning">Pending</StatusChip>
             </SampleCard>
             <SampleCard label="Low stock">
@@ -520,7 +524,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard label="Unselected">
               <FilterChip selected={false}>Inactive</FilterChip>
             </SampleCard>
-            <SampleCard label="Selected">
+            <SampleCard label="Selected" command="FILTER CHIP PRIMARY SELECTED">
               <FilterChip selected>Active</FilterChip>
             </SampleCard>
             <SampleCard label="Disabled">
@@ -594,7 +598,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard label="B2B">
               <TagChip tone="info">B2B</TagChip>
             </SampleCard>
-            <SampleCard label="Weighted">
+            <SampleCard label="Weighted" command="TAG CHIP NEUTRAL">
               <TagChip tone="neutral">Weighted</TagChip>
             </SampleCard>
             <SampleCard label="Tracked">
@@ -658,7 +662,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="DEMO">
-            <SampleCard label="Click × to remove">
+            <SampleCard label="Click × to remove" command="REMOVABLE CHIP">
               <div className="flex flex-wrap items-center gap-1.5">
                 {removable.length === 0 ? (
                   <span className="text-[length:var(--exits-text-sm)] text-muted">No chips — reset sample</span>
@@ -709,7 +713,7 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
             <SampleCard label="WARNING">
               <CountChip layout="inline" tone="warning" label="Low stock" count={12} />
             </SampleCard>
-            <SampleCard label="DANGER">
+            <SampleCard label="DANGER" command="COUNT CHIP DANGER">
               <CountChip layout="inline" tone="danger" label="Overdue" count={5} />
             </SampleCard>
           </StaticSampleGroup>

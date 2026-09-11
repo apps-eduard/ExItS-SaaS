@@ -63,7 +63,11 @@ describe("UiStandardsPage", () => {
 
     expect(screen.getByTestId("ui-standards-page")).toBeInTheDocument();
     expect(screen.getByText("ExItS UI Standards")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-copy-hint")).toHaveTextContent(
+      "Visual standards are paired with copyable Cursor commands",
+    );
     expect(screen.getByTestId("ui-standards-sticky-nav")).toBeInTheDocument();
+    expect(screen.getAllByTestId("ui-standards-copy-command").length).toBeGreaterThan(0);
     expect(screen.getByTestId("ui-standards-disclosure-toolbar")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-table")).toHaveClass("exits-table-container");

@@ -35,29 +35,35 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
 
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
+
 function SampleFrame({
   label,
   children,
   hint,
   testId,
   className,
+  command,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
   testId?: string;
   className?: string;
+  command?: string;
 }) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-1.5", className)} data-testid={testId}>
-      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-        {label}
-      </span>
-      <div className="min-w-0">{children}</div>
-      {hint ? (
-        <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span>
-      ) : null}
-    </div>
+    <UiStandardsSampleCard
+      label={label}
+      testId={testId}
+      hint={hint}
+      className={className}
+      bordered={false}
+      standard="Card"
+      command={command}
+    >
+      {children}
+    </UiStandardsSampleCard>
   );
 }
 
@@ -573,7 +579,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         <div className="grid gap-3">
           <StaticSampleGroup title="KPI VARIANTS">
             <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-4">
-              <SampleFrame label="A · TEXT KPI">
+              <SampleFrame label="A · TEXT KPI" command="KPI CARD">
                 <Card treatment="bordered" data-testid="ui-standards-card-kpi-sales">
                   <CardDescription className="uppercase tracking-wide">Today&apos;s sales</CardDescription>
                   <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
@@ -656,7 +662,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               </CardFooter>
             </Card>
           </SampleFrame>
-          <SampleFrame label="REQUEST STOCK">
+          <SampleFrame label="REQUEST STOCK" command="ACTION CARD + BORDERED">
             <Card treatment="bordered">
               <CardHeader>
                 <PackagePlus className="size-4 text-muted" aria-hidden />
@@ -701,7 +707,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-entity"
       >
         <StaticSampleGroup title="ENTITY CARD">
-          <SampleFrame label="WITH AVATAR / INITIALS">
+          <SampleFrame label="WITH AVATAR / INITIALS" command="ENTITY CARD + WITH CHIP + WITH ACTIONS">
             <Card treatment="bordered" className="flex h-full min-h-[11.5rem] flex-col gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
                 <EntityAvatar initials="KF" />
@@ -761,7 +767,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
         testId="ui-standards-cards-product"
       >
         <StaticSampleGroup title="PRODUCT / MEDIA">
-          <SampleFrame label="VERTICAL · WITH IMAGE">
+          <SampleFrame label="VERTICAL · WITH IMAGE" command="PRODUCT CARD + WITH IMAGE + WITH CHIP">
             <Card treatment="bordered">
               <CardMedia className="aspect-[4/3] w-full">
                 <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />
@@ -838,6 +844,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
               label="SELECT ONE"
               className="sm:col-span-2 lg:col-span-3"
               testId="ui-standards-card-selectable-main"
+              command="SELECTABLE CARD"
             >
               <div
                 className="grid grid-cols-1 gap-2 [grid-template-columns:repeat(auto-fit,minmax(min(100%,13.75rem),1fr))]"
@@ -1263,7 +1270,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="ENTITY · LIFT VS EXPAND">
-            <SampleFrame label="LIFT">
+            <SampleFrame label="LIFT" command="ENTITY CARD + INTERACTIVE + LIFT">
               <Card treatment="bordered" interactive motion="lift">
                 <div className="flex min-w-0 items-start gap-2.5">
                   <EntityAvatar initials="KF" />
@@ -1278,7 +1285,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 </div>
               </Card>
             </SampleFrame>
-            <SampleFrame label="EXPAND">
+            <SampleFrame label="EXPAND" command="ENTITY CARD + INTERACTIVE + EXPAND">
               <Card treatment="bordered" interactive motion="expand">
                 <div className="flex min-w-0 items-start gap-2.5">
                   <EntityAvatar initials="KF" />
@@ -1308,7 +1315,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-3">
           <StaticSampleGroup title="PRICING / PLAN CARD — SPECIAL USE">
-            <SampleFrame label="PLANS" className="sm:col-span-2 lg:col-span-3">
+            <SampleFrame label="PLANS" className="sm:col-span-2 lg:col-span-3" command="FEATURED CARD">
               <div
                 className="grid items-stretch gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr))]"
                 data-testid="ui-standards-card-pricing"
@@ -1440,7 +1447,7 @@ export function UiStandardsCardsPanel({ isOpen, setOpen }: DisclosureProps) {
                 <CardDescription>{formatPeso(120)} / kg</CardDescription>
               </Card>
             </SampleFrame>
-            <SampleFrame label="LIFT + MEDIA ZOOM">
+            <SampleFrame label="LIFT + MEDIA ZOOM" command="PRODUCT CARD + LIFT + MEDIA ZOOM">
               <Card treatment="bordered" interactive motion="lift">
                 <CardMedia zoom className="aspect-[4/3] w-full">
                   <ProductImagePlaceholder color="color-mix(in srgb, var(--exits-success) 25%, var(--exits-surface-muted))" />

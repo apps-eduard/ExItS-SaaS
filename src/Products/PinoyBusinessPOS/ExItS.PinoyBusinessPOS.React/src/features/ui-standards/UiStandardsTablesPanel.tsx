@@ -47,6 +47,8 @@ import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-c
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
+import { UiStandardsCopyCommand } from "@/features/ui-standards/UiStandardsCopyCommand";
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
 
 type DemoSkuFilter = "all" | "hasSku" | "noSku";
 type DemoSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
@@ -125,21 +127,30 @@ function SampleFrame({
   hint,
   testId,
   className,
+  command,
+  commandContext,
 }: {
   label: string;
   children: ReactNode;
   hint?: string;
   testId?: string;
   className?: string;
+  command?: string;
+  commandContext?: string;
 }) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-1.5", className)} data-testid={testId}>
-      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
-        {label}
-      </span>
-      <div className="min-w-0">{children}</div>
-      {hint ? <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span> : null}
-    </div>
+    <UiStandardsSampleCard
+      label={label}
+      testId={testId}
+      hint={hint}
+      className={className}
+      bordered={false}
+      standard="Table"
+      command={command}
+      commandContext={commandContext}
+    >
+      {children}
+    </UiStandardsSampleCard>
   );
 }
 
@@ -596,6 +607,8 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         onOpenChange={(open) => setOpen("tables.demo", open)}
         testId="ui-standards-table-demo"
       >
+        <UiStandardsCopyCommand standard="Table" command="FULL TABLE + ACTIONS ON + INLINE EDIT ON" />
+        <UiStandardsCopyCommand standard="Table" command="FULL TABLE + MULTI SELECT OFF" />
         <ExitsTableContainer data-testid="ui-standards-table">
           <ExitsTableToolbar
             search={
@@ -1201,7 +1214,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-4">
           <StaticSampleGroup title="A · SINGLE ICON ACTION">
-            <SampleFrame label="PENCIL">
+            <SampleFrame label="PENCIL" command="EXITS TABLE + ACTIONS ON">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1335,7 +1348,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <div className="grid gap-4">
           <StaticSampleGroup title="A · NORMAL TABLE">
-            <SampleFrame label="READ-ONLY CELLS" testId="ui-standards-inline-sample-normal">
+            <SampleFrame label="READ-ONLY CELLS" testId="ui-standards-inline-sample-normal" command="EXITS TABLE + ACTIONS ON + INLINE EDIT OFF">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableHeader>
@@ -1417,7 +1430,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="C · EDIT SKU ONLY">
-            <SampleFrame label="STEALTH SKU" testId="ui-standards-inline-sample-sku">
+            <SampleFrame label="STEALTH SKU" testId="ui-standards-inline-sample-sku" command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON">
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1508,7 +1521,12 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="E · EDIT UNIT COST ONLY">
-            <SampleFrame label="₱ [180.00]" testId="ui-standards-inline-sample-unit-cost">
+            <SampleFrame
+              label="₱ [180.00]"
+              testId="ui-standards-inline-sample-unit-cost"
+              command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON"
+              commandContext="EDITABLE: UNIT COST"
+            >
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>
@@ -1557,7 +1575,12 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <StaticSampleGroup title="F · EDIT ALL">
-            <SampleFrame label="ALL EDITABLE FIELDS" testId="ui-standards-inline-sample-edit-all">
+            <SampleFrame
+              label="ALL EDITABLE FIELDS"
+              testId="ui-standards-inline-sample-edit-all"
+              command="EXITS TABLE + ACTIONS ON + INLINE EDIT ON"
+              commandContext="EDITABLE: SKU, QUANTITY, UNIT COST"
+            >
               <ExitsTableContainer>
                 <ExitsTable>
                   <ExitsTableBody>

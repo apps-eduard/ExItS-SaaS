@@ -27,29 +27,35 @@ import { Button, buttonIconMotion } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
+import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
 
 function SampleCard({
   label,
   children,
   testId,
   hint,
+  command,
+  commandContext,
 }: {
   label: string;
   children: ReactNode;
   testId?: string;
   hint?: string;
+  command?: string;
+  commandContext?: string;
 }) {
   return (
-    <div
-      className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
-      data-testid={testId}
+    <UiStandardsSampleCard
+      label={label}
+      testId={testId}
+      hint={hint}
+      contentClassName="flex justify-start"
+      standard="Button"
+      command={command}
+      commandContext={commandContext}
     >
-      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
-      <div className="flex justify-start">{children}</div>
-      {hint ? (
-        <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span>
-      ) : null}
-    </div>
+      {children}
+    </UiStandardsSampleCard>
   );
 }
 
@@ -317,7 +323,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Save">
+                  <SampleCard label="Save" command="PRIMARY + SOFT + WITH ICON">
                     <Button type="button" shape="soft">
                       <Save className="size-4" aria-hidden />
                       Save
@@ -344,7 +350,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               summary: "3 examples",
               body: (
                 <>
-                  <SampleCard label="Approve">
+                  <SampleCard label="Approve" command="SUCCESS + WITH ICON">
                     <Button type="button" variant="success" shape="soft">
                       <Check className="size-4" aria-hidden />
                       Approve
@@ -374,7 +380,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                   <div className="grid gap-2 sm:col-span-2 lg:col-span-3" data-testid="ui-standards-cancel-icon-comparison">
                     <p className="m-0 text-[length:var(--exits-text-sm)] font-medium text-muted">CANCEL</p>
                     <div className="grid gap-2 sm:grid-cols-3">
-                      <SampleCard label="CircleX" testId="ui-standards-cancel-circlex">
+                      <SampleCard label="CircleX" testId="ui-standards-cancel-circlex" command="MUTED + WITH ICON" commandContext="ICON: CircleX">
                         <Button type="button" variant="secondary" shape="soft">
                           <CircleX className="size-4" aria-hidden />
                           Cancel
@@ -485,7 +491,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                       Pause
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Reset">
+                  <SampleCard label="Reset" command="WARNING + WITH ICON" commandContext="ICON: RotateCcw">
                     <Button type="button" variant="warning">
                       <RotateCcw className="size-4" aria-hidden />
                       Reset
@@ -506,7 +512,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                       Decline
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Delete">
+                  <SampleCard label="Delete" command="DANGER + WITH ICON">
                     <Button type="button" variant="destructive">
                       <Trash2 className="size-4" aria-hidden />
                       Delete
@@ -526,7 +532,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
               title: "DANGER STRONG",
               summary: "1 example",
               body: (
-                <SampleCard label="Delete permanently">
+                <SampleCard label="Delete permanently" command="DANGER STRONG + WITH ICON">
                   <Button type="button" variant="dangerStrong" shape="soft">
                     <Trash2 className="size-4" aria-hidden />
                     Delete permanently
@@ -609,9 +615,14 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
         </StaticSampleGroup>
 
         <StaticSampleGroup title="ICON ONLY ROUND · INTENTS">
-          <SampleCard label="ROUND GHOST · More" testId="ui-standards-round-ghost">
+          <SampleCard label="ROUND GHOST · More" testId="ui-standards-round-ghost" command="ICON ONLY ROUND GHOST">
             <Button type="button" variant="ghost" size="icon" shape="round" title="More" aria-label="More">
               <MoreHorizontal className="size-4" aria-hidden />
+            </Button>
+          </SampleCard>
+          <SampleCard label="ROUND GHOST · Edit" testId="ui-standards-round-ghost-edit" command="ICON ONLY ROUND GHOST" commandContext="ICON: Pencil">
+            <Button type="button" variant="ghost" size="icon" shape="round" title="Edit" aria-label="Edit">
+              <Pencil className="size-4" aria-hidden />
             </Button>
           </SampleCard>
           <SampleCard label="ROUND MUTED · Refresh" testId="ui-standards-round-muted">

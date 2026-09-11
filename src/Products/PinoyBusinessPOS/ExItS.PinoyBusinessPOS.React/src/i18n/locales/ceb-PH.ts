@@ -2977,6 +2977,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
   "uiStandards.prefsHint": "Use Settings to test theme and density.",
+  "uiStandards.copyCommandsHint": "Visual standards are paired with copyable Cursor commands. Choose the approved sample, copy its command, and paste it into Cursor.",
   "uiStandards.sections": "UI standards sections",
   "uiStandards.tabButtons": "Buttons",
   "uiStandards.tabChips": "Chips",
