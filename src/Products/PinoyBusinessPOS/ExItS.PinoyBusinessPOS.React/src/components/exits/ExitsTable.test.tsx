@@ -351,4 +351,46 @@ describe("ExitsTable foundation", () => {
     expect(screen.getByRole("menuitem", { name: "SKU" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /Edit all/i })).toBeInTheDocument();
   });
+
+  it("keeps stealth editor groups and quiet danger cancel class for alignment cues", () => {
+    render(
+      <ExitsTableContainer>
+        <ExitsTable>
+          <ExitsTableBody>
+            <ExitsTableRow editing>
+              <ExitsTableCell cellAlign="numeric" colSize="numeric">
+                <div className="exits-table__qty-edit" data-testid="qty-edit-group">
+                  <ExitsTableInlineEditor stealth>
+                    <span>2</span>
+                  </ExitsTableInlineEditor>
+                  <span className="exits-table__uom">Kg</span>
+                </div>
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="money" colSize="money">
+                <div className="exits-table__money-edit" data-testid="money-edit-group">
+                  <span className="exits-table__currency-prefix">₱</span>
+                  <ExitsTableInlineEditor stealth>
+                    <span>76.00</span>
+                  </ExitsTableInlineEditor>
+                </div>
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="actions" colSize="actions">
+                <ExitsTableActions>
+                  <button type="button" className="exits-table__action-cancel" aria-label="Cancel Apple editing">
+                    Cancel
+                  </button>
+                </ExitsTableActions>
+              </ExitsTableCell>
+            </ExitsTableRow>
+          </ExitsTableBody>
+        </ExitsTable>
+      </ExitsTableContainer>,
+    );
+
+    expect(screen.getByTestId("qty-edit-group")).toHaveClass("exits-table__qty-edit");
+    expect(screen.getByTestId("money-edit-group")).toHaveClass("exits-table__money-edit");
+    expect(screen.getByRole("button", { name: "Cancel Apple editing" })).toHaveClass(
+      "exits-table__action-cancel",
+    );
+  });
 });

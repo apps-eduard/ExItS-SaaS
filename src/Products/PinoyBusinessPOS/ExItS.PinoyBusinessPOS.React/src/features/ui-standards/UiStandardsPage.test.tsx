@@ -110,6 +110,11 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-edit-sku-apple")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-edit-qty-apple")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-edit-unit-cost-apple")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
+        name: "Cancel Apple editing",
+      }),
+    ).toHaveClass("exits-table__action-cancel");
     await user.click(
       within(screen.getByTestId("ui-standards-main-row-apple")).getByRole("button", {
         name: "Cancel Apple editing",

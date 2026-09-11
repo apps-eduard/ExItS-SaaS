@@ -187,6 +187,8 @@
   --exits-table-row-height: 2.75rem;
   --exits-table-header-height: 2.5rem;
   --exits-table-font-size: var(--exits-text-sm);
+  --exits-table-inline-editor-height: 1.625rem;
+  --exits-table-action-size: 1.75rem;
   --exits-touch-target-min: 2.75rem;
   /*
    * Visual control density (default = balance).
@@ -346,6 +348,8 @@
   --exits-table-row-height: 2.75rem;
   --exits-table-header-height: 2.5rem;
   --exits-table-font-size: var(--exits-text-sm);
+  --exits-table-inline-editor-height: 1.625rem;
+  --exits-table-action-size: 1.75rem;
 }
 
 [data-density="comfort"] {
@@ -383,6 +387,8 @@
   --exits-table-row-height: 3.25rem;
   --exits-table-header-height: 2.875rem;
   --exits-table-font-size: var(--exits-text-sm);
+  --exits-table-inline-editor-height: 1.875rem;
+  --exits-table-action-size: 2rem;
 }
 
 [data-density="compact"] {
@@ -420,6 +426,8 @@
   --exits-table-row-height: 2.375rem;
   --exits-table-header-height: 2.25rem;
   --exits-table-font-size: var(--exits-text-xs);
+  --exits-table-inline-editor-height: 1.375rem;
+  --exits-table-action-size: 1.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -516,7 +524,7 @@ html {
 }
 
 .exits-table__row--editing {
-  background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 22%, transparent);
+  background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 10%, transparent);
 }
 
 .exits-table__row--error {
@@ -636,19 +644,48 @@ html {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.15rem;
+  gap: 0.2rem;
   white-space: nowrap;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* Keep action icons denser than full form controls so they match table row rhythm. */
+.exits-table__actions > button {
+  width: var(--exits-table-action-size);
+  height: var(--exits-table-action-size);
+  min-width: var(--exits-table-action-size);
+  min-height: var(--exits-table-action-size);
+}
+
+/* Quiet discard/cancel — ghost surface + Danger icon (not solid danger). */
+.exits-table__action-cancel {
+  color: var(--exits-danger);
+}
+
+.exits-table__action-cancel:hover {
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger-soft, #fef2f1) 70%, transparent);
+}
+
+.exits-table__action-cancel:focus-visible {
+  color: var(--exits-danger);
 }
 
 .exits-table__editor {
-  display: flex;
+  display: inline-flex;
   min-width: 0;
   max-width: 100%;
   width: 100%;
   flex-direction: column;
+  justify-content: center;
   align-items: stretch;
-  gap: 0.15rem;
+  align-self: center;
+  gap: 0;
   margin-inline-start: auto;
+  min-height: var(--exits-table-inline-editor-height);
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .exits-table__editor--start {
@@ -673,29 +710,39 @@ html {
   border: 0;
 }
 
+/* Collapse Input label chrome so it cannot push the field below the row baseline. */
 .exits-table__editor > div {
-  gap: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0 !important;
+  min-height: var(--exits-table-inline-editor-height);
+  width: 100%;
+}
+
+.exits-table__editor > div > div:first-child {
+  display: none;
 }
 
 .exits-table__editor input,
 .exits-table__editor select {
-  height: calc(var(--exits-table-row-height) - 0.85rem);
-  min-height: calc(var(--exits-table-row-height) - 0.85rem);
-  max-height: 2rem;
+  height: var(--exits-table-inline-editor-height);
+  min-height: var(--exits-table-inline-editor-height);
+  max-height: var(--exits-table-inline-editor-height);
   padding-block: 0;
   padding-inline: 0.35rem;
   font-size: var(--exits-table-font-size);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 /* Stealth inline editor — table-native, not a dropped-in form control. */
 .exits-table__editor--stealth input,
 .exits-table__editor--stealth select {
   width: 100%;
-  height: calc(var(--exits-table-row-height) - 0.85rem) !important;
-  min-height: calc(var(--exits-table-row-height) - 0.85rem) !important;
-  max-height: 2rem !important;
+  height: var(--exits-table-inline-editor-height) !important;
+  min-height: var(--exits-table-inline-editor-height) !important;
+  max-height: var(--exits-table-inline-editor-height) !important;
   padding-block: 0 !important;
   padding-inline: 0.35rem !important;
   background: transparent !important;
@@ -706,7 +753,7 @@ html {
   font: inherit;
   font-size: var(--exits-table-font-size) !important;
   font-weight: inherit;
-  line-height: 1.2;
+  line-height: 1 !important;
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -793,16 +840,24 @@ html {
   gap: 0.35rem;
   min-width: 0;
   width: 100%;
+  min-height: var(--exits-table-inline-editor-height);
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .exits-table__qty-edit .exits-table__editor {
   max-width: 4.25rem;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 2.75rem;
 }
 
 .exits-table__uom {
+  display: inline-flex;
+  align-items: center;
   color: var(--exits-muted, #5b6b60);
-  font-size: calc(var(--exits-table-font-size) * 0.95);
+  font-size: var(--exits-table-font-size);
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -813,16 +868,25 @@ html {
   gap: 0.25rem;
   min-width: 0;
   width: 100%;
+  min-height: var(--exits-table-inline-editor-height);
+  line-height: 1;
+  vertical-align: middle;
 }
 
 .exits-table__money-edit .exits-table__editor {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 3.5rem;
+  max-width: 100%;
 }
 
 .exits-table__currency-prefix {
+  display: inline-flex;
+  align-items: center;
   color: var(--exits-muted, #5b6b60);
+  font-size: var(--exits-table-font-size);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
 }
 

@@ -158,11 +158,16 @@ function IconAction({
   variant = "ghost",
   children,
   onClick,
+  className,
+  title,
 }: {
   label: string;
   variant?: "ghost" | "destructive" | "success" | "info";
   children: ReactNode;
   onClick?: () => void;
+  className?: string;
+  /** Tooltip; defaults to aria-label. Prefer short title for Cancel editing. */
+  title?: string;
 }) {
   return (
     <Button
@@ -170,8 +175,9 @@ function IconAction({
       variant={variant}
       size="icon"
       shape="round"
-      title={label}
+      title={title ?? label}
       aria-label={label}
+      className={className}
       onClick={onClick}
     >
       {children}
@@ -797,6 +803,8 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                               </IconAction>
                               <IconAction
                                 label={`Cancel ${line.name} editing`}
+                                title="Cancel editing"
+                                className="exits-table__action-cancel"
                                 onClick={() => cancelRowEdit()}
                               >
                                 <CircleX className="size-4" aria-hidden />
@@ -996,6 +1004,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                               type="button"
                               variant="ghost"
                               shape="soft"
+                              className="exits-table__action-cancel"
                               onClick={() => cancelMobileEdit()}
                             >
                               <CircleX className="size-4" aria-hidden />
@@ -1358,7 +1367,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1401,7 +1414,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1446,7 +1463,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1498,7 +1519,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1538,7 +1563,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1579,7 +1608,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                   <Check className="size-4" aria-hidden />
                   Save
                 </Button>
-                <Button type="button" variant="ghost" shape="soft">
+                <Button type="button" variant="ghost" shape="soft" className="exits-table__action-cancel">
                   <CircleX className="size-4" aria-hidden />
                   Cancel
                 </Button>
@@ -1685,7 +1714,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <IconAction label="Save Apple changes" variant="success">
                             <Check className="size-4" aria-hidden />
                           </IconAction>
-                          <IconAction label="Cancel Apple editing">
+                          <IconAction
+                            label="Cancel Apple editing"
+                            title="Cancel editing"
+                            className="exits-table__action-cancel"
+                          >
                             <CircleX className="size-4" aria-hidden />
                           </IconAction>
                         </ExitsTableActions>
@@ -1920,6 +1953,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           type="button"
                           variant="ghost"
                           shape="soft"
+                          className="exits-table__action-cancel"
                           onClick={() => cancelMobileEdit()}
                         >
                           <CircleX className="size-4" aria-hidden />
