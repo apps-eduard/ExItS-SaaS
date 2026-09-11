@@ -4,15 +4,18 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Shared Button — shape/treatment are opt-in pilots.
+ * Shared Button — shape/treatment/motion are opt-in pilots.
  * Defaults (standard + flat) preserve existing visual appearance.
+ * Contextual icon motion: put `group/button` (already on Button) +
+ * `buttonIconMotion.*` classes on Lucide children.
  */
 export const buttonVariants = cva(
   [
-    "inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
+    "group/button inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
     "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
+    "active:scale-[0.985] motion-reduce:active:scale-100",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
-    "disabled:pointer-events-none disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none",
+    "disabled:pointer-events-none disabled:opacity-50 disabled:translate-y-0 disabled:scale-100 disabled:shadow-none",
   ].join(" "),
   {
     variants: {
@@ -53,14 +56,16 @@ export const buttonVariants = cva(
         standard: "rounded-[var(--exits-radius-md)]",
         soft: "rounded-[var(--exits-radius-soft)]",
         pill: "rounded-full",
+        /** Circular icon-only control (pair with size="icon"). */
+        round: "rounded-full",
       },
       /** Pilot — default flat preserves historical treatment. */
       treatment: {
         flat: "",
         elevated:
-          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px hover:shadow-[var(--exits-shadow-md)] active:translate-y-0 active:scale-[0.99]",
+          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px hover:shadow-[var(--exits-shadow-md)] active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[var(--exits-shadow-sm)] motion-reduce:active:scale-100",
         gradient:
-          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99]",
+          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100",
       },
     },
     compoundVariants: [
@@ -91,6 +96,28 @@ export const buttonVariants = cva(
     },
   },
 );
+
+/**
+ * Contextual icon micro-motion for Lucide children inside Button.
+ * Use only when movement communicates intent — not on every icon.
+ */
+export const buttonIconMotion = {
+  continue:
+    "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-x-0",
+  back: "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:-translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-x-0",
+  open: "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:translate-x-px group-hover/button:-translate-y-px motion-reduce:transition-none motion-reduce:group-hover/button:translate-x-0 motion-reduce:group-hover/button:translate-y-0",
+  add: "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:scale-110 motion-reduce:transition-none motion-reduce:group-hover/button:scale-100",
+  view: "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:scale-105 motion-reduce:transition-none motion-reduce:group-hover/button:scale-100",
+  delete:
+    "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:-translate-y-px group-hover/button:scale-105 motion-reduce:transition-none motion-reduce:group-hover/button:translate-y-0 motion-reduce:group-hover/button:scale-100",
+  more: "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:scale-105 group-hover/button:opacity-90 motion-reduce:transition-none motion-reduce:group-hover/button:scale-100",
+  refresh:
+    "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:rotate-[20deg] motion-reduce:transition-none motion-reduce:group-hover/button:rotate-0",
+  warning:
+    "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:scale-105 motion-reduce:transition-none motion-reduce:group-hover/button:scale-100",
+} as const;
+
+export type ButtonIconMotionKind = keyof typeof buttonIconMotion;
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {

@@ -56,15 +56,23 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-btn-group-danger")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-danger-strong")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-icon-only")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-btn-group-icon-only-round-intents")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-states")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-button-motion")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-icon-edit-round")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-round-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-motion-round-refresh")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-motion-success-demo")).toBeInTheDocument();
     const samples = within(screen.getByTestId("ui-standards-button-showcase"));
     expect(samples.getByRole("button", { name: "Save" })).toBeInTheDocument();
     expect(samples.getByRole("button", { name: "Approve" })).toBeInTheDocument();
     expect(samples.getByRole("button", { name: "Delete permanently" })).toBeInTheDocument();
-    expect(samples.getByLabelText("Edit")).toBeInTheDocument();
-    expect(samples.getByLabelText("Refresh")).toBeInTheDocument();
+    expect(samples.getAllByLabelText("Edit").length).toBeGreaterThanOrEqual(3);
+    expect(samples.getAllByLabelText("Refresh").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("SHAPE");
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("TREATMENT");
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("ICON ONLY ROUND");
+    expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("ROUND (icon-only circle)");
   });
 });
 
