@@ -299,11 +299,14 @@ export type ExitsTableRowProps = HTMLAttributes<HTMLTableRowElement> & {
   /** Soft hover for future clickable/selectable tables. Off by default. */
   interactive?: boolean;
   selected?: boolean;
+  /** Inline-edit presentation — page owns edit state / values. */
   editing?: boolean;
+  /** Row-level validation / save failure presentation. */
+  error?: boolean;
 };
 
 export const ExitsTableRow = forwardRef<HTMLTableRowElement, ExitsTableRowProps>(function ExitsTableRow(
-  { className, interactive = false, selected = false, editing = false, ...props },
+  { className, interactive = false, selected = false, editing = false, error = false, ...props },
   ref,
 ) {
   return (
@@ -314,10 +317,12 @@ export const ExitsTableRow = forwardRef<HTMLTableRowElement, ExitsTableRowProps>
         interactive && "exits-table__row--interactive",
         selected && "exits-table__row--selected",
         editing && "exits-table__row--editing",
+        error && "exits-table__row--error",
         className,
       )}
       data-selected={selected ? "true" : undefined}
       data-editing={editing ? "true" : undefined}
+      data-error={error ? "true" : undefined}
       {...props}
     />
   );
@@ -328,6 +333,11 @@ export type ExitsTableHeadProps = ThHTMLAttributes<HTMLTableCellElement> & {
   sortable?: boolean;
   sortDirection?: ExitsTableSortDirection;
   onSort?: () => void;
+  /**
+   * Stick this column to the inline-end while scrolling horizontally.
+   * SPECIAL USE / CANDIDATE — typically Actions. Not default.
+   */
+  stickyEnd?: boolean;
 };
 
 export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadProps>(
@@ -338,6 +348,7 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
       sortable = false,
       sortDirection = null,
       onSort,
+      stickyEnd = false,
       children,
       ...props
     },
@@ -358,9 +369,11 @@ export const ExitsTableHead = forwardRef<HTMLTableCellElement, ExitsTableHeadPro
           alignClass[cellAlign],
           sortable && "exits-table__head--sortable",
           sortDirection && "exits-table__head--sorted",
+          stickyEnd && "exits-table__cell--sticky-end",
           className,
         )}
         data-align={cellAlign}
+        data-sticky-end={stickyEnd ? "true" : undefined}
         aria-sort={
           sortable
             ? sortDirection === "asc"
@@ -400,10 +413,15 @@ export type ExitsTableCellProps = TdHTMLAttributes<HTMLTableCellElement> & {
   cellAlign?: ExitsTableAlign;
   /** Slightly stronger weight for primary numeric columns (e.g. line total). */
   emphasis?: "normal" | "semibold" | "bold";
+  /** Stick Actions (or similar) to inline-end while scrolling. SPECIAL USE. */
+  stickyEnd?: boolean;
 };
 
 export const ExitsTableCell = forwardRef<HTMLTableCellElement, ExitsTableCellProps>(
-  function ExitsTableCell({ className, cellAlign = "text", emphasis = "normal", ...props }, ref) {
+  function ExitsTableCell(
+    { className, cellAlign = "text", emphasis = "normal", stickyEnd = false, ...props },
+    ref,
+  ) {
     return (
       <td
         ref={ref}
@@ -412,14 +430,80 @@ export const ExitsTableCell = forwardRef<HTMLTableCellElement, ExitsTableCellPro
           alignClass[cellAlign],
           emphasis === "semibold" && "exits-table__cell--semibold",
           emphasis === "bold" && "exits-table__cell--bold",
+          stickyEnd && "exits-table__cell--sticky-end",
           className,
         )}
         data-align={cellAlign}
+        data-sticky-end={stickyEnd ? "true" : undefined}
         {...props}
       />
     );
   },
 );
+
+/**
+ * Compact row-action cluster. Stops click propagation so interactive rows
+ * do not activate when an action button is pressed.
+ */
+export function ExitsTableActions({
+  className,
+  onClick,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      {...props}
+      className={cn("exits-table__actions", className)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.(event);
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export type ExitsTableInlineEditorProps = HTMLAttributes<HTMLDivElement> & {
+  /** Numeric editors default to end alignment. */
+  align?: "start" | "end";
+  error?: string;
+  errorId?: string;
+};
+
+/**
+ * Presentation wrapper for compact inline editors inside table cells.
+ * Page supplies Input / MoneyInput / QuantityInput and owns validation state.
+ */
+export function ExitsTableInlineEditor({
+  className,
+  align = "end",
+  error,
+  errorId,
+  children,
+  ...props
+}: ExitsTableInlineEditorProps) {
+  return (
+    <div
+      className={cn(
+        "exits-table__editor",
+        align === "end" ? "exits-table__editor--end" : "exits-table__editor--start",
+        error && "exits-table__editor--error",
+        className,
+      )}
+      data-align={align}
+      {...props}
+    >
+      {children}
+      {error ? (
+        <p id={errorId} className="exits-table__editor-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export type ExitsTableCheckboxProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
   indeterminate?: boolean;
@@ -557,19 +641,22 @@ export const ExitsTableMobile = forwardRef<HTMLUListElement, ExitsTableMobilePro
 
 export type ExitsTableMobileRowProps = HTMLAttributes<HTMLLIElement> & {
   selected?: boolean;
+  editing?: boolean;
 };
 
 export const ExitsTableMobileRow = forwardRef<HTMLLIElement, ExitsTableMobileRowProps>(
-  function ExitsTableMobileRow({ className, selected = false, ...props }, ref) {
+  function ExitsTableMobileRow({ className, selected = false, editing = false, ...props }, ref) {
     return (
       <li
         ref={ref}
         className={cn(
           "exits-table-mobile__row",
           selected && "exits-table-mobile__row--selected",
+          editing && "exits-table-mobile__row--editing",
           className,
         )}
         data-selected={selected ? "true" : undefined}
+        data-editing={editing ? "true" : undefined}
         {...props}
       />
     );

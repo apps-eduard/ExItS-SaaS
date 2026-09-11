@@ -474,7 +474,7 @@ html {
   border-collapse: collapse;
   font-size: var(--exits-table-font-size);
   color: var(--exits-foreground, inherit);
-  text-align: left;
+  text-align: start;
 }
 
 .exits-table__header {
@@ -515,7 +515,12 @@ html {
 }
 
 .exits-table__row--editing {
-  background: color-mix(in srgb, var(--exits-warning, #f59e0b) 8%, transparent);
+  background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 55%, transparent);
+  border-inline-start: 3px solid var(--exits-primary);
+}
+
+.exits-table__row--error {
+  background: color-mix(in srgb, var(--exits-danger-soft, #fee2e2) 55%, transparent);
 }
 
 .exits-table__cell {
@@ -526,25 +531,148 @@ html {
 
 .exits-table__cell--text,
 .exits-table__head.exits-table__cell--text {
-  text-align: left;
+  text-align: start;
 }
 
 .exits-table__cell--numeric,
 .exits-table__cell--money,
 .exits-table__head.exits-table__cell--numeric,
 .exits-table__head.exits-table__cell--money {
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 
 .exits-table__cell--actions,
 .exits-table__head.exits-table__cell--actions {
-  text-align: right;
+  text-align: end;
+  width: 1%;
+  white-space: nowrap;
 }
 
 .exits-table__cell--center,
 .exits-table__head.exits-table__cell--center {
   text-align: center;
+}
+
+/* Sticky Actions — SPECIAL USE / CANDIDATE (inline-end). */
+.exits-table__cell--sticky-end,
+.exits-table__head.exits-table__cell--sticky-end {
+  position: sticky;
+  inset-inline-end: 0;
+  z-index: 2;
+  background: var(--exits-surface, #fff);
+  box-shadow: -6px 0 8px -6px color-mix(in srgb, var(--exits-foreground, #111) 18%, transparent);
+}
+
+[dir="rtl"] .exits-table__cell--sticky-end,
+[dir="rtl"] .exits-table__head.exits-table__cell--sticky-end {
+  box-shadow: 6px 0 8px -6px color-mix(in srgb, var(--exits-foreground, #111) 18%, transparent);
+}
+
+.exits-table__header .exits-table__cell--sticky-end {
+  background: color-mix(in srgb, var(--exits-surface-muted, #eef2ef) 70%, transparent);
+}
+
+.exits-table__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+.exits-table__editor {
+  display: flex;
+  min-width: 5.5rem;
+  max-width: 9rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin-inline-start: auto;
+}
+
+.exits-table__editor--start {
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
+.exits-table__editor--end {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+.exits-table__editor .exits-type-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.exits-table__editor > div {
+  gap: 0;
+}
+
+.exits-table__editor input,
+.exits-table__editor select {
+  height: calc(var(--exits-control-height) - 0.35rem);
+  min-height: calc(var(--exits-control-height) - 0.35rem);
+  padding-block: 0;
+  padding-inline: 0.5rem;
+  font-size: var(--exits-table-font-size);
+  font-variant-numeric: tabular-nums;
+}
+
+.exits-table__editor--end input,
+.exits-table__editor--end select {
+  text-align: end;
+}
+
+.exits-table__editor--error input,
+.exits-table__editor--error select {
+  border-color: var(--exits-danger);
+}
+
+.exits-table__editor-error {
+  margin: 0;
+  max-width: 12rem;
+  color: var(--exits-danger);
+  font-size: calc(var(--exits-table-font-size) * 0.9);
+  line-height: 1.25;
+  text-align: end;
+}
+
+.exits-table__row-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  color: var(--exits-danger);
+  font-size: var(--exits-table-font-size);
+}
+
+.exits-table__qty-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.exits-table__qty-edit .exits-table__editor {
+  max-width: 4.5rem;
+}
+
+.exits-table__uom {
+  color: var(--exits-muted, #5b6b60);
+  font-size: calc(var(--exits-table-font-size) * 0.95);
+  white-space: nowrap;
 }
 
 .exits-table__cell--semibold {
@@ -879,7 +1007,7 @@ html {
   width: 100%;
   min-height: var(--exits-table-header-height);
   align-items: center;
-  justify-content: inherit;
+  justify-content: flex-start;
   gap: 0.35rem;
   padding: var(--exits-table-cell-y) var(--exits-table-cell-x);
   border: 0;
@@ -888,6 +1016,16 @@ html {
   font: inherit;
   font-weight: inherit;
   cursor: pointer;
+}
+
+.exits-table__head.exits-table__cell--numeric .exits-table__sort-btn,
+.exits-table__head.exits-table__cell--money .exits-table__sort-btn,
+.exits-table__head.exits-table__cell--actions .exits-table__sort-btn {
+  justify-content: flex-end;
+}
+
+.exits-table__head.exits-table__cell--center .exits-table__sort-btn {
+  justify-content: center;
 }
 
 .exits-table__sort-btn:focus-visible {
@@ -915,6 +1053,54 @@ html {
 
 .exits-table-mobile__row--selected {
   background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 80%, transparent);
+}
+
+.exits-table-mobile__row--editing {
+  background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 45%, transparent);
+  border-inline-start: 3px solid var(--exits-primary);
+}
+
+.exits-table-mobile__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.exits-table-mobile__edit-form {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+}
+
+.exits-table-mobile__edit-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: calc(var(--exits-table-font-size) * 0.95);
+  color: var(--exits-muted, #5b6b60);
+}
+
+.exits-table-mobile__edit-form input {
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  width: 100%;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  padding-inline: var(--exits-control-padding-x);
+  font-size: var(--exits-table-font-size);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  color: var(--exits-foreground);
+}
+
+.exits-table-mobile__edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .exits-table-mobile__lead {

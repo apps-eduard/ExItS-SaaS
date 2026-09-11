@@ -69,7 +69,13 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-table")).toHaveClass("exits-table-container");
     expect(screen.getByTestId("exits-table-output-actions")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-select-all")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table-alignment")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table-inline-row-edit")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table-qty-head")).toHaveAttribute("data-align", "numeric");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("FULL TABLE");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("ACTIONS ON");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("INLINE EDIT ON");
     expect(screen.getAllByText("Apple").length).toBeGreaterThanOrEqual(1);
 
     await user.click(screen.getByTestId("ui-standards-tab-buttons"));

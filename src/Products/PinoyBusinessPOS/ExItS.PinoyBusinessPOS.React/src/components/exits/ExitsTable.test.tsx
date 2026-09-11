@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   cycleExitsTableSort,
   ExitsTable,
+  ExitsTableActions,
   ExitsTableBody,
   ExitsTableCell,
   ExitsTableCheckbox,
@@ -11,6 +12,7 @@ import {
   ExitsTableFooter,
   ExitsTableHead,
   ExitsTableHeader,
+  ExitsTableInlineEditor,
   ExitsTableMobile,
   ExitsTableMobileRow,
   ExitsTableOutputActions,
@@ -194,5 +196,68 @@ describe("ExitsTable foundation", () => {
       "aria-label",
       "Export & Print",
     );
+  });
+
+  it("aligns sortable numeric headers to end and supports actions / editing presentation", async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const onAction = vi.fn();
+    const onRowClick = vi.fn();
+
+    render(
+      <ExitsTableContainer>
+        <ExitsTable>
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead
+                cellAlign="numeric"
+                sortable
+                sortDirection={null}
+                onSort={onSort}
+                data-testid="sort-qty"
+              >
+                Quantity
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="actions" stickyEnd>
+                Actions
+              </ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            <ExitsTableRow interactive editing onClick={onRowClick} data-testid="editing-row">
+              <ExitsTableCell cellAlign="numeric">
+                <ExitsTableInlineEditor error="Quantity must be greater than zero." errorId="qty-err">
+                  <span>editor</span>
+                </ExitsTableInlineEditor>
+              </ExitsTableCell>
+              <ExitsTableCell cellAlign="actions" stickyEnd>
+                <ExitsTableActions data-testid="row-actions">
+                  <button type="button" aria-label="Edit row" onClick={onAction}>
+                    Edit
+                  </button>
+                </ExitsTableActions>
+              </ExitsTableCell>
+            </ExitsTableRow>
+          </ExitsTableBody>
+        </ExitsTable>
+      </ExitsTableContainer>,
+    );
+
+    const qtyHead = screen.getByTestId("sort-qty");
+    expect(qtyHead).toHaveAttribute("data-align", "numeric");
+    expect(qtyHead.className).toMatch(/exits-table__cell--numeric/);
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toHaveAttribute(
+      "data-sticky-end",
+      "true",
+    );
+    expect(screen.getByTestId("editing-row")).toHaveAttribute("data-editing", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Quantity must be greater than zero.");
+
+    await user.click(screen.getByTestId("sort-qty-sort"));
+    expect(onSort).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "Edit row" }));
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
   });
 });

@@ -1,0 +1,1267 @@
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import {
+  Check,
+  CircleX,
+  Eye,
+  LoaderCircle,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import { Button, buttonIconMotion } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  MenuItem,
+  MenuSeparator,
+  useDismissibleOpen,
+} from "@/components/ui/dropdown-menu";
+import {
+  cycleExitsTableSort,
+  ExitsTable,
+  ExitsTableActions,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableCheckbox,
+  ExitsTableContainer,
+  ExitsTableFooter,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableInlineEditor,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableOutputActions,
+  ExitsTablePagination,
+  ExitsTableRow,
+  ExitsTableToolbar,
+  type ExitsTableSortDirection,
+} from "@/components/exits/ExitsTable";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { MoneyInput, QuantityInput } from "@/components/exits/MoneyQuantityInputs";
+import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { UiStandardsSection } from "@/features/ui-standards/UiStandardsSection";
+import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
+import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
+import { cn } from "@/lib/cn";
+
+type DemoSkuFilter = "all" | "hasSku" | "noSku";
+type DemoSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
+
+type DemoLine = {
+  id: string;
+  name: string;
+  sku: string;
+  qty: number;
+  unitOfMeasureCode: string;
+  unitCost: number;
+  lineTotal: number;
+};
+
+const DEMO_LINES: DemoLine[] = [
+  {
+    id: "apple",
+    name: "Apple",
+    sku: "PH-FRU-APPLE",
+    qty: 2,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 180,
+    lineTotal: 360,
+  },
+  {
+    id: "banana",
+    name: "Banana Lakatan",
+    sku: "PH-FRU-BANANA",
+    qty: 3,
+    unitOfMeasureCode: "Kilogram",
+    unitCost: 76,
+    lineTotal: 228,
+  },
+  {
+    id: "battery",
+    name: "Battery AA Pack",
+    sku: "PH-GEN-BATTERY-AA",
+    qty: 1,
+    unitOfMeasureCode: "Pack",
+    unitCost: 61.75,
+    lineTotal: 61.75,
+  },
+];
+
+const DEMO_ORDER_TOTAL = 649.75;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+function qtyLabel(line: DemoLine): string {
+  const uom = formatUnitOfMeasureLabel(line.unitOfMeasureCode);
+  return uom ? `${line.qty} ${uom}` : String(line.qty);
+}
+
+function SampleFrame({
+  label,
+  children,
+  hint,
+  testId,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  hint?: string;
+  testId?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-1.5", className)} data-testid={testId}>
+      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">
+        {label}
+      </span>
+      <div className="min-w-0">{children}</div>
+      {hint ? <span className="text-[length:var(--exits-text-xs)] text-muted">{hint}</span> : null}
+    </div>
+  );
+}
+
+function StaticSampleGroup({ title, children }: { title: string; children: ReactNode }) {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return (
+    <section
+      className="grid gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0"
+      data-testid={`ui-standards-tables-group-${slug}`}
+    >
+      <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">{title}</h3>
+      <div className="grid gap-3">{children}</div>
+    </section>
+  );
+}
+
+function IconAction({
+  label,
+  variant = "ghost",
+  children,
+  onClick,
+}: {
+  label: string;
+  variant?: "ghost" | "destructive" | "success" | "info";
+  children: ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size="icon"
+      shape="round"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function MoreActionsMenu({ productName }: { productName: string }) {
+  const menu = useDismissibleOpen(false);
+  return (
+    <DropdownMenu
+      align="end"
+      open={menu.open}
+      onOpenChange={menu.setOpen}
+      menuLabel={`Actions for ${productName}`}
+      trigger={(triggerProps) => (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          shape="round"
+          id={triggerProps.id}
+          aria-haspopup="menu"
+          aria-expanded={triggerProps.expanded}
+          aria-controls={triggerProps.controls}
+          aria-label={`More actions for ${productName}`}
+          title="More"
+          data-testid="ui-standards-table-actions-more-menu"
+          onClick={triggerProps.onClick}
+          onKeyDown={triggerProps.onKeyDown}
+        >
+          <MoreHorizontal className={cn("size-4", buttonIconMotion.more)} aria-hidden />
+        </Button>
+      )}
+    >
+      <MenuItem onSelect={() => menu.close()}>View details</MenuItem>
+      <MenuItem onSelect={() => menu.close()}>Edit</MenuItem>
+      <MenuItem onSelect={() => menu.close()}>Duplicate</MenuItem>
+      <MenuItem onSelect={() => menu.close()}>History</MenuItem>
+      <MenuSeparator />
+      <MenuItem destructive onSelect={() => menu.close()}>
+        Delete
+      </MenuItem>
+    </DropdownMenu>
+  );
+}
+
+type DisclosureProps = {
+  isOpen: (id: string) => boolean;
+  setOpen: (id: string, open: boolean) => void;
+};
+
+export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
+  const { t } = useI18n();
+  const [searchInput, setSearchInput] = useState("");
+  const [skuFilter, setSkuFilter] = useState<DemoSkuFilter>("all");
+  const [sortKey, setSortKey] = useState<DemoSortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editQty, setEditQty] = useState("2");
+  const [editUnitCost, setEditUnitCost] = useState("180.00");
+  const [cellEditValue, setCellEditValue] = useState("180.00");
+  const [cellEditing, setCellEditing] = useState(false);
+  const [mobileEditing, setMobileEditing] = useState(false);
+  const [mobileQty, setMobileQty] = useState("2");
+  const [mobileCost, setMobileCost] = useState("180.00");
+  const qtyErrorId = useId();
+
+  const filteredSortedLines = useMemo(() => {
+    const queryText = searchInput.trim().toLowerCase();
+    let rows = DEMO_LINES.filter((line) => {
+      if (skuFilter === "hasSku" && !line.sku.trim()) return false;
+      if (skuFilter === "noSku" && line.sku.trim()) return false;
+      if (!queryText) return true;
+      return (
+        line.name.toLowerCase().includes(queryText) || line.sku.toLowerCase().includes(queryText)
+      );
+    });
+
+    if (sortKey && sortDirection) {
+      const dir = sortDirection === "asc" ? 1 : -1;
+      rows = [...rows].sort((a, b) => {
+        switch (sortKey) {
+          case "product":
+            return a.name.localeCompare(b.name) * dir;
+          case "sku":
+            return a.sku.localeCompare(b.sku) * dir;
+          case "quantity":
+            return (a.qty - b.qty) * dir;
+          case "unitCost":
+            return (a.unitCost - b.unitCost) * dir;
+          case "lineTotal":
+            return (a.lineTotal - b.lineTotal) * dir;
+          default:
+            return 0;
+        }
+      });
+    }
+    return rows;
+  }, [searchInput, skuFilter, sortKey, sortDirection]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredSortedLines.length / pageSize) || 1);
+  const safePage = Math.min(page, pageCount);
+  const pagedLines = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredSortedLines.slice(start, start + pageSize);
+  }, [filteredSortedLines, safePage, pageSize]);
+
+  const visibleIds = pagedLines.map((line) => line.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const someVisibleSelected = visibleIds.some((id) => selectedIds.has(id));
+
+  const editLineTotal = (Number(editQty) || 0) * (Number(editUnitCost) || 0);
+
+  useEffect(() => {
+    if (!editingId) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setEditingId(null);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [editingId]);
+
+  function toggleSort(key: DemoSortKey) {
+    const next = cycleExitsTableSort(sortKey, sortDirection, key);
+    setSortKey(next.key as DemoSortKey | null);
+    setSortDirection(next.direction);
+    setPage(1);
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        for (const id of visibleIds) next.delete(id);
+      } else {
+        for (const id of visibleIds) next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function startRowEdit(line: DemoLine) {
+    setEditingId(line.id);
+    setEditQty(String(line.qty));
+    setEditUnitCost(line.unitCost.toFixed(2));
+  }
+
+  function noopOutput() {
+    // Reference page — no real file generation.
+  }
+
+  return (
+    <div className="grid gap-3" data-testid="ui-standards-tables-section">
+      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+        {t("uiStandards.tablesExtensionPilotBadge")}
+      </p>
+
+      <UiStandardsSection
+        id="tables.demo"
+        title={t("uiStandards.tabTables")}
+        description={t("uiStandards.tableDemoLede")}
+        summary="FULL TABLE · ACTIONS ON · demo rows"
+        open={isOpen("tables.demo")}
+        onOpenChange={(open) => setOpen("tables.demo", open)}
+        testId="ui-standards-table-demo"
+      >
+        <ExitsTableContainer data-testid="ui-standards-table">
+          <ExitsTableToolbar
+            search={
+              <SearchField
+                label={t("exitsTable.searchProducts")}
+                value={searchInput}
+                placeholder={t("exitsTable.searchProducts")}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  setPage(1);
+                }}
+                onClear={() => {
+                  setSearchInput("");
+                  setPage(1);
+                }}
+                data-testid="ui-standards-table-search"
+              />
+            }
+            filter={
+              <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                <span className="sr-only">{t("exitsTable.filter")}</span>
+                <select
+                  className="exits-select"
+                  value={skuFilter}
+                  onChange={(e) => {
+                    setSkuFilter(e.target.value as DemoSkuFilter);
+                    setPage(1);
+                  }}
+                  aria-label={t("exitsTable.filter")}
+                  data-testid="ui-standards-table-filter"
+                >
+                  <option value="all">{t("exitsTable.filterAll")}</option>
+                  <option value="hasSku">{t("exitsTable.filterHasSku")}</option>
+                  <option value="noSku">{t("exitsTable.filterNoSku")}</option>
+                </select>
+              </label>
+            }
+            selection={
+              selectedIds.size > 0 ? (
+                <>
+                  <span data-testid="ui-standards-selected-count">
+                    {t("exitsTable.selectedCount").replace("{count}", String(selectedIds.size))}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="min-h-8 px-2"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    {t("exitsTable.clearSelection")}
+                  </Button>
+                </>
+              ) : null
+            }
+            output={
+              <ExitsTableOutputActions
+                csvLabel={t("exitsTable.exportCsv")}
+                xlsxLabel={t("exitsTable.exportExcel")}
+                pdfLabel={t("exitsTable.exportPdf")}
+                printLabel={t("exitsTable.print")}
+                menuLabel={t("exitsTable.exportPrintMenu")}
+                onCsv={noopOutput}
+                onXlsx={noopOutput}
+                onPdf={noopOutput}
+                onPrint={noopOutput}
+              />
+            }
+          />
+
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="center">
+                  <ExitsTableCheckbox
+                    checked={allVisibleSelected}
+                    indeterminate={someVisibleSelected && !allVisibleSelected}
+                    onChange={() => toggleSelectAllVisible()}
+                    aria-label={t("exitsTable.selectAll")}
+                    data-testid="ui-standards-select-all"
+                  />
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="text"
+                  sortable
+                  sortDirection={sortKey === "product" ? sortDirection : null}
+                  onSort={() => toggleSort("product")}
+                >
+                  {t("purchasing.colProduct")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="text"
+                  sortable
+                  sortDirection={sortKey === "sku" ? sortDirection : null}
+                  onSort={() => toggleSort("sku")}
+                >
+                  {t("catalog.sku")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="numeric"
+                  sortable
+                  sortDirection={sortKey === "quantity" ? sortDirection : null}
+                  onSort={() => toggleSort("quantity")}
+                  data-testid="ui-standards-table-qty-head"
+                >
+                  {t("purchasing.qty")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  sortable
+                  sortDirection={sortKey === "unitCost" ? sortDirection : null}
+                  onSort={() => toggleSort("unitCost")}
+                >
+                  {t("purchasing.unitCost")}
+                </ExitsTableHead>
+                <ExitsTableHead
+                  cellAlign="money"
+                  sortable
+                  sortDirection={sortKey === "lineTotal" ? sortDirection : null}
+                  onSort={() => toggleSort("lineTotal")}
+                >
+                  {t("purchasing.lineTotal")}
+                </ExitsTableHead>
+                <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {pagedLines.map((line) => {
+                const selected = selectedIds.has(line.id);
+                return (
+                  <ExitsTableRow
+                    key={line.id}
+                    selected={selected}
+                    interactive
+                    onClick={() => {
+                      // Row click = primary view navigation (demo no-op).
+                    }}
+                  >
+                    <ExitsTableCell cellAlign="center">
+                      <ExitsTableCheckbox
+                        checked={selected}
+                        onChange={() => toggleSelectOne(line.id)}
+                        aria-label={t("exitsTable.selectRow")}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {line.name}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text" className="text-muted">
+                      {line.sku}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric">{qtyLabel(line)}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="money">
+                      <MoneyDisplay amount={line.unitCost} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" emphasis="semibold">
+                      <MoneyDisplay amount={line.lineTotal} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="actions">
+                      <ExitsTableActions data-testid={`ui-standards-table-row-actions-${line.id}`}>
+                        <IconAction
+                          label={`Edit ${line.name}`}
+                          onClick={() => startRowEdit(line)}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </IconAction>
+                        <MoreActionsMenu productName={line.name} />
+                      </ExitsTableActions>
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                );
+              })}
+            </ExitsTableBody>
+            <ExitsTableFooter>
+              <ExitsTableRow>
+                <ExitsTableCell cellAlign="actions" colSpan={5} emphasis="bold">
+                  {t("incomingOrders.orderTotal")}
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="money" emphasis="bold">
+                  <MoneyDisplay amount={DEMO_ORDER_TOTAL} />
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="actions" aria-hidden />
+              </ExitsTableRow>
+            </ExitsTableFooter>
+          </ExitsTable>
+
+          <ExitsTableMobile>
+            {pagedLines.map((line) => {
+              const selected = selectedIds.has(line.id);
+              return (
+                <ExitsTableMobileRow key={line.id} selected={selected}>
+                  <div className="exits-table-mobile__lead">
+                    <ExitsTableCheckbox
+                      checked={selected}
+                      onChange={() => toggleSelectOne(line.id)}
+                      aria-label={t("exitsTable.selectRow")}
+                    />
+                    <div className="exits-table-mobile__lead-body">
+                      <div className="exits-table-mobile__title-row">
+                        <p className="exits-table-mobile__title">{line.name}</p>
+                        <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                      </div>
+                      <p className="exits-table-mobile__meta">{line.sku}</p>
+                      <p className="exits-table-mobile__math">
+                        {qtyLabel(line)} × {formatPeso(line.unitCost)}
+                      </p>
+                      <div className="exits-table-mobile__actions">
+                        <Button type="button" variant="outline" shape="soft">
+                          View
+                        </Button>
+                        <Button type="button" variant="ghost" shape="soft">
+                          Edit
+                        </Button>
+                        <MoreActionsMenu productName={line.name} />
+                      </div>
+                    </div>
+                  </div>
+                </ExitsTableMobileRow>
+              );
+            })}
+            <li className="exits-table-mobile__footer">
+              <span>{t("incomingOrders.orderTotal")}</span>
+              <MoneyDisplay amount={DEMO_ORDER_TOTAL} />
+            </li>
+          </ExitsTableMobile>
+
+          <ExitsTablePagination
+            page={safePage}
+            pageSize={pageSize}
+            total={filteredSortedLines.length}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+            previousLabel={t("exitsTable.previous")}
+            nextLabel={t("exitsTable.next")}
+            rangeLabel={t("exitsTable.range")}
+          />
+        </ExitsTableContainer>
+        <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+          Row click → view. Explicit action controls stop row activation. MULTI SELECT and INLINE
+          EDIT remain independent.
+        </p>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.alignment"
+        title={t("uiStandards.tablesAlignmentTitle")}
+        description="Header and value alignment must match. Sortable numeric headers keep label + icon at END."
+        summary="START · END · CENTER · PILOT"
+        open={isOpen("tables.alignment")}
+        onOpenChange={(open) => setOpen("tables.alignment", open)}
+        testId="ui-standards-table-alignment"
+      >
+        <StaticSampleGroup title="ALIGNMENT MATRIX — REVISION PILOT">
+          <SampleFrame label="REFERENCE" className="sm:col-span-2" testId="ui-standards-table-align-matrix">
+            <ExitsTableContainer>
+              <ExitsTable>
+                <ExitsTableHeader>
+                  <ExitsTableRow>
+                    <ExitsTableHead cellAlign="text">Column type</ExitsTableHead>
+                    <ExitsTableHead cellAlign="text">Header</ExitsTableHead>
+                    <ExitsTableHead cellAlign="text">Value</ExitsTableHead>
+                  </ExitsTableRow>
+                </ExitsTableHeader>
+                <ExitsTableBody>
+                  {[
+                    ["Text / Name", "START", "Apple"],
+                    ["SKU / Code", "START", "PH-FRU-APPLE"],
+                    ["Status", "START", "Active"],
+                    ["Quantity", "END", "2 Kg"],
+                    ["Money", "END", "₱180.00"],
+                    ["Percentage", "END", "12%"],
+                    ["Checkbox", "CENTER", "☐"],
+                    ["Actions", "END", "⋯"],
+                  ].map(([type, align, value]) => (
+                    <ExitsTableRow key={type}>
+                      <ExitsTableCell cellAlign="text">{type}</ExitsTableCell>
+                      <ExitsTableCell
+                        cellAlign={
+                          align === "END" ? "numeric" : align === "CENTER" ? "center" : "text"
+                        }
+                      >
+                        {align}
+                      </ExitsTableCell>
+                      <ExitsTableCell
+                        cellAlign={
+                          align === "END" ? "numeric" : align === "CENTER" ? "center" : "text"
+                        }
+                      >
+                        {type === "Status" ? <StatusChip tone="success">Active</StatusChip> : value}
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  ))}
+                </ExitsTableBody>
+              </ExitsTable>
+            </ExitsTableContainer>
+          </SampleFrame>
+        </StaticSampleGroup>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.actions"
+        title={t("uiStandards.tablesActionsTitle")}
+        description="Reuse locked Button Standard. Prefer 1–2 visible actions + More for secondary."
+        summary="ICON · MORE · DANGER · PILOT"
+        open={isOpen("tables.actions")}
+        onOpenChange={(open) => setOpen("tables.actions", open)}
+        testId="ui-standards-table-actions"
+      >
+        <div className="grid gap-4">
+          <StaticSampleGroup title="A · SINGLE ICON ACTION">
+            <SampleFrame label="PENCIL">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <IconAction label="Edit Apple">
+                            <Pencil className="size-4" aria-hidden />
+                          </IconAction>
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="B · MULTIPLE ICON ACTIONS">
+            <SampleFrame label="EYE · PENCIL · MORE">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <IconAction label="View Apple" variant="info">
+                            <Eye className={cn("size-4", buttonIconMotion.view)} aria-hidden />
+                          </IconAction>
+                          <IconAction label="Edit Apple">
+                            <Pencil className="size-4" aria-hidden />
+                          </IconAction>
+                          <MoreActionsMenu productName="Apple" />
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="C · PRIMARY + MORE">
+            <SampleFrame label="EDIT + MORE">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <Button type="button" variant="ghost" shape="soft">
+                            Edit
+                          </Button>
+                          <MoreActionsMenu productName="Apple" />
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="D · DESTRUCTIVE">
+            <SampleFrame label="EDIT + DELETE">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <IconAction label="Edit Apple">
+                            <Pencil className="size-4" aria-hidden />
+                          </IconAction>
+                          <IconAction label="Delete Apple" variant="destructive">
+                            <Trash2 className={cn("size-4", buttonIconMotion.delete)} aria-hidden />
+                          </IconAction>
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            ACTION DENSITY GUIDANCE — REVISION PILOT / NOT YET ADDED TO LOCKED STANDARD. Prefer icon
+            actions in dense tables; avoid listing View Edit Duplicate Archive Delete History Print
+            as separate buttons every row.
+          </p>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.inline-row-edit"
+        title={t("uiStandards.tablesInlineRowEditTitle")}
+        description="ROW EDIT preferred. Page owns values/validation/API. Escape cancels demo edit."
+        summary="ROW EDIT · PILOT"
+        open={isOpen("tables.inline-row-edit")}
+        onOpenChange={(open) => setOpen("tables.inline-row-edit", open)}
+        testId="ui-standards-table-inline-row-edit"
+      >
+        <ExitsTableContainer>
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">SKU</ExitsTableHead>
+                <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">Line total</ExitsTableHead>
+                <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {DEMO_LINES.slice(0, 2).map((line) => {
+                const editing = editingId === line.id;
+                return (
+                  <ExitsTableRow key={line.id} editing={editing} data-testid={`ui-standards-inline-row-${line.id}`}>
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {line.name}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text" className="text-muted">
+                      {line.sku}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric">
+                      {editing ? (
+                        <div className="exits-table__qty-edit">
+                          <ExitsTableInlineEditor>
+                            <QuantityInput
+                              label={`Quantity for ${line.name}`}
+                              value={editQty}
+                              onChange={(e) => setEditQty(e.target.value)}
+                            />
+                          </ExitsTableInlineEditor>
+                          <span className="exits-table__uom">
+                            {formatUnitOfMeasureLabel(line.unitOfMeasureCode)}
+                          </span>
+                        </div>
+                      ) : (
+                        qtyLabel(line)
+                      )}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money">
+                      {editing ? (
+                        <ExitsTableInlineEditor>
+                          <MoneyInput
+                            label={`Unit cost for ${line.name}`}
+                            value={editUnitCost}
+                            onChange={(e) => setEditUnitCost(e.target.value)}
+                          />
+                        </ExitsTableInlineEditor>
+                      ) : (
+                        <MoneyDisplay amount={line.unitCost} />
+                      )}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" emphasis="semibold">
+                      <MoneyDisplay amount={editing ? editLineTotal : line.lineTotal} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="actions">
+                      <ExitsTableActions>
+                        {editing ? (
+                          <>
+                            <IconAction
+                              label={`Save ${line.name} changes`}
+                              variant="success"
+                              onClick={() => setEditingId(null)}
+                            >
+                              <Check className="size-4" aria-hidden />
+                            </IconAction>
+                            <IconAction
+                              label={`Cancel ${line.name} editing`}
+                              onClick={() => setEditingId(null)}
+                            >
+                              <CircleX className="size-4" aria-hidden />
+                            </IconAction>
+                          </>
+                        ) : (
+                          <IconAction
+                            label={`Edit ${line.name}`}
+                            onClick={() => startRowEdit(line)}
+                          >
+                            <Pencil className="size-4" aria-hidden />
+                          </IconAction>
+                        )}
+                      </ExitsTableActions>
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                );
+              })}
+            </ExitsTableBody>
+          </ExitsTable>
+        </ExitsTableContainer>
+
+        <StaticSampleGroup title="TEXT SAVE / CANCEL (LESS DENSE)">
+          <SampleFrame label="LABELED ACTIONS">
+            <ExitsTableActions>
+              <Button type="button" variant="success" shape="soft">
+                <Check className="size-4" aria-hidden />
+                Save
+              </Button>
+              <Button type="button" variant="ghost" shape="soft">
+                <CircleX className="size-4" aria-hidden />
+                Cancel
+              </Button>
+            </ExitsTableActions>
+          </SampleFrame>
+        </StaticSampleGroup>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.inline-cell-edit"
+        title={t("uiStandards.tablesInlineCellEditTitle")}
+        description="CELL EDIT is special dense/data-management use. ROW EDIT remains the preferred general candidate."
+        summary="CELL EDIT · SPECIAL · PILOT"
+        open={isOpen("tables.inline-cell-edit")}
+        onOpenChange={(open) => setOpen("tables.inline-cell-edit", open)}
+        testId="ui-standards-table-inline-cell-edit"
+      >
+        <ExitsTableContainer>
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              <ExitsTableRow editing={cellEditing}>
+                <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                <ExitsTableCell
+                  cellAlign="money"
+                  onDoubleClick={() => setCellEditing(true)}
+                  data-testid="ui-standards-table-cell-edit"
+                >
+                  {cellEditing ? (
+                    <ExitsTableInlineEditor>
+                      <MoneyInput
+                        label="Unit cost for Apple"
+                        value={cellEditValue}
+                        onChange={(e) => setCellEditValue(e.target.value)}
+                        onBlur={() => setCellEditing(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === "Escape") setCellEditing(false);
+                        }}
+                      />
+                    </ExitsTableInlineEditor>
+                  ) : (
+                    <button
+                      type="button"
+                      className="tabular-nums text-end underline-offset-2 hover:underline"
+                      onClick={() => setCellEditing(true)}
+                    >
+                      {formatPeso(Number(cellEditValue) || 0)}
+                    </button>
+                  )}
+                </ExitsTableCell>
+              </ExitsTableRow>
+            </ExitsTableBody>
+          </ExitsTable>
+        </ExitsTableContainer>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.validation"
+        title={t("uiStandards.tablesValidationTitle")}
+        description="Semantic Danger for errors. Saving disables editors. No real API."
+        summary="ERROR · ROW ERROR · SAVING · PILOT"
+        open={isOpen("tables.validation")}
+        onOpenChange={(open) => setOpen("tables.validation", open)}
+        testId="ui-standards-table-validation"
+      >
+        <div className="grid gap-4">
+          <StaticSampleGroup title="INLINE EDIT — VALIDATION ERROR">
+            <SampleFrame label="QUANTITY ERROR" testId="ui-standards-table-validation-qty">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow editing>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="numeric">
+                        <ExitsTableInlineEditor
+                          error="Quantity must be greater than zero."
+                          errorId={qtyErrorId}
+                        >
+                          <QuantityInput
+                            label="Quantity for Apple"
+                            value="-1"
+                            aria-invalid
+                            aria-describedby={qtyErrorId}
+                            readOnly
+                          />
+                        </ExitsTableInlineEditor>
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <IconAction label="Save Apple changes" variant="success">
+                            <Check className="size-4" aria-hidden />
+                          </IconAction>
+                          <IconAction label="Cancel Apple editing">
+                            <CircleX className="size-4" aria-hidden />
+                          </IconAction>
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="ROW-LEVEL ERROR">
+            <SampleFrame label="SAVE FAILED" testId="ui-standards-table-row-error">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableBody>
+                    <ExitsTableRow error>
+                      <ExitsTableCell colSpan={2}>
+                        <div className="exits-table__row-error">
+                          <span>Could not save changes. Try again.</span>
+                          <ExitsTableActions>
+                            <Button type="button" variant="outline" shape="soft">
+                              Retry
+                            </Button>
+                            <Button type="button" variant="ghost" shape="soft">
+                              Cancel
+                            </Button>
+                          </ExitsTableActions>
+                        </div>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="SAVING">
+            <SampleFrame label="DISABLED EDITORS" testId="ui-standards-table-saving">
+              <ExitsTableContainer>
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
+                      <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions">Actions</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    <ExitsTableRow editing>
+                      <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                      <ExitsTableCell cellAlign="numeric">
+                        <ExitsTableInlineEditor>
+                          <QuantityInput label="Quantity for Apple" value="2" disabled />
+                        </ExitsTableInlineEditor>
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="money">
+                        <ExitsTableInlineEditor>
+                          <MoneyInput label="Unit cost for Apple" value="180.00" disabled />
+                        </ExitsTableInlineEditor>
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <ExitsTableActions>
+                          <Button type="button" variant="success" shape="soft" disabled>
+                            <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                            Saving
+                          </Button>
+                        </ExitsTableActions>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableBody>
+                </ExitsTable>
+              </ExitsTableContainer>
+            </SampleFrame>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.sticky-actions"
+        title={t("uiStandards.tablesStickyActionsTitle")}
+        description="SPECIAL USE / CANDIDATE — sticky Actions at inline-end for wide tables. Not default."
+        summary="STICKY ACTIONS · CANDIDATE"
+        open={isOpen("tables.sticky-actions")}
+        onOpenChange={(open) => setOpen("tables.sticky-actions", open)}
+        testId="ui-standards-table-sticky-actions"
+      >
+        <ExitsTableContainer>
+          <ExitsTable className="min-w-[56rem]">
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">Product</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">SKU</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">Warehouse note</ExitsTableHead>
+                <ExitsTableHead cellAlign="numeric">Quantity</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">Unit cost</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">Line total</ExitsTableHead>
+                <ExitsTableHead cellAlign="actions" stickyEnd>
+                  Actions
+                </ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              <ExitsTableRow>
+                <ExitsTableCell cellAlign="text">Apple</ExitsTableCell>
+                <ExitsTableCell cellAlign="text">PH-FRU-APPLE</ExitsTableCell>
+                <ExitsTableCell cellAlign="text">
+                  Preferred cold-room bin A12 · supplier lot verified
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="numeric">2 Kg</ExitsTableCell>
+                <ExitsTableCell cellAlign="money">
+                  <MoneyDisplay amount={180} />
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="money" emphasis="semibold">
+                  <MoneyDisplay amount={360} />
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="actions" stickyEnd>
+                  <ExitsTableActions>
+                    <IconAction label="Edit Apple">
+                      <Pencil className="size-4" aria-hidden />
+                    </IconAction>
+                  </ExitsTableActions>
+                </ExitsTableCell>
+              </ExitsTableRow>
+            </ExitsTableBody>
+          </ExitsTable>
+        </ExitsTableContainer>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.mobile-edit"
+        title={t("uiStandards.tablesMobileEditTitle")}
+        description="Mobile stacked form — labeled Cancel/Save. Same domain state; presentation only."
+        summary="MOBILE EDIT · PILOT"
+        open={isOpen("tables.mobile-edit")}
+        onOpenChange={(open) => setOpen("tables.mobile-edit", open)}
+        testId="ui-standards-table-mobile-edit"
+      >
+        <ExitsTableContainer>
+          <ExitsTableMobile className="!flex md:!flex">
+            <ExitsTableMobileRow editing={mobileEditing}>
+              <p className="exits-table-mobile__title">Apple</p>
+              <p className="exits-table-mobile__meta">SKU: PH-FRU-APPLE</p>
+              {!mobileEditing ? (
+                <>
+                  <p className="exits-table-mobile__math">Quantity: 2 Kg</p>
+                  <p className="exits-table-mobile__math">Unit cost: {formatPeso(180)}</p>
+                  <p className="exits-table-mobile__total">Line total: {formatPeso(360)}</p>
+                  <div className="exits-table-mobile__actions">
+                    <Button type="button" variant="outline" shape="soft">
+                      View
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      shape="soft"
+                      onClick={() => setMobileEditing(true)}
+                    >
+                      Edit
+                    </Button>
+                    <MoreActionsMenu productName="Apple" />
+                  </div>
+                </>
+              ) : (
+                <div className="exits-table-mobile__edit-form">
+                  <label>
+                    Quantity
+                    <input
+                      value={mobileQty}
+                      onChange={(e) => setMobileQty(e.target.value)}
+                      inputMode="decimal"
+                      aria-label="Quantity for Apple"
+                    />
+                  </label>
+                  <label>
+                    Unit cost
+                    <input
+                      value={mobileCost}
+                      onChange={(e) => setMobileCost(e.target.value)}
+                      inputMode="decimal"
+                      aria-label="Unit cost for Apple"
+                    />
+                  </label>
+                  <p className="exits-table-mobile__total m-0">
+                    Line total: {formatPeso((Number(mobileQty) || 0) * (Number(mobileCost) || 0))}
+                  </p>
+                  <div className="exits-table-mobile__edit-actions">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      shape="soft"
+                      onClick={() => setMobileEditing(false)}
+                    >
+                      <CircleX className="size-4" aria-hidden />
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="success"
+                      shape="soft"
+                      onClick={() => setMobileEditing(false)}
+                    >
+                      <Check className="size-4" aria-hidden />
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </ExitsTableMobileRow>
+          </ExitsTableMobile>
+        </ExitsTableContainer>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tables.cheatsheet"
+        title={t("uiStandards.tableCheatTitle")}
+        description={t("uiStandards.tableCheatLede")}
+        summary="Cursor shorthand · PILOT EXTENSION"
+        open={isOpen("tables.cheatsheet")}
+        onOpenChange={(open) => setOpen("tables.cheatsheet", open)}
+        testId="ui-standards-table-cheatsheet"
+      >
+        <pre className="m-0 overflow-x-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-3 text-[length:var(--exits-text-xs)] leading-relaxed">
+{`EXITS TABLE
+FULL TABLE
+SIMPLE TABLE
+
+SEARCH ON / OFF
+FILTER ON / OFF
+SORT ON / OFF
+MULTI SELECT ON / OFF
+OUTPUT ICONS ON / OFF
+PAGE SIZE ON / OFF
+PAGINATION ON / OFF
+FOOTER ON / OFF
+
+ACTIONS ON / OFF
+INLINE EDIT ON / OFF
+ROW EDIT
+CELL EDIT
+STICKY ACTIONS
+
+OUTPUT ICONS = CSV + XLSX + PDF + Print
+PAGE SIZE = 10 / 25 / 50 / 100 (default 25)
+
+Examples:
+FULL TABLE
+ACTIONS ON
+
+FULL TABLE
+MULTI SELECT OFF
+ACTIONS ON
+
+FULL TABLE
+INLINE EDIT ON
+ACTIONS ON
+
+Inventory adjustment:
+EXITS TABLE
+INLINE EDIT ON
+ROW EDIT
+ACTIONS ON
+
+Reference list:
+EXITS TABLE
+ACTIONS OFF
+INLINE EDIT OFF
+
+TABLE EXTENSION
+PILOT / NOT YET MERGED INTO LOCKED STANDARD`}
+        </pre>
+      </UiStandardsSection>
+    </div>
+  );
+}
