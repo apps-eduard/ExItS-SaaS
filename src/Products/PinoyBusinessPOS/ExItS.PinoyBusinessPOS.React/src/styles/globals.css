@@ -658,18 +658,18 @@ html {
   min-height: var(--exits-table-action-size);
 }
 
-/* Quiet reset — ghost surface + muted icon (discards draft / returns to original). */
+/* Quiet reset — ghost surface + Danger icon (not solid danger). */
 .exits-table__action-reset {
-  color: var(--exits-muted, #5b6b60);
+  color: var(--exits-danger);
 }
 
 .exits-table__action-reset:hover {
-  color: var(--exits-foreground, inherit);
-  background: color-mix(in srgb, var(--exits-surface-muted, #eef2ef) 85%, transparent);
+  color: var(--exits-danger);
+  background: color-mix(in srgb, var(--exits-danger-soft, #fef2f1) 70%, transparent);
 }
 
 .exits-table__action-reset:focus-visible {
-  color: var(--exits-foreground, inherit);
+  color: var(--exits-danger);
 }
 
 /* Quiet discard/cancel — ghost surface + Danger icon (not solid danger). */
