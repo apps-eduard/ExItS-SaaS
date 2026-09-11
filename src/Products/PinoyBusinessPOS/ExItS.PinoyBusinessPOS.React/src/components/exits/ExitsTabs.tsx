@@ -14,10 +14,12 @@ import {
   exitsTabTriggerVariants,
   exitsTabsListVariants,
   exitsTabsPanelVariants,
+  type ExitsTabsActiveTreatment,
+  type ExitsTabsLayout,
   type ExitsTabsVariant,
 } from "@/components/exits/tab-variants";
 
-export type { ExitsTabsVariant };
+export type { ExitsTabsVariant, ExitsTabsLayout, ExitsTabsActiveTreatment };
 
 export type ExitsTabCountTone = Extract<ChipTone, "neutral" | "primary" | "danger" | "warning">;
 
@@ -46,6 +48,10 @@ export type ExitsTabsProps = {
   scrollable?: boolean;
   /** Icon-only compact tool tabs — SPECIAL USE. */
   iconOnly?: boolean;
+  /** Equal shares width vs content-sized (esp. pillBar). */
+  layout?: ExitsTabsLayout;
+  /** Pill-bar active pill treatment candidate — PILOT / NOT LOCKED. */
+  activeTreatment?: ExitsTabsActiveTreatment;
   className?: string;
   listClassName?: string;
   testId?: string;
@@ -66,6 +72,8 @@ export function ExitsTabs({
   ariaLabel,
   scrollable = false,
   iconOnly = false,
+  layout = "content",
+  activeTreatment = "solid",
   className,
   listClassName,
   testId,
@@ -128,8 +136,10 @@ export function ExitsTabs({
       aria-label={ariaLabel}
       aria-orientation={orientation}
       data-variant={variant}
+      data-layout={layout}
+      data-active-treatment={variant === "pillBar" ? activeTreatment : undefined}
       data-testid={testId ? `${testId}-list` : undefined}
-      className={cn(exitsTabsListVariants({ variant, scrollable }), listClassName)}
+      className={cn(exitsTabsListVariants({ variant, scrollable, layout }), listClassName)}
       onKeyDown={onListKeyDown}
     >
       {items.map((item) => {
@@ -138,6 +148,7 @@ export function ExitsTabs({
         const countTone = item.countTone ?? "neutral";
         const title =
           item.title ?? (iconOnly && typeof item.label === "string" ? item.label : undefined);
+        const solidSelected = variant === "pillBar" && activeTreatment === "solid" && selected;
 
         return (
           <button
@@ -155,7 +166,12 @@ export function ExitsTabs({
             tabIndex={selected ? 0 : -1}
             title={title}
             aria-label={iconOnly && typeof item.label === "string" ? item.label : undefined}
-            className={exitsTabTriggerVariants({ variant, iconOnly })}
+            className={exitsTabTriggerVariants({
+              variant,
+              iconOnly,
+              layout,
+              activeTreatment: variant === "pillBar" ? activeTreatment : "solid",
+            })}
             onClick={() => {
               if (!item.disabled) onValueChange(item.key);
             }}
@@ -172,7 +188,15 @@ export function ExitsTabs({
                 ···
               </span>
             ) : item.count != null ? (
-              <CountBadge count={item.count} tone={countTone} />
+              <CountBadge
+                count={item.count}
+                tone={countTone}
+                className={
+                  solidSelected
+                    ? "border-[color-mix(in_srgb,var(--exits-primary-contrast)_35%,transparent)] bg-[color-mix(in_srgb,var(--exits-primary-contrast)_18%,transparent)] text-[var(--exits-primary-contrast)]"
+                    : undefined
+                }
+              />
             ) : null}
           </button>
         );

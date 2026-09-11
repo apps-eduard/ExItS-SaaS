@@ -2,15 +2,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 /**
  * ExItS Tabs visual foundation (PILOT / NOT LOCKED).
- * Variant / orientation / icon / count are independent dimensions.
+ * Variant / orientation / icon / count / layout are independent dimensions.
  */
 export type ExitsTabsVariant =
   | "underline"
   | "soft"
   | "pill"
+  | "pillBar"
   | "segmented"
   | "enclosed"
   | "vertical";
+
+/** Equal shares available width; content sizes to label. */
+export type ExitsTabsLayout = "equal" | "content";
+
+/** Pill-bar active inner pill treatment candidates (NOT LOCKED). */
+export type ExitsTabsActiveTreatment = "solid" | "accent";
 
 export const exitsTabsListVariants = cva("exits-tabs__list flex", {
   variants: {
@@ -19,6 +26,15 @@ export const exitsTabsListVariants = cva("exits-tabs__list flex", {
       soft: "gap-1 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/35 p-1",
       /** Independent rounded items with gaps — NOT a shared segmented container. */
       pill: "flex-wrap gap-2",
+      /**
+       * Continuous fully-rounded outer bar; selected item is an inner filled pill.
+       * Distinct from PILL (gaps) and SEGMENTED (segment boundaries).
+       */
+      pillBar: [
+        "gap-0.5 rounded-full border border-[color-mix(in_srgb,var(--exits-primary)_18%,var(--exits-border))]",
+        "bg-[color-mix(in_srgb,var(--exits-primary)_8%,var(--exits-surface-muted))]",
+        "p-1",
+      ].join(" "),
       segmented:
         "gap-0.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] p-0.5",
       enclosed: "gap-0 border-b border-border",
@@ -27,6 +43,10 @@ export const exitsTabsListVariants = cva("exits-tabs__list flex", {
     scrollable: {
       true: "max-w-full overflow-x-auto overscroll-x-contain [scrollbar-width:thin]",
       false: "",
+    },
+    layout: {
+      equal: "",
+      content: "",
     },
   },
   compoundVariants: [
@@ -46,10 +66,21 @@ export const exitsTabsListVariants = cva("exits-tabs__list flex", {
       scrollable: true,
       class: "flex-nowrap whitespace-nowrap",
     },
+    {
+      variant: "pillBar",
+      scrollable: true,
+      class: "flex-nowrap whitespace-nowrap",
+    },
+    {
+      variant: "pillBar",
+      layout: "equal",
+      class: "w-full",
+    },
   ],
   defaultVariants: {
     variant: "underline",
     scrollable: false,
+    layout: "content",
   },
 });
 
@@ -60,7 +91,7 @@ export const exitsTabTriggerVariants = cva(
     "h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
     "px-[var(--exits-control-padding-x)]",
     "text-[length:var(--exits-text-sm)] leading-none",
-    "transition-[color,background-color,border-color,box-shadow,opacity] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
+    "transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
     "focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
     "disabled:pointer-events-none disabled:opacity-45",
     "motion-reduce:transition-none",
@@ -89,6 +120,11 @@ export const exitsTabTriggerVariants = cva(
           "data-[selected=true]:text-[var(--exits-primary)]",
           "data-[selected=true]:shadow-sm",
         ].join(" "),
+        pillBar: [
+          "rounded-full border border-transparent bg-transparent text-muted",
+          "hover:bg-[color-mix(in_srgb,var(--exits-surface)_55%,transparent)] hover:text-foreground",
+          "active:scale-[0.99] motion-reduce:active:scale-100",
+        ].join(" "),
         segmented: [
           "flex-1 rounded-[calc(var(--exits-radius-md)-2px)] text-muted sm:flex-none",
           "hover:text-foreground",
@@ -108,13 +144,49 @@ export const exitsTabTriggerVariants = cva(
           "data-[selected=true]:text-[var(--exits-primary)]",
         ].join(" "),
       },
+      activeTreatment: {
+        solid: "",
+        accent: "",
+      },
+      layout: {
+        equal: "",
+        content: "",
+      },
       iconOnly: {
         true: "min-w-[var(--exits-control-height)] px-0",
         false: "",
       },
     },
+    compoundVariants: [
+      {
+        variant: "pillBar",
+        activeTreatment: "solid",
+        class: [
+          "data-[selected=true]:bg-[var(--exits-primary)]",
+          "data-[selected=true]:text-[var(--exits-primary-contrast)]",
+          "data-[selected=true]:shadow-sm",
+        ].join(" "),
+      },
+      {
+        variant: "pillBar",
+        activeTreatment: "accent",
+        class: [
+          "data-[selected=true]:border-[color-mix(in_srgb,var(--exits-primary)_40%,transparent)]",
+          "data-[selected=true]:bg-[color-mix(in_srgb,var(--exits-primary)_16%,var(--exits-surface))]",
+          "data-[selected=true]:text-[var(--exits-primary)]",
+          "data-[selected=true]:shadow-sm",
+        ].join(" "),
+      },
+      {
+        variant: "pillBar",
+        layout: "equal",
+        class: "min-w-0 flex-1",
+      },
+    ],
     defaultVariants: {
       variant: "underline",
+      activeTreatment: "solid",
+      layout: "content",
       iconOnly: false,
     },
   },
@@ -132,6 +204,7 @@ export const exitsTabsPanelVariants = cva(
         underline: "pt-3",
         soft: "pt-3",
         pill: "pt-3",
+        pillBar: "pt-3",
         segmented: "pt-3",
         enclosed:
           "rounded-b-[var(--exits-radius-md)] rounded-se-[var(--exits-radius-md)] border border-t-0 border-border bg-surface p-3",

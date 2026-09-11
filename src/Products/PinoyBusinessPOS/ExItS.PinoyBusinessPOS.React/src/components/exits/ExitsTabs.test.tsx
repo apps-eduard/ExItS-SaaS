@@ -3,16 +3,23 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
+import type { ExitsTabsVariant } from "@/components/exits/ExitsTabs";
 import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
 
 function ControlledTabs({
-  variant = "underline" as const,
+  variant = "underline" as ExitsTabsVariant,
   items,
   initial = "a",
+  layout,
+  activeTreatment,
+  scrollable,
 }: {
-  variant?: "underline" | "soft" | "pill" | "segmented" | "enclosed" | "vertical";
+  variant?: ExitsTabsVariant;
   items: Parameters<typeof ExitsTabs>[0]["items"];
   initial?: string;
+  layout?: "equal" | "content";
+  activeTreatment?: "solid" | "accent";
+  scrollable?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return createElement(ExitsTabs, {
@@ -22,16 +29,20 @@ function ControlledTabs({
     onValueChange: setValue,
     ariaLabel: "Demo tabs",
     testId: "tabs-demo",
+    layout,
+    activeTreatment,
+    scrollable,
     panels: Object.fromEntries(items.map((i) => [i.key, `Panel ${i.key}`])),
   });
 }
 
 describe("ExitsTabs visual pilot", () => {
-  it("renders all six variants including pill", () => {
+  it("renders all seven variants including pillBar", () => {
     for (const variant of [
       "underline",
       "soft",
       "pill",
+      "pillBar",
       "segmented",
       "enclosed",
       "vertical",
@@ -77,6 +88,69 @@ describe("ExitsTabs visual pilot", () => {
     const segList = screen.getByRole("tablist");
     expect(segList).toHaveAttribute("data-variant", "segmented");
     expect(segList.className).toMatch(/p-0\.5/);
+  });
+
+  it("pillBar is distinct from pill and segmented", () => {
+    const { rerender } = render(
+      createElement(ControlledTabs, {
+        variant: "pillBar",
+        layout: "equal",
+        items: [
+          { key: "a", label: "Overview" },
+          { key: "b", label: "Orders" },
+        ],
+      }),
+    );
+    const bar = screen.getByRole("tablist");
+    expect(bar).toHaveAttribute("data-variant", "pillBar");
+    expect(bar).toHaveAttribute("data-layout", "equal");
+    expect(bar).toHaveAttribute("data-active-treatment", "solid");
+    expect(bar.className).toMatch(/rounded-full/);
+    expect(bar.className).not.toMatch(/gap-2/);
+    expect(screen.getByRole("tab", { name: "Overview" }).className).toMatch(/rounded-full/);
+    expect(screen.getByRole("tab", { name: "Overview" }).className).toMatch(/flex-1/);
+
+    rerender(
+      createElement(ControlledTabs, {
+        variant: "pill",
+        items: [
+          { key: "a", label: "Overview" },
+          { key: "b", label: "Orders" },
+        ],
+      }),
+    );
+    expect(screen.getByRole("tablist").className).toMatch(/gap-2/);
+    expect(screen.getByRole("tablist")).not.toHaveAttribute("data-active-treatment");
+
+    rerender(
+      createElement(ControlledTabs, {
+        variant: "segmented",
+        items: [
+          { key: "a", label: "Overview" },
+          { key: "b", label: "Orders" },
+        ],
+      }),
+    );
+    expect(screen.getByRole("tablist").className).toMatch(/rounded-\[var\(--exits-radius-md\)\]/);
+  });
+
+  it("pillBar supports content layout and accent treatment", () => {
+    render(
+      createElement(ControlledTabs, {
+        variant: "pillBar",
+        layout: "content",
+        activeTreatment: "accent",
+        items: [
+          { key: "a", label: "All", count: 24, countTone: "neutral" },
+          { key: "b", label: "Pending", count: 6, countTone: "warning" },
+        ],
+      }),
+    );
+    const list = screen.getByRole("tablist");
+    expect(list).toHaveAttribute("data-layout", "content");
+    expect(list).toHaveAttribute("data-active-treatment", "accent");
+    expect(screen.getByRole("tab", { name: /All/i }).className).not.toMatch(/flex-1/);
+    expect(screen.getByText("24")).toBeInTheDocument();
   });
 
   it("pill supports icon + count composition", () => {
@@ -153,6 +227,7 @@ describe("ExitsTabs visual pilot", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.variants"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.counts"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.icon-options"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.pill-bar"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.real-world"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["tabs.cheatsheet"]).toBe(false);
   });

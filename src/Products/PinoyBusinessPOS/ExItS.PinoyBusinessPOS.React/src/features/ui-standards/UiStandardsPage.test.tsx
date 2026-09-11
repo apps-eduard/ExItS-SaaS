@@ -121,8 +121,11 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-tabs-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
     expect(screen.getByTestId("ui-standards-tabs-demo-underline")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-demo-pill")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-pill-bar")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tabs-demo-pill-bar")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-tabs-icon-options")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("PILL TABS");
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("PILL BAR TABS");
+    expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent("EQUAL WIDTH");
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

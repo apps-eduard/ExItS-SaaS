@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import {
+  BarChart3,
   Boxes,
   ChartColumn,
   ClipboardList,
@@ -84,6 +85,21 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
   const [pillOrders, setPillOrders] = useState("all");
   const [pillCatalog, setPillCatalog] = useState("all");
   const [pillInventory, setPillInventory] = useState("all");
+  const [pillBarText, setPillBarText] = useState("overview");
+  const [pillBarVariant, setPillBarVariant] = useState("overview");
+  const [pillBarIcons, setPillBarIcons] = useState("overview");
+  const [pillBarCount, setPillBarCount] = useState("all");
+  const [pillBarIconCount, setPillBarIconCount] = useState("products");
+  const [pillBarSemantic, setPillBarSemantic] = useState("all");
+  const [pillBarEqual, setPillBarEqual] = useState("overview");
+  const [pillBarContent, setPillBarContent] = useState("overview");
+  const [pillBarSolid, setPillBarSolid] = useState("orders");
+  const [pillBarAccent, setPillBarAccent] = useState("orders");
+  const [pillBarMobile, setPillBarMobile] = useState("overview");
+  const [pillBarOrders, setPillBarOrders] = useState("all");
+  const [pillBarProductType, setPillBarProductType] = useState("all");
+  const [pillBarInv, setPillBarInv] = useState("all");
+  const [pillBarUsers, setPillBarUsers] = useState("staff");
   const [iconOptUnderline, setIconOptUnderline] = useState("products");
   const [iconOptSoft, setIconOptSoft] = useState("products");
   const [iconOptPill, setIconOptPill] = useState("products");
@@ -120,8 +136,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
       <UiStandardsSection
         id="tabs.variants"
         title={t("uiStandards.tabsVariantsTitle")}
-        description="Six visual candidates. Family ≠ one style — pick by purpose. PILOT / NOT LOCKED."
-        summary="UNDERLINE · SOFT · PILL · SEGMENTED · ENCLOSED · VERTICAL"
+        description="Seven visual candidates. Family ≠ one style — pick by purpose. PILOT / NOT LOCKED."
+        summary="UNDERLINE · SOFT · PILL · PILL BAR · SEGMENTED · ENCLOSED · VERTICAL"
         open={isOpen("tabs.variants")}
         onOpenChange={(open) => setOpen("tabs.variants", open)}
         testId="ui-standards-tabs-variants"
@@ -132,7 +148,8 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
               <div className="grid gap-1 text-[length:var(--exits-text-xs)] text-muted">
                 <div>PAGE / MODULE NAVIGATION → UNDERLINE</div>
                 <div>NORMAL CONTENT TABS → SOFT</div>
-                <div>COMPACT CATEGORY / STATUS TABS → PILL</div>
+                <div>SEPARATE COMPACT TABS → PILL</div>
+                <div>PROMINENT COMPACT TAB BAR → PILL BAR</div>
                 <div>VIEW SWITCHER → SEGMENTED</div>
                 <div>DETAIL PANEL → ENCLOSED</div>
                 <div>SETTINGS / ADMIN → VERTICAL</div>
@@ -321,6 +338,34 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             </SampleCard>
           </StaticSampleGroup>
 
+          <StaticSampleGroup title="PILL BAR">
+            <SampleCard
+              label="Continuous outer bar · inner active pill"
+              hint="Distinct from PILL (gaps) and SEGMENTED (segment control) — PILOT"
+            >
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Pill bar demo"
+                testId="ui-standards-tabs-demo-pill-bar"
+                value={pillBarVariant}
+                onValueChange={setPillBarVariant}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "products", label: "Products" },
+                  { key: "orders", label: "Orders" },
+                  { key: "reports", label: "Reports" },
+                ]}
+                panels={{
+                  overview: <DemoPanel title="Overview" />,
+                  products: <DemoPanel title="Products" />,
+                  orders: <DemoPanel title="Orders" />,
+                  reports: <DemoPanel title="Reports" />,
+                }}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
           <StaticSampleGroup title="SEGMENTED">
             <SampleCard label="View switcher" hint="Connected segments · compact · no independent pill gaps">
               <ExitsTabs
@@ -387,6 +432,290 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
                   notifications: <DemoPanel title="Notifications" />,
                   advanced: <DemoPanel title="Advanced" />,
                 }}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="tabs.pill-bar"
+        title={t("uiStandards.tabsPillBarTitle")}
+        description="One continuous pill bar; selected tab is a filled inner pill. PILOT / NOT LOCKED — distinct from PILL and SEGMENTED."
+        summary="OUTER BAR · INNER PILL · layout · treatments"
+        open={isOpen("tabs.pill-bar")}
+        onOpenChange={(open) => setOpen("tabs.pill-bar", open)}
+        testId="ui-standards-tabs-pill-bar"
+      >
+        <div className="grid gap-3">
+          <StaticSampleGroup title="PILL BAR — TEXT">
+            <SampleCard label="Text only" hint="Equal width showcase">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Pill bar text"
+                testId="ui-standards-tabs-pill-bar-text"
+                value={pillBarText}
+                onValueChange={setPillBarText}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "products", label: "Products" },
+                  { key: "orders", label: "Orders" },
+                  { key: "reports", label: "Reports" },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="PILL BAR — ICON + TEXT">
+            <SampleCard label="Restrained Lucide icons">
+              <ExitsTabs
+                variant="pillBar"
+                layout="content"
+                ariaLabel="Pill bar icons"
+                testId="ui-standards-tabs-pill-bar-icons"
+                value={pillBarIcons}
+                onValueChange={setPillBarIcons}
+                items={[
+                  { key: "overview", label: "Overview", icon: LayoutDashboard },
+                  { key: "products", label: "Products", icon: Package },
+                  { key: "orders", label: "Orders", icon: ClipboardList },
+                  { key: "reports", label: "Reports", icon: BarChart3 },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="PILL BAR — COUNT">
+            <SampleCard label="CountBadge · neutral inactive">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Pill bar counts"
+                testId="ui-standards-tabs-pill-bar-count"
+                value={pillBarCount}
+                onValueChange={setPillBarCount}
+                items={[
+                  { key: "all", label: "All", count: 24, countTone: "neutral" },
+                  { key: "pending", label: "Pending", count: 6, countTone: "neutral" },
+                  { key: "completed", label: "Completed", count: 16, countTone: "neutral" },
+                  { key: "cancelled", label: "Cancelled", count: 2, countTone: "neutral" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="Semantic counts" hint="Completed stays neutral — not bright Success green">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Pill bar semantic counts"
+                value={pillBarSemantic}
+                onValueChange={setPillBarSemantic}
+                items={[
+                  { key: "all", label: "All", count: 24, countTone: "neutral" },
+                  { key: "pending", label: "Pending", count: 6, countTone: "warning" },
+                  { key: "overdue", label: "Overdue", count: 5, countTone: "danger" },
+                  { key: "completed", label: "Completed", count: 13, countTone: "neutral" },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="PILL BAR — ICON + TEXT + COUNT">
+            <SampleCard label="Full candidate composition">
+              <ExitsTabs
+                variant="pillBar"
+                layout="content"
+                ariaLabel="Pill bar icon count"
+                testId="ui-standards-tabs-pill-bar-icon-count"
+                value={pillBarIconCount}
+                onValueChange={setPillBarIconCount}
+                items={[
+                  {
+                    key: "products",
+                    label: "Products",
+                    icon: Package,
+                    count: 24,
+                    countTone: "neutral",
+                  },
+                  {
+                    key: "orders",
+                    label: "Orders",
+                    icon: ClipboardList,
+                    count: 6,
+                    countTone: "neutral",
+                  },
+                  {
+                    key: "low",
+                    label: "Low stock",
+                    icon: TriangleAlert,
+                    count: 12,
+                    countTone: "warning",
+                  },
+                  {
+                    key: "customers",
+                    label: "Customers",
+                    icon: Users,
+                    count: 38,
+                    countTone: "neutral",
+                  },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="EQUAL WIDTH · CONTENT WIDTH">
+            <SampleCard label="layout=equal" hint="Shares available width">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Pill bar equal"
+                testId="ui-standards-tabs-pill-bar-equal"
+                value={pillBarEqual}
+                onValueChange={setPillBarEqual}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "products", label: "Products" },
+                  { key: "orders", label: "Orders" },
+                  { key: "reports", label: "Reports" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="layout=content" hint="Width follows label">
+              <ExitsTabs
+                variant="pillBar"
+                layout="content"
+                ariaLabel="Pill bar content"
+                testId="ui-standards-tabs-pill-bar-content"
+                value={pillBarContent}
+                onValueChange={setPillBarContent}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "products", label: "Products" },
+                  { key: "orders", label: "Orders" },
+                  { key: "reports", label: "Reports" },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="ACTIVE TREATMENT CANDIDATES — NOT LOCKED">
+            <SampleCard label="A — SOLID PRIMARY" hint="Preferred candidate for this style">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                activeTreatment="solid"
+                ariaLabel="Pill bar solid active"
+                testId="ui-standards-tabs-pill-bar-solid"
+                value={pillBarSolid}
+                onValueChange={setPillBarSolid}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "orders", label: "Orders", count: 6, countTone: "neutral" },
+                  { key: "reports", label: "Reports" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="B — PRIMARY ACCENT" hint="Soft fill · stronger Primary text">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                activeTreatment="accent"
+                ariaLabel="Pill bar accent active"
+                testId="ui-standards-tabs-pill-bar-accent"
+                value={pillBarAccent}
+                onValueChange={setPillBarAccent}
+                items={[
+                  { key: "overview", label: "Overview" },
+                  { key: "orders", label: "Orders", count: 6, countTone: "neutral" },
+                  { key: "reports", label: "Reports" },
+                ]}
+              />
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="MOBILE / MANY TABS">
+            <SampleCard label="Horizontal scroll when needed" hint="Do not shrink labels / wrap rows">
+              <div className="max-w-[22rem]">
+                <ExitsTabs
+                  variant="pillBar"
+                  layout="content"
+                  scrollable
+                  ariaLabel="Pill bar mobile many"
+                  testId="ui-standards-tabs-pill-bar-mobile"
+                  value={pillBarMobile}
+                  onValueChange={setPillBarMobile}
+                  items={[
+                    { key: "overview", label: "Overview" },
+                    { key: "products", label: "Products" },
+                    { key: "inventory", label: "Inventory" },
+                    { key: "purchasing", label: "Purchasing" },
+                    { key: "orders", label: "Orders" },
+                    { key: "customers", label: "Customers" },
+                  ]}
+                />
+              </div>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="REAL-WORLD — PILL BAR">
+            <SampleCard label="ORDER STATUS">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="Order status pill bar"
+                value={pillBarOrders}
+                onValueChange={setPillBarOrders}
+                items={[
+                  { key: "all", label: "All", count: 24, countTone: "neutral" },
+                  { key: "pending", label: "Pending", count: 6, countTone: "neutral" },
+                  { key: "completed", label: "Completed", count: 16, countTone: "neutral" },
+                  { key: "cancelled", label: "Cancelled", count: 2, countTone: "neutral" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="PRODUCT TYPE">
+              <ExitsTabs
+                variant="pillBar"
+                layout="content"
+                ariaLabel="Product type pill bar"
+                value={pillBarProductType}
+                onValueChange={setPillBarProductType}
+                items={[
+                  { key: "all", label: "All" },
+                  { key: "products", label: "Products" },
+                  { key: "services", label: "Services" },
+                  { key: "bundles", label: "Bundles" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="INVENTORY">
+              <ExitsTabs
+                variant="pillBar"
+                layout="content"
+                ariaLabel="Inventory pill bar"
+                value={pillBarInv}
+                onValueChange={setPillBarInv}
+                items={[
+                  { key: "all", label: "All" },
+                  { key: "low", label: "Low stock", count: 12, countTone: "warning" },
+                  { key: "expiring", label: "Expiring", count: 4, countTone: "warning" },
+                  { key: "out", label: "Out of stock", count: 3, countTone: "danger" },
+                ]}
+              />
+            </SampleCard>
+            <SampleCard label="USER TYPE">
+              <ExitsTabs
+                variant="pillBar"
+                layout="equal"
+                ariaLabel="User type pill bar"
+                value={pillBarUsers}
+                onValueChange={setPillBarUsers}
+                items={[
+                  { key: "staff", label: "Staff" },
+                  { key: "managers", label: "Managers" },
+                  { key: "owners", label: "Owners" },
+                  { key: "vendors", label: "Vendors" },
+                ]}
               />
             </SampleCard>
           </StaticSampleGroup>
@@ -988,27 +1317,33 @@ export function UiStandardsTabsPanel({ isOpen, setOpen }: DisclosureProps) {
             {t("uiStandards.tabsPilotBadge")}
           </p>
           <pre className="m-0 whitespace-pre-wrap">{`VARIANTS
-  UNDERLINE TABS · SOFT TABS · PILL TABS · SEGMENTED TABS · ENCLOSED TABS · VERTICAL TABS
+  UNDERLINE TABS · SOFT TABS · PILL TABS · PILL BAR TABS · SEGMENTED TABS · ENCLOSED TABS · VERTICAL TABS
 
 OPTIONS
   WITH ICON · NO ICON · WITH COUNT · NO COUNT · SCROLLABLE · DISABLED
+  EQUAL WIDTH · CONTENT WIDTH
 
 COUNT
   NEUTRAL COUNT · PRIMARY COUNT · SEMANTIC COUNT
 
 EXAMPLES
   Products / Inventory / Orders → UNDERLINE TABS + WITH ICON + WITH COUNT
-  Order status                  → PILL TABS + WITH COUNT
-  Catalog categories            → PILL TABS
+  Order status                  → PILL BAR TABS + EQUAL WIDTH + WITH COUNT
+  Product categories            → PILL BAR TABS + CONTENT WIDTH
+  Catalog compact filters       → PILL TABS + WITH COUNT
+  Main compact navigation       → PILL BAR TABS + WITH ICON
+  Orders                        → PILL BAR TABS + WITH ICON + WITH COUNT
   List / Grid                   → SEGMENTED TABS + WITH ICON
   Settings                      → VERTICAL TABS + WITH ICON
   Low stock                     → WITH COUNT WARNING
   Mobile module navigation      → UNDERLINE TABS + SCROLLABLE
+  Mobile pill bar               → PILL BAR TABS + SCROLLABLE
 
 CANDIDATE DEFAULTS (NOT LOCKED)
   PAGE / MODULE → UNDERLINE
   CONTENT → SOFT
-  COMPACT CATEGORY / STATUS → PILL
+  SEPARATE COMPACT → PILL
+  PROMINENT COMPACT TAB BAR → PILL BAR
   VIEW SWITCHER → SEGMENTED
   DETAIL PANEL → ENCLOSED
   SETTINGS → VERTICAL
