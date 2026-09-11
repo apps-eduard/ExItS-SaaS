@@ -74,6 +74,7 @@ import { DashboardRoutePage } from "@/features/reports/DashboardRoutePage";
 import { OperationalReportPage } from "@/features/reports/OperationalReportPage";
 import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
+import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
@@ -423,6 +424,7 @@ export const appRoutes = [
             ),
           },
           { path: "settings/preferences", element: <PreferencesPage /> },
+          { path: "ui-standards", element: <UiStandardsPage /> },
           {
             path: "more",
             element: (
