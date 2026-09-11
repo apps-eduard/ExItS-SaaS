@@ -45,11 +45,24 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tabs.states": false,
   "tabs.mobile": false,
   "tabs.cheatsheet": false,
+
+  "cards.treatments": true,
+  "cards.kpi": true,
+  "cards.entity": true,
+  "cards.selectable": true,
+  "cards.real-world": true,
+  "cards.basic": false,
+  "cards.action": false,
+  "cards.product": false,
+  "cards.status": false,
+  "cards.compact": false,
+  "cards.states": false,
+  "cards.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
 
-export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs";
+export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs" | "cards";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };

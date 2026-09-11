@@ -129,6 +129,18 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-tabs-cheatsheet-body")).toHaveTextContent(
       "Docs/UI/exits-tabs-standard.md",
     );
+
+    await user.click(screen.getByTestId("ui-standards-tab-cards"));
+    expect(screen.getByTestId("ui-standards-cards-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-treatments")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-kpi")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-entity")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-selectable")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-cards-real-world")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-card-treatment-bordered")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-card-kpi-sales")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-card-interactive")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-card-selectable-main")).toBeInTheDocument();
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {
