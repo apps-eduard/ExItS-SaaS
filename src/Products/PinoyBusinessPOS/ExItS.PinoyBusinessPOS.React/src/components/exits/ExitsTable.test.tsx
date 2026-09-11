@@ -129,6 +129,15 @@ describe("ExitsTable foundation", () => {
 
     await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
     expect(onPageSizeChange).toHaveBeenCalledWith(10);
+
+    const pageSize = screen.getByTestId("exits-table-page-size");
+    expect([...pageSize.querySelectorAll("option")].map((opt) => opt.getAttribute("value"))).toEqual([
+      "10",
+      "25",
+      "50",
+      "100",
+    ]);
+    expect(pageSize).toHaveValue("25");
   });
 
   it("cycles sort none → asc → desc → none", () => {

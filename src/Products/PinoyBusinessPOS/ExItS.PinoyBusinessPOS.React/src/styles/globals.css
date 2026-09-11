@@ -685,6 +685,21 @@ html {
   background: color-mix(in srgb, var(--exits-surface-muted, #eef2ef) 80%, transparent);
 }
 
+.exits-table-output__btn[data-format="csv"]:hover:not(:disabled) {
+  color: color-mix(in srgb, #0f766e 55%, var(--exits-text, #1a2b22));
+  background: color-mix(in srgb, #0f766e 10%, transparent);
+}
+
+.exits-table-output__btn[data-format="xlsx"]:hover:not(:disabled) {
+  color: color-mix(in srgb, #15803d 55%, var(--exits-text, #1a2b22));
+  background: color-mix(in srgb, #15803d 10%, transparent);
+}
+
+.exits-table-output__btn[data-format="pdf"]:hover:not(:disabled) {
+  color: color-mix(in srgb, #b91c1c 55%, var(--exits-text, #1a2b22));
+  background: color-mix(in srgb, #b91c1c 10%, transparent);
+}
+
 .exits-table-output__btn:focus-visible {
   outline: 2px solid var(--exits-focus, var(--ring));
   outline-offset: 1px;
@@ -743,6 +758,7 @@ html {
 .exits-file-format-icon__doc {
   width: 100%;
   height: 100%;
+  color: var(--exits-muted, #5b6b60);
 }
 
 .exits-file-format-icon__badge {
@@ -758,6 +774,24 @@ html {
   letter-spacing: 0.02em;
   line-height: 1.15;
   border: 1px solid var(--exits-border, #d8e0da);
+}
+
+.exits-file-format-icon--csv .exits-file-format-icon__badge {
+  color: #0f766e;
+  border-color: color-mix(in srgb, #0f766e 35%, var(--exits-border, #d8e0da));
+  background: color-mix(in srgb, #0f766e 8%, var(--exits-surface, #fff));
+}
+
+.exits-file-format-icon--xlsx .exits-file-format-icon__badge {
+  color: #15803d;
+  border-color: color-mix(in srgb, #15803d 35%, var(--exits-border, #d8e0da));
+  background: color-mix(in srgb, #15803d 8%, var(--exits-surface, #fff));
+}
+
+.exits-file-format-icon--pdf .exits-file-format-icon__badge {
+  color: #b91c1c;
+  border-color: color-mix(in srgb, #b91c1c 35%, var(--exits-border, #d8e0da));
+  background: color-mix(in srgb, #b91c1c 8%, var(--exits-surface, #fff));
 }
 
 .incoming-order-print-root {

@@ -58,7 +58,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 type LineSkuFilter = "all" | "hasSku" | "noSku";
 type LineSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 function lineQtyLabel(line: ConnectedPurchaseOrderLine): string {
   const uom = line.unitOfMeasureCode ? formatUnitOfMeasureLabel(line.unitOfMeasureCode) : "";

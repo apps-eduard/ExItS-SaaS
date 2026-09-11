@@ -280,6 +280,14 @@ describe("IncomingOrders React flow", () => {
     expect(screen.getByTestId("incoming-order-print-root")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-print-root").querySelector("input")).toBeNull();
     expect(screen.getByTestId("incoming-order-print-root")).not.toHaveTextContent("Accept order");
+    const pageSize = screen.getByTestId("exits-table-page-size");
+    expect(pageSize).toHaveValue("25");
+    expect([...pageSize.querySelectorAll("option")].map((opt) => opt.getAttribute("value"))).toEqual([
+      "10",
+      "25",
+      "50",
+      "100",
+    ]);
 
     await user.type(screen.getByTestId("incoming-order-lines-search"), "Banana");
     await waitFor(() => {

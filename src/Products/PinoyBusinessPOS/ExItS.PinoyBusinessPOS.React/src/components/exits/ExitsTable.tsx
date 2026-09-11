@@ -200,6 +200,7 @@ export function ExitsTableOutputActions({
               "exits-table-output__btn",
               activeBusy === action.id && "exits-table-output__btn--busy",
             )}
+            data-format={action.id}
             title={action.label}
             aria-label={action.label}
             disabled={disabled || Boolean(activeBusy) || !action.onClick}
@@ -466,7 +467,7 @@ export function ExitsTablePagination({
   page,
   pageSize,
   total,
-  pageSizeOptions = [10, 25, 50],
+  pageSizeOptions = [10, 25, 50, 100],
   onPageChange,
   onPageSizeChange,
   rowsPerPageLabel,
