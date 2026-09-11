@@ -15,17 +15,28 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableFooter,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import {
-  formatIncomingLineMath,
-  incomingOrderStatusTone,
-} from "@/features/purchasing/incoming-orders-helpers";
+import { incomingOrderStatusTone } from "@/features/purchasing/incoming-orders-helpers";
+import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const DECLINE_REASONS = [
@@ -254,27 +265,91 @@ export function IncomingOrderDetailPage() {
       {order.lines.length === 0 ? (
         <EmptyState title={t("purchasing.linesEmpty")} detail={t("purchasing.linesRequired")} />
       ) : (
-        <ul className="m-0 grid list-none gap-2 p-0" data-testid="incoming-order-lines">
-          {order.lines.map((line) => (
-            <li key={line.productId}>
-              <Card className="grid gap-1 p-3" data-testid={`incoming-order-line-${line.productId}`}>
-                <p className="m-0 font-semibold">{line.nameSnapshot}</p>
-                {line.skuSnapshot ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{line.skuSnapshot}</p>
-                ) : null}
-                <p className="m-0 text-[length:var(--exits-text-sm)] tabular-nums">
-                  {formatIncomingLineMath(line.qty, line.unitPriceSnapshot, line.lineTotal)}
-                </p>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
+        <ExitsTableContainer data-testid="incoming-order-lines">
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">{t("purchasing.colProduct")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("catalog.sku")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="numeric">{t("purchasing.qty")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">{t("purchasing.unitCost")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="money">{t("purchasing.lineTotal")}</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {order.lines.map((line) => {
+                const uom = line.unitOfMeasureCode
+                  ? formatUnitOfMeasureLabel(line.unitOfMeasureCode)
+                  : "";
+                const qtyLabel = uom ? `${line.qty} ${uom}` : String(line.qty);
+                return (
+                  <ExitsTableRow
+                    key={line.productId}
+                    data-testid={`incoming-order-line-${line.productId}`}
+                  >
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {line.nameSnapshot}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text" className="text-muted">
+                      {line.skuSnapshot?.trim() || "—"}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric">{qtyLabel}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="money">
+                      <MoneyDisplay amount={line.unitPriceSnapshot} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" emphasis="semibold">
+                      <MoneyDisplay
+                        amount={line.lineTotal}
+                        testId={`incoming-order-line-total-${line.productId}`}
+                      />
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                );
+              })}
+            </ExitsTableBody>
+            <ExitsTableFooter data-testid="incoming-order-total">
+              <ExitsTableRow>
+                <ExitsTableCell cellAlign="actions" colSpan={4} emphasis="bold">
+                  {t("incomingOrders.total")}
+                </ExitsTableCell>
+                <ExitsTableCell cellAlign="money" emphasis="bold">
+                  <MoneyDisplay amount={order.totalAmount} testId="incoming-order-total-amount" />
+                </ExitsTableCell>
+              </ExitsTableRow>
+            </ExitsTableFooter>
+          </ExitsTable>
 
-      <Card className="flex items-center justify-between gap-3 p-3" data-testid="incoming-order-total">
-        <span className="font-medium">{t("incomingOrders.total")}</span>
-        <MoneyDisplay amount={order.totalAmount} testId="incoming-order-total-amount" />
-      </Card>
+          <ExitsTableMobile data-testid="incoming-order-lines-mobile">
+            {order.lines.map((line) => {
+              const uom = line.unitOfMeasureCode
+                ? formatUnitOfMeasureLabel(line.unitOfMeasureCode)
+                : "";
+              const qtyLabel = uom ? `${line.qty} ${uom}` : String(line.qty);
+              return (
+                <ExitsTableMobileRow
+                  key={line.productId}
+                  data-testid={`incoming-order-line-mobile-${line.productId}`}
+                >
+                  <div className="exits-table-mobile__title-row">
+                    <p className="exits-table-mobile__title">{line.nameSnapshot}</p>
+                    <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
+                  </div>
+                  {line.skuSnapshot?.trim() ? (
+                    <p className="exits-table-mobile__meta">{line.skuSnapshot.trim()}</p>
+                  ) : null}
+                  <p className="exits-table-mobile__math">
+                    {qtyLabel} × {formatPeso(line.unitPriceSnapshot)}
+                  </p>
+                </ExitsTableMobileRow>
+              );
+            })}
+            <li className="exits-table-mobile__footer" data-testid="incoming-order-total-mobile">
+              <span>{t("incomingOrders.total")}</span>
+              <MoneyDisplay amount={order.totalAmount} />
+            </li>
+          </ExitsTableMobile>
+        </ExitsTableContainer>
+      )}
 
       {isNew && showDecline ? (
         <Card className="grid gap-3 p-3" data-testid="incoming-order-decline-form">

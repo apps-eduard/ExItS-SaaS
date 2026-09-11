@@ -4667,6 +4667,7 @@ export const en = {
   "connected.cancel": "Cancel",
   "connected.openLinkedProducts": "Open linked products",
   "connected.linkedTitle": "Linked products",
+  "connected.createPurchaseOrder": "Create new purchase order",
   "connected.linkedHelp":
     "Products you already linked from this supplier. Unlinking does not change stock.",
   "connected.searchLinked": "Search linked products",
@@ -5009,7 +5010,7 @@ export const en = {
   "purchasing.draftSummary": "{products} products · {units} units",
   "purchasing.subtotal": "Subtotal",
   "purchasing.qty": "Quantity",
-  "purchasing.unitCost": "Unit purchase cost",
+  "purchasing.unitCost": "Unit cost",
   "purchasing.addLine": "Add line",
   "purchasing.removeLine": "Remove",
   "purchasing.lines": "Lines",

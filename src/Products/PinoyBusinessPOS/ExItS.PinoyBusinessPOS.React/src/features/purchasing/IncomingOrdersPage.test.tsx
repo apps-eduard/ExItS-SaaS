@@ -172,8 +172,13 @@ describe("IncomingOrders React flow", () => {
       .mockResolvedValueOnce(pendingOrder("Accepted"));
     renderDetail();
     await waitFor(() => screen.getByTestId("incoming-order-accept"));
-    expect(screen.getByText("20 × ₱12 = ₱240")).toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-lines")).toBeInTheDocument();
+    expect(screen.getByTestId(`incoming-order-line-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`incoming-order-line-total-${productId}`)).toHaveTextContent("₱240.00");
+    expect(screen.getAllByText("PH-BEV-WATER-500").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("20 pc").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱240.00");
+    expect(screen.getByRole("columnheader", { name: "Unit cost" })).toBeInTheDocument();
 
     await user.click(screen.getByTestId("incoming-order-accept"));
     await waitFor(() => expect(acceptIncomingOrder).toHaveBeenCalled());

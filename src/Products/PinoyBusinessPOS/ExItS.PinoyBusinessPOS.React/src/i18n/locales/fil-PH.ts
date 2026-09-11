@@ -1815,6 +1815,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.linkedNoMatchHelp": "Subukan ang ibang paghahanap.",
 
   "connected.linkedTitle": "Naka-link na produkto",
+  "connected.createPurchaseOrder": "Gumawa ng bagong purchase order",
 
   "connected.loadFailed": "Hindi ma-load ang datos ng connected supplier.",
 
@@ -8716,7 +8717,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.source.directPurchase": "Direct purchase",
 
-  "purchasing.unitCost": "Unit purchase cost",
+  "purchasing.unitCost": "Unit cost",
 
   "purchasing.unknownSupplier": "Hindi kilalang supplier",
 

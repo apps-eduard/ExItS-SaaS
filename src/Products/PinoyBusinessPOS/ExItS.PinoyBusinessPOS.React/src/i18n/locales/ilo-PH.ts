@@ -1815,6 +1815,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "connected.linkedNoMatchHelp": "Padasen ti sabali a panagbirok.",
 
   "connected.linkedTitle": "Linked a produkto",
+  "connected.createPurchaseOrder": "Create new purchase order",
 
   "connected.loadFailed": "Saan a ma-load ti datos ti connected supplier.",
 
@@ -8718,7 +8719,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.source.directPurchase": "Direct purchase",
 
-  "purchasing.unitCost": "Unit purchase cost",
+  "purchasing.unitCost": "Unit cost",
 
   "purchasing.unknownSupplier": "Unknown supplier",
 

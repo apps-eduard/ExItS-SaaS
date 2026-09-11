@@ -1815,6 +1815,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.linkedNoMatchHelp": "Tilawi ang iban nga pangita.",
 
   "connected.linkedTitle": "Linked nga produkto",
+  "connected.createPurchaseOrder": "Create new purchase order",
 
   "connected.loadFailed": "Indi ma-load ang datos sang connected supplier.",
 
@@ -8718,7 +8719,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.source.directPurchase": "Direct purchase",
 
-  "purchasing.unitCost": "Unit purchase cost",
+  "purchasing.unitCost": "Unit cost",
 
   "purchasing.unknownSupplier": "Unknown supplier",
 
