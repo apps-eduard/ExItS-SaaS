@@ -2963,7 +2963,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
   "uiStandards.buttonPilotBadge": "BUTTON STANDARD — PILOT / NOT YET LOCKED",
-  "uiStandards.buttonPilotLede": "Candidate semantic intents for visual approval. Reuses the existing Button component and design tokens.",
+  "uiStandards.buttonPilotLede": "Candidate semantic intents for visual approval. Reuses the shared ExItS Button component and design tokens.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
   "uiStandards.prefsHint": "Use Settings to test theme and density.",

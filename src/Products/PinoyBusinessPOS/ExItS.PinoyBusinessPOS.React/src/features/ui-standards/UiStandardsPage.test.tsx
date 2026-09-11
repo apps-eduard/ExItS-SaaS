@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { catalogs } from "@/i18n/messages";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
@@ -57,9 +57,14 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-btn-group-danger-strong")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-icon-only")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-btn-group-states")).toBeInTheDocument();
+    const samples = within(screen.getByTestId("ui-standards-button-showcase"));
+    expect(samples.getByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(samples.getByRole("button", { name: "Approve" })).toBeInTheDocument();
+    expect(samples.getByRole("button", { name: "Delete permanently" })).toBeInTheDocument();
+    expect(samples.getByLabelText("Edit")).toBeInTheDocument();
+    expect(samples.getByLabelText("Refresh")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("SHAPE");
     expect(screen.getByTestId("ui-standards-button-cheatsheet")).toHaveTextContent("TREATMENT");
-    expect(screen.getByLabelText("Edit")).toBeInTheDocument();
   });
 });
 

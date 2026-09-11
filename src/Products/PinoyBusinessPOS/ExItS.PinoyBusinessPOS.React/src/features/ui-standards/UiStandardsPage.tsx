@@ -103,8 +103,24 @@ function qtyLabel(line: DemoLine): string {
   return uom ? `${line.qty} ${uom}` : String(line.qty);
 }
 
-function SampleRow({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap items-center gap-2">{children}</div>;
+function SampleCard({
+  label,
+  children,
+  testId,
+}: {
+  label: string;
+  children: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-1.5 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"
+      data-testid={testId}
+    >
+      <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
+      <div className="flex justify-start">{children}</div>
+    </div>
+  );
 }
 
 function SampleGroup({ title, children }: { title: string; children: ReactNode }) {
@@ -113,9 +129,12 @@ function SampleGroup({ title, children }: { title: string; children: ReactNode }
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
   return (
-    <section className="grid gap-2" data-testid={`ui-standards-btn-group-${slug}`}>
+    <section
+      className="grid gap-2 border-t border-border pt-3 first:border-t-0 first:pt-0"
+      data-testid={`ui-standards-btn-group-${slug}`}
+    >
       <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">{title}</h3>
-      {children}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </section>
   );
 }
@@ -615,135 +634,161 @@ OUTPUT ICONS ON.`}
             </div>
 
             <SampleGroup title="PRIMARY">
-              <SampleRow>
+              <SampleCard label="Save">
                 <Button type="button" shape="soft">
                   <Save className="size-4" aria-hidden />
                   Save
                 </Button>
+              </SampleCard>
+              <SampleCard label="Add product">
                 <Button type="button" shape="soft">
                   <Plus className="size-4" aria-hidden />
                   Add product
                 </Button>
+              </SampleCard>
+              <SampleCard label="Continue">
                 <Button type="button" shape="soft">
                   Continue
                   <ArrowRight className="size-4" aria-hidden />
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="SUCCESS">
-              <SampleRow>
+              <SampleCard label="Approve">
                 <Button type="button" variant="success" shape="soft">
                   <Check className="size-4" aria-hidden />
                   Approve
                 </Button>
+              </SampleCard>
+              <SampleCard label="Accept order">
                 <Button type="button" variant="success" shape="soft">
                   <Check className="size-4" aria-hidden />
                   Accept order
                 </Button>
+              </SampleCard>
+              <SampleCard label="Mark paid">
                 <Button type="button" variant="success" shape="soft">
                   <CheckCircle2 className="size-4" aria-hidden />
                   Mark paid
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="MUTED">
-              <SampleRow>
+              <SampleCard label="Cancel">
                 <Button type="button" variant="secondary">
                   Cancel
                 </Button>
+              </SampleCard>
+              <SampleCard label="Close">
                 <Button type="button" variant="secondary">
                   Close
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="OUTLINE">
-              <SampleRow>
+              <SampleCard label="Change branch">
                 <Button type="button" variant="outline">
                   Change branch
                 </Button>
+              </SampleCard>
+              <SampleCard label="Download">
                 <Button type="button" variant="outline">
                   Download
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="GHOST">
-              <SampleRow>
+              <SampleCard label="Back">
                 <Button type="button" variant="ghost">
                   <ArrowLeft className="size-4" aria-hidden />
                   Back
                 </Button>
+              </SampleCard>
+              <SampleCard label="More">
                 <Button type="button" variant="ghost">
                   <MoreHorizontal className="size-4" aria-hidden />
                   More
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="INFO">
-              <SampleRow>
+              <SampleCard label="View details">
                 <Button type="button" variant="info">
                   <Eye className="size-4" aria-hidden />
                   View details
                 </Button>
+              </SampleCard>
+              <SampleCard label="Preview">
                 <Button type="button" variant="info">
                   Preview
                   <ExternalLink className="size-4" aria-hidden />
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="WARNING">
-              <SampleRow>
+              <SampleCard label="Deactivate">
                 <Button type="button" variant="warning">
                   <Power className="size-4" aria-hidden />
                   Deactivate
                 </Button>
+              </SampleCard>
+              <SampleCard label="Pause">
                 <Button type="button" variant="warning">
                   <Pause className="size-4" aria-hidden />
                   Pause
                 </Button>
+              </SampleCard>
+              <SampleCard label="Reset">
                 <Button type="button" variant="warning">
                   <RotateCcw className="size-4" aria-hidden />
                   Reset
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="DANGER">
-              <SampleRow>
+              <SampleCard label="Decline">
                 <Button type="button" variant="destructive">
                   <XCircle className="size-4" aria-hidden />
                   Decline
                 </Button>
+              </SampleCard>
+              <SampleCard label="Delete">
                 <Button type="button" variant="destructive">
                   <Trash2 className="size-4" aria-hidden />
                   Delete
                 </Button>
+              </SampleCard>
+              <SampleCard label="Void">
                 <Button type="button" variant="destructive">
                   <Ban className="size-4" aria-hidden />
                   Void
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="DANGER STRONG">
-              <SampleRow>
+              <SampleCard label="Delete permanently">
                 <Button type="button" variant="dangerStrong" shape="soft">
                   <Trash2 className="size-4" aria-hidden />
                   Delete permanently
                 </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="ICON ONLY">
-              <SampleRow>
+              <SampleCard label="Edit">
                 <Button type="button" variant="outline" size="icon" title="Edit" aria-label="Edit">
                   <Pencil className="size-4" aria-hidden />
                 </Button>
+              </SampleCard>
+              <SampleCard label="Refresh">
                 <Button
                   type="button"
                   variant="outline"
@@ -754,9 +799,13 @@ OUTPUT ICONS ON.`}
                 >
                   <RefreshCw className="size-4" aria-hidden />
                 </Button>
+              </SampleCard>
+              <SampleCard label="Print">
                 <Button type="button" variant="outline" size="icon" title="Print" aria-label="Print">
                   <Printer className="size-4" aria-hidden />
                 </Button>
+              </SampleCard>
+              <SampleCard label="Delete">
                 <Button
                   type="button"
                   variant="destructive"
@@ -766,44 +815,44 @@ OUTPUT ICONS ON.`}
                 >
                   <Trash2 className="size-4" aria-hidden />
                 </Button>
+              </SampleCard>
+              <SampleCard label="More">
                 <Button type="button" variant="ghost" size="icon" title="More" aria-label="More">
                   <MoreHorizontal className="size-4" aria-hidden />
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  shape="pill"
-                  title="Print (pill pilot)"
-                  aria-label="Print (pill pilot)"
-                >
-                  <Printer className="size-4" aria-hidden />
-                </Button>
-              </SampleRow>
+              </SampleCard>
             </SampleGroup>
 
             <SampleGroup title="STATES">
-              <SampleRow>
+              <SampleCard label="Normal">
                 <Button type="button" shape="soft">
                   <Save className="size-4" aria-hidden />
                   Normal
                 </Button>
+              </SampleCard>
+              <SampleCard label="Hover / lift">
                 <Button type="button" shape="soft" treatment="elevated">
                   <Save className="size-4" aria-hidden />
                   Hover / lift
                 </Button>
+              </SampleCard>
+              <SampleCard label="Pressed (try)">
                 <Button type="button" shape="soft" treatment="elevated">
                   Pressed (try)
                 </Button>
+              </SampleCard>
+              <SampleCard label="Disabled">
                 <Button type="button" shape="soft" disabled>
                   Disabled
                 </Button>
+              </SampleCard>
+              <SampleCard label="Loading">
                 <Button type="button" shape="soft" disabled aria-busy="true">
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                   Saving...
                 </Button>
-              </SampleRow>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              </SampleCard>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted sm:col-span-2 lg:col-span-3">
                 {t("uiStandards.buttonStatesHint")}
               </p>
             </SampleGroup>
