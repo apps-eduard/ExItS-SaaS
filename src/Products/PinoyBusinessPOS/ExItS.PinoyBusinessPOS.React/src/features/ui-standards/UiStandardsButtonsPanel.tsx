@@ -336,7 +336,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                       Save
                     </Button>
                   </SampleCard>
-                  <SampleCard label="Add product" command="PRIMARY + SOFT + WITH ICON" commandContext="ICON: Plus">
+                  <SampleCard label="Add product" testId="ui-standards-btn-add-product" command="PRIMARY + SOFT + WITH ICON" commandContext="ICON: Plus">
                     <Button type="button" shape="soft">
                       <Plus className="size-4" aria-hidden />
                       Add product
@@ -344,6 +344,7 @@ export function UiStandardsButtonsPanel({ isOpen, setOpen }: UiStandardsButtonsP
                   </SampleCard>
                   <SampleCard
                     label="Continue"
+                    testId="ui-standards-btn-continue"
                     command="PRIMARY + SOFT + WITH ICON"
                     commandContext={"ICON: ArrowRight\nICON POSITION: RIGHT"}
                   >

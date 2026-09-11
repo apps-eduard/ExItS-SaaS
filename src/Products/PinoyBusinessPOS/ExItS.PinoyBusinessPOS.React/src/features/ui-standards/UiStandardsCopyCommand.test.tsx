@@ -20,9 +20,9 @@ describe("formatUiStandardsCursorClipboard", () => {
 
   it("includes optional context between Apply and Preserve lines", () => {
     const text = formatUiStandardsCursorClipboard("Button", "MUTED + WITH ICON", "ICON: CircleX");
-    expect(text).toContain("ICON: CircleX");
-    expect(text.indexOf("Apply:")).toBeLessThan(text.indexOf("ICON: CircleX"));
-    expect(text.indexOf("ICON: CircleX")).toBeLessThan(text.indexOf("Preserve existing"));
+    expect(text).toContain("Context: ICON: CircleX");
+    expect(text.indexOf("Apply:")).toBeLessThan(text.indexOf("Context:"));
+    expect(text.indexOf("Context:")).toBeLessThan(text.indexOf("Preserve existing"));
   });
 });
 
