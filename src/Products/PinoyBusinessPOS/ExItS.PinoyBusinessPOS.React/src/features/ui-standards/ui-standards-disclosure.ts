@@ -26,6 +26,8 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "chips.status": true,
   "chips.filter": true,
   "chips.tags": true,
+  "chips.shapes": true,
+  "chips.compact-tags": true,
   "chips.status-icons": false,
   "chips.filter-modes": false,
   "chips.removable": false,

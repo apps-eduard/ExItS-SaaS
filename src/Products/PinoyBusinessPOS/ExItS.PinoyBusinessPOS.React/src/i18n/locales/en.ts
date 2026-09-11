@@ -55,6 +55,8 @@ export const en = {
   "uiStandards.chipPilotBadge": "CHIP STANDARD — PILOT / NOT LOCKED",
   "uiStandards.chipPilotLede": "Visual pilot for the ExItS chip language. Soft semantic pills, density from Preferences, primary via --exits-primary. Do not treat as locked until approved.",
   "uiStandards.chipStatusTitle": "Status chips",
+  "uiStandards.chipShapesTitle": "Chip shapes",
+  "uiStandards.chipCompactTagsTitle": "Compact tags",
   "uiStandards.chipStatusIconsTitle": "Status icon options",
   "uiStandards.chipFilterTitle": "Filter chips",
   "uiStandards.chipFilterModesTitle": "Single vs multi",

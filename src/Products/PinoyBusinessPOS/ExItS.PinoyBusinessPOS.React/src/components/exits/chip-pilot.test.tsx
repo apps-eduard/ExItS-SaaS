@@ -16,9 +16,33 @@ describe("ExItS chip visual pilot primitives", () => {
       const el = screen.getByText(tone);
       expect(el.className).toContain("exits-status-chip");
       expect(el.className).toContain(`exits-status-chip--${tone}`);
+      expect(el.getAttribute("data-shape")).toBe("pill");
       expect(el.tagName).toBe("SPAN");
       unmount();
     }
+  });
+
+  it("renders pill soft and square shapes without forcing family", () => {
+    const { rerender } = render(
+      createElement(StatusChip, { tone: "success", shape: "pill", children: "Published" }),
+    );
+    expect(screen.getByText("Published").getAttribute("data-shape")).toBe("pill");
+    expect(screen.getByText("Published").className).not.toContain("exits-status-chip--shape-");
+
+    rerender(
+      createElement(StatusChip, { tone: "success", shape: "soft", children: "Published" }),
+    );
+    expect(screen.getByText("Published").className).toContain("exits-status-chip--shape-soft");
+
+    rerender(
+      createElement(StatusChip, { tone: "success", shape: "square", children: "Published" }),
+    );
+    expect(screen.getByText("Published").className).toContain("exits-status-chip--shape-square");
+
+    rerender(createElement(TagChip, { tone: "info", shape: "square", children: "Beta" }));
+    expect(screen.getByText("Beta").closest("[data-shape]")?.getAttribute("data-shape")).toBe(
+      "square",
+    );
   });
 
   it("FilterChip toggles selection with button semantics and disabled state", async () => {
@@ -88,6 +112,8 @@ describe("ExItS chip visual pilot primitives", () => {
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.status"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.filter"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.tags"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["chips.shapes"]).toBe(true);
+    expect(UI_STANDARDS_DEFAULT_OPEN["chips.compact-tags"]).toBe(true);
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.status-icons"]).toBe(false);
     expect(UI_STANDARDS_DEFAULT_OPEN["chips.cheatsheet"]).toBe(false);
   });

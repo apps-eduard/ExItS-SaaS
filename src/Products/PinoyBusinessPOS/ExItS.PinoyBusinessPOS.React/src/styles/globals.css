@@ -141,6 +141,8 @@
 
 /* ---- Shared structure tokens (theme-independent) ---- */
 :root {
+  /** ~4px — compact square/tag chips (not sharp corners). */
+  --exits-radius-xs: 0.25rem;
   --exits-radius-sm: 0.375rem;
   --exits-radius-md: 0.5rem;
   /** Soft button shape pilot (~11px) — between md and lg; not a pill. */
@@ -212,13 +214,24 @@
   --exits-entity-card-gap: 0.55rem;
   --exits-entity-card-meta-gap: 0.35rem 0.85rem;
 
-  /* Read-only status/attribute pills â€” separate from interactive filter chips */
+  /* Read-only status/attribute pills — separate from interactive filter chips */
   --exits-status-chip-height: 1.625rem;
   --exits-status-chip-padding-x: 0.625rem;
   --exits-status-chip-font-size: 0.75rem;
   --exits-status-chip-border-width: 1px;
   --exits-status-chip-gap: 0.3rem;
   --exits-status-chip-icon-size: 0.8125rem;
+
+  /*
+   * Compact square/tag chip tokens (shape=square) — denser than status pills.
+   * Still density-aware; not Button-sized.
+   */
+  --exits-chip-square-height: 1.3125rem;
+  --exits-chip-square-padding-x: 0.375rem;
+  --exits-chip-square-padding-y: 0.0625rem;
+  --exits-chip-square-font-size: var(--exits-text-xs);
+  --exits-chip-square-gap: 0.2rem;
+  --exits-chip-square-icon-size: 0.6875rem;
 }
 
 /*
@@ -321,6 +334,12 @@
   --exits-status-chip-border-width: 1px;
   --exits-status-chip-gap: 0.3rem;
   --exits-status-chip-icon-size: 0.8125rem;
+  --exits-chip-square-height: 1.3125rem;
+  --exits-chip-square-padding-x: 0.375rem;
+  --exits-chip-square-padding-y: 0.0625rem;
+  --exits-chip-square-font-size: var(--exits-text-xs);
+  --exits-chip-square-gap: 0.2rem;
+  --exits-chip-square-icon-size: 0.6875rem;
   /* Table — standard ~44px rows */
   --exits-table-cell-x: 0.75rem;
   --exits-table-cell-y: 0.625rem;
@@ -352,6 +371,12 @@
   --exits-status-chip-border-width: 1px;
   --exits-status-chip-gap: 0.35rem;
   --exits-status-chip-icon-size: 0.875rem;
+  --exits-chip-square-height: 1.375rem;
+  --exits-chip-square-padding-x: 0.4375rem;
+  --exits-chip-square-padding-y: 0.125rem;
+  --exits-chip-square-font-size: var(--exits-text-xs);
+  --exits-chip-square-gap: 0.25rem;
+  --exits-chip-square-icon-size: 0.75rem;
   /* Table — comfortable ~52px rows */
   --exits-table-cell-x: 0.875rem;
   --exits-table-cell-y: 0.75rem;
@@ -383,6 +408,12 @@
   --exits-status-chip-border-width: 1px;
   --exits-status-chip-gap: 0.25rem;
   --exits-status-chip-icon-size: 0.75rem;
+  --exits-chip-square-height: 1.25rem;
+  --exits-chip-square-padding-x: 0.3125rem;
+  --exits-chip-square-padding-y: 0.0625rem;
+  --exits-chip-square-font-size: 0.6875rem;
+  --exits-chip-square-gap: 0.15rem;
+  --exits-chip-square-icon-size: 0.625rem;
   /* Table — compact ~38px rows */
   --exits-table-cell-x: 0.625rem;
   --exits-table-cell-y: 0.4rem;
@@ -1229,6 +1260,26 @@ html:has(.admin-shell) #root {
   color: var(--exits-primary);
   border-color: color-mix(in srgb, var(--exits-primary) 28%, transparent);
   background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+}
+
+/* Shape candidates — independent from tone (default remains pill via base rule). */
+.exits-status-chip--shape-soft {
+  border-radius: var(--exits-radius-sm);
+}
+
+.exits-status-chip--shape-square {
+  border-radius: var(--exits-radius-xs);
+  height: var(--exits-chip-square-height);
+  min-height: var(--exits-chip-square-height);
+  max-height: var(--exits-chip-square-height);
+  padding: var(--exits-chip-square-padding-y) var(--exits-chip-square-padding-x);
+  font-size: var(--exits-chip-square-font-size);
+  gap: var(--exits-chip-square-gap);
+}
+
+.exits-status-chip--shape-square .exits-status-chip__icon {
+  width: var(--exits-chip-square-icon-size);
+  height: var(--exits-chip-square-icon-size);
 }
 
 /*

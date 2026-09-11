@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { chipSurfaceVariants, type ChipTone } from "@/components/exits/chip-variants";
+import {
+  chipSurfaceVariants,
+  type ChipShape,
+  type ChipTone,
+} from "@/components/exits/chip-variants";
 
 export type CountChipLayout = "inline" | "split";
 
@@ -8,18 +12,20 @@ export type CountChipProps = {
   label: ReactNode;
   count: ReactNode;
   tone?: ChipTone;
+  shape?: ChipShape;
   /** `inline` = [ Pending 3 ] · `split` = Pending [ 3 ] (both candidates). */
   layout?: CountChipLayout;
   className?: string;
 };
 
 /**
- * Compact label + count chip (PILOT — layout not locked).
+ * Compact label + count chip (PILOT — layout/shape not locked).
  */
 export function CountChip({
   label,
   count,
   tone = "neutral",
+  shape = "soft",
   layout = "inline",
   className,
 }: CountChipProps) {
@@ -29,10 +35,11 @@ export function CountChip({
         <span className="text-[length:var(--exits-status-chip-font-size)] text-muted">{label}</span>
         <span
           className={cn(
-            chipSurfaceVariants({ tone }),
+            chipSurfaceVariants({ tone, shape }),
             "pointer-events-none cursor-default select-none tabular-nums",
           )}
           data-tone={tone}
+          data-shape={shape}
           data-layout="split"
         >
           {count}
@@ -44,11 +51,12 @@ export function CountChip({
   return (
     <span
       className={cn(
-        chipSurfaceVariants({ tone }),
+        chipSurfaceVariants({ tone, shape }),
         "pointer-events-none cursor-default select-none gap-1.5",
         className,
       )}
       data-tone={tone}
+      data-shape={shape}
       data-layout="inline"
     >
       <span className="min-w-0 truncate">{label}</span>
@@ -65,6 +73,7 @@ export type CountBadgeProps = {
 
 /**
  * Tiny count-only badge candidate (menu / notification / tab counts) — PILOT.
+ * Remains round/pill by design (not square).
  */
 export function CountBadge({ count, tone = "neutral", className }: CountBadgeProps) {
   return (
@@ -82,6 +91,7 @@ export function CountBadge({ count, tone = "neutral", className }: CountBadgePro
         className,
       )}
       data-tone={tone}
+      data-shape="pill"
     >
       {count}
     </span>

@@ -104,11 +104,14 @@ describe("UiStandardsPage", () => {
 
     await user.click(screen.getByTestId("ui-standards-tab-chips"));
     expect(screen.getByTestId("ui-standards-chips-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-shapes")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-chips-compact-tags")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-chips-status")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-chips-filter")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-chips-tags")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-chips-cheatsheet")).toHaveTextContent("PILOT / NOT LOCKED");
     expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("STATUS CHIP");
+    expect(screen.getByTestId("ui-standards-chip-cheatsheet-body")).toHaveTextContent("SQUARE");
   });
 
   it("toggles sections, expand/collapse/reset, and persists layout", async () => {

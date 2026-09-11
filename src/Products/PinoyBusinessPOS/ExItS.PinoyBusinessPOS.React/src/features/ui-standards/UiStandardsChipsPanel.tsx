@@ -123,6 +123,179 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("uiStandards.chipPilotLede")}</p>
 
       <UiStandardsSection
+        id="chips.shapes"
+        title={t("uiStandards.chipShapesTitle")}
+        description="Same labels across PILL · SOFT · SQUARE. Shape is independent from tone and family."
+        summary="PILL · SOFT · SQUARE"
+        open={isOpen("chips.shapes")}
+        onOpenChange={(open) => setOpen("chips.shapes", open)}
+        testId="ui-standards-chips-shapes"
+      >
+        <div className="grid gap-3">
+          <StaticSampleGroup title="STATUS / PUBLISHED">
+            <SampleCard label="PILL">
+              <StatusChip tone="success" shape="pill">
+                Published
+              </StatusChip>
+            </SampleCard>
+            <SampleCard label="SOFT">
+              <StatusChip tone="success" shape="soft">
+                Published
+              </StatusChip>
+            </SampleCard>
+            <SampleCard label="SQUARE">
+              <StatusChip tone="success" shape="square">
+                Published
+              </StatusChip>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="TAG / BETA">
+            <SampleCard label="PILL">
+              <TagChip tone="info" shape="pill">
+                Beta
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="SOFT">
+              <TagChip tone="info" shape="soft">
+                Beta
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="SQUARE">
+              <TagChip tone="info" shape="square">
+                Beta
+              </TagChip>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="B2B">
+            <SampleCard label="PILL">
+              <TagChip tone="info" shape="pill">
+                B2B
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="SOFT">
+              <TagChip tone="info" shape="soft">
+                B2B
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="SQUARE">
+              <TagChip tone="info" shape="square">
+                B2B
+              </TagChip>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="SHAPE RECOMMENDATIONS — CANDIDATE ONLY">
+            <SampleCard label="NOT LOCKED" hint="Defaults are pilot suggestions only">
+              <div className="grid w-full gap-1 text-[length:var(--exits-text-xs)] text-muted">
+                <div>STATUS CHIP → PILL or SOFT</div>
+                <div>FILTER CHIP → PILL</div>
+                <div>TAG CHIP → SQUARE / SOFT</div>
+                <div>REMOVABLE CHIP → PILL</div>
+                <div>COUNT CHIP → SOFT / SQUARE</div>
+                <div>COUNT BADGE → PILL / ROUND</div>
+              </div>
+            </SampleCard>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="chips.compact-tags"
+        title={t("uiStandards.chipCompactTagsTitle")}
+        description="Square compact metadata labels — tiny padding, ~4px radius, read-only. Not filter buttons."
+        summary="SQUARE · compact"
+        open={isOpen("chips.compact-tags")}
+        onOpenChange={(open) => setOpen("chips.compact-tags", open)}
+        testId="ui-standards-chips-compact-tags"
+      >
+        <div className="grid gap-3">
+          <StaticSampleGroup title="COMPACT TAGS">
+            <SampleCard label="Row">
+              <div className="flex flex-wrap gap-1">
+                <TagChip tone="info" shape="square">
+                  Beta
+                </TagChip>
+                <TagChip tone="primary" shape="square">
+                  New
+                </TagChip>
+                <TagChip tone="info" shape="square">
+                  B2B
+                </TagChip>
+                <TagChip tone="neutral" shape="square">
+                  Weighted
+                </TagChip>
+                <TagChip tone="neutral" shape="square">
+                  SKU
+                </TagChip>
+                <TagChip tone="neutral" shape="square">
+                  PO
+                </TagChip>
+                <TagChip tone="neutral" shape="square">
+                  Direct
+                </TagChip>
+                <TagChip tone="success" shape="square">
+                  Synced
+                </TagChip>
+              </div>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="SEMANTIC TONES">
+            <SampleCard label="NEUTRAL">
+              <TagChip tone="neutral" shape="square">
+                Draft
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="PRIMARY">
+              <TagChip tone="primary" shape="square">
+                Preferred
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="INFO">
+              <TagChip tone="info" shape="square">
+                B2B
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="SUCCESS">
+              <TagChip tone="success" shape="square">
+                Synced
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="WARNING">
+              <TagChip tone="warning" shape="square">
+                Review
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="DANGER">
+              <TagChip tone="danger" shape="square">
+                Failed
+              </TagChip>
+            </SampleCard>
+          </StaticSampleGroup>
+
+          <StaticSampleGroup title="ICONS (optional)">
+            <SampleCard label="No icon">
+              <TagChip tone="info" shape="square">
+                Beta
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="Synced">
+              <TagChip tone="success" shape="square" icon={<CheckCircle2 aria-hidden />}>
+                Synced
+              </TagChip>
+            </SampleCard>
+            <SampleCard label="Review">
+              <TagChip tone="warning" shape="square" icon={<TriangleAlert aria-hidden />}>
+                Review
+              </TagChip>
+            </SampleCard>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
         id="chips.status"
         title={t("uiStandards.chipStatusTitle")}
         description="Read-only business state. Soft semantic surfaces, pill shape, no pointer/press."
@@ -688,22 +861,30 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
 TONES
   NEUTRAL · PRIMARY · INFO · SUCCESS · WARNING · DANGER
 
+SHAPES
+  PILL · SOFT · SQUARE
+
 OPTIONS
   WITH ICON · NO ICON · SELECTED · DISABLED
 
 EXAMPLES
-  Approved          → STATUS CHIP SUCCESS + WITH ICON
-  Pending           → STATUS CHIP WARNING
-  Active            → STATUS CHIP SUCCESS
-  B2B               → TAG CHIP INFO
-  Weighted          → TAG CHIP NEUTRAL
-  Selected filter   → FILTER CHIP PRIMARY + SELECTED
-  Branch: Main      → REMOVABLE CHIP
-  Overdue 5         → COUNT CHIP DANGER
+  Published         → STATUS CHIP SUCCESS PILL
+  Pending           → STATUS CHIP WARNING SOFT
+  Beta              → TAG CHIP INFO SQUARE
+  B2B               → TAG CHIP INFO SQUARE
+  Weighted          → TAG CHIP NEUTRAL SQUARE
+  Selected filter   → FILTER CHIP PRIMARY PILL SELECTED
+  Branch: Main      → REMOVABLE CHIP PILL
+  Overdue 5         → COUNT CHIP DANGER SOFT
   Notifications 12  → COUNT BADGE PRIMARY
 
-DEFAULT SHAPE
-  PILL
+CANDIDATE DEFAULTS (NOT LOCKED)
+  STATUS → PILL or SOFT
+  FILTER → PILL
+  TAG → SQUARE / SOFT
+  REMOVABLE → PILL
+  COUNT → SOFT / SQUARE
+  COUNT BADGE → PILL / ROUND
 
 STATUS
   PILOT / NOT LOCKED — inspect /ui-standards before locking`}</pre>

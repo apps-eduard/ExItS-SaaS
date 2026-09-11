@@ -2,7 +2,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 /**
  * Shared ExItS chip visual foundation (PILOT / NOT LOCKED).
- * Semantic components choose HTML roles; this only organizes tone/size classes.
+ * Family + tone + shape are independent; components choose HTML roles.
  */
 export const chipToneClasses = {
   neutral:
@@ -20,32 +20,63 @@ export const chipToneClasses = {
 
 export type ChipTone = keyof typeof chipToneClasses;
 
-/** Compact read-only / tag / count surface (status-chip density tokens). */
+/** Chip shape candidates — independent from Button shapes. */
+export type ChipShape = "pill" | "soft" | "square";
+
+export const chipShapeClasses = {
+  pill: [
+    "rounded-full",
+    "h-[var(--exits-status-chip-height)] min-h-[var(--exits-status-chip-height)] max-h-[var(--exits-status-chip-height)]",
+    "px-[var(--exits-status-chip-padding-x)]",
+    "gap-[var(--exits-status-chip-gap)]",
+    "text-[length:var(--exits-status-chip-font-size)]",
+    "[--exits-chip-icon-size:var(--exits-status-chip-icon-size)]",
+  ].join(" "),
+  soft: [
+    "rounded-[var(--exits-radius-sm)]",
+    "h-[var(--exits-status-chip-height)] min-h-[var(--exits-status-chip-height)] max-h-[var(--exits-status-chip-height)]",
+    "px-[var(--exits-status-chip-padding-x)]",
+    "gap-[var(--exits-status-chip-gap)]",
+    "text-[length:var(--exits-status-chip-font-size)]",
+    "[--exits-chip-icon-size:var(--exits-status-chip-icon-size)]",
+  ].join(" "),
+  /** Tight metadata tag — denser than status pills; still density-aware. */
+  square: [
+    "rounded-[var(--exits-radius-xs)]",
+    "h-[var(--exits-chip-square-height)] min-h-[var(--exits-chip-square-height)] max-h-[var(--exits-chip-square-height)]",
+    "px-[var(--exits-chip-square-padding-x)] py-[var(--exits-chip-square-padding-y)]",
+    "gap-[var(--exits-chip-square-gap)]",
+    "text-[length:var(--exits-chip-square-font-size)]",
+    "[--exits-chip-icon-size:var(--exits-chip-square-icon-size)]",
+  ].join(" "),
+} as const;
+
+/** Compact read-only / tag / count surface (status + square density tokens). */
 export const chipSurfaceVariants = cva(
   [
-    "inline-flex max-w-full shrink-0 items-center justify-center gap-[var(--exits-status-chip-gap)]",
-    "box-border h-[var(--exits-status-chip-height)] min-h-[var(--exits-status-chip-height)]",
-    "rounded-full border border-solid px-[var(--exits-status-chip-padding-x)]",
-    "text-[length:var(--exits-status-chip-font-size)] font-medium leading-none",
+    "inline-flex max-w-full shrink-0 items-center justify-center box-border border border-solid",
+    "font-medium leading-none",
     "transition-[background-color,border-color,color,box-shadow,opacity,transform]",
     "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
   ].join(" "),
   {
     variants: {
       tone: chipToneClasses,
+      shape: chipShapeClasses,
     },
     defaultVariants: {
       tone: "neutral",
+      shape: "pill",
     },
   },
 );
 
-/** Interactive filter density (toolbar chip height tokens), pill by default. */
+/** Interactive filter density — pilot default remains pill. */
 export const filterChipVariants = cva(
   [
     "group/filter-chip inline-flex max-w-full shrink-0 items-center justify-center gap-[var(--exits-chip-gap)]",
     "box-border h-[var(--exits-chip-min-height)] min-h-[var(--exits-chip-min-height)]",
-    "rounded-full border border-solid px-[var(--exits-chip-padding-x)]",
+    "border border-solid px-[var(--exits-chip-padding-x)]",
     "text-[length:var(--exits-chip-font-size)] font-medium leading-none",
     "transition-[background-color,border-color,color,box-shadow,transform]",
     "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
@@ -69,9 +100,15 @@ export const filterChipVariants = cva(
           "hover:bg-[var(--exits-surface-muted)]",
         ].join(" "),
       },
+      shape: {
+        pill: "rounded-full",
+        soft: "rounded-[var(--exits-radius-sm)]",
+        square: "rounded-[var(--exits-radius-xs)]",
+      },
     },
     defaultVariants: {
       selected: false,
+      shape: "pill",
     },
   },
 );

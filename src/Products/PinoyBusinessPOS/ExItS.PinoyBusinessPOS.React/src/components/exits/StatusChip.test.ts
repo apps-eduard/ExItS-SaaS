@@ -78,6 +78,10 @@ describe("slim global status chips", () => {
     expect(globalsCss).toMatch(
       /\.exits-status-chip--success\s*\{[\s\S]*?background:\s*color-mix[\s\S]*?5%/,
     );
+    expect(globalsCss).toContain("--exits-radius-xs");
+    expect(globalsCss).toContain("--exits-chip-square-height");
+    expect(globalsCss).toMatch(/\.exits-status-chip--shape-soft\s*\{[\s\S]*?border-radius:\s*var\(--exits-radius-sm\)/);
+    expect(globalsCss).toMatch(/\.exits-status-chip--shape-square\s*\{[\s\S]*?border-radius:\s*var\(--exits-radius-xs\)/);
   });
 
   it("Branches Primary/Active still use shared StatusChip", () => {

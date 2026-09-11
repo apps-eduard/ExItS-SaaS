@@ -1,11 +1,16 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { chipSurfaceVariants, type ChipTone } from "@/components/exits/chip-variants";
+import {
+  chipSurfaceVariants,
+  type ChipShape,
+  type ChipTone,
+} from "@/components/exits/chip-variants";
 
 export type RemovableChipProps = {
   children: ReactNode;
   tone?: ChipTone;
+  shape?: ChipShape;
   className?: string;
   onRemove: () => void;
   /** Accessible name for the remove control, e.g. "Remove Branch: Main filter". */
@@ -15,10 +20,12 @@ export type RemovableChipProps = {
 
 /**
  * Selected value / active filter chip with trailing remove (PILOT).
+ * Default shape remains pill for touch clarity.
  */
 export function RemovableChip({
   children,
   tone = "neutral",
+  shape = "pill",
   className,
   onRemove,
   removeLabel,
@@ -27,11 +34,12 @@ export function RemovableChip({
   return (
     <span
       className={cn(
-        chipSurfaceVariants({ tone }),
+        chipSurfaceVariants({ tone, shape }),
         "pointer-events-auto max-w-[16rem] gap-1 pr-1",
         className,
       )}
       data-tone={tone}
+      data-shape={shape}
     >
       <span className="min-w-0 truncate pl-0.5">{children}</span>
       <button
