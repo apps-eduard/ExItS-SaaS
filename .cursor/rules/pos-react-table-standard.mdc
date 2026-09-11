@@ -8,10 +8,11 @@ alwaysApply: false
 
 For PinoyBusinessPOS React table / list work:
 
-1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-table-standard.md` (authoritative contract).
-2. Reuse the existing ExitsTable component family in `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`.
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-table-standard.md` (APPROVED / LOCKED revised contract).
+2. Reuse the existing ExitsTable family in `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`.
 3. Do **not** invent another table design or component family unless the task explicitly authorizes an exception.
-4. Recognize the documented shorthand vocabulary:
+4. Visual authority: `/ui-standards` → Tables.
+5. Recognize the documented shorthand vocabulary:
    - `EXITS TABLE`
    - `FULL TABLE` / `FULLY IMPLEMENT THE TABLE`
    - `SIMPLE TABLE`
@@ -23,7 +24,17 @@ For PinoyBusinessPOS React table / list work:
    - `PAGE SIZE ON` / `PAGE SIZE OFF`
    - `PAGINATION ON` / `PAGINATION OFF`
    - `FOOTER ON` / `FOOTER OFF`
-   - `INLINE EDIT ON` / `INLINE EDIT OFF`
-5. Explicit task overrides take precedence over standard defaults.
+   - `ACTIONS ON` / `ACTIONS OFF`
+   - `INLINE EDIT ON` / `INLINE EDIT OFF` (default OFF unless explicit)
+   - `EDIT MODE: FIELD MENU`
+   - `EDITABLE: <columns>`
+   - `EDIT ALL`
+   - `ROW EDIT` / `CELL EDIT` (special)
+   - `STICKY ACTIONS` (special use via `stickyEnd`, not default)
+   - `RESET` (RotateCcw revert — not Cancel / CircleX)
+6. Inline edit uses Pencil → field menu → stealth editors → Save (Check) / Reset (RotateCcw). Do not bring Cancel back as the inline-edit revert action.
+7. Page owns editable fields, drafts, validation, save, permissions; foundation owns presentation / portal menu / stealth chrome.
+8. Explicit task overrides take precedence over standard defaults.
+9. Do **not** mass-migrate application tables unless the task explicitly requires it.
 
 Keep detailed rules in the markdown standard — do not invent conflicting placement, page sizes, or output designs here.

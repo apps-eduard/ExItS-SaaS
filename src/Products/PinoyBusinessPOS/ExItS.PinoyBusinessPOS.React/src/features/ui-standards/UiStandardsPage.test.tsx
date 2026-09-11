@@ -79,7 +79,9 @@ describe("UiStandardsPage", () => {
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("INLINE EDIT ON");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("EDIT MODE:");
     expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("FIELD MENU");
-    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("EDITABLE:");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("APPROVED / LOCKED");
+    expect(screen.getByTestId("ui-standards-table-cheatsheet")).toHaveTextContent("RESET");
+    expect(screen.getByTestId("ui-standards-tables-section")).toHaveTextContent("APPROVED / LOCKED");
     expect(screen.getAllByText("Apple").length).toBeGreaterThanOrEqual(1);
 
     const appleRow = screen.getByTestId("ui-standards-main-row-apple");

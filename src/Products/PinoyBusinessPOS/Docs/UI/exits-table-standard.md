@@ -1,45 +1,54 @@
 # ExItS Table Standard (PinoyBusinessPOS React)
 
-**Status:** Authoritative UI contract
+**Status:** APPROVED / LOCKED (revised)
 **Scope:** `src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React`
-**Implementation authority:** `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`
-**Approved visual reference:** Incoming Order detail table
-(`ExItS.PinoyBusinessPOS.React/src/features/purchasing/IncomingOrderDetailPage.tsx`)
+**Implementation authority:** CURRENT `ExitsTable` family at
+`ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx`
+**Approved visual reference:** `/ui-standards` → **Tables**
+(`ExItS.PinoyBusinessPOS.React/src/features/ui-standards/UiStandardsTablesPanel.tsx`)
 
-The approved Incoming Order / PO table implementation is the **canonical visual reference**.
+This revision incorporates the approved **Actions**, **Edit field menu**, **stealth inline editing**, **Reset**, and **portaled overlay** behaviors into the official ExItS Table Standard.
 
 Future PinoyBusinessPOS React tables **MUST** reuse the existing **ExitsTable** family rather than invent separate table styling or components, unless a task **explicitly authorizes** an exception.
 
 This standard evolves with the shared component contract. Do **not** pin the standard permanently to a commit SHA.
 
+Do **not** create: `EditableTable`, `ActionTable`, `ExitsTable2`, `AdminTable`, or parallel table visual systems.
+
 ---
 
 ## Ownership split
 
-### Foundation owns
+### ExitsTable foundation owns
 
-- Layout and styling
-- Alignment
-- Responsive / mobile presentation
-- Density token application
-- Presentation states (selected, interactive, busy)
-- Toolbar / control placement
-- Callback and prop contracts
+- Presentation and layout
+- Column alignment (`cellAlign`) and sizing hints (`colSize`)
+- Sorting presentation (`ExitsTableHead` sortable)
+- Selection presentation (`ExitsTableCheckbox`, selected row)
+- Actions layout (`ExitsTableActions`)
+- Edit field menu presentation (`ExitsTableEditMenu`)
+- Stealth inline editor chrome (`ExitsTableInlineEditor`)
+- Portaled dropdown overlay behavior (via shared `DropdownMenu`)
+- Responsive / mobile presentation (`ExitsTableMobile`)
+- Accessibility conventions (aria-sort, menu roles, editor labels via page)
+- Theme and density token application
 
-### Page owns
+### Page / domain owns
 
-- Data fetching and React Query
-- Permissions
-- Domain / business rules
-- Search, filter, sort, selection, and pagination **state**
+- Which columns are editable (`ExitsTableEditableField[]` supplied to the menu)
+- Row-specific editability and permissions
+- Draft values / baseline / dirty comparison
+- Business validation rules
+- Save mutation / API / React Query
+- Authorization, audit, confirmation
+- Calculated business values (e.g. line total)
+- Inventory and other domain rules
+- Search / filter / sort / selection / pagination **state**
 - Export dataset construction
-- Mutations and inline-edit behavior
 
 ---
 
 ## Canonical component family
-
-Reuse these existing primitives. Do **not** duplicate them.
 
 | Component | Role |
 |-----------|------|
@@ -47,20 +56,20 @@ Reuse these existing primitives. Do **not** duplicate them.
 | `ExitsTableToolbar` | Search / filter / selection / output slots |
 | `ExitsTable` | Desktop table scroll + `<table>` |
 | `ExitsTableHeader` | `<thead>` |
-| `ExitsTableHead` | Column header (optional sortable) |
+| `ExitsTableHead` | Column header (optional sortable, `cellAlign`, `colSize`, `stickyEnd`) |
 | `ExitsTableBody` | `<tbody>` |
-| `ExitsTableRow` | Row (optional `interactive` / `selected`) |
-| `ExitsTableCell` | Cell (`cellAlign`, optional `emphasis`) |
+| `ExitsTableRow` | Row (`interactive`, `selected`, `editing`, `error`) |
+| `ExitsTableCell` | Cell (`cellAlign`, `colSize`, `emphasis`, `truncate`, `stickyEnd`) |
 | `ExitsTableFooter` | Totals / summary footer |
-| `ExitsTableMobile` | Mobile list presentation |
+| `ExitsTableMobile` / `ExitsTableMobileRow` | Mobile list presentation |
 | `ExitsTablePagination` | Range, page size, prev/next |
 | `ExitsTableOutputActions` | CSV / XLSX / PDF / Print |
 | `ExitsFileFormatIcon` | Format badge icons (`csv` / `xlsx` / `pdf`) |
-
-Related presentation helpers already used by the pilot (not a second table family):
-
-- `ExitsTableCheckbox` — selection column presentation
-- Lucide `Printer` — print action icon
+| `ExitsTableCheckbox` | Selection column presentation |
+| `ExitsTableActions` | Compact END-aligned row action cluster |
+| `ExitsTableEditMenu` | Pencil → field picker (portal dropdown) |
+| `ExitsTableInlineEditor` | Stealth inline editor wrapper |
+| `ExitsTableEditableField` | `{ key, label }` page-owned editable column metadata |
 
 ---
 
@@ -80,8 +89,8 @@ Cursor must **not** arbitrarily relocate standard controls.
 
 | Region | Contents |
 |--------|----------|
-| **Header** | Optional select-all checkbox; column labels; sort indicators when enabled |
-| **Body** | Rows |
+| **Header** | Optional select-all; column labels; sort indicators; optional Actions |
+| **Body** | Rows (optional Actions / inline edit) |
 | **Footer** | Totals / summaries when applicable |
 
 ### Bottom bar (`ExitsTablePagination`)
@@ -91,22 +100,6 @@ Cursor must **not** arbitrarily relocate standard controls.
 | **LEFT** | Result range / count |
 | **MIDDLE** | Rows per page |
 | **RIGHT** | Pagination (Previous / page / Next) |
-
-### Conceptual layout
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Search........................   Filter                  CSV XLSX PDF Print  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ ☐ Product       SKU               Quantity ↕      Unit cost ↕   Total ↕     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ rows                                                                        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                         Summary / Order total               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ 1–25 of N            Rows per page [25]              Previous  1  Next      │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
 
 ---
 
@@ -121,20 +114,38 @@ Cursor must **not** arbitrarily relocate standard controls.
 - **No** unnecessary nested cards around the table
 - Professional compact SaaS / POS appearance
 
-### Alignment (`cellAlign`)
+### Column alignment (`cellAlign`) — logical START / END
 
-| Content | Align |
-|---------|--------|
-| Text / name | left (`text`) |
-| SKU / code | left (`text`) |
-| Status | contextual left / center |
-| Quantity | right (`numeric`) |
-| Money | right (`money`) |
-| Percentage | right (`numeric`) |
-| Actions | right (`actions`) |
-| Checkbox | center (`center`) |
+Use logical alignment for RTL. Implementation props:
+
+| Content | Header | Cell | `cellAlign` |
+|---------|--------|------|-------------|
+| Text / name | START | START | `text` |
+| SKU / code / reference | START | START | `text` |
+| Status | START | START | `text` |
+| Date / time | START (unless page intentionally differs) | START (unless page intentionally differs) | `text` |
+| Quantity | END | END | `numeric` |
+| Money / price / cost / total | END | END | `money` |
+| Percentage | END | END | `numeric` |
+| Numeric count | END | END | `numeric` |
+| Checkbox | CENTER | CENTER | `center` |
+| Actions | END | END | `actions` |
 
 Numeric / money cells use **tabular-nums**.
+
+### Sortable header alignment (locked)
+
+For END-aligned numeric / money columns, the **label + sort indicator stay together at END**.
+
+Example:
+
+```
+                Quantity ↕
+               Unit cost ↕
+              Line total ↕
+```
+
+Sortable controls must **not** force numeric headers back to START.
 
 ### Typography hierarchy
 
@@ -149,6 +160,31 @@ Numeric / money cells use **tabular-nums**.
 
 ---
 
+## Column sizing (`colSize`) — locked capability
+
+Opt-in sizing hints on `ExitsTableHead` / `ExitsTableCell`. Actual prop values:
+
+| `colSize` | Intent |
+|-----------|--------|
+| `checkbox` | Compact / fixed selection column |
+| `flex` | Flexible name / product column |
+| `sku` | Enough width for codes such as `PH-FRU-APPLE` without unnecessary wrap |
+| `numeric` | Compact readable quantity / count |
+| `money` | Compact readable currency |
+| `actions` | Compact / content-sized actions |
+
+**Principles:**
+
+- Sizing is **page/table configuration** — do not hardcode every Product/SKU/Quantity table to one global width.
+- Product / name → normally `flex`
+- SKU / code → enough width to avoid unnecessary wrapping; long exceptional values may truncate (`truncate`)
+- Numeric / money → compact but readable
+- Actions / checkbox → compact
+
+Do **not** destroy overall table width for unusual values.
+
+---
+
 ## Density (locked)
 
 Authoritative density names (root preference system):
@@ -157,9 +193,20 @@ Authoritative density names (root preference system):
 - `balance`
 - `comfort`
 
-Use existing `--exits-table-*` CSS variables.
+Use existing `--exits-table-*` CSS variables (including `--exits-table-inline-editor-height`, `--exits-table-action-size`).
 Do **not** introduce alternate table density names.
-Table controls inherit density from the existing root preference system.
+Table controls, Actions, and stealth editors inherit density from the root preference system.
+
+---
+
+## Theme (locked)
+
+Supports light / dark / system via ExItS tokens.
+Editing focus uses semantic **Primary**.
+Invalid uses semantic **Danger**.
+Do **not** hardcode green or red hex for editing chrome.
+
+Future Preferences → Primary Color must recolor selected / focus / Primary editing emphasis without changing Danger / Warning / Success semantics.
 
 ---
 
@@ -172,17 +219,332 @@ Table controls inherit density from the existing root preference system.
 
 Do **not** force unreadable desktop columns onto phone width.
 Do **not** invent a second mobile table design.
-
-Typical mobile row:
-
-```
-Apple                              ₱900.00
-PH-FRU-APPLE
-5 kg × ₱180.00
-```
+Mobile Actions must remain clear and touch-friendly — do not blindly squeeze the desktop Actions column.
 
 Toolbar controls may stack.
 Output Actions collapse to a single **Export & Print** menu that calls the **same** handlers as the desktop icons.
+
+---
+
+## Actions column (locked optional capability)
+
+### ACTIONS ON / OFF
+
+**ON:** Render an END-aligned Actions column using `ExitsTableActions` and locked **Button** Standard controls.
+**OFF:** No Actions column.
+
+Actions:
+
+- END aligned
+- Compact / density-aware
+- No unnecessary wrapping
+- RTL-aware (inline-end)
+- Accessible names / tooltips
+
+Default dense-row pattern (UI Standards demo):
+
+| Action | Icon | Button |
+|--------|------|--------|
+| Edit | `Pencil` | ICON ONLY ROUND GHOST |
+| More | `MoreHorizontal` | ICON ONLY ROUND GHOST |
+
+Other common actions (page-owned): View (`Eye`), Delete (semantic Danger) — still locked Button Standard.
+
+Do **not** create table-specific button visual systems.
+
+### ACTIONS without INLINE EDIT
+
+Valid:
+
+```
+ACTIONS ON
+INLINE EDIT OFF
+```
+
+Example: View / Print / History / Delete without cell editing.
+
+### Pencil vs More
+
+| Trigger | Purpose |
+|---------|---------|
+| Pencil | Editable-field menu (`ExitsTableEditMenu`) |
+| MoreHorizontal | Non-edit row actions |
+
+Do not merge everything into one giant menu by default.
+
+### Sticky Actions
+
+`stickyEnd` on head/cell is a **supported special-use capability** (candidate for sticky Actions). It is **not** the default for every Actions column. Enable only when the page needs it.
+
+---
+
+## Inline edit (locked optional capability)
+
+### INLINE EDIT ON / OFF
+
+**Default: OFF** unless explicitly requested, already approved on the page, or migration preserves existing editing.
+
+**ON:** Use field-menu + stealth editors as below. Page owns drafts, validation, save, permissions.
+**OFF:** Read-only cells.
+
+`FULL TABLE` alone must **not** automatically make business data editable.
+
+### MULTI SELECT independence
+
+`MULTI SELECT` and `INLINE EDIT` are independent. Any ON/OFF combination is valid.
+
+### Edit action opens field menu (locked)
+
+Pencil does **not** immediately turn every editable cell into an editor.
+
+Pencil → `ExitsTableEditMenu` (portaled dropdown):
+
+```
+Edit field
+────────────
+SKU
+Quantity
+Unit cost
+────────────
+Edit all
+```
+
+Menu contents come from page-supplied `ExitsTableEditableField[]` (`key` + human `label`).
+Do **not** hardcode SKU / Quantity / Unit cost into the foundation — those are UI Standards demo fields.
+
+### Editable column configuration (locked)
+
+Page supplies:
+
+```ts
+type ExitsTableEditableField = {
+  key: string;   // stable id — not shown to users
+  label: string; // human header / menu label
+};
+```
+
+Example concepts (page-owned, not foundation hardcodes):
+
+| Column | Editable |
+|--------|----------|
+| Product | no |
+| SKU | yes |
+| Quantity | yes |
+| Unit cost | yes |
+| Line total | no (calculated) |
+| Actions | no |
+
+### Row-specific editability
+
+Pages may omit Pencil / pass empty `fields` when a row is not editable (e.g. posted vs draft).
+ExitsTable does **not** decide domain status rules.
+
+### Menu labels
+
+Use human-facing titles (`Unit cost`), never property names (`unitCost`).
+
+### Edit all (locked)
+
+Last menu item after a separator.
+Activates **all currently permitted / configured** editable fields for that row.
+Must **not** bypass permissions, enable calculated/read-only columns, or invent fields.
+
+### Single-field edit (locked)
+
+Choosing one menu item activates **only** that field’s stealth editor.
+Other cells remain normal table content.
+
+### Stealth inline editor (locked)
+
+`ExitsTableInlineEditor` (default `stealth`):
+
+- Same table typography / font size
+- Density-aware compact height (`--exits-table-inline-editor-height`)
+- Subtle 1px border; restrained radius; minimal padding
+- Correct START / END alignment
+- Stable column width; nearly unchanged row height
+- Transparent / near-transparent background
+- Must still read as a **table row**, not a form dropped into a table
+
+Quantity pattern: `[value] UOM` (UOM outside the numeric editor, END group).
+Unit cost pattern: `₱ [amount]` (currency prefix outside editor, END group).
+SKU: START-aligned stealth text editor.
+
+### Editor focus (locked)
+
+When the user selects a field from the Edit menu, that editor **receives focus automatically** (UI Standards / recommended page pattern). Do not require an extra click before typing.
+
+### Focused / invalid visuals (locked)
+
+| State | Treatment |
+|-------|-----------|
+| At-rest editing | Subtle editable border |
+| Focused | Stronger semantic Primary border / soft focus |
+| Invalid | Semantic Danger border; accessible error association |
+
+### Row height / column stability (locked)
+
+Display → edit must **not** cause dramatic row-height change, column resize, footer movement, or table geometry change.
+
+### One row editing (recommended / current demo)
+
+UI Standards edits **one row at a time** (`editingId`). Treat single active edit row as the default ExItS recommendation. Do not invent multi-row spreadsheet editing unless explicitly authorized.
+
+### Read-only cells (locked)
+
+Inline edit does **not** mean every cell is editable. Pages determine editable columns.
+UI Standards demonstrates Product as read-only.
+
+### Calculated cells (locked)
+
+Example: Line Total remains **read-only** presentation.
+While Quantity and/or Unit cost drafts are active, Line Total may **preview** the draft calculated value.
+Never place Line Total inside an input.
+
+### Inventory boundary (locked)
+
+UI Standards Quantity is **demo data**.
+`INLINE EDIT` Quantity does **not** authorize overwriting real inventory on-hand.
+Production stock changes require audited domain workflows (receiving, adjustment, transfer, sale, waste/loss, etc.).
+ExitsTable is presentation infrastructure only.
+
+---
+
+## Save (locked)
+
+While editing, Actions show:
+
+| Control | Icon | Button |
+|---------|------|--------|
+| Save | `Check` | ICON ONLY ROUND SUCCESS |
+| Reset | `RotateCcw` | ICON ONLY ROUND GHOST + quiet Danger foreground (`.exits-table__action-reset`) |
+
+Save:
+
+- Validates through **page-owned** rules (only active editable fields in the UI Standards demo)
+- Invokes page-owned save (local state in UI Standards; API in production)
+- Exits editing on success (current UI Standards behavior)
+
+Accessible name example: `Save Apple changes`.
+
+Do **not** create `TableSaveButton`.
+
+---
+
+## Reset (locked) — not Cancel
+
+The product owner replaced inline-edit **Cancel** with **Reset**.
+
+### Semantics
+
+| Term | Meaning |
+|------|---------|
+| **RESET** | Revert draft value(s) to last committed / original baseline |
+| **CANCEL** | Abandon / close an operation |
+
+They are **not** synonyms.
+Do **not** document CircleX Cancel as the canonical inline-edit revert action.
+Do **not** substitute CircleX Cancel in future table migrations unless the user/page explicitly requests Cancel.
+
+### Icon / button
+
+- Icon: **`RotateCcw`**
+- Button: locked ghost / icon-round + `.exits-table__action-reset` (Danger-colored icon, quiet surface — **not** solid Danger)
+- Accessible name example: `Reset Apple to original`
+- Tooltip: `Reset`
+
+Do **not** create `TableResetButton` / `InlineResetButton`.
+
+### Actual CURRENT UI Standards behavior (authority)
+
+1. On edit start, page snapshots baseline (`sku`, `qty`, `unitCost` drafts).
+2. **Reset** restores **all** current draft fields from that baseline (single-field or Edit all).
+3. If drafts already match baseline → Reset **exits** edit mode (mouse-friendly leave without Save).
+4. If drafts differed → Reset restores originals and **remains in editing**.
+5. Escape also exits without saving (page handler).
+6. No separate dirty-state disable of Save/Reset buttons in CURRENT demo (both remain available while editing).
+7. After Restore-while-editing, focus is not specially re-choreographed beyond normal DOM focus.
+
+Document implementation truth — do not invent extra dirty UX during lock.
+
+---
+
+## Edit menu portal / overlay (locked)
+
+`ExitsTableEditMenu` uses the shared `DropdownMenu` with **`portal` (default true)** → `document.body` fixed overlay.
+
+Required:
+
+- Not clipped by `.exits-table-scroll`, sticky regions, Card overflow
+- Opening menu must **not** create table scrollbars or change table geometry
+- Anchored to Pencil; `align="end"` (logical); collision padding (~10px); flip above when needed; clamp to viewport
+- z-index below dialogs, above sticky Actions (`z-index: 70` in current dropdown)
+- Short menus display fully; long field lists may scroll **inside the menu**, never by expanding the table
+- Escape / outside click closes; Arrow navigation on menu items
+- Sticky Actions compatible (portal escapes sticky stacking/clip)
+
+On scroll of scrollports / resize: menu repositions (or closes if trigger leaves viewport).
+
+Do **not** install another dropdown library.
+
+---
+
+## Validation presentation (locked)
+
+- Invalid stealth editor: Danger border (`invalid` / error on `ExitsTableInlineEditor`)
+- Prefer compact indication; avoid giant in-cell error paragraphs that destroy row height
+- UI Standards may show a restrained **row-level** validation region beneath the editing row
+- Errors must remain accessible (`aria-invalid`, `aria-describedby` / `role="alert"`)
+
+### Saving presentation
+
+If the page shows a saving state, disable editors and use locked Button busy/disabled patterns.
+Production owns async mutation; table owns presentation only.
+UI Standards may include a static “Saving” sample — no new saving mechanics required for lock.
+
+---
+
+## Footer alignment (locked)
+
+Totals must remain aligned beneath the corresponding numeric / money column.
+
+Example: Order Total amount aligns with Line Total values.
+Actions column must **not** offset the total geometry.
+
+---
+
+## Mobile inline edit (locked)
+
+On mobile (`ExitsTableMobile`):
+
+- Same Edit field menu concept (labeled Edit trigger allowed)
+- Chosen field becomes a compact stacked editor; others stay display
+- Edit all → compact stacked form for configured fields
+- Calculated / read-only remain display
+- Labeled **Reset** / **Save** (RotateCcw / Check) for clarity
+- No horizontal desktop editor squeezing
+
+---
+
+## Accessibility (locked)
+
+| Concern | Convention |
+|---------|------------|
+| Sort | `aria-sort` on sortable heads |
+| Actions | Accessible names (e.g. `Edit Apple`) |
+| Edit menu | `role="menu"`, menuitems, Escape, ArrowUp/Down, focus to first item |
+| Editors | Accessible labels (Input `label` / aria-label); errors associated |
+| Save | Row-specific aria-label |
+| Reset | Row-specific aria-label |
+
+---
+
+## RTL (locked)
+
+- Logical START / END via CSS (`text-align: start|end`, `inset-inline-end` for sticky)
+- Actions at inline-end
+- Portaled menus use logical end alignment relative to trigger direction
+- No hardcoded LTR layout hacks
 
 ---
 
@@ -193,180 +555,86 @@ Terms below are exact. Explicit task ON/OFF instructions override `FULL TABLE` /
 ### EXITS TABLE
 
 Use the canonical existing ExitsTable foundation and approved visual style.
-
 Does **not** automatically enable every optional feature.
-Never create a new table visual language when this phrase is used.
 
-### FULL TABLE
-### FULLY IMPLEMENT THE TABLE
+### FULL TABLE / FULLY IMPLEMENT THE TABLE
 
 Enable all **applicable** standard capabilities:
 
-- Search
-- Filter
-- Sorting
-- Multi select
-- Selection status
-- Bulk-action area (when applicable)
-- Output icons
-- Result count
-- Page size
-- Pagination
-- Loading state
-- Empty state
-- Error state
+- Search, Filter, Sorting, Multi select (when applicable)
+- Selection status / Clear
+- Output icons, Result count, Page size, Pagination
+- Loading / Empty / Error states
 - Responsive / mobile
-- Density / theme support
+- Density / theme
 
-Footer / summary is enabled when the domain/page has a meaningful summary.
-Sticky header may be enabled when useful for long tables.
-**Inline edit is NOT automatically enabled** (page/domain behavior).
+Footer when domain has a meaningful summary.
+Sticky header when useful for long tables.
 
-Explicit ON/OFF overrides `FULL TABLE` defaults.
-
-Example: `FULL TABLE` + `MULTI SELECT OFF` → everything appropriate except multi select.
+**ACTIONS** and **INLINE EDIT** remain **optional** — `FULL TABLE` does **not** auto-enable business editing.
 
 ### SIMPLE TABLE
 
-Canonical ExitsTable visuals with:
-
-- Header / Body
-- Responsive / mobile
-- Theme
-- Density
-- Alignment
-
+Header / Body / responsive / theme / density / alignment.
 Optional footer when requested.
+**OFF by default:** search, filter, sort, multi select, output icons, page size, pagination, Actions, inline edit.
 
-**OFF by default:** search, filter, sort, multi select, output icons, page size, pagination.
+### SEARCH / FILTER / SORT / MULTI SELECT / OUTPUT ICONS / PAGE SIZE / PAGINATION / FOOTER
 
-### SEARCH ON / OFF
+Unchanged from prior locked meanings (see historical sections below for detail).
 
-**ON:** Standard toolbar Search (LEFT).
-Server-side search preferred for pageable / large datasets; client-side acceptable for small bounded / detail datasets.
-**OFF:** Do not render Search.
+### ACTIONS ON / OFF
 
-### FILTER ON / OFF
-
-**ON:** Standard Filter position beside Search (MIDDLE). Filters must reflect real page/domain data — do not invent meaningless filters.
-**OFF:** Do not render Filter.
-
-### SORT ON / OFF
-
-**ON:** Canonical sortable `ExitsTableHead`. Cycle: **none → ascending → descending → none**. Subtle sort icons. Page/query owns sort logic.
-**OFF:** Non-sortable headers.
-
-### MULTI SELECT ON
-
-Means:
-
-- Checkbox column
-- Row checkbox
-- Header select-all for **visible** rows
-- Selected-row presentation
-- “N selected”
-- Clear selection
-- Bulk-action area when applicable
-
-Selection state belongs to the page.
-
-### MULTI SELECT OFF
-
-**Remove / hide:**
-
-- Row checkboxes
-- Select-all checkbox
-- Selected-row selection treatment
-- Selected count
-- Clear selection
-- Bulk-action selection area
-
-Do **not** remove normal clickable / interactive row behavior.
-
-### OUTPUT ICONS ON
-
-Use `ExitsTableOutputActions` on the toolbar **RIGHT**.
-
-| Action | Icon | Tooltip / aria-label |
-|--------|------|----------------------|
-| CSV | `ExitsFileFormatIcon` `csv` | Export CSV |
-| XLSX | `ExitsFileFormatIcon` `xlsx` | Export Excel |
-| PDF | `ExitsFileFormatIcon` `pdf` | Export PDF |
-| Print | Lucide `Printer` | Print |
-
-Desktop: four compact individual icons.
-Mobile: single **Export & Print** menu (same handlers).
-Do **not** create alternate output button designs.
-
-### OUTPUT ICONS OFF
-
-Do not render `ExitsTableOutputActions`.
-
-### PAGE SIZE ON
-
-Canonical options: **10 / 25 / 50 / 100**
-Default: **25**
-Maximum standard: **100**
-
-Do **not** add `All`, `200`, `250`, or `500` unless explicitly authorized for a specific workflow.
-
-### PAGE SIZE OFF
-
-Hide the rows-per-page selector.
-Does **not** automatically disable pagination unless also requested.
-
-### PAGINATION ON
-
-Use `ExitsTablePagination`: result range, page navigation, and page-size selector if `PAGE SIZE ON`.
-Prefer server-side pagination for large / pageable datasets.
-
-### PAGINATION OFF
-
-No pagination controls. Render the bounded dataset supplied by the page.
-
-### FOOTER ON / OFF
-
-**ON:** Use `ExitsTableFooter` for meaningful totals/summary. Do not create a separate Total card when the total naturally belongs to the table.
-**OFF:** No table footer summary.
+**ON:** Actions column per this standard.
+**OFF:** No Actions column.
 
 ### INLINE EDIT ON / OFF
 
-**ON:** Use existing ExitsTable row/cell presentation. Page owns edit state, inputs, validation, Save/Cancel, and API mutation. Do **not** create a separate editable-table design.
-**OFF:** Read-only cells (default unless requested).
+**ON:** Field-menu + stealth editors + Save / Reset per this standard.
+**OFF:** No inline editing (default unless explicit).
+
+### EDIT MODE: FIELD MENU
+
+Canonical edit mode. Pencil opens the field picker (not immediate multi-cell editors).
+
+### EDITABLE: \<columns\>
+
+Page-configured human labels / keys for the Edit menu.
+Example: `EDITABLE: SKU, QUANTITY, UNIT COST`
+
+### EDIT ALL
+
+Final menu action after separator — all permitted configured editable fields.
+
+### ROW EDIT
+
+Preferred general inline-edit framing: editing happens in the context of a row (field menu → selected cells).
+
+### CELL EDIT
+
+Special dense / data-management use (e.g. double-click single cell). Prefer field-menu row edit for general cases. Documented as supported special pattern in UI Standards — not the default Edit path.
+
+### STICKY ACTIONS
+
+Supported via `stickyEnd` — special use / not default.
+
+### RESET
+
+Canonical inline-edit revert terminology (`RotateCcw`). Do **not** substitute Cancel unless explicitly requested.
 
 ---
 
 ## Output action semantics (locked)
 
-Canonical component name: **`ExitsTableOutputActions`**
-User shorthand: **Output icons**
-
+Canonical component: **`ExitsTableOutputActions`**
 Formats: **CSV / XLSX / PDF / Print**
-
-### Export scope
 
 | Selection | Scope |
 |-----------|--------|
-| **None** | Full matching filtered/sorted result set — **not** only the current pagination page |
+| **None** | Full matching filtered/sorted result set — **not** only the current page |
 | **One or more** | Selected matching records only |
 
-For server-side datasets: do **not** fetch huge datasets into React merely for export; use a suitable server-side export/query strategy.
-Page/domain controls permissions and data exposure.
-
-Authoritative business totals (e.g. PO `order.totalAmount`) must **not** be replaced by filtered or selected line sums. When exporting a selection, label any selection sum separately (e.g. “Selected lines total”).
-
-### Output icon visuals (locked)
-
-| Format | Treatment |
-|--------|-----------|
-| CSV | Neutral file outline + subtle CSV (teal/green) accent on badge |
-| XLSX | Neutral spreadsheet/file outline + subtle green XLS/XLSX accent |
-| PDF | Neutral file outline + subtle red PDF accent |
-| Print | Neutral Printer icon |
-
-Color enhances recognition only. Resting buttons stay subtle/neutral.
-
-Do **not** use: strongly colored full buttons, emoji, external images, brand icon packages, or four generic Download icons.
+For server-side datasets: use server export strategy; do not fetch huge datasets into React merely for export.
 
 ---
 
@@ -374,15 +642,47 @@ Do **not** use: strongly colored full buttons, emoji, external images, brand ico
 
 | Constant | Value |
 |----------|--------|
-| `DEFAULT_PAGE_SIZE` | `25` |
-| `PAGE_SIZE_OPTIONS` | `10`, `25`, `50`, `100` |
-| `MAX_PAGE_SIZE` | `100` |
+| Default | `25` |
+| Options | `10`, `25`, `50`, `100` |
+| Max standard | `100` |
 
-Page size affects the **displayed page only**. It must **not** change:
+Page size affects the **displayed page only**. It must **not** change authoritative totals, export-all matching scope, or business calculations.
 
-- Authoritative totals
-- Export-all matching scope
-- Business calculations
+---
+
+## SEARCH / FILTER / SORT / MULTI SELECT detail (locked)
+
+### SEARCH ON / OFF
+
+**ON:** Toolbar Search (LEFT). Server-side preferred for large datasets.
+**OFF:** Do not render Search.
+
+### FILTER ON / OFF
+
+**ON:** Filter beside Search (MIDDLE). Real domain filters only.
+**OFF:** Do not render Filter.
+
+### SORT ON / OFF
+
+**ON:** Sortable `ExitsTableHead`. Cycle: **none → ascending → descending → none**.
+**OFF:** Non-sortable headers.
+
+### MULTI SELECT ON
+
+Checkbox column, row checkbox, header select-all for **visible** rows, selected presentation, “N selected”, Clear, bulk area when applicable.
+
+### MULTI SELECT OFF
+
+Remove selection chrome only — keep normal interactive row behavior.
+
+### OUTPUT ICONS ON / OFF
+
+**ON:** `ExitsTableOutputActions` toolbar RIGHT.
+**OFF:** Do not render.
+
+### PAGINATION ON / OFF / PAGE SIZE ON / OFF / FOOTER ON / OFF
+
+As previously locked: `ExitsTablePagination`; page size selector independent of pagination hide unless both requested.
 
 ---
 
@@ -391,12 +691,6 @@ Page size affects the **displayed page only**. It must **not** change:
 1. **Explicit task instruction**
 2. **ExitsTable standard defaults** (`FULL TABLE` / `SIMPLE TABLE` / ON-OFF vocabulary)
 3. **Page’s existing presentation**
-
-Examples:
-
-- `FULL TABLE, MULTI SELECT OFF` → multi select OFF
-- `EXITS TABLE, OUTPUT ICONS ON` → canonical visuals + only the capabilities explicitly requested (plus any implied by those requests)
-- `Keep existing server pagination` → preserve server behavior while presenting through ExitsTable
 
 Never sacrifice domain correctness merely to match presentation.
 
@@ -407,49 +701,83 @@ Never sacrifice domain correctness merely to match presentation.
 ### Example 1
 
 ```
+EXITS TABLE
+FULL TABLE
+ACTIONS ON
+```
+
+Canonical full table + Actions column. Inline edit still OFF unless requested.
+
+### Example 2
+
+```
+EXITS TABLE
+ACTIONS ON
+INLINE EDIT ON
+EDIT MODE: FIELD MENU
+EDITABLE: SKU, QUANTITY, UNIT COST
+```
+
+Pencil menu: SKU, Quantity, Unit cost, Edit all. Save / Reset while editing.
+
+### Example 3
+
+```
+EXITS TABLE
+MULTI SELECT OFF
+ACTIONS ON
+INLINE EDIT ON
+EDITABLE: PRICE
+```
+
+No checkboxes; Actions on; Price via field-menu workflow.
+
+### Example 4
+
+```
+EXITS TABLE
+ACTIONS ON
+INLINE EDIT OFF
+```
+
+Row actions without cell editing.
+
+### Example 5
+
+```
+EXITS TABLE
+INLINE EDIT OFF
+```
+
+No inline editing even if Actions exists.
+
+### Example 6
+
+```
 Convert Customers to ExitsTable.
 FULL TABLE.
 MULTI SELECT OFF.
 OUTPUT ICONS ON.
 ```
 
-Meaning: canonical style; search/filter/sort/page size/pagination/output enabled; selection disabled.
+---
 
-### Example 2
+## UI Standards reference
 
-```
-Use ExitsTable.
-SEARCH ON.
-SORT ON.
-PAGE SIZE ON.
-MULTI SELECT OFF.
-OUTPUT ICONS OFF.
-```
+`/ui-standards` → **Tables** is the human visual authority for the approved implementation, including:
 
-### Example 3
+- Full table
+- Alignment
+- Actions
+- Edit field menu (portaled)
+- Field edit / Edit all
+- Stealth editors + auto-focus
+- Save / Reset
+- Validation
+- Responsive / mobile samples
+- Cursor shorthand cheatsheet
 
-```
-Convert Categories to ExitsTable.
-INLINE EDIT ON.
-SEARCH ON.
-MULTI SELECT OFF.
-```
-
-### Example 4
-
-```
-Use ExitsTable.
-FULL TABLE.
-OUTPUT ICONS OFF.
-```
-
-### Example 5
-
-```
-Use ExitsTable.
-Simple table.
-FOOTER ON.
-```
+Mark UI Standards table wording **APPROVED / LOCKED** (not pilot / extension).
 
 ---
 
@@ -458,6 +786,8 @@ FOOTER ON.
 | Path | Role |
 |------|------|
 | `ExItS.PinoyBusinessPOS.React/src/components/exits/ExitsTable.tsx` | Shared implementation |
-| `ExItS.PinoyBusinessPOS.React/src/features/purchasing/IncomingOrderDetailPage.tsx` | Approved visual reference / pilot |
-| `ExItS.PinoyBusinessPOS.React/src/styles/globals.css` | `.exits-table*` / output icon styles |
+| `ExItS.PinoyBusinessPOS.React/src/features/ui-standards/UiStandardsTablesPanel.tsx` | Approved visual reference |
+| `ExItS.PinoyBusinessPOS.React/src/components/ui/dropdown-menu.tsx` | Portaled overlay primitive |
+| `ExItS.PinoyBusinessPOS.React/src/styles/globals.css` | `.exits-table*` styles |
 | `.cursor/rules/pos-react-table-standard.mdc` | Short Cursor rule pointing here |
+| `Docs/UI/exits-button-standard.md` | Locked Button Standard (reuse; do not fork) |

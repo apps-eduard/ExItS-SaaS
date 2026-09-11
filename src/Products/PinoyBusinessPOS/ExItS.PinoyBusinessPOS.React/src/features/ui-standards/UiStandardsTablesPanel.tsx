@@ -591,7 +591,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.demo"
         title={t("uiStandards.tabTables")}
         description={t("uiStandards.tableDemoLede")}
-        summary="FULL TABLE · ACTIONS ON · INLINE EDIT ON · EDIT MODE: FIELD MENU · demo rows"
+        summary="FULL TABLE · ACTIONS ON · INLINE EDIT ON · APPROVED / LOCKED"
         open={isOpen("tables.demo")}
         onOpenChange={(open) => setOpen("tables.demo", open)}
         testId="ui-standards-table-demo"
@@ -1138,12 +1138,12 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.alignment"
         title={t("uiStandards.tablesAlignmentTitle")}
         description="Header and value alignment must match. Sortable numeric headers keep label + icon at END."
-        summary="START · END · CENTER · PILOT"
+        summary="START · END · CENTER · LOCKED"
         open={isOpen("tables.alignment")}
         onOpenChange={(open) => setOpen("tables.alignment", open)}
         testId="ui-standards-table-alignment"
       >
-        <StaticSampleGroup title="ALIGNMENT MATRIX — REVISION PILOT">
+        <StaticSampleGroup title="ALIGNMENT MATRIX — APPROVED / LOCKED">
           <SampleFrame label="REFERENCE" className="sm:col-span-2" testId="ui-standards-table-align-matrix">
             <ExitsTableContainer>
               <ExitsTable>
@@ -1194,7 +1194,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.actions"
         title={t("uiStandards.tablesActionsTitle")}
         description="Reuse locked Button Standard. Prefer 1–2 visible actions + More for secondary."
-        summary="ICON · MORE · DANGER · PILOT"
+        summary="ICON · MORE · DANGER · LOCKED"
         open={isOpen("tables.actions")}
         onOpenChange={(open) => setOpen("tables.actions", open)}
         testId="ui-standards-table-actions"
@@ -1317,7 +1317,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </StaticSampleGroup>
 
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            ACTION DENSITY GUIDANCE — REVISION PILOT / NOT YET ADDED TO LOCKED STANDARD. Prefer icon
+            ACTION DENSITY GUIDANCE — APPROVED / LOCKED. Prefer icon
             actions in dense tables; avoid listing View Edit Duplicate Archive Delete History Print
             as separate buttons every row.
           </p>
@@ -1328,7 +1328,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.inline-row-edit"
         title={t("uiStandards.tablesInlineRowEditTitle")}
         description="Pencil → Edit field menu → stealth editors. Page owns editable columns, drafts, and validation."
-        summary="FIELD MENU · STEALTH · PILOT"
+        summary="FIELD MENU · STEALTH · LOCKED"
         open={isOpen("tables.inline-row-edit")}
         onOpenChange={(open) => setOpen("tables.inline-row-edit", open)}
         testId="ui-standards-table-inline-row-edit"
@@ -1669,11 +1669,11 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
 
           <StaticSampleGroup title="SINGLE-FIELD SHORTCUT — CANDIDATE">
             <SampleFrame
-              label="NOT LOCKED"
-              hint="If exactly one field is editable, Pencil may later open that field directly. Pilot still shows the field-menu architecture."
+              label="CANDIDATE (NOT DEFAULT)"
+              hint="If exactly one field is editable, Pencil may later open that field directly. Locked default remains the field-menu architecture."
             >
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                Candidate only — do not treat as the locked Table Standard yet.
+                Candidate only — field menu remains the locked default Edit path.
               </p>
             </SampleFrame>
           </StaticSampleGroup>
@@ -1699,7 +1699,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.inline-cell-edit"
         title={t("uiStandards.tablesInlineCellEditTitle")}
         description="CELL EDIT is special dense/data-management use. ROW EDIT remains the preferred general candidate."
-        summary="CELL EDIT · SPECIAL · PILOT"
+        summary="CELL EDIT · SPECIAL · LOCKED"
         open={isOpen("tables.inline-cell-edit")}
         onOpenChange={(open) => setOpen("tables.inline-cell-edit", open)}
         testId="ui-standards-table-inline-cell-edit"
@@ -1752,7 +1752,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.validation"
         title={t("uiStandards.tablesValidationTitle")}
         description="Semantic Danger for errors. Saving disables editors. No real API."
-        summary="ERROR · ROW ERROR · SAVING · PILOT"
+        summary="ERROR · ROW ERROR · SAVING · LOCKED"
         open={isOpen("tables.validation")}
         onOpenChange={(open) => setOpen("tables.validation", open)}
         testId="ui-standards-table-validation"
@@ -1930,7 +1930,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.mobile-edit"
         title={t("uiStandards.tablesMobileEditTitle")}
         description="Mobile uses the same Edit field menu. Chosen fields become a compact stacked form with labeled Reset/Save."
-        summary="MOBILE · FIELD MENU · PILOT"
+        summary="MOBILE · FIELD MENU · LOCKED"
         open={isOpen("tables.mobile-edit")}
         onOpenChange={(open) => setOpen("tables.mobile-edit", open)}
         testId="ui-standards-table-mobile-edit"
@@ -2059,7 +2059,7 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
         id="tables.cheatsheet"
         title={t("uiStandards.tableCheatTitle")}
         description={t("uiStandards.tableCheatLede")}
-        summary="Cursor shorthand · PILOT EXTENSION"
+        summary="Cursor shorthand · APPROVED / LOCKED"
         open={isOpen("tables.cheatsheet")}
         onOpenChange={(open) => setOpen("tables.cheatsheet", open)}
         testId="ui-standards-table-cheatsheet"
@@ -2082,7 +2082,9 @@ ACTIONS ON / OFF
 INLINE EDIT ON / OFF
 EDIT MODE:
   FIELD MENU
-STICKY ACTIONS
+EDIT ALL
+RESET
+STICKY ACTIONS (SPECIAL)
 
 EDITABLE:
   SKU
@@ -2103,15 +2105,20 @@ EXITS TABLE
 INLINE EDIT ON
 EDITABLE: PRICE
 
+EXITS TABLE
+ACTIONS ON
+INLINE EDIT OFF
+
 SINGLE-FIELD SHORTCUT — CANDIDATE
-(if exactly one editable field, Pencil may open it directly)
+(if exactly one editable field, Pencil may open it directly — not default)
 
 Inventory note:
 Quantity in UI Standards is DEMO DATA.
 Real stock uses audited movements — not free overwrite.
 
-TABLE EXTENSION
-PILOT / NOT YET MERGED INTO LOCKED STANDARD`}
+TABLE STANDARD
+APPROVED / LOCKED
+Docs/UI/exits-table-standard.md`}
         </pre>
       </UiStandardsSection>
     </div>
