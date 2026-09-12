@@ -1,4 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -90,6 +93,16 @@ describe("AdminManagementShell", () => {
     expect(rail.contains(brand)).toBe(true);
     expect(brand.querySelector(".admin-sidebar__mark")).toBeInTheDocument();
     expect(brand.querySelector(".admin-sidebar__brand-label")).toBeInTheDocument();
+  });
+
+  it("hides duplicate desktop topbar brand via shell composition CSS", () => {
+    const globalsCss = readFileSync(
+      resolve(dirname(fileURLToPath(import.meta.url)), "../../styles/globals.css"),
+      "utf8",
+    );
+    expect(globalsCss).toMatch(
+      /\.app-top-bar\.app-top-bar--shell-desktop\s+\.app-top-bar__brand\s*\{[^}]*display:\s*none/,
+    );
   });
 
   it("does not inject XL Plan Usage on Overview; keeps it for /org/manage*", () => {

@@ -175,21 +175,36 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           hideDesktopBrand && "app-top-bar__row--shell-desktop",
         )}
       >
-        <div className={cn("app-top-bar__brand", hideDesktopBrand && "lg:hidden")}>
-          <span className="app-top-bar__mark" aria-hidden="true">
-            E
-          </span>
-          <div className="app-top-bar__brand-copy md:hidden">
-            {showWorkspaceControl ? (
-              renderWorkspaceButton("workspace-context-mobile", true)
-            ) : (
+        {hideDesktopBrand ? (
+          <div className="app-top-bar__brand app-top-bar__brand--shell-mobile">
+            <span className="app-top-bar__mark" aria-hidden="true">
+              E
+            </span>
+            <div className="app-top-bar__brand-copy">
+              {showWorkspaceControl ? (
+                renderWorkspaceButton("workspace-context-mobile", true)
+              ) : (
+                <p className="app-top-bar__app-name">{t("app.name")}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="app-top-bar__brand">
+            <span className="app-top-bar__mark" aria-hidden="true">
+              E
+            </span>
+            <div className="app-top-bar__brand-copy md:hidden">
+              {showWorkspaceControl ? (
+                renderWorkspaceButton("workspace-context-mobile", true)
+              ) : (
+                <p className="app-top-bar__app-name">{t("app.name")}</p>
+              )}
+            </div>
+            <div className="app-top-bar__brand-copy hidden md:block">
               <p className="app-top-bar__app-name">{t("app.name")}</p>
-            )}
+            </div>
           </div>
-          <div className="app-top-bar__brand-copy hidden md:block">
-            <p className="app-top-bar__app-name">{t("app.name")}</p>
-          </div>
-        </div>
+        )}
 
         <div className="app-top-bar__center hidden md:flex">
           {showWorkspaceControl ? (

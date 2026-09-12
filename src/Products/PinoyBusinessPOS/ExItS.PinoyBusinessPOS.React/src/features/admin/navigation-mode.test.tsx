@@ -107,44 +107,40 @@ describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
     expect(globalsCss).not.toMatch(
       /\[data-navigation-mode="compact"\]\s*\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
     );
-    expect(globalsCss).not.toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar__link\[data-tooltip\]::after/,
-    );
   });
 
-  it("Reveal reserves compact rail and expands overlay panel without changing reservation", () => {
-    expect(globalsCss).toMatch(/\.admin-sidebar-rail/);
-    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*260ms/);
-    expect(globalsCss).toMatch(/--exits-sidebar-collapse-duration:\s*220ms/);
+  it("Reveal pushes shell width via shared token (not overlay absolute panel)", () => {
+    expect(globalsCss).toMatch(/--exits-shell-sidebar-width:\s*15\.5rem/);
+    expect(globalsCss).toMatch(
+      /html\[data-navigation-mode="reveal"\][\s\S]*?--exits-shell-sidebar-width:\s*3\.75rem/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:focus-within\)[\s\S]*?--exits-shell-sidebar-width:\s*15\.5rem/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:hover\)[\s\S]*?--exits-shell-sidebar-width:\s*15\.5rem/,
+    );
+    expect(globalsCss).toMatch(/\.admin-sidebar-rail[\s\S]*?width:\s*var\(--exits-shell-sidebar-width\)/);
+    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*280ms/);
+    expect(globalsCss).toMatch(/--exits-sidebar-collapse-duration:\s*240ms/);
     expect(globalsCss).toMatch(/--exits-sidebar-collapse-grace:\s*140ms/);
     expect(globalsCss).toMatch(/cubic-bezier\(0\.2,\s*0,\s*0,\s*1\)/);
 
+    // Push model: reveal sidebar stays in flow (relative), not absolute overlay.
     expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar-rail[\s\S]*?width:\s*3\.75rem/,
+      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar\.admin-sidebar--expanded\s*\{[^}]*position:\s*relative/,
     );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded[\s\S]*?position:\s*absolute/,
+    expect(globalsCss).not.toMatch(
+      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar\.admin-sidebar--expanded\s*\{[^}]*position:\s*absolute/,
     );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?width:\s*15\.5rem/,
-    );
+
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*0/,
     );
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1|:focus-within[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1/,
     );
-    expect(globalsCss).toMatch(/inset-inline-start:\s*0/);
     expect(globalsCss).toMatch(/\[data-motion="reduced"\][\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/);
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar-rail[\s\S]*?flex:\s*0\s+0\s+3\.75rem/,
-    );
   });
 
   it("does not change mobile bottom-nav architecture in CSS", () => {

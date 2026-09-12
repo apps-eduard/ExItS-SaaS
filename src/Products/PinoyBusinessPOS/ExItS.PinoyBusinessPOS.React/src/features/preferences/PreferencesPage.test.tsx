@@ -281,15 +281,16 @@ describe("Preferences icon top navigation", () => {
 
     expect(globalsCss).toContain('[data-navigation-mode="compact"]');
     expect(globalsCss).toContain('[data-navigation-mode="reveal"]');
+    expect(globalsCss).toMatch(/--exits-shell-sidebar-width:\s*15\.5rem/);
     expect(globalsCss).toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded[\s\S]*?width:\s*3\.75rem/,
+      /html\[data-navigation-mode="compact"\][\s\S]*?--exits-shell-sidebar-width:\s*3\.75rem/,
     );
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
     );
     expect(globalsCss).toMatch(/\.admin-sidebar__label/);
     expect(globalsCss).toMatch(/border-inline-start/);
-    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*260ms/);
+    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*280ms/);
   });
 
   it("uses shared icon top nav on all widths (no separate mobile nav)", async () => {

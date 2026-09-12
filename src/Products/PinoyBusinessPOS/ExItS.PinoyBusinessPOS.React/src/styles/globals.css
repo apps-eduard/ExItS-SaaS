@@ -188,11 +188,13 @@
   --exits-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --exits-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
   /* Desktop Reveal navigation — expand slightly slower than collapse. */
-  --exits-sidebar-reveal-duration: 260ms;
-  --exits-sidebar-collapse-duration: 220ms;
+  --exits-sidebar-reveal-duration: 280ms;
+  --exits-sidebar-collapse-duration: 240ms;
   --exits-sidebar-label-fade-duration: 160ms;
   --exits-sidebar-collapse-grace: 140ms;
   --exits-sidebar-label-slide: -0.25rem;
+  /* Authoritative desktop shell sidebar track (Standard / Compact / Reveal). */
+  --exits-shell-sidebar-width: 15.5rem;
   /* Table defaults (balance / when density unset) */
   --exits-table-cell-x: 0.75rem;
   --exits-table-cell-y: 0.625rem;
@@ -11693,6 +11695,15 @@ a.dashboard-metric-card:focus-visible {
     /* Content-column topbar: no bleed past sidebar edge. */
     margin-inline-start: 0;
   }
+
+  /*
+   * Desktop shell branding lives in the sidebar only.
+   * Higher specificity than .app-top-bar__brand { display: flex } so Tailwind lg:hidden
+   * is not overridden (that override left a duplicate logo / clipped "OS" fragment).
+   */
+  .app-top-bar.app-top-bar--shell-desktop .app-top-bar__brand {
+    display: none;
+  }
 }
 
 .app-top-bar__brand {
@@ -17204,18 +17215,29 @@ a.exits-chip--primary:hover {
 }
 
 .admin-sidebar--expanded {
-  width: 15.5rem;
+  width: 100%;
+  max-width: none;
 }
 
-/* Desktop sidebar rail — reserves layout width; Reveal overlays content. */
+/* Desktop sidebar rail — authoritative shell track width. */
 .admin-sidebar-rail {
   position: relative;
   align-self: stretch;
   flex-shrink: 0;
   min-height: 0;
   height: 100%;
-  width: 15.5rem;
-  flex: 0 0 15.5rem;
+  width: var(--exits-shell-sidebar-width);
+  flex: 0 0 var(--exits-shell-sidebar-width);
+  min-width: 0;
+}
+
+html[data-navigation-mode="standard"] {
+  --exits-shell-sidebar-width: 15.5rem;
+}
+
+html[data-navigation-mode="compact"],
+html[data-navigation-mode="reveal"] {
+  --exits-shell-sidebar-width: 3.75rem;
 }
 
 [dir="rtl"] {
@@ -17257,6 +17279,12 @@ html[data-motion="reduced"] .exits-tooltip {
 
 /* Compact + Reveal icon-rail modes — desktop (lg+) only; mobile bottom nav unchanged. */
 @media (min-width: 1024px) {
+  .admin-shell__column,
+  .operations-shell__column {
+    min-width: 0;
+    min-height: 0;
+  }
+
   .admin-shell .admin-sidebar,
   .operations-shell .admin-sidebar {
     border-radius: 0;
@@ -17277,8 +17305,8 @@ html[data-motion="reduced"] .exits-tooltip {
 
   /* —— STANDARD: reserved + visual 15.5rem —— */
   [data-navigation-mode="standard"] .admin-sidebar-rail {
-    width: 15.5rem;
-    flex: 0 0 15.5rem;
+    width: var(--exits-shell-sidebar-width);
+    flex: 0 0 var(--exits-shell-sidebar-width);
   }
 
   [data-navigation-mode="standard"] .admin-sidebar.admin-sidebar--expanded {
@@ -17288,15 +17316,14 @@ html[data-motion="reduced"] .exits-tooltip {
 
   /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */
   [data-navigation-mode="compact"] .admin-sidebar-rail {
-    width: 3.75rem;
-    flex: 0 0 3.75rem;
+    width: var(--exits-shell-sidebar-width);
+    flex: 0 0 var(--exits-shell-sidebar-width);
     overflow: visible;
   }
 
   [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
     position: relative;
     width: 100%;
-    max-width: 3.75rem;
     box-shadow: none;
   }
 
@@ -17365,13 +17392,10 @@ html[data-motion="reduced"] .exits-tooltip {
 
   [data-navigation-mode="compact"] .admin-sidebar__footer {
     padding-top: 0.45rem;
-  }
-
-  [data-navigation-mode="compact"] .admin-sidebar__nav {
     padding-inline: 0.35rem;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar__footer {
+  [data-navigation-mode="compact"] .admin-sidebar__nav {
     padding-inline: 0.35rem;
   }
 
@@ -17381,38 +17405,63 @@ html[data-motion="reduced"] .exits-tooltip {
     outline-offset: 2px;
   }
 
-  /* —— REVEAL: compact reservation + absolute overlay panel —— */
+  /*
+   * —— REVEAL: PUSH shell (not overlay) ——
+   * One authoritative --exits-shell-sidebar-width drives rail + content column together.
+   */
   [data-navigation-mode="reveal"] .admin-shell__column,
   [data-navigation-mode="reveal"] .operations-shell__column,
   [data-navigation-mode="reveal"] .admin-shell__body,
   [data-navigation-mode="reveal"] .operations-shell__body,
   [data-navigation-mode="reveal"] .admin-shell__main,
   [data-navigation-mode="reveal"] .operations-shell__main {
-    /* Content track must not grow with the overlay panel. */
-    overflow: hidden;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar-rail {
-    width: 3.75rem;
-    flex: 0 0 3.75rem;
-    overflow: visible;
-    z-index: 35;
+    width: var(--exits-shell-sidebar-width);
+    flex: 0 0 var(--exits-shell-sidebar-width);
+    overflow: hidden;
+    z-index: auto;
+    /* Close: slight grace so pointer can re-enter the rail. */
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
+      flex-basis var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
-    width: 3.75rem;
+    position: relative;
+    inset: auto;
+    width: 100%;
     max-width: none;
     height: 100%;
     max-height: 100%;
-    z-index: 35;
+    z-index: auto;
     box-shadow: none;
-    /* Collapse: slightly faster + small grace so pointer can re-enter. */
+  }
+
+  /* Open: pointer-capable hover OR keyboard focus-within → push shell to 15.5rem. */
+  @media (hover: hover) and (pointer: fine) {
+    html[data-navigation-mode="reveal"]:has(.admin-sidebar:hover) {
+      --exits-shell-sidebar-width: 15.5rem;
+    }
+
+    html[data-navigation-mode="reveal"]:has(.admin-sidebar:hover) .admin-sidebar-rail {
+      transition:
+        width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+        flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
+    }
+  }
+
+  html[data-navigation-mode="reveal"]:has(.admin-sidebar:focus-within) {
+    --exits-shell-sidebar-width: 15.5rem;
+  }
+
+  html[data-navigation-mode="reveal"]:has(.admin-sidebar:focus-within) .admin-sidebar-rail {
     transition:
-      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
-      box-shadow var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace);
+      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar__brand {
@@ -17507,16 +17556,7 @@ html[data-motion="reduced"] .exits-tooltip {
     outline-offset: 2px;
   }
 
-  /* Reveal open — overlay expands; layout rail stays 3.75rem. */
-  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover,
-  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within {
-    width: 15.5rem;
-    box-shadow: var(--exits-shadow-md);
-    transition:
-      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
-      box-shadow var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
-  }
-
+  /* Reveal open — labels / brand text fade after width starts pushing. */
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand,
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand {
     justify-content: flex-start;
@@ -17551,7 +17591,7 @@ html[data-motion="reduced"] .exits-tooltip {
     margin: 0;
     overflow: visible;
     clip: auto;
-    white-space: normal;
+    white-space: nowrap;
     border: 0;
     opacity: 1;
     transition: opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 70ms;
@@ -17614,15 +17654,10 @@ html[data-motion="reduced"] .exits-tooltip {
   }
 
   /*
-   * No-hover / touch desktop: keep Reveal as a stable compact rail with focus expand.
-   * Compact-style portaled tooltips are enabled from JS when (hover: none).
+   * No-hover / touch desktop: do not treat sticky hover as open.
+   * Keyboard :focus-within still pushes the shell; Compact tooltips cover discovery.
    */
   @media (hover: none) {
-    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) {
-      width: 3.75rem;
-      box-shadow: none;
-    }
-
     [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__brand {
       justify-content: center;
       padding-inline: 0.35rem;
@@ -17649,7 +17684,7 @@ html[data-motion="reduced"] .exits-tooltip {
 @media (max-width: 1023px) {
   [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded,
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded {
-    width: 15.5rem;
+    width: 100%;
   }
 }
 
