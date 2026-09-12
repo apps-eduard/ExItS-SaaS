@@ -42,7 +42,7 @@ function renderWithProviders(ui: ReactNode, path: string) {
   );
 }
 
-describe("desktop navigation mode (Standard / Compact)", () => {
+describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
   beforeEach(() => {
     window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
     useWorkspaceMock.mockReturnValue({
@@ -76,21 +76,21 @@ describe("desktop navigation mode (Standard / Compact)", () => {
 
     const overview = screen.getByTestId("admin-nav-overview");
     expect(overview).toHaveAttribute("aria-current", "page");
-    expect(overview).not.toHaveAttribute("title");
     expect(overview).toHaveAttribute("aria-label");
+    expect(overview).toHaveAttribute("data-tooltip");
     expect(overview.querySelector(".admin-sidebar__label")).toBeInTheDocument();
     expect(overview.querySelector(".admin-sidebar__icon")).toBeInTheDocument();
     expect(document.documentElement.dataset.navigationMode).toBe("standard");
   });
 
-  it("Compact idle hides labels visually while preserving accessible names", () => {
+  it("Compact idle hides labels, keeps accessible names, and exposes CSS tooltips without auto-expand", () => {
     writeUiPreferences({ ...defaultUiPreferences, navigationMode: "compact" });
     renderWithProviders(<OperationsSidebar />, "/inventory");
 
     const inventory = screen.getByTestId("ops-sidebar-inventory");
     expect(inventory).toHaveAttribute("aria-current", "page");
-    expect(inventory).not.toHaveAttribute("title");
     expect(inventory.getAttribute("aria-label")).toBeTruthy();
+    expect(inventory).toHaveAttribute("data-tooltip");
     expect(inventory.querySelector(".admin-sidebar__icon")).toBeInTheDocument();
     expect(inventory.querySelector(".admin-sidebar__label")).toBeInTheDocument();
     expect(document.documentElement.dataset.navigationMode).toBe("compact");
@@ -98,29 +98,46 @@ describe("desktop navigation mode (Standard / Compact)", () => {
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar__label[\s\S]*?clip:\s*rect\(0,\s*0,\s*0,\s*0\)/,
     );
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar__link\[data-tooltip\]::after/,
+    );
+    // Compact must NOT auto-expand on hover/focus.
+    expect(globalsCss).not.toMatch(
+      /\[data-navigation-mode="compact"\]\s*\.admin-sidebar\.admin-sidebar--expanded:hover/,
+    );
+    expect(globalsCss).not.toMatch(
+      /\[data-navigation-mode="compact"\]\s*\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
+    );
   });
 
-  it("Compact reveal expands over content on hover and focus-within without resizing the rail", () => {
+  it("Reveal reserves compact rail and expands smoothly on hover/focus-within", () => {
     expect(globalsCss).toMatch(/\.admin-sidebar-rail/);
+    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*260ms/);
+    expect(globalsCss).toMatch(/--exits-sidebar-collapse-duration:\s*220ms/);
+    expect(globalsCss).toMatch(/--exits-sidebar-collapse-grace:\s*140ms/);
+    expect(globalsCss).toMatch(/cubic-bezier\(0\.2,\s*0,\s*0,\s*1\)/);
+
     expect(globalsCss).toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar-rail[\s\S]*?width:\s*3\.75rem/,
+      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar-rail[\s\S]*?width:\s*3\.75rem/,
     );
     expect(globalsCss).toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
+      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
     );
     expect(globalsCss).toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
+      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
     );
     expect(globalsCss).toMatch(
-      /:hover[\s\S]*?width:\s*15\.5rem[\s\S]*?:focus-within|:focus-within[\s\S]*?width:\s*15\.5rem/,
+      /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?width:\s*15\.5rem/,
     );
     expect(globalsCss).toMatch(
-      /:hover[\s\S]*?\.admin-sidebar__label[\s\S]*?position:\s*static|:focus-within[\s\S]*?\.admin-sidebar__label[\s\S]*?position:\s*static/,
+      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*0/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1|:focus-within[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1/,
     );
     expect(globalsCss).toMatch(/inset-inline-start:\s*0/);
-    expect(globalsCss).toMatch(/box-shadow:\s*var\(--exits-shadow-md\)/);
-    // Motion tokens drive reveal duration (0 under reduced motion).
-    expect(globalsCss).toMatch(/width var\(--exits-motion-normal\)/);
+    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration/);
+    expect(globalsCss).toMatch(/\[data-motion="reduced"\][\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/);
   });
 
   it("does not change mobile bottom-nav architecture in CSS", () => {
@@ -128,7 +145,7 @@ describe("desktop navigation mode (Standard / Compact)", () => {
       /\[data-navigation-mode="compact"\][\s\S]{0,200}operations-bottom-nav/,
     );
     expect(globalsCss).not.toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]{0,200}admin-mobile-nav/,
+      /\[data-navigation-mode="reveal"\][\s\S]{0,200}admin-mobile-nav/,
     );
   });
 });

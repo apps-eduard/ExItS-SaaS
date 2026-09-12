@@ -8,7 +8,7 @@ export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"])
 export const primaryColorPreferenceSchema = z.enum(["green", "blue", "violet", "orange", "rose"]);
 export const controlShapePreferenceSchema = z.enum(["standard", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
-export const navigationModePreferenceSchema = z.enum(["standard", "compact"]);
+export const navigationModePreferenceSchema = z.enum(["standard", "compact", "reveal"]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,

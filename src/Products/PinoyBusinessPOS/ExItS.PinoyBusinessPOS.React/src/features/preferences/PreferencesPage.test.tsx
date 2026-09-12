@@ -121,12 +121,11 @@ describe("Preferences icon top navigation", () => {
     });
     expect(screen.getByRole("radio", { name: "Sidebar: Standard" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Sidebar: Compact" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Sidebar: Reveal" })).toBeInTheDocument();
     expect(screen.queryByTestId("preferences-navigation-empty")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Icons and labels\./)).toBeInTheDocument();
+    expect(screen.getByText(/Permanent icon rail\./)).toBeInTheDocument();
+    expect(screen.getByText(/Icon rail that expands on hover or focus\./)).toBeInTheDocument();
 
     await user.click(screen.getByTestId("preferences-nav-accessibility"));
     await waitFor(() => {
@@ -238,7 +237,7 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toContain('[data-motion="reduced"]');
   });
 
-  it("supports Navigation mode: Standard and Compact with persistence", async () => {
+  it("supports Navigation mode: Standard, Compact, and Reveal with persistence", async () => {
     const user = userEvent.setup();
     renderAuthenticatedAt("/settings/preferences/navigation");
 
@@ -261,6 +260,15 @@ describe("Preferences icon top navigation", () => {
       "true",
     );
 
+    await user.click(screen.getByRole("radio", { name: "Sidebar: Reveal" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.navigationMode).toBe("reveal");
+    });
+    expect(screen.getByRole("radio", { name: "Sidebar: Reveal" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
     await user.click(screen.getByRole("radio", { name: "Sidebar: Standard" }));
     await waitFor(() => {
       expect(document.documentElement.dataset.navigationMode).toBe("standard");
@@ -272,11 +280,16 @@ describe("Preferences icon top navigation", () => {
     expect(stored.navigationMode).toBe("standard");
 
     expect(globalsCss).toContain('[data-navigation-mode="compact"]');
+    expect(globalsCss).toContain('[data-navigation-mode="reveal"]');
     expect(globalsCss).toMatch(
       /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded[\s\S]*?width:\s*3\.75rem/,
     );
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded:hover/,
+    );
     expect(globalsCss).toMatch(/\.admin-sidebar__label/);
     expect(globalsCss).toMatch(/border-inline-start/);
+    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*260ms/);
   });
 
   it("uses shared icon top nav on all widths (no separate mobile nav)", async () => {

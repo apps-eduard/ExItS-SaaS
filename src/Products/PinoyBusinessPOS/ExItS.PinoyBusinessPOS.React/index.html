@@ -39,7 +39,11 @@
           if (p.controlShape === "standard" || p.controlShape === "pill")
             d.dataset.controlShape = p.controlShape;
           if (p.motion === "system" || p.motion === "reduced") d.dataset.motion = p.motion;
-          if (p.navigationMode === "standard" || p.navigationMode === "compact")
+          if (
+            p.navigationMode === "standard" ||
+            p.navigationMode === "compact" ||
+            p.navigationMode === "reveal"
+          )
             d.dataset.navigationMode = p.navigationMode;
           if (typeof p.locale === "string") d.lang = p.locale;
         }

@@ -187,6 +187,12 @@
   --exits-motion-slow: 420ms;
   --exits-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --exits-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Desktop Reveal navigation — expand slightly slower than collapse. */
+  --exits-sidebar-reveal-duration: 260ms;
+  --exits-sidebar-collapse-duration: 220ms;
+  --exits-sidebar-label-fade-duration: 160ms;
+  --exits-sidebar-collapse-grace: 140ms;
+  --exits-sidebar-label-slide: -0.25rem;
   /* Table defaults (balance / when density unset) */
   --exits-table-cell-x: 0.75rem;
   --exits-table-cell-y: 0.625rem;
@@ -431,6 +437,10 @@
   --exits-motion-fast: 0ms;
   --exits-motion-normal: 0ms;
   --exits-motion-slow: 0ms;
+  --exits-sidebar-reveal-duration: 0ms;
+  --exits-sidebar-collapse-duration: 0ms;
+  --exits-sidebar-label-fade-duration: 0ms;
+  --exits-sidebar-collapse-grace: 0ms;
 }
 
 [data-motion="reduced"] *,
@@ -563,6 +573,10 @@
     --exits-motion-fast: 0ms;
     --exits-motion-normal: 0ms;
     --exits-motion-slow: 0ms;
+    --exits-sidebar-reveal-duration: 0ms;
+    --exits-sidebar-collapse-duration: 0ms;
+    --exits-sidebar-label-fade-duration: 0ms;
+    --exits-sidebar-collapse-grace: 0ms;
   }
 
   *,
@@ -17173,13 +17187,9 @@ a.exits-chip--primary:hover {
 
 .admin-sidebar--expanded {
   width: 15.5rem;
-  transition:
-    width var(--exits-motion-normal) var(--exits-ease-standard),
-    box-shadow var(--exits-motion-normal) var(--exits-ease-standard),
-    padding var(--exits-motion-normal) var(--exits-ease-standard);
 }
 
-/* Desktop sidebar rail — reserves layout width; Compact reveal overlays content. */
+/* Desktop sidebar rail — reserves layout width; Reveal overlays content. */
 .admin-sidebar-rail {
   position: relative;
   align-self: stretch;
@@ -17188,36 +17198,23 @@ a.exits-chip--primary:hover {
   height: 100%;
 }
 
-/* Compact desktop icon rail — desktop sidebar only (lg+ shells); mobile bottom nav unchanged. */
+[dir="rtl"] {
+  --exits-sidebar-label-slide: 0.25rem;
+}
+
+/* Compact + Reveal icon-rail modes — desktop (lg+) only; mobile bottom nav unchanged. */
 @media (min-width: 1024px) {
-  [data-navigation-mode="compact"] .admin-shell__body,
-  [data-navigation-mode="compact"] .operations-shell__body {
-    /* Allow Compact reveal to overlay main content without clipping. */
-    overflow: visible;
-  }
-
-  [data-navigation-mode="compact"] .admin-shell__main,
-  [data-navigation-mode="compact"] .operations-shell__main {
-    overflow: hidden;
-  }
-
+  /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */
   [data-navigation-mode="compact"] .admin-sidebar-rail {
     width: 3.75rem;
     flex: 0 0 3.75rem;
     overflow: visible;
-    z-index: 25;
   }
 
   [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
-    position: absolute;
-    inset-block: 0;
-    inset-inline-start: 0;
     width: 3.75rem;
-    height: 100%;
-    max-height: 100%;
     padding-inline: 0.35rem;
     padding-block: 0.5rem;
-    z-index: 25;
     box-shadow: none;
   }
 
@@ -17281,24 +17278,165 @@ a.exits-chip--primary:hover {
     outline-offset: 2px;
   }
 
-  /*
-   * Compact reveal: hover or keyboard focus expands the SAME sidebar over content.
-   * Rail keeps reserved 3.75rem so main content does not reflow.
-   */
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within {
+  /* Compact professional tooltip (CSS; no native title). */
+  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]::after,
+  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    inset-inline-start: calc(100% + 0.45rem);
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 40;
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--exits-radius-sm);
+    border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+    background: var(--exits-surface-elevated);
+    color: var(--exits-text);
+    box-shadow: var(--exits-shadow-sm);
+    font-size: var(--exits-text-xs);
+    font-weight: var(--exits-font-weight-medium);
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--exits-motion-fast) var(--exits-ease-standard),
+      visibility var(--exits-motion-fast) var(--exits-ease-standard);
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]:hover::after,
+  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]:focus-visible::after,
+  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]:hover::after,
+  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* —— REVEAL: compact idle + smooth overlay expand on hover/focus —— */
+  [data-navigation-mode="reveal"] .admin-shell__body,
+  [data-navigation-mode="reveal"] .operations-shell__body {
+    overflow: visible;
+  }
+
+  [data-navigation-mode="reveal"] .admin-shell__main,
+  [data-navigation-mode="reveal"] .operations-shell__main {
+    overflow: hidden;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar-rail {
+    width: 3.75rem;
+    flex: 0 0 3.75rem;
+    overflow: visible;
+    z-index: 25;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 3.75rem;
+    height: 100%;
+    max-height: 100%;
+    padding-inline: 0.35rem;
+    padding-block: 0.5rem;
+    z-index: 25;
+    box-shadow: none;
+    /* Collapse: slightly faster + small grace so pointer can re-enter. */
+    transition:
+      width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
+      box-shadow var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
+      padding var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace);
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__brand {
+    display: none;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__group-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__group + .admin-sidebar__group {
+    margin-top: 0.45rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__link,
+  [data-navigation-mode="reveal"] .admin-sidebar__switch {
+    position: relative;
+    justify-content: center;
+    gap: 0;
+    min-height: 2.5rem;
+    padding: 0.45rem;
+    border-radius: var(--exits-radius-sm, 4px);
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+    translate: var(--exits-sidebar-label-slide) 0;
+    transition:
+      opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard),
+      translate var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard);
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__badge {
+    position: absolute;
+    top: 0.1rem;
+    inset-inline-end: 0.05rem;
+    transform: scale(0.85);
+    transform-origin: top center;
+    transition:
+      transform var(--exits-sidebar-collapse-duration) var(--exits-ease-standard),
+      inset-inline-end var(--exits-sidebar-collapse-duration) var(--exits-ease-standard);
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__footer {
+    padding-top: 0.45rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__link:focus-visible,
+  [data-navigation-mode="reveal"] .admin-sidebar__switch:focus-visible {
+    outline: 2px solid var(--exits-focus);
+    outline-offset: 2px;
+  }
+
+  /* Reveal open — immediate expand response; labels fade after width starts. */
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within {
     width: 15.5rem;
     padding: 0.65rem 0.45rem;
     box-shadow: var(--exits-shadow-md);
+    transition:
+      width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      box-shadow var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
+      padding var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand {
     display: block;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group-title,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group-title {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group-title,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group-title {
     position: static;
     width: auto;
     height: auto;
@@ -17308,24 +17446,26 @@ a.exits-chip--primary:hover {
     clip: auto;
     white-space: normal;
     border: 0;
+    opacity: 1;
+    transition: opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 70ms;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group + .admin-sidebar__group,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group + .admin-sidebar__group {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group + .admin-sidebar__group,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group + .admin-sidebar__group {
     margin-top: 0.85rem;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__link,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__switch,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__link,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__switch {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__link,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__switch,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__link,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__switch {
     justify-content: flex-start;
     gap: 0.5rem;
     padding: 0.35rem 0.55rem;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__label,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__label {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__label,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__label {
     position: static;
     width: auto;
     height: auto;
@@ -17338,10 +17478,15 @@ a.exits-chip--primary:hover {
     flex: 1 1 auto;
     min-width: 0;
     text-overflow: ellipsis;
+    opacity: 1;
+    translate: 0 0;
+    transition:
+      opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 80ms,
+      translate var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 80ms;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__badge,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__badge {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__badge,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__badge {
     position: static;
     top: auto;
     inset-inline-end: auto;
@@ -17349,15 +17494,60 @@ a.exits-chip--primary:hover {
     margin-inline-start: auto;
   }
 
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__footer,
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__footer {
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__footer,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__footer {
     padding-top: 0.65rem;
+  }
+
+  /*
+   * No-hover / touch desktop: keep Reveal as a stable compact rail with focus expand + tooltip fallback.
+   * Keyboard :focus-within still expands.
+   */
+  @media (hover: none) {
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) {
+      width: 3.75rem;
+      padding-inline: 0.35rem;
+      padding-block: 0.5rem;
+      box-shadow: none;
+    }
+
+    [data-navigation-mode="reveal"] .admin-sidebar__link[data-tooltip]::after,
+    [data-navigation-mode="reveal"] .admin-sidebar__switch[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      inset-inline-start: calc(100% + 0.45rem);
+      top: 50%;
+      translate: 0 -50%;
+      z-index: 40;
+      padding: 0.3rem 0.5rem;
+      border-radius: var(--exits-radius-sm);
+      border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+      background: var(--exits-surface-elevated);
+      color: var(--exits-text);
+      box-shadow: var(--exits-shadow-sm);
+      font-size: var(--exits-text-xs);
+      font-weight: var(--exits-font-weight-medium);
+      line-height: 1.2;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:not(:focus-within)
+      .admin-sidebar__link[data-tooltip]:focus-visible::after,
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:not(:focus-within)
+      .admin-sidebar__switch[data-tooltip]:focus-visible::after {
+      opacity: 1;
+      visibility: visible;
+    }
   }
 }
 
-/* Below lg, Compact preference does not apply (mobile bottom nav). */
+/* Below lg, Compact/Reveal preferences do not apply (mobile bottom nav). */
 @media (max-width: 1023px) {
-  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded {
     width: 15.5rem;
   }
 }

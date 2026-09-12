@@ -32,8 +32,12 @@ export const en = {
   "navigationMode.label": "Sidebar",
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
+  "navigationMode.reveal": "Reveal",
   "navigationMode.helper":
-    "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
+    "Standard shows icons and labels. Compact is a permanent icon rail. Reveal expands on hover or focus.",
+  "navigationMode.helperStandard": "Icons and labels.",
+  "navigationMode.helperCompact": "Permanent icon rail.",
+  "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
   "status.foundation": "Foundation",
   "empty.title": "Nothing here yet",
   "empty.detail": "Product screens will arrive in later authorized packages.",

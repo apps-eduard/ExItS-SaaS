@@ -2745,7 +2745,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "navigationMode.label": "Sidebar",
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
-  "navigationMode.helper": "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
+  "navigationMode.reveal": "Reveal",
+  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Reveal expands on hover or focus.",
+  "navigationMode.helperStandard": "Icons and labels.",
+  "navigationMode.helperCompact": "Permanent icon rail.",
+  "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
 
   "density.compact": "Compact",
 

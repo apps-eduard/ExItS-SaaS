@@ -73,6 +73,7 @@ export function AdminSidebar() {
                           : undefined
                       }
                       data-testid={item.testId}
+                      data-tooltip={accessibleLabel}
                       aria-label={accessibleLabel}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
@@ -105,6 +106,7 @@ export function AdminSidebar() {
           to="/workspace"
           className="admin-sidebar__switch"
           data-testid="admin-sidebar-switch-workspace"
+          data-tooltip={switchLabel}
           aria-label={switchLabel}
         >
           <ArrowLeftRight className="size-4 shrink-0" aria-hidden />

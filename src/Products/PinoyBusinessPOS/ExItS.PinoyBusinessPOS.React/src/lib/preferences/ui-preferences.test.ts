@@ -105,6 +105,9 @@ describe("ui preferences", () => {
     applyNavigationMode("compact");
     expect(document.documentElement.dataset.navigationMode).toBe("compact");
 
+    applyNavigationMode("reveal");
+    expect(document.documentElement.dataset.navigationMode).toBe("reveal");
+
     applyUiPreferences(defaultUiPreferences);
     expect(document.documentElement.dataset.primary).toBe("green");
     expect(document.documentElement.dataset.controlShape).toBe("standard");
@@ -112,7 +115,7 @@ describe("ui preferences", () => {
     expect(document.documentElement.dataset.navigationMode).toBe("standard");
   });
 
-  it("accepts standard and compact navigation mode", () => {
+  it("accepts standard, compact, and reveal navigation mode", () => {
     expect(
       parseUiPreferences(
         JSON.stringify({
@@ -122,6 +125,15 @@ describe("ui preferences", () => {
         }),
       ),
     ).toMatchObject({ navigationMode: "compact" });
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
+          navigationMode: "reveal",
+        }),
+      ),
+    ).toMatchObject({ navigationMode: "reveal" });
     expect(
       parseUiPreferences(
         JSON.stringify({
