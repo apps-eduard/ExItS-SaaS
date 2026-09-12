@@ -2730,6 +2730,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "density.balance": "Balanse",
 
   "density.comfort": "Komportable",
+  "appearance.primary.label": "Primary color",
+  "appearance.primary.green": "Green",
+  "appearance.primary.blue": "Blue",
+  "appearance.primary.violet": "Violet",
+  "appearance.primary.orange": "Orange",
+  "appearance.primary.rose": "Rose",
+  "appearance.controlShape.label": "Control shape",
+  "appearance.controlShape.standard": "Standard",
+  "appearance.controlShape.pill": "Pill",
+  "appearance.motion.label": "Motion",
+  "appearance.motion.system": "System",
+  "appearance.motion.reduced": "Reduced",
 
   "density.compact": "Compact / hugot",
 
@@ -3057,8 +3069,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "uiStandards.tabTables": "Tables",
   "uiStandards.viewClassic": "Classic",
   "uiStandards.viewSimple": "Simple",
+  "uiStandards.viewSimpleV2": "Simple V2",
   "uiStandards.viewSwitcherAria": "UI Standards view",
   "uiStandards.simpleLede": "Choose a visual pattern, then copy its Cursor command.",
+  "uiStandards.simpleV2Lede": "Copy the Cursor command, then use the visual row below it.",
   "uiStandards.simpleLedeSecondary": "Detailed rules remain available in Classic.",
   "uiStandards.simpleSectionsAria": "Simple catalog sections",
   "uiStandards.tabBadges": "Badges",
@@ -8251,7 +8265,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "preferences.section.navigation": "Nabigasyon",
   "preferences.section.accessibility": "Accessibility",
   "preferences.navigationEmpty": "Wala pay dugang navigation preferences. Ang personal nga navigation options mutungha dinhi kung available na.",
-  "preferences.accessibilityEmpty": "Wala pay dugang accessibility preferences. Ang motion nagsunod gihapon sa device settings nimo.",
+  "preferences.accessibilityEmpty": "Wala pay dugang accessibility preferences. Ang Motion preferences anaa sa Appearance.",
 
   "preferences.lede": "I-personalize kung giunsa pagtan-aw ug paglihok ang ExItS para nimo.",
 

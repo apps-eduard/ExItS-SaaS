@@ -3,18 +3,16 @@ import { render, screen } from "@testing-library/react";
 import { Button, buttonIconMotion, buttonVariants } from "@/components/ui/button";
 
 describe("Button shape and treatment (locked standard)", () => {
-  it("keeps default API visually equivalent to standard + flat", () => {
-    const { rerender } = render(<Button type="button">Save</Button>);
+  it("defaults to auto shape (control-radius) while explicit standard stays fixed", () => {
+    render(<Button type="button">Save</Button>);
     const plain = screen.getByRole("button", { name: "Save" }).className;
-    rerender(
-      <Button type="button" shape="standard" treatment="flat">
-        Save
-      </Button>,
-    );
-    expect(screen.getByRole("button", { name: "Save" }).className).toBe(plain);
-    expect(plain).toContain("rounded-[var(--exits-radius-md)]");
+    expect(plain).toContain("rounded-[var(--exits-control-radius)]");
     expect(plain).not.toContain("rounded-full");
     expect(plain).not.toContain("shadow-[var(--exits-shadow-sm)]");
+
+    const standard = buttonVariants({ shape: "standard", treatment: "flat" });
+    expect(standard).toContain("rounded-[var(--exits-radius-md)]");
+    expect(standard).not.toContain("rounded-[var(--exits-control-radius)]");
   });
 
   it("renders soft, pill, and round shapes", () => {

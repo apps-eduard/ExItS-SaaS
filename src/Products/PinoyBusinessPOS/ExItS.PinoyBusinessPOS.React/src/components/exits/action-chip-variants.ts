@@ -16,7 +16,7 @@ export type ActionChipVisual =
   | "elevated"
   | "gradient";
 
-export type ActionChipShape = "pill" | "soft" | "square";
+export type ActionChipShape = "pill" | "soft" | "square" | "auto";
 
 export type ActionChipGroupLayout =
   | "inline"
@@ -92,6 +92,8 @@ export const actionChipItemVariants = cva(baseItem, {
       pill: "rounded-full",
       soft: "rounded-[var(--exits-radius-md)]",
       square: "rounded-[var(--exits-radius-xs)]",
+      /** Follows Preferences control shape. */
+      auto: "rounded-[var(--exits-control-radius)]",
     },
     tone: {
       neutral: "",
@@ -128,7 +130,7 @@ export const actionChipItemVariants = cva(baseItem, {
   },
   defaultVariants: {
     visual: "soft",
-    shape: "soft",
+    shape: "auto",
     tone: "neutral",
     iconOnly: false,
     fullWidthMobile: false,

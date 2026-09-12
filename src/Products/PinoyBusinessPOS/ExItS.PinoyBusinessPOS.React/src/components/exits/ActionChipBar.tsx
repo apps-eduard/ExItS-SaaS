@@ -265,7 +265,7 @@ export function ActionChipBar({
   items,
   ariaLabel,
   variant = "soft",
-  shape = "soft",
+  shape = "auto",
   layout = "wrap",
   primaryTreatment = "tinted",
   fullWidthMobile = false,

@@ -169,6 +169,67 @@ describe("Preferences icon top navigation", () => {
     expect(stored.locale).toBe("fil-PH");
   });
 
+  it("supports Appearance foundation: primary swatches, control shape, motion", async () => {
+    const user = userEvent.setup();
+    renderAuthenticatedAt("/settings/preferences/appearance");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("preferences-primary-color")).toBeInTheDocument();
+    });
+
+    for (const color of ["green", "blue", "violet", "orange", "rose"] as const) {
+      const swatch = screen.getByTestId(`preferences-primary-${color}`);
+      expect(swatch).toHaveAttribute("role", "radio");
+      expect(swatch.tagName).toBe("BUTTON");
+      await user.click(swatch);
+      await waitFor(() => {
+        expect(document.documentElement.dataset.primary).toBe(color);
+        expect(document.documentElement.dataset.accent).toBe(color);
+        expect(swatch).toHaveAttribute("aria-checked", "true");
+        expect(swatch).toHaveAttribute("data-selected", "true");
+      });
+    }
+
+    expect(screen.getByRole("radio", { name: "Green" })).toHaveAttribute("title", "Green");
+    expect(screen.getByRole("radio", { name: "Violet" })).toHaveAttribute("title", "Violet");
+
+    await user.click(screen.getByRole("radio", { name: "Control shape: Pill" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.controlShape).toBe("pill");
+    });
+    await user.click(screen.getByRole("radio", { name: "Control shape: Standard" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.controlShape).toBe("standard");
+    });
+
+    await user.click(screen.getByRole("radio", { name: "Motion: Reduced" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.motion).toBe("reduced");
+    });
+    await user.click(screen.getByRole("radio", { name: "Motion: System" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.motion).toBe("system");
+    });
+
+    const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
+      primaryColor?: string;
+      controlShape?: string;
+      motion?: string;
+    };
+    expect(stored.primaryColor).toBe("rose");
+    expect(stored.controlShape).toBe("standard");
+    expect(stored.motion).toBe("system");
+
+    // Semantic colors remain independent of Primary (token definitions intact).
+    expect(globalsCss).toMatch(/--exits-success:/);
+    expect(globalsCss).toMatch(/--exits-warning:/);
+    expect(globalsCss).toMatch(/--exits-danger:/);
+    expect(globalsCss).toMatch(/--exits-info:/);
+    expect(globalsCss).toContain('[data-primary="rose"]');
+    expect(globalsCss).toContain('[data-control-shape="pill"]');
+    expect(globalsCss).toContain('[data-motion="reduced"]');
+  });
+
   it("uses shared icon top nav on all widths (no separate mobile nav)", async () => {
     renderAuthenticatedAt("/settings/preferences/appearance");
     await waitFor(() => {

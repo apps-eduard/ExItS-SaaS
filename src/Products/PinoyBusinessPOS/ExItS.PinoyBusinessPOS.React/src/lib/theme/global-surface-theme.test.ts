@@ -61,18 +61,23 @@ describe("POS global surface theme tokens", () => {
     expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,600}--exits-primary:\s*#4ade80/);
   });
 
-  it("exposes surface primitives and accent readiness selectors", () => {
+  it("exposes surface primitives and primary palette selectors", () => {
     expect(globalsCss).toContain(".exits-card");
     expect(globalsCss).toContain(".exits-card--raised");
     expect(globalsCss).toContain(".exits-card--selected");
     expect(globalsCss).toContain(".exits-metric-surface");
     expect(globalsCss).toContain(".exits-alert-surface");
-    expect(globalsCss).toContain('[data-accent="green"]');
-    expect(globalsCss).toContain('[data-accent="violet"]');
-    expect(globalsCss).toContain('[data-accent="blue"]');
+    expect(globalsCss).toContain('[data-primary="green"]');
+    expect(globalsCss).toContain('[data-primary="violet"]');
+    expect(globalsCss).toContain('[data-primary="blue"]');
+    expect(globalsCss).toContain('[data-primary="orange"]');
+    expect(globalsCss).toContain('[data-primary="rose"]');
+    expect(globalsCss).toContain("--exits-control-radius");
+    expect(globalsCss).toContain('[data-control-shape="pill"]');
+    expect(globalsCss).toContain('[data-motion="reduced"]');
   });
 
-  it("zeros motion tokens under prefers-reduced-motion", () => {
+  it("zeros motion tokens under prefers-reduced-motion and data-motion=reduced", () => {
     expect(globalsCss).toMatch(
       /prefers-reduced-motion:\s*reduce[\s\S]{0,200}--exits-motion-fast:\s*0ms/,
     );
@@ -81,6 +86,9 @@ describe("POS global surface theme tokens", () => {
     );
     expect(globalsCss).toMatch(
       /prefers-reduced-motion:\s*reduce[\s\S]{0,360}--exits-motion-slow:\s*0ms/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-motion="reduced"\][\s\S]{0,120}--exits-motion-fast:\s*0ms/,
     );
   });
 

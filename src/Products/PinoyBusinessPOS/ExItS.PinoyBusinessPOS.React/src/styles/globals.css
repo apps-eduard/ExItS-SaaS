@@ -4,7 +4,8 @@
  * POS global visual theme (POS-REACT-GLOBAL-SURFACE-THEME-V2)
  * Semantic --exits-* tokens are the single source of truth for surfaces,
  * accents, motion, and elevation. Prefer tokens over page-local hex.
- * Future accent picker: set data-accent on <html> (green | violet | blue).
+ * Primary color preference: set data-primary on <html>
+ * (green | blue | violet | orange | rose). data-accent mirrored for compatibility.
  */
 
 @theme inline {
@@ -46,6 +47,7 @@
   --exits-primary-soft: #eef6f1;
   --exits-primary-contrast: #ffffff;
   --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #166534 35%, transparent);
 
   --exits-success: #166534;
   --exits-success-soft: #eef6f0;
@@ -83,6 +85,7 @@
   --exits-primary-soft: color-mix(in srgb, #4ade80 14%, #161e1a);
   --exits-primary-contrast: #06280f;
   --exits-primary-foreground: #06280f;
+  --exits-primary-border: color-mix(in srgb, #4ade80 35%, transparent);
 
   --exits-success: #4ade80;
   --exits-success-soft: color-mix(in srgb, #4ade80 12%, #161e1a);
@@ -121,6 +124,7 @@
     --exits-primary-soft: color-mix(in srgb, #4ade80 14%, #161e1a);
     --exits-primary-contrast: #06280f;
     --exits-primary-foreground: #06280f;
+    --exits-primary-border: color-mix(in srgb, #4ade80 35%, transparent);
 
     --exits-success: #4ade80;
     --exits-success-soft: color-mix(in srgb, #4ade80 12%, #161e1a);
@@ -148,6 +152,8 @@
   /** Soft button shape pilot (~11px) — between md and lg; not a pill. */
   --exits-radius-soft: 0.6875rem;
   --exits-radius-lg: 0.75rem;
+  /** Interactive control radius — Preferences control shape (standard | pill). */
+  --exits-control-radius: var(--exits-radius-md);
   --exits-space-1: 0.25rem;
   --exits-space-2: 0.5rem;
   --exits-space-3: 0.75rem;
@@ -237,79 +243,201 @@
 }
 
 /*
- * Accent readiness (picker not implemented). Default = green POS accent.
- * Components must keep using --exits-primary / --exits-primary-soft / --exits-ring.
+ * Primary color palettes (Preferences Appearance).
+ * data-primary is authoritative; data-accent kept as a mirror for legacy selectors.
+ * Semantic success / warning / danger / info tokens stay independent.
  */
 :root,
+[data-primary="green"],
 [data-accent="green"],
-:root:not([data-accent]) {
+:root:not([data-primary]):not([data-accent]) {
   /* green tokens already set by light/dark theme blocks above */
 }
 
+[data-theme="light"][data-primary="violet"],
 [data-theme="light"][data-accent="violet"],
+:root[data-primary="violet"]:not([data-theme="dark"]),
 :root[data-accent="violet"]:not([data-theme="dark"]) {
   --exits-primary: #6d28d9;
   --exits-primary-hover: #5b21b6;
   --exits-primary-soft: #f3eefc;
   --exits-primary-contrast: #ffffff;
   --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #6d28d9 35%, transparent);
   --exits-focus: #6d28d9;
   --exits-ring: #6d28d9;
 }
 
+[data-theme="dark"][data-primary="violet"],
 [data-theme="dark"][data-accent="violet"] {
   --exits-primary: #c4b5fd;
   --exits-primary-hover: #ddd6fe;
   --exits-primary-soft: color-mix(in srgb, #c4b5fd 14%, #161e1a);
   --exits-primary-contrast: #1e1035;
   --exits-primary-foreground: #1e1035;
+  --exits-primary-border: color-mix(in srgb, #c4b5fd 35%, transparent);
   --exits-focus: #c4b5fd;
   --exits-ring: #c4b5fd;
 }
 
+[data-theme="light"][data-primary="blue"],
 [data-theme="light"][data-accent="blue"],
+:root[data-primary="blue"]:not([data-theme="dark"]),
 :root[data-accent="blue"]:not([data-theme="dark"]) {
   --exits-primary: #1d4ed8;
   --exits-primary-hover: #1e40af;
   --exits-primary-soft: #eef3fc;
   --exits-primary-contrast: #ffffff;
   --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #1d4ed8 35%, transparent);
   --exits-focus: #1d4ed8;
   --exits-ring: #1d4ed8;
 }
 
+[data-theme="dark"][data-primary="blue"],
 [data-theme="dark"][data-accent="blue"] {
   --exits-primary: #60a5fa;
   --exits-primary-hover: #93c5fd;
   --exits-primary-soft: color-mix(in srgb, #60a5fa 14%, #161e1a);
   --exits-primary-contrast: #0b1f3a;
   --exits-primary-foreground: #0b1f3a;
+  --exits-primary-border: color-mix(in srgb, #60a5fa 35%, transparent);
   --exits-focus: #60a5fa;
   --exits-ring: #60a5fa;
 }
 
+[data-theme="light"][data-primary="orange"],
+[data-theme="light"][data-accent="orange"],
+:root[data-primary="orange"]:not([data-theme="dark"]),
+:root[data-accent="orange"]:not([data-theme="dark"]) {
+  --exits-primary: #c2410c;
+  --exits-primary-hover: #9a3412;
+  --exits-primary-soft: #fff4ed;
+  --exits-primary-contrast: #ffffff;
+  --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #c2410c 35%, transparent);
+  --exits-focus: #c2410c;
+  --exits-ring: #c2410c;
+}
+
+[data-theme="dark"][data-primary="orange"],
+[data-theme="dark"][data-accent="orange"] {
+  --exits-primary: #fb923c;
+  --exits-primary-hover: #fdba74;
+  --exits-primary-soft: color-mix(in srgb, #fb923c 14%, #161e1a);
+  --exits-primary-contrast: #431407;
+  --exits-primary-foreground: #431407;
+  --exits-primary-border: color-mix(in srgb, #fb923c 35%, transparent);
+  --exits-focus: #fb923c;
+  --exits-ring: #fb923c;
+}
+
+[data-theme="light"][data-primary="rose"],
+[data-theme="light"][data-accent="rose"],
+:root[data-primary="rose"]:not([data-theme="dark"]),
+:root[data-accent="rose"]:not([data-theme="dark"]) {
+  --exits-primary: #be123c;
+  --exits-primary-hover: #9f1239;
+  --exits-primary-soft: #fff1f2;
+  --exits-primary-contrast: #ffffff;
+  --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #be123c 35%, transparent);
+  --exits-focus: #be123c;
+  --exits-ring: #be123c;
+}
+
+[data-theme="dark"][data-primary="rose"],
+[data-theme="dark"][data-accent="rose"] {
+  --exits-primary: #fb7185;
+  --exits-primary-hover: #fda4af;
+  --exits-primary-soft: color-mix(in srgb, #fb7185 14%, #161e1a);
+  --exits-primary-contrast: #4c0519;
+  --exits-primary-foreground: #4c0519;
+  --exits-primary-border: color-mix(in srgb, #fb7185 35%, transparent);
+  --exits-focus: #fb7185;
+  --exits-ring: #fb7185;
+}
+
 @media (prefers-color-scheme: dark) {
+  [data-theme="system"][data-primary="violet"],
   [data-theme="system"][data-accent="violet"],
+  :root:not([data-theme])[data-primary="violet"],
   :root:not([data-theme])[data-accent="violet"] {
     --exits-primary: #c4b5fd;
     --exits-primary-hover: #ddd6fe;
     --exits-primary-soft: color-mix(in srgb, #c4b5fd 14%, #161e1a);
     --exits-primary-contrast: #1e1035;
     --exits-primary-foreground: #1e1035;
+    --exits-primary-border: color-mix(in srgb, #c4b5fd 35%, transparent);
     --exits-focus: #c4b5fd;
     --exits-ring: #c4b5fd;
   }
 
+  [data-theme="system"][data-primary="blue"],
   [data-theme="system"][data-accent="blue"],
+  :root:not([data-theme])[data-primary="blue"],
   :root:not([data-theme])[data-accent="blue"] {
     --exits-primary: #60a5fa;
     --exits-primary-hover: #93c5fd;
     --exits-primary-soft: color-mix(in srgb, #60a5fa 14%, #161e1a);
     --exits-primary-contrast: #0b1f3a;
     --exits-primary-foreground: #0b1f3a;
+    --exits-primary-border: color-mix(in srgb, #60a5fa 35%, transparent);
     --exits-focus: #60a5fa;
     --exits-ring: #60a5fa;
   }
+
+  [data-theme="system"][data-primary="orange"],
+  [data-theme="system"][data-accent="orange"],
+  :root:not([data-theme])[data-primary="orange"],
+  :root:not([data-theme])[data-accent="orange"] {
+    --exits-primary: #fb923c;
+    --exits-primary-hover: #fdba74;
+    --exits-primary-soft: color-mix(in srgb, #fb923c 14%, #161e1a);
+    --exits-primary-contrast: #431407;
+    --exits-primary-foreground: #431407;
+    --exits-primary-border: color-mix(in srgb, #fb923c 35%, transparent);
+    --exits-focus: #fb923c;
+    --exits-ring: #fb923c;
+  }
+
+  [data-theme="system"][data-primary="rose"],
+  [data-theme="system"][data-accent="rose"],
+  :root:not([data-theme])[data-primary="rose"],
+  :root:not([data-theme])[data-accent="rose"] {
+    --exits-primary: #fb7185;
+    --exits-primary-hover: #fda4af;
+    --exits-primary-soft: color-mix(in srgb, #fb7185 14%, #161e1a);
+    --exits-primary-contrast: #4c0519;
+    --exits-primary-foreground: #4c0519;
+    --exits-primary-border: color-mix(in srgb, #fb7185 35%, transparent);
+    --exits-focus: #fb7185;
+    --exits-ring: #fb7185;
+  }
+}
+
+/* Control shape preference — buttons / action chips with shape="auto" */
+:root,
+[data-control-shape="standard"] {
+  --exits-control-radius: var(--exits-radius-md);
+}
+
+[data-control-shape="pill"] {
+  --exits-control-radius: 9999px;
+}
+
+/* Forced reduced motion preference (also honor OS media query below) */
+[data-motion="reduced"] {
+  --exits-motion-fast: 0ms;
+  --exits-motion-normal: 0ms;
+  --exits-motion-slow: 0ms;
+}
+
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
 }
 
 /* Density modes â€” visual control sizing (balance = default everyday density) */

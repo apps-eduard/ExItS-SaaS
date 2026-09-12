@@ -1,11 +1,13 @@
 import { DensityControl } from "@/components/exits/DensityControl";
 import { ThemeControl } from "@/components/exits/ThemeControl";
+import { PrimaryColorControl } from "@/components/exits/PrimaryColorControl";
+import { ControlShapeControl } from "@/components/exits/ControlShapeControl";
+import { MotionControl } from "@/components/exits/MotionControl";
 import { useI18n } from "@/i18n/I18nProvider";
 import { PreferencesSectionPanel } from "@/features/preferences/PreferencesSectionPanel";
 
 /**
- * Appearance — personal visual presentation.
- * Future (not in this task): Primary color, Control shape, Motion.
+ * Appearance — Theme, Primary color, Control shape, Density, Motion.
  */
 export function AppearancePreferences() {
   const { t } = useI18n();
@@ -18,7 +20,10 @@ export function AppearancePreferences() {
     >
       <div className="divide-y divide-border px-4">
         <ThemeControl />
+        <PrimaryColorControl />
+        <ControlShapeControl />
         <DensityControl />
+        <MotionControl />
       </div>
     </PreferencesSectionPanel>
   );

@@ -1,5 +1,13 @@
 <!doctype html>
-<html lang="en" data-theme="system" data-density="compact">
+<html
+  lang="en"
+  data-theme="system"
+  data-density="balance"
+  data-primary="green"
+  data-accent="green"
+  data-control-shape="standard"
+  data-motion="system"
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -7,6 +15,33 @@
     <meta name="color-scheme" content="light dark" />
     <title>Pinoy Business POS</title>
     <meta name="theme-color" content="#166534" />
+    <!-- Apply stored Appearance prefs before paint to reduce theme/primary flash -->
+    <script>
+      try {
+        var raw = localStorage.getItem("exits.pos-client.ui-preferences.v1");
+        if (raw) {
+          var p = JSON.parse(raw);
+          var d = document.documentElement;
+          if (p.theme === "system" || p.theme === "light" || p.theme === "dark") d.dataset.theme = p.theme;
+          if (p.density === "compact" || p.density === "balance" || p.density === "comfort")
+            d.dataset.density = p.density;
+          if (
+            p.primaryColor === "green" ||
+            p.primaryColor === "blue" ||
+            p.primaryColor === "violet" ||
+            p.primaryColor === "orange" ||
+            p.primaryColor === "rose"
+          ) {
+            d.dataset.primary = p.primaryColor;
+            d.dataset.accent = p.primaryColor;
+          }
+          if (p.controlShape === "standard" || p.controlShape === "pill")
+            d.dataset.controlShape = p.controlShape;
+          if (p.motion === "system" || p.motion === "reduced") d.dataset.motion = p.motion;
+          if (typeof p.locale === "string") d.lang = p.locale;
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

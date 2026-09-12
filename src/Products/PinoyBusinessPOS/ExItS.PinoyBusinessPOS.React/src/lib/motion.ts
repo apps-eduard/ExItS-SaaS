@@ -1,4 +1,7 @@
 export function prefersReducedMotion(): boolean {
+  if (typeof document !== "undefined" && document.documentElement.dataset.motion === "reduced") {
+    return true;
+  }
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return false;
   }

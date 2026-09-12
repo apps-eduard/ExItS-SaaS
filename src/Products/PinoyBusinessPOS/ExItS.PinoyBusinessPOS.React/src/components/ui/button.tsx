@@ -48,13 +48,16 @@ export const buttonVariants = cva(
         large:
           "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
-      /** Default matches historical ExItS button radius. */
+      /** Default matches historical ExItS button radius when preference is standard. */
       shape: {
+        /** Fixed md radius — wins over global control-shape preference. */
         standard: "rounded-[var(--exits-radius-md)]",
         soft: "rounded-[var(--exits-radius-soft)]",
         pill: "rounded-full",
         /** Circular icon-only control (pair with size="icon"). */
         round: "rounded-full",
+        /** Follows Preferences control shape (--exits-control-radius). */
+        auto: "rounded-[var(--exits-control-radius)]",
       },
       /** Default flat preserves historical treatment. */
       treatment: {
@@ -88,7 +91,7 @@ export const buttonVariants = cva(
     defaultVariants: {
       variant: "default",
       size: "default",
-      shape: "standard",
+      shape: "auto",
       treatment: "flat",
     },
   },
