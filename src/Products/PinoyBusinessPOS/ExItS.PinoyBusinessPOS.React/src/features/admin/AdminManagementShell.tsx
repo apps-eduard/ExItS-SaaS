@@ -56,7 +56,10 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       </header>
 
       <div className="admin-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-3">
-        <div className="hidden min-h-0 lg:block" data-testid="admin-desktop-sidebar">
+        <div
+          className="admin-sidebar-rail hidden min-h-0 lg:block"
+          data-testid="admin-desktop-sidebar"
+        >
           <AdminSidebar />
         </div>
 

@@ -66,7 +66,6 @@ export function AdminSidebar() {
                       to={item.to}
                       end={item.end}
                       state={preferencesState}
-                      title={accessibleLabel}
                       onClick={
                         preferencesState
                           ? () =>
@@ -106,7 +105,6 @@ export function AdminSidebar() {
           to="/workspace"
           className="admin-sidebar__switch"
           data-testid="admin-sidebar-switch-workspace"
-          title={switchLabel}
           aria-label={switchLabel}
         >
           <ArrowLeftRight className="size-4 shrink-0" aria-hidden />

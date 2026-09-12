@@ -17173,74 +17173,193 @@ a.exits-chip--primary:hover {
 
 .admin-sidebar--expanded {
   width: 15.5rem;
-  transition: width var(--exits-motion-normal) var(--exits-ease-standard);
+  transition:
+    width var(--exits-motion-normal) var(--exits-ease-standard),
+    box-shadow var(--exits-motion-normal) var(--exits-ease-standard),
+    padding var(--exits-motion-normal) var(--exits-ease-standard);
+}
+
+/* Desktop sidebar rail — reserves layout width; Compact reveal overlays content. */
+.admin-sidebar-rail {
+  position: relative;
+  align-self: stretch;
+  flex-shrink: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 /* Compact desktop icon rail — desktop sidebar only (lg+ shells); mobile bottom nav unchanged. */
-[data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
-  width: 3.75rem;
-  padding-inline: 0.35rem;
-  padding-block: 0.5rem;
+@media (min-width: 1024px) {
+  [data-navigation-mode="compact"] .admin-shell__body,
+  [data-navigation-mode="compact"] .operations-shell__body {
+    /* Allow Compact reveal to overlay main content without clipping. */
+    overflow: visible;
+  }
+
+  [data-navigation-mode="compact"] .admin-shell__main,
+  [data-navigation-mode="compact"] .operations-shell__main {
+    overflow: hidden;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar-rail {
+    width: 3.75rem;
+    flex: 0 0 3.75rem;
+    overflow: visible;
+    z-index: 25;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: 3.75rem;
+    height: 100%;
+    max-height: 100%;
+    padding-inline: 0.35rem;
+    padding-block: 0.5rem;
+    z-index: 25;
+    box-shadow: none;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__brand {
+    display: none;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__group-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__group + .admin-sidebar__group {
+    margin-top: 0.45rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__link,
+  [data-navigation-mode="compact"] .admin-sidebar__switch {
+    position: relative;
+    justify-content: center;
+    gap: 0;
+    min-height: 2.5rem;
+    padding: 0.45rem;
+    border-radius: var(--exits-radius-sm, 4px);
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__badge {
+    position: absolute;
+    top: 0.1rem;
+    inset-inline-end: 0.05rem;
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__footer {
+    padding-top: 0.45rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__link:focus-visible,
+  [data-navigation-mode="compact"] .admin-sidebar__switch:focus-visible {
+    outline: 2px solid var(--exits-focus);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Compact reveal: hover or keyboard focus expands the SAME sidebar over content.
+   * Rail keeps reserved 3.75rem so main content does not reflow.
+   */
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within {
+    width: 15.5rem;
+    padding: 0.65rem 0.45rem;
+    box-shadow: var(--exits-shadow-md);
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand {
+    display: block;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group-title,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group-title {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0 0.5rem 0.35rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    border: 0;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group + .admin-sidebar__group,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group + .admin-sidebar__group {
+    margin-top: 0.85rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__link,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__switch,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__link,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__switch {
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__label,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip: auto;
+    white-space: nowrap;
+    border: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__badge,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__badge {
+    position: static;
+    top: auto;
+    inset-inline-end: auto;
+    transform: none;
+    margin-inline-start: auto;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__footer,
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__footer {
+    padding-top: 0.65rem;
+  }
 }
 
-[data-navigation-mode="compact"] .admin-sidebar__brand {
-  display: none;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__group-title {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__group + .admin-sidebar__group {
-  margin-top: 0.45rem;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__link,
-[data-navigation-mode="compact"] .admin-sidebar__switch {
-  position: relative;
-  justify-content: center;
-  gap: 0;
-  min-height: 2.5rem;
-  padding: 0.45rem;
-  border-radius: var(--exits-radius-sm, 4px);
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__badge {
-  position: absolute;
-  top: 0.1rem;
-  inset-inline-end: 0.05rem;
-  transform: scale(0.85);
-  transform-origin: top center;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__footer {
-  padding-top: 0.45rem;
-}
-
-[data-navigation-mode="compact"] .admin-sidebar__link:focus-visible,
-[data-navigation-mode="compact"] .admin-sidebar__switch:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
+/* Below lg, Compact preference does not apply (mobile bottom nav). */
+@media (max-width: 1023px) {
+  [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
+    width: 15.5rem;
+  }
 }
 
 .admin-sidebar__brand {

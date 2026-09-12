@@ -33,7 +33,7 @@ export const en = {
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
   "navigationMode.helper":
-    "Standard shows icons and labels. Compact uses an icon rail.",
+    "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
   "status.foundation": "Foundation",
   "empty.title": "Nothing here yet",
   "empty.detail": "Product screens will arrive in later authorized packages.",

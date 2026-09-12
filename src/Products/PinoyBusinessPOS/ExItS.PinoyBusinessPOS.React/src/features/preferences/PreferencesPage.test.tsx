@@ -123,7 +123,9 @@ describe("Preferences icon top navigation", () => {
     expect(screen.getByRole("radio", { name: "Sidebar: Compact" })).toBeInTheDocument();
     expect(screen.queryByTestId("preferences-navigation-empty")).not.toBeInTheDocument();
     expect(
-      screen.getByText("Standard shows icons and labels. Compact uses an icon rail."),
+      screen.getByText(
+        "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("preferences-nav-accessibility"));

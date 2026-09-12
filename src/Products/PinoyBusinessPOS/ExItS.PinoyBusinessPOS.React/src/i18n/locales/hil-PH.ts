@@ -2745,7 +2745,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "navigationMode.label": "Sidebar",
   "navigationMode.standard": "Standard",
   "navigationMode.compact": "Compact",
-  "navigationMode.helper": "Standard shows icons and labels. Compact uses an icon rail.",
+  "navigationMode.helper": "Standard shows icons and labels. Compact uses an icon rail and reveals labels on hover or focus.",
 
   "density.compact": "Compact / hugot",
 
