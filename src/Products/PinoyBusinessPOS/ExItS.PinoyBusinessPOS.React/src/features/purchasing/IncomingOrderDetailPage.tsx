@@ -160,6 +160,7 @@ export function IncomingOrderDetailPage() {
     await queryClient.invalidateQueries({
       queryKey: ["connected-suppliers", "incoming-order", connectedPurchaseOrderId],
     });
+    await queryClient.invalidateQueries({ queryKey: ["purchasing-hub"] });
   }
 
   const acceptMutation = useMutation({

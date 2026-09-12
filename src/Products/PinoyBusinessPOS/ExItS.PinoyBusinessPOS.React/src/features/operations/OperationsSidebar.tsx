@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { ArrowLeftRight } from "lucide-react";
+import { NavActivityCountBadge } from "@/components/exits/NavActivityCountBadge";
 import {
   buildOperationsSidebarGroups,
   flattenOperationsSidebarItems,
@@ -10,6 +11,7 @@ import {
   isPreferencesDestination,
   preferencesNavigationState,
 } from "@/features/preferences/preferences-return";
+import { usePurchasingNavigationBadge } from "@/features/purchasing/usePurchasingNavigationBadge";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -19,6 +21,7 @@ export function OperationsSidebar() {
   const { t } = useI18n();
   const location = useLocation();
   const { sessionGrant, boundWorkspace } = useWorkspace();
+  const purchasingBadge = usePurchasingNavigationBadge();
   const groups = buildOperationsSidebarGroups({
     grant: sessionGrant,
     branchType: boundWorkspace?.branchType,
@@ -48,6 +51,13 @@ export function OperationsSidebar() {
                 const preferencesState = isPreferencesDestination(item.to)
                   ? preferencesNavigationState(location.pathname, location.search)
                   : undefined;
+                const badgeDisplay =
+                  item.id === "purchasing" ? purchasingBadge.display : null;
+                const label = t(item.labelKey);
+                const ariaLabel =
+                  badgeDisplay != null
+                    ? `${label}, ${purchasingBadge.count} items`
+                    : undefined;
                 return (
                   <li key={item.id}>
                     <NavLink
@@ -61,6 +71,7 @@ export function OperationsSidebar() {
                           : undefined
                       }
                       data-testid={item.testId}
+                      aria-label={ariaLabel}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "admin-sidebar__link",
@@ -68,7 +79,14 @@ export function OperationsSidebar() {
                       )}
                     >
                       <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
+                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      {badgeDisplay != null ? (
+                        <NavActivityCountBadge
+                          display={badgeDisplay}
+                          selected={isActive}
+                          testId={`${item.testId}-badge`}
+                        />
+                      ) : null}
                     </NavLink>
                   </li>
                 );

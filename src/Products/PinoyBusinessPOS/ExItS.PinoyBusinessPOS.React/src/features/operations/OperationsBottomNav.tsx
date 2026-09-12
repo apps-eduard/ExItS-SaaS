@@ -8,11 +8,13 @@ import {
   PackagePlus,
   ShoppingCart,
 } from "lucide-react";
+import { NavActivityCountBadge } from "@/components/exits/NavActivityCountBadge";
 import {
   buildOperationsBottomNavTabs,
   matchOperationsNavTab,
   type OperationsNavTabId,
 } from "@/features/operations/operations-nav-config";
+import { usePurchasingNavigationBadge } from "@/features/purchasing/usePurchasingNavigationBadge";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -34,6 +36,7 @@ export function OperationsBottomNav() {
   const location = useLocation();
   const { status: sessionStatus } = useSession();
   const { sessionGrant, boundWorkspace } = useWorkspace();
+  const purchasingBadge = usePurchasingNavigationBadge();
 
   if (!isAuthenticatedOrColdStartOffline(sessionStatus) || !boundWorkspace) {
     return null;
@@ -61,12 +64,17 @@ export function OperationsBottomNav() {
         {tabs.map((tab) => {
           const Icon = ICONS[tab.id];
           const isActive = activeId === tab.id;
+          const badgeDisplay = tab.id === "purchasing" ? purchasingBadge.display : null;
+          const label = t(tab.labelKey);
+          const ariaLabel =
+            badgeDisplay != null ? `${label}, ${purchasingBadge.count} items` : undefined;
           return (
             <li key={tab.id} className="min-w-0 flex-1">
               <NavLink
                 to={tab.to}
                 end={tab.end}
                 data-testid={tab.testId}
+                aria-label={ariaLabel}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[var(--exits-radius-md)] px-1 py-1 text-center text-[length:var(--exits-text-xs)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -75,12 +83,22 @@ export function OperationsBottomNav() {
                     : "font-medium text-muted hover:text-foreground",
                 )}
               >
-                <Icon
-                  className={cn("size-5 shrink-0", tab.primary ? "size-[1.35rem]" : null)}
-                  aria-hidden
-                  strokeWidth={tab.primary ? 2.25 : 2}
-                />
-                <span className="max-w-full truncate">{t(tab.labelKey)}</span>
+                <span className="relative inline-flex">
+                  <Icon
+                    className={cn("size-5 shrink-0", tab.primary ? "size-[1.35rem]" : null)}
+                    aria-hidden
+                    strokeWidth={tab.primary ? 2.25 : 2}
+                  />
+                  {badgeDisplay != null ? (
+                    <NavActivityCountBadge
+                      display={badgeDisplay}
+                      selected={isActive}
+                      testId={`${tab.testId}-badge`}
+                      className="absolute -end-2.5 -top-1.5 min-w-[1.1rem] px-1 h-[1.1rem] text-[0.625rem]"
+                    />
+                  ) : null}
+                </span>
+                <span className="max-w-full truncate">{label}</span>
               </NavLink>
             </li>
           );

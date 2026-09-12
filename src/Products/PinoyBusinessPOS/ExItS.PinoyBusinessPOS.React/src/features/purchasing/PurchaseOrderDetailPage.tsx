@@ -382,6 +382,7 @@ export function PurchaseOrderDetailPage() {
       await queryClient.invalidateQueries({
         queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
       });
+      await queryClient.invalidateQueries({ queryKey: ["purchasing-hub"] });
       await query.refetch();
     } catch (err) {
       if (options?.reconcile) {
@@ -402,6 +403,7 @@ export function PurchaseOrderDetailPage() {
           await queryClient.invalidateQueries({
             queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
           });
+          await queryClient.invalidateQueries({ queryKey: ["purchasing-hub"] });
           await query.refetch();
           return;
         }
