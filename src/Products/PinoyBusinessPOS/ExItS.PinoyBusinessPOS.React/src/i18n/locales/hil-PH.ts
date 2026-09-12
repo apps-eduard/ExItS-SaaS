@@ -8514,11 +8514,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.goodReceived": "Good received",
 
-  "purchasing.hubLede": "Receive stock, create purchase orders, and manage buying and selling.",
+  "purchasing.hubLede": "Manage business buying and selling activity.",
   "purchasing.buyingTitle": "Buying",
-  "purchasing.buyingLede": "Buy stock from suppliers and manage purchase orders.",
+  "purchasing.buyingLede": "Buy stock from suppliers and manage purchasing activity.",
+  "purchasing.buyingPrimary": "Primary actions",
+  "purchasing.buyingManage": "Manage",
   "purchasing.sellingTitle": "Selling",
-  "purchasing.sellingLede": "Review orders other businesses have placed with you.",
+  "purchasing.sellingLede": "Review and manage orders other businesses place with you.",
 
   "purchasing.invalidLine": "Enter a valid quantity and unit cost.",
 

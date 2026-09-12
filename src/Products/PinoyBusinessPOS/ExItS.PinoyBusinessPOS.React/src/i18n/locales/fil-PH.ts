@@ -8512,11 +8512,13 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.goodReceived": "Mabuting natanggap",
 
-  "purchasing.hubLede": "Tumanggap ng stock, gumawa ng purchase order, at pamahalaan ang pagbili at pagbebenta.",
+  "purchasing.hubLede": "Pamahalaan ang pagbili at pagbebenta ng negosyo.",
   "purchasing.buyingTitle": "Pagbili",
-  "purchasing.buyingLede": "Bumili ng stock mula sa mga supplier at pamahalaan ang mga purchase order.",
+  "purchasing.buyingLede": "Bumili ng stock mula sa mga supplier at pamahalaan ang pagbili.",
+  "purchasing.buyingPrimary": "Pangunahing aksyon",
+  "purchasing.buyingManage": "Pamahalaan",
   "purchasing.sellingTitle": "Pagbebenta",
-  "purchasing.sellingLede": "Suriin ang mga order na inilagay ng ibang negosyo sa inyo.",
+  "purchasing.sellingLede": "Suriin at pamahalaan ang mga order na inilagay ng ibang negosyo sa inyo.",
 
   "purchasing.invalidLine": "Maglagay ng wastong dami at unit cost.",
 

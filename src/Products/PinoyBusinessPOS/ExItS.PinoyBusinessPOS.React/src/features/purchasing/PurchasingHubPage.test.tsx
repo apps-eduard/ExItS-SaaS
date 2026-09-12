@@ -143,17 +143,14 @@ describe("PurchasingHubPage buying/selling groups", () => {
     listSuppliers.mockResolvedValue({ items: [], totalCount: 9, page: 1, pageSize: 1 });
   });
 
-  it("keeps top quick actions and groups browse chips into Buying and Selling", async () => {
+  it("places primary and manage actions only inside Buying/Selling with no hub duplicates", async () => {
     renderPage();
-
-    expect(screen.getByTestId("purchasing-receive-stock")).toBeInTheDocument();
-    expect(screen.getByTestId("purchasing-new")).toBeInTheDocument();
 
     const buying = await screen.findByTestId("purchasing-buying");
     const selling = screen.getByTestId("purchasing-selling");
-    expect(buying).toBeInTheDocument();
-    expect(selling).toBeInTheDocument();
 
+    expect(within(buying).getByTestId("purchasing-receive-stock")).toBeInTheDocument();
+    expect(within(buying).getByTestId("purchasing-new")).toBeInTheDocument();
     expect(within(buying).getByTestId("purchasing-orders")).toBeInTheDocument();
     expect(within(buying).getByTestId("purchasing-receipts")).toBeInTheDocument();
     expect(within(buying).getByTestId("purchasing-direct")).toBeInTheDocument();
@@ -162,17 +159,27 @@ describe("PurchasingHubPage buying/selling groups", () => {
 
     expect(within(selling).getByTestId("purchasing-incoming-orders")).toBeInTheDocument();
     expect(within(selling).queryByTestId("purchasing-orders")).not.toBeInTheDocument();
+    expect(within(selling).queryByTestId("purchasing-receive-stock")).not.toBeInTheDocument();
 
     expect(screen.queryByTestId("purchasing-toolbar")).not.toBeInTheDocument();
+    expect(document.querySelectorAll(".purchasing-hub-choices")).toHaveLength(0);
+
+    expect(screen.getAllByTestId("purchasing-receive-stock")).toHaveLength(1);
+    expect(screen.getAllByTestId("purchasing-new")).toHaveLength(1);
     expect(screen.getAllByTestId("purchasing-orders")).toHaveLength(1);
     expect(screen.getAllByTestId("purchasing-incoming-orders")).toHaveLength(1);
+    expect(screen.getAllByTestId("purchasing-receipts")).toHaveLength(1);
+    expect(screen.getAllByTestId("purchasing-direct")).toHaveLength(1);
+    expect(screen.getAllByTestId("purchasing-suppliers")).toHaveLength(1);
   });
 
   it("uses action chips with CountBadge values on the correct side", async () => {
     renderPage();
 
-    const buyingActions = await screen.findByTestId("purchasing-buying-actions");
+    const buyingPrimary = await screen.findByTestId("purchasing-buying-primary");
+    const buyingActions = screen.getByTestId("purchasing-buying-actions");
     const sellingActions = screen.getByTestId("purchasing-selling-actions");
+    expect(buyingPrimary.className).toMatch(/exits-chip-bar--actions/);
     expect(buyingActions).toHaveAttribute("role", "toolbar");
     expect(buyingActions.className).toMatch(/exits-chip-bar--actions/);
     expect(sellingActions.className).toMatch(/exits-chip-bar--actions/);
@@ -184,6 +191,15 @@ describe("PurchasingHubPage buying/selling groups", () => {
       expect(within(screen.getByTestId("purchasing-direct")).getByText("4")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-suppliers")).getByText("9")).toBeInTheDocument();
     });
+  });
+
+  it("navigates from Buying primary Receive stock to the existing route", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByTestId("purchasing-receive-stock");
+    await user.click(screen.getByTestId("purchasing-receive-stock"));
+    expect(await screen.findByText("receive-page")).toBeInTheDocument();
   });
 
   it("navigates from Selling Incoming orders to the existing route", async () => {

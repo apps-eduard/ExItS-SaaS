@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ClipboardList,
@@ -27,7 +26,6 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
-import { CountBadge } from "@/components/exits/CountChip";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Card } from "@/components/ui/card";
@@ -51,7 +49,6 @@ type BrowseDef = {
   href: string;
   testId: string;
   count: number;
-  countTone: "neutral" | "warning";
 };
 
 function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
@@ -62,12 +59,8 @@ function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
       href: item.href,
       testId: item.testId,
       icon: <Icon />,
-      label: (
-        <>
-          <span>{item.label}</span>
-          <CountBadge count={item.count} tone={item.countTone} />
-        </>
-      ),
+      label: item.label,
+      count: item.count,
     };
   });
 }
@@ -137,7 +130,32 @@ export function PurchasingHubPage() {
   const directTotal = directPurchasesQuery.data?.totalCount ?? 0;
   const suppliersTotal = suppliersQuery.data?.totalCount ?? 0;
 
-  const buyingDefs = useMemo(() => {
+  const buyingPrimaryItems = useMemo(() => {
+    const items: ExitsChipItem[] = [];
+    if (allowManageInventory) {
+      items.push({
+        key: "receive",
+        label: t("purchasing.receiveStock"),
+        icon: <PackagePlus />,
+        href: "/purchasing/receive-stock",
+        testId: "purchasing-receive-stock",
+        emphasis: "primary",
+      });
+    }
+    if (allowManagePurchasing) {
+      items.push({
+        key: "new",
+        label: t("purchasing.newOrder"),
+        icon: <FilePlus />,
+        href: "/purchasing/new",
+        testId: "purchasing-new",
+        emphasis: "primary",
+      });
+    }
+    return items;
+  }, [allowManageInventory, allowManagePurchasing, t]);
+
+  const buyingManageDefs = useMemo(() => {
     const items: BrowseDef[] = [];
     if (allowViewPurchasing) {
       items.push({
@@ -147,7 +165,6 @@ export function PurchasingHubPage() {
         href: "/purchasing/orders",
         testId: "purchasing-orders",
         count: ordersTotal,
-        countTone: "neutral",
       });
       items.push({
         key: "receipts",
@@ -156,7 +173,6 @@ export function PurchasingHubPage() {
         href: "/purchasing/receipts",
         testId: "purchasing-receipts",
         count: receivableCount,
-        countTone: receivableCount > 0 ? "warning" : "neutral",
       });
     }
     if (allowDirect) {
@@ -167,7 +183,6 @@ export function PurchasingHubPage() {
         href: "/purchasing/direct-purchases",
         testId: "purchasing-direct",
         count: directTotal,
-        countTone: "neutral",
       });
     }
     if (allowSuppliers) {
@@ -178,7 +193,6 @@ export function PurchasingHubPage() {
         href: "/suppliers",
         testId: "purchasing-suppliers",
         count: suppliersTotal,
-        countTone: "neutral",
       });
     }
     return items;
@@ -203,15 +217,15 @@ export function PurchasingHubPage() {
         href: "/purchasing/incoming-orders",
         testId: "purchasing-incoming-orders",
         count: incomingPendingCount,
-        countTone: incomingPendingCount > 0 ? "warning" : "neutral",
       });
     }
     return items;
   }, [allowViewPurchasing, incomingPendingCount, t]);
 
-  const buyingItems = toChipItems(buyingDefs);
+  const buyingManageItems = toChipItems(buyingManageDefs);
   const sellingItems = toChipItems(sellingDefs);
-  const showDirections = buyingItems.length > 0 || sellingItems.length > 0;
+  const showBuying = buyingPrimaryItems.length > 0 || buyingManageItems.length > 0;
+  const showSelling = sellingItems.length > 0;
 
   return (
     <div
@@ -226,42 +240,9 @@ export function PurchasingHubPage() {
         backTestId="page-header-back-purchasing"
       />
 
-      <div className="purchasing-hub-choices">
-        {allowManageInventory ? (
-          <Link
-            className="exits-list__card purchasing-hub-choice text-foreground no-underline"
-            to="/purchasing/receive-stock"
-            data-testid="purchasing-receive-stock"
-          >
-            <span className="purchasing-hub-choice__icon" aria-hidden>
-              <PackagePlus />
-            </span>
-            <span className="purchasing-hub-choice__copy min-w-0">
-              <span className="purchasing-hub-choice__title">{t("purchasing.receiveStock")}</span>
-              <span className="purchasing-hub-choice__lede">{t("purchasing.choiceReceive")}</span>
-            </span>
-          </Link>
-        ) : null}
-        {allowManagePurchasing ? (
-          <Link
-            className="exits-list__card purchasing-hub-choice text-foreground no-underline"
-            to="/purchasing/new"
-            data-testid="purchasing-new"
-          >
-            <span className="purchasing-hub-choice__icon" aria-hidden>
-              <FilePlus />
-            </span>
-            <span className="purchasing-hub-choice__copy min-w-0">
-              <span className="purchasing-hub-choice__title">{t("purchasing.newOrder")}</span>
-              <span className="purchasing-hub-choice__lede">{t("purchasing.choiceOrder")}</span>
-            </span>
-          </Link>
-        ) : null}
-      </div>
-
-      {showDirections ? (
+      {showBuying || showSelling ? (
         <div className="purchasing-hub-directions" data-testid="purchasing-directions">
-          {buyingItems.length > 0 ? (
+          {showBuying ? (
             <Card
               as="section"
               padding="none"
@@ -280,17 +261,40 @@ export function PurchasingHubPage() {
                   <p className="purchasing-hub-direction__lede m-0">{t("purchasing.buyingLede")}</p>
                 </div>
               </div>
-              <ExitsChipBar
-                variant="actions"
-                ariaLabel={t("purchasing.buyingTitle")}
-                testId="purchasing-buying-actions"
-                className="purchasing-hub-direction__actions exits-animate-toolbar"
-                items={buyingItems}
-              />
+
+              {buyingPrimaryItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.buyingPrimary")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.buyingPrimary")}
+                    testId="purchasing-buying-primary"
+                    className="purchasing-hub-direction__actions purchasing-hub-direction__actions--primary exits-animate-toolbar"
+                    items={buyingPrimaryItems}
+                  />
+                </div>
+              ) : null}
+
+              {buyingManageItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.buyingManage")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.buyingManage")}
+                    testId="purchasing-buying-actions"
+                    className="purchasing-hub-direction__actions exits-animate-toolbar"
+                    items={buyingManageItems}
+                  />
+                </div>
+              ) : null}
             </Card>
           ) : null}
 
-          {sellingItems.length > 0 ? (
+          {showSelling ? (
             <Card
               as="section"
               padding="none"

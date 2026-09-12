@@ -5916,11 +5916,27 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
+.purchasing-hub-direction__group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.purchasing-hub-direction__group-label {
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--exits-text-muted);
+}
+
 .purchasing-hub-direction .exits-chip-bar {
   margin: 0;
 }
 
-/* Buying: full-width action chips in 2 columns */
+/* Buying primary + manage: full-width chips in 2 columns */
+.purchasing-hub-page [data-testid="purchasing-buying-primary"].exits-chip-bar,
 .purchasing-hub-page [data-testid="purchasing-buying-actions"].exits-chip-bar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5938,6 +5954,7 @@ html:has(.admin-shell) #root {
   flex-wrap: unset;
 }
 
+.purchasing-hub-page [data-testid="purchasing-buying-primary"] .exits-chip,
 .purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip {
   width: 100%;
@@ -5946,25 +5963,18 @@ html:has(.admin-shell) #root {
   justify-content: flex-start;
 }
 
+.purchasing-hub-page [data-testid="purchasing-buying-primary"] .exits-chip__label,
 .purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip__label,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip__label {
   flex: 1 1 auto;
-  width: 100%;
-  max-width: none;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip__label > span:first-child,
-.purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip__label > span:first-child {
   min-width: 0;
+  max-width: none;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip__label > :last-child,
-.purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip__label > :last-child {
+.purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-count-badge,
+.purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-count-badge {
   margin-inline-start: auto;
   flex-shrink: 0;
 }
