@@ -111,9 +111,15 @@ describe("POS global Control Shape rollout", () => {
     expect(screen.getByRole("tab", { name: "All" }).className).toContain("exits-chip");
   });
 
-  it("form fields stay on field-radius under pill preference tokens", () => {
+  it("form fields stay on field-radius under soft and pill preference tokens", () => {
+    expect(globalsCss).toMatch(
+      /\[data-control-shape="soft"\][\s\S]*?--exits-control-radius:\s*var\(--exits-radius-soft\)/,
+    );
     expect(globalsCss).toMatch(
       /\[data-control-shape="pill"\][\s\S]*?--exits-control-radius:\s*9999px/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-control-shape="soft"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
     );
     expect(globalsCss).toMatch(
       /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,

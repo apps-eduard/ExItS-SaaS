@@ -13,6 +13,7 @@ export function DensityControl() {
       label={t("density.label")}
       value={preferences.density}
       onChange={setDensity}
+      variant="segmented"
       options={[
         {
           value: "compact",

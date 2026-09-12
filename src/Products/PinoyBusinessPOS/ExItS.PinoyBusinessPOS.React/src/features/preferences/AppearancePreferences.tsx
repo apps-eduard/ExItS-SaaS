@@ -17,6 +17,7 @@ export function AppearancePreferences() {
       title={t("preferences.section.appearance")}
       titleId="preferences-appearance-heading"
       testId="preferences-section-appearance"
+      surface="plain"
     >
       <div className="divide-y divide-border px-4">
         <ThemeControl />

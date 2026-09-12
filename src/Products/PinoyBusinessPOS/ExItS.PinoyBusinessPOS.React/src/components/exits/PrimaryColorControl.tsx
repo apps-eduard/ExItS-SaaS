@@ -10,16 +10,22 @@ import {
 
 const SWATCH_COLORS: Record<PrimaryColorPreference, string> = {
   green: "#166534",
+  teal: "#0f766e",
   blue: "#1d4ed8",
+  indigo: "#4338ca",
   violet: "#6d28d9",
+  fuchsia: "#a21caf",
   orange: "#c2410c",
   rose: "#be123c",
 };
 
 const LABEL_KEYS = {
   green: "appearance.primary.green",
+  teal: "appearance.primary.teal",
   blue: "appearance.primary.blue",
+  indigo: "appearance.primary.indigo",
   violet: "appearance.primary.violet",
+  fuchsia: "appearance.primary.fuchsia",
   orange: "appearance.primary.orange",
   rose: "appearance.primary.rose",
 } as const;
@@ -33,14 +39,17 @@ export function PrimaryColorControl() {
   const labelId = useId();
 
   return (
-    <div className="@container flex min-w-0 flex-col gap-3 py-4" data-testid="preferences-primary-color">
+    <div
+      className="@container flex min-w-0 flex-col gap-2 py-3"
+      data-testid="preferences-primary-color"
+    >
       <span id={labelId} className="exits-type-label text-foreground">
         {t("appearance.primary.label")}
       </span>
       <div
         role="radiogroup"
         aria-labelledby={labelId}
-        className="flex flex-wrap items-center gap-1"
+        className="flex flex-wrap items-center gap-0.5"
       >
         {PRIMARY_COLOR_OPTIONS.map((value) => {
           const selected = preferences.primaryColor === value;
@@ -57,20 +66,23 @@ export function PrimaryColorControl() {
               data-primary-swatch={value}
               data-selected={selected ? "true" : "false"}
               className={cn(
-                "inline-flex size-10 shrink-0 items-center justify-center rounded-full",
+                "inline-flex size-9 shrink-0 items-center justify-center rounded-full",
                 "transition-[box-shadow,transform] duration-[var(--exits-motion-fast)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
                 "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
-                selected && "ring-2 ring-[var(--exits-primary)] ring-offset-2 ring-offset-[var(--exits-bg)]",
+                selected &&
+                  "ring-2 ring-[var(--exits-primary)] ring-offset-2 ring-offset-[var(--exits-bg)]",
               )}
               onClick={() => setPrimaryColor(value)}
             >
               <span
-                className="relative inline-flex size-[1.375rem] items-center justify-center rounded-full border border-black/10 shadow-sm"
+                className="relative inline-flex size-[1.25rem] items-center justify-center rounded-full border border-black/10 shadow-sm"
                 style={{ backgroundColor: SWATCH_COLORS[value] }}
                 aria-hidden
               >
-                {selected ? <Check className="size-3 text-white drop-shadow-sm" strokeWidth={3} /> : null}
+                {selected ? (
+                  <Check className="size-3 text-white drop-shadow-sm" strokeWidth={3} />
+                ) : null}
               </span>
             </button>
           );

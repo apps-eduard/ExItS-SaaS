@@ -28,15 +28,22 @@
             d.dataset.density = p.density;
           if (
             p.primaryColor === "green" ||
+            p.primaryColor === "teal" ||
             p.primaryColor === "blue" ||
+            p.primaryColor === "indigo" ||
             p.primaryColor === "violet" ||
+            p.primaryColor === "fuchsia" ||
             p.primaryColor === "orange" ||
             p.primaryColor === "rose"
           ) {
             d.dataset.primary = p.primaryColor;
             d.dataset.accent = p.primaryColor;
           }
-          if (p.controlShape === "standard" || p.controlShape === "pill")
+          if (
+            p.controlShape === "standard" ||
+            p.controlShape === "soft" ||
+            p.controlShape === "pill"
+          )
             d.dataset.controlShape = p.controlShape;
           if (p.motion === "system" || p.motion === "reduced") d.dataset.motion = p.motion;
           if (

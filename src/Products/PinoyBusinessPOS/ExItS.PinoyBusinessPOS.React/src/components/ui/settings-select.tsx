@@ -13,6 +13,12 @@ type SettingsSelectProps<T extends string> = {
   value: T;
   options: SettingsOption<T>[];
   onChange: (value: T) => void;
+  /**
+   * cards — taller option tiles (Language, etc.)
+   * segmented — compact single-row control (Appearance Theme / Density / Shape / Motion)
+   */
+  variant?: "cards" | "segmented";
+  testId?: string;
 };
 
 /**
@@ -24,11 +30,59 @@ export function SettingsSelect<T extends string>({
   value,
   options,
   onChange,
+  variant = "cards",
+  testId,
 }: SettingsSelectProps<T>) {
   const labelId = useId();
+
+  if (variant === "segmented") {
+    return (
+      <div
+        className="@container flex min-w-0 flex-col gap-2 py-3"
+        data-testid={testId}
+        data-settings-variant="segmented"
+      >
+        <span id={labelId} className="exits-type-label text-foreground">
+          {label}
+        </span>
+        <div
+          role="radiogroup"
+          aria-labelledby={labelId}
+          className="flex min-w-0 flex-wrap gap-1 rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-surface))] p-1"
+        >
+          {options.map((option) => {
+            const selected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={`${label}: ${option.label}`}
+                className={cn(
+                  "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--exits-radius-md)-2px)] px-2.5 py-1.5",
+                  "text-[length:var(--exits-text-sm)] font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selected
+                    ? "bg-surface text-foreground shadow-sm ring-1 ring-[color-mix(in_srgb,var(--exits-primary)_28%,var(--exits-border))]"
+                    : "text-muted hover:bg-[color-mix(in_srgb,var(--exits-surface)_70%,transparent)] hover:text-foreground",
+                )}
+                onClick={() => {
+                  onChange(option.value);
+                }}
+              >
+                {option.icon}
+                <span className="min-w-0 truncate">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // Prefer container width over viewport: preferences live in a narrow right drawer,
   // where viewport-based 3-up columns truncates labels (Sy… / Li… / D…).
-  // Theme/Density (3): stack until the control is wide enough for readable 3-up.
   // Language (5+): single column when narrow; 2 columns only when comfortable.
   const layoutClass =
     options.length === 3
@@ -39,11 +93,12 @@ export function SettingsSelect<T extends string>({
   const oddLastSpansFull = options.length > 3 && options.length % 2 === 1;
 
   return (
-    <div className="@container flex min-w-0 flex-col gap-3 py-4">
-      <span
-        id={labelId}
-        className="exits-type-label text-foreground"
-      >
+    <div
+      className="@container flex min-w-0 flex-col gap-3 py-4"
+      data-testid={testId}
+      data-settings-variant="cards"
+    >
+      <span id={labelId} className="exits-type-label text-foreground">
         {label}
       </span>
       <div role="radiogroup" aria-labelledby={labelId} className={layoutClass}>

@@ -8,16 +8,17 @@ export function ControlShapeControl() {
   const { preferences, setControlShape } = usePreferences();
 
   return (
-    <div data-testid="preferences-control-shape">
-      <SettingsSelect<ControlShapePreference>
-        label={t("appearance.controlShape.label")}
-        value={preferences.controlShape}
-        onChange={setControlShape}
-        options={[
-          { value: "standard", label: t("appearance.controlShape.standard") },
-          { value: "pill", label: t("appearance.controlShape.pill") },
-        ]}
-      />
-    </div>
+    <SettingsSelect<ControlShapePreference>
+      label={t("appearance.controlShape.label")}
+      value={preferences.controlShape}
+      onChange={setControlShape}
+      variant="segmented"
+      testId="preferences-control-shape"
+      options={[
+        { value: "standard", label: t("appearance.controlShape.standard") },
+        { value: "soft", label: t("appearance.controlShape.soft") },
+        { value: "pill", label: t("appearance.controlShape.pill") },
+      ]}
+    />
   );
 }

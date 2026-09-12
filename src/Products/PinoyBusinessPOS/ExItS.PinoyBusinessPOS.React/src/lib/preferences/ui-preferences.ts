@@ -5,8 +5,17 @@ export const UI_PREFERENCES_STORAGE_KEY = "exits.pos-client.ui-preferences.v1";
 export const themePreferenceSchema = z.enum(["system", "light", "dark"]);
 export const localePreferenceSchema = z.enum(["en", "fil-PH", "ceb-PH", "ilo-PH", "hil-PH"]);
 export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"]);
-export const primaryColorPreferenceSchema = z.enum(["green", "blue", "violet", "orange", "rose"]);
-export const controlShapePreferenceSchema = z.enum(["standard", "pill"]);
+export const primaryColorPreferenceSchema = z.enum([
+  "green",
+  "teal",
+  "blue",
+  "indigo",
+  "violet",
+  "fuchsia",
+  "orange",
+  "rose",
+]);
+export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
 export const navigationModePreferenceSchema = z.enum(["standard", "compact", "reveal"]);
 
@@ -36,11 +45,20 @@ export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
 
 export const PRIMARY_COLOR_OPTIONS = [
   "green",
+  "teal",
   "blue",
+  "indigo",
   "violet",
+  "fuchsia",
   "orange",
   "rose",
 ] as const satisfies readonly PrimaryColorPreference[];
+
+export const CONTROL_SHAPE_OPTIONS = [
+  "standard",
+  "soft",
+  "pill",
+] as const satisfies readonly ControlShapePreference[];
 
 export const defaultUiPreferences: UiPreferences = {
   theme: "system",

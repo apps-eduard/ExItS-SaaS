@@ -184,7 +184,16 @@ describe("Preferences icon top navigation", () => {
       expect(screen.getByTestId("preferences-primary-color")).toBeInTheDocument();
     });
 
-    for (const color of ["green", "blue", "violet", "orange", "rose"] as const) {
+    for (const color of [
+      "green",
+      "teal",
+      "blue",
+      "indigo",
+      "violet",
+      "fuchsia",
+      "orange",
+      "rose",
+    ] as const) {
       const swatch = screen.getByTestId(`preferences-primary-${color}`);
       expect(swatch).toHaveAttribute("role", "radio");
       expect(swatch.tagName).toBe("BUTTON");
@@ -198,8 +207,14 @@ describe("Preferences icon top navigation", () => {
     }
 
     expect(screen.getByRole("radio", { name: "Green" })).toHaveAttribute("title", "Green");
+    expect(screen.getByRole("radio", { name: "Teal" })).toHaveAttribute("title", "Teal");
     expect(screen.getByRole("radio", { name: "Violet" })).toHaveAttribute("title", "Violet");
+    expect(screen.getByRole("radio", { name: "Fuchsia" })).toHaveAttribute("title", "Fuchsia");
 
+    await user.click(screen.getByRole("radio", { name: "Control shape: Soft" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.controlShape).toBe("soft");
+    });
     await user.click(screen.getByRole("radio", { name: "Control shape: Pill" }));
     await waitFor(() => {
       expect(document.documentElement.dataset.controlShape).toBe("pill");
@@ -233,8 +248,42 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toMatch(/--exits-danger:/);
     expect(globalsCss).toMatch(/--exits-info:/);
     expect(globalsCss).toContain('[data-primary="rose"]');
+    expect(globalsCss).toContain('[data-primary="teal"]');
+    expect(globalsCss).toContain('[data-primary="indigo"]');
+    expect(globalsCss).toContain('[data-primary="fuchsia"]');
+    expect(globalsCss).toContain('[data-control-shape="soft"]');
     expect(globalsCss).toContain('[data-control-shape="pill"]');
     expect(globalsCss).toContain('[data-motion="reduced"]');
+  });
+
+  it("keeps Appearance controls compact (segmented rows, plain panel, 8 swatches)", async () => {
+    renderAuthenticatedAt("/settings/preferences/appearance");
+    await waitFor(() => {
+      expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("preferences-section-appearance")).toHaveAttribute(
+      "data-surface",
+      "plain",
+    );
+    expect(settingsSelectSource).toContain('variant === "segmented"');
+    expect(settingsSelectSource).toContain('data-settings-variant="segmented"');
+    expect(settingsSelectSource).toContain("@min-[20rem]:grid-cols-2");
+
+    expect(screen.getByTestId("preferences-control-shape")).toHaveAttribute(
+      "data-settings-variant",
+      "segmented",
+    );
+    expect(screen.getByTestId("preferences-motion")).toHaveAttribute(
+      "data-settings-variant",
+      "segmented",
+    );
+
+    const primary = screen.getByTestId("preferences-primary-color");
+    expect(within(primary).getAllByRole("radio")).toHaveLength(8);
+    expect(within(screen.getByTestId("preferences-control-shape")).getAllByRole("radio")).toHaveLength(
+      3,
+    );
   });
 
   it("supports Navigation mode: Standard, Compact, and Reveal with persistence", async () => {

@@ -8,16 +8,16 @@ export function MotionControl() {
   const { preferences, setMotion } = usePreferences();
 
   return (
-    <div data-testid="preferences-motion">
-      <SettingsSelect<MotionPreference>
-        label={t("appearance.motion.label")}
-        value={preferences.motion}
-        onChange={setMotion}
-        options={[
-          { value: "system", label: t("appearance.motion.system") },
-          { value: "reduced", label: t("appearance.motion.reduced") },
-        ]}
-      />
-    </div>
+    <SettingsSelect<MotionPreference>
+      label={t("appearance.motion.label")}
+      value={preferences.motion}
+      onChange={setMotion}
+      variant="segmented"
+      testId="preferences-motion"
+      options={[
+        { value: "system", label: t("appearance.motion.system") },
+        { value: "reduced", label: t("appearance.motion.reduced") },
+      ]}
+    />
   );
 }

@@ -303,6 +303,84 @@
   --exits-ring: #c4b5fd;
 }
 
+[data-theme="light"][data-primary="teal"],
+[data-theme="light"][data-accent="teal"],
+:root[data-primary="teal"]:not([data-theme="dark"]),
+:root[data-accent="teal"]:not([data-theme="dark"]) {
+  --exits-primary: #0f766e;
+  --exits-primary-hover: #115e59;
+  --exits-primary-soft: #eef8f6;
+  --exits-primary-contrast: #ffffff;
+  --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #0f766e 35%, transparent);
+  --exits-focus: #0f766e;
+  --exits-ring: #0f766e;
+}
+
+[data-theme="dark"][data-primary="teal"],
+[data-theme="dark"][data-accent="teal"] {
+  --exits-primary: #2dd4bf;
+  --exits-primary-hover: #5eead4;
+  --exits-primary-soft: color-mix(in srgb, #2dd4bf 14%, #171b22);
+  --exits-primary-contrast: #042f2e;
+  --exits-primary-foreground: #042f2e;
+  --exits-primary-border: color-mix(in srgb, #2dd4bf 32%, transparent);
+  --exits-focus: #2dd4bf;
+  --exits-ring: #2dd4bf;
+}
+
+[data-theme="light"][data-primary="indigo"],
+[data-theme="light"][data-accent="indigo"],
+:root[data-primary="indigo"]:not([data-theme="dark"]),
+:root[data-accent="indigo"]:not([data-theme="dark"]) {
+  --exits-primary: #4338ca;
+  --exits-primary-hover: #3730a3;
+  --exits-primary-soft: #eef0fb;
+  --exits-primary-contrast: #ffffff;
+  --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #4338ca 35%, transparent);
+  --exits-focus: #4338ca;
+  --exits-ring: #4338ca;
+}
+
+[data-theme="dark"][data-primary="indigo"],
+[data-theme="dark"][data-accent="indigo"] {
+  --exits-primary: #a5b4fc;
+  --exits-primary-hover: #c7d2fe;
+  --exits-primary-soft: color-mix(in srgb, #a5b4fc 14%, #171b22);
+  --exits-primary-contrast: #1e1b4b;
+  --exits-primary-foreground: #1e1b4b;
+  --exits-primary-border: color-mix(in srgb, #a5b4fc 32%, transparent);
+  --exits-focus: #a5b4fc;
+  --exits-ring: #a5b4fc;
+}
+
+[data-theme="light"][data-primary="fuchsia"],
+[data-theme="light"][data-accent="fuchsia"],
+:root[data-primary="fuchsia"]:not([data-theme="dark"]),
+:root[data-accent="fuchsia"]:not([data-theme="dark"]) {
+  --exits-primary: #a21caf;
+  --exits-primary-hover: #86198f;
+  --exits-primary-soft: #fdf4ff;
+  --exits-primary-contrast: #ffffff;
+  --exits-primary-foreground: #ffffff;
+  --exits-primary-border: color-mix(in srgb, #a21caf 35%, transparent);
+  --exits-focus: #a21caf;
+  --exits-ring: #a21caf;
+}
+
+[data-theme="dark"][data-primary="fuchsia"],
+[data-theme="dark"][data-accent="fuchsia"] {
+  --exits-primary: #e879f9;
+  --exits-primary-hover: #f0abfc;
+  --exits-primary-soft: color-mix(in srgb, #e879f9 14%, #171b22);
+  --exits-primary-contrast: #4a044e;
+  --exits-primary-foreground: #4a044e;
+  --exits-primary-border: color-mix(in srgb, #e879f9 32%, transparent);
+  --exits-focus: #e879f9;
+  --exits-ring: #e879f9;
+}
+
 [data-theme="light"][data-primary="blue"],
 [data-theme="light"][data-accent="blue"],
 :root[data-primary="blue"]:not([data-theme="dark"]),
@@ -396,6 +474,48 @@
     --exits-ring: #c4b5fd;
   }
 
+  [data-theme="system"][data-primary="teal"],
+  [data-theme="system"][data-accent="teal"],
+  :root:not([data-theme])[data-primary="teal"],
+  :root:not([data-theme])[data-accent="teal"] {
+    --exits-primary: #2dd4bf;
+    --exits-primary-hover: #5eead4;
+    --exits-primary-soft: color-mix(in srgb, #2dd4bf 14%, #171b22);
+    --exits-primary-contrast: #042f2e;
+    --exits-primary-foreground: #042f2e;
+    --exits-primary-border: color-mix(in srgb, #2dd4bf 32%, transparent);
+    --exits-focus: #2dd4bf;
+    --exits-ring: #2dd4bf;
+  }
+
+  [data-theme="system"][data-primary="indigo"],
+  [data-theme="system"][data-accent="indigo"],
+  :root:not([data-theme])[data-primary="indigo"],
+  :root:not([data-theme])[data-accent="indigo"] {
+    --exits-primary: #a5b4fc;
+    --exits-primary-hover: #c7d2fe;
+    --exits-primary-soft: color-mix(in srgb, #a5b4fc 14%, #171b22);
+    --exits-primary-contrast: #1e1b4b;
+    --exits-primary-foreground: #1e1b4b;
+    --exits-primary-border: color-mix(in srgb, #a5b4fc 32%, transparent);
+    --exits-focus: #a5b4fc;
+    --exits-ring: #a5b4fc;
+  }
+
+  [data-theme="system"][data-primary="fuchsia"],
+  [data-theme="system"][data-accent="fuchsia"],
+  :root:not([data-theme])[data-primary="fuchsia"],
+  :root:not([data-theme])[data-accent="fuchsia"] {
+    --exits-primary: #e879f9;
+    --exits-primary-hover: #f0abfc;
+    --exits-primary-soft: color-mix(in srgb, #e879f9 14%, #171b22);
+    --exits-primary-contrast: #4a044e;
+    --exits-primary-foreground: #4a044e;
+    --exits-primary-border: color-mix(in srgb, #e879f9 32%, transparent);
+    --exits-focus: #e879f9;
+    --exits-ring: #e879f9;
+  }
+
   [data-theme="system"][data-primary="blue"],
   [data-theme="system"][data-accent="blue"],
   :root:not([data-theme])[data-primary="blue"],
@@ -445,6 +565,10 @@
   --exits-control-radius: var(--exits-radius-md);
 }
 
+[data-control-shape="soft"] {
+  --exits-control-radius: var(--exits-radius-soft);
+}
+
 [data-control-shape="pill"] {
   --exits-control-radius: 9999px;
 }
@@ -452,6 +576,7 @@
 /* Form fields keep a professional rectangle under any Control Shape. */
 :root,
 [data-control-shape="standard"],
+[data-control-shape="soft"],
 [data-control-shape="pill"] {
   --exits-field-radius: var(--exits-radius-md);
 }

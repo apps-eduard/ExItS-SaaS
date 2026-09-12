@@ -73,8 +73,17 @@ describe("ui preferences", () => {
     ).toMatchObject({ theme: "light", locale: "en", density: "compact" });
   });
 
-  it("accepts five primary colors and control shape / motion", () => {
-    expect(PRIMARY_COLOR_OPTIONS).toEqual(["green", "blue", "violet", "orange", "rose"]);
+  it("accepts eight primary colors and control shape / motion", () => {
+    expect(PRIMARY_COLOR_OPTIONS).toEqual([
+      "green",
+      "teal",
+      "blue",
+      "indigo",
+      "violet",
+      "fuchsia",
+      "orange",
+      "rose",
+    ]);
     for (const primaryColor of PRIMARY_COLOR_OPTIONS) {
       expect(
         parseUiPreferences(
@@ -89,6 +98,15 @@ describe("ui preferences", () => {
         ),
       ).toMatchObject({ primaryColor, controlShape: "pill", motion: "reduced" });
     }
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
+          controlShape: "soft",
+        }),
+      ),
+    ).toMatchObject({ controlShape: "soft" });
   });
 
   it("applies primary, control shape, motion, and navigation mode to documentElement", () => {
@@ -96,8 +114,14 @@ describe("ui preferences", () => {
     expect(document.documentElement.dataset.primary).toBe("violet");
     expect(document.documentElement.dataset.accent).toBe("violet");
 
+    applyPrimaryColor("teal");
+    expect(document.documentElement.dataset.primary).toBe("teal");
+
     applyControlShape("pill");
     expect(document.documentElement.dataset.controlShape).toBe("pill");
+
+    applyControlShape("soft");
+    expect(document.documentElement.dataset.controlShape).toBe("soft");
 
     applyMotion("reduced");
     expect(document.documentElement.dataset.motion).toBe("reduced");
