@@ -152,8 +152,13 @@
   /** Soft button shape pilot (~11px) — between md and lg; not a pill. */
   --exits-radius-soft: 0.6875rem;
   --exits-radius-lg: 0.75rem;
-  /** Interactive control radius — Preferences control shape (standard | pill). */
+  /** Interactive control radius — Preferences control shape (standard | pill). Buttons / Search / filter chips. */
   --exits-control-radius: var(--exits-radius-md);
+  /**
+   * Form field radius — text/select/textarea/date inputs.
+   * Intentionally independent of Control Shape (Pill must NOT pill form fields).
+   */
+  --exits-field-radius: var(--exits-radius-md);
   --exits-space-1: 0.25rem;
   --exits-space-2: 0.5rem;
   --exits-space-3: 0.75rem;
@@ -424,7 +429,7 @@
   }
 }
 
-/* Control shape preference — buttons / action chips with shape="auto" */
+/* Control shape preference — buttons / search / action chips with shape="auto" */
 :root,
 [data-control-shape="standard"] {
   --exits-control-radius: var(--exits-radius-md);
@@ -432,6 +437,13 @@
 
 [data-control-shape="pill"] {
   --exits-control-radius: 9999px;
+}
+
+/* Form fields keep a professional rectangle under any Control Shape. */
+:root,
+[data-control-shape="standard"],
+[data-control-shape="pill"] {
+  --exits-field-radius: var(--exits-radius-md);
 }
 
 /* Forced reduced motion preference (also honor OS media query below) */
@@ -12012,7 +12024,7 @@ a.dashboard-metric-card:focus-visible {
   width: 100%;
   min-height: var(--exits-control-height);
   border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
   background: var(--exits-surface);
   padding: 0.55rem 0.75rem;
   font: inherit;
@@ -12046,7 +12058,128 @@ textarea.exits-input {
   color: var(--exits-text-muted);
 }
 
-/* Text-like controls â€” shared min height (bare inputs often look compact without this). */
+/* ---- ExItS Search Field (Control Shape; not a form exits-input) ---- */
+.exits-search-field {
+  --exits-search-radius: var(--exits-control-radius);
+  position: relative;
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  border-radius: var(--exits-search-radius);
+  background: color-mix(in srgb, var(--exits-surface) 92%, var(--exits-surface-muted));
+  color: var(--exits-text);
+  transition:
+    border-color var(--exits-motion-fast) var(--exits-ease-standard),
+    box-shadow var(--exits-motion-fast) var(--exits-ease-standard),
+    background-color var(--exits-motion-fast) var(--exits-ease-standard);
+}
+
+.exits-search-field[data-shape="standard"] {
+  --exits-search-radius: var(--exits-radius-md);
+}
+
+.exits-search-field[data-shape="pill"] {
+  --exits-search-radius: 9999px;
+}
+
+.exits-search-field:hover:not(.exits-search-field--disabled) {
+  border-color: var(--exits-border);
+}
+
+.exits-search-field:focus-within:not(.exits-search-field--disabled) {
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+}
+
+.exits-search-field--disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.exits-search-field__leading {
+  position: absolute;
+  inset-inline-start: 0.75rem;
+  top: 50%;
+  translate: 0 -50%;
+  display: inline-flex;
+  pointer-events: none;
+  color: var(--exits-text-muted);
+}
+
+.exits-search-field__icon,
+.exits-search-field__spinner {
+  display: block;
+}
+
+.exits-search-field__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  padding-block: 0;
+  padding-inline-start: 2.35rem;
+  padding-inline-end: 2.5rem;
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: var(--exits-font-weight-regular);
+  line-height: 1.25;
+  color: var(--exits-text);
+  outline: none;
+  appearance: none;
+}
+
+.exits-search-field__input::placeholder {
+  color: var(--exits-text-muted);
+  opacity: 0.92;
+}
+
+.exits-search-field__input:disabled {
+  cursor: not-allowed;
+}
+
+.exits-search-field:not(:has(.exits-search-field__clear)) .exits-search-field__input {
+  padding-inline-end: 0.85rem;
+}
+
+.exits-search-field__clear {
+  position: absolute;
+  inset-inline-end: 0.2rem;
+  top: 50%;
+  translate: 0 -50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: max(2rem, calc(var(--exits-control-height) - 0.35rem));
+  height: max(2rem, calc(var(--exits-control-height) - 0.35rem));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--exits-radius-sm);
+  background: transparent;
+  color: var(--exits-text-muted);
+  cursor: pointer;
+}
+
+.exits-search-field__clear:hover {
+  background: var(--exits-surface-muted);
+  color: var(--exits-text);
+}
+
+.exits-search-field__clear:focus-visible {
+  outline: 2px solid var(--exits-focus);
+  outline-offset: 1px;
+}
+
+/* Text-like controls — shared min height (bare inputs often look compact without this). */
 input:not([type]),
 input[type="text"],
 input[type="search"],
@@ -12071,7 +12204,7 @@ input[type="week"] {
   min-height: var(--exits-control-height);
   height: var(--exits-control-height);
   border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
   background: var(--exits-surface);
   padding: 0.35rem 0.75rem;
   font: inherit;
@@ -12418,7 +12551,7 @@ select.pc-field__control {
   max-height: var(--exits-control-height);
   margin: 0;
   border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
   background-color: var(--exits-surface);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235a6570' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
