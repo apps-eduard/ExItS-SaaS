@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -63,6 +64,8 @@ export function NotificationsPage() {
 
       {visible.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={
             tab === "unread" ? t("notifications.unreadEmptyTitle") : t("notifications.emptyTitle")
           }

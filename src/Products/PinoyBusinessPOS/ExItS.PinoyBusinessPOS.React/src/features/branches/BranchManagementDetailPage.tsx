@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CircleAlert,
   Eye,
   EyeOff,
   Hash,
@@ -40,6 +39,7 @@ import {
 import { listPosDevices } from "@/api/platform/pos-devices-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -539,9 +539,7 @@ export function BranchManagementDetailPage() {
       />
 
       {detailsMessage ? (
-        <div className="exits-alert exits-alert--success" role="status" data-testid="branch-detail-message">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{detailsMessage}</p>
-        </div>
+        <Notice tone="success" testId="branch-detail-message">{detailsMessage}</Notice>
       ) : null}
 
       {activeTab === "overview" ? (
@@ -765,9 +763,7 @@ export function BranchManagementDetailPage() {
             }
           />
           {detailsError ? (
-            <div className="exits-alert exits-alert--error" role="alert">
-              <p className="m-0 text-[length:var(--exits-text-sm)]">{detailsError}</p>
-            </div>
+            <Notice tone="danger">{detailsError}</Notice>
           ) : null}
           <Button
             type="button"
@@ -796,7 +792,9 @@ export function BranchManagementDetailPage() {
             <ErrorState title={t("error.title")} detail={t("devices.loadError")} />
           ) : null}
           {devicesQuery.isSuccess && branchDevices.length === 0 ? (
-            <EmptyState title={t("branches.devices.empty")} detail="" />
+            <EmptyState
+              align="center"
+              icon={<Store className="size-5" strokeWidth={1.75} />} title={t("branches.devices.empty")} detail="" />
           ) : null}
           {branchDevices.length > 0 ? (
             <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="branch-devices-list">
@@ -927,12 +925,9 @@ export function BranchManagementDetailPage() {
             </span>
           </label>
           {lifecycleError ? (
-            <div className="exits-alert exits-alert--error" role="alert" data-testid="branch-lifecycle-error">
-              <div className="flex gap-3">
-                <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{lifecycleError}</p>
-              </div>
-            </div>
+            <Notice tone="danger" testId="branch-lifecycle-error">
+              {lifecycleError}
+            </Notice>
           ) : null}
           <Button
             type="button"

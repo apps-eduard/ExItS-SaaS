@@ -417,7 +417,9 @@ export function RetailWarehouseRequestStockPage() {
   }
 
   if (!allowManage) {
-    return <EmptyState title={t("stockRequest.title")} detail={t("stockRequest.denied")} />;
+    return <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockRequest.title")} detail={t("stockRequest.denied")} />;
   }
 
   if (!workspace || !supply) {

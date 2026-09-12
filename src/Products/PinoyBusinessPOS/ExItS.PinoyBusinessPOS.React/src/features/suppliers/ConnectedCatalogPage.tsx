@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Plus } from "lucide-react";
+import { Building2, Check, Plus } from "lucide-react";
 import {
   canManageCatalog,
   canManagePurchasing,
@@ -386,6 +386,8 @@ export function ConnectedCatalogPage() {
   if (!isConnectedSupplier(supplierQuery.data) || !relationshipId) {
     return (
       <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
         title={t("connected.relationshipMissing")}
         detail={t("connected.relationshipMissingHelp")}
       />
@@ -477,10 +479,15 @@ export function ConnectedCatalogPage() {
         />
       ) : null}
       {readinessQuery.isSuccess && readinessQuery.data.items.length === 0 && !debounced ? (
-        <EmptyState title={t("connected.catalogEmpty")} detail={t("connected.catalogEmptyHelp")} />
+        <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />} title={t("connected.catalogEmpty")} detail={t("connected.catalogEmptyHelp")} />
       ) : null}
       {readinessQuery.isSuccess && filteredItems.length === 0 && Boolean(debounced) ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("connected.catalogNoMatch")}
           detail={t("connected.catalogNoMatchHelp")}
         />

@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  CheckCircle2,
-  CircleAlert,
   Clock3,
   ShoppingCart,
   Store,
@@ -14,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { PageSkeleton } from "@/components/exits/loading/PageSkeleton";
@@ -210,50 +209,34 @@ export function ShiftsHubPage() {
       ) : null}
 
       {errorMessage ? (
-        <div className="exits-alert-surface flex items-start gap-2 px-3 py-2.5">
-          <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">{t("error.title")}</p>
-            <p className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted wrap-break-word">
-              {errorMessage}
-            </p>
+        <Notice
+          tone="danger"
+          title={t("error.title")}
+          action={
             <Button
               type="button"
               variant="ghost"
-              className="mt-1.5 h-auto min-h-0 px-0 py-0"
+              className="h-auto min-h-0 px-0 py-0"
               onClick={() => void refresh()}
             >
               {t("shift.retry")}
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <p className="text-[length:var(--exits-text-xs)] text-muted wrap-break-word">{errorMessage}</p>
+        </Notice>
       ) : null}
 
-      <div
-        className={
-          readinessOk
-            ? "exits-alert-surface exits-alert-surface--success shifts-hub-page__readiness flex items-start gap-2 px-3 py-2"
-            : "exits-alert-surface shifts-hub-page__readiness flex items-start gap-2 px-3 py-2"
-        }
-        data-testid="shift-readiness-card"
+      <Notice
+        tone={readinessOk ? "success" : "warning"}
+        className="shifts-hub-page__readiness"
+        testId="shift-readiness-card"
+        title={t("shift.readinessLabel")}
       >
-        {readinessOk ? (
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-        ) : (
-          <CircleAlert className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-            {t("shift.readinessLabel")}
-          </p>
-          <p
-            className="mt-0.5 mb-0 text-[length:var(--exits-text-xs)] text-muted"
-            data-testid="shift-readiness-status"
-          >
-            {readinessDetail}
-          </p>
-        </div>
-      </div>
+        <p className="text-[length:var(--exits-text-xs)] text-muted" data-testid="shift-readiness-status">
+          {readinessDetail}
+        </p>
+      </Notice>
 
       {hasOpenShift && currentShift ? (
         <div
@@ -334,7 +317,9 @@ export function ShiftsHubPage() {
           />
           {myHistoryQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
           {myHistoryQuery.isSuccess && myShifts.length === 0 ? (
-            <EmptyState title={t("shift.historyEmpty")} />
+            <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.historyEmpty")} />
           ) : null}
           <ShiftHistoryResponsiveList
             shifts={myShifts}
@@ -367,7 +352,9 @@ export function ShiftsHubPage() {
             </div>
             {openShiftsQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
             {openShiftsQuery.isSuccess && openShifts.length === 0 ? (
-              <EmptyState title={t("shift.openShiftsEmpty")} />
+              <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.openShiftsEmpty")} />
             ) : null}
             <ShiftHistoryResponsiveList
               shifts={openShifts}
@@ -453,7 +440,9 @@ export function ShiftsHubPage() {
 
             {historyQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
             {historyQuery.isSuccess && historyShifts.length === 0 ? (
-              <EmptyState title={t("shift.historyEmpty")} />
+              <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.historyEmpty")} />
             ) : null}
             <ShiftHistoryResponsiveList
               shifts={historyShifts}

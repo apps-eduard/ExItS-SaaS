@@ -47,6 +47,8 @@ import { ErrorState } from "@/components/exits/ErrorState";
 
 import { LoadingState } from "@/components/exits/LoadingState";
 
+import { Notice } from "@/components/exits/Notice";
+
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -233,16 +235,14 @@ function CatalogProductNameConflictPanel({
 
   if (!conflict.canRevealExisting || !conflict.existingProduct) {
     return (
-      <div
-        className="exits-alert catalog-form-field--full"
-        data-testid="catalog-name-conflict"
-        role="status"
+      <Notice
+        tone="warning"
+        className="catalog-form-field--full"
+        testId="catalog-name-conflict"
+        title={t("catalog.duplicate.title")}
       >
-        <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.hiddenForeign")}
-        </p>
-      </div>
+        <p className="text-muted">{t("catalog.duplicate.hiddenForeign")}</p>
+      </Notice>
     );
   }
 
@@ -254,34 +254,26 @@ function CatalogProductNameConflictPanel({
   const notOffered = existing.isOfferedAtBranch === false;
 
   return (
-    <div
-      className="exits-alert catalog-form-field--full"
-      data-testid="catalog-name-conflict"
-      role="status"
+    <Notice
+      tone="warning"
+      className="catalog-form-field--full"
+      testId="catalog-name-conflict"
+      title={t("catalog.duplicate.title")}
+      action={
+        <Link
+          to={`/catalog/products/${existing.productId}/edit`}
+          className="inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline"
+          data-testid="catalog-name-conflict-use-existing"
+        >
+          {t("catalog.duplicate.useExisting")}
+        </Link>
+      }
     >
-      <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
-      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]" data-testid="catalog-name-conflict-name">
-        {existing.name}
-      </p>
-      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">{scopeLabel}</p>
-      {inactive ? (
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.inactive")}
-        </p>
-      ) : null}
-      {notOffered ? (
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.notOffered")}
-        </p>
-      ) : null}
-      <Link
-        to={`/catalog/products/${existing.productId}/edit`}
-        className="mt-2 inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline"
-        data-testid="catalog-name-conflict-use-existing"
-      >
-        {t("catalog.duplicate.useExisting")}
-      </Link>
-    </div>
+      <p data-testid="catalog-name-conflict-name">{existing.name}</p>
+      <p className="text-muted">{scopeLabel}</p>
+      {inactive ? <p className="text-muted">{t("catalog.duplicate.inactive")}</p> : null}
+      {notOffered ? <p className="text-muted">{t("catalog.duplicate.notOffered")}</p> : null}
+    </Notice>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Notice } from "@/components/exits/Notice";
 import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
@@ -118,11 +119,7 @@ export function BranchMapPickerDialog({
         </h2>
 
         {!tilesUrl ? (
-          <div className="exits-alert" role="status" data-testid="branch-map-picker-unavailable">
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("branches.mapUnavailable")}
-            </p>
-          </div>
+          <Notice tone="info" testId="branch-map-picker-unavailable">{t("branches.mapUnavailable")}</Notice>
         ) : (
           <div
             className="branch-map-picker__map min-h-[240px] flex-1 overflow-hidden rounded-[var(--exits-radius-md)] border border-border"

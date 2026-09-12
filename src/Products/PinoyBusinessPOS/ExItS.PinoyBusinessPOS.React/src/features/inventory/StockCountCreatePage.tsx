@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, Package, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -580,7 +580,9 @@ export function StockCountCreatePage() {
             />
             {pickerQuery.isLoading ? <LoadingState label={t("stockCount.loading")} /> : null}
             {!pickerQuery.isLoading && pickerRows.length === 0 ? (
-              <EmptyState title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
+              <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockCount.noProducts")} detail={t("stockCount.noProductsDetail")} />
             ) : null}
 
             {pickerRows.length > 0 ? (

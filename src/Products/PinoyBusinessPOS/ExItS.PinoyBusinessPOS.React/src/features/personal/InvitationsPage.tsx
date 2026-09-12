@@ -1,19 +1,10 @@
 import { useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  CalendarClock,
-  Check,
-  ChevronRight,
-  HandCoins,
-  Hourglass,
-  Loader2,
-  UserRound,
-  X,
-} from "lucide-react";
+import { ArrowLeft, CalendarClock, Check, ChevronRight, HandCoins, Hourglass, Loader2, UserRound, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import type { PersonalConnectionRequestDto } from "@/api/platform/personal-types";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
@@ -382,9 +373,7 @@ export function InvitationsPage() {
       ) : null}
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
       <section
@@ -399,7 +388,9 @@ export function InvitationsPage() {
         </div>
 
         {receivedGroups.length === 0 ? (
-          <EmptyState title={t("invitations.emptyTitle")} detail={t("invitations.emptyBody")} />
+          <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("invitations.emptyTitle")} detail={t("invitations.emptyBody")} />
         ) : (
           <ul className="exits-list m-0 grid list-none gap-2 p-0">
             {receivedGroups.map((group) => {
@@ -445,7 +436,9 @@ export function InvitationsPage() {
         </div>
 
         {sentGroups.length === 0 ? (
-          <EmptyState title={t("invitations.sentEmptyTitle")} detail={t("invitations.sentEmpty")} />
+          <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("invitations.sentEmptyTitle")} detail={t("invitations.sentEmpty")} />
         ) : (
           <ul className="exits-list m-0 grid list-none gap-2 p-0">
             {sentGroups.map((group) => {

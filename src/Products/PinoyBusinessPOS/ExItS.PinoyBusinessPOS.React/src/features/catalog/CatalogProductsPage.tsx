@@ -579,7 +579,9 @@ export function CatalogProductsPage() {
             <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
           ) : null}
           {query.isSuccess && filteredItems.length === 0 ? (
-            <EmptyState title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
+            <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />} title={t("catalog.emptyProducts")} detail={t("catalog.emptyProductsDetail")} />
           ) : null}
 
           <ul

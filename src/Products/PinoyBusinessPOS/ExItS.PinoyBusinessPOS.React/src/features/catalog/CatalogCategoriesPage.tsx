@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, RotateCcw, Save, Tags } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageCatalog } from "@/access/pos-capabilities";
 import {
@@ -302,6 +302,8 @@ export function CatalogCategoriesPage() {
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />}
           title={t("catalog.emptyCategories")}
           detail={
             allowManage ? t("catalog.emptyCategoriesDetail") : t("catalog.emptyCategoriesReadonly")

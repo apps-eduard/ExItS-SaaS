@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Users, X } from "lucide-react";
+import { Building2, Check, Loader2, Users, X } from "lucide-react";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import {
   approveConnection,
@@ -12,6 +12,7 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -223,9 +224,7 @@ export function ConnectedIncomingRequestsPage() {
       />
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
       {acceptSetup ? (
@@ -354,10 +353,15 @@ export function ConnectedIncomingRequestsPage() {
         />
       ) : null}
       {showTrueEmpty ? (
-        <EmptyState title={t("connected.noIncoming")} detail={t("connected.noIncomingHelp")} />
+        <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />} title={t("connected.noIncoming")} detail={t("connected.noIncomingHelp")} />
       ) : null}
       {showFilteredEmpty ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("connected.incomingNoMatch")}
           detail={t("connected.incomingNoMatchHelp")}
         />

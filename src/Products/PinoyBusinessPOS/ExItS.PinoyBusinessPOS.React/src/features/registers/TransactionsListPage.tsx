@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Clock3 } from "lucide-react";
 import { canViewSales } from "@/access/pos-capabilities";
 import { getCashierShift } from "@/api/pos/pos-shifts-client";
 import { getRegister } from "@/api/pos/pos-registers-client";
@@ -235,7 +235,9 @@ export function TransactionsListPage() {
           <ErrorState title={t("error.title")} detail={t("transactions.loadError")} />
         ) : null}
         {salesQuery.isSuccess && sales.length === 0 ? (
-          <EmptyState title={t("transactions.empty")} detail={t("transactions.emptyDetail")} />
+          <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("transactions.empty")} detail={t("transactions.emptyDetail")} />
         ) : null}
 
         {sales.length > 0 ? (

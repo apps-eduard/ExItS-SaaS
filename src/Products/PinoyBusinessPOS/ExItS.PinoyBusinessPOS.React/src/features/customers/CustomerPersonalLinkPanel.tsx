@@ -137,13 +137,9 @@ export function CustomerPersonalLinkPanel({
       ) : null}
 
       {error ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-          data-testid="customer-personal-link-error"
-          role="alert"
-        >
+        <Notice tone="danger" testId="customer-personal-link-error">
           {error}
-        </p>
+        </Notice>
       ) : null}
     </section>
   );

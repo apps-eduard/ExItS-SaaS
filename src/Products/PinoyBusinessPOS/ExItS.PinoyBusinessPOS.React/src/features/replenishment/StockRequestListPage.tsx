@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { ArrowLeftRight, ChevronRight, Plus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listIncomingStockRequests,
@@ -67,7 +67,9 @@ export function StockRequestListPage() {
   }, [query.data?.items, isWarehouse, warehouseTab, retailTab]);
 
   if (!workspace) {
-    return <EmptyState title={t("stockRequest.listTitle")} detail={t("stockRequest.needBranch")} />;
+    return <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("stockRequest.listTitle")} detail={t("stockRequest.needBranch")} />;
   }
 
   const tabItems = isWarehouse
@@ -134,7 +136,9 @@ export function StockRequestListPage() {
       ) : null}
 
       {!query.isLoading && !query.isError && items.length === 0 ? (
-        <EmptyState title={t("stockRequest.empty")} detail={t("stockRequest.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("stockRequest.empty")} detail={t("stockRequest.emptyDetail")} />
       ) : null}
 
       {!query.isLoading && items.length > 0 ? (

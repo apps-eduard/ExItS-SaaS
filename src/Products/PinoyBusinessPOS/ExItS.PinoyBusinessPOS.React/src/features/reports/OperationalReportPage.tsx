@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -643,7 +644,12 @@ export function OperationalReportPage() {
               onRankByChange={setRankBy}
             />
           ) : !productProfitQuery.isLoading && !errorMessage ? (
-            <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+            <EmptyState
+              size="compact"
+              variant="filtered"
+              title={t("reports.emptyTitle")}
+              detail={t("reports.emptyDetail")}
+            />
           ) : null
         ) : null}
         {isSupplierPayables && supplierPayablesQuery.data ? (
@@ -671,7 +677,12 @@ export function OperationalReportPage() {
         query.data.length === 0 &&
         !query.isLoading &&
         !errorMessage ? (
-          <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+          <EmptyState
+            size="compact"
+            variant="filtered"
+            title={t("reports.emptyTitle")}
+            detail={t("reports.emptyDetail")}
+          />
         ) : null}
       </Card>
     </div>

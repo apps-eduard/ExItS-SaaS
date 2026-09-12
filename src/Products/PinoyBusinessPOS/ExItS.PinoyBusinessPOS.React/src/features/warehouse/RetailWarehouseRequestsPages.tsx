@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Package } from "lucide-react";
 import { listOutgoingStockRequests } from "@/api/pos/pos-stock-requests-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -176,7 +176,9 @@ export function RetailWarehouseRequestsListPage({ mode }: { mode: ListMode }) {
       ) : null}
 
       {!query.isLoading && !query.isError && items.length === 0 ? (
-        <EmptyState title={t("stockRequest.empty")} detail={t("stockRequest.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockRequest.empty")} detail={t("stockRequest.emptyDetail")} />
       ) : null}
 
       {!query.isLoading && items.length > 0 ? (

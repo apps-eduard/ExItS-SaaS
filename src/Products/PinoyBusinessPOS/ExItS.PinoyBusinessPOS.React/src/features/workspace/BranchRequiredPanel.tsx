@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { MapPin } from "lucide-react";
+import { MapPin, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -22,6 +22,9 @@ export function BranchRequiredPanel({
     <div className="flex min-w-0 flex-col gap-4" data-testid={testId}>
       <PageHeader title={title ?? t("workspace.branchRequiredTitle")} />
       <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Store className="size-5" strokeWidth={1.75} />}
         title={t("workspace.branchRequiredTitle")}
         detail={t("workspace.branchRequiredDetail")}
       />

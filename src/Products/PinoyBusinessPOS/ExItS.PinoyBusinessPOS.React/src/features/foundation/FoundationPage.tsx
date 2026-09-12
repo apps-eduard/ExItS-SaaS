@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { Inbox } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export function FoundationPage() {
@@ -17,7 +18,9 @@ export function FoundationPage() {
           {t("foundation.scope")}
         </p>
       </Card>
-      <EmptyState title={t("empty.title")} detail={t("empty.detail")} />
+      <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("empty.title")} detail={t("empty.detail")} />
     </div>
   );
 }

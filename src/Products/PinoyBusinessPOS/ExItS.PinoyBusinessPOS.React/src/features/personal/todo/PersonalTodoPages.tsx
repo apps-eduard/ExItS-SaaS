@@ -1,20 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ListPlus,
-  Loader2,
-  Pencil,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ListPlus, Loader2, Pencil, RefreshCw, RotateCcw, Save, Search, SlidersHorizontal, Users, X } from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
@@ -652,7 +639,9 @@ export function PersonalTodoHubPage() {
       </section>
 
       {filtered.length === 0 ? (
-        <EmptyState title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
       ) : (
         <section
           className="personal-todo-list-section catalog-form-section exits-animate-panel personal-section gap-2"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, RotateCcw, Save, Tags } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCatalogBrand,
@@ -256,7 +256,9 @@ export function CatalogBrandsPage() {
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("catalog.emptyBrands")} detail={t("catalog.emptyBrandsDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />} title={t("catalog.emptyBrands")} detail={t("catalog.emptyBrandsDetail")} />
       ) : null}
 
       {items.length > 0 ? (

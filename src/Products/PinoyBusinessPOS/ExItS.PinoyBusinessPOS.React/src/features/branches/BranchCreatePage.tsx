@@ -10,6 +10,7 @@ import {
 import { createOrganizationBranch } from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Notice } from "@/components/exits/Notice";
 import { suggestBranchCode } from "@/features/branches/branch-code";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
@@ -350,13 +351,7 @@ export function BranchCreatePage() {
         </section>
 
         {formError ? (
-          <div
-            className="exits-alert exits-alert--error"
-            role="alert"
-            data-testid="branch-create-error"
-          >
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">{formError}</p>
-          </div>
+          <Notice tone="danger" testId="branch-create-error">{formError}</Notice>
         ) : null}
 
         <div className="branch-create-actions gap-3">

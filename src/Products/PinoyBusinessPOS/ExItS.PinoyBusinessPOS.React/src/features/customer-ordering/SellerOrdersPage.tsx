@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Users } from "lucide-react";
 import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { Button } from "@/components/ui/button";
@@ -113,7 +113,9 @@ export function SellerOrdersPage() {
 
         {!query.isLoading && !query.isError ? (
           items.length === 0 ? (
-            <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
+            <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.emptyTitle")} detail={t("orders.emptySellerDetail")} />
           ) : (
             <ul
               className="exits-list m-0 grid min-h-0 list-none gap-2 overflow-y-auto overscroll-y-contain p-0"

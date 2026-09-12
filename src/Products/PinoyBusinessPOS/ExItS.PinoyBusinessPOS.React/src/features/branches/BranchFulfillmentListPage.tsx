@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Store } from "lucide-react";
 import { canManageBranchFulfillment } from "@/access/pos-capabilities";
 import {
   listOrganizationBranchesForFulfillment,
@@ -11,6 +11,7 @@ import {
 } from "@/api/platform/branch-fulfillment-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -157,13 +158,13 @@ export function BranchFulfillmentListPage() {
       />
 
       {toggleError ? (
-        <div className="exits-alert exits-alert--error" role="alert" data-testid="branch-list-toggle-error">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{toggleError}</p>
-        </div>
+        <Notice tone="danger" testId="branch-list-toggle-error">{toggleError}</Notice>
       ) : null}
 
       {branches.length === 0 ? (
-        <EmptyState title={t("branches.emptyTitle")} detail={t("branches.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Store className="size-5" strokeWidth={1.75} />} title={t("branches.emptyTitle")} detail={t("branches.emptyDetail")} />
       ) : (
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="branch-fulfillment-items">
           {branches.map((branch) => {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackagePlus } from "lucide-react";
+import { ChevronRight, ClipboardList, PackagePlus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listDirectPurchases,
@@ -340,7 +340,9 @@ export function DirectPurchasesListPage() {
       ) : null}
 
       {showTrueEmpty ? (
-        <EmptyState title={t("purchasing.directEmpty")} detail={t("purchasing.directEmptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("purchasing.directEmpty")} detail={t("purchasing.directEmptyDetail")} />
       ) : null}
 
       {showResults ? (

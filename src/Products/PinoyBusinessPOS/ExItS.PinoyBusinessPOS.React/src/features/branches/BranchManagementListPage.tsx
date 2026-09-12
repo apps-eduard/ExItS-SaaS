@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Route, Warehouse } from "lucide-react";
+import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Route, Store, Warehouse } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
@@ -444,7 +444,9 @@ export function BranchManagementListPage() {
       ) : null}
 
       {summaryQuery.isSuccess && branches.length === 0 ? (
-        <EmptyState title={t("branches.mgmt.emptyTitle")} detail={t("branches.mgmt.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Store className="size-5" strokeWidth={1.75} />} title={t("branches.mgmt.emptyTitle")} detail={t("branches.mgmt.emptyDetail")} />
       ) : null}
 
       {summaryQuery.isSuccess && branches.length > 0 ? (

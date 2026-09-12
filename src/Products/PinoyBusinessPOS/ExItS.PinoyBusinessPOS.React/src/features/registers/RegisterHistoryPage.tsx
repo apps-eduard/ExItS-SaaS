@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ReceiptText } from "lucide-react";
+import { Clock3, ReceiptText } from "lucide-react";
 import { canViewRegisters, canViewShifts } from "@/access/pos-capabilities";
 import {
   getRegister,
@@ -266,7 +266,9 @@ export function RegisterHistoryPage() {
           <ErrorState title={t("error.title")} detail={t("shift.loadHistoryError")} />
         ) : null}
         {shiftsQuery.isSuccess && shifts.length === 0 ? (
-          <EmptyState title={t("register.historyShiftsEmpty")} />
+          <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("register.historyShiftsEmpty")} />
         ) : null}
 
         <ShiftHistoryResponsiveList

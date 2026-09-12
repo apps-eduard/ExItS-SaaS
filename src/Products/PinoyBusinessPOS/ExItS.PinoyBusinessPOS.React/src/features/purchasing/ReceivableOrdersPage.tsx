@@ -183,12 +183,17 @@ export function ReceivableOrdersPage() {
       ) : null}
       {showTrueEmpty ? (
         <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
           title={t("purchasing.receiptsEmpty")}
           detail={t("purchasing.receiptsEmptyDetail")}
         />
       ) : null}
       {showFilteredEmpty ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
           title={t("purchasing.receiptsNoMatch")}
           detail={t("purchasing.receiptsNoMatchDetail")}
         />

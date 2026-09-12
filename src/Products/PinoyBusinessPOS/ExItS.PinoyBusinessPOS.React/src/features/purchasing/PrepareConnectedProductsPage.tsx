@@ -1,3 +1,4 @@
+import { Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -233,6 +234,8 @@ export function PrepareConnectedProductsPage() {
       ) : null}
       {needs.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("purchasing.prepareAllReady")}
           detail={t("purchasing.prepareAllReadyHelp")}
         />

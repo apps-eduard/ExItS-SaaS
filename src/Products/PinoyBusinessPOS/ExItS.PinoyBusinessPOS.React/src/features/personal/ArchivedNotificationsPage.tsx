@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PlatformApiError } from "@/api/platform/platform-http";
@@ -133,6 +134,8 @@ export function ArchivedNotificationsPage() {
 
       {items.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("notifications.archiveEmptyTitle")}
           detail={t("notifications.archiveEmptyBody")}
         />

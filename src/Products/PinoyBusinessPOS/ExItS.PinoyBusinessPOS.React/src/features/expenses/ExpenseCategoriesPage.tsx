@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Loader2, Pencil, Plus, RotateCcw, Save } from "lucide-react";
+import { Ban, Loader2, Pencil, Plus, RotateCcw, Save, Wallet } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
@@ -295,6 +295,8 @@ export function ExpenseCategoriesPage() {
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Wallet className="size-5" strokeWidth={1.75} />}
           title={t("expense.categoriesEmpty")}
           detail={
             allowManage ? t("expense.categoriesEmptyDetail") : t("expense.categoriesEmptyReadonly")

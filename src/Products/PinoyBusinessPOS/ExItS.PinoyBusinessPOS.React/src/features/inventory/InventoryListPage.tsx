@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, Package, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
 import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -289,6 +289,8 @@ export function InventoryListPage() {
             ) : null}
             {!query.isError && query.isSuccess && items.length === 0 ? (
               <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
                 title={t("inventory.empty")}
                 detail={t("inventory.emptyDetail")}
                 action={

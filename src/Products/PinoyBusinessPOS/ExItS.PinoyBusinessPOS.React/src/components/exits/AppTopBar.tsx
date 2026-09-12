@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Notice } from "@/components/exits/Notice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, MapPin, Store, Warehouse } from "lucide-react";
@@ -248,9 +249,7 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
       </div>
 
       {signOutError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{signOutError}</p>
-        </div>
+        <Notice tone="danger">{signOutError}</Notice>
       ) : null}
     </header>
   );

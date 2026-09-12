@@ -15,6 +15,7 @@ import {
 } from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -471,9 +472,7 @@ export function OrgAreaDetailPage() {
       ) : null}
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
       <ConfirmationDialog

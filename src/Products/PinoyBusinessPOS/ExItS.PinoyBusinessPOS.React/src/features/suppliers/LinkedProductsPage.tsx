@@ -1,3 +1,4 @@
+import { Building2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +99,8 @@ export function LinkedProductsPage() {
   if (!supplierQuery.data || !isConnectedSupplier(supplierQuery.data) || !relationshipId) {
     return (
       <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
         title={t("connected.relationshipMissing")}
         detail={t("connected.relationshipMissingHelp")}
       />
@@ -148,6 +151,9 @@ export function LinkedProductsPage() {
       ) : null}
       {linksQuery.isSuccess && filtered.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={debounced ? t("connected.linkedNoMatch") : t("connected.linkedEmpty")}
           detail={debounced ? t("connected.linkedNoMatchHelp") : t("connected.linkedEmptyHelp")}
         />

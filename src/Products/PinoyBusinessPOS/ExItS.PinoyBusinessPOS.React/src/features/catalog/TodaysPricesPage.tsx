@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, RotateCcw, Save } from "lucide-react";
+import { Loader2, RotateCcw, Save, Tags } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canGovernOrganizationCatalog } from "@/access/pos-capabilities";
 import {
@@ -327,7 +327,9 @@ export function TodaysPricesPage() {
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
       {query.isSuccess && visibleDrafts.length === 0 ? (
-        <EmptyState title={t("catalog.emptyProducts")} detail={t("prices.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />} title={t("catalog.emptyProducts")} detail={t("prices.emptyDetail")} />
       ) : null}
 
       {rowModels.length > 0 ? (

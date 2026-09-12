@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, ClipboardList, Plus } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { listPurchaseOrders, type PosPurchaseOrderDto } from "@/api/pos/pos-purchase-orders-client";
 import { Button } from "@/components/ui/button";
@@ -154,7 +154,9 @@ export function PurchaseOrdersListPage() {
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />
       ) : null}
       {!query.isLoading && !query.isError && items.length === 0 ? (
-        <EmptyState title={t("purchasing.ordersEmpty")} detail={t("purchasing.ordersEmptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("purchasing.ordersEmpty")} detail={t("purchasing.ordersEmptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0">

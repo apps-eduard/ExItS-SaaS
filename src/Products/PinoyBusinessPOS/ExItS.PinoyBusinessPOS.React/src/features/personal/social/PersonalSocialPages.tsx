@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, X } from "lucide-react";
+import { Ban, BellPlus, BellRing, Check, CheckCheck, ChevronRight, Send, Store, UserRoundCheck, Users, X } from "lucide-react";
 import {
   acceptPersonalUtangInvitation,
   cancelPersonalReminder,
@@ -81,6 +81,8 @@ export function PersonalInvitationsPage() {
       />
       {query.data.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.social.invitationsEmptyTitle")}
           detail={t("personal.social.invitationsEmptyDetail")}
         />
@@ -327,6 +329,8 @@ export function PersonalNotificationsPage() {
 
       {visible.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={
             tab === "unread"
               ? t("personal.social.unreadEmptyTitle")

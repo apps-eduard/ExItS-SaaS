@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -775,7 +776,10 @@ export function StockCountDetailPage() {
           </ul>
 
           {visibleLines.length === 0 ? (
-            <EmptyState title={t("stockCount.noMatchingLines")} detail={t("stockCount.noMatchingLinesDetail")} />
+            <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockCount.noMatchingLines")} detail={t("stockCount.noMatchingLinesDetail")} />
           ) : null}
 
           {allowManage ? (

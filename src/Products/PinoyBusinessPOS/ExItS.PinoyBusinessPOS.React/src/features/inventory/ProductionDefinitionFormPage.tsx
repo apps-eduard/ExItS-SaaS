@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -744,6 +745,9 @@ export function ProductionDefinitionFormPage() {
             />
             {outputCandidates.length === 0 && outputPickerQuery.isSuccess ? (
               <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
                 title={t("production.setups.noProducts")}
                 detail={t("production.setups.noProductsDetail")}
               />
@@ -1004,6 +1008,9 @@ export function ProductionDefinitionFormPage() {
                 data-testid="production-setup-no-eligible-ingredients"
               >
                 <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
                   title={t("production.setups.noProductionIngredientsYet")}
                   detail={t("production.setups.noProductionIngredientsDetail")}
                 />
@@ -1023,6 +1030,9 @@ export function ProductionDefinitionFormPage() {
             materialCandidates.length === 0 &&
             materialPickerQuery.isSuccess ? (
               <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
                 title={t("production.setups.noEligibleMaterials")}
                 detail={t("production.setups.noProductsDetail")}
               />

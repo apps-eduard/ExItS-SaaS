@@ -223,6 +223,8 @@ export function PersonalUtangHubPage() {
       {emptyWorkspace ? (
         <div className="exits-animate-panel" data-testid="utang-hub-empty">
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.utang.workspaceEmptyTitle")}
             detail={t("personal.utang.workspaceEmptyDetail")}
           />
@@ -330,6 +332,9 @@ export function PersonalUtangHubPage() {
               </p>
             ) : visibleAccounts.length === 0 ? (
               <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
                 title={t("personal.utang.accountsFilterEmptyTitle")}
                 detail={t("personal.utang.accountsFilterEmptyDetail")}
               />

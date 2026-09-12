@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -754,6 +755,9 @@ export function ProductionRecipeOutputSheet({
             />
             {existingCandidates.length === 0 && existingQuery.isSuccess ? (
               <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
                 title={t("production.setups.noProducts")}
                 detail={t("production.setups.noProductsDetail")}
               />

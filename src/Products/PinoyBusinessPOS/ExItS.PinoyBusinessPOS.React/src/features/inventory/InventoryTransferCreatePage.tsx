@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { ArrowLeftRight, ArrowRightLeft, Minus, Plus, RotateCcw, X } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listInventory,
@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -490,9 +491,9 @@ export function InventoryTransferCreatePage() {
       ) : null}
 
       {error ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert" data-testid="transfer-create-error">
+        <Notice tone="danger" testId="transfer-create-error">
           {error}
-        </p>
+        </Notice>
       ) : null}
 
       {createBlockedReason && lines.length > 0 && destinationBranchId ? (
@@ -669,7 +670,9 @@ export function InventoryTransferCreatePage() {
         />
         {pickerQuery.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
         {!pickerQuery.isLoading && pickerRows.length === 0 ? (
-          <EmptyState title={t("transfer.noProducts")} detail={t("transfer.noProductsDetail")} />
+          <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("transfer.noProducts")} detail={t("transfer.noProductsDetail")} />
         ) : null}
         {pickerRows.length > 0 ? (
           <ul

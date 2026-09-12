@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Link, useParams } from "react-router-dom";
@@ -313,7 +314,9 @@ export function PersonDetailPage() {
 
     return (
 
-      <EmptyState title={t("people.detail.notFoundTitle")} detail={t("people.detail.notFoundBody")} />
+      <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.detail.notFoundTitle")} detail={t("people.detail.notFoundBody")} />
 
     );
 

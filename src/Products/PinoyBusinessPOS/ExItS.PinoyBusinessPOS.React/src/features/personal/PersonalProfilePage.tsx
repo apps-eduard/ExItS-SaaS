@@ -9,6 +9,7 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -137,23 +138,15 @@ export function PersonalProfilePage() {
       />
 
       {successMessage ? (
-        <p
-          className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 py-2 text-[length:var(--exits-text-sm)] text-foreground"
-          data-testid="personal-profile-success"
-          role="status"
-        >
+        <Notice tone="success" testId="personal-profile-success">
           {successMessage}
-        </p>
+        </Notice>
       ) : null}
 
       {formError ? (
-        <p
-          className="m-0 rounded-[var(--exits-radius-md)] border border-destructive/40 bg-destructive/10 px-3 py-2 text-[length:var(--exits-text-sm)] text-destructive"
-          data-testid="personal-profile-error"
-          role="alert"
-        >
+        <Notice tone="danger" testId="personal-profile-error">
           {formError}
-        </p>
+        </Notice>
       ) : null}
 
       <section

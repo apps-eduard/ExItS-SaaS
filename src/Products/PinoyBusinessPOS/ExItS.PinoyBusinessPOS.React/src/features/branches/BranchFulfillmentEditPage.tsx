@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
+import { Check, Loader2, Save } from "lucide-react";
 import { canManageBranchFulfillment, canUseWarehouseBranches } from "@/access/pos-capabilities";
 import {
   addBranchDeliveryServiceArea,
@@ -23,6 +23,7 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -547,28 +548,14 @@ export function BranchFulfillmentEditPage() {
       />
 
       {error ? (
-        <div
-          className="exits-alert exits-alert--error"
-          role="alert"
-          data-testid="branch-fulfillment-error"
-        >
-          <div className="flex gap-3">
-            <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-          </div>
-        </div>
+        <Notice tone="danger" testId="branch-fulfillment-error">
+          {error}
+        </Notice>
       ) : null}
       {okMessage ? (
-        <div
-          className="exits-alert exits-alert--success"
-          role="status"
-          data-testid="branch-fulfillment-ok"
-        >
-          <div className="flex gap-3">
-            <CircleCheck className="mt-0.5 size-5 shrink-0" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{okMessage}</p>
-          </div>
-        </div>
+        <Notice tone="success" testId="branch-fulfillment-ok">
+          {okMessage}
+        </Notice>
       ) : null}
 
       <div className="branch-setup-tabs-scroll">

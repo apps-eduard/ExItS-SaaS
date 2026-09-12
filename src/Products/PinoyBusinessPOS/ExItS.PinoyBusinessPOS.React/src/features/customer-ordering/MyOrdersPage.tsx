@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { ChevronRight, Package, RefreshCw, Store, Truck } from "lucide-react";
+import { ChevronRight, Package, RefreshCw, Store, Truck, Users } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listMyCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,9 @@ export function MyOrdersPage() {
           backTestId="page-header-back-my-orders"
         />
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.internetRequiredDetail")}
         />
@@ -149,7 +152,9 @@ export function MyOrdersPage() {
 
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
-          <EmptyState title={t("orders.emptyTitle")} detail={t("orders.emptyBuyerDetail")} />
+          <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.emptyTitle")} detail={t("orders.emptyBuyerDetail")} />
           <Button asChild className="w-full gap-2" data-testid="my-orders-open-stores-empty">
             <Link to="/personal/linked-merchants">
               <Store className="size-4 shrink-0" aria-hidden />

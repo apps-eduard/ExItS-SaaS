@@ -553,13 +553,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       ) : null}
 
       {mode === "create" && createKind === "exits" && eligibilityFailed ? (
-        <div
-          className="exits-alert exits-alert--error"
-          data-testid="customer-link-eligibility-failed"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("customers.linkElig.failed")}</p>
-        </div>
+        <Notice tone="danger" testId="customer-link-eligibility-failed">{t("customers.linkElig.failed")}</Notice>
       ) : null}
 
       {mode === "create" &&
@@ -567,25 +561,23 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       linkEligibility &&
       linkEligibility.status !== "Eligible" &&
       !eligibilityLoading ? (
-        <div
-          className="exits-alert exits-alert--warning"
-          data-testid={`customer-link-eligibility-${linkEligibility.status}`}
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {eligibilityMessage(linkEligibility.status)}
-          </p>
-          {existingContact ? (
-            <Button asChild className="mt-2 w-full sm:w-auto">
-              <Link
-                to={`/customers/${existingContact.customerId}`}
-                data-testid="customer-link-view-existing"
-              >
-                {t("customers.openExisting")}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
+        <Notice
+          tone="warning"
+          testId={`customer-link-eligibility-${linkEligibility.status}`}
+          title={eligibilityMessage(linkEligibility.status)}
+          action={
+            existingContact ? (
+              <Button asChild className="w-full sm:w-auto">
+                <Link
+                  to={`/customers/${existingContact.customerId}`}
+                  data-testid="customer-link-view-existing"
+                >
+                  {t("customers.openExisting")}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       ) : null}
 
       {mode === "create" && !online ? (
@@ -617,19 +609,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           {t("customers.sectionInfo")}
         </h2>
         {createKind === "exits" && foundIdentity ? (
-          <div
-            className="exits-alert exits-alert--success"
-            data-testid="customer-exits-invite-hint"
-            role="status"
-          >
-            <CircleCheck className="exits-alert__icon size-5 shrink-0 text-[var(--exits-success)]" aria-hidden />
-            <p className="exits-alert__content m-0 text-[length:var(--exits-text-sm)]">
-              {t("customers.personalLink.confirmHint").replace(
+          <Notice tone="success" testId="customer-exits-invite-hint">{t("customers.personalLink.confirmHint").replace(
                 "{name}",
                 displayName.trim() || foundIdentity.displayName,
-              )}
-            </p>
-          </div>
+              )}</Notice>
         ) : null}
         <div className="catalog-form-section__grid">
           <Input

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Notice } from "@/components/exits/Notice";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -223,13 +224,7 @@ export function CustomerBusinessLocalFormPage() {
       />
 
       {error ? (
-        <div
-          className="exits-alert exits-alert--error"
-          data-testid="customer-business-form-error"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-        </div>
+        <Notice tone="danger" testId="customer-business-form-error">{error}</Notice>
       ) : null}
 
       <Card className="supplier-form-card flex min-w-0 flex-col gap-0 p-0" data-testid="customer-business-form-card">

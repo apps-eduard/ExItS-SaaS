@@ -1,6 +1,6 @@
 import { Link, useOutletContext } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackagePlus } from "lucide-react";
+import { ChevronRight, Package, PackagePlus } from "lucide-react";
 import { getOutgoingStockRequestSummary } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -144,6 +144,8 @@ export function RetailWarehouseOverviewPage() {
 
         {summary.recent.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
             title={t("retailWarehouse.recentEmpty")}
             detail={t("retailWarehouse.recentEmptyDetail")}
           />

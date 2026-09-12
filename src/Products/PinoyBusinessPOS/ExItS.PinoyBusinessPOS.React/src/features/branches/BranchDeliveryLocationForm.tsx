@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { Notice } from "@/components/exits/Notice";
 import { Button } from "@/components/ui/button";
 import {
   formatCoordinateDisplay,
@@ -57,11 +58,7 @@ export function BranchDeliveryLocationForm({
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("branches.mapHint")}</p>
 
       {!mapProviderReady ? (
-        <div className="exits-alert" data-testid="branch-map-fallback" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("branches.mapUnavailable")}
-          </p>
-        </div>
+        <Notice tone="info" testId="branch-map-fallback">{t("branches.mapUnavailable")}</Notice>
       ) : null}
 
       <div className="flex flex-wrap gap-2">

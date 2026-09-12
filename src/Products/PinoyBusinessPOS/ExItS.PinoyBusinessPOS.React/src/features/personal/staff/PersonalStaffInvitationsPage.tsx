@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import {
   acceptStaffInvitationById,
   declineStaffInvitationById,
@@ -177,6 +177,8 @@ export function PersonalStaffInvitationsPage() {
 
       {pendingQuery.isSuccess && rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("staffInvite.personalEmptyTitle")}
           detail={t("staffInvite.personalEmptyDetail")}
         />

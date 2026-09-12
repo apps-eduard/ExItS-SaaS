@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -284,9 +285,7 @@ function SupplierFormPage({ mode }: { mode: Mode }) {
       ) : null}
 
       {error ? (
-        <div className="exits-alert exits-alert--error" data-testid="supplier-form-error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-        </div>
+        <Notice tone="danger" testId="supplier-form-error">{error}</Notice>
       ) : null}
 
       <Card className="supplier-form-card flex min-w-0 flex-col gap-0 p-0" data-testid="supplier-form-card">

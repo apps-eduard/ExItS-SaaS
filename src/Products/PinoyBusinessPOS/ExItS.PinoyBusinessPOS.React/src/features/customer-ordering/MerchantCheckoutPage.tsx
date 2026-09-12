@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Smartphone, Truck, Wallet } from "lucide-react";
+import { Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
@@ -336,6 +336,9 @@ export function MerchantCheckoutPage() {
           backTestId="page-header-back-checkout"
         />
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.internetRequiredDetail")}
         />
@@ -352,7 +355,9 @@ export function MerchantCheckoutPage() {
           backLabel={t("orders.backToShop")}
           backTestId="page-header-back-checkout"
         />
-        <EmptyState title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
       </div>
     );
   }

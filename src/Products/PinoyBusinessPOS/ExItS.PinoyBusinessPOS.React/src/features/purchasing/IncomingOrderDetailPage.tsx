@@ -1,3 +1,4 @@
+import { ClipboardList } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -434,7 +435,10 @@ export function IncomingOrderDetailPage() {
       ) : null}
 
       {order.lines.length === 0 ? (
-        <EmptyState title={t("purchasing.linesEmpty")} detail={t("purchasing.linesRequired")} />
+        <EmptyState
+              variant="setup"
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("purchasing.linesEmpty")} detail={t("purchasing.linesRequired")} />
       ) : (
         <ExitsTableContainer data-testid="incoming-order-lines">
           <ExitsTableToolbar

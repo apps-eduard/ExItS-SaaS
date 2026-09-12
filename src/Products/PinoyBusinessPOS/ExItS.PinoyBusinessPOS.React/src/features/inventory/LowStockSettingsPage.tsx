@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings2 } from "lucide-react";
+import { Package, Settings2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listCatalogCategories } from "@/api/pos/pos-catalog-client";
 import {
@@ -503,7 +503,9 @@ export function LowStockSettingsPage() {
           onRetry={() => void listQuery.refetch()}
         >
           {listQuery.isSuccess && items.length === 0 ? (
-            <EmptyState title={t("lowStockSettings.empty")} detail={t("lowStockSettings.emptyDetail")} />
+            <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("lowStockSettings.empty")} detail={t("lowStockSettings.emptyDetail")} />
           ) : null}
 
           {/* Desktop / large: compact table */}

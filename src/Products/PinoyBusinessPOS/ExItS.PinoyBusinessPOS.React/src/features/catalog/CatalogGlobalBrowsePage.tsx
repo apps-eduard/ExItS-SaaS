@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Tags, Upload } from "lucide-react";
 import {
   globalProductImageUrl,
   listActiveGlobalCategories,
@@ -211,7 +211,9 @@ export function CatalogGlobalBrowsePage() {
         <ErrorState title={t("error.title")} detail={(productsQuery.error as Error).message} />
       ) : null}
       {productsQuery.isSuccess && productsQuery.data.items.length === 0 ? (
-        <EmptyState title={t("catalogGlobal.empty")} detail={t("catalogGlobal.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />} title={t("catalogGlobal.empty")} detail={t("catalogGlobal.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="catalog-global-list">

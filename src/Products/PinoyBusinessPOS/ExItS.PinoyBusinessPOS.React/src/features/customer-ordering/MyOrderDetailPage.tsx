@@ -1,16 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Ban,
-  CreditCard,
-  Info,
-  Loader2,
-  MapPin,
-  Package,
-  Truck,
-  Wallet,
-} from "lucide-react";
+import { Ban, CreditCard, Info, Loader2, MapPin, Package, Truck, Users, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   cancelMyCustomerOrder,
@@ -123,6 +114,9 @@ export function MyOrderDetailPage() {
           backTestId="page-header-back-order-detail"
         />
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.internetRequiredDetail")}
         />

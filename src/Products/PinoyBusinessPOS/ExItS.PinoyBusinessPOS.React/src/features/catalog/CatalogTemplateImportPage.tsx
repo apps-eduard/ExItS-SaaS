@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  ChevronRight,
-  Loader2,
-  RotateCcw,
-  Upload,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Loader2, RotateCcw, Tags, Upload } from "lucide-react";
 import {
   getPublishedTemplate,
   listPublishedTemplates,
@@ -317,6 +309,8 @@ export function CatalogTemplateImportPage() {
           ) : null}
           {templatesQuery.isSuccess && templatesQuery.data.items.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />}
               title={t("catalogImport.emptyTemplates")}
               detail={t("catalogImport.emptyTemplatesDetail")}
             />
@@ -410,6 +404,8 @@ export function CatalogTemplateImportPage() {
 
           {detailQuery.isSuccess && previewProducts.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />}
               title={t("catalogImport.emptyPreview")}
               detail={t("catalogImport.emptyPreviewDetail")}
             />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, ClipboardList, Plus, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -594,6 +594,8 @@ export function ReceiveStockPage() {
             !productsQuery.isFetching &&
             productItems.length === 0 ? (
               <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
                 title={t("purchasing.noProducts")}
                 detail={t("purchasing.noProductsDetail")}
                 action={

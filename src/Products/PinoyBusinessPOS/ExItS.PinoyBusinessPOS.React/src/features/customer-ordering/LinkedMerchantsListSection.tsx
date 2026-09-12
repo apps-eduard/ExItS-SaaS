@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Ban,
-  CalendarClock,
-  ChevronDown,
-  Loader2,
-  Package,
-  Receipt,
-  ShoppingBag,
-  Truck,
-} from "lucide-react";
+import { Ban, CalendarClock, ChevronDown, Loader2, Package, Receipt, ShoppingBag, Truck, Users } from "lucide-react";
 import type { LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import {
   disconnectAndBlockLinkedMerchant,
@@ -355,11 +346,16 @@ export function LinkedMerchantsListSection({
 
       {rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.merchantsEmptyTitle")}
           detail={t("personal.merchantsEmptyDetail")}
         />
       ) : filteredRows.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.merchants.noResultsTitle")}
           detail={t("personal.merchants.noResultsBody")}
         />

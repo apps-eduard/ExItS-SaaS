@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Inbox, X } from "lucide-react";
 import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import {
   listOrganizationNotifications,
@@ -192,6 +192,8 @@ export function OrgNotificationsPage() {
 
       {visible.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />}
           title={
             tab === "unread"
               ? t("org.notifications.unreadEmptyTitle")

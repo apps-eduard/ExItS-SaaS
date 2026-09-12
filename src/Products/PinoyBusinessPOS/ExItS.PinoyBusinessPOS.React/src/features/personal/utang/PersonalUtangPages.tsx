@@ -1,19 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  CircleAlert,
-  HandCoins,
-  Loader2,
-  PenLine,
-  Send,
-  UserPlus,
-  Wallet,
-} from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Send, UserPlus, Users, Wallet } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -840,6 +828,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
       {rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.utang.listEmptyTitle")}
           detail={
             mode === "lent"
@@ -1615,6 +1605,8 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         {history.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.utang.historyEmptyTitle")}
             detail={t("personal.utang.historyEmptyDetail")}
           />

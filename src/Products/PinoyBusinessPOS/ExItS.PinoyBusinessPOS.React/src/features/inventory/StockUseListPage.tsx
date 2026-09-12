@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageMinus } from "lucide-react";
+import { ChevronRight, Package, PackageMinus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listStockUses } from "@/api/pos/pos-stock-use-client";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,9 @@ export function StockUseListPage() {
         <ErrorState title={t("stockUse.errorTitle")} detail={t("stockUse.loadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("stockUse.empty")} detail={t("stockUse.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockUse.empty")} detail={t("stockUse.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="stock-use-list">

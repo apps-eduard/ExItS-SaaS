@@ -1,3 +1,4 @@
+import { ArrowLeftRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -160,7 +161,9 @@ export function StockRequestDetailPage() {
   });
 
   if (!workspace) {
-    return <EmptyState title={t("stockRequest.detailTitle")} detail={t("stockRequest.needBranch")} />;
+    return <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("stockRequest.detailTitle")} detail={t("stockRequest.needBranch")} />;
   }
 
   if (query.isLoading) return <LoadingState label={t("stockRequest.loading")} />;

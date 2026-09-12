@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CircleAlert,
   Eye,
   EyeOff,
   Gauge,
@@ -36,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { BottomSheet } from "@/components/exits/SheetDialog";
@@ -581,16 +581,9 @@ export function OrgPosDevicesPage() {
       </section>
 
       {actionError ? (
-        <div
-          role="alert"
-          className="exits-alert exits-alert--error"
-          data-testid="devices-action-error"
-        >
-          <div className="flex gap-3">
-            <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{actionError}</p>
-          </div>
-        </div>
+        <Notice tone="danger" testId="devices-action-error">
+          {actionError}
+        </Notice>
       ) : null}
 
       {devicesQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
@@ -679,6 +672,8 @@ export function OrgPosDevicesPage() {
       {devices.length === 0 && !devicesQuery.isLoading ? (
         <div data-testid="devices-empty">
           <EmptyState
+              align="center"
+              icon={<MonitorSmartphone className="size-5" strokeWidth={1.75} />}
             title={t("devices.empty")}
             detail={
               deviceEnforcementEnabled === false ? t("devices.emptyOptionalDetail") : ""

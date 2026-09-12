@@ -1,18 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Ban,
-  FileText,
-  Link2,
-  MapPin,
-  NotebookPen,
-  Pencil,
-  Phone,
-  RotateCcw,
-  UserRound,
-  Wallet,
-} from "lucide-react";
+import { Ban, FileText, Link2, MapPin, NotebookPen, Pencil, Phone, RotateCcw, UserRound, Users, Wallet } from "lucide-react";
 import { canEditCustomer, canManageCustomerCreditPolicy, canApproveCustomerCreditPolicy, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
 import {
   createCustomerLinkRequestForCustomer,
@@ -646,6 +635,8 @@ export function CustomerDetailPage() {
         {creditsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
         {creditsQuery.isSuccess && creditsQuery.data.items.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("customers.creditsEmpty")}
             detail={t("customers.creditsEmptyDetail")}
           />
@@ -713,6 +704,8 @@ export function CustomerDetailPage() {
         {repaymentsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
         {repaymentsQuery.isSuccess && repaymentsQuery.data.items.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("customers.paymentsEmpty")}
             detail={t("customers.paymentsEmptyDetail")}
           />

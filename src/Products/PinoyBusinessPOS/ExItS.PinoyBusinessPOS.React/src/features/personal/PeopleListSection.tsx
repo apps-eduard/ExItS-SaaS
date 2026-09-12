@@ -1,4 +1,4 @@
-import { ChevronRight, Link2 } from "lucide-react";
+import { ChevronRight, Link2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CountBadge } from "@/components/exits/CountChip";
@@ -234,9 +234,14 @@ export function PeopleListSection({
       />
 
       {rows.length === 0 ? (
-        <EmptyState title={t("people.emptyTitle")} detail={t("people.emptyBody")} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.emptyTitle")} detail={t("people.emptyBody")} />
       ) : filteredRows.length === 0 ? (
-        <EmptyState title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
+        <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
       ) : (
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="people-list">
           {filteredRows.map((row) => (

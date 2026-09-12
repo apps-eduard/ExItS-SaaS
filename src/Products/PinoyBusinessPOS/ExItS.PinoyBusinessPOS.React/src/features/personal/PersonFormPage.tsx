@@ -3,6 +3,7 @@ import { IdCard, Loader2, Save, UserRound } from "lucide-react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/exits/Notice";
 import { PersonalIdentityResolvePanel } from "@/features/personal/PersonalIdentityResolvePanel";
 import {
   findExistingContact,
@@ -210,10 +211,11 @@ export function PersonCreateForm({
       )}
 
       {error ? (
-        <div className="exits-alert exits-alert--error" data-testid="people-add-error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-          {existingContact ? (
-            <p className="m-0 mt-2">
+        <Notice
+          tone="danger"
+          testId="people-add-error"
+          action={
+            existingContact ? (
               <Link
                 to={`/personal/people/${existingContact.id}`}
                 className="font-semibold text-primary"
@@ -221,9 +223,11 @@ export function PersonCreateForm({
               >
                 {t("people.add.openExisting")}
               </Link>
-            </p>
-          ) : null}
-        </div>
+            ) : undefined
+          }
+        >
+          {error}
+        </Notice>
       ) : null}
 
       {createKind === null ? (

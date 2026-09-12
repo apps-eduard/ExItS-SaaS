@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Play, RotateCcw } from "lucide-react";
+import { Clock3, Play, RotateCcw } from "lucide-react";
 import { ActionButtonLoading } from "@/components/exits/loading/ActionButtonLoading";
 import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -392,19 +393,19 @@ export function ShiftOpenPage() {
       />
 
       {submitError ? (
-        <div className="exits-alert exits-alert--error" data-testid="shift-open-error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{t("error.title")}</p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]">{submitError}</p>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3"
-            onClick={() => void registersQuery.refetch()}
-          >
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-            {t("shift.retry")}
-          </Button>
-        </div>
+        <Notice
+          tone="danger"
+          testId="shift-open-error"
+          title={t("error.title")}
+          action={
+            <Button type="button" variant="outline" onClick={() => void registersQuery.refetch()}>
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("shift.retry")}
+            </Button>
+          }
+        >
+          {submitError}
+        </Notice>
       ) : null}
 
       <section className="catalog-form-section exits-animate-panel">
@@ -420,7 +421,9 @@ export function ShiftOpenPage() {
               Uncomment this block and remove the PWA auto-provision path below
               when PosDeviceAuthorization:EnforcementEnabled=true for native installs.
 
-            <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+            <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
             <Button asChild variant="outline" className="mt-3">
               <Link to="/registers">{t("shift.goToRegisters")}</Link>
             </Button>
@@ -429,6 +432,8 @@ export function ShiftOpenPage() {
             {pwaOptionalCashRegister ? (
               <div className="flex flex-col gap-2" data-testid="shift-open-pwa-register">
                 <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />}
                   title={t("shift.pwaRegisterTitle")}
                   detail={t("shift.pwaRegisterDetail")}
                 />
@@ -479,7 +484,9 @@ export function ShiftOpenPage() {
               </div>
             ) : (
               <>
-                <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+                <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
                 <Button asChild variant="outline" className="mt-3">
                   <Link to="/registers">{t("shift.goToRegisters")}</Link>
                 </Button>

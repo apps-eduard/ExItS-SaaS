@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -121,6 +122,8 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
 
       {plans.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.explore.emptyTitle")}
           detail={t("personal.explore.emptyDetail")}
         />

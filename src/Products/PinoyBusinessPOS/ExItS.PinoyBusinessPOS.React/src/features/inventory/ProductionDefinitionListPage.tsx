@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Package, Plus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listProductionDefinitions } from "@/api/pos/pos-production-client";
 import { Button } from "@/components/ui/button";
@@ -128,6 +128,9 @@ export function ProductionDefinitionListPage() {
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
           title={t("production.setups.empty")}
           detail={t("production.setups.emptyDetail")}
         />

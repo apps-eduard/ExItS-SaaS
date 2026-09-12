@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus, Tags } from "lucide-react";
+import { ChevronRight, Plus, Tags, Wallet } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   expenseWorkspaceScope,
@@ -483,6 +483,9 @@ export function ExpenseListPage() {
       ) : null}
       {listQuery.isSuccess && items.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Wallet className="size-5" strokeWidth={1.75} />}
           title={filtersActive ? t("expense.emptyFiltered") : t("expense.empty")}
           detail={
             filtersActive

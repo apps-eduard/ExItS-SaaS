@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronRight, History } from "lucide-react";
+import { ChevronRight, History, Users } from "lucide-react";
 import {
   getLinkedCustomerStatement,
   isExtendedHistoryRequiredError,
@@ -451,6 +451,8 @@ export function LinkedMerchantStatementPage() {
           <h2 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h2>
           {openDebt.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
               title={t("personal.merchantStatement.openDebtEmptyTitle")}
               detail={t("personal.merchantStatement.openDebtEmptyDetail")}
             />
@@ -484,6 +486,8 @@ export function LinkedMerchantStatementPage() {
         <h2 className="pc-section-heading">{t("personal.merchantStatement.recentSection")}</h2>
         {recent.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.merchantStatement.recentEmptyTitle")}
             detail={t("personal.merchantStatement.recentEmptyDetail")}
           />
@@ -536,6 +540,8 @@ export function LinkedMerchantStatementPage() {
           </Button>
         ) : olderItems.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.merchantStatement.olderEmptyTitle")}
             detail={t("personal.merchantStatement.olderEmptyDetail")}
           />

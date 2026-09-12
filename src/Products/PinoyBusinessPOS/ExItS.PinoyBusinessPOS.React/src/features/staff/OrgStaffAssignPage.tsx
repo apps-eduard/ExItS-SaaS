@@ -22,6 +22,7 @@ import {
 } from "@/api/platform/product-local-roles-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
@@ -895,9 +896,7 @@ export function OrgStaffAssignPage() {
         </section>
       ) : null}
       {submitError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{submitError}</p>
-        </div>
+        <Notice tone="danger">{submitError}</Notice>
       ) : null}
 
       <div className="exits-animate-toolbar">

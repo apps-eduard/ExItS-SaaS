@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Check, Plus } from "lucide-react";
+import { BookOpen, Check, ClipboardList, Plus } from "lucide-react";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
@@ -793,6 +793,8 @@ export function PurchaseOrderCreatePage() {
             <>
               {linkedProductsQuery.isSuccess && readyProducts.length === 0 ? (
                 <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
                   title={t("purchasing.noReadyProducts")}
                   detail={t("purchasing.noReadyProductsHelp")}
                   action={
@@ -807,6 +809,8 @@ export function PurchaseOrderCreatePage() {
               filteredConnected.length === 0 &&
               debounced ? (
                 <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
                   title={t("purchasing.noProducts")}
                   detail={t("purchasing.noProductsDetail")}
                 />
@@ -915,6 +919,7 @@ export function PurchaseOrderCreatePage() {
             <>
               {readinessQuery.isSuccess && setupItems.length === 0 ? (
                 <EmptyState
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
                   align="center"
                   title={t("purchasing.noSetupProducts")}
                   detail={t("purchasing.noSetupProductsHelp")}
@@ -1165,6 +1170,8 @@ export function PurchaseOrderCreatePage() {
           />
           {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
             <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
               title={t("purchasing.noProducts")}
               detail={t("purchasing.noProductsDetail")}
             />

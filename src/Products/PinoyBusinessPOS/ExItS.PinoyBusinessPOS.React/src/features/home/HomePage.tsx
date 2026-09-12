@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import { rememberPreferencesReturnTo } from "@/features/preferences/preferences-return";
+import { Inbox } from "lucide-react";
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
@@ -24,7 +25,9 @@ export function HomePage() {
     if (status === "loading" || status === "binding" || status === "idle" || status === "ready") {
       return <LoadingState label={t("session.loading")} />;
     }
-    return <EmptyState title={t("home.emptyTitle")} detail={t("workspace.lede")} />;
+    return <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("home.emptyTitle")} detail={t("workspace.lede")} />;
   }
 
   const experienceRoute = isWarehouseBranch(boundWorkspace.branchType)
@@ -68,7 +71,9 @@ function BoundHomeRedirect({
         <p className="m-0 text-[length:var(--exits-text-md)]">{t("home.body")}</p>
         <p className="mt-3 mb-0 text-[length:var(--exits-text-sm)] text-muted">{t("home.scope")}</p>
       </Card>
-      <EmptyState title={t("home.emptyTitle")} detail={t("home.emptyDetail")} />
+      <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("home.emptyTitle")} detail={t("home.emptyDetail")} />
       <div className="flex flex-wrap gap-2">
         {canSwitchWorkspace ? (
           <Button asChild variant="ghost">

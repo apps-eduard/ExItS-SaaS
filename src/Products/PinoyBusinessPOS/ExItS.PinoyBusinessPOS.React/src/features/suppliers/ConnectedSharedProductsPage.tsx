@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link2Off, Percent, Share2, Tag } from "lucide-react";
+import { Building2, Link2Off, Percent, Share2, Tag } from "lucide-react";
 import { canGovernOrganizationCatalog, canManageSuppliers } from "@/access/pos-capabilities";
 import {
   applyBuyerProductPricing,
@@ -349,6 +349,9 @@ export function ConnectedSharedProductsPage() {
       ) : null}
       {query.isSuccess && shareItems.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("connected.noProductsForFilter")}
           detail={t("connected.noProductsForFilterHelp")}
         />

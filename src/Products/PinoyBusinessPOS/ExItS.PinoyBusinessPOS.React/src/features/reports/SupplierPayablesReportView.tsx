@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/exits/EmptyState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Card } from "@/components/ui/card";
@@ -91,7 +92,12 @@ export function SupplierPayablesReportView({ report }: SupplierPayablesReportVie
           {t("reports.supplierPayables.supplierBalances")}
         </h2>
         {suppliers.length === 0 ? (
-          <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+          <EmptyState
+            size="compact"
+            variant="filtered"
+            title={t("reports.emptyTitle")}
+            detail={t("reports.emptyDetail")}
+          />
         ) : (
           <ul
             className="m-0 flex list-none flex-col gap-2 p-0"
@@ -141,7 +147,12 @@ export function SupplierPayablesReportView({ report }: SupplierPayablesReportVie
           {t("reports.supplierPayables.payableDetail")}
         </h2>
         {payables.length === 0 ? (
-          <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+          <EmptyState
+            size="compact"
+            variant="filtered"
+            title={t("reports.emptyTitle")}
+            detail={t("reports.emptyDetail")}
+          />
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block" data-testid="supplier-payables-table">

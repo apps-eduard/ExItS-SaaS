@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { PackageOpen } from "lucide-react";
+import { PackageOpen, Users } from "lucide-react";
 import {
   canApproveCustomerCreditPolicy,
   canManageCustomerCreditPolicy,
@@ -93,6 +93,8 @@ export function BusinessCustomerDetailPage() {
   if (!detailQuery.data) {
     return (
       <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
         title={t("customers.business.notFound")}
         detail={t("customers.business.notFoundHelp")}
       />

@@ -9124,7 +9124,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "reports.scope.orgOnlyNote": "This report includes all branches (organization-wide).",
 
-  "reports.scope.noDataForBranch": "No data for this branch in the selected period.",
+  "reports.scope.noDataForBranch": "No report rows for this branch in the selected period.",
 
   "reports.cashVariance": "Cash variance",
 
@@ -9232,9 +9232,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "reports.datePresets": "Date range",
 
-  "reports.emptyDetail": "No data for this period.",
+  "reports.emptyDetail": "Try another date range or branch scope.",
 
-  "reports.emptyTitle": "No rows",
+  "reports.emptyTitle": "No report rows for this period",
 
   "reports.errorTitle": "Report error",
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ClipboardList } from "lucide-react";
 import { canViewPurchasing } from "@/access/pos-capabilities";
 import { listIncomingOrders } from "@/api/pos/pos-connected-suppliers-client";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -145,10 +145,15 @@ export function IncomingOrdersListPage() {
         <ErrorState title={t("error.title")} detail={t("incomingOrders.loadFailed")} />
       ) : null}
       {query.isSuccess && (query.data?.length ?? 0) === 0 && !search.trim() ? (
-        <EmptyState title={t("incomingOrders.empty")} detail={t("incomingOrders.emptyHelp")} />
+        <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("incomingOrders.empty")} detail={t("incomingOrders.emptyHelp")} />
       ) : null}
       {query.isSuccess && filtered.length === 0 && search.trim() ? (
-        <EmptyState title={t("incomingOrders.noMatch")} detail={t("incomingOrders.noMatchHelp")} />
+        <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("incomingOrders.noMatch")} detail={t("incomingOrders.noMatchHelp")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="incoming-orders-list">

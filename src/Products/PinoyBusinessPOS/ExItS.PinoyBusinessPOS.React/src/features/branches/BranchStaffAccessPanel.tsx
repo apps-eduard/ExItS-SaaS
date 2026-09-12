@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Store } from "lucide-react";
 import { canInviteOrganizationStaff } from "@/access/pos-capabilities";
 import {
   listMembershipBranchAssignments,
@@ -17,6 +17,7 @@ import {
 } from "@/api/platform/organization-members-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { BottomSheet } from "@/components/exits/SheetDialog";
@@ -191,9 +192,7 @@ export function BranchStaffAccessPanel({
       </p>
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert" data-testid="branch-staff-error">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger" testId="branch-staff-error">{actionError}</Notice>
       ) : null}
 
       <div className="flex items-center justify-between gap-2">
@@ -217,7 +216,9 @@ export function BranchStaffAccessPanel({
       </div>
 
       {assigned.length === 0 ? (
-        <EmptyState title={t("branches.staff.empty")} detail="" />
+        <EmptyState
+              align="center"
+              icon={<Store className="size-5" strokeWidth={1.75} />} title={t("branches.staff.empty")} detail="" />
       ) : (
         <ul className="m-0 grid list-none gap-2 p-0" data-testid="branch-staff-list">
           {assigned.map((item) => (

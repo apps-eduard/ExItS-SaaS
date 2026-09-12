@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -547,6 +548,9 @@ export function ProductionRunCreatePage() {
 
       {definitionsQuery.isSuccess && activeDefinitions.length === 0 ? (
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
           title={t("production.setups.empty")}
           detail={t("production.produce.noActiveSetups")}
         />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Factory } from "lucide-react";
+import { ChevronRight, Factory, Package } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listProductionRuns } from "@/api/pos/pos-production-client";
 import { Button } from "@/components/ui/button";
@@ -100,7 +100,9 @@ export function ProductionRunListPage() {
         <ErrorState title={t("production.errorTitle")} detail={t("production.runs.loadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("production.runs.empty")} detail={t("production.runs.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("production.runs.empty")} detail={t("production.runs.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="production-run-list">

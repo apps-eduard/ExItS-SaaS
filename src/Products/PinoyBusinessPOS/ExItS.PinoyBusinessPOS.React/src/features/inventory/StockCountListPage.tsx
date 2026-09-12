@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ClipboardList } from "lucide-react";
+import { ChevronRight, ClipboardList, Package } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listStockCounts } from "@/api/pos/pos-stock-count-client";
 import { Button } from "@/components/ui/button";
@@ -164,7 +164,9 @@ export function StockCountListPage() {
 
       {!query.isLoading && !query.isError && items.length === 0 ? (
         <>
-          <EmptyState title={t("stockCount.empty")} detail={t("stockCount.emptyDetail")} />
+          <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockCount.empty")} detail={t("stockCount.emptyDetail")} />
           {allowManage && online ? (
             <Button asChild>
               <Link to="/inventory/stock-counts/new" data-testid="stock-count-empty-cta">

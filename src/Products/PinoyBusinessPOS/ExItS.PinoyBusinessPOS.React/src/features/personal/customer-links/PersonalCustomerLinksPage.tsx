@@ -1,15 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Ban,
-  CalendarClock,
-  Check,
-  Hourglass,
-  Loader2,
-  RefreshCw,
-  Store,
-  X,
-} from "lucide-react";
+import { Ban, CalendarClock, Check, Hourglass, Loader2, RefreshCw, Store, Users, X } from "lucide-react";
 import {
   acceptCustomerLinkRequest,
   blockBusinessFromCustomerLinkRequest,
@@ -351,6 +342,8 @@ function PendingTabContent({
     return (
       <div className="exits-animate-panel flex flex-col gap-3">
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.customerLinks.emptyTitle")}
           detail={t("personal.customerLinks.emptyDetail")}
         />
@@ -512,6 +505,8 @@ function HistoryTabContent({
     return (
       <div className="exits-animate-panel flex flex-col gap-3">
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.customerLinks.historyEmptyTitle")}
           detail={t("personal.customerLinks.historyEmptyDetail")}
         />

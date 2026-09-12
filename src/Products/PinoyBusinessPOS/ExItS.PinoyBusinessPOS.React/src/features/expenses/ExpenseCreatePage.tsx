@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, Eye, Loader2, Plus, Receipt, Smartphone } from "lucide-react";
+import { ArrowLeft, Banknote, Eye, Loader2, Plus, Receipt, Smartphone, Wallet } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   EXPENSE_DESCRIPTION_MAX,
@@ -278,6 +278,8 @@ export function ExpenseCreatePage() {
       {categoriesQuery.isSuccess && activeCategories.length === 0 ? (
         <div data-testid="expense-no-categories">
           <EmptyState
+              align="center"
+              icon={<Wallet className="size-5" strokeWidth={1.75} />}
             title={t("expense.noActiveCategories")}
             detail={t("expense.noActiveCategoriesDetail")}
           />

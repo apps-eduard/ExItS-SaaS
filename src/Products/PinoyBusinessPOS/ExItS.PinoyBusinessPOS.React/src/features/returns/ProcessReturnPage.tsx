@@ -1,3 +1,4 @@
+import { Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -289,6 +291,8 @@ export function ProcessReturnPage() {
           {...headerBack}
         />
         <EmptyState
+              align="center"
+              icon={<Undo2 className="size-5" strokeWidth={1.75} />}
           title={t("returns.alreadyReturned")}
           detail={t("returns.alreadyReturnedDetail")}
         />
@@ -435,13 +439,7 @@ export function ProcessReturnPage() {
       </section>
 
       {staleNotice ? (
-        <div
-          data-testid="returns-stale-banner"
-          className="exits-alert exits-alert--error"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("returns.errorStale")}</p>
-        </div>
+        <Notice tone="danger" testId="returns-stale-banner">{t("returns.errorStale")}</Notice>
       ) : null}
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="returns-lines">

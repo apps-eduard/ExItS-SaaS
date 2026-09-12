@@ -1,3 +1,4 @@
+import { ArrowLeftRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -144,7 +145,9 @@ export function SupplyRoutesPage() {
   });
 
   if (!orgId) {
-    return <EmptyState title={t("supplyRoutes.needOrg")} detail={t("supplyRoutes.needOrgDetail")} />;
+    return <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("supplyRoutes.needOrg")} detail={t("supplyRoutes.needOrgDetail")} />;
   }
 
   if (branchesQuery.isLoading || routesQuery.isLoading) {
@@ -191,6 +194,8 @@ export function SupplyRoutesPage() {
 
       {warehouses.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
           title={t("supplyRoutes.noWarehouses")}
           detail={t("supplyRoutes.noWarehousesDetail")}
         />

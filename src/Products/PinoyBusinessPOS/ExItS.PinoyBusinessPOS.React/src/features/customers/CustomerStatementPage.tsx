@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -221,11 +222,15 @@ export function CustomerStatementPage() {
 
           {statementQuery.data.lines.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
               title={t("customers.statementEmpty")}
               detail={t("customers.statementEmptyDetail")}
             />
           ) : filteredLines.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
               title={t("customers.statementEmpty")}
               detail={t("customers.statementEmptyDetail")}
             />

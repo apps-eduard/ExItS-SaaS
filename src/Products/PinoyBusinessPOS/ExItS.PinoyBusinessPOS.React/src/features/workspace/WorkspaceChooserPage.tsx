@@ -1,11 +1,4 @@
-import {
-  BriefcaseBusiness,
-  ChevronDown,
-  ChevronRight,
-  LayoutGrid,
-  ShoppingCart,
-  Warehouse,
-} from "lucide-react";
+import { BriefcaseBusiness, ChevronDown, ChevronRight, Inbox, LayoutGrid, ShoppingCart, Warehouse } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -224,7 +217,9 @@ export function WorkspaceChooserPage() {
     return (
       <div className="flex min-w-0 flex-col gap-4">
         <PageHeader title={t("workspace.title")} description={t("workspace.lede")} />
-        <EmptyState title={t("noLocation.title")} detail={t("noLocation.detail")} />
+        <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("noLocation.title")} detail={t("noLocation.detail")} />
       </div>
     );
   }
@@ -328,6 +323,8 @@ export function WorkspaceChooserPage() {
         >
           <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
           <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />}
             title={t("workspace.noAuthorizedDestinationsTitle")}
             detail={t("workspace.noAuthorizedDestinationsDetail")}
           />
@@ -419,6 +416,8 @@ export function WorkspaceChooserPage() {
                 data-testid="workspace-no-authorized-destinations"
               >
                 <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />}
                   title={t("workspace.noAuthorizedDestinationsTitle")}
                   detail={t("workspace.noAuthorizedDestinationsDetail")}
                 />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight, Package, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listWasteLosses } from "@/api/pos/pos-waste-loss-client";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,9 @@ export function WasteLossListPage() {
         <ErrorState title={t("wasteLoss.errorTitle")} detail={t("wasteLoss.loadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("wasteLoss.empty")} detail={t("wasteLoss.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("wasteLoss.empty")} detail={t("wasteLoss.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="waste-loss-list">

@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -250,6 +251,8 @@ export function InventoryExpirationPage() {
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
           title={t("inventory.expirationEmpty")}
           detail={t("inventory.expirationEmptyDetail")}
         />

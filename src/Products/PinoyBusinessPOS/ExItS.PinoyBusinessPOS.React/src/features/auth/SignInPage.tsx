@@ -4,8 +4,8 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { AuthExperienceLayout, AuthOrDivider } from "@/features/auth/AuthExperienceLayout";
-import { cn } from "@/lib/cn";
 import {
   persistRememberedUsername,
   readRememberMePreference,
@@ -49,18 +49,13 @@ function AuthInlineFeedback({
   tone?: "error" | "success";
 }) {
   return (
-    <p
-      role="alert"
-      data-testid={testId}
-      className={cn(
-        "m-0 rounded-[var(--exits-radius-md)] px-3 py-2 text-[length:var(--exits-text-sm)] leading-relaxed",
-        tone === "success"
-          ? "border border-success/30 bg-success/5 text-success"
-          : "border border-destructive/30 bg-destructive/5 text-destructive",
-      )}
+    <Notice
+      tone={tone === "success" ? "success" : "danger"}
+      testId={testId}
+      icon={null}
     >
       {message}
-    </p>
+    </Notice>
   );
 }
 
