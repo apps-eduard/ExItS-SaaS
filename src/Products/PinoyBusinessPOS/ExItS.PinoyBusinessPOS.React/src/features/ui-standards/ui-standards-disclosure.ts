@@ -31,6 +31,7 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "buttons.samples.danger-strong": false,
 
   "chips.status": true,
+  "chips.control-shape": true,
   "chips.filter": true,
   "chips.tags": true,
   "chips.shapes": true,

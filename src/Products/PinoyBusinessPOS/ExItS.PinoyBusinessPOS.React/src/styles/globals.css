@@ -13609,7 +13609,7 @@ select.pc-field__control:disabled {
   }
 }
 
-/* List-toolbar filter pills â€” shared height for Filters/Sort buttons and active chips */
+/* List-toolbar filter chips — shared height; radius follows Control Shape */
 .exits-filter-pill {
   display: inline-flex;
   flex-shrink: 0;
@@ -13621,21 +13621,23 @@ select.pc-field__control:disabled {
   padding-inline: var(--exits-chip-padding-x);
   padding-block: 0;
   border: 1px solid var(--exits-border);
-  border-radius: 9999px;
+  border-radius: var(--exits-control-radius);
   background: var(--exits-surface);
   color: var(--exits-text);
   font-size: var(--exits-chip-font-size);
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
+  transition:
+    background-color var(--exits-motion-fast) ease,
+    border-color var(--exits-motion-fast) ease,
+    color var(--exits-motion-fast) ease,
+    border-radius var(--exits-motion-fast) var(--exits-ease-standard),
+    box-shadow var(--exits-motion-fast) ease;
 }
 
 button.exits-filter-pill {
   cursor: pointer;
-  transition:
-    background-color var(--exits-motion-fast) ease,
-    border-color var(--exits-motion-fast) ease,
-    color var(--exits-motion-fast) ease;
 }
 
 button.exits-filter-pill:hover:not(:disabled) {
@@ -13644,7 +13646,8 @@ button.exits-filter-pill:hover:not(:disabled) {
 
 button.exits-filter-pill:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--exits-ring, color-mix(in srgb, var(--exits-primary) 45%, transparent));
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
 }
 
 button.exits-filter-pill.exits-filter-pill--button {
@@ -13696,7 +13699,8 @@ button.exits-filter-pill.exits-filter-pill--button {
   min-height: var(--exits-chip-min-height);
   padding: 0 var(--exits-chip-padding-x);
   border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
+  /* Filter + action chip bars follow Preferences Control Shape */
+  border-radius: var(--exits-control-radius);
   background: var(--exits-surface);
   color: var(--exits-text);
   font-size: var(--exits-chip-font-size);
@@ -13709,8 +13713,14 @@ button.exits-filter-pill.exits-filter-pill--button {
     background-color var(--exits-motion-fast) ease,
     border-color var(--exits-motion-fast) ease,
     color var(--exits-motion-fast) ease,
+    border-radius var(--exits-motion-fast) var(--exits-ease-standard),
     box-shadow var(--exits-motion-fast) ease,
     transform var(--exits-motion-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Steps keep a stable field-like radius (not global Control Shape). */
+.exits-chip-bar--steps .exits-chip {
+  border-radius: var(--exits-radius-md);
 }
 
 .exits-chip:nth-child(1) {
@@ -13766,10 +13776,6 @@ button.exits-chip {
   max-width: none;
 }
 
-.exits-chip-bar--actions .exits-chip {
-  border-radius: var(--exits-radius-md);
-}
-
 .exits-chip:hover {
   background: var(--exits-surface-muted);
 }
@@ -13786,8 +13792,9 @@ button.exits-chip:active:not(:disabled) {
 }
 
 .exits-chip:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
 }
 
 .exits-chip--active {

@@ -15,9 +15,11 @@ import {
   Warehouse,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ActionChipBar } from "@/components/exits/ActionChipBar";
 import { CountBadge, CountChip } from "@/components/exits/CountChip";
 import { FilterChip } from "@/components/exits/FilterChip";
 import { RemovableChip } from "@/components/exits/RemovableChip";
+import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TagChip } from "@/components/exits/TagChip";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -501,6 +503,61 @@ export function UiStandardsChipsPanel({ isOpen, setOpen }: DisclosureProps) {
               <StatusChip tone="danger" icon={<Ban aria-hidden />}>
                 Void
               </StatusChip>
+            </SampleCard>
+          </StaticSampleGroup>
+        </div>
+      </UiStandardsSection>
+
+      <UiStandardsSection
+        id="chips.control-shape"
+        title="Global Control Shape"
+        description="Preferences → Control Shape updates Button, Action Chip, Filter Chip, and Search Field together. Form fields keep field radius."
+        summary="STANDARD · PILL"
+        open={isOpen("chips.control-shape")}
+        onOpenChange={(open) => setOpen("chips.control-shape", open)}
+        testId="ui-standards-chips-control-shape"
+      >
+        <div className="grid gap-3" data-testid="ui-standards-global-control-shape">
+          <StaticSampleGroup title="PARTICIPATING CONTROLS (shape=auto)">
+            <SampleCard
+              label="Button · Action · Filter · Search"
+              command="CONTROL SHAPE + AUTO"
+              commandContext="Follows Preferences → Control Shape"
+              hint="Switch Preferences → Control Shape (Standard / Pill) — samples update live."
+            >
+              <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button">New product</Button>
+                  <ActionChipBar
+                    ariaLabel="Control shape action sample"
+                    items={[{ key: "template", label: "Business template" }]}
+                  />
+                  <FilterChip selected>Organization</FilterChip>
+                  <FilterChip>Active</FilterChip>
+                </div>
+                <SearchField
+                  label="Search products"
+                  placeholder="Search products..."
+                  value=""
+                  onChange={() => undefined}
+                  testId="ui-standards-control-shape-search"
+                />
+              </div>
+            </SampleCard>
+          </StaticSampleGroup>
+          <StaticSampleGroup title="FORM FIELDS">
+            <SampleCard
+              label="Keep field shape"
+              command="FORM FIELD RADIUS"
+              hint="Form fields keep their field shape."
+              explanatory
+            >
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+                <input className="exits-input" readOnly value="Product name" aria-label="Product name sample" />
+                <select className="exits-input" aria-label="Category sample" defaultValue="cat">
+                  <option value="cat">Category</option>
+                </select>
+              </div>
             </SampleCard>
           </StaticSampleGroup>
         </div>

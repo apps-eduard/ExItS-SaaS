@@ -1,13 +1,16 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { filterChipVariants, type ChipShape } from "@/components/exits/chip-variants";
+import { filterChipVariants, type FilterChipShape } from "@/components/exits/chip-variants";
 
 export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
   children: ReactNode;
   selected?: boolean;
-  /** Default remains pill — easier to distinguish from compact tags. */
-  shape?: ChipShape;
+  /**
+   * Default `auto` follows Preferences Control Shape via `--exits-control-radius`.
+   * Explicit `pill` / `soft` / `square` win over the global preference.
+   */
+  shape?: FilterChipShape;
   /** Show a check when selected (multi-select clarity). */
   showCheck?: boolean;
   icon?: ReactNode;
@@ -15,13 +18,13 @@ export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 
 /**
  * Interactive filter / selection chip (APPROVED / LOCKED).
- * Button semantics — not a StatusChip. Default shape: pill.
+ * Button semantics — not a StatusChip. Default shape: auto (global Control Shape).
  */
 export function FilterChip({
   children,
   className,
   selected = false,
-  shape = "pill",
+  shape = "auto",
   showCheck = false,
   icon,
   type = "button",

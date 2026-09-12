@@ -3,14 +3,15 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
   chipSurfaceVariants,
-  type ChipShape,
   type ChipTone,
+  type FilterChipShape,
 } from "@/components/exits/chip-variants";
 
 export type RemovableChipProps = {
   children: ReactNode;
   tone?: ChipTone;
-  shape?: ChipShape;
+  /** Default `auto` follows Preferences Control Shape. Explicit shapes win. */
+  shape?: FilterChipShape;
   className?: string;
   onRemove: () => void;
   /** Accessible name for the remove control, e.g. "Remove Branch: Main filter". */
@@ -20,21 +21,23 @@ export type RemovableChipProps = {
 
 /**
  * Selected value / active filter chip with trailing remove (APPROVED / LOCKED).
- * Default shape remains pill for touch clarity.
+ * Default shape follows global Control Shape (`auto`).
  */
 export function RemovableChip({
   children,
   tone = "neutral",
-  shape = "pill",
+  shape = "auto",
   className,
   onRemove,
   removeLabel,
   disabled,
 }: RemovableChipProps) {
+  const surfaceShape = shape === "auto" ? "soft" : shape;
   return (
     <span
       className={cn(
-        chipSurfaceVariants({ tone, shape }),
+        chipSurfaceVariants({ tone, shape: surfaceShape }),
+        shape === "auto" && "rounded-[var(--exits-control-radius)]",
         "pointer-events-auto max-w-[16rem] gap-1 pr-1",
         className,
       )}

@@ -24,6 +24,9 @@ export type ChipTone = keyof typeof chipToneClasses;
 /** Chip shapes — independent from Button shapes. See exits-chip-standard.md. */
 export type ChipShape = "pill" | "soft" | "square";
 
+/** Interactive filter / removable chips may follow Preferences Control Shape. */
+export type FilterChipShape = ChipShape | "auto";
+
 export const chipShapeClasses = {
   pill: [
     "rounded-full",
@@ -72,16 +75,17 @@ export const chipSurfaceVariants = cva(
   },
 );
 
-/** Interactive filter density — default shape remains pill. */
+/** Interactive filter density — default follows Preferences Control Shape. */
 export const filterChipVariants = cva(
   [
     "group/filter-chip inline-flex max-w-full shrink-0 items-center justify-center gap-[var(--exits-chip-gap)]",
     "box-border h-[var(--exits-chip-min-height)] min-h-[var(--exits-chip-min-height)]",
     "border border-solid px-[var(--exits-chip-padding-x)]",
     "text-[length:var(--exits-chip-font-size)] font-medium leading-none",
-    "transition-[background-color,border-color,color,box-shadow,transform]",
+    "transition-[background-color,border-color,color,box-shadow,transform,border-radius]",
     "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
+    "focus-visible:outline-none focus-visible:border-[var(--exits-primary)]",
+    "focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_28%,transparent)]",
     "disabled:pointer-events-none disabled:opacity-50 disabled:scale-100",
     "active:scale-[0.985] motion-reduce:active:scale-100",
   ].join(" "),
@@ -102,6 +106,8 @@ export const filterChipVariants = cva(
         ].join(" "),
       },
       shape: {
+        /** Follows Preferences control shape (--exits-control-radius). */
+        auto: "rounded-[var(--exits-control-radius)]",
         pill: "rounded-full",
         soft: "rounded-[var(--exits-radius-sm)]",
         square: "rounded-[var(--exits-radius-xs)]",
@@ -109,7 +115,7 @@ export const filterChipVariants = cva(
     },
     defaultVariants: {
       selected: false,
-      shape: "pill",
+      shape: "auto",
     },
   },
 );

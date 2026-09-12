@@ -71,7 +71,8 @@ Interactive filter / selection control.
 Examples: All, Active, Inactive, Low stock, Needs attention.
 
 - Button semantics (`<button>`, `aria-pressed`)
-- Default shape: **PILL**
+- Default shape: **AUTO** (follows Preferences → Control Shape via `--exits-control-radius`)
+- Explicit `pill` / `soft` / `square` override the global preference
 - Selected state uses **PRIMARY** semantic treatment (not a full Primary action Button)
 
 ### TAG CHIP

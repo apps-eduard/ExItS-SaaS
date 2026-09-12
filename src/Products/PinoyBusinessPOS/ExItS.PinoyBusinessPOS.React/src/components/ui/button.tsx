@@ -14,7 +14,7 @@ export const buttonVariants = cva(
     "group/button inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
     "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
     "active:scale-[0.985] motion-reduce:active:scale-100",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
+    "focus-visible:outline-none focus-visible:border-[var(--exits-primary)] focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_28%,transparent)]",
     "disabled:pointer-events-none disabled:opacity-50 disabled:translate-y-0 disabled:scale-100 disabled:shadow-none",
   ].join(" "),
   {
