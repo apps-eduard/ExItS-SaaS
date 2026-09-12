@@ -29,6 +29,11 @@ export const en = {
   "appearance.motion.label": "Motion",
   "appearance.motion.system": "System",
   "appearance.motion.reduced": "Reduced",
+  "navigationMode.label": "Sidebar",
+  "navigationMode.standard": "Standard",
+  "navigationMode.compact": "Compact",
+  "navigationMode.helper":
+    "Standard shows icons and labels. Compact uses an icon rail.",
   "status.foundation": "Foundation",
   "empty.title": "Nothing here yet",
   "empty.detail": "Product screens will arrive in later authorized packages.",

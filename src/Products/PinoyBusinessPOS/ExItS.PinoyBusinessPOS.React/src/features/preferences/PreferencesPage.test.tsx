@@ -117,8 +117,14 @@ describe("Preferences icon top navigation", () => {
     await user.click(screen.getByTestId("preferences-nav-navigation"));
     await waitFor(() => {
       expect(screen.getByTestId("preferences-section-navigation")).toBeInTheDocument();
-      expect(screen.getByTestId("preferences-navigation-empty")).toBeInTheDocument();
+      expect(screen.getByTestId("preferences-navigation-mode")).toBeInTheDocument();
     });
+    expect(screen.getByRole("radio", { name: "Sidebar: Standard" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Sidebar: Compact" })).toBeInTheDocument();
+    expect(screen.queryByTestId("preferences-navigation-empty")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Standard shows icons and labels. Compact uses an icon rail."),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByTestId("preferences-nav-accessibility"));
     await waitFor(() => {
@@ -228,6 +234,47 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toContain('[data-primary="rose"]');
     expect(globalsCss).toContain('[data-control-shape="pill"]');
     expect(globalsCss).toContain('[data-motion="reduced"]');
+  });
+
+  it("supports Navigation mode: Standard and Compact with persistence", async () => {
+    const user = userEvent.setup();
+    renderAuthenticatedAt("/settings/preferences/navigation");
+
+    await waitFor(() => {
+      expect(screen.getByTestId("preferences-navigation-mode")).toBeInTheDocument();
+    });
+
+    expect(document.documentElement.dataset.navigationMode).toBe("standard");
+    expect(screen.getByRole("radio", { name: "Sidebar: Standard" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Sidebar: Compact" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.navigationMode).toBe("compact");
+    });
+    expect(screen.getByRole("radio", { name: "Sidebar: Compact" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Sidebar: Standard" }));
+    await waitFor(() => {
+      expect(document.documentElement.dataset.navigationMode).toBe("standard");
+    });
+
+    const stored = JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}") as {
+      navigationMode?: string;
+    };
+    expect(stored.navigationMode).toBe("standard");
+
+    expect(globalsCss).toContain('[data-navigation-mode="compact"]');
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar\.admin-sidebar--expanded[\s\S]*?width:\s*3\.75rem/,
+    );
+    expect(globalsCss).toMatch(/\.admin-sidebar__label/);
+    expect(globalsCss).toMatch(/border-inline-start/);
   });
 
   it("uses shared icon top nav on all widths (no separate mobile nav)", async () => {

@@ -1,12 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { OperationsSidebar } from "@/features/operations/OperationsSidebar";
 import { resolvePreferencesReturnTo } from "@/features/preferences/preferences-return";
 
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/features/purchasing/usePurchasingNavigationBadge", () => ({
+  usePurchasingNavigationBadge: () => ({ count: 0, display: null }),
 }));
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
@@ -45,20 +50,23 @@ function LocationProbe() {
 describe("OperationsSidebar preferences return", () => {
   it("remembers the current content route when opening preferences", async () => {
     const user = userEvent.setup();
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
-      <MemoryRouter initialEntries={["/inventory"]}>
-        <Routes>
-          <Route
-            path="*"
-            element={
-              <>
-                <OperationsSidebar />
-                <LocationProbe />
-              </>
-            }
-          />
-        </Routes>
-      </MemoryRouter>,
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/inventory"]}>
+          <Routes>
+            <Route
+              path="*"
+              element={
+                <>
+                  <OperationsSidebar />
+                  <LocationProbe />
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
     );
 
     expect(screen.getByTestId("location-probe")).toHaveTextContent("/inventory");

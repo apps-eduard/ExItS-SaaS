@@ -21,15 +21,15 @@ export function NavActivityCountBadge({
   testId,
 }: NavActivityCountBadgeProps) {
   return (
-    <span className="inline-flex shrink-0" data-testid={testId} aria-hidden>
+    <span className={cn("inline-flex shrink-0", className)} data-testid={testId} aria-hidden>
       <CountBadge
         count={display}
         tone="primary"
-        className={cn(
-          selected &&
-            "border-[color-mix(in_srgb,var(--exits-primary)_45%,transparent)] bg-[color-mix(in_srgb,var(--exits-primary)_22%,transparent)] text-[var(--exits-primary)]",
-          className,
-        )}
+        className={
+          selected
+            ? "border-[color-mix(in_srgb,var(--exits-primary)_45%,transparent)] bg-[color-mix(in_srgb,var(--exits-primary)_22%,transparent)] text-[var(--exits-primary)]"
+            : undefined
+        }
       />
     </span>
   );

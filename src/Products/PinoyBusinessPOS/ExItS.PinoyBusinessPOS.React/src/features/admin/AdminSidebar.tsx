@@ -14,7 +14,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-/** Desktop (lg+) Manage Business sidebar — expanded only (no tablet rail). */
+/** Desktop (lg+) Manage Business sidebar — Standard labels or Compact icon rail via data-navigation-mode. */
 export function AdminSidebar() {
   const { t } = useI18n();
   const location = useLocation();
@@ -22,6 +22,7 @@ export function AdminSidebar() {
   const groups = buildAdminNavGroups(sessionGrant);
   const items = flattenAdminNavItems(groups);
   const activeId = matchAdminNavItem(location.pathname, items);
+  const switchLabel = t("workspace.switch");
 
   if (groups.length === 0) {
     return null;
@@ -54,12 +55,18 @@ export function AdminSidebar() {
                 const preferencesState = isPreferencesDestination(item.to)
                   ? preferencesNavigationState(location.pathname, location.search)
                   : undefined;
+                const label = t(item.labelKey);
+                const accessibleLabel =
+                  item.locked && item.lockedReasonKey
+                    ? `${label} · ${t(item.lockedReasonKey)}`
+                    : label;
                 return (
                   <li key={item.id}>
                     <NavLink
                       to={item.to}
                       end={item.end}
                       state={preferencesState}
+                      title={accessibleLabel}
                       onClick={
                         preferencesState
                           ? () =>
@@ -67,6 +74,7 @@ export function AdminSidebar() {
                           : undefined
                       }
                       data-testid={item.testId}
+                      aria-label={accessibleLabel}
                       aria-current={isActive ? "page" : undefined}
                       className={cn(
                         "admin-sidebar__link",
@@ -75,8 +83,8 @@ export function AdminSidebar() {
                       )}
                     >
                       <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">
-                        {t(item.labelKey)}
+                      <span className="admin-sidebar__label min-w-0 flex-1 truncate">
+                        {label}
                         {item.locked && item.lockedReasonKey ? (
                           <span className="admin-sidebar__lock-hint">
                             {" "}
@@ -98,9 +106,11 @@ export function AdminSidebar() {
           to="/workspace"
           className="admin-sidebar__switch"
           data-testid="admin-sidebar-switch-workspace"
+          title={switchLabel}
+          aria-label={switchLabel}
         >
           <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
-          <span>{t("workspace.switch")}</span>
+          <span className="admin-sidebar__label">{switchLabel}</span>
         </Link>
       </div>
     </aside>

@@ -16,7 +16,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-/** Desktop (lg+) Operations sidebar — expanded only (no tablet rail). */
+/** Desktop (lg+) Operations sidebar — Standard labels or Compact icon rail via data-navigation-mode. */
 export function OperationsSidebar() {
   const { t } = useI18n();
   const location = useLocation();
@@ -29,6 +29,7 @@ export function OperationsSidebar() {
   });
   const items = flattenOperationsSidebarItems(groups);
   const activeId = matchOperationsSidebarItem(location.pathname, items);
+  const switchLabel = t("workspace.switch");
 
   if (groups.length === 0) {
     return null;
@@ -57,13 +58,14 @@ export function OperationsSidebar() {
                 const ariaLabel =
                   badgeDisplay != null
                     ? `${label}, ${purchasingBadge.count} items`
-                    : undefined;
+                    : label;
                 return (
                   <li key={item.id}>
                     <NavLink
                       to={item.to}
                       end={item.end}
                       state={preferencesState}
+                      title={label}
                       onClick={
                         preferencesState
                           ? () =>
@@ -79,11 +81,12 @@ export function OperationsSidebar() {
                       )}
                     >
                       <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">{label}</span>
+                      <span className="admin-sidebar__label min-w-0 flex-1 truncate">{label}</span>
                       {badgeDisplay != null ? (
                         <NavActivityCountBadge
                           display={badgeDisplay}
                           selected={isActive}
+                          className="admin-sidebar__badge"
                           testId={`${item.testId}-badge`}
                         />
                       ) : null}
@@ -101,9 +104,11 @@ export function OperationsSidebar() {
           to="/workspace"
           className="admin-sidebar__switch"
           data-testid="operations-sidebar-switch-workspace"
+          title={switchLabel}
+          aria-label={switchLabel}
         >
           <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
-          <span>{t("workspace.switch")}</span>
+          <span className="admin-sidebar__label">{switchLabel}</span>
         </Link>
       </div>
     </aside>

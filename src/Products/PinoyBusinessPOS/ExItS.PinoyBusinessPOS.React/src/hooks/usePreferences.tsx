@@ -7,6 +7,7 @@ import {
   type DensityPreference,
   type LocalePreference,
   type MotionPreference,
+  type NavigationModePreference,
   type PrimaryColorPreference,
   type ThemePreference,
   type UiPreferences,
@@ -20,6 +21,7 @@ type PreferencesContextValue = {
   setPrimaryColor: (primaryColor: PrimaryColorPreference) => void;
   setControlShape: (controlShape: ControlShapePreference) => void;
   setMotion: (motion: MotionPreference) => void;
+  setNavigationMode: (navigationMode: NavigationModePreference) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -84,6 +86,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setNavigationMode = useCallback((navigationMode: NavigationModePreference) => {
+    setPreferences((current) => {
+      const next = { ...current, navigationMode };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       preferences,
@@ -93,8 +103,18 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setPrimaryColor,
       setControlShape,
       setMotion,
+      setNavigationMode,
     }),
-    [preferences, setTheme, setLocale, setDensity, setPrimaryColor, setControlShape, setMotion],
+    [
+      preferences,
+      setTheme,
+      setLocale,
+      setDensity,
+      setPrimaryColor,
+      setControlShape,
+      setMotion,
+      setNavigationMode,
+    ],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

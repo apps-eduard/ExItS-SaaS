@@ -8,6 +8,7 @@ export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"])
 export const primaryColorPreferenceSchema = z.enum(["green", "blue", "violet", "orange", "rose"]);
 export const controlShapePreferenceSchema = z.enum(["standard", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
+export const navigationModePreferenceSchema = z.enum(["standard", "compact"]);
 
 export const uiPreferencesSchema = z.object({
   theme: themePreferenceSchema,
@@ -20,6 +21,8 @@ export const uiPreferencesSchema = z.object({
   controlShape: controlShapePreferenceSchema.default("standard"),
   /** Missing in older storage → follow OS prefers-reduced-motion. */
   motion: motionPreferenceSchema.default("system"),
+  /** Missing in older storage → labeled desktop sidebar. */
+  navigationMode: navigationModePreferenceSchema.default("standard"),
 });
 
 export type ThemePreference = z.infer<typeof themePreferenceSchema>;
@@ -28,6 +31,7 @@ export type DensityPreference = z.infer<typeof densityPreferenceSchema>;
 export type PrimaryColorPreference = z.infer<typeof primaryColorPreferenceSchema>;
 export type ControlShapePreference = z.infer<typeof controlShapePreferenceSchema>;
 export type MotionPreference = z.infer<typeof motionPreferenceSchema>;
+export type NavigationModePreference = z.infer<typeof navigationModePreferenceSchema>;
 export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
 
 export const PRIMARY_COLOR_OPTIONS = [
@@ -45,6 +49,7 @@ export const defaultUiPreferences: UiPreferences = {
   primaryColor: "green",
   controlShape: "standard",
   motion: "system",
+  navigationMode: "standard",
 };
 
 export function parseUiPreferences(raw: string | null): UiPreferences {
@@ -96,6 +101,10 @@ export function applyMotion(motion: MotionPreference): void {
   document.documentElement.dataset.motion = motion;
 }
 
+export function applyNavigationMode(navigationMode: NavigationModePreference): void {
+  document.documentElement.dataset.navigationMode = navigationMode;
+}
+
 export function applyUiPreferences(preferences: UiPreferences): void {
   applyTheme(preferences.theme);
   applyLocale(preferences.locale);
@@ -103,4 +112,5 @@ export function applyUiPreferences(preferences: UiPreferences): void {
   applyPrimaryColor(preferences.primaryColor);
   applyControlShape(preferences.controlShape);
   applyMotion(preferences.motion);
+  applyNavigationMode(preferences.navigationMode);
 }

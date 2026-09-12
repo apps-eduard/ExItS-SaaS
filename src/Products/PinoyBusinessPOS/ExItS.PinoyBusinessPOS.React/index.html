@@ -7,6 +7,7 @@
   data-accent="green"
   data-control-shape="standard"
   data-motion="system"
+  data-navigation-mode="standard"
 >
   <head>
     <meta charset="UTF-8" />
@@ -38,6 +39,8 @@
           if (p.controlShape === "standard" || p.controlShape === "pill")
             d.dataset.controlShape = p.controlShape;
           if (p.motion === "system" || p.motion === "reduced") d.dataset.motion = p.motion;
+          if (p.navigationMode === "standard" || p.navigationMode === "compact")
+            d.dataset.navigationMode = p.navigationMode;
           if (typeof p.locale === "string") d.lang = p.locale;
         }
       } catch (e) {}

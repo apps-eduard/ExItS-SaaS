@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyControlShape,
   applyMotion,
+  applyNavigationMode,
   applyPrimaryColor,
   applyUiPreferences,
   defaultUiPreferences,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/preferences/ui-preferences";
 
 describe("ui preferences", () => {
-  it("defaults to System, English, Balance, Green, Standard, System motion", () => {
+  it("defaults to System, English, Balance, Green, Standard, System motion, Standard navigation", () => {
     expect(defaultUiPreferences).toEqual({
       theme: "system",
       locale: "en",
@@ -19,6 +20,7 @@ describe("ui preferences", () => {
       primaryColor: "green",
       controlShape: "standard",
       motion: "system",
+      navigationMode: "standard",
     });
     expect(parseUiPreferences(null)).toEqual(defaultUiPreferences);
   });
@@ -43,6 +45,7 @@ describe("ui preferences", () => {
       primaryColor: "green",
       controlShape: "standard",
       motion: "system",
+      navigationMode: "standard",
     });
     expect(parseUiPreferences(JSON.stringify({ theme: "light", locale: "ar" }))).toEqual(
       defaultUiPreferences,
@@ -57,6 +60,7 @@ describe("ui preferences", () => {
       primaryColor: "green",
       controlShape: "standard",
       motion: "system",
+      navigationMode: "standard",
     });
   });
 
@@ -87,7 +91,7 @@ describe("ui preferences", () => {
     }
   });
 
-  it("applies primary, control shape, and motion to documentElement", () => {
+  it("applies primary, control shape, motion, and navigation mode to documentElement", () => {
     applyPrimaryColor("violet");
     expect(document.documentElement.dataset.primary).toBe("violet");
     expect(document.documentElement.dataset.accent).toBe("violet");
@@ -98,9 +102,34 @@ describe("ui preferences", () => {
     applyMotion("reduced");
     expect(document.documentElement.dataset.motion).toBe("reduced");
 
+    applyNavigationMode("compact");
+    expect(document.documentElement.dataset.navigationMode).toBe("compact");
+
     applyUiPreferences(defaultUiPreferences);
     expect(document.documentElement.dataset.primary).toBe("green");
     expect(document.documentElement.dataset.controlShape).toBe("standard");
     expect(document.documentElement.dataset.motion).toBe("system");
+    expect(document.documentElement.dataset.navigationMode).toBe("standard");
+  });
+
+  it("accepts standard and compact navigation mode", () => {
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
+          navigationMode: "compact",
+        }),
+      ),
+    ).toMatchObject({ navigationMode: "compact" });
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
+          navigationMode: "standard",
+        }),
+      ),
+    ).toMatchObject({ navigationMode: "standard" });
   });
 });

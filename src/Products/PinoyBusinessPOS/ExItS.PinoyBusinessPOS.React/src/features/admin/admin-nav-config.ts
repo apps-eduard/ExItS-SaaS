@@ -138,6 +138,7 @@ export function buildAdminNavGroups(
       to: "/org/branches",
       labelKey: "admin.nav.branchesWarehouses",
       icon: MapPinned,
+      testId: "admin-nav-branches",
       matchPrefixes: ["/org/branches"],
     });
     organizationItems.push({
