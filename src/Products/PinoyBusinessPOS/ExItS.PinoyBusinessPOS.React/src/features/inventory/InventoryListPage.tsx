@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
@@ -226,12 +227,9 @@ export function InventoryListPage() {
             {t("inventory.viewOnlyHint")}
           </p>
         ) : (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="inventory-manage-scope-hint"
-          >
+          <Notice tone="info" testId="inventory-manage-scope-hint">
             {t("inventory.manageScopeHint")}
-          </p>
+          </Notice>
         )}
 
         <ExitsChipBar
