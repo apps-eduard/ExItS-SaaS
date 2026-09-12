@@ -50,7 +50,15 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
       organizationId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
       branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
     },
-    sessionGrant: { capabilities: ["ViewPurchasing", "ManagePurchasing", "ViewInventory", "ManageInventory", "ViewSuppliers"] },
+    sessionGrant: {
+      capabilities: [
+        "ViewPurchasing",
+        "ManagePurchasing",
+        "ViewInventory",
+        "ManageInventory",
+        "ViewSuppliers",
+      ],
+    },
   }),
 }));
 
@@ -73,6 +81,8 @@ function renderPage() {
           <Route path="/purchasing/incoming-orders" element={<div>incoming-page</div>} />
           <Route path="/purchasing/receipts" element={<div>receipts-page</div>} />
           <Route path="/purchasing/direct-purchases" element={<div>direct-page</div>} />
+          <Route path="/purchasing/receive-stock" element={<div>receive-page</div>} />
+          <Route path="/purchasing/new" element={<div>new-po-page</div>} />
           <Route path="/suppliers" element={<div>suppliers-page</div>} />
         </Routes>
       </MemoryRouter>
@@ -80,7 +90,7 @@ function renderPage() {
   );
 }
 
-describe("PurchasingHubPage browse chips", () => {
+describe("PurchasingHubPage buying/selling groups", () => {
   beforeEach(() => {
     listPurchaseOrders.mockReset();
     listIncomingOrders.mockReset();
@@ -125,35 +135,72 @@ describe("PurchasingHubPage browse chips", () => {
       page: 1,
       pageSize: 40,
     });
-    listIncomingOrders.mockResolvedValue([{ connectedPurchaseOrderId: "a" }, { connectedPurchaseOrderId: "b" }]);
+    listIncomingOrders.mockResolvedValue([
+      { connectedPurchaseOrderId: "a" },
+      { connectedPurchaseOrderId: "b" },
+    ]);
     listDirectPurchases.mockResolvedValue({ items: [], totalCount: 4, page: 1, pageSize: 1 });
     listSuppliers.mockResolvedValue({ items: [], totalCount: 9, page: 1, pageSize: 1 });
   });
 
-  it("uses ExitsChipBar actions with counts and control-shape class", async () => {
+  it("keeps top quick actions and groups browse chips into Buying and Selling", async () => {
     renderPage();
 
-    const toolbar = await screen.findByTestId("purchasing-toolbar");
-    expect(toolbar).toHaveAttribute("role", "toolbar");
-    expect(toolbar.className).toMatch(/exits-chip-bar--actions/);
-    expect(toolbar.className).toMatch(/exits-chip-bar--scroll/);
+    expect(screen.getByTestId("purchasing-receive-stock")).toBeInTheDocument();
+    expect(screen.getByTestId("purchasing-new")).toBeInTheDocument();
 
-    expect(screen.getByTestId("purchasing-orders")).toHaveClass("exits-chip");
-    expect(screen.getByTestId("purchasing-incoming-orders")).toHaveClass("exits-chip");
+    const buying = await screen.findByTestId("purchasing-buying");
+    const selling = screen.getByTestId("purchasing-selling");
+    expect(buying).toBeInTheDocument();
+    expect(selling).toBeInTheDocument();
+
+    expect(within(buying).getByTestId("purchasing-orders")).toBeInTheDocument();
+    expect(within(buying).getByTestId("purchasing-receipts")).toBeInTheDocument();
+    expect(within(buying).getByTestId("purchasing-direct")).toBeInTheDocument();
+    expect(within(buying).getByTestId("purchasing-suppliers")).toBeInTheDocument();
+    expect(within(buying).queryByTestId("purchasing-incoming-orders")).not.toBeInTheDocument();
+
+    expect(within(selling).getByTestId("purchasing-incoming-orders")).toBeInTheDocument();
+    expect(within(selling).queryByTestId("purchasing-orders")).not.toBeInTheDocument();
+
+    expect(screen.queryByTestId("purchasing-toolbar")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("purchasing-orders")).toHaveLength(1);
+    expect(screen.getAllByTestId("purchasing-incoming-orders")).toHaveLength(1);
+  });
+
+  it("uses action chips with CountBadge values on the correct side", async () => {
+    renderPage();
+
+    const buyingActions = await screen.findByTestId("purchasing-buying-actions");
+    const sellingActions = screen.getByTestId("purchasing-selling-actions");
+    expect(buyingActions).toHaveAttribute("role", "toolbar");
+    expect(buyingActions.className).toMatch(/exits-chip-bar--actions/);
+    expect(sellingActions.className).toMatch(/exits-chip-bar--actions/);
 
     await waitFor(() => {
       expect(within(screen.getByTestId("purchasing-orders")).getByText("12")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-orders")).getByText("2")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-receipts")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-direct")).getByText("4")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-suppliers")).getByText("9")).toBeInTheDocument();
     });
   });
 
-  it("navigates from chip links while preserving destinations", async () => {
+  it("navigates from Selling Incoming orders to the existing route", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByTestId("purchasing-incoming-orders");
+    await user.click(screen.getByTestId("purchasing-incoming-orders"));
+    expect(await screen.findByText("incoming-page")).toBeInTheDocument();
+  });
+
+  it("navigates from Buying Purchase orders to the existing route", async () => {
     const user = userEvent.setup();
     renderPage();
 
     await screen.findByTestId("purchasing-orders");
-    await user.click(screen.getByTestId("purchasing-incoming-orders"));
-    expect(await screen.findByText("incoming-page")).toBeInTheDocument();
+    await user.click(screen.getByTestId("purchasing-orders"));
+    expect(await screen.findByText("orders-page")).toBeInTheDocument();
   });
 });

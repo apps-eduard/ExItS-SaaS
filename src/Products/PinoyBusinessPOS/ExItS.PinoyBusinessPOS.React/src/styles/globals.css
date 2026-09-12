@@ -5845,8 +5845,79 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
-.purchasing-hub-page [data-testid="purchasing-toolbar"] .exits-chip__icon > svg {
+.purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip__icon > svg,
+.purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip__icon > svg {
   stroke-width: 2.5;
+}
+
+.purchasing-hub-directions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .purchasing-hub-directions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.purchasing-hub-direction {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.85rem;
+  height: 100%;
+  padding: 0.9rem 1rem;
+}
+
+.purchasing-hub-direction__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.purchasing-hub-direction__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.purchasing-hub-direction__icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.purchasing-hub-direction__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.purchasing-hub-direction__title {
+  margin: 0;
+  font-size: var(--exits-text-md);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--exits-text);
+}
+
+.purchasing-hub-direction__lede {
+  font-size: var(--exits-text-sm);
+  line-height: 1.45;
+  color: var(--exits-text-muted);
+}
+
+.purchasing-hub-direction .exits-chip-bar {
+  margin: 0;
 }
 
 .purchasing-row {

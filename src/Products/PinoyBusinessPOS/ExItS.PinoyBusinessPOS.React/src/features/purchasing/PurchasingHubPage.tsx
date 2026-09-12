@@ -7,6 +7,8 @@ import {
   Inbox,
   PackageCheck,
   PackagePlus,
+  ShoppingCart,
+  Store,
   Truck,
   Users,
   type LucideIcon,
@@ -28,6 +30,7 @@ import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { CountBadge } from "@/components/exits/CountChip";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Card } from "@/components/ui/card";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   purchasingHubDirectPurchasesQueryKey,
@@ -50,6 +53,24 @@ type BrowseDef = {
   count: number;
   countTone: "neutral" | "warning";
 };
+
+function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
+  return defs.map((item) => {
+    const Icon = item.icon;
+    return {
+      key: item.key,
+      href: item.href,
+      testId: item.testId,
+      icon: <Icon />,
+      label: (
+        <>
+          <span>{item.label}</span>
+          <CountBadge count={item.count} tone={item.countTone} />
+        </>
+      ),
+    };
+  });
+}
 
 export function PurchasingHubPage() {
   const { t } = useI18n();
@@ -116,7 +137,7 @@ export function PurchasingHubPage() {
   const directTotal = directPurchasesQuery.data?.totalCount ?? 0;
   const suppliersTotal = suppliersQuery.data?.totalCount ?? 0;
 
-  const browseDefs = useMemo(() => {
+  const buyingDefs = useMemo(() => {
     const items: BrowseDef[] = [];
     if (allowViewPurchasing) {
       items.push({
@@ -127,15 +148,6 @@ export function PurchasingHubPage() {
         testId: "purchasing-orders",
         count: ordersTotal,
         countTone: "neutral",
-      });
-      items.push({
-        key: "incoming",
-        label: t("incomingOrders.title"),
-        icon: Inbox,
-        href: "/purchasing/incoming-orders",
-        testId: "purchasing-incoming-orders",
-        count: incomingPendingCount,
-        countTone: incomingPendingCount > 0 ? "warning" : "neutral",
       });
       items.push({
         key: "receipts",
@@ -175,28 +187,31 @@ export function PurchasingHubPage() {
     allowSuppliers,
     allowViewPurchasing,
     directTotal,
-    incomingPendingCount,
     ordersTotal,
     receivableCount,
     suppliersTotal,
     t,
   ]);
 
-  const browseItems: ExitsChipItem[] = browseDefs.map((item) => {
-    const Icon = item.icon;
-    return {
-      key: item.key,
-      href: item.href,
-      testId: item.testId,
-      icon: <Icon />,
-      label: (
-        <>
-          <span>{item.label}</span>
-          <CountBadge count={item.count} tone={item.countTone} />
-        </>
-      ),
-    };
-  });
+  const sellingDefs = useMemo(() => {
+    const items: BrowseDef[] = [];
+    if (allowViewPurchasing) {
+      items.push({
+        key: "incoming",
+        label: t("incomingOrders.title"),
+        icon: Inbox,
+        href: "/purchasing/incoming-orders",
+        testId: "purchasing-incoming-orders",
+        count: incomingPendingCount,
+        countTone: incomingPendingCount > 0 ? "warning" : "neutral",
+      });
+    }
+    return items;
+  }, [allowViewPurchasing, incomingPendingCount, t]);
+
+  const buyingItems = toChipItems(buyingDefs);
+  const sellingItems = toChipItems(sellingDefs);
+  const showDirections = buyingItems.length > 0 || sellingItems.length > 0;
 
   return (
     <div
@@ -244,14 +259,66 @@ export function PurchasingHubPage() {
         ) : null}
       </div>
 
-      {browseItems.length > 0 ? (
-        <ExitsChipBar
-          variant="actions"
-          ariaLabel={t("purchasing.title")}
-          testId="purchasing-toolbar"
-          className="exits-chip-bar--scroll exits-animate-toolbar"
-          items={browseItems}
-        />
+      {showDirections ? (
+        <div className="purchasing-hub-directions" data-testid="purchasing-directions">
+          {buyingItems.length > 0 ? (
+            <Card
+              as="section"
+              padding="none"
+              className="purchasing-hub-direction"
+              data-testid="purchasing-buying"
+              aria-labelledby="purchasing-buying-title"
+            >
+              <div className="purchasing-hub-direction__header">
+                <span className="purchasing-hub-direction__icon" aria-hidden>
+                  <ShoppingCart />
+                </span>
+                <div className="purchasing-hub-direction__copy min-w-0">
+                  <h2 id="purchasing-buying-title" className="purchasing-hub-direction__title">
+                    {t("purchasing.buyingTitle")}
+                  </h2>
+                  <p className="purchasing-hub-direction__lede m-0">{t("purchasing.buyingLede")}</p>
+                </div>
+              </div>
+              <ExitsChipBar
+                variant="actions"
+                ariaLabel={t("purchasing.buyingTitle")}
+                testId="purchasing-buying-actions"
+                className="exits-chip-bar--scroll exits-animate-toolbar"
+                items={buyingItems}
+              />
+            </Card>
+          ) : null}
+
+          {sellingItems.length > 0 ? (
+            <Card
+              as="section"
+              padding="none"
+              className="purchasing-hub-direction"
+              data-testid="purchasing-selling"
+              aria-labelledby="purchasing-selling-title"
+            >
+              <div className="purchasing-hub-direction__header">
+                <span className="purchasing-hub-direction__icon" aria-hidden>
+                  <Store />
+                </span>
+                <div className="purchasing-hub-direction__copy min-w-0">
+                  <h2 id="purchasing-selling-title" className="purchasing-hub-direction__title">
+                    {t("purchasing.sellingTitle")}
+                  </h2>
+                  <p className="purchasing-hub-direction__lede m-0">{t("purchasing.sellingLede")}</p>
+                </div>
+              </div>
+              <ExitsChipBar
+                variant="actions"
+                ariaLabel={t("purchasing.sellingTitle")}
+                testId="purchasing-selling-actions"
+                className="exits-chip-bar--scroll exits-animate-toolbar"
+                items={sellingItems}
+              />
+            </Card>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

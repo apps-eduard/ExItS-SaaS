@@ -8514,7 +8514,11 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.goodReceived": "Good received",
 
-  "purchasing.hubLede": "Receive stock now, or create purchase orders for later delivery.",
+  "purchasing.hubLede": "Receive stock, create purchase orders, and manage buying and selling.",
+  "purchasing.buyingTitle": "Buying",
+  "purchasing.buyingLede": "Buy stock from suppliers and manage purchase orders.",
+  "purchasing.sellingTitle": "Selling",
+  "purchasing.sellingLede": "Review orders other businesses have placed with you.",
 
   "purchasing.invalidLine": "Enter a valid quantity and unit cost.",
 
