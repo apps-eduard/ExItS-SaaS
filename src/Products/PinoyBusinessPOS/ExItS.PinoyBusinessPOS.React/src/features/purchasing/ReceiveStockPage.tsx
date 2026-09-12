@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Check, ClipboardList, PackagePlus, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, PackagePlus, Plus, Trash2, X } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import {
   ExitsTable,
   ExitsTableBody,
@@ -38,6 +37,7 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
   directPurchaseCreditValidationKey,
@@ -50,6 +50,7 @@ import {
   type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -107,7 +108,7 @@ export function ReceiveStockPage() {
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -261,14 +262,14 @@ export function ReceiveStockPage() {
       listCatalogCategories(workspace!, { status: "Active", pageSize: 50 }, signal),
   });
 
-  // All = omit categoryId (not a literal category). Always browse eligible Active products.
+  // All / multi-category: omit categoryId (API supports one). Filter OR client-side.
   const productsQuery = useQuery({
     queryKey: [
       "catalog-products",
       "direct-buy",
       workspace?.organizationId,
       debounced,
-      categoryId,
+      categoryIds.length === 1 ? categoryIds[0] : "all-or-multi",
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
@@ -276,9 +277,9 @@ export function ReceiveStockPage() {
         workspace!,
         {
           search: debounced || undefined,
-          categoryId: categoryId || undefined,
+          categoryId: categoryIds.length === 1 ? categoryIds[0] : undefined,
           status: "Active",
-          pageSize: 20,
+          pageSize: 100,
         },
         signal,
       ),
@@ -300,7 +301,16 @@ export function ReceiveStockPage() {
   });
 
   const categories = categoriesQuery.data?.items ?? [];
-  const productItems = productsQuery.data?.items ?? [];
+  const rawProductItems = productsQuery.data?.items ?? [];
+  const productItems = useMemo(() => {
+    if (categoryIds.length <= 1) {
+      return rawProductItems;
+    }
+    const allowed = new Set(categoryIds);
+    return rawProductItems.filter(
+      (product) => product.categoryId != null && allowed.has(product.categoryId),
+    );
+  }, [categoryIds, rawProductItems]);
   const recentItems = recentCompletedQuery.data?.items ?? [];
   const recentTotal = recentCompletedQuery.data?.totalCount ?? 0;
   const reviewDisabled = !linesValid || !allowManage || !online;
@@ -308,6 +318,19 @@ export function ReceiveStockPage() {
     () => new Set(lines.map((line) => line.productId)),
     [lines],
   );
+  const selectedCategories = useMemo(
+    () => categories.filter((category) => categoryIds.includes(category.categoryId)),
+    [categories, categoryIds],
+  );
+  const hasActiveFilters = categoryIds.length > 0 || debounced.length > 0;
+
+  function clearCategoryFilters() {
+    setCategoryIds([]);
+  }
+
+  function removeCategoryFilter(categoryId: string) {
+    setCategoryIds((prev) => prev.filter((id) => id !== categoryId));
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -617,6 +640,55 @@ export function ReceiveStockPage() {
               >
                 {t("purchasing.findProducts")}
               </h2>
+
+              {categories.length > 0 ? (
+                <>
+                  <ReceiveCategoryMultiSelect
+                    categories={categories}
+                    selectedIds={categoryIds}
+                    onChange={setCategoryIds}
+                    label={t("purchasing.categories")}
+                    placeholder={t("purchasing.categoriesPlaceholder")}
+                    selectedCountLabel={(count) =>
+                      t("purchasing.categoriesSelected").replace("{count}", String(count))
+                    }
+                    clearLabel={t("purchasing.clearCategories")}
+                  />
+                  <div
+                    className="receive-stock-category-chips"
+                    data-testid="direct-category-filters"
+                  >
+                    <button
+                      type="button"
+                      className={cn(
+                        "exits-chip",
+                        categoryIds.length === 0 && "exits-chip--active",
+                      )}
+                      onClick={clearCategoryFilters}
+                      data-testid="direct-category-all"
+                    >
+                      <span className="exits-chip__label">{t("purchasing.categoryAll")}</span>
+                    </button>
+                    {selectedCategories.map((category) => (
+                      <button
+                        key={category.categoryId}
+                        type="button"
+                        className="exits-chip exits-chip--active"
+                        onClick={() => removeCategoryFilter(category.categoryId)}
+                        data-testid={`direct-category-chip-${category.categoryId}`}
+                        aria-label={t("purchasing.removeCategory").replace(
+                          "{name}",
+                          category.name,
+                        )}
+                      >
+                        <span className="exits-chip__label">{category.name}</span>
+                        <X className="size-3.5 shrink-0" aria-hidden />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+
               <SearchField
                 label={t("purchasing.productSearch")}
                 value={search}
@@ -625,36 +697,6 @@ export function ReceiveStockPage() {
                 placeholder={t("purchasing.productSearch")}
                 data-testid="direct-product-search"
               />
-              {categories.length > 0 ? (
-                <ExitsChipBar
-                  variant="filter"
-                  ariaLabel={t("purchasing.categoryFilter")}
-                  testId="direct-category-filters"
-                  className="exits-chip-bar--scroll receive-stock-categories"
-                  items={[
-                    {
-                      key: "all",
-                      label: t("purchasing.categoryAll"),
-                      state: !categoryId ? "active" : "idle",
-                      onSelect: () => setCategoryId(""),
-                      testId: "direct-category-all",
-                    },
-                    ...categories.map((category) => ({
-                      key: category.categoryId,
-                      label: category.name,
-                      state:
-                        categoryId === category.categoryId
-                          ? ("active" as const)
-                          : ("idle" as const),
-                      testId: `direct-category-${category.categoryId}`,
-                      onSelect: () =>
-                        setCategoryId((prev) =>
-                          prev === category.categoryId ? "" : category.categoryId,
-                        ),
-                    })),
-                  ]}
-                />
-              ) : null}
 
               {productsQuery.isFetching ? <LoadingState label={t("loading.label")} /> : null}
 
@@ -662,62 +704,87 @@ export function ReceiveStockPage() {
                 <EmptyState
                   align="center"
                   size="compact"
+                  variant={hasActiveFilters ? "filtered" : "default"}
                   icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
-                  title={t("purchasing.noProducts")}
-                  detail={t("purchasing.noProductsDetail")}
-                  action={
-                    <Button asChild variant="secondary" data-testid="direct-add-new-product">
-                      <Link to="/catalog/products/new">{t("purchasing.addNewProduct")}</Link>
-                    </Button>
+                  title={
+                    hasActiveFilters
+                      ? t("purchasing.noMatchingProducts")
+                      : t("purchasing.noProducts")
                   }
+                  detail={
+                    hasActiveFilters
+                      ? t("purchasing.noMatchingProductsDetail")
+                      : t("purchasing.noProductsDetail")
+                  }
+                  action={
+                    hasActiveFilters ? undefined : (
+                      <Button asChild variant="secondary" data-testid="direct-add-new-product">
+                        <Link to="/catalog/products/new">{t("purchasing.addNewProduct")}</Link>
+                      </Button>
+                    )
+                  }
+                  testId="direct-product-empty"
                 />
               ) : null}
 
-              <ul
-                className="receive-stock-product-list m-0 flex list-none flex-col gap-1.5 p-0"
-                data-testid="direct-product-results"
-              >
-                {productItems.map((product) => {
-                  const alreadyAdded = addedProductIds.has(product.productId);
-                  return (
-                    <li key={product.productId}>
-                      <article
-                        className="receive-stock-product-card"
-                        data-testid={`direct-product-${product.productId}`}
-                      >
-                        <div className="receive-stock-product-card__identity min-w-0">
-                          <p className="m-0 min-w-0 font-medium leading-snug">{product.name}</p>
-                          <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                            {[product.sku, product.unitOfMeasure].filter(Boolean).join(" · ")}
-                          </p>
-                        </div>
-                        {alreadyAdded ? (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            disabled
-                            className="receive-stock-product-card__add"
-                            data-testid={`direct-added-${product.productId}`}
+              {!productsQuery.isFetching && productItems.length > 0 ? (
+                <ExitsTableContainer data-testid="direct-product-results">
+                  <ExitsTable>
+                    <ExitsTableHeader>
+                      <ExitsTableRow>
+                        <ExitsTableHead cellAlign="text">
+                          {t("purchasing.receiveProduct")}
+                        </ExitsTableHead>
+                        <ExitsTableHead cellAlign="text">{t("purchasing.unit")}</ExitsTableHead>
+                        <ExitsTableHead cellAlign="text">{t("purchasing.action")}</ExitsTableHead>
+                      </ExitsTableRow>
+                    </ExitsTableHeader>
+                    <ExitsTableBody>
+                      {productItems.map((product) => {
+                        const alreadyAdded = addedProductIds.has(product.productId);
+                        return (
+                          <ExitsTableRow
+                            key={product.productId}
+                            data-testid={`direct-product-${product.productId}`}
                           >
-                            <Check className="size-4" aria-hidden />
-                            {t("purchasing.productAdded")}
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            className="receive-stock-product-card__add"
-                            onClick={() => addProductRow(product)}
-                            data-testid={`direct-add-${product.productId}`}
-                          >
-                            <Plus className="size-4" aria-hidden />
-                            {t("purchasing.addProduct")}
-                          </Button>
-                        )}
-                      </article>
-                    </li>
-                  );
-                })}
-              </ul>
+                            <ExitsTableCell cellAlign="text">
+                              <div className="font-medium leading-snug">{product.name}</div>
+                              {product.sku ? (
+                                <div className="text-[length:var(--exits-text-xs)] text-muted">
+                                  {product.sku}
+                                </div>
+                              ) : null}
+                            </ExitsTableCell>
+                            <ExitsTableCell cellAlign="text">{product.unitOfMeasure}</ExitsTableCell>
+                            <ExitsTableCell cellAlign="text">
+                              {alreadyAdded ? (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  disabled
+                                  data-testid={`direct-added-${product.productId}`}
+                                >
+                                  <Check className="size-4" aria-hidden />
+                                  {t("purchasing.productAdded")}
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  onClick={() => addProductRow(product)}
+                                  data-testid={`direct-add-${product.productId}`}
+                                >
+                                  <Plus className="size-4" aria-hidden />
+                                  {t("purchasing.addProduct")}
+                                </Button>
+                              )}
+                            </ExitsTableCell>
+                          </ExitsTableRow>
+                        );
+                      })}
+                    </ExitsTableBody>
+                  </ExitsTable>
+                </ExitsTableContainer>
+              ) : null}
             </Card>
 
             <Card
@@ -740,119 +807,137 @@ export function ReceiveStockPage() {
                   size="compact"
                   icon={<PackagePlus className="size-5" strokeWidth={1.75} />}
                   title={t("purchasing.draftEmpty")}
-                  detail={t("purchasing.draftEmptyDetail")}
+                  detail={t("purchasing.draftEmptyDetailLeft")}
                   testId="direct-receipt-empty"
                 />
               ) : (
                 <>
-                  <ul className="receive-stock-line-list m-0 flex list-none flex-col gap-0 p-0">
-                    {lines.map((line) => {
-                      const lineTotal = roundMoney(line.quantity * line.unitCost);
-                      return (
-                        <li
-                          key={line.productId}
-                          className="receive-stock-line"
-                          data-testid={`direct-receipt-line-${line.productId}`}
-                        >
-                          <div className="receive-stock-line__header">
-                            <div className="min-w-0">
-                              <p className="m-0 font-medium leading-snug">{line.name}</p>
-                              {line.sku ? (
-                                <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                                  {line.sku}
-                                </p>
-                              ) : null}
-                            </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t("purchasing.removeLine")}
-                              onClick={() => removeLine(line.productId)}
-                              data-testid={`direct-remove-${line.productId}`}
+                  <ExitsTableContainer data-testid="direct-receipt-table">
+                    <ExitsTable>
+                      <ExitsTableHeader>
+                        <ExitsTableRow>
+                          <ExitsTableHead cellAlign="text">
+                            {t("purchasing.receiveProduct")}
+                          </ExitsTableHead>
+                          <ExitsTableHead cellAlign="text">{t("purchasing.qtyShort")}</ExitsTableHead>
+                          <ExitsTableHead cellAlign="text">
+                            {t("purchasing.costShort")}
+                          </ExitsTableHead>
+                          <ExitsTableHead cellAlign="numeric">
+                            {t("purchasing.lineTotal")}
+                          </ExitsTableHead>
+                          <ExitsTableHead cellAlign="text">
+                            {t("purchasing.action")}
+                          </ExitsTableHead>
+                        </ExitsTableRow>
+                      </ExitsTableHeader>
+                      <ExitsTableBody>
+                        {lines.map((line) => {
+                          const lineTotal = roundMoney(line.quantity * line.unitCost);
+                          return (
+                            <ExitsTableRow
+                              key={line.productId}
+                              data-testid={`direct-receipt-line-${line.productId}`}
                             >
-                              <Trash2 className="size-4" aria-hidden />
-                            </Button>
-                          </div>
-                          <div className="receive-stock-line__fields">
-                            <label className="receive-stock-field receive-stock-field--compact">
-                              <span className="receive-stock-field__label">
-                                {t("purchasing.qtyShort")}
-                                <span className="text-muted"> · {line.uom}</span>
-                              </span>
-                              <input
-                                className="exits-input"
-                                value={line.qtyInput}
-                                onChange={(e) =>
-                                  patchLine(line.productId, { qtyInput: e.target.value })
-                                }
-                                inputMode="decimal"
-                                data-testid={`direct-line-qty-${line.productId}`}
-                              />
-                            </label>
-                            <label className="receive-stock-field receive-stock-field--compact">
-                              <span className="receive-stock-field__label">
-                                {t("purchasing.costShort")}
-                              </span>
-                              <input
-                                className="exits-input"
-                                value={line.costInput}
-                                onChange={(e) =>
-                                  patchLine(line.productId, { costInput: e.target.value })
-                                }
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                data-testid={`direct-line-cost-${line.productId}`}
-                              />
-                            </label>
-                            {line.tracksExpiration ? (
-                              <>
-                                <label className="receive-stock-field receive-stock-field--compact">
-                                  <span className="receive-stock-field__label">
-                                    {t("purchasing.expiryDate")}
-                                  </span>
+                              <ExitsTableCell cellAlign="text">
+                                <div className="font-medium leading-snug">{line.name}</div>
+                                {line.sku ? (
+                                  <div className="text-[length:var(--exits-text-xs)] text-muted">
+                                    {line.sku}
+                                  </div>
+                                ) : null}
+                                {line.tracksExpiration ? (
+                                  <div className="receive-stock-line__secondary mt-1.5 flex flex-wrap gap-2">
+                                    <label className="receive-stock-field receive-stock-field--compact">
+                                      <span className="receive-stock-field__label">
+                                        {t("purchasing.expiryDate")}
+                                      </span>
+                                      <input
+                                        type="date"
+                                        className="exits-input"
+                                        value={line.expiryDate}
+                                        onChange={(e) =>
+                                          patchLine(line.productId, {
+                                            expiryDate: e.target.value,
+                                          })
+                                        }
+                                        data-testid={`direct-line-expiry-${line.productId}`}
+                                      />
+                                    </label>
+                                    <label className="receive-stock-field receive-stock-field--compact">
+                                      <span className="receive-stock-field__label">
+                                        {t("purchasing.lotNumber")}
+                                      </span>
+                                      <input
+                                        className="exits-input"
+                                        value={line.lotNumber}
+                                        onChange={(e) =>
+                                          patchLine(line.productId, {
+                                            lotNumber: e.target.value,
+                                          })
+                                        }
+                                        data-testid={`direct-line-lot-${line.productId}`}
+                                      />
+                                    </label>
+                                  </div>
+                                ) : null}
+                              </ExitsTableCell>
+                              <ExitsTableCell cellAlign="text">
+                                <div className="flex items-center gap-1.5">
                                   <input
-                                    type="date"
-                                    className="exits-input"
-                                    value={line.expiryDate}
+                                    className="exits-input receive-qty-input"
+                                    value={line.qtyInput}
                                     onChange={(e) =>
-                                      patchLine(line.productId, {
-                                        expiryDate: e.target.value,
-                                      })
+                                      patchLine(line.productId, { qtyInput: e.target.value })
                                     }
-                                    data-testid={`direct-line-expiry-${line.productId}`}
+                                    inputMode="decimal"
+                                    aria-label={t("purchasing.qtyShort")}
+                                    data-testid={`direct-line-qty-${line.productId}`}
                                   />
-                                </label>
-                                <label className="receive-stock-field receive-stock-field--compact">
-                                  <span className="receive-stock-field__label">
-                                    {t("purchasing.lotNumber")}
+                                  <span className="text-[length:var(--exits-text-xs)] text-muted">
+                                    {line.uom}
                                   </span>
-                                  <input
-                                    className="exits-input"
-                                    value={line.lotNumber}
-                                    onChange={(e) =>
-                                      patchLine(line.productId, {
-                                        lotNumber: e.target.value,
-                                      })
-                                    }
-                                    data-testid={`direct-line-lot-${line.productId}`}
-                                  />
-                                </label>
-                              </>
-                            ) : null}
-                            <div className="receive-stock-line__total-block">
-                              <span className="receive-stock-field__label">
-                                {t("purchasing.lineTotal")}
-                              </span>
-                              <span className="receive-stock-line__total tabular-nums">
-                                {formatPeso(lineTotal)}
-                              </span>
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                                </div>
+                              </ExitsTableCell>
+                              <ExitsTableCell cellAlign="text">
+                                <input
+                                  className="exits-input receive-qty-input"
+                                  value={line.costInput}
+                                  onChange={(e) =>
+                                    patchLine(line.productId, { costInput: e.target.value })
+                                  }
+                                  inputMode="decimal"
+                                  placeholder="0.00"
+                                  aria-label={t("purchasing.costShort")}
+                                  data-testid={`direct-line-cost-${line.productId}`}
+                                />
+                              </ExitsTableCell>
+                              <ExitsTableCell cellAlign="numeric">
+                                <span className="font-semibold tabular-nums">
+                                  {formatPeso(lineTotal)}
+                                </span>
+                              </ExitsTableCell>
+                              <ExitsTableCell cellAlign="text">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={t("purchasing.removeNamed").replace(
+                                    "{name}",
+                                    line.name,
+                                  )}
+                                  onClick={() => removeLine(line.productId)}
+                                  data-testid={`direct-remove-${line.productId}`}
+                                >
+                                  <Trash2 className="size-4" aria-hidden />
+                                </Button>
+                              </ExitsTableCell>
+                            </ExitsTableRow>
+                          );
+                        })}
+                      </ExitsTableBody>
+                    </ExitsTable>
+                  </ExitsTableContainer>
                   <div className="receive-stock-receipt__summary">
                     <div className="receive-stock-receipt__summary-row">
                       <span className="text-[length:var(--exits-text-sm)] text-muted">
