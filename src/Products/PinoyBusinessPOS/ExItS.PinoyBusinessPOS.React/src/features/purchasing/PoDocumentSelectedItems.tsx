@@ -70,10 +70,10 @@ export function PoDocumentSelectedItems({
     >
       <h2
         id={`${testId}-heading`}
-        className="m-0 flex items-center gap-2 text-[length:var(--exits-text-md)] font-medium"
+        className="po-document-selected__title m-0 flex items-center gap-2 text-[length:var(--exits-text-md)] font-medium text-[var(--exits-primary)]"
       >
         <span>{title}</span>
-        <CountBadge count={lines.length} tone="neutral" />
+        <CountBadge count={lines.length} tone="primary" />
       </h2>
 
       {lines.length === 0 ? (

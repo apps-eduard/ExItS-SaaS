@@ -1492,11 +1492,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               data-testid="catalog-unit-editor"
               aria-disabled={readOnly || undefined}
             >
-              <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
+              <fieldset disabled={readOnly} className="catalog-form-unit-editor m-0 min-w-0 border-0 p-0">
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("catalog.packagesLede")}
               </p>
 
+              <div className="catalog-form-unit-card-list">
               {unitDrafts.map((draft) => (
                 <div key={draft.key} className="catalog-form-unit-card">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1515,48 +1516,40 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                     </Button>
                   </div>
 
-                  <Input
-                    label={t("catalog.unitDisplayName")}
-
-                    name={`${draft.key}-name`}
-
-                    value={draft.displayName}
-
-                    onChange={(e) => updateDraft(draft.key, { displayName: e.target.value })}
-                  />
-
-                  <Input
-                    label={t("catalog.unitShortLabel")}
-
-                    name={`${draft.key}-short`}
-
-                    value={draft.shortLabel}
-
-                    onChange={(e) => updateDraft(draft.key, { shortLabel: e.target.value })}
-                  />
-
-                  <Input
-                    label={t("catalog.multiplierToBase")}
-
-                    name={`${draft.key}-mult`}
-
-                    inputMode="decimal"
-
-                    value={draft.multiplierToBase}
-
-                    onChange={(e) => updateDraft(draft.key, { multiplierToBase: e.target.value })}
-                  />
-
-                  {draft.kind === "Sell" ? (
+                  <div className="catalog-form-unit-card__fields">
                     <Input
-                      label={t("catalog.unitSellingPrice")}
-                      name={`${draft.key}-price`}
-                      inputMode="decimal"
-                      value={draft.sellingPrice}
-                      disabled={packagePricesReadOnly}
-                      onChange={(e) => updateDraft(draft.key, { sellingPrice: e.target.value })}
+                      label={t("catalog.unitDisplayName")}
+                      name={`${draft.key}-name`}
+                      value={draft.displayName}
+                      onChange={(e) => updateDraft(draft.key, { displayName: e.target.value })}
                     />
-                  ) : null}
+
+                    <Input
+                      label={t("catalog.unitShortLabel")}
+                      name={`${draft.key}-short`}
+                      value={draft.shortLabel}
+                      onChange={(e) => updateDraft(draft.key, { shortLabel: e.target.value })}
+                    />
+
+                    <Input
+                      label={t("catalog.multiplierToBase")}
+                      name={`${draft.key}-mult`}
+                      inputMode="decimal"
+                      value={draft.multiplierToBase}
+                      onChange={(e) => updateDraft(draft.key, { multiplierToBase: e.target.value })}
+                    />
+
+                    {draft.kind === "Sell" ? (
+                      <Input
+                        label={t("catalog.unitSellingPrice")}
+                        name={`${draft.key}-price`}
+                        inputMode="decimal"
+                        value={draft.sellingPrice}
+                        disabled={packagePricesReadOnly}
+                        onChange={(e) => updateDraft(draft.key, { sellingPrice: e.target.value })}
+                      />
+                    ) : null}
+                  </div>
 
                   {draft.kind === "Sell" ? (
                     <>
@@ -1577,6 +1570,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   ) : null}
                 </div>
               ))}
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button
@@ -1652,37 +1646,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         ) : null}
 
         <div className="catalog-form-actions" data-testid="catalog-form-actions">
-          {!readOnly ? (
-            <div className="catalog-form-actions__primary">
-              <Button
-                type="submit"
-                className="catalog-form-actions__save"
-                data-testid="catalog-save"
-                disabled={
-                  saveMutation.isPending ||
-                  statusMutation.isPending ||
-                  blockedOffline ||
-                  isNameDuplicate ||
-                  (mode === "create" &&
-                    (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
-                    !workspace.branchId)
-                }
-              >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                    {t("catalog.saving")}
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4 shrink-0" aria-hidden />
-                    {t("catalog.save")}
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : null}
-
           {mode === "edit" &&
           canGovern &&
           productQuery.data &&
@@ -1733,6 +1696,37 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   <RotateCcw className="size-4 shrink-0" aria-hidden />
                 )}
                 {t("catalog.reactivate")}
+              </Button>
+            </div>
+          ) : null}
+
+          {!readOnly ? (
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="submit"
+                className="catalog-form-actions__save"
+                data-testid="catalog-save"
+                disabled={
+                  saveMutation.isPending ||
+                  statusMutation.isPending ||
+                  blockedOffline ||
+                  isNameDuplicate ||
+                  (mode === "create" &&
+                    (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
+                    !workspace.branchId)
+                }
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    {t("catalog.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4 shrink-0" aria-hidden />
+                    {t("catalog.save")}
+                  </>
+                )}
               </Button>
             </div>
           ) : null}

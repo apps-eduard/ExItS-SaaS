@@ -48,7 +48,11 @@ export function PoDocumentSummary({
       {fields.length > 0 ? (
         <dl className="po-document-summary__meta m-0">
           {fields.map((field) => (
-            <div key={field.key} className="po-document-summary__field">
+            <div
+              key={field.key}
+              className={cn("po-document-summary__field", `po-document-summary__field--${field.key}`)}
+              data-field={field.key}
+            >
               <dt className="m-0 text-[length:var(--exits-text-sm)] text-muted">{field.label}</dt>
               <dd className="m-0 text-[length:var(--exits-text-sm)] font-medium" data-testid={`${testId}-${field.key}`}>
                 {field.value}

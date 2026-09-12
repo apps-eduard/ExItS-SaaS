@@ -8584,6 +8584,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.ordersEmpty": "No purchase orders",
 
   "purchasing.ordersEmptyDetail": "Create a purchase order or change the filter.",
+  "purchasing.ordersNoMatch": "No matching purchase orders",
+  "purchasing.ordersNoMatchDetail": "Try another PO number, supplier, or status.",
+  "purchasing.searchOrders": "Search purchase orders",
+  "purchasing.poNumber": "PO number",
 
   "purchasing.ordersLede": "Draft, submit, and track purchase orders.",
 

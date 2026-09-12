@@ -1,4 +1,4 @@
-import { ClipboardList } from "lucide-react";
+import { Ban, Check, ChevronLeft, ClipboardList, PackageCheck, Play } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -456,7 +456,13 @@ export function IncomingOrderDetailPage() {
               data-testid="incoming-order-decline-note"
             />
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="po-document-actions__cluster">
+            <Button asChild variant="ghost">
+              <Link to="/purchasing/incoming-orders">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden />
+                {t("incomingOrders.backList")}
+              </Link>
+            </Button>
             <Button type="button" variant="ghost" disabled={busy} onClick={() => setShowDecline(false)}>
               {t("purchasing.cancel")}
             </Button>
@@ -467,6 +473,7 @@ export function IncomingOrderDetailPage() {
               data-testid="incoming-order-decline-confirm"
               onClick={() => declineMutation.mutate()}
             >
+              <Ban className="size-4 shrink-0" aria-hidden />
               {t("incomingOrders.decline")}
             </Button>
           </div>
@@ -475,22 +482,30 @@ export function IncomingOrderDetailPage() {
 
       {isNew && !showDecline ? (
         <div className="po-document-actions" data-testid="incoming-order-pending-actions">
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={!canAct}
-            data-testid="incoming-order-decline"
-            onClick={() => setShowDecline(true)}
-          >
-            {t("incomingOrders.decline")}
-          </Button>
-          <div className="po-document-actions__primary">
+          <div className="po-document-actions__cluster">
+            <Button asChild variant="ghost">
+              <Link to="/purchasing/incoming-orders">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden />
+                {t("incomingOrders.backList")}
+              </Link>
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={!canAct}
+              data-testid="incoming-order-decline"
+              onClick={() => setShowDecline(true)}
+            >
+              <Ban className="size-4 shrink-0" aria-hidden />
+              {t("incomingOrders.decline")}
+            </Button>
             <Button
               type="button"
               disabled={!canAct}
               data-testid="incoming-order-accept"
               onClick={() => acceptMutation.mutate()}
             >
+              <Check className="size-4 shrink-0" aria-hidden />
               {t("incomingOrders.accept")}
             </Button>
           </div>
@@ -499,13 +514,20 @@ export function IncomingOrderDetailPage() {
 
       {isAccepted ? (
         <div className="po-document-actions">
-          <div className="po-document-actions__primary">
+          <div className="po-document-actions__cluster">
+            <Button asChild variant="ghost">
+              <Link to="/purchasing/incoming-orders">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden />
+                {t("incomingOrders.backList")}
+              </Link>
+            </Button>
             <Button
               type="button"
               disabled={!canAct}
               data-testid="incoming-order-prepare"
               onClick={() => prepareMutation.mutate()}
             >
+              <Play className="size-4 shrink-0" aria-hidden />
               {t("incomingOrders.startPreparing")}
             </Button>
           </div>
@@ -514,13 +536,20 @@ export function IncomingOrderDetailPage() {
 
       {isPreparing ? (
         <div className="po-document-actions">
-          <div className="po-document-actions__primary">
+          <div className="po-document-actions__cluster">
+            <Button asChild variant="ghost">
+              <Link to="/purchasing/incoming-orders">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden />
+                {t("incomingOrders.backList")}
+              </Link>
+            </Button>
             <Button
               type="button"
               disabled={!canAct}
               data-testid="incoming-order-fulfill"
               onClick={() => fulfillMutation.mutate()}
             >
+              <PackageCheck className="size-4 shrink-0" aria-hidden />
               {t("incomingOrders.markReady")}
             </Button>
           </div>
@@ -531,9 +560,18 @@ export function IncomingOrderDetailPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("incomingOrders.viewOnly")}</p>
       ) : null}
 
-      <Button asChild variant="ghost">
-        <Link to="/purchasing/incoming-orders">{t("incomingOrders.backList")}</Link>
-      </Button>
+      {!isNew && !isAccepted && !isPreparing ? (
+        <div className="po-document-actions">
+          <div className="po-document-actions__cluster">
+            <Button asChild variant="ghost">
+              <Link to="/purchasing/incoming-orders">
+                <ChevronLeft className="size-4 shrink-0" aria-hidden />
+                {t("incomingOrders.backList")}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -241,16 +241,6 @@ export function InventoryListPage() {
         />
 
         <div className="inventory-filters" data-testid="inventory-filters">
-          <SearchField
-            label={t("inventory.search")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("inventory.search")}
-            data-testid="inventory-search"
-            containerClassName="inventory-list-page__search exits-page__search"
-          />
-
           <ExitsChipBar
             variant="filter"
             ariaLabel={t("inventory.trackingFilter")}
@@ -262,6 +252,16 @@ export function InventoryListPage() {
               testId: `inventory-filter-${filter.key}`,
               onSelect: () => setTrackingFilter(filter.value),
             }))}
+          />
+
+          <SearchField
+            label={t("inventory.search")}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("inventory.search")}
+            data-testid="inventory-search"
+            containerClassName="inventory-list-page__search exits-page__search"
           />
         </div>
       </div>

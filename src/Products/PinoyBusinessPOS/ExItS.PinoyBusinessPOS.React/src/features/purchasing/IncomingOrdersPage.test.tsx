@@ -193,8 +193,8 @@ describe("IncomingOrders React flow", () => {
       { status: "New" },
       expect.anything(),
     );
-    expect(screen.getByText("PO-000123")).toBeInTheDocument();
-    expect(screen.getByText(/Paul Store/)).toBeInTheDocument();
+    expect(screen.getAllByText("PO-000123").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/Paul Store/).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Incoming connection requests")).not.toBeInTheDocument();
     expect(screen.getByTestId("incoming-orders-filter-pending")).toHaveAttribute("aria-selected", "true");
   });

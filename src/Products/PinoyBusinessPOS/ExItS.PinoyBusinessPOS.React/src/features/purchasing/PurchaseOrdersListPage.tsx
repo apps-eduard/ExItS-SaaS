@@ -1,22 +1,45 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { listPurchaseOrders, type PosPurchaseOrderDto } from "@/api/pos/pos-purchase-orders-client";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableOutputActions,
+  ExitsTablePagination,
+  ExitsTableRow,
+  ExitsTableToolbar,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { pageBackNav } from "@/navigation/page-back-nav";
-import { StatusChip } from "@/components/exits/StatusChip";
+import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip, type StatusChipTone } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  buildPurchaseOrderListExportModel,
+  downloadPurchaseOrderListCsv,
+  downloadPurchaseOrderListPdf,
+  downloadPurchaseOrderListXlsx,
+  printPurchaseOrderListDocument,
+} from "@/features/purchasing/purchase-orders-list-output";
 import { useI18n } from "@/i18n/I18nProvider";
+import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 type StatusFilter = "" | "Draft" | "Ordered" | "PartiallyReceived" | "Received" | "Cancelled";
 
@@ -39,16 +62,28 @@ const STATUS_FILTERS: Array<{
   { value: "Cancelled", key: "Cancelled", labelKey: "purchasing.statusCancelled" },
 ];
 
-function statusTone(status: string): "success" | "warning" | "info" | "danger" {
-  switch (status) {
+function resolveStatusLabel(po: PosPurchaseOrderDto): string {
+  return po.displayStatus || po.status;
+}
+
+/** Semantic status tones — Cancelled=danger, Waiting*=primary. */
+export function purchaseOrderListStatusTone(po: PosPurchaseOrderDto): StatusChipTone {
+  const label = resolveStatusLabel(po);
+  const normalized = label.replace(/\s+/g, "").toLowerCase();
+
+  if (po.status === "Cancelled" || normalized === "cancelled") {
+    return "danger";
+  }
+  if (normalized === "waitingforsupplier" || normalized.startsWith("waiting")) {
+    return "primary";
+  }
+
+  switch (po.status) {
     case "Ordered":
+    case "Received":
       return "success";
     case "PartiallyReceived":
       return "warning";
-    case "Received":
-      return "success";
-    case "Cancelled":
-      return "info";
     case "Draft":
       return "info";
     default:
@@ -56,12 +91,42 @@ function statusTone(status: string): "success" | "warning" | "info" | "danger" {
   }
 }
 
+function matchesSearch(po: PosPurchaseOrderDto, query: string): boolean {
+  if (!query) {
+    return true;
+  }
+  const tokens = [
+    po.poNumber ?? "",
+    po.supplierName ?? "",
+    po.supplierBranchName ?? "",
+    po.status,
+    po.displayStatus ?? "",
+    po.paymentTermLabel ?? "",
+    po.paymentTerm ?? "",
+  ];
+  return tokens.some((token) => token.toLowerCase().includes(query));
+}
+
 export function PurchaseOrdersListPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [status, setStatus] = useState<StatusFilter>("");
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 200);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status, pageSize]);
 
   const workspace = useMemo(
     () =>
@@ -74,31 +139,106 @@ export function PurchaseOrdersListPage() {
   const allowManage = canManagePurchasing(sessionGrant);
 
   const query = useQuery({
-    queryKey: ["purchase-orders", workspace?.organizationId, workspace?.branchId, status, page],
+    queryKey: [
+      "purchase-orders",
+      workspace?.organizationId,
+      workspace?.branchId,
+      status,
+      page,
+      pageSize,
+    ],
     enabled: Boolean(workspace) && online,
     queryFn: ({ signal }) =>
       listPurchaseOrders(
         workspace!,
-        { status: status || undefined, page, pageSize: PAGE_SIZE },
+        { status: status || undefined, page, pageSize },
         signal,
       ),
   });
+
+  const items: PosPurchaseOrderDto[] = query.data?.items ?? [];
+  const filteredItems = useMemo(() => {
+    const q = debouncedSearch.toLowerCase();
+    if (!q) {
+      return items;
+    }
+    return items.filter((po) => matchesSearch(po, q));
+  }, [items, debouncedSearch]);
+
+  const totalCount = debouncedSearch
+    ? filteredItems.length
+    : (query.data?.totalCount ?? 0);
+  const statusFilterLabel =
+    STATUS_FILTERS.find((filter) => filter.value === status)?.labelKey ?? "purchasing.statusAll";
+
+  function buildExportModel() {
+    return buildPurchaseOrderListExportModel(filteredItems, t(statusFilterLabel));
+  }
+
+  async function runOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    try {
+      const model = buildExportModel();
+      if (action === "csv") {
+        downloadPurchaseOrderListCsv(model);
+        return;
+      }
+      if (action === "xlsx") {
+        downloadPurchaseOrderListXlsx(model);
+        return;
+      }
+      if (action === "pdf") {
+        downloadPurchaseOrderListPdf(model);
+        return;
+      }
+      printPurchaseOrderListDocument();
+    } catch {
+      showToast({
+        title: t("exitsTable.outputFailed"),
+        tone: "error",
+      });
+    }
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  const totalCount = query.data?.totalCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const items: PosPurchaseOrderDto[] = query.data?.items ?? [];
-  const canPrev = page > 1;
-  const canNext = page < totalPages && totalCount > 0;
+  const printModel = buildPurchaseOrderListExportModel(filteredItems, t(statusFilterLabel));
 
   return (
     <div
       className="purchasing-orders-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="purchase-orders-list-page"
     >
+      <div className="purchase-orders-print-root incoming-order-print-root" aria-hidden>
+        <h1>{t("purchasing.orders")}</h1>
+        <p>{t(statusFilterLabel)}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>{t("purchasing.poNumber")}</th>
+              <th>{t("purchasing.supplier")}</th>
+              <th>{t("purchasing.orderDate")}</th>
+              <th>{t("purchasing.lines")}</th>
+              <th>{t("purchasing.fieldStatus")}</th>
+              <th>{t("purchasing.paymentTerm")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {printModel.rows.map((row) => (
+              <tr key={`${row.poNumber}-${row.orderDate}-${row.status}`}>
+                <td>{row.poNumber}</td>
+                <td>{row.supplier}</td>
+                <td>{row.orderDate}</td>
+                <td>{row.lines}</td>
+                <td>{row.status}</td>
+                <td>{row.payment}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <PageHeader
         title={t("purchasing.orders")}
         description={t("purchasing.ordersLede")}
@@ -106,11 +246,13 @@ export function PurchaseOrdersListPage() {
         backLabel={t(pageBackNav.purchasing.labelKey)}
         backTestId="page-header-back-purchasing"
       />
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("purchasing.ordersNoStock")}</p>
+
+      <Notice tone="info">{t("purchasing.ordersNoStock")}</Notice>
+
       {!online ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="purchasing-offline">
+        <Notice tone="warning" testId="purchasing-offline">
           {t("purchasing.offline")}
-        </p>
+        </Notice>
       ) : null}
 
       {allowManage ? (
@@ -153,66 +295,132 @@ export function PurchaseOrdersListPage() {
       {query.isError ? (
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />
       ) : null}
-      {!query.isLoading && !query.isError && items.length === 0 ? (
+
+      {!query.isLoading && !query.isError && filteredItems.length === 0 ? (
         <EmptyState
-              align="center"
-              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("purchasing.ordersEmpty")} detail={t("purchasing.ordersEmptyDetail")} />
+          align="center"
+          icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+          title={debouncedSearch ? t("purchasing.ordersNoMatch") : t("purchasing.ordersEmpty")}
+          detail={
+            debouncedSearch ? t("purchasing.ordersNoMatchDetail") : t("purchasing.ordersEmptyDetail")
+          }
+        />
       ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0">
-        {items.map((po) => (
-          <li key={po.purchaseOrderId}>
-            <Link
-              to={`/purchasing/${po.purchaseOrderId}`}
-              className="exits-list__card purchasing-row block min-w-0 text-foreground no-underline"
-              data-testid={`po-row-${po.purchaseOrderId}`}
-            >
-              <span className="purchasing-row__main min-w-0">
-                <span className="exits-list__name block truncate font-semibold">
-                  {po.poNumber ?? t("purchasing.unnamedPo")}
-                </span>
-                <span className="purchasing-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                  {po.supplierName ?? t("purchasing.unknownSupplier")} · {po.orderDate} ·{" "}
-                  {t("purchasing.linesCount").replace("{count}", String(po.lines.length))}
-                </span>
-              </span>
-              <span className="purchasing-row__aside">
-                <StatusChip tone={statusTone(po.status)}>{po.displayStatus || po.status}</StatusChip>
-                <ChevronRight className="purchasing-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {!query.isLoading && !query.isError && filteredItems.length > 0 ? (
+        <ExitsTableContainer data-testid="purchase-orders-table">
+          <ExitsTableToolbar
+            search={
+              <SearchField
+                label={t("purchasing.searchOrders")}
+                value={searchInput}
+                placeholder={t("purchasing.searchOrders")}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onClear={() => setSearchInput("")}
+                data-testid="purchase-orders-search"
+              />
+            }
+            output={
+              <ExitsTableOutputActions
+                csvLabel={t("exitsTable.exportCsv")}
+                xlsxLabel={t("exitsTable.exportExcel")}
+                pdfLabel={t("exitsTable.exportPdf")}
+                printLabel={t("exitsTable.print")}
+                menuLabel={t("exitsTable.exportPrintMenu")}
+                onCsv={() => runOutput("csv")}
+                onXlsx={() => runOutput("xlsx")}
+                onPdf={() => runOutput("pdf")}
+                onPrint={() => runOutput("print")}
+              />
+            }
+          />
 
-      {query.isSuccess && totalCount > 0 ? (
-        <div className="exits-pagination">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("purchasing.pageLabel")
-              .replace("{page}", String(page))
-              .replace("{totalPages}", String(totalPages))}
-          </p>
-          <div className="exits-pagination__actions flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-9"
-              disabled={!canPrev}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              {t("purchasing.prevPage")}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-9"
-              disabled={!canNext}
-              onClick={() => setPage((current) => current + 1)}
-            >
-              {t("purchasing.nextPage")}
-            </Button>
-          </div>
-        </div>
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">{t("purchasing.poNumber")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.supplier")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.orderDate")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="numeric">{t("purchasing.lines")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.fieldStatus")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.paymentTerm")}</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {filteredItems.map((po) => {
+                const label = resolveStatusLabel(po);
+                return (
+                  <ExitsTableRow
+                    key={po.purchaseOrderId}
+                    interactive
+                    data-testid={`po-row-${po.purchaseOrderId}`}
+                    onClick={() => navigate(`/purchasing/${po.purchaseOrderId}`)}
+                  >
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {po.poNumber ?? t("purchasing.unnamedPo")}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">
+                      {po.supplierName ?? t("purchasing.unknownSupplier")}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">{po.orderDate}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                      {po.lines.length}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">
+                      <StatusChip tone={purchaseOrderListStatusTone(po)}>{label}</StatusChip>
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">
+                      {po.paymentTermLabel || po.paymentTerm || "—"}
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                );
+              })}
+            </ExitsTableBody>
+          </ExitsTable>
+
+          <ExitsTableMobile data-testid="purchase-orders-mobile">
+            {filteredItems.map((po) => {
+              const label = resolveStatusLabel(po);
+              return (
+                <ExitsTableMobileRow
+                  key={po.purchaseOrderId}
+                  data-testid={`po-row-mobile-${po.purchaseOrderId}`}
+                  onClick={() => navigate(`/purchasing/${po.purchaseOrderId}`)}
+                >
+                  <div className="exits-table-mobile__title-row">
+                    <p className="exits-table-mobile__title">
+                      {po.poNumber ?? t("purchasing.unnamedPo")}
+                    </p>
+                    <StatusChip tone={purchaseOrderListStatusTone(po)}>{label}</StatusChip>
+                  </div>
+                  <p className="exits-table-mobile__meta">
+                    {po.supplierName ?? t("purchasing.unknownSupplier")}
+                  </p>
+                  <p className="exits-table-mobile__math">
+                    {po.orderDate} ·{" "}
+                    {t("purchasing.linesCount").replace("{count}", String(po.lines.length))}
+                  </p>
+                </ExitsTableMobileRow>
+              );
+            })}
+          </ExitsTableMobile>
+
+          <ExitsTablePagination
+            page={page}
+            pageSize={pageSize}
+            total={debouncedSearch ? filteredItems.length : totalCount}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+            rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+            previousLabel={t("exitsTable.previous")}
+            nextLabel={t("exitsTable.next")}
+            rangeLabel={t("exitsTable.range")}
+          />
+        </ExitsTableContainer>
       ) : null}
     </div>
   );

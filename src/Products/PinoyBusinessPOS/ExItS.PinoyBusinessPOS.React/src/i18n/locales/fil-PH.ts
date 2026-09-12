@@ -8590,6 +8590,11 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.ordersEmptyDetail": "Gumawa ng purchase order o baguhin ang filter.",
 
+  "purchasing.ordersNoMatch": "Walang tumugmang purchase order",
+  "purchasing.ordersNoMatchDetail": "Subukan ang ibang PO number, supplier, o status.",
+  "purchasing.searchOrders": "Maghanap ng purchase order",
+  "purchasing.poNumber": "PO number",
+
   "purchasing.ordersLede": "Mag-draft, mag-submit, at subaybayan ang mga purchase order.",
 
   "purchasing.ordersNoStock": "Ang paggawa o pag-submit ng purchase order ay hindi nagdadagdag ng inventory.",

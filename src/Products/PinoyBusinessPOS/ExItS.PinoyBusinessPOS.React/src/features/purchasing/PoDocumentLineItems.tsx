@@ -59,10 +59,10 @@ export function PoDocumentLineItems({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2
           id={`${testId}-heading`}
-          className="m-0 flex items-center gap-2 text-[length:var(--exits-text-md)] font-medium"
+          className="po-document-lines__title m-0 flex items-center gap-2 text-[length:var(--exits-text-md)] font-medium text-[var(--exits-primary)]"
         >
           <span>{title}</span>
-          <CountBadge count={lines.length} tone="neutral" />
+          <CountBadge count={lines.length} tone="primary" />
         </h2>
         {headerEnd}
       </div>

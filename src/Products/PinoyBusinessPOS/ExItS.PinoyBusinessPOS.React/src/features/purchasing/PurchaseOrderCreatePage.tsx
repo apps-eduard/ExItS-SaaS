@@ -33,6 +33,7 @@ import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity"
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
@@ -686,6 +687,7 @@ export function PurchaseOrderCreatePage() {
       ) : null}
 
       <PoDocumentSummary
+        className="po-document-summary--create"
         counterpartyLabel={t("purchasing.seller")}
         counterpartyName={
           selectedSupplier
@@ -698,34 +700,25 @@ export function PurchaseOrderCreatePage() {
           {
             key: "receiving",
             label: t("purchasing.receivingBranch"),
-            value: boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—",
-          },
-          {
-            key: "orderDate",
-            label: t("purchasing.orderDate"),
             value: (
-              <input
-                type="date"
-                className="rounded-md border border-border bg-background px-2 py-1"
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-                disabled={!allowManage || !online}
-                data-testid="po-order-date"
-              />
+              <span data-testid="po-branch">
+                <StatusChip tone="neutral">
+                  {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
+                </StatusChip>
+              </span>
             ),
           },
-        ]}
-        testId="po-create-summary"
-        footer={
-          <div className="grid gap-3">
-            <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("purchasing.supplier")}
+          {
+            key: "supplier",
+            label: t("purchasing.supplier"),
+            value: (
               <select
-                className="exits-select"
+                className="exits-select w-full"
                 value={supplierId}
                 onChange={(e) => onSupplierChange(e.target.value)}
                 disabled={!allowManage || !online}
                 data-testid="po-supplier"
+                aria-label={t("purchasing.supplier")}
               >
                 <option value="">{t("purchasing.selectSupplier")}</option>
                 {(suppliersQuery.data?.items ?? []).map((s) => (
@@ -734,22 +727,35 @@ export function PurchaseOrderCreatePage() {
                   </option>
                 ))}
               </select>
-            </label>
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("purchasing.notes")}
-              <textarea
-                className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+            ),
+          },
+          {
+            key: "orderDate",
+            label: t("purchasing.orderDate"),
+            value: (
+              <input
+                type="date"
+                className="exits-input w-full"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
                 disabled={!allowManage || !online}
+                data-testid="po-order-date"
+                aria-label={t("purchasing.orderDate")}
               />
-            </label>
-            <p className="m-0 sr-only" data-testid="po-branch">
-              {t("purchasing.receivingBranch")}
-              {": "}
-              {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
-            </p>
-          </div>
+            ),
+          },
+        ]}
+        testId="po-create-summary"
+        footer={
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("purchasing.notes")}
+            <textarea
+              className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={!allowManage || !online}
+            />
+          </label>
         }
       />
 
