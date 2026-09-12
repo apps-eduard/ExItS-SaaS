@@ -53,6 +53,7 @@ export function OrgMorePage() {
     branchType: boundWorkspace?.branchType,
     // Manager More must not expose Admin configuration destinations.
     excludeAdminDestinations: boundWorkspace?.experience !== "manage_business",
+    experience: boundWorkspace?.experience,
   });
 
   return (

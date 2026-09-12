@@ -50,8 +50,24 @@ describe("org bottom nav config", () => {
       experience: "operations",
     });
     expect(matchOrgNavTab("/sell/checkout", tabs)).toBe("sell");
-    expect(matchOrgNavTab("/catalog/products", tabs)).toBe("catalog");
+    // Manager stock slot prefers Inventory (`id: catalog`, `to: /inventory`).
+    expect(matchOrgNavTab("/inventory/products", tabs)).toBe("catalog");
     expect(matchOrgNavTab("/more", tabs)).toBe("more");
+  });
+
+  it("Owner Cashier workspace bottom nav hides Inventory/Catalog slot", () => {
+    const tabs = buildOrgBottomNavTabs({
+      grant: baseGrant({
+        mappedPosRoleCode: "Owner",
+        productLocalRoleCode: "Owner",
+        membershipRole: "OrganizationOwner",
+        organizationManagementAuthority: true,
+      }),
+      experience: "start_selling",
+    });
+    expect(tabs.some((t) => t.id === "catalog")).toBe(false);
+    expect(tabs.map((t) => t.id)).toEqual(["home", "sell", "orders", "more"]);
+    expect(tabs[0]?.to).toBe("/role/cashier");
   });
 
   it("filters More links by role", () => {

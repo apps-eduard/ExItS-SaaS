@@ -41,8 +41,19 @@ import {
   type OrganizationBranchType,
 } from "@/features/branches/branch-type";
 import type { MessageKey } from "@/i18n/messages";
-import type { WorkingExperience } from "@/workspace/working-experience";
-import { workingExperienceRoute } from "@/workspace/working-experience";
+import type {
+  OperationsNavWorkspace,
+  WorkingExperience,
+} from "@/workspace/working-experience";
+import {
+  resolveOperationsNavWorkspace,
+  workingExperienceRoute,
+} from "@/workspace/working-experience";
+
+/** Visible in Manager and Cashier presentation workspaces. */
+const NAV_BOTH: OperationsNavWorkspace[] = ["manager", "cashier"];
+/** Visible only in Manager presentation workspace (still permission-gated). */
+const NAV_MANAGER: OperationsNavWorkspace[] = ["manager"];
 
 export type OperationsNavTabId =
   | "home"
@@ -159,7 +170,9 @@ export function buildOperationsBottomNavTabs(input: {
   ];
   const right: OperationsNavTab[] = [];
 
-  if (canViewInventory(input.grant)) {
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience);
+  // Inventory is Manager-workspace presentation only (permissions still apply there).
+  if (navWorkspace === "manager" && canViewInventory(input.grant)) {
     left.push({
       id: "inventory",
       to: "/inventory",
@@ -257,17 +270,27 @@ function buildWarehouseOperationsBottomNavTabs(
   return tabs.slice(0, 5);
 }
 
+/**
+ * Permission first, then workspace presentation.
+ * Workspace filtering can only reduce visibility — never grant beyond capability.
+ */
 function pushItem(
   items: OperationsSidebarItem[],
   item: OperationsSidebarItem,
   allowed: boolean,
+  workspaces: ReadonlyArray<OperationsNavWorkspace>,
+  currentWorkspace: OperationsNavWorkspace,
 ): void {
-  if (allowed) {
-    items.push(item);
+  if (!allowed) {
+    return;
   }
+  if (!workspaces.includes(currentWorkspace)) {
+    return;
+  }
+  items.push(item);
 }
 
-/** Desktop (>=1024) sidebar groups — Retail vs Warehouse, capability-filtered, no Admin links. */
+/** Desktop (>=1024) sidebar groups — Retail vs Warehouse, capability then workspace filtered. */
 export function buildOperationsSidebarGroups(input: {
   grant: PosSessionGrantFacts | null | undefined;
   branchType?: OrganizationBranchType | string | null;
@@ -275,6 +298,7 @@ export function buildOperationsSidebarGroups(input: {
 }): OperationsSidebarGroup[] {
   const warehouse = isWarehouseBranch(input.branchType);
   const grant = input.grant;
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience ?? "operations");
   const homeTo = warehouse
     ? "/warehouse"
     : retailHomeTo(input.experience ?? "operations");
@@ -310,6 +334,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/sell"],
       },
       canCreateSale(grant, input.branchType),
+      NAV_BOTH,
+      navWorkspace,
     );
     pushItem(
       daily,
@@ -322,6 +348,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/orders"],
       },
       canViewCustomerOrders(grant),
+      NAV_BOTH,
+      navWorkspace,
     );
     if (daily.length > 0) {
       groups.push({
@@ -345,6 +373,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/catalog"],
       },
       canManageCatalog(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
   }
   pushItem(
@@ -358,6 +388,8 @@ export function buildOperationsSidebarGroups(input: {
       matchPrefixes: ["/inventory"],
     },
     canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
   );
   if (warehouse) {
     pushItem(
@@ -371,6 +403,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/purchasing/receive-stock"],
       },
       canManageInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
     pushItem(
       stock,
@@ -383,6 +417,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/inventory/transfers"],
       },
       canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
   }
   pushItem(
@@ -396,6 +432,8 @@ export function buildOperationsSidebarGroups(input: {
       matchPrefixes: ["/purchasing"],
     },
     canViewPurchasing(grant),
+    NAV_MANAGER,
+    navWorkspace,
   );
   if (!warehouse) {
     pushItem(
@@ -409,6 +447,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/inventory/transfers"],
       },
       canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
   }
   pushItem(
@@ -422,6 +462,8 @@ export function buildOperationsSidebarGroups(input: {
       matchPrefixes: ["/suppliers"],
     },
     canViewSuppliers(grant),
+    NAV_MANAGER,
+    navWorkspace,
   );
   if (warehouse) {
     pushItem(
@@ -435,6 +477,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/inventory/expiration"],
       },
       canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
     pushItem(
       stock,
@@ -447,6 +491,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/inventory/stock-use"],
       },
       canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
   }
   if (stock.length > 0) {
@@ -470,6 +516,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/customers"],
       },
       canViewCustomers(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
     if (customers.length > 0) {
       groups.push({
@@ -491,6 +539,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/expenses"],
       },
       canViewExpenses(grant),
+      NAV_MANAGER,
+      navWorkspace,
     );
     pushItem(
       control,
@@ -503,6 +553,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/returns"],
       },
       canViewReturns(grant),
+      NAV_BOTH,
+      navWorkspace,
     );
     pushItem(
       control,
@@ -515,6 +567,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/shifts"],
       },
       canViewShifts(grant),
+      NAV_BOTH,
+      navWorkspace,
     );
     pushItem(
       control,
@@ -527,6 +581,8 @@ export function buildOperationsSidebarGroups(input: {
         matchPrefixes: ["/registers"],
       },
       canViewRegisters(grant) || canManageRegisters(grant),
+      NAV_BOTH,
+      navWorkspace,
     );
     if (control.length > 0) {
       groups.push({
@@ -550,6 +606,8 @@ export function buildOperationsSidebarGroups(input: {
       matchPrefixes: ["/dashboard"],
     },
     canViewDashboard(grant),
+    NAV_MANAGER,
+    navWorkspace,
   );
   pushItem(
     insights,
@@ -562,6 +620,8 @@ export function buildOperationsSidebarGroups(input: {
       matchPrefixes: ["/reports"],
     },
     canAccessReportsHub(grant),
+    NAV_MANAGER,
+    navWorkspace,
   );
   if (insights.length > 0) {
     groups.push({

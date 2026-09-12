@@ -45,6 +45,7 @@ import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTil
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ManagerHomePage } from "@/features/role/ManagerHomePage";
+import { CashierHomePage } from "@/features/role/CashierHomePage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -579,16 +580,5 @@ export function ManagerRoleHomePage() {
 }
 
 export function CashierRoleHomePage() {
-  return (
-    <RoleHomeShell
-      titleKey="role.cashierTitle"
-      ledeKey="role.cashierLede"
-      badgeKey="role.cashierBadge"
-      bodyKey="role.cashierBody"
-      returnRoute="/role/cashier"
-      primarySell
-      dashboardGuide
-      homeTestId="cashier-home"
-    />
-  );
+  return <CashierHomePage />;
 }

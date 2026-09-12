@@ -41,7 +41,10 @@ import {
   type OrganizationBranchType,
 } from "@/features/branches/branch-type";
 import type { WorkingExperience } from "@/workspace/working-experience";
-import { workingExperienceRoute } from "@/workspace/working-experience";
+import {
+  resolveOperationsNavWorkspace,
+  workingExperienceRoute,
+} from "@/workspace/working-experience";
 
 export type OrgNavTabId = "home" | "sell" | "catalog" | "orders" | "more";
 
@@ -115,23 +118,26 @@ export function buildOrgBottomNavTabs(input: {
     testId: "org-nav-more",
   });
 
-  // Prefer Inventory over Catalog for the stock slot (Manager IA).
-  if (canViewInventory(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/inventory",
-      end: false,
-      labelKey: "org.nav.inventory",
-      testId: "org-nav-catalog",
-    });
-  } else if (canManageCatalog(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/catalog",
-      end: false,
-      labelKey: "org.nav.catalog",
-      testId: "org-nav-catalog",
-    });
+  // Prefer Inventory over Catalog for the stock slot (Manager IA only).
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience);
+  if (navWorkspace === "manager") {
+    if (canViewInventory(input.grant)) {
+      left.push({
+        id: "catalog",
+        to: "/inventory",
+        end: false,
+        labelKey: "org.nav.inventory",
+        testId: "org-nav-catalog",
+      });
+    } else if (canManageCatalog(input.grant)) {
+      left.push({
+        id: "catalog",
+        to: "/catalog",
+        end: false,
+        labelKey: "org.nav.catalog",
+        testId: "org-nav-catalog",
+      });
+    }
   }
 
   const sell: OrgNavTab | null = canCreateSale(input.grant, input.branchType)
@@ -245,7 +251,12 @@ export type OrgMoreSection = {
 /** Secondary destinations for the More hub — permission-filtered, flat list. */
 export function buildOrgMoreLinks(
   grant: PosSessionGrantFacts | null | undefined,
-  options?: { showFinishSetup?: boolean; branchType?: OrganizationBranchType | string | null },
+  options?: {
+    showFinishSetup?: boolean;
+    branchType?: OrganizationBranchType | string | null;
+    excludeAdminDestinations?: boolean;
+    experience?: WorkingExperience | null;
+  },
 ): OrgMoreLink[] {
   return buildOrgMoreSections(grant, options).flatMap((section) => section.links);
 }
@@ -258,68 +269,74 @@ export function buildOrgMoreSections(
     branchType?: OrganizationBranchType | string | null;
     /** When true (Manager More), omit Admin configuration destinations. */
     excludeAdminDestinations?: boolean;
+    /** Presentation workspace — never grants beyond permission. */
+    experience?: WorkingExperience | null;
   },
 ): OrgMoreSection[] {
   const warehouse = isWarehouseBranch(options?.branchType);
   const excludeAdmin = options?.excludeAdminDestinations === true;
+  const cashierWorkspace =
+    resolveOperationsNavWorkspace(options?.experience ?? "operations") === "cashier";
   const operations: OrgMoreLink[] = [];
   const insights: OrgMoreLink[] = [];
   const organization: OrgMoreLink[] = [];
   const settings: OrgMoreLink[] = [];
 
   if (warehouse) {
-    if (canManageInventory(grant)) {
-      operations.push({
-        to: "/purchasing/receive-stock",
-        labelKey: "org.more.receiveStock",
-        testId: "org-more-receive-stock",
-        icon: PackagePlus,
-      });
-    }
-    if (canViewInventory(grant)) {
-      operations.push({
-        to: "/inventory/transfers",
-        labelKey: "org.more.transfers",
-        testId: "org-more-transfers",
-        icon: ArrowLeftRight,
-      });
-      operations.push({
-        to: "/inventory",
-        labelKey: "org.more.inventory",
-        testId: "org-more-inventory",
-        icon: Boxes,
-      });
-      operations.push({
-        to: "/inventory/expiration",
-        labelKey: "org.more.expiringLots",
-        testId: "org-more-expiring-lots",
-        icon: ClipboardList,
-      });
-      operations.push({
-        to: "/inventory/stock-use",
-        labelKey: "org.more.stockMovements",
-        testId: "org-more-stock-movements",
-        icon: RefreshCw,
-      });
-    }
-    if (canViewPurchasing(grant)) {
-      operations.push({
-        to: "/purchasing",
-        labelKey: "org.more.purchasing",
-        testId: "org-more-purchasing",
-        icon: PackagePlus,
-      });
-    }
-    if (canViewSuppliers(grant)) {
-      operations.push({
-        to: "/suppliers",
-        labelKey: "org.more.suppliers",
-        testId: "org-more-suppliers",
-        icon: Truck,
-      });
+    if (!cashierWorkspace) {
+      if (canManageInventory(grant)) {
+        operations.push({
+          to: "/purchasing/receive-stock",
+          labelKey: "org.more.receiveStock",
+          testId: "org-more-receive-stock",
+          icon: PackagePlus,
+        });
+      }
+      if (canViewInventory(grant)) {
+        operations.push({
+          to: "/inventory/transfers",
+          labelKey: "org.more.transfers",
+          testId: "org-more-transfers",
+          icon: ArrowLeftRight,
+        });
+        operations.push({
+          to: "/inventory",
+          labelKey: "org.more.inventory",
+          testId: "org-more-inventory",
+          icon: Boxes,
+        });
+        operations.push({
+          to: "/inventory/expiration",
+          labelKey: "org.more.expiringLots",
+          testId: "org-more-expiring-lots",
+          icon: ClipboardList,
+        });
+        operations.push({
+          to: "/inventory/stock-use",
+          labelKey: "org.more.stockMovements",
+          testId: "org-more-stock-movements",
+          icon: RefreshCw,
+        });
+      }
+      if (canViewPurchasing(grant)) {
+        operations.push({
+          to: "/purchasing",
+          labelKey: "org.more.purchasing",
+          testId: "org-more-purchasing",
+          icon: PackagePlus,
+        });
+      }
+      if (canViewSuppliers(grant)) {
+        operations.push({
+          to: "/suppliers",
+          labelKey: "org.more.suppliers",
+          testId: "org-more-suppliers",
+          icon: Truck,
+        });
+      }
     }
   } else {
-    if (canViewInventory(grant)) {
+    if (!cashierWorkspace && canViewInventory(grant)) {
       operations.push({
         to: "/inventory",
         labelKey: "org.more.inventory",
@@ -327,7 +344,7 @@ export function buildOrgMoreSections(
         icon: Boxes,
       });
     }
-    if (canViewCustomers(grant)) {
+    if (!cashierWorkspace && canViewCustomers(grant)) {
       operations.push({
         to: "/customers",
         labelKey: "org.more.customers",
@@ -351,7 +368,7 @@ export function buildOrgMoreSections(
         icon: Receipt,
       });
     }
-    if (canViewPurchasing(grant)) {
+    if (!cashierWorkspace && canViewPurchasing(grant)) {
       operations.push({
         to: "/purchasing",
         labelKey: "org.more.purchasing",
@@ -359,7 +376,7 @@ export function buildOrgMoreSections(
         icon: PackagePlus,
       });
     }
-    if (canViewSuppliers(grant)) {
+    if (!cashierWorkspace && canViewSuppliers(grant)) {
       operations.push({
         to: "/suppliers",
         labelKey: "org.more.suppliers",
@@ -367,7 +384,7 @@ export function buildOrgMoreSections(
         icon: Truck,
       });
     }
-    if (canViewExpenses(grant)) {
+    if (!cashierWorkspace && canViewExpenses(grant)) {
       operations.push({
         to: "/expenses",
         labelKey: "org.more.expenses",
@@ -377,7 +394,7 @@ export function buildOrgMoreSections(
     }
   }
 
-  if (!warehouse && canViewDashboard(grant)) {
+  if (!cashierWorkspace && !warehouse && canViewDashboard(grant)) {
     insights.push({
       to: "/dashboard",
       labelKey: "org.more.dashboard",
@@ -385,7 +402,7 @@ export function buildOrgMoreSections(
       icon: LayoutDashboard,
     });
   }
-  if (canAccessReportsHub(grant)) {
+  if (!cashierWorkspace && canAccessReportsHub(grant)) {
     insights.push({
       to: "/reports",
       labelKey: "org.more.reports",
@@ -394,7 +411,7 @@ export function buildOrgMoreSections(
     });
   }
 
-  if (!excludeAdmin) {
+  if (!excludeAdmin && !cashierWorkspace) {
     if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
       organization.push({
         to: "/org",
