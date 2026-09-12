@@ -187,9 +187,12 @@
   --exits-type-page-title: 1.125rem;
   --exits-type-kpi: clamp(1.15rem, 2.4vw, 1.45rem);
   --exits-type-hero-kpi: clamp(1.55rem, 3.6vw, 2rem);
-  --exits-motion-fast: 140ms;
-  --exits-motion-normal: 220ms;
-  --exits-motion-slow: 420ms;
+  --exits-motion-instant: 60ms;
+  --exits-motion-fast: 130ms;
+  --exits-motion-normal: 180ms;
+  --exits-motion-base: var(--exits-motion-normal);
+  --exits-motion-slow: 240ms;
+  --exits-motion-shell: 280ms;
   --exits-ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --exits-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
   /* Desktop Reveal navigation — expand slightly slower than collapse. */
@@ -663,9 +666,12 @@
 
 /* Forced reduced motion preference (also honor OS media query below) */
 [data-motion="reduced"] {
+  --exits-motion-instant: 0ms;
   --exits-motion-fast: 0ms;
   --exits-motion-normal: 0ms;
+  --exits-motion-base: 0ms;
   --exits-motion-slow: 0ms;
+  --exits-motion-shell: 0ms;
   --exits-sidebar-reveal-duration: 0ms;
   --exits-sidebar-collapse-duration: 0ms;
   --exits-sidebar-label-fade-duration: 0ms;
@@ -677,6 +683,32 @@
 [data-motion="reduced"] *::after {
   animation-duration: 0.01ms !important;
   transition-duration: 0.01ms !important;
+}
+
+/* Kill interaction transforms when Animations=Reduced (not duration-only). */
+[data-motion="reduced"] .exits-motion-press:active,
+[data-motion="reduced"] .exits-motion-lift:hover,
+[data-motion="reduced"] .exits-motion-lift:active,
+[data-motion="reduced"] .exits-settings-gear--ambient {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Semantic motion utilities — shared primitives first. */
+.exits-motion-transition {
+  transition-property: transform, opacity;
+  transition-duration: var(--exits-motion-base);
+  transition-timing-function: var(--exits-ease-standard);
+}
+
+.exits-motion-interaction {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
+  transition-duration: var(--exits-motion-fast);
+  transition-timing-function: var(--exits-ease-standard);
+}
+
+.exits-motion-ambient {
+  /* Continuous decorative motion only — Settings gear. */
 }
 
 /* Density modes â€” visual control sizing (balance = default everyday density) */
@@ -817,9 +849,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --exits-motion-instant: 0ms;
     --exits-motion-fast: 0ms;
     --exits-motion-normal: 0ms;
+    --exits-motion-base: 0ms;
     --exits-motion-slow: 0ms;
+    --exits-motion-shell: 0ms;
     --exits-sidebar-reveal-duration: 0ms;
     --exits-sidebar-collapse-duration: 0ms;
     --exits-sidebar-label-fade-duration: 0ms;
@@ -831,6 +866,14 @@
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .exits-motion-press:active,
+  .exits-motion-lift:hover,
+  .exits-motion-lift:active,
+  .exits-settings-gear--ambient {
+    transform: none !important;
+    filter: none !important;
   }
 }
 
@@ -12456,6 +12499,16 @@ textarea.exits-input {
   background: transparent;
   color: var(--exits-text-muted);
   cursor: pointer;
+  animation: exits-search-clear-in var(--exits-motion-fast) var(--exits-ease-standard);
+}
+
+@keyframes exits-search-clear-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .exits-search-field__clear:hover {

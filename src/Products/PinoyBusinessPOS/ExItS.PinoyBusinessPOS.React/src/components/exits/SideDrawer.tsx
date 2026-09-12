@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { prefersReducedMotion } from "@/lib/motion";
 
 function useBodyScrollLock(locked: boolean) {
   useEffect(() => {
@@ -97,12 +98,9 @@ export function SideDrawer({
     }
 
     // Fallback when transitionend does not fire (jsdom, reduced motion, interrupted).
-    const canQueryMotion =
-      typeof window !== "undefined" && typeof window.matchMedia === "function";
-    const reduced =
-      canQueryMotion && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // jsdom has no CSS transitions; skip the wait when motion APIs are unavailable.
-    const timeoutMs = !canQueryMotion || reduced ? 0 : 450;
+    const reduced = prefersReducedMotion();
+    // jsdom has no CSS transitions; skip the wait when motion is reduced.
+    const timeoutMs = reduced ? 0 : 450;
     const timeout = window.setTimeout(() => {
       finishExit();
     }, timeoutMs);

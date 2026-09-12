@@ -1,5 +1,5 @@
 import { Settings } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   capturePreferencesReturnFrom,
@@ -26,8 +26,8 @@ const COLOR_TRANSITION_MS = 600;
 
 /**
  * Compact shell preferences control — icon only; opens the preferences drawer route.
- * Ambient gear: slow continuous rotation + decorative Primary accent cycle (client-only).
- * Does not mutate data-primary or Preferences storage.
+ * Ambient gear (category AMBIENT): slow rotation + decorative Primary cycle.
+ * Does not mutate data-primary or Preferences storage. Pauses when document is hidden.
  */
 export function ShellPreferencesButton({
   to = "/settings/preferences",
@@ -40,6 +40,7 @@ export function ShellPreferencesButton({
   const reducedMotion = usePrefersReducedMotion();
   const [ambientColor, setAmbientColor] = useState<PrimaryColorPreference | null>(null);
   const [darkSurface, setDarkSurface] = useState(false);
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (reducedMotion) {
@@ -50,12 +51,45 @@ export function ShellPreferencesButton({
     setDarkSurface(isDocumentThemeDark());
     setAmbientColor((prev) => prev ?? pickNextAmbientPrimary(null));
 
-    const id = window.setInterval(() => {
+    const tick = () => {
+      if (typeof document !== "undefined" && document.hidden) {
+        return;
+      }
       setAmbientColor((prev) => pickNextAmbientPrimary(prev));
       setDarkSurface(isDocumentThemeDark());
-    }, COLOR_CYCLE_MS);
+    };
 
-    return () => window.clearInterval(id);
+    const start = () => {
+      if (intervalRef.current != null) {
+        return;
+      }
+      intervalRef.current = window.setInterval(tick, COLOR_CYCLE_MS);
+    };
+
+    const stop = () => {
+      if (intervalRef.current != null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        start();
+      }
+    };
+
+    if (!document.hidden) {
+      start();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [reducedMotion]);
 
   const ambientEnabled = !reducedMotion && ambientColor != null;
@@ -83,7 +117,7 @@ export function ShellPreferencesButton({
     >
       <Settings
         className={cn(
-          "size-5 exits-settings-gear",
+          "size-5 exits-settings-gear exits-motion-ambient",
           ambientEnabled && "exits-settings-gear--ambient",
           !ambientEnabled && "text-[var(--exits-primary)]",
         )}
@@ -91,7 +125,7 @@ export function ShellPreferencesButton({
           ambientEnabled
             ? {
                 color: iconColor,
-                transition: `color ${COLOR_TRANSITION_MS}ms ease`,
+                transition: `color ${COLOR_TRANSITION_MS}ms var(--exits-ease-standard)`,
               }
             : undefined
         }

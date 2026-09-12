@@ -228,11 +228,17 @@ describe("Preferences icon top navigation", () => {
       expect(document.documentElement.dataset.controlShape).toBe("standard");
     });
 
-    await user.click(screen.getByRole("radio", { name: "Motion: Reduced" }));
+    expect(screen.getByTestId("preferences-animations")).toBeInTheDocument();
+    expect(screen.getByText("Animations")).toBeInTheDocument();
+    expect(
+      screen.getByText("Controls interface transitions and decorative motion."),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "Animations: Reduced" }));
     await waitFor(() => {
       expect(document.documentElement.dataset.motion).toBe("reduced");
     });
-    await user.click(screen.getByRole("radio", { name: "Motion: System" }));
+    await user.click(screen.getByRole("radio", { name: "Animations: System" }));
     await waitFor(() => {
       expect(document.documentElement.dataset.motion).toBe("system");
     });

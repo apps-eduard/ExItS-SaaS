@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
  */
 export const buttonVariants = cva(
   [
-    "group/button inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
+    "group/button exits-motion-press exits-motion-interaction inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
     "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
     "active:scale-[0.985] motion-reduce:active:scale-100",
     "focus-visible:outline-none focus-visible:border-[var(--exits-primary)] focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_28%,transparent)]",

@@ -110,4 +110,29 @@ describe("ShellPreferencesButton ambient settings gear", () => {
     expect(clearSpy).toHaveBeenCalled();
     clearSpy.mockRestore();
   });
+
+  it("pauses the color-cycle interval while the document is hidden", async () => {
+    const setSpy = vi.spyOn(window, "setInterval");
+    const clearSpy = vi.spyOn(window, "clearInterval");
+    renderButton();
+    await waitFor(() => {
+      expect(screen.getByTestId("shell-preferences-button")).toHaveAttribute(
+        "data-ambient-settings",
+        "on",
+      );
+    });
+    expect(setSpy).toHaveBeenCalled();
+    const beforeClears = clearSpy.mock.calls.length;
+
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(clearSpy.mock.calls.length).toBeGreaterThan(beforeClears);
+
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(setSpy.mock.calls.length).toBeGreaterThan(1);
+
+    setSpy.mockRestore();
+    clearSpy.mockRestore();
+  });
 });

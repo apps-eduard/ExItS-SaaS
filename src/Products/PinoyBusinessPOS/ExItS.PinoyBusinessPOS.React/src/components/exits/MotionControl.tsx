@@ -4,29 +4,37 @@ import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MotionPreference } from "@/lib/preferences/ui-preferences";
 
+/**
+ * Appearance → Animations (persisted as `motion`: system | reduced).
+ */
 export function MotionControl() {
   const { t } = useI18n();
   const { preferences, setMotion } = usePreferences();
 
   return (
-    <SettingsSelect<MotionPreference>
-      label={t("appearance.motion.label")}
-      value={preferences.motion}
-      onChange={setMotion}
-      variant="segmented"
-      testId="preferences-motion"
-      options={[
-        {
-          value: "system",
-          label: t("appearance.motion.system"),
-          icon: <Activity className="size-3.5 shrink-0" aria-hidden="true" />,
-        },
-        {
-          value: "reduced",
-          label: t("appearance.motion.reduced"),
-          icon: <Accessibility className="size-3.5 shrink-0" aria-hidden="true" />,
-        },
-      ]}
-    />
+    <div className="flex min-w-0 flex-col gap-1.5" data-testid="preferences-animations">
+      <SettingsSelect<MotionPreference>
+        label={t("appearance.motion.label")}
+        value={preferences.motion}
+        onChange={setMotion}
+        variant="segmented"
+        testId="preferences-motion"
+        options={[
+          {
+            value: "system",
+            label: t("appearance.motion.system"),
+            icon: <Activity className="size-3.5 shrink-0" aria-hidden="true" />,
+          },
+          {
+            value: "reduced",
+            label: t("appearance.motion.reduced"),
+            icon: <Accessibility className="size-3.5 shrink-0" aria-hidden="true" />,
+          },
+        ]}
+      />
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+        {t("appearance.motion.hint")}
+      </p>
+    </div>
   );
 }

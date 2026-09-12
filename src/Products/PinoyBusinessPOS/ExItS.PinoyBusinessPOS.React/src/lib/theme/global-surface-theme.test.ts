@@ -36,8 +36,12 @@ const REQUIRED_SEMANTIC_TOKENS = [
   "--exits-radius-sm",
   "--exits-radius-md",
   "--exits-radius-lg",
+  "--exits-motion-instant",
   "--exits-motion-fast",
   "--exits-motion-normal",
+  "--exits-motion-base",
+  "--exits-motion-slow",
+  "--exits-motion-shell",
   "--exits-motion-slow",
 ] as const;
 

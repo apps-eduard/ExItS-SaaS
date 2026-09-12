@@ -33,8 +33,8 @@ export type ExitsCardAccentTone = "neutral" | "primary" | "success" | "warning" 
 export type ExitsCardAccentPosition = "start" | "top" | "tint";
 
 const motionBase = [
-  "origin-center will-change-transform",
-  "duration-[180ms]",
+  "exits-motion-lift origin-center",
+  "duration-[var(--exits-motion-fast)]",
   "motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:hover:shadow-[var(--exits-shadow-sm)]",
 ].join(" ");
 
