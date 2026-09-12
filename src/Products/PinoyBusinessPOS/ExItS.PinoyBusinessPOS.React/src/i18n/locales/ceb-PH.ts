@@ -8235,8 +8235,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "preferences.appearance": "Hitsura",
 
   "preferences.close": "Isira ang preferences",
+  "preferences.menuLabel": "Mga seksyon sa Preferences",
+  "preferences.section.appearance": "Panagway",
+  "preferences.section.languageRegion": "Pinulongan ug Rehiyon",
+  "preferences.section.navigation": "Nabigasyon",
+  "preferences.section.accessibility": "Accessibility",
+  "preferences.navigationEmpty": "Wala pay dugang navigation preferences. Ang personal nga navigation options mutungha dinhi kung available na.",
+  "preferences.accessibilityEmpty": "Wala pay dugang accessibility preferences. Ang motion nagsunod gihapon sa device settings nimo.",
 
-  "preferences.lede": "Mga setting sa pinulongan, hitsura, ug density para niining device.",
+  "preferences.lede": "I-personalize kung giunsa pagtan-aw ug paglihok ang ExItS para nimo.",
 
   "preferences.title": "Mga setting",
 

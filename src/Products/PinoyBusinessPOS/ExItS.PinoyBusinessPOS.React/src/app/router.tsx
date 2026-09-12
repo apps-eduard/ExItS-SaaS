@@ -74,6 +74,10 @@ import { DashboardRoutePage } from "@/features/reports/DashboardRoutePage";
 import { OperationalReportPage } from "@/features/reports/OperationalReportPage";
 import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
+import { AppearancePreferences } from "@/features/preferences/AppearancePreferences";
+import { LanguageRegionPreferences } from "@/features/preferences/LanguageRegionPreferences";
+import { NavigationPreferences } from "@/features/preferences/NavigationPreferences";
+import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPreferences";
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
@@ -423,7 +427,16 @@ export const appRoutes = [
               </RequireOrganizationSession>
             ),
           },
-          { path: "settings/preferences", element: <PreferencesPage /> },
+          {
+            path: "settings/preferences",
+            element: <PreferencesPage />,
+            children: [
+              { path: "appearance", element: <AppearancePreferences /> },
+              { path: "language-region", element: <LanguageRegionPreferences /> },
+              { path: "navigation", element: <NavigationPreferences /> },
+              { path: "accessibility", element: <AccessibilityPreferences /> },
+            ],
+          },
           { path: "ui-standards", element: <UiStandardsPage /> },
           {
             path: "more",

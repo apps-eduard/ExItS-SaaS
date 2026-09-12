@@ -6,7 +6,11 @@ const PREFERENCES_RETURN_STORAGE_KEY = "exits.preferences.returnTo";
 
 /** True when a nav destination opens the preferences drawer. */
 export function isPreferencesDestination(to: string): boolean {
-  return to === "/settings/preferences" || to.startsWith("/settings/preferences?");
+  return (
+    to === "/settings/preferences" ||
+    to.startsWith("/settings/preferences?") ||
+    to.startsWith("/settings/preferences/")
+  );
 }
 
 /** Safe in-app return path after closing the preferences drawer. */
@@ -14,7 +18,11 @@ export function isSafePreferencesReturnPath(path: string | null | undefined): pa
   if (!path || !path.startsWith("/") || path.startsWith("//")) {
     return false;
   }
-  if (path === "/settings/preferences" || path.startsWith("/settings/preferences?")) {
+  if (
+    path === "/settings/preferences" ||
+    path.startsWith("/settings/preferences?") ||
+    path.startsWith("/settings/preferences/")
+  ) {
     return false;
   }
   return true;

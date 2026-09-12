@@ -8235,8 +8235,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "preferences.appearance": "Langa",
 
   "preferences.close": "Irikep ti preferences",
+  "preferences.menuLabel": "Dagiti section ti Preferences",
+  "preferences.section.appearance": "Langaw",
+  "preferences.section.languageRegion": "Pagsasao ken Rehion",
+  "preferences.section.navigation": "Nabigasion",
+  "preferences.section.accessibility": "Accessibility",
+  "preferences.navigationEmpty": "Awan pay ti nangnayon a navigation preferences. Agparang ditoy dagiti personal a navigation options no adda daanen.",
+  "preferences.accessibilityEmpty": "Awan pay ti nangnayon a accessibility preferences. Ti motion ket surotenna pay laeng ti device settings mo.",
 
-  "preferences.lede": "Dagiti kaykayat iti pagsasao, langa, ken density para iti daytoy a device.",
+  "preferences.lede": "I-personalize no kasano a makita ken agtagtaga ti ExItS para kenka.",
 
   "preferences.title": "Dagiti kaykayat",
 

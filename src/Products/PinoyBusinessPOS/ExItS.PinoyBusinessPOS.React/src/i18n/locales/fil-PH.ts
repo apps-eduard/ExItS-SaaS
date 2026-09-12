@@ -8233,8 +8233,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "preferences.appearance": "Itsura",
 
   "preferences.close": "Isara ang preferences",
+  "preferences.menuLabel": "Mga seksyon ng Preferences",
+  "preferences.section.appearance": "Hitsura",
+  "preferences.section.languageRegion": "Wika at Rehiyon",
+  "preferences.section.navigation": "Nabigasyon",
+  "preferences.section.accessibility": "Accessibility",
+  "preferences.navigationEmpty": "Wala pang karagdagang preference sa nabigasyon. Lalabas dito ang personal na mga opsyon sa nabigasyon kapag available na.",
+  "preferences.accessibilityEmpty": "Wala pang karagdagang preference sa accessibility. Sinusunod pa ng motion ang settings ng device mo.",
 
-  "preferences.lede": "Mga preference sa wika, itsura, at density para sa device na ito.",
+  "preferences.lede": "I-personalize kung paano nakikita at gumagana ang ExItS para sa iyo.",
 
   "preferences.title": "Preferences",
 

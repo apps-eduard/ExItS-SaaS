@@ -8235,8 +8235,15 @@ export const hilPH: Record<keyof typeof en, string> = {
   "preferences.appearance": "Hitsura",
 
   "preferences.close": "Siraduhan ang preferences",
+  "preferences.menuLabel": "Mga seksyon sang Preferences",
+  "preferences.section.appearance": "Panagway",
+  "preferences.section.languageRegion": "Lengguahe kag Rehiyon",
+  "preferences.section.navigation": "Nabigasyon",
+  "preferences.section.accessibility": "Aksesibilidad",
+  "preferences.navigationEmpty": "Wala pa sang dugang navigation preferences. Magapakita diri ang personal nga navigation options kung available na.",
+  "preferences.accessibilityEmpty": "Wala pa sang dugang accessibility preferences. Ang motion nagasunod pa sa device settings mo.",
 
-  "preferences.lede": "Mga setting sang pulong, hitsura, kag density para sa sini nga device.",
+  "preferences.lede": "I-personalize kung paano makita kag maggawi ang ExItS para sa imo.",
 
   "preferences.title": "Mga setting",
 

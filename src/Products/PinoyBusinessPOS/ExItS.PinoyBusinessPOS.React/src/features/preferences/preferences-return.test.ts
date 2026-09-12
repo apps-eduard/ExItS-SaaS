@@ -22,6 +22,7 @@ describe("preferences-return", () => {
     expect(isSafePreferencesReturnPath("/role/cashier")).toBe(true);
     expect(isSafePreferencesReturnPath("/settings/preferences")).toBe(false);
     expect(isSafePreferencesReturnPath("/settings/preferences?x=1")).toBe(false);
+    expect(isSafePreferencesReturnPath("/settings/preferences/appearance")).toBe(false);
     expect(isSafePreferencesReturnPath("//evil.example")).toBe(false);
     expect(isSafePreferencesReturnPath("https://evil.example")).toBe(false);
     expect(isSafePreferencesReturnPath(null)).toBe(false);

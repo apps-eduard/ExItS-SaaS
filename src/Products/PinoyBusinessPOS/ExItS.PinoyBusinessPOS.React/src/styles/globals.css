@@ -14651,6 +14651,13 @@ a.exits-chip--primary:hover {
   width: min(100%, 24rem);
 }
 
+@media (min-width: 40rem) {
+  .exits-side-drawer__panel--preferences {
+    /* Two-area Preferences menu + content */
+    width: min(100%, 42rem);
+  }
+}
+
 /* Manager / Cashier role home */
 .manager-ops-home {
   width: 100%;
