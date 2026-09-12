@@ -11805,4 +11805,3 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.incomingKindSupplierInvite": "Supplier invitation",
   "connected.reviewAndAccept": "Review & accept",
 };
-     
