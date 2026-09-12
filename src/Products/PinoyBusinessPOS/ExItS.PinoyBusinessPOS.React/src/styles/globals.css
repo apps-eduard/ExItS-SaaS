@@ -15227,56 +15227,90 @@ a.exits-chip--primary:hover {
   line-height: 1.2;
 }
 
-.manager-snapshot-table {
+.manager-snapshot-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-  overflow: hidden;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 @media (min-width: 640px) {
-  .manager-snapshot-table:has(> :nth-child(2):last-child) {
+  .manager-snapshot-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .manager-snapshot-table:has(> :nth-child(3):last-child) {
+  .manager-snapshot-grid:has(> :nth-child(3):last-child),
+  .manager-snapshot-grid:has(> :nth-child(3)) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .manager-snapshot-table:has(> :nth-child(4)) {
+  .manager-snapshot-grid:has(> :nth-child(4)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .manager-snapshot-grid:has(> :nth-child(4)) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-.manager-snapshot-row {
-  min-width: 0;
-  border-bottom: 1px solid var(--exits-border);
-  background: transparent;
+.manager-snapshot-card {
+  box-sizing: border-box;
+  min-height: 0;
+  box-shadow: none;
+  /* Structural card radius — does not follow Control Shape Pill. */
+  border-radius: var(--exits-radius-md) !important;
+}
+
+.manager-snapshot-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: var(--exits-radius-md);
+  background: color-mix(in srgb, var(--exits-primary) 12%, var(--exits-surface));
+  color: var(--exits-primary);
   transition:
     background-color var(--exits-motion-fast) ease,
-    border-color var(--exits-motion-fast) ease;
+    color var(--exits-motion-fast) ease;
 }
 
-.manager-snapshot-row:last-child {
-  border-bottom: 0;
+.manager-snapshot-card__chevron {
+  margin-block-start: 0.2rem;
+  transition: color var(--exits-motion-fast) ease;
 }
 
-@media (min-width: 640px) {
-  .manager-snapshot-row {
-    border-bottom: 0;
-    border-right: 1px solid var(--exits-border);
-  }
-
-  .manager-snapshot-row:last-child {
-    border-right: 0;
-  }
+.manager-snapshot-card:hover {
+  border-color: color-mix(in srgb, var(--exits-primary) 42%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary-soft) 55%, var(--exits-surface));
+  box-shadow: none;
 }
 
-.manager-snapshot-row:hover {
-  background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+.manager-snapshot-card:hover .manager-snapshot-card__icon {
+  background: color-mix(in srgb, var(--exits-primary) 18%, var(--exits-surface));
+  color: var(--exits-primary);
+}
+
+.manager-snapshot-card:hover .manager-snapshot-card__chevron {
+  color: var(--exits-primary);
+}
+
+.manager-snapshot-card:focus-visible {
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+}
+
+.manager-snapshot-card--attention .manager-snapshot-card__icon {
+  background: color-mix(in srgb, var(--exits-warning) 14%, var(--exits-surface));
+  color: var(--exits-warning);
+}
+
+.manager-snapshot-card--attention:hover .manager-snapshot-card__icon {
+  background: color-mix(in srgb, var(--exits-warning) 20%, var(--exits-surface));
+  color: var(--exits-warning);
 }
 
 .shifts-hub-page__shift-number {

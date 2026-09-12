@@ -391,33 +391,40 @@ export function ManagerWarehouseHome({
                 {snapshotModules.map((mod) => {
                   let detail = "";
                   let titleKey: MessageKey = "managerHome.snapshot.inventory";
+                  let attention = false;
                   if (mod.summaryKind === "inventory") {
                     titleKey = "managerHome.snapshot.inventory";
-                    detail =
-                      (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0
-                        ? t("managerHome.snapshot.inventoryDetail")
-                            .replace("{low}", String(mod.lowStock ?? 0))
-                            .replace("{expiry}", String(mod.expiry ?? 0))
-                        : t("managerHome.snapshot.inventoryClear");
+                    attention = (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.inventoryDetail")
+                          .replace("{low}", String(mod.lowStock ?? 0))
+                          .replace("{expiry}", String(mod.expiry ?? 0))
+                      : t("managerHome.snapshot.inventoryClear");
                   } else if (mod.summaryKind === "transfers") {
                     titleKey = "managerHome.snapshot.transfers";
-                    detail =
-                      (mod.transferCount ?? 0) > 0
-                        ? t("managerHome.snapshot.transfersDetail").replace(
-                            "{count}",
-                            String(mod.transferCount ?? 0),
-                          )
-                        : t("managerHome.snapshot.transfersClear");
+                    attention = (mod.transferCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.transfersDetail").replace(
+                          "{count}",
+                          String(mod.transferCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.transfersClear");
                   } else if (mod.summaryKind === "purchasing") {
                     titleKey = "managerHome.snapshot.purchasing";
-                    detail =
-                      (mod.receivableCount ?? 0) > 0
-                        ? t("managerHome.snapshot.purchasingDetail").replace(
-                            "{count}",
-                            String(mod.receivableCount ?? 0),
-                          )
-                        : t("managerHome.snapshot.purchasingClear");
+                    attention = (mod.receivableCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.purchasingDetail").replace(
+                          "{count}",
+                          String(mod.receivableCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.purchasingClear");
                   }
+                  const icon =
+                    mod.key === "inventory"
+                      ? Boxes
+                      : mod.key === "transfers"
+                        ? ArrowLeftRight
+                        : PackagePlus;
                   return (
                     <ManagerSnapshotLink
                       key={mod.key}
@@ -425,6 +432,8 @@ export function ManagerWarehouseHome({
                       detail={detail}
                       href={mod.href}
                       testId={mod.testId}
+                      icon={icon}
+                      tone={attention ? "attention" : "default"}
                     />
                   );
                 })}

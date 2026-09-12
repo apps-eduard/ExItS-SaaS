@@ -239,33 +239,50 @@ export function ManagerSnapshotLink({
   detail,
   href,
   testId,
+  icon: Icon,
+  tone = "default",
 }: {
   title: string;
   detail: string;
   href: string;
   testId: string;
+  icon: LucideIcon;
+  /** When snapshot helper indicates attention (e.g. low stock), use warning accent. */
+  tone?: "default" | "attention";
 }) {
   return (
     <Link
       to={href}
-      className="manager-snapshot-row flex min-w-0 items-center justify-between gap-2 px-3 py-2.5 no-underline"
+      className={cn(
+        "manager-snapshot-card exits-card exits-card--interactive flex min-w-0 items-start gap-2.5 px-3 py-2.5 no-underline text-inherit",
+        tone === "attention" && "manager-snapshot-card--attention",
+      )}
       data-testid={testId}
       role="listitem"
+      aria-label={`${title} — ${detail}`}
     >
-      <span className="min-w-0">
-        <span className="block text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+      <span className="manager-snapshot-card__icon shrink-0" aria-hidden>
+        <Icon className="size-4" strokeWidth={1.75} />
+      </span>
+      <span className="manager-snapshot-card__copy min-w-0 flex-1">
+        <span className="manager-snapshot-card__title block text-[length:var(--exits-text-sm)] font-semibold text-foreground">
           {title}
         </span>
-        <span className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted">{detail}</span>
+        <span className="manager-snapshot-card__detail mt-0.5 block text-[length:var(--exits-text-xs)] leading-snug text-muted">
+          {detail}
+        </span>
       </span>
-      <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+      <ChevronRight
+        className="manager-snapshot-card__chevron size-4 shrink-0 text-muted rtl:rotate-180"
+        aria-hidden
+      />
     </Link>
   );
 }
 
 export function ManagerSnapshotTable({ children }: { children: ReactNode }) {
   return (
-    <div className="manager-snapshot-table min-w-0 overflow-hidden" role="list">
+    <div className="manager-snapshot-grid min-w-0" role="list">
       {children}
     </div>
   );

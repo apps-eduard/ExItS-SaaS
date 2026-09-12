@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
   BarChart3,
+  Boxes,
   CircleDollarSign,
   ClipboardList,
   Clock3,
@@ -12,6 +13,7 @@ import {
   Receipt,
   ShoppingCart,
   Store,
+  Users,
   Warehouse,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -587,30 +589,32 @@ export function ManagerRetailHome() {
               <ManagerSnapshotTable>
                 {snapshotModules.map((mod) => {
                   let detail = "";
+                  let attention = false;
                   if (mod.summaryKind === "inventory") {
-                    detail =
-                      (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0
-                        ? t("managerHome.snapshot.inventoryDetail")
-                            .replace("{low}", String(mod.lowStock ?? 0))
-                            .replace("{expiry}", String(mod.expiry ?? 0))
-                        : t("managerHome.snapshot.inventoryClear");
+                    attention = (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.inventoryDetail")
+                          .replace("{low}", String(mod.lowStock ?? 0))
+                          .replace("{expiry}", String(mod.expiry ?? 0))
+                      : t("managerHome.snapshot.inventoryClear");
                   } else if (mod.summaryKind === "orders") {
-                    detail =
-                      (mod.orderCount ?? 0) > 0
-                        ? t("managerHome.snapshot.ordersDetail").replace(
-                            "{count}",
-                            String(mod.orderCount ?? 0),
-                          )
-                        : t("managerHome.snapshot.ordersClear");
+                    attention = (mod.orderCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.ordersDetail").replace(
+                          "{count}",
+                          String(mod.orderCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.ordersClear");
                   } else if (mod.summaryKind === "purchasing") {
-                    detail =
-                      (mod.receivableCount ?? 0) > 0
-                        ? t("managerHome.snapshot.purchasingDetail").replace(
-                            "{count}",
-                            String(mod.receivableCount ?? 0),
-                          )
-                        : t("managerHome.snapshot.purchasingClear");
+                    attention = (mod.receivableCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.purchasingDetail").replace(
+                          "{count}",
+                          String(mod.receivableCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.purchasingClear");
                   } else if (mod.summaryKind === "utang") {
+                    attention = true;
                     detail = t("managerHome.snapshot.utangDetail")
                       .replace("{outstanding}", formatPeso(mod.outstandingAmount ?? 0))
                       .replace("{overdue}", formatPeso(mod.overdueAmount ?? 0));
@@ -623,6 +627,14 @@ export function ManagerRetailHome() {
                         : mod.key === "purchasing"
                           ? "managerHome.snapshot.purchasing"
                           : "managerHome.snapshot.utang";
+                  const icon =
+                    mod.key === "inventory"
+                      ? Boxes
+                      : mod.key === "orders"
+                        ? ClipboardList
+                        : mod.key === "purchasing"
+                          ? PackagePlus
+                          : Users;
                   return (
                     <ManagerSnapshotLink
                       key={mod.key}
@@ -630,6 +642,8 @@ export function ManagerRetailHome() {
                       detail={detail}
                       href={mod.href}
                       testId={mod.testId}
+                      icon={icon}
+                      tone={attention ? "attention" : "default"}
                     />
                   );
                 })}
