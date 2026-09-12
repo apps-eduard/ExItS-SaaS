@@ -17407,7 +17407,12 @@ html[data-motion="reduced"] .exits-tooltip {
 
   /*
    * —— REVEAL: PUSH shell (not overlay) ——
-   * One authoritative --exits-shell-sidebar-width drives rail + content column together.
+   *
+   * ROOT CAUSE FIX (task-12): do NOT drive the animated size only by flipping
+   * --exits-shell-sidebar-width on an ancestor. Unregistered custom properties
+   * snap (no length interpolation), so width: var(--token) appears instant even
+   * when transition-duration is 280ms. Animate explicit width/flex-basis instead;
+   * keep the token in sync for any other consumers.
    */
   [data-navigation-mode="reveal"] .admin-shell__column,
   [data-navigation-mode="reveal"] .operations-shell__column,
@@ -17420,8 +17425,9 @@ html[data-motion="reduced"] .exits-tooltip {
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar-rail {
-    width: var(--exits-shell-sidebar-width);
-    flex: 0 0 var(--exits-shell-sidebar-width);
+    --exits-shell-sidebar-width: 3.75rem;
+    width: 3.75rem;
+    flex: 0 0 3.75rem;
     overflow: hidden;
     z-index: auto;
     /* Close: slight grace so pointer can re-enter the rail. */
@@ -17443,22 +17449,20 @@ html[data-motion="reduced"] .exits-tooltip {
 
   /* Open: pointer-capable hover OR keyboard focus-within → push shell to 15.5rem. */
   @media (hover: hover) and (pointer: fine) {
-    html[data-navigation-mode="reveal"]:has(.admin-sidebar:hover) {
-      --exits-shell-sidebar-width: 15.5rem;
-    }
-
     html[data-navigation-mode="reveal"]:has(.admin-sidebar:hover) .admin-sidebar-rail {
+      --exits-shell-sidebar-width: 15.5rem;
+      width: 15.5rem;
+      flex: 0 0 15.5rem;
       transition:
         width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
         flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
     }
   }
 
-  html[data-navigation-mode="reveal"]:has(.admin-sidebar:focus-within) {
-    --exits-shell-sidebar-width: 15.5rem;
-  }
-
   html[data-navigation-mode="reveal"]:has(.admin-sidebar:focus-within) .admin-sidebar-rail {
+    --exits-shell-sidebar-width: 15.5rem;
+    width: 15.5rem;
+    flex: 0 0 15.5rem;
     transition:
       width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
       flex-basis var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);

@@ -109,22 +109,45 @@ describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
     );
   });
 
-  it("Reveal pushes shell width via shared token (not overlay absolute panel)", () => {
+  it("Reveal pushes shell by animating explicit width/flex-basis (not custom-property snap)", () => {
     expect(globalsCss).toMatch(/--exits-shell-sidebar-width:\s*15\.5rem/);
     expect(globalsCss).toMatch(
       /html\[data-navigation-mode="reveal"\][\s\S]*?--exits-shell-sidebar-width:\s*3\.75rem/,
     );
-    expect(globalsCss).toMatch(
-      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:focus-within\)[\s\S]*?--exits-shell-sidebar-width:\s*15\.5rem/,
-    );
-    expect(globalsCss).toMatch(
-      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:hover\)[\s\S]*?--exits-shell-sidebar-width:\s*15\.5rem/,
-    );
-    expect(globalsCss).toMatch(/\.admin-sidebar-rail[\s\S]*?width:\s*var\(--exits-shell-sidebar-width\)/);
     expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*280ms/);
     expect(globalsCss).toMatch(/--exits-sidebar-collapse-duration:\s*240ms/);
     expect(globalsCss).toMatch(/--exits-sidebar-collapse-grace:\s*140ms/);
     expect(globalsCss).toMatch(/cubic-bezier\(0\.2,\s*0,\s*0,\s*1\)/);
+
+    // Idle rail uses concrete lengths (interpolatable), not only var(--token).
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*3\.75rem/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*flex:\s*0\s+0\s+3\.75rem/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*transition:[\s\S]*?width\s+var\(--exits-sidebar-collapse-duration\)/,
+    );
+
+    // Open state sets concrete 15.5rem on the rail (hover + focus-within).
+    expect(globalsCss).toMatch(
+      /:has\(\.admin-sidebar:hover\)\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*15\.5rem/,
+    );
+    expect(globalsCss).toMatch(
+      /:has\(\.admin-sidebar:focus-within\)\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*15\.5rem/,
+    );
+    expect(globalsCss).toMatch(
+      /:has\(\.admin-sidebar:focus-within\)\s*\.admin-sidebar-rail\s*\{[^}]*transition:[\s\S]*?width\s+var\(--exits-sidebar-reveal-duration\)/,
+    );
+
+    // Must not open solely by flipping the token on html (custom-property snap).
+    expect(globalsCss).not.toMatch(
+      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:hover\)\s*\{\s*--exits-shell-sidebar-width:\s*15\.5rem;\s*\}/,
+    );
+    expect(globalsCss).not.toMatch(
+      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:focus-within\)\s*\{\s*--exits-shell-sidebar-width:\s*15\.5rem;\s*\}/,
+    );
 
     // Push model: reveal sidebar stays in flow (relative), not absolute overlay.
     expect(globalsCss).toMatch(
@@ -141,6 +164,9 @@ describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
       /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1|:focus-within[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1/,
     );
     expect(globalsCss).toMatch(/\[data-motion="reduced"\][\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/);
+    expect(globalsCss).toMatch(
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/,
+    );
   });
 
   it("does not change mobile bottom-nav architecture in CSS", () => {
