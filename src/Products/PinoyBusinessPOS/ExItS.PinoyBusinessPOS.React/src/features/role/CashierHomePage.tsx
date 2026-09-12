@@ -22,6 +22,7 @@ import {
 } from "@/access/pos-capabilities";
 import { getDashboard } from "@/api/pos/pos-reporting-client";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { RoleIdentityChip } from "@/components/exits/RoleIdentityChip";
 import { StatusChip } from "@/components/exits/StatusChip";
 import {
   ManagerActionCard,
@@ -122,6 +123,7 @@ export function CashierHomePage() {
         subtitle={boundWorkspace?.branchName?.trim() || undefined}
         description={t("role.cashierLede")}
         descriptionCollapsible={false}
+        actions={<RoleIdentityChip testId="cashier-home-badge" />}
       />
 
       <ManagerHomeSection title={t("managerHome.section.today")} testId="cashier-home-session">

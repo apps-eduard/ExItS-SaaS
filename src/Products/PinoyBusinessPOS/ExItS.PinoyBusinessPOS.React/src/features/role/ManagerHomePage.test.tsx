@@ -27,6 +27,10 @@ const workspaceState = vi.hoisted(() => ({
   },
 }));
 
+const sessionState = vi.hoisted(() => ({
+  accountClass: "Organization" as string,
+}));
+
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
     t: (key: string, vars?: Record<string, string | number>) => {
@@ -36,6 +40,13 @@ vi.mock("@/i18n/I18nProvider", () => ({
         key,
       );
     },
+  }),
+}));
+
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: { accountClass: sessionState.accountClass },
+    refreshSession: vi.fn(),
   }),
 }));
 
@@ -214,6 +225,7 @@ function renderHome() {
 
 describe("ManagerHomePage", () => {
   beforeEach(() => {
+    sessionState.accountClass = "Organization";
     workspaceState.branchType = "Retail";
     workspaceState.branchId = "22222222-2222-2222-2222-222222222222";
     workspaceState.branchName = "Main Branch";
@@ -302,14 +314,31 @@ describe("ManagerHomePage", () => {
     });
   });
 
-  it("highlights Manager role chip on retail home", async () => {
+  it("shows authenticated Manager role chip on Manager workspace (not workspace-derived)", async () => {
     renderHome();
     await waitFor(() => {
       expect(screen.getByTestId("manager-home")).toBeInTheDocument();
     });
     const badge = screen.getByTestId("manager-home-badge");
-    expect(badge.querySelector(".manager-home-role-chip")).not.toBeNull();
-    expect(badge).toHaveTextContent("role.managerBadge");
+    expect(badge.querySelector(".role-identity-chip")).not.toBeNull();
+    expect(badge).toHaveTextContent("account.role.manager");
+    expect(badge).not.toHaveTextContent("role.managerBadge");
+  });
+
+  it("keeps Owner chip when Owner uses Manager workspace", async () => {
+    workspaceState.grant = {
+      productAccessAllowed: true,
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+    };
+    renderHome();
+    await waitFor(() => {
+      expect(screen.getByTestId("manager-home")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("manager-home-badge")).toHaveTextContent("account.role.owner");
+    expect(screen.getByText("role.managerTitle")).toBeInTheDocument();
   });
 
   it("polishes retail action cards: neutral sell, chevrons, shift sixth action, insight cards", async () => {

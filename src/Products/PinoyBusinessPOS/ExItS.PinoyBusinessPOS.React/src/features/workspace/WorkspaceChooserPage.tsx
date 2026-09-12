@@ -11,9 +11,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   canUseAdminExperience,
-  isOrganizationAdministratorMembership,
-  isOrganizationOwnerMembership,
-  resolveEffectivePosRoleCode,
   type PosSessionGrantFacts,
 } from "@/access/pos-capabilities";
 import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
@@ -27,7 +24,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
-import { resolveFriendlyPosRole } from "@/lib/user-display";
+import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
 import { cn } from "@/lib/cn";
 import { normalizePosError } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
@@ -112,23 +109,8 @@ function resolveOwnWorkspaceRoleLabel(
   grant: GrantFacts,
   t: (key: MessageKey) => string,
 ): string | null {
-  if (isOrganizationOwnerMembership(grant)) {
-    return t("account.role.owner");
-  }
-  if (isOrganizationAdministratorMembership(grant)) {
-    return t("account.role.admin");
-  }
-  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(grant));
-  if (friendlyRole === "owner") {
-    return t("account.role.owner");
-  }
-  if (friendlyRole === "manager") {
-    return t("account.role.manager");
-  }
-  if (friendlyRole === "cashier") {
-    return t("account.role.cashier");
-  }
-  return null;
+  const key = resolveAuthenticatedRoleLabelKey(null, grant);
+  return key ? t(key) : null;
 }
 
 function branchCardMetaLine(input: {

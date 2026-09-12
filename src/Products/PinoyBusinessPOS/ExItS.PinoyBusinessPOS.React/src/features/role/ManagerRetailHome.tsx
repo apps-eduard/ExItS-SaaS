@@ -49,6 +49,7 @@ import { listSupplyRoutesByDestination } from "@/api/pos/pos-supply-routes-clien
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { RoleIdentityChip } from "@/components/exits/RoleIdentityChip";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import {
@@ -456,11 +457,7 @@ export function ManagerRetailHome() {
         title={t("role.managerTitle")}
         subtitle={boundWorkspace?.branchName?.trim() || undefined}
         description={t("managerHome.lede")}
-        actions={
-          <span data-testid="manager-home-badge">
-            <StatusChip className="manager-home-role-chip">{t("role.managerBadge")}</StatusChip>
-          </span>
-        }
+        actions={<RoleIdentityChip testId="manager-home-badge" />}
       />
 
       {loading ? <LoadingState label={t("managerHome.loading")} /> : null}

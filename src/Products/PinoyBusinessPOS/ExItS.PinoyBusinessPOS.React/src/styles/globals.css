@@ -15819,10 +15819,16 @@ a.exits-chip--primary:hover {
   font-weight: var(--exits-font-weight-medium);
 }
 
+.role-identity-chip.exits-status-chip {
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.01em;
+}
+
+/* Legacy alias — prefer .role-identity-chip; keep soft primary semantics. */
 .manager-home-role-chip.exits-status-chip {
-  color: var(--exits-primary-contrast, #fff);
-  border-color: var(--exits-primary);
-  background: var(--exits-primary);
+  color: var(--exits-primary);
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, transparent);
+  background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
   font-weight: var(--exits-font-weight-semibold);
   letter-spacing: 0.01em;
 }

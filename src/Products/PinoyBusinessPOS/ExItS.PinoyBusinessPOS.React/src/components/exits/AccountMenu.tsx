@@ -8,16 +8,8 @@ import { sessionAccountClass, isOrganizationContextLocked } from "@/session/acco
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
 import { ACCOUNT_CONTEXT_SWITCH_PATH, useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import {
-  isOrganizationAdministratorMembership,
-  isOrganizationOwnerMembership,
-  resolveEffectivePosRoleCode,
-} from "@/access/pos-capabilities";
-import {
-  deriveUserInitials,
-  resolveFriendlyPosRole,
-  resolveUserDisplayName,
-} from "@/lib/user-display";
+import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
+import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 
 type AccountMenuProps = {
@@ -44,27 +36,6 @@ function experienceLabel(
   return null;
 }
 
-function resolveMenuRoleLabel(
-  session: Parameters<typeof sessionAccountClass>[0],
-  sessionGrant: Parameters<typeof resolveEffectivePosRoleCode>[0],
-  t: (key: "personal.badge" | "account.role.owner" | "account.role.admin" | "account.role.manager" | "account.role.cashier") => string,
-): string | null {
-  if (sessionAccountClass(session) === "Personal") {
-    return t("personal.badge");
-  }
-  if (isOrganizationOwnerMembership(sessionGrant)) {
-    return t("account.role.owner");
-  }
-  if (isOrganizationAdministratorMembership(sessionGrant)) {
-    return t("account.role.admin");
-  }
-  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(sessionGrant));
-  if (friendlyRole === "owner") return t("account.role.owner");
-  if (friendlyRole === "manager") return t("account.role.manager");
-  if (friendlyRole === "cashier") return t("account.role.cashier");
-  return null;
-}
-
 export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -81,7 +52,8 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const initials = deriveUserInitials(session);
-  const roleLabel = resolveMenuRoleLabel(session, sessionGrant, t);
+  const roleLabelKey = resolveAuthenticatedRoleLabelKey(session, sessionGrant);
+  const roleLabel = roleLabelKey ? t(roleLabelKey) : null;
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);

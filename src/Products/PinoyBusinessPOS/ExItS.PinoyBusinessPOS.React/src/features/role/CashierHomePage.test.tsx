@@ -23,9 +23,20 @@ const workspaceState = vi.hoisted(() => ({
   },
 }));
 
+const sessionState = vi.hoisted(() => ({
+  accountClass: "Organization" as string,
+}));
+
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
     t: (key: string) => key,
+  }),
+}));
+
+vi.mock("@/session/SessionProvider", () => ({
+  useSession: () => ({
+    session: { accountClass: sessionState.accountClass },
+    refreshSession: vi.fn(),
   }),
 }));
 
@@ -81,6 +92,7 @@ function renderHome() {
 
 describe("POS-CASHIER-WORKSPACE-FOCUSED-SHELL-17 Cashier Home", () => {
   beforeEach(() => {
+    sessionState.accountClass = "Organization";
     workspaceState.hasOpenShift = false;
     workspaceState.currentShift = null;
     workspaceState.grant = {
@@ -90,6 +102,23 @@ describe("POS-CASHIER-WORKSPACE-FOCUSED-SHELL-17 Cashier Home", () => {
       mappedPosRoleCode: "Owner",
       productLocalRoleCode: "Owner",
     };
+  });
+
+  it("shows Owner chip when Owner uses Cashier workspace", () => {
+    renderHome();
+    expect(screen.getByTestId("cashier-home")).toBeInTheDocument();
+    expect(screen.getByText("role.cashierTitle")).toBeInTheDocument();
+    expect(screen.getByTestId("cashier-home-badge")).toHaveTextContent("account.role.owner");
+  });
+
+  it("shows Cashier chip when authenticated role is Cashier", () => {
+    workspaceState.grant = {
+      productAccessAllowed: true,
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+    };
+    renderHome();
+    expect(screen.getByTestId("cashier-home-badge")).toHaveTextContent("account.role.cashier");
   });
 
   it("renders cashier session + front-counter actions without admin launchers", () => {

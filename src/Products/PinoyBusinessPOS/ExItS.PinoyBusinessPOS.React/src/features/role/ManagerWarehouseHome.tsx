@@ -29,7 +29,7 @@ import { getManagementOverview } from "@/api/pos/pos-reporting-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
+import { RoleIdentityChip } from "@/components/exits/RoleIdentityChip";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   buildManagerAttentionItems,
@@ -277,11 +277,7 @@ export function ManagerWarehouseHome({
         subtitle={boundWorkspace.branchName?.trim() || undefined}
         description={t("managerHome.warehouseLede")}
         descriptionCollapsible={false}
-        trailing={
-          <span data-testid="manager-home-badge">
-            <StatusChip className="manager-home-role-chip">{t("role.managerBadge")}</StatusChip>
-          </span>
-        }
+        trailing={<RoleIdentityChip testId="manager-home-badge" />}
       />
 
       {loading ? <LoadingState label={t("managerHome.loading")} /> : null}
