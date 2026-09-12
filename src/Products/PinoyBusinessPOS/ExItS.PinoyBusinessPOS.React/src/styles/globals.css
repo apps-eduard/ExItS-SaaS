@@ -15081,9 +15081,11 @@ a.exits-chip--primary:hover {
 
 .receive-stock-product-card {
   display: flex;
-  flex-direction: column;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.65rem;
-  padding: 0.7rem 0.75rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--exits-border);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
@@ -15094,7 +15096,39 @@ a.exits-chip--primary:hover {
   background: #fff;
 }
 
-.receive-stock-product-card__fields {
+.receive-stock-product-card__identity {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.receive-stock-product-card__add {
+  flex-shrink: 0;
+}
+
+.receive-stock-line {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--exits-border);
+  background: transparent;
+}
+
+.receive-stock-line:last-child {
+  border-bottom: none;
+  padding-bottom: 0.15rem;
+}
+
+.receive-stock-line__header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.receive-stock-line__fields {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
@@ -15102,42 +15136,48 @@ a.exits-chip--primary:hover {
   gap: 0.5rem;
 }
 
-.receive-stock-field--compact {
-  flex: 1 1 6.5rem;
-  max-width: 9rem;
-}
-
-.receive-stock-product-card__add {
+.receive-stock-line__total-block {
+  display: flex;
+  min-width: 5.5rem;
+  flex-direction: column;
+  gap: 0.35rem;
   margin-inline-start: auto;
-}
-
-.receive-stock-line {
-  display: flex;
-  min-width: 0;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
-  background: var(--exits-surface);
-}
-
-:root:not([data-theme="dark"]) .receive-stock-line,
-[data-theme="light"] .receive-stock-line {
-  background: #fff;
-}
-
-.receive-stock-line__aside {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.15rem;
 }
 
 .receive-stock-line__total {
   font-size: var(--exits-text-sm);
   font-weight: 600;
+}
+
+.receive-stock-history__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.receive-stock-review__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.65rem 0;
+}
+
+.receive-stock-review__line {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.receive-stock-actions--review {
+  margin-top: 0.75rem;
+}
+
+.receive-stock-field--compact {
+  flex: 1 1 6.5rem;
+  max-width: 9rem;
 }
 
 .receive-stock-receipt__summary {
@@ -15162,7 +15202,7 @@ a.exits-chip--primary:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.65rem;
   margin-top: 0.15rem;
   padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom, 0px));

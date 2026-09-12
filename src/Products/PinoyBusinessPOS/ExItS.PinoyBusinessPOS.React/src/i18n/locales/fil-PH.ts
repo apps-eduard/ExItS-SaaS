@@ -8715,7 +8715,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.receiveStock": "Tumanggap ng stock",
 
   "purchasing.receiveStockHelper":
-    "Itala ang mga binili at natanggap nang walang purchase order.",
+    "Itala ang mga binili at natanggap na. Kapag kinonfirma ang receipt, maidagdag ang mga ito sa inventory.",
+  "purchasing.findProducts": "Hanapin ang produkto",
+  "purchasing.productAdded": "Naidagdag",
+  "purchasing.recentCompletedReceipts": "Kamakailang natapos na receipt",
+  "purchasing.viewAllDirectPurchases": "Tingnan ang lahat ng direct purchase",
+  "purchasing.completedReceiptsEmpty": "Wala pang natapos na receipt",
+  "purchasing.completedReceiptsEmptyDetail":
+    "Lalabas dito ang mga nakumpirmang Receive Stock.",
+  "purchasing.receiveStockConfirm": "Receive stock",
+  "purchasing.view": "Tingnan",
 
   "purchasing.receiveStockLede": "I-record ang direktang bili at dagdagan ang inventory.",
 

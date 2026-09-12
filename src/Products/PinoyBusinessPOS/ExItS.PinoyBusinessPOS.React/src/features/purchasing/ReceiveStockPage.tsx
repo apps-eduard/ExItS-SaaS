@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ClipboardList, PackagePlus, Plus, Trash2 } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, PackagePlus, Plus, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -9,6 +9,10 @@ import {
 } from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { createDirectPurchaseReceipt } from "@/api/pos/pos-direct-purchase-receipts-client";
+import {
+  listDirectPurchases,
+  type DirectPurchaseHistoryItem,
+} from "@/api/pos/pos-direct-purchases-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +20,17 @@ import { Card } from "@/components/ui/card";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -40,23 +55,20 @@ import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const OTHER_SOURCE = "__other__";
+const RECENT_COMPLETED_PAGE_SIZE = 8;
 
 type DraftLine = {
   productId: string;
   name: string;
+  sku: string | null;
   uom: string;
   tracksExpiration: boolean;
   quantity: number;
   unitCost: number;
-  expiryDate: string | null;
-  lotNumber: string | null;
-};
-
-type RowDraft = {
-  qty: string;
-  cost: string;
-  expiry: string;
-  lot: string;
+  qtyInput: string;
+  costInput: string;
+  expiryDate: string;
+  lotNumber: string;
 };
 
 function todayIsoDate(): string {
@@ -64,13 +76,21 @@ function todayIsoDate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function emptyRowDraft(existing?: DraftLine): RowDraft {
-  return {
-    qty: existing ? String(existing.quantity) : "1",
-    cost: existing ? String(existing.unitCost) : "",
-    expiry: existing?.expiryDate ?? "",
-    lot: existing?.lotNumber ?? "",
-  };
+function historyRowHref(item: DirectPurchaseHistoryItem): string {
+  return item.sourceType === "B2B"
+    ? `/purchasing/direct-purchases/b2b/${item.sourceId}`
+    : `/purchasing/direct-purchases/${item.sourceId}`;
+}
+
+function formatHistoryDate(item: DirectPurchaseHistoryItem): string {
+  if (item.purchaseDate) return item.purchaseDate;
+  return new Date(item.occurredAtUtc).toISOString().slice(0, 10);
+}
+
+function lineIsComplete(line: DraftLine): boolean {
+  if (!(line.quantity > 0 && line.unitCost > 0)) return false;
+  if (line.tracksExpiration && !line.expiryDate.trim()) return false;
+  return true;
 }
 
 export function ReceiveStockPage() {
@@ -89,7 +109,6 @@ export function ReceiveStockPage() {
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([]);
-  const [rowDrafts, setRowDrafts] = useState<Record<string, RowDraft>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -132,7 +151,6 @@ export function ReceiveStockPage() {
     setSourceName("");
     setReferenceNumber("");
     setNotes("");
-    setRowDrafts({});
     setReviewing(false);
     setStatusLocked(false);
     if (hadDraft) {
@@ -155,6 +173,11 @@ export function ReceiveStockPage() {
 
   const estimatedTotal = useMemo(
     () => roundMoney(lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)),
+    [lines],
+  );
+
+  const linesValid = useMemo(
+    () => lines.length > 0 && lines.every(lineIsComplete),
     [lines],
   );
 
@@ -238,6 +261,7 @@ export function ReceiveStockPage() {
       listCatalogCategories(workspace!, { status: "Active", pageSize: 50 }, signal),
   });
 
+  // All = omit categoryId (not a literal category). Always browse eligible Active products.
   const productsQuery = useQuery({
     queryKey: [
       "catalog-products",
@@ -246,7 +270,7 @@ export function ReceiveStockPage() {
       debounced,
       categoryId,
     ],
-    enabled: Boolean(workspace) && online && allowManage && (debounced.length > 0 || categoryId.length > 0),
+    enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
@@ -260,21 +284,33 @@ export function ReceiveStockPage() {
       ),
   });
 
+  const recentCompletedQuery = useQuery({
+    queryKey: ["direct-purchases", "receive-stock-recent", workspace?.organizationId],
+    enabled: Boolean(workspace) && online,
+    queryFn: ({ signal }) =>
+      listDirectPurchases(
+        workspace!,
+        {
+          status: "Completed",
+          page: 1,
+          pageSize: RECENT_COMPLETED_PAGE_SIZE,
+        },
+        signal,
+      ),
+  });
+
+  const categories = categoriesQuery.data?.items ?? [];
+  const productItems = productsQuery.data?.items ?? [];
+  const recentItems = recentCompletedQuery.data?.items ?? [];
+  const recentTotal = recentCompletedQuery.data?.totalCount ?? 0;
+  const reviewDisabled = !linesValid || !allowManage || !online;
+  const addedProductIds = useMemo(
+    () => new Set(lines.map((line) => line.productId)),
+    [lines],
+  );
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
-  }
-
-  function rowDraftFor(product: PosCatalogProductDto): RowDraft {
-    const existing = lines.find((l) => l.productId === product.productId);
-    return rowDrafts[product.productId] ?? emptyRowDraft(existing);
-  }
-
-  function patchRowDraft(productId: string, patch: Partial<RowDraft>) {
-    setRowDrafts((prev) => {
-      const existingLine = lines.find((l) => l.productId === productId);
-      const base = prev[productId] ?? emptyRowDraft(existingLine);
-      return { ...prev, [productId]: { ...base, ...patch } };
-    });
   }
 
   function addProductRow(product: PosCatalogProductDto) {
@@ -282,46 +318,71 @@ export function ReceiveStockPage() {
       setError(t("purchasing.receiveStockNotTracked"));
       return;
     }
-    const draft = rowDraftFor(product);
-    const qty = Number(draft.qty);
-    const cost = Number(draft.cost);
-    if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(cost) || cost <= 0) {
-      setError(t("purchasing.invalidLine"));
+    if (lines.some((line) => line.productId === product.productId)) {
       return;
     }
     const tracksExpiration = product.tracksExpiration === true;
-    if (tracksExpiration && !draft.expiry.trim()) {
-      setError(t("purchasing.expiryRequired"));
-      return;
-    }
     const line: DraftLine = {
       productId: product.productId,
       name: product.name,
+      sku: product.sku ?? null,
       uom: product.unitOfMeasure,
       tracksExpiration,
-      quantity: qty,
-      unitCost: cost,
-      expiryDate: tracksExpiration ? draft.expiry.trim() : null,
-      lotNumber: tracksExpiration && draft.lot.trim() ? draft.lot.trim() : null,
+      quantity: 1,
+      unitCost: 0,
+      qtyInput: "1",
+      costInput: "",
+      expiryDate: "",
+      lotNumber: "",
     };
-    setLines((prev) => {
-      const without = prev.filter((l) => l.productId !== line.productId);
-      return [...without, line];
-    });
-    setRowDrafts((prev) => {
-      const next = { ...prev };
-      delete next[product.productId];
-      return next;
-    });
+    setLines((prev) => [...prev, line]);
     setError(null);
+  }
+
+  function patchLine(
+    productId: string,
+    patch: Partial<Pick<DraftLine, "qtyInput" | "costInput" | "expiryDate" | "lotNumber">>,
+  ) {
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.productId !== productId) return line;
+        const next = { ...line, ...patch };
+        if (patch.qtyInput !== undefined) {
+          const qty = Number(patch.qtyInput);
+          next.quantity = Number.isFinite(qty) && qty > 0 ? qty : 0;
+        }
+        if (patch.costInput !== undefined) {
+          const cost = Number(patch.costInput);
+          next.unitCost = Number.isFinite(cost) && cost > 0 ? cost : 0;
+        }
+        return next;
+      }),
+    );
   }
 
   function removeLine(productId: string) {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }
 
+  function startReview() {
+    if (!linesValid) {
+      const incomplete = lines.find((line) => !lineIsComplete(line));
+      if (incomplete?.tracksExpiration && !incomplete.expiryDate.trim()) {
+        setError(t("purchasing.expiryRequired"));
+      } else {
+        setError(t("purchasing.invalidLine"));
+      }
+      return;
+    }
+    if (validatePayment() === null) {
+      return;
+    }
+    setError(null);
+    setReviewing(true);
+  }
+
   async function confirm() {
-    if (!workspace || !allowManage || !online || saving || statusLocked || lines.length === 0) {
+    if (!workspace || !allowManage || !online || saving || statusLocked || !linesValid) {
       return;
     }
     const paidNow = validatePayment();
@@ -363,8 +424,9 @@ export function ReceiveStockPage() {
         productId: line.productId,
         quantity: line.quantity,
         unitCost: line.unitCost,
-        expiryDate: line.expiryDate,
-        lotNumber: line.lotNumber,
+        expiryDate: line.tracksExpiration ? line.expiryDate.trim() : null,
+        lotNumber:
+          line.tracksExpiration && line.lotNumber.trim() ? line.lotNumber.trim() : null,
       })),
       ...paymentFields,
     };
@@ -412,11 +474,6 @@ export function ReceiveStockPage() {
     }
   }
 
-  const categories = categoriesQuery.data?.items ?? [];
-  const showProductResults = debounced.length > 0 || categoryId.length > 0;
-  const productItems = productsQuery.data?.items ?? [];
-  const reviewDisabled = lines.length === 0 || !allowManage || !online;
-
   return (
     <div
       className="receive-stock-page exits-page flex min-w-0 flex-col gap-3"
@@ -443,6 +500,11 @@ export function ReceiveStockPage() {
       {!allowManage ? (
         <Notice tone="danger" testId="direct-manage-denied">
           {t("purchasing.inventoryManageDenied")}
+        </Notice>
+      ) : null}
+      {error ? (
+        <Notice tone="danger" testId="direct-error">
+          {error}
         </Notice>
       ) : null}
 
@@ -553,7 +615,7 @@ export function ReceiveStockPage() {
                 id="direct-add-products-heading"
                 className="receive-stock-section__title m-0"
               >
-                {t("purchasing.addProducts")}
+                {t("purchasing.findProducts")}
               </h2>
               <SearchField
                 label={t("purchasing.productSearch")}
@@ -575,6 +637,7 @@ export function ReceiveStockPage() {
                       label: t("purchasing.categoryAll"),
                       state: !categoryId ? "active" : "idle",
                       onSelect: () => setCategoryId(""),
+                      testId: "direct-category-all",
                     },
                     ...categories.map((category) => ({
                       key: category.categoryId,
@@ -583,6 +646,7 @@ export function ReceiveStockPage() {
                         categoryId === category.categoryId
                           ? ("active" as const)
                           : ("idle" as const),
+                      testId: `direct-category-${category.categoryId}`,
                       onSelect: () =>
                         setCategoryId((prev) =>
                           prev === category.categoryId ? "" : category.categoryId,
@@ -592,13 +656,9 @@ export function ReceiveStockPage() {
                 />
               ) : null}
 
-              {showProductResults && productsQuery.isFetching ? (
-                <LoadingState label={t("loading.label")} />
-              ) : null}
+              {productsQuery.isFetching ? <LoadingState label={t("loading.label")} /> : null}
 
-              {showProductResults &&
-              !productsQuery.isFetching &&
-              productItems.length === 0 ? (
+              {!productsQuery.isFetching && productItems.length === 0 ? (
                 <EmptyState
                   align="center"
                   size="compact"
@@ -614,105 +674,45 @@ export function ReceiveStockPage() {
               ) : null}
 
               <ul
-                className="receive-stock-product-list m-0 flex list-none flex-col gap-2 p-0"
+                className="receive-stock-product-list m-0 flex list-none flex-col gap-1.5 p-0"
                 data-testid="direct-product-results"
               >
                 {productItems.map((product) => {
-                  const draft = rowDraftFor(product);
-                  const tracksExpiration = product.tracksExpiration === true;
+                  const alreadyAdded = addedProductIds.has(product.productId);
                   return (
                     <li key={product.productId}>
                       <article
                         className="receive-stock-product-card"
                         data-testid={`direct-product-${product.productId}`}
                       >
-                        <div className="flex min-w-0 items-baseline justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="m-0 min-w-0 font-medium leading-snug">{product.name}</p>
-                            {product.sku ? (
-                              <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                                {product.sku}
-                              </p>
-                            ) : null}
-                          </div>
-                          <p className="m-0 shrink-0 text-[length:var(--exits-text-sm)] text-muted">
-                            {product.unitOfMeasure}
+                        <div className="receive-stock-product-card__identity min-w-0">
+                          <p className="m-0 min-w-0 font-medium leading-snug">{product.name}</p>
+                          <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                            {[product.sku, product.unitOfMeasure].filter(Boolean).join(" · ")}
                           </p>
                         </div>
-                        <div className="receive-stock-product-card__fields">
-                          <label className="receive-stock-field receive-stock-field--compact">
-                            <span className="receive-stock-field__label">{t("purchasing.qtyShort")}</span>
-                            <input
-                              className="exits-input"
-                              value={draft.qty}
-                              onChange={(e) =>
-                                patchRowDraft(product.productId, { qty: e.target.value })
-                              }
-                              inputMode="decimal"
-                              data-testid={`direct-line-qty-${product.productId}`}
-                            />
-                          </label>
-                          <label className="receive-stock-field receive-stock-field--compact">
-                            <span className="receive-stock-field__label">{t("purchasing.costShort")}</span>
-                            <input
-                              className="exits-input"
-                              value={draft.cost}
-                              onChange={(e) =>
-                                patchRowDraft(product.productId, { cost: e.target.value })
-                              }
-                              inputMode="decimal"
-                              placeholder="0.00"
-                              data-testid={`direct-line-cost-${product.productId}`}
-                            />
-                          </label>
-                          {tracksExpiration ? (
-                            <>
-                              <label className="receive-stock-field receive-stock-field--compact">
-                                <span className="receive-stock-field__label">
-                                  {t("purchasing.expiryDate")}
-                                </span>
-                                <input
-                                  type="date"
-                                  className="exits-input"
-                                  value={draft.expiry}
-                                  onChange={(e) =>
-                                    patchRowDraft(product.productId, {
-                                      expiry: e.target.value,
-                                    })
-                                  }
-                                  data-testid={`direct-line-expiry-${product.productId}`}
-                                />
-                              </label>
-                              <label className="receive-stock-field receive-stock-field--compact">
-                                <span className="receive-stock-field__label">
-                                  {t("purchasing.lotNumber")}
-                                </span>
-                                <input
-                                  className="exits-input"
-                                  value={draft.lot}
-                                  onChange={(e) =>
-                                    patchRowDraft(product.productId, { lot: e.target.value })
-                                  }
-                                  data-testid={`direct-line-lot-${product.productId}`}
-                                />
-                              </label>
-                            </>
-                          ) : null}
+                        {alreadyAdded ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled
+                            className="receive-stock-product-card__add"
+                            data-testid={`direct-added-${product.productId}`}
+                          >
+                            <Check className="size-4" aria-hidden />
+                            {t("purchasing.productAdded")}
+                          </Button>
+                        ) : (
                           <Button
                             type="button"
                             className="receive-stock-product-card__add"
-                            disabled={
-                              tracksExpiration &&
-                              Number(draft.qty) > 0 &&
-                              !draft.expiry.trim()
-                            }
                             onClick={() => addProductRow(product)}
                             data-testid={`direct-add-${product.productId}`}
                           >
                             <Plus className="size-4" aria-hidden />
                             {t("purchasing.addProduct")}
                           </Button>
-                        </div>
+                        )}
                       </article>
                     </li>
                   );
@@ -745,7 +745,7 @@ export function ReceiveStockPage() {
                 />
               ) : (
                 <>
-                  <ul className="receive-stock-line-list m-0 flex list-none flex-col gap-1.5 p-0">
+                  <ul className="receive-stock-line-list m-0 flex list-none flex-col gap-0 p-0">
                     {lines.map((line) => {
                       const lineTotal = roundMoney(line.quantity * line.unitCost);
                       return (
@@ -754,17 +754,15 @@ export function ReceiveStockPage() {
                           className="receive-stock-line"
                           data-testid={`direct-receipt-line-${line.productId}`}
                         >
-                          <div className="receive-stock-line__main min-w-0">
-                            <p className="m-0 font-medium leading-snug">{line.name}</p>
-                            <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted tabular-nums">
-                              {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
-                              {line.expiryDate ? ` · ${line.expiryDate}` : ""}
-                            </p>
-                          </div>
-                          <div className="receive-stock-line__aside">
-                            <span className="receive-stock-line__total tabular-nums">
-                              {formatPeso(lineTotal)}
-                            </span>
+                          <div className="receive-stock-line__header">
+                            <div className="min-w-0">
+                              <p className="m-0 font-medium leading-snug">{line.name}</p>
+                              {line.sku ? (
+                                <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                                  {line.sku}
+                                </p>
+                              ) : null}
+                            </div>
                             <Button
                               type="button"
                               variant="ghost"
@@ -775,6 +773,81 @@ export function ReceiveStockPage() {
                             >
                               <Trash2 className="size-4" aria-hidden />
                             </Button>
+                          </div>
+                          <div className="receive-stock-line__fields">
+                            <label className="receive-stock-field receive-stock-field--compact">
+                              <span className="receive-stock-field__label">
+                                {t("purchasing.qtyShort")}
+                                <span className="text-muted"> · {line.uom}</span>
+                              </span>
+                              <input
+                                className="exits-input"
+                                value={line.qtyInput}
+                                onChange={(e) =>
+                                  patchLine(line.productId, { qtyInput: e.target.value })
+                                }
+                                inputMode="decimal"
+                                data-testid={`direct-line-qty-${line.productId}`}
+                              />
+                            </label>
+                            <label className="receive-stock-field receive-stock-field--compact">
+                              <span className="receive-stock-field__label">
+                                {t("purchasing.costShort")}
+                              </span>
+                              <input
+                                className="exits-input"
+                                value={line.costInput}
+                                onChange={(e) =>
+                                  patchLine(line.productId, { costInput: e.target.value })
+                                }
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                data-testid={`direct-line-cost-${line.productId}`}
+                              />
+                            </label>
+                            {line.tracksExpiration ? (
+                              <>
+                                <label className="receive-stock-field receive-stock-field--compact">
+                                  <span className="receive-stock-field__label">
+                                    {t("purchasing.expiryDate")}
+                                  </span>
+                                  <input
+                                    type="date"
+                                    className="exits-input"
+                                    value={line.expiryDate}
+                                    onChange={(e) =>
+                                      patchLine(line.productId, {
+                                        expiryDate: e.target.value,
+                                      })
+                                    }
+                                    data-testid={`direct-line-expiry-${line.productId}`}
+                                  />
+                                </label>
+                                <label className="receive-stock-field receive-stock-field--compact">
+                                  <span className="receive-stock-field__label">
+                                    {t("purchasing.lotNumber")}
+                                  </span>
+                                  <input
+                                    className="exits-input"
+                                    value={line.lotNumber}
+                                    onChange={(e) =>
+                                      patchLine(line.productId, {
+                                        lotNumber: e.target.value,
+                                      })
+                                    }
+                                    data-testid={`direct-line-lot-${line.productId}`}
+                                  />
+                                </label>
+                              </>
+                            ) : null}
+                            <div className="receive-stock-line__total-block">
+                              <span className="receive-stock-field__label">
+                                {t("purchasing.lineTotal")}
+                              </span>
+                              <span className="receive-stock-line__total tabular-nums">
+                                {formatPeso(lineTotal)}
+                              </span>
+                            </div>
                           </div>
                         </li>
                       );
@@ -809,7 +882,7 @@ export function ReceiveStockPage() {
           <div className="receive-stock-actions">
             <Button
               type="button"
-              variant="ghost"
+              variant="destructive"
               onClick={() => navigate(pageBackNav.purchasing.to)}
               data-testid="direct-cancel"
             >
@@ -818,28 +891,179 @@ export function ReceiveStockPage() {
             <Button
               type="button"
               disabled={reviewDisabled}
-              onClick={() => {
-                if (validatePayment() === null) {
-                  return;
-                }
-                setError(null);
-                setReviewing(true);
-              }}
+              onClick={startReview}
               data-testid="direct-review"
             >
               {t("purchasing.reviewDirect")}
               <ArrowRight className="size-4" aria-hidden />
             </Button>
           </div>
+
+          <Card
+            as="section"
+            padding="compact"
+            className="receive-stock-section receive-stock-history"
+            data-testid="direct-recent-completed"
+            aria-labelledby="direct-recent-completed-heading"
+          >
+            <div className="receive-stock-history__header">
+              <h2
+                id="direct-recent-completed-heading"
+                className="receive-stock-section__title m-0 flex items-center gap-2"
+              >
+                <span>{t("purchasing.recentCompletedReceipts")}</span>
+                {recentTotal > 0 ? <CountBadge count={recentTotal} tone="neutral" /> : null}
+              </h2>
+              <Button asChild variant="ghost" data-testid="direct-view-all-purchases">
+                <Link to="/purchasing/direct-purchases">
+                  {t("purchasing.viewAllDirectPurchases")}
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              </Button>
+            </div>
+
+            {recentCompletedQuery.isFetching ? (
+              <LoadingState label={t("loading.label")} />
+            ) : null}
+
+            {!recentCompletedQuery.isFetching && recentItems.length === 0 ? (
+              <EmptyState
+                align="center"
+                size="compact"
+                icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+                title={t("purchasing.completedReceiptsEmpty")}
+                detail={t("purchasing.completedReceiptsEmptyDetail")}
+                testId="direct-recent-empty"
+              />
+            ) : null}
+
+            {!recentCompletedQuery.isFetching && recentItems.length > 0 ? (
+              <ExitsTableContainer data-testid="direct-recent-table">
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColReference")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColDate")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColSeller")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColItems")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">
+                        {t("purchasing.directColTotal")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">{t("purchasing.view")}</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    {recentItems.map((item) => (
+                      <ExitsTableRow
+                        key={`${item.sourceType}-${item.sourceId}`}
+                        interactive
+                        data-testid={`direct-recent-row-${item.sourceId}`}
+                        onClick={() => navigate(historyRowHref(item))}
+                      >
+                        <ExitsTableCell cellAlign="text" className="font-medium">
+                          {item.referenceNumber}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">{formatHistoryDate(item)}</ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">{item.sellerDisplayName}</ExitsTableCell>
+                        <ExitsTableCell cellAlign="text" className="tabular-nums">
+                          {item.lineCount}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                          {formatPeso(item.totalAmount)}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`direct-recent-view-${item.sourceId}`}
+                          >
+                            <Link to={historyRowHref(item)} aria-label={t("purchasing.view")}>
+                              <ArrowRight className="size-4" aria-hidden />
+                            </Link>
+                          </Button>
+                        </ExitsTableCell>
+                      </ExitsTableRow>
+                    ))}
+                  </ExitsTableBody>
+                </ExitsTable>
+                <ExitsTableMobile>
+                  {recentItems.map((item) => (
+                    <ExitsTableMobileRow
+                      key={`m-${item.sourceType}-${item.sourceId}`}
+                      data-testid={`direct-recent-mobile-${item.sourceId}`}
+                      onClick={() => navigate(historyRowHref(item))}
+                    >
+                      <div className="exits-table-mobile__title-row">
+                        <p className="exits-table-mobile__title">{item.referenceNumber}</p>
+                        <span className="tabular-nums font-semibold">
+                          {formatPeso(item.totalAmount)}
+                        </span>
+                      </div>
+                      <p className="exits-table-mobile__meta">
+                        {formatHistoryDate(item)} · {item.sellerDisplayName}
+                      </p>
+                      <p className="exits-table-mobile__math">
+                        {t("purchasing.directColItems")}: {item.lineCount}
+                      </p>
+                    </ExitsTableMobileRow>
+                  ))}
+                </ExitsTableMobile>
+              </ExitsTableContainer>
+            ) : null}
+          </Card>
         </>
       ) : (
-        <Card data-testid="direct-review-sheet" className="receive-stock-review">
-          <p className="mt-0">{t("purchasing.willIncreaseStock")}</p>
+        <Card data-testid="direct-review-sheet" className="receive-stock-review" padding="compact">
+          <Notice tone="info" testId="direct-review-notice">
+            {t("purchasing.willIncreaseStock")}
+          </Notice>
+          <div className="receive-stock-review__meta">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.purchaseDate")}: {purchaseDate}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.boughtFrom")}:{" "}
+              {useOtherSource
+                ? sourceName.trim() || t("purchasing.sourceEmpty")
+                : suppliersQuery.data?.items.find((s) => s.supplierId === supplierId)?.name ||
+                  t("purchasing.sourceEmpty")}
+            </p>
+            {referenceNumber.trim() ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.reference")}: {referenceNumber.trim()}
+              </p>
+            ) : null}
+            {notes.trim() ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.notesOptional")}: {notes.trim()}
+              </p>
+            ) : null}
+          </div>
+          <h3 className="receive-stock-section__title m-0 flex items-center gap-2">
+            <span>{t("purchasing.receiptItems")}</span>
+            <CountBadge count={lines.length} tone="primary" />
+          </h3>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {lines.map((line) => (
-              <li key={line.productId}>
-                {line.name}: {line.quantity} @ {formatPeso(line.unitCost)}
-                {line.expiryDate ? ` · exp ${line.expiryDate}` : ""}
+              <li key={line.productId} className="receive-stock-review__line">
+                <span className="font-medium">{line.name}</span>
+                <span className="tabular-nums text-muted">
+                  {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
+                  {line.expiryDate ? ` · ${line.expiryDate}` : ""}
+                </span>
+                <span className="tabular-nums font-semibold">
+                  {formatPeso(roundMoney(line.quantity * line.unitCost))}
+                </span>
               </li>
             ))}
           </ul>
@@ -863,13 +1087,15 @@ export function ReceiveStockPage() {
             allowSupplierCredit={allowSupplierCredit}
             disabled={saving || statusLocked}
           />
-          <div className="mt-3 flex flex-wrap justify-between gap-2">
+          <div className="receive-stock-actions receive-stock-actions--review">
             <Button
               type="button"
               variant="ghost"
+              disabled={saving || statusLocked}
               onClick={() => setReviewing(false)}
+              data-testid="direct-back-edit"
             >
-              {t("purchasing.backToReceipt")}
+              {t("returns.backToEdit")}
             </Button>
             <Button
               type="button"
@@ -877,17 +1103,11 @@ export function ReceiveStockPage() {
               onClick={() => void confirm()}
               data-testid="direct-confirm"
             >
-              {saving ? t("purchasing.saving") : t("purchasing.confirmDirect")}
+              {saving ? t("purchasing.saving") : t("purchasing.receiveStockConfirm")}
             </Button>
           </div>
         </Card>
       )}
-
-      {error ? (
-        <Notice tone="danger" testId="direct-error">
-          {error}
-        </Notice>
-      ) : null}
     </div>
   );
 }

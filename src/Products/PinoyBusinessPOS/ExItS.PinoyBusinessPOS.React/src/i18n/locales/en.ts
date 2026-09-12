@@ -5068,7 +5068,16 @@ export const en = {
   "purchasing.receiveStock": "Receive stock",
   "purchasing.receiveStockLede": "Record a direct purchase and increase inventory.",
   "purchasing.receiveStockHelper":
-    "Record goods that were purchased and received without a purchase order.",
+    "Record goods you already purchased and received. Confirming this receipt adds them to inventory.",
+  "purchasing.findProducts": "Find products",
+  "purchasing.productAdded": "Added",
+  "purchasing.recentCompletedReceipts": "Recent completed receipts",
+  "purchasing.viewAllDirectPurchases": "View all direct purchases",
+  "purchasing.completedReceiptsEmpty": "No completed receipts yet",
+  "purchasing.completedReceiptsEmptyDetail":
+    "Completed Receive Stock transactions will appear here.",
+  "purchasing.receiveStockConfirm": "Receive stock",
+  "purchasing.view": "View",
   "purchasing.draftEmpty": "No products added yet",
   "purchasing.draftEmptyDetail": "Search or browse products to add items to this receipt.",
   "purchasing.receivingIntoBranch": "Receiving into: {name}",
