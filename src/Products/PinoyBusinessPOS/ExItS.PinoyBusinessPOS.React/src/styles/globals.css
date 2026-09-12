@@ -12190,6 +12190,28 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text);
 }
 
+@keyframes exits-settings-gear-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exits-settings-gear--ambient {
+  animation: exits-settings-gear-spin 22s linear infinite;
+  transform-origin: center;
+}
+
+.group\/settings:hover .exits-settings-gear--ambient {
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exits-settings-gear--ambient {
+    animation: none;
+    filter: none;
+  }
+}
+
 .app-top-bar__avatar .size-8,
 .app-top-bar [data-testid="account-menu-trigger"].app-top-bar__avatar > span:first-child {
   width: 2rem;

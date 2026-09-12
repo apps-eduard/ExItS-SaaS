@@ -3,22 +3,10 @@ import { useId } from "react";
 import { cn } from "@/lib/cn";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
+import { PRIMARY_PALETTE_ACCENTS_LIGHT } from "@/lib/primary-palette-accents";
 import {
   PRIMARY_COLOR_OPTIONS,
-  type PrimaryColorPreference,
 } from "@/lib/preferences/ui-preferences";
-
-const SWATCH_COLORS: Record<PrimaryColorPreference, string> = {
-  green: "#166534",
-  teal: "#0f766e",
-  cyan: "#0e7490",
-  blue: "#1d4ed8",
-  indigo: "#4338ca",
-  violet: "#6d28d9",
-  fuchsia: "#a21caf",
-  rose: "#be123c",
-  orange: "#c2410c",
-};
 
 const LABEL_KEYS = {
   green: "appearance.primary.green",
@@ -79,7 +67,7 @@ export function PrimaryColorControl() {
             >
               <span
                 className="relative inline-flex size-[1.25rem] items-center justify-center rounded-full border border-black/10 shadow-sm"
-                style={{ backgroundColor: SWATCH_COLORS[value] }}
+                style={{ backgroundColor: PRIMARY_PALETTE_ACCENTS_LIGHT[value] }}
                 aria-hidden
               >
                 {selected ? (
