@@ -1,5 +1,4 @@
-import { type ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { useState, type ReactNode } from "react";
 import {
   ClipboardList,
   Inbox,
@@ -22,7 +21,7 @@ import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSample
 const NAV_CONTEXT =
   'Use related route navigation with aria-current="page"; do not use tab/tabpanel semantics.';
 
-const ACTIVE_PATH = "/demo/incoming";
+const ACTIVE_KEY = "incoming";
 
 function SampleCard({
   label,
@@ -73,16 +72,6 @@ function StaticSampleGroup({ title, children }: { title: string; children: React
   );
 }
 
-function DemoRouter({
-  children,
-  initialPath = ACTIVE_PATH,
-}: {
-  children: ReactNode;
-  initialPath?: string;
-}) {
-  return <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>;
-}
-
 type PurchasingOptions = {
   withIcons?: boolean;
   withCounts?: boolean;
@@ -129,7 +118,7 @@ function SubnavDemo({
   testId,
   items,
   className,
-  initialPath = ACTIVE_PATH,
+  initialKey = ACTIVE_KEY,
 }: {
   variant: ModuleSubnavVariant;
   layout?: ModuleSubnavLayout;
@@ -139,21 +128,22 @@ function SubnavDemo({
   testId: string;
   items: ReadonlyArray<ModuleSubnavItem>;
   className?: string;
-  initialPath?: string;
+  initialKey?: string;
 }) {
+  const [value, setValue] = useState(initialKey);
   return (
-    <DemoRouter initialPath={initialPath}>
-      <ModuleSubnav
-        variant={variant}
-        layout={layout}
-        activeTreatment={activeTreatment}
-        scrollable={scrollable}
-        ariaLabel={ariaLabel}
-        testId={testId}
-        items={items}
-        className={className}
-      />
-    </DemoRouter>
+    <ModuleSubnav
+      variant={variant}
+      layout={layout}
+      activeTreatment={activeTreatment}
+      scrollable={scrollable}
+      ariaLabel={ariaLabel}
+      testId={testId}
+      items={items}
+      className={className}
+      value={value}
+      onValueChange={setValue}
+    />
   );
 }
 
@@ -548,7 +538,7 @@ export function UiStandardsModuleSubnavPanel({ isOpen, setOpen }: DisclosureProp
             >
               <SubnavDemo
                 variant="soft"
-                initialPath="/demo/orders/pending"
+                initialKey="pending"
                 ariaLabel="Orders module subnav"
                 testId="ui-standards-module-subnav-rw-orders-demo"
                 items={ordersItems}
@@ -564,7 +554,7 @@ export function UiStandardsModuleSubnavPanel({ isOpen, setOpen }: DisclosureProp
             >
               <SubnavDemo
                 variant="underline"
-                initialPath="/demo/inventory/low"
+                initialKey="low"
                 ariaLabel="Inventory module subnav"
                 testId="ui-standards-module-subnav-rw-inventory-demo"
                 items={inventoryItems}
@@ -580,7 +570,7 @@ export function UiStandardsModuleSubnavPanel({ isOpen, setOpen }: DisclosureProp
             >
               <SubnavDemo
                 variant="vertical"
-                initialPath="/demo/settings/general"
+                initialKey="general"
                 ariaLabel="Settings module subnav"
                 testId="ui-standards-module-subnav-rw-settings-demo"
                 items={settingsItems}

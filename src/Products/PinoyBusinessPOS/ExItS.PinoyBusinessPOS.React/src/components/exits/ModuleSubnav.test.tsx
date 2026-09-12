@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ClipboardList, Inbox } from "lucide-react";
 import { ModuleSubnav } from "@/components/exits/ModuleSubnav";
 import { formatUiStandardsCursorClipboard } from "@/features/ui-standards/UiStandardsCopyCommand";
@@ -77,6 +77,26 @@ describe("ModuleSubnav", () => {
       "aria-disabled",
       "true",
     );
+  });
+  it("supports controlled value without nesting a Router", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(
+      <ModuleSubnav
+        variant="soft"
+        ariaLabel="Controlled"
+        value="incoming"
+        onValueChange={onValueChange}
+        items={purchasingItems}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /Incoming orders/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await user.click(screen.getByRole("link", { name: /Purchase orders/i }));
+    expect(onValueChange).toHaveBeenCalledWith("po");
   });
 });
 
