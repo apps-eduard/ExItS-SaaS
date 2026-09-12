@@ -5067,7 +5067,10 @@ export const en = {
     "Create a purchase order when you will receive later ? ordering alone does not add stock.",
   "purchasing.receiveStock": "Receive stock",
   "purchasing.receiveStockLede": "Record a direct purchase and increase inventory.",
-  "purchasing.receiveStockHelper": "Use this when you bought goods without a purchase order.",
+  "purchasing.receiveStockHelper":
+    "Record goods that were purchased and received without a purchase order.",
+  "purchasing.draftEmpty": "No products added yet",
+  "purchasing.draftEmptyDetail": "Search or browse products to add items to this receipt.",
   "purchasing.receivingIntoBranch": "Receiving into: {name}",
   "purchasing.receivingBranch": "Receiving branch",
   "purchasing.receivingBranchHelp":
@@ -5311,7 +5314,6 @@ export const en = {
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
   "purchasing.receiveStockNotTracked": "Only inventory-tracked products can be received here.",
   "purchasing.draft": "Draft lines",
-  "purchasing.draftEmpty": "No products in this receipt yet.",
   "purchasing.reviewDirect": "Review receipt",
   "purchasing.willIncreaseStock": "Confirming will increase inventory now.",
   "purchasing.confirmDirect": "Confirm direct purchase",

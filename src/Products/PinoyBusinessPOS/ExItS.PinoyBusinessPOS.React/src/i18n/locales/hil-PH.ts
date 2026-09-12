@@ -8494,7 +8494,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.draft": "Draft lines",
 
-  "purchasing.draftEmpty": "No products in this receipt yet.",
+  "purchasing.draftEmpty": "No products added yet",
+  "purchasing.draftEmptyDetail": "Search or browse products to add items to this receipt.",
 
   "purchasing.errorTitle": "Purchasing error",
 
@@ -8707,7 +8708,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.receiveStock": "Receive stock",
 
-  "purchasing.receiveStockHelper": "Use this when you bought goods without a purchase order.",
+  "purchasing.receiveStockHelper":
+    "Record goods that were purchased and received without a purchase order.",
 
   "purchasing.receiveStockLede": "Record a direct purchase and increase inventory.",
 

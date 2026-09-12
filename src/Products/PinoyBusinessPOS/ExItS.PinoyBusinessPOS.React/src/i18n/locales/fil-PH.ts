@@ -8492,7 +8492,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.draft": "Draft na linya",
 
-  "purchasing.draftEmpty": "Wala pang produkto sa receipt na ito.",
+  "purchasing.draftEmpty": "Wala pang produkto",
+  "purchasing.draftEmptyDetail": "Maghanap o mag-browse ng produkto para idagdag sa receipt na ito.",
 
   "purchasing.errorTitle": "Error sa pagbili",
 
@@ -8713,7 +8714,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.receiveStock": "Tumanggap ng stock",
 
-  "purchasing.receiveStockHelper": "Gamitin ito kapag bumili ka nang walang purchase order.",
+  "purchasing.receiveStockHelper":
+    "Itala ang mga binili at natanggap nang walang purchase order.",
 
   "purchasing.receiveStockLede": "I-record ang direktang bili at dagdagan ang inventory.",
 

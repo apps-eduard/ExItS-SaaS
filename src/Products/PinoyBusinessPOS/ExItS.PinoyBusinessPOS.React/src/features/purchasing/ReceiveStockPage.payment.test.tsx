@@ -271,6 +271,8 @@ describe("ReceiveStockPage compact layout", () => {
     expect(screen.getByTestId("page-header-subtitle")).toHaveTextContent("Main Branch");
     expect(screen.getByTestId("direct-purchase-details")).toBeInTheDocument();
     expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-receipt-empty")).toHaveTextContent("No products added yet");
     expect(screen.queryByTestId("direct-source-name")).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByTestId("direct-supplier"), "__other__");
@@ -279,5 +281,29 @@ describe("ReceiveStockPage compact layout", () => {
     const review = screen.getByTestId("direct-review");
     expect(review).toBeDisabled();
     expect(review.className).not.toMatch(/w-full/);
+  });
+
+  it("updates receipt count when a product is added and removed", async () => {
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/purchasing/receive-stock"]}>
+          <Routes>
+            <Route path="/purchasing/receive-stock" element={<ReceiveStockPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    await addLine(user);
+    expect(screen.queryByTestId("direct-receipt-empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId("direct-receipt-total")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+
+    await user.click(screen.getByTestId(`direct-remove-${productId}`));
+    expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-review")).toBeDisabled();
   });
 });
