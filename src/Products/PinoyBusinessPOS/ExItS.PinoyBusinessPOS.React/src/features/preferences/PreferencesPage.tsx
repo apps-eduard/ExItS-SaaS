@@ -18,7 +18,7 @@ import { useSession } from "@/session/SessionProvider";
 
 /**
  * Preferences shell — personal UI experience (not organization Settings).
- * Sections: Appearance · Language & Region · Navigation · Accessibility
+ * Compact panel + icon-only top section nav (Appearance · Language · Navigation · Accessibility).
  */
 export function PreferencesPage() {
   const { t } = useI18n();
@@ -61,17 +61,9 @@ export function PreferencesPage() {
       closeTestId="preferences-close"
       panelClassName="exits-side-drawer__panel--preferences"
     >
-      <div
-        className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-5"
-        data-testid="preferences-layout"
-      >
-        <div className="min-w-0 sm:w-[13.25rem] sm:shrink-0 sm:border-e sm:border-border sm:pe-4">
-          <PreferencesSectionNav activeSection={activeSection} />
-        </div>
-        <div
-          className="preferences-section-content min-w-0 w-full flex-1 sm:max-w-[30rem]"
-          data-testid="preferences-section-content"
-        >
+      <div className="flex min-w-0 flex-col gap-3" data-testid="preferences-layout">
+        <PreferencesSectionNav activeSection={activeSection} />
+        <div className="preferences-section-content min-w-0 w-full" data-testid="preferences-section-content">
           <Outlet />
         </div>
       </div>

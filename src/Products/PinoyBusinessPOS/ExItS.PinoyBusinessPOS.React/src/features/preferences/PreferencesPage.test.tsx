@@ -29,38 +29,69 @@ describe("preferences sections helpers", () => {
   });
 });
 
-describe("Preferences menu foundation", () => {
+describe("Preferences icon top navigation", () => {
   beforeEach(() => {
     window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
   });
 
-  it("opens /settings/preferences on Appearance by default", async () => {
+  it("opens /settings/preferences on Appearance with icon-only top nav", async () => {
     renderAuthenticatedAt("/settings/preferences");
     await waitFor(() => {
       expect(screen.getByTestId("preferences-drawer")).toBeInTheDocument();
       expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("preferences-section-nav")).toHaveAttribute(
-      "data-active-section",
-      "appearance",
-    );
-    expect(screen.getByTestId("preferences-nav-appearance")).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+
+    const nav = screen.getByTestId("preferences-section-nav");
+    expect(nav).toHaveAttribute("data-active-section", "appearance");
+    expect(nav).toHaveAttribute("data-variant", "icon-top");
+    expect(nav.querySelector('[role="tablist"]')).toBeNull();
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+
+    const appearance = screen.getByTestId("preferences-nav-appearance");
+    expect(appearance).toHaveAttribute("aria-current", "page");
+    expect(appearance).toHaveAttribute("aria-label", "Appearance");
+    expect(appearance).toHaveAttribute("title", "Appearance");
+    expect(within(appearance).queryByText("Appearance")).not.toBeInTheDocument();
+
     expect(screen.getByRole("radio", { name: "Theme: System" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Density: Balance" })).toBeInTheDocument();
     expect(screen.queryByRole("radio", { name: "Language: English" })).not.toBeInTheDocument();
   });
 
-  it("navigates Appearance, Language & Region, Navigation, and Accessibility", async () => {
+  it("renders four icon navigation controls with labels and tooltips", async () => {
+    renderAuthenticatedAt("/settings/preferences/appearance");
+    await waitFor(() => {
+      expect(screen.getByTestId("preferences-section-nav")).toBeInTheDocument();
+    });
+
+    const nav = screen.getByTestId("preferences-section-nav");
+    const links = within(nav).getAllByRole("link");
+    expect(links).toHaveLength(4);
+
+    expect(screen.getByRole("link", { name: "Appearance" })).toHaveAttribute("title", "Appearance");
+    expect(screen.getByRole("link", { name: "Language & Region" })).toHaveAttribute(
+      "title",
+      "Language & Region",
+    );
+    expect(screen.getByRole("link", { name: "Navigation" })).toHaveAttribute("title", "Navigation");
+    expect(screen.getByRole("link", { name: "Accessibility" })).toHaveAttribute(
+      "title",
+      "Accessibility",
+    );
+  });
+
+  it("navigates sections via icon top nav without a left menu", async () => {
     const user = userEvent.setup();
     renderAuthenticatedAt("/settings/preferences/appearance");
 
     await waitFor(() => {
       expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
     });
+
+    // No reserved left sidebar rail
+    expect(screen.getByTestId("preferences-layout").className).toMatch(/flex-col/);
+    expect(screen.getByTestId("preferences-layout").className).not.toMatch(/sm:flex-row/);
+    expect(screen.queryByText(/^Language & Region$/)).not.toBeInTheDocument(); // no left-menu text label
 
     await user.click(screen.getByTestId("preferences-nav-language-region"));
     await waitFor(() => {
@@ -70,6 +101,7 @@ describe("Preferences menu foundation", () => {
       "aria-current",
       "page",
     );
+    expect(screen.getByRole("heading", { name: "Language & Region" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Language: English" })).toBeInTheDocument();
 
     await user.click(screen.getByTestId("preferences-nav-navigation"));
@@ -82,6 +114,11 @@ describe("Preferences menu foundation", () => {
     await waitFor(() => {
       expect(screen.getByTestId("preferences-section-accessibility")).toBeInTheDocument();
       expect(screen.getByTestId("preferences-accessibility-empty")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId("preferences-nav-appearance"));
+    await waitFor(() => {
+      expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
     });
   });
 
@@ -122,30 +159,30 @@ describe("Preferences menu foundation", () => {
     expect(stored.locale).toBe("fil-PH");
   });
 
-  it("renders mobile-friendly section nav without tab semantics", async () => {
+  it("uses shared icon top nav on all widths (no separate mobile nav)", async () => {
     renderAuthenticatedAt("/settings/preferences/appearance");
     await waitFor(() => {
       expect(screen.getByTestId("preferences-section-nav")).toBeInTheDocument();
     });
-    const nav = screen.getByTestId("preferences-section-nav");
-    expect(nav.querySelector('[role="tablist"]')).toBeNull();
-    expect(within(nav).getAllByRole("link")).toHaveLength(4);
-    expect(screen.getByTestId("preferences-layout").className).toMatch(/flex-col/);
+    expect(screen.getByTestId("preferences-section-nav")).toHaveAttribute("data-variant", "icon-top");
+    expect(screen.queryByTestId("preferences-section-nav-mobile")).not.toBeInTheDocument();
+    expect(within(screen.getByTestId("preferences-section-nav")).getAllByRole("link")).toHaveLength(
+      4,
+    );
   });
 
-  it("keeps logical start/end classes for RTL-safe layout", async () => {
+  it("avoids physical left/right layout utilities for RTL-safe spacing", async () => {
     renderAuthenticatedAt("/settings/preferences/appearance");
     await waitFor(() => {
       expect(screen.getByTestId("preferences-layout")).toBeInTheDocument();
     });
     const layout = screen.getByTestId("preferences-layout");
-    expect(layout.className).toMatch(/\bsm:gap-5\b/);
-    const rail = screen.getByTestId("preferences-section-nav").parentElement;
-    expect(rail?.className).toContain("sm:w-[13.25rem]");
-    expect(rail?.className).toMatch(/\bsm:border-e\b/);
-    expect(rail?.className).toMatch(/\bsm:pe-4\b/);
-    expect(rail?.className).not.toMatch(/\bborder-r\b/);
-    expect(rail?.className).not.toMatch(/\bpr-4\b/);
-    expect(screen.getByTestId("preferences-section-content").className).toContain("sm:max-w-[30rem]");
+    expect(layout.className).not.toMatch(/\bborder-r\b/);
+    expect(layout.className).not.toMatch(/\bpr-\d/);
+    expect(layout.className).not.toMatch(/\bml-\d/);
+    expect(layout.className).not.toMatch(/\bmr-\d/);
+    expect(screen.getByTestId("preferences-section-content").className).not.toContain(
+      "sm:max-w-[30rem]",
+    );
   });
 });
