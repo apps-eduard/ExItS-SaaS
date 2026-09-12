@@ -4,6 +4,13 @@ export type UiStandardsViewMode = "classic" | "simple";
 
 export const UI_STANDARDS_DEFAULT_VIEW: UiStandardsViewMode = "classic";
 
+/** Legacy Simple V2 storage/query values normalize to Simple. */
+export function normalizeUiStandardsView(value: unknown): UiStandardsViewMode | null {
+  if (value === "classic") return "classic";
+  if (value === "simple" || value === "simple-v2") return "simple";
+  return null;
+}
+
 export function isUiStandardsViewMode(value: unknown): value is UiStandardsViewMode {
   return value === "classic" || value === "simple";
 }
@@ -14,7 +21,7 @@ export function readUiStandardsView(): UiStandardsViewMode {
   }
   try {
     const raw = window.localStorage.getItem(UI_STANDARDS_VIEW_STORAGE_KEY);
-    return isUiStandardsViewMode(raw) ? raw : UI_STANDARDS_DEFAULT_VIEW;
+    return normalizeUiStandardsView(raw) ?? UI_STANDARDS_DEFAULT_VIEW;
   } catch {
     return UI_STANDARDS_DEFAULT_VIEW;
   }
@@ -31,6 +38,5 @@ export function writeUiStandardsView(view: UiStandardsViewMode): void {
 
 export function parseUiStandardsViewParam(search: string): UiStandardsViewMode | null {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-  const value = params.get("view");
-  return isUiStandardsViewMode(value) ? value : null;
+  return normalizeUiStandardsView(params.get("view"));
 }

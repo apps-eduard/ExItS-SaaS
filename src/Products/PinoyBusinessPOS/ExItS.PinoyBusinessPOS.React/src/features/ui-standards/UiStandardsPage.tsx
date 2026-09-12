@@ -13,7 +13,7 @@ import { UiStandardsActionChipsPanel } from "@/features/ui-standards/UiStandards
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
 import { UiStandardsDisclosureToolbar } from "@/features/ui-standards/UiStandardsDisclosureToolbar";
-import { UiStandardsSimpleCatalog } from "@/features/ui-standards/UiStandardsSimpleCatalog";
+import { UiStandardsSimpleCatalogV2 } from "@/features/ui-standards/UiStandardsSimpleCatalogV2";
 import { useUiStandardsDisclosure } from "@/features/ui-standards/useUiStandardsDisclosure";
 import type { UiStandardsTab } from "@/features/ui-standards/ui-standards-disclosure";
 import {
@@ -80,7 +80,7 @@ export function UiStandardsPage() {
       </div>
 
       {view === "simple" ? (
-        <UiStandardsSimpleCatalog />
+        <UiStandardsSimpleCatalogV2 />
       ) : (
         <>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("uiStandards.prefsHint")}</p>

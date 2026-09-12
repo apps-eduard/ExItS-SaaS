@@ -10,6 +10,7 @@ import { UiStandardsActionChipsPanel } from "@/features/ui-standards/UiStandards
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
 import { UiStandardsSimpleCatalog } from "@/features/ui-standards/UiStandardsSimpleCatalog";
+import { UiStandardsSimpleCatalogV2 } from "@/features/ui-standards/UiStandardsSimpleCatalogV2";
 import { formatUiStandardsCursorClipboard } from "@/features/ui-standards/UiStandardsCopyCommand";
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -212,6 +213,22 @@ describe("UI Standards every-sample copy coverage", () => {
       within(screen.getByTestId("simple-action-icons")).getByTestId("ui-standards-copy-command"),
     ).toHaveAttribute("data-command", "ACTION CHIP + SOFT + WITH ICON");
     expect(counts.implementable).toBeGreaterThan(40);
+  });
+
+  it("covers every implementable Simple V2 catalog sample with command above", () => {
+    render(
+      <MemoryRouter>
+        <UiStandardsSimpleCatalogV2 />
+      </MemoryRouter>,
+    );
+    const counts = assertEveryImplementableSampleHasCopy("ui-standards-simple-v2-catalog");
+    expect(screen.getByTestId("simple-v2-tag-default")).toHaveAttribute("data-command-placement", "above");
+    expect(screen.getByTestId("simple-v2-tag-pills")).toHaveAttribute("data-has-copy", "true");
+    expect(screen.getByTestId("simple-v2-tag-icons")).toHaveAttribute("data-has-copy", "true");
+    expect(
+      within(screen.getByTestId("simple-v2-tag-default")).getByTestId("ui-standards-copy-command"),
+    ).toHaveAttribute("data-command", "TAG CHIP + SOFT");
+    expect(counts.implementable).toBeGreaterThan(10);
   });
 
   it("formats cross-standard clipboard text with Context prefix", () => {

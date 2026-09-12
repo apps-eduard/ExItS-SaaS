@@ -262,6 +262,7 @@ export type UiStandardsSampleCommandProps = {
   command?: string;
   commandContext?: string;
   standardStatus?: UiStandardsStandardStatus;
+  className?: string;
 };
 
 export function UiStandardsSampleCommandFooter({
@@ -269,6 +270,7 @@ export function UiStandardsSampleCommandFooter({
   command,
   commandContext,
   standardStatus,
+  className,
 }: UiStandardsSampleCommandProps): ReactNode {
   if (!standard || !command?.trim()) {
     return null;
@@ -279,6 +281,7 @@ export function UiStandardsSampleCommandFooter({
       command={command}
       context={commandContext}
       standardStatus={standardStatus}
+      className={className}
     />
   );
 }

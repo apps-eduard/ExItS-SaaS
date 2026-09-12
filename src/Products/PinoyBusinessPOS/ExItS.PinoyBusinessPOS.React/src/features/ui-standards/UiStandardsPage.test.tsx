@@ -367,6 +367,21 @@ describe("UiStandardsPage Classic / Simple views", () => {
     expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple");
     expect(screen.getByTestId("ui-standards-simple-catalog")).toBeInTheDocument();
   });
+
+  it("switches to Simple V2 with Tag showcase and command above visuals", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-view-simple-v2"));
+    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple-v2");
+    expect(screen.getByTestId("ui-standards-simple-v2-catalog")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-simple-v2-tag")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-v2-tag-default")).toHaveAttribute("data-command-placement", "above");
+    expect(screen.getByTestId("simple-v2-tag-pills")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-v2-tag-icons")).toBeInTheDocument();
+    expect(within(screen.getByTestId("simple-v2-tag-default")).getByText("Primary")).toBeInTheDocument();
+    expect(window.localStorage.getItem("exits.uiStandards.view.v1")).toBe("simple-v2");
+  });
 });
 
 describe("ShellUiStandardsButton", () => {

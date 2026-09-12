@@ -22,6 +22,8 @@ describe("ui-standards view storage", () => {
   it("persists classic and simple only", () => {
     writeUiStandardsView("simple");
     expect(readUiStandardsView()).toBe("simple");
+    writeUiStandardsView("simple-v2");
+    expect(readUiStandardsView()).toBe("simple-v2");
     writeUiStandardsView("classic");
     expect(readUiStandardsView()).toBe("classic");
     expect(isUiStandardsViewMode("old")).toBe(false);
@@ -31,6 +33,7 @@ describe("ui-standards view storage", () => {
 
   it("parses view query params", () => {
     expect(parseUiStandardsViewParam("?view=simple")).toBe("simple");
+    expect(parseUiStandardsViewParam("?view=simple-v2")).toBe("simple-v2");
     expect(parseUiStandardsViewParam("view=classic")).toBe("classic");
     expect(parseUiStandardsViewParam("?view=new")).toBeNull();
   });
