@@ -4,6 +4,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 import {
   PREFERENCES_SECTIONS,
   preferencesSectionPath,
+  type PreferencesSectionAccent,
   type PreferencesSectionId,
 } from "@/features/preferences/preferences-sections";
 
@@ -11,9 +12,24 @@ type PreferencesSectionNavProps = {
   activeSection: PreferencesSectionId;
 };
 
+const ACCENT_INACTIVE: Record<Exclude<PreferencesSectionAccent, "teal">, string> = {
+  primary: "text-[var(--exits-primary)]",
+  info: "text-[var(--exits-info)]",
+  warning: "text-[var(--exits-warning)]",
+};
+
+/** Inactive icon colors — teal uses a fixed calm hue so it stays distinct from Primary. */
+function inactiveAccentClass(accent: PreferencesSectionAccent): string {
+  if (accent === "teal") {
+    return "text-[#0f766e] dark:text-[#2dd4bf]";
+  }
+  return ACCENT_INACTIVE[accent];
+}
+
 /**
  * Preferences section icon top nav — link semantics (aria-current), not Tabs.
  * Icon-only + title tooltip + aria-label. Shared on desktop and mobile.
+ * Hit target shape follows Control Shape (`--exits-control-radius`).
  */
 export function PreferencesSectionNav({ activeSection }: PreferencesSectionNavProps) {
   const { t } = useI18n();
@@ -26,7 +42,7 @@ export function PreferencesSectionNav({ activeSection }: PreferencesSectionNavPr
       data-variant="icon-top"
       className="preferences-section-nav min-w-0 border-b border-border pb-3"
     >
-      <ul className="m-0 flex list-none flex-nowrap items-center justify-start gap-1 p-0">
+      <ul className="m-0 flex list-none flex-nowrap items-center justify-start gap-2.5 p-0">
         {PREFERENCES_SECTIONS.map((section) => {
           const Icon = section.icon;
           const label = t(section.labelKey);
@@ -36,23 +52,24 @@ export function PreferencesSectionNav({ activeSection }: PreferencesSectionNavPr
               <NavLink
                 to={to}
                 data-testid={section.testId}
+                data-accent={section.accent}
                 aria-label={label}
                 title={label}
                 className={({ isActive }) =>
                   cn(
                     "inline-flex size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
-                    "items-center justify-center rounded-full border border-transparent",
-                    "no-underline transition-[background-color,border-color,color,box-shadow]",
+                    "items-center justify-center rounded-[var(--exits-control-radius)] border border-transparent",
+                    "no-underline transition-[background-color,border-color,color,box-shadow,border-radius]",
                     "duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
                     "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--exits-bg)]",
                     isActive
                       ? "border-[color-mix(in_srgb,var(--exits-primary)_40%,var(--exits-border))] bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-surface))] text-[var(--exits-primary)]"
-                      : "bg-transparent text-foreground hover:bg-[var(--exits-surface-muted)]",
+                      : cn("bg-transparent hover:bg-[var(--exits-surface-muted)]", inactiveAccentClass(section.accent)),
                   )
                 }
               >
-                <Icon className="size-4 shrink-0 opacity-90" aria-hidden strokeWidth={2} />
+                <Icon className="size-4 shrink-0 opacity-95" aria-hidden strokeWidth={2} />
               </NavLink>
             </li>
           );

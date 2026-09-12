@@ -16,7 +16,7 @@ function ShapeIcon({ kind }: { kind: ControlShapePreference }) {
   if (kind === "soft") {
     return (
       <span
-        className="box-border size-3.5 shrink-0 border-2 border-current rounded-[7px]"
+        className="box-border size-3.5 shrink-0 border-2 border-current rounded-[5px]"
         aria-hidden="true"
       />
     );

@@ -18,7 +18,6 @@ const SWATCH_COLORS: Record<PrimaryColorPreference, string> = {
   fuchsia: "#a21caf",
   rose: "#be123c",
   orange: "#c2410c",
-  amber: "#b45309",
 };
 
 const LABEL_KEYS = {
@@ -31,7 +30,6 @@ const LABEL_KEYS = {
   fuchsia: "appearance.primary.fuchsia",
   rose: "appearance.primary.rose",
   orange: "appearance.primary.orange",
-  amber: "appearance.primary.amber",
 } as const;
 
 /**

@@ -73,7 +73,7 @@ describe("ui preferences", () => {
     ).toMatchObject({ theme: "light", locale: "en", density: "compact" });
   });
 
-  it("accepts ten primary colors and control shape / motion", () => {
+  it("accepts nine primary colors and control shape / motion", () => {
     expect(PRIMARY_COLOR_OPTIONS).toEqual([
       "green",
       "teal",
@@ -84,9 +84,8 @@ describe("ui preferences", () => {
       "fuchsia",
       "rose",
       "orange",
-      "amber",
     ]);
-    expect(PRIMARY_COLOR_OPTIONS).toHaveLength(10);
+    expect(PRIMARY_COLOR_OPTIONS).toHaveLength(9);
     for (const primaryColor of PRIMARY_COLOR_OPTIONS) {
       expect(
         parseUiPreferences(
@@ -112,6 +111,18 @@ describe("ui preferences", () => {
     ).toMatchObject({ controlShape: "soft" });
   });
 
+  it("migrates retired Amber primary to Orange", () => {
+    expect(
+      parseUiPreferences(
+        JSON.stringify({
+          theme: "light",
+          locale: "en",
+          primaryColor: "amber",
+        }),
+      ),
+    ).toMatchObject({ primaryColor: "orange" });
+  });
+
   it("applies primary, control shape, motion, and navigation mode to documentElement", () => {
     applyPrimaryColor("violet");
     expect(document.documentElement.dataset.primary).toBe("violet");
@@ -124,9 +135,9 @@ describe("ui preferences", () => {
     expect(document.documentElement.dataset.primary).toBe("cyan");
     expect(document.documentElement.dataset.accent).toBe("cyan");
 
-    applyPrimaryColor("amber");
-    expect(document.documentElement.dataset.primary).toBe("amber");
-    expect(document.documentElement.dataset.accent).toBe("amber");
+    applyPrimaryColor("orange");
+    expect(document.documentElement.dataset.primary).toBe("orange");
+    expect(document.documentElement.dataset.accent).toBe("orange");
 
     applyControlShape("pill");
     expect(document.documentElement.dataset.controlShape).toBe("pill");

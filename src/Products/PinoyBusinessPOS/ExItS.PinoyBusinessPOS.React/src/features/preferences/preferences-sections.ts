@@ -8,12 +8,16 @@ export type PreferencesSectionId =
   | "navigation"
   | "accessibility";
 
+/** Distinct inactive icon accent — active state still uses Primary. */
+export type PreferencesSectionAccent = "primary" | "info" | "teal" | "warning";
+
 export type PreferencesSectionDef = {
   id: PreferencesSectionId;
   /** Nested path segment under /settings/preferences/ */
   path: PreferencesSectionId;
   labelKey: MessageKey;
   icon: LucideIcon;
+  accent: PreferencesSectionAccent;
   testId: string;
 };
 
@@ -24,6 +28,7 @@ export const PREFERENCES_SECTIONS: ReadonlyArray<PreferencesSectionDef> = [
     path: "appearance",
     labelKey: "preferences.section.appearance",
     icon: Palette,
+    accent: "primary",
     testId: "preferences-nav-appearance",
   },
   {
@@ -31,6 +36,7 @@ export const PREFERENCES_SECTIONS: ReadonlyArray<PreferencesSectionDef> = [
     path: "language-region",
     labelKey: "preferences.section.languageRegion",
     icon: Globe2,
+    accent: "info",
     testId: "preferences-nav-language-region",
   },
   {
@@ -38,6 +44,7 @@ export const PREFERENCES_SECTIONS: ReadonlyArray<PreferencesSectionDef> = [
     path: "navigation",
     labelKey: "preferences.section.navigation",
     icon: PanelLeft,
+    accent: "teal",
     testId: "preferences-nav-navigation",
   },
   {
@@ -45,6 +52,7 @@ export const PREFERENCES_SECTIONS: ReadonlyArray<PreferencesSectionDef> = [
     path: "accessibility",
     labelKey: "preferences.section.accessibility",
     icon: Accessibility,
+    accent: "warning",
     testId: "preferences-nav-accessibility",
   },
 ];

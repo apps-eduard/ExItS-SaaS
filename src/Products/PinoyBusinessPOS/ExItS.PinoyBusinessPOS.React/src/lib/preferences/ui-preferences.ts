@@ -15,7 +15,6 @@ export const primaryColorPreferenceSchema = z.enum([
   "fuchsia",
   "rose",
   "orange",
-  "amber",
 ]);
 export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
@@ -55,7 +54,6 @@ export const PRIMARY_COLOR_OPTIONS = [
   "fuchsia",
   "rose",
   "orange",
-  "amber",
 ] as const satisfies readonly PrimaryColorPreference[];
 
 export const CONTROL_SHAPE_OPTIONS = [
@@ -79,7 +77,12 @@ export function parseUiPreferences(raw: string | null): UiPreferences {
     return defaultUiPreferences;
   }
   try {
-    const parsed = uiPreferencesSchema.safeParse(JSON.parse(raw) as unknown);
+    const parsedJson = JSON.parse(raw) as Record<string, unknown>;
+    // Retired Amber swatch → Orange (warm primary still available).
+    if (parsedJson.primaryColor === "amber") {
+      parsedJson.primaryColor = "orange";
+    }
+    const parsed = uiPreferencesSchema.safeParse(parsedJson);
     return parsed.success ? parsed.data : defaultUiPreferences;
   } catch {
     return defaultUiPreferences;

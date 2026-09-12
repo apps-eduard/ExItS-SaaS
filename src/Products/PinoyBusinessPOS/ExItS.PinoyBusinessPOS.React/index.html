@@ -38,8 +38,8 @@
             p.primaryColor === "orange" ||
             p.primaryColor === "amber"
           ) {
-            d.dataset.primary = p.primaryColor;
-            d.dataset.accent = p.primaryColor;
+            d.dataset.primary = p.primaryColor === "amber" ? "orange" : p.primaryColor;
+            d.dataset.accent = d.dataset.primary;
           }
           if (
             p.controlShape === "standard" ||
