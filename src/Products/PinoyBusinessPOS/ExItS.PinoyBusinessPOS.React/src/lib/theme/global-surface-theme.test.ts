@@ -72,12 +72,14 @@ describe("POS global surface theme tokens", () => {
     expect(globalsCss).toContain(".exits-alert-surface");
     expect(globalsCss).toContain('[data-primary="green"]');
     expect(globalsCss).toContain('[data-primary="teal"]');
+    expect(globalsCss).toContain('[data-primary="cyan"]');
     expect(globalsCss).toContain('[data-primary="violet"]');
     expect(globalsCss).toContain('[data-primary="blue"]');
     expect(globalsCss).toContain('[data-primary="indigo"]');
     expect(globalsCss).toContain('[data-primary="fuchsia"]');
     expect(globalsCss).toContain('[data-primary="orange"]');
     expect(globalsCss).toContain('[data-primary="rose"]');
+    expect(globalsCss).toContain('[data-primary="amber"]');
     expect(globalsCss).toContain("--exits-control-radius");
     expect(globalsCss).toContain('[data-control-shape="soft"]');
     expect(globalsCss).toContain('[data-control-shape="pill"]');

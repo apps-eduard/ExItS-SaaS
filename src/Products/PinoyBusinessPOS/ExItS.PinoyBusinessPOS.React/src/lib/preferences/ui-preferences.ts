@@ -8,12 +8,14 @@ export const densityPreferenceSchema = z.enum(["compact", "balance", "comfort"])
 export const primaryColorPreferenceSchema = z.enum([
   "green",
   "teal",
+  "cyan",
   "blue",
   "indigo",
   "violet",
   "fuchsia",
-  "orange",
   "rose",
+  "orange",
+  "amber",
 ]);
 export const controlShapePreferenceSchema = z.enum(["standard", "soft", "pill"]);
 export const motionPreferenceSchema = z.enum(["system", "reduced"]);
@@ -46,12 +48,14 @@ export type UiPreferences = z.infer<typeof uiPreferencesSchema>;
 export const PRIMARY_COLOR_OPTIONS = [
   "green",
   "teal",
+  "cyan",
   "blue",
   "indigo",
   "violet",
   "fuchsia",
-  "orange",
   "rose",
+  "orange",
+  "amber",
 ] as const satisfies readonly PrimaryColorPreference[];
 
 export const CONTROL_SHAPE_OPTIONS = [

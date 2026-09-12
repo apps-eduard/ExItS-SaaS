@@ -39,7 +39,7 @@ export function SettingsSelect<T extends string>({
   if (variant === "segmented") {
     return (
       <div
-        className="@container flex min-w-0 flex-col gap-1.5 py-0"
+        className="@container flex min-w-0 flex-col gap-2"
         data-testid={testId}
         data-settings-variant="segmented"
       >
@@ -64,9 +64,9 @@ export function SettingsSelect<T extends string>({
                 className={cn(
                   "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[var(--exits-control-radius)] px-2.5 py-1.5",
                   "text-[length:var(--exits-text-sm)] font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-primary)]",
                   selected
-                    ? "bg-surface text-foreground shadow-sm ring-1 ring-[color-mix(in_srgb,var(--exits-primary)_28%,var(--exits-border))]"
+                    ? "bg-surface text-[var(--exits-primary)] shadow-sm ring-1 ring-[var(--exits-primary)]"
                     : "text-muted hover:bg-[color-mix(in_srgb,var(--exits-surface)_70%,transparent)] hover:text-foreground",
                 )}
                 onClick={() => {

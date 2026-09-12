@@ -11,23 +11,27 @@ import {
 const SWATCH_COLORS: Record<PrimaryColorPreference, string> = {
   green: "#166534",
   teal: "#0f766e",
+  cyan: "#0e7490",
   blue: "#1d4ed8",
   indigo: "#4338ca",
   violet: "#6d28d9",
   fuchsia: "#a21caf",
-  orange: "#c2410c",
   rose: "#be123c",
+  orange: "#c2410c",
+  amber: "#b45309",
 };
 
 const LABEL_KEYS = {
   green: "appearance.primary.green",
   teal: "appearance.primary.teal",
+  cyan: "appearance.primary.cyan",
   blue: "appearance.primary.blue",
   indigo: "appearance.primary.indigo",
   violet: "appearance.primary.violet",
   fuchsia: "appearance.primary.fuchsia",
-  orange: "appearance.primary.orange",
   rose: "appearance.primary.rose",
+  orange: "appearance.primary.orange",
+  amber: "appearance.primary.amber",
 } as const;
 
 /**
@@ -40,7 +44,7 @@ export function PrimaryColorControl() {
 
   return (
     <div
-      className="@container flex min-w-0 flex-col gap-2 py-3"
+      className="@container flex min-w-0 flex-col gap-2.5"
       data-testid="preferences-primary-color"
     >
       <span id={labelId} className="exits-type-label text-foreground">

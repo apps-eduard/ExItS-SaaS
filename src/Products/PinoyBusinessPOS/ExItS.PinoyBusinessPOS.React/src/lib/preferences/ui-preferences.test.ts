@@ -73,17 +73,20 @@ describe("ui preferences", () => {
     ).toMatchObject({ theme: "light", locale: "en", density: "compact" });
   });
 
-  it("accepts eight primary colors and control shape / motion", () => {
+  it("accepts ten primary colors and control shape / motion", () => {
     expect(PRIMARY_COLOR_OPTIONS).toEqual([
       "green",
       "teal",
+      "cyan",
       "blue",
       "indigo",
       "violet",
       "fuchsia",
-      "orange",
       "rose",
+      "orange",
+      "amber",
     ]);
+    expect(PRIMARY_COLOR_OPTIONS).toHaveLength(10);
     for (const primaryColor of PRIMARY_COLOR_OPTIONS) {
       expect(
         parseUiPreferences(
@@ -116,6 +119,14 @@ describe("ui preferences", () => {
 
     applyPrimaryColor("teal");
     expect(document.documentElement.dataset.primary).toBe("teal");
+
+    applyPrimaryColor("cyan");
+    expect(document.documentElement.dataset.primary).toBe("cyan");
+    expect(document.documentElement.dataset.accent).toBe("cyan");
+
+    applyPrimaryColor("amber");
+    expect(document.documentElement.dataset.primary).toBe("amber");
+    expect(document.documentElement.dataset.accent).toBe("amber");
 
     applyControlShape("pill");
     expect(document.documentElement.dataset.controlShape).toBe("pill");

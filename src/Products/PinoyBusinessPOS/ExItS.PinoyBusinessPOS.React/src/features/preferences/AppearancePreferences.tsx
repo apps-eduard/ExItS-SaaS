@@ -8,6 +8,7 @@ import { PreferencesSectionPanel } from "@/features/preferences/PreferencesSecti
 
 /**
  * Appearance — Theme, Primary color, Control shape, Density, Motion.
+ * Compact layout with consistent group rhythm (no cramped dividers).
  */
 export function AppearancePreferences() {
   const { t } = useI18n();
@@ -19,7 +20,7 @@ export function AppearancePreferences() {
       testId="preferences-section-appearance"
       surface="plain"
     >
-      <div className="divide-y divide-border px-4">
+      <div className="flex flex-col gap-5 px-4 pb-1">
         <ThemeControl />
         <PrimaryColorControl />
         <ControlShapeControl />

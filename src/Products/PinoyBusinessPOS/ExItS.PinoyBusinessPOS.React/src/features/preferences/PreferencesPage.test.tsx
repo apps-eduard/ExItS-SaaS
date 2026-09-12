@@ -187,12 +187,14 @@ describe("Preferences icon top navigation", () => {
     for (const color of [
       "green",
       "teal",
+      "cyan",
       "blue",
       "indigo",
       "violet",
       "fuchsia",
-      "orange",
       "rose",
+      "orange",
+      "amber",
     ] as const) {
       const swatch = screen.getByTestId(`preferences-primary-${color}`);
       expect(swatch).toHaveAttribute("role", "radio");
@@ -208,6 +210,8 @@ describe("Preferences icon top navigation", () => {
 
     expect(screen.getByRole("radio", { name: "Green" })).toHaveAttribute("title", "Green");
     expect(screen.getByRole("radio", { name: "Teal" })).toHaveAttribute("title", "Teal");
+    expect(screen.getByRole("radio", { name: "Cyan" })).toHaveAttribute("title", "Cyan");
+    expect(screen.getByRole("radio", { name: "Amber" })).toHaveAttribute("title", "Amber");
     expect(screen.getByRole("radio", { name: "Violet" })).toHaveAttribute("title", "Violet");
     expect(screen.getByRole("radio", { name: "Fuchsia" })).toHaveAttribute("title", "Fuchsia");
 
@@ -238,7 +242,7 @@ describe("Preferences icon top navigation", () => {
       controlShape?: string;
       motion?: string;
     };
-    expect(stored.primaryColor).toBe("rose");
+    expect(stored.primaryColor).toBe("amber");
     expect(stored.controlShape).toBe("standard");
     expect(stored.motion).toBe("system");
 
@@ -249,6 +253,8 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toMatch(/--exits-info:/);
     expect(globalsCss).toContain('[data-primary="rose"]');
     expect(globalsCss).toContain('[data-primary="teal"]');
+    expect(globalsCss).toContain('[data-primary="cyan"]');
+    expect(globalsCss).toContain('[data-primary="amber"]');
     expect(globalsCss).toContain('[data-primary="indigo"]');
     expect(globalsCss).toContain('[data-primary="fuchsia"]');
     expect(globalsCss).toContain('[data-control-shape="soft"]');
@@ -256,7 +262,7 @@ describe("Preferences icon top navigation", () => {
     expect(globalsCss).toContain('[data-motion="reduced"]');
   });
 
-  it("keeps Appearance controls compact (segmented rows, plain panel, 8 swatches)", async () => {
+  it("keeps Appearance controls compact (segmented rows, plain panel, 10 swatches)", async () => {
     renderAuthenticatedAt("/settings/preferences/appearance");
     await waitFor(() => {
       expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
@@ -280,7 +286,7 @@ describe("Preferences icon top navigation", () => {
     );
 
     const primary = screen.getByTestId("preferences-primary-color");
-    expect(within(primary).getAllByRole("radio")).toHaveLength(8);
+    expect(within(primary).getAllByRole("radio")).toHaveLength(10);
     expect(within(screen.getByTestId("preferences-control-shape")).getAllByRole("radio")).toHaveLength(
       3,
     );

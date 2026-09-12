@@ -1,3 +1,4 @@
+import { Accessibility, Activity } from "lucide-react";
 import { SettingsSelect } from "@/components/ui/settings-select";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -15,8 +16,16 @@ export function MotionControl() {
       variant="segmented"
       testId="preferences-motion"
       options={[
-        { value: "system", label: t("appearance.motion.system") },
-        { value: "reduced", label: t("appearance.motion.reduced") },
+        {
+          value: "system",
+          label: t("appearance.motion.system"),
+          icon: <Activity className="size-3.5 shrink-0" aria-hidden="true" />,
+        },
+        {
+          value: "reduced",
+          label: t("appearance.motion.reduced"),
+          icon: <Accessibility className="size-3.5 shrink-0" aria-hidden="true" />,
+        },
       ]}
     />
   );
