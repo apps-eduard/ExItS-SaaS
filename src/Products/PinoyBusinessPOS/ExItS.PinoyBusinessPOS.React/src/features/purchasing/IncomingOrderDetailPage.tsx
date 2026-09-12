@@ -1,5 +1,5 @@
 import { ClipboardList } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
@@ -17,27 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import {
-  cycleExitsTableSort,
-  ExitsTable,
-  ExitsTableBody,
-  ExitsTableCell,
-  ExitsTableContainer,
-  ExitsTableFooter,
-  ExitsTableHead,
-  ExitsTableHeader,
-  ExitsTableMobile,
-  ExitsTableMobileRow,
-  ExitsTableOutputActions,
-  ExitsTablePagination,
-  ExitsTableRow,
-  ExitsTableToolbar,
-  type ExitsTableSortDirection,
-} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -50,15 +32,15 @@ import {
   printIncomingOrderDocument,
 } from "@/features/purchasing/incoming-order-table-output";
 import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
+import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
+import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
+import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
+import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
+import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-type LineSkuFilter = "all" | "hasSku" | "noSku";
-type LineSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 function lineQtyLabel(line: ConnectedPurchaseOrderLine): string {
   const uom = line.unitOfMeasureCode ? formatUnitOfMeasureLabel(line.unitOfMeasureCode) : "";
@@ -111,6 +93,17 @@ function declineReasonLabel(t: (key: MessageKey) => string, reason: string): str
   }
 }
 
+function toDocumentLines(lines: ConnectedPurchaseOrderLine[]): PoDocumentLine[] {
+  return lines.map((line) => ({
+    id: line.productId,
+    productName: line.nameSnapshot,
+    sku: line.skuSnapshot,
+    quantityLabel: lineQtyLabel(line),
+    unitCost: line.unitPriceSnapshot,
+    lineTotal: line.lineTotal,
+  }));
+}
+
 export function IncomingOrderDetailPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
@@ -122,22 +115,6 @@ export function IncomingOrderDetailPage() {
   const [declineReason, setDeclineReason] = useState("");
   const [declineNote, setDeclineNote] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [skuFilter, setSkuFilter] = useState<LineSkuFilter>("all");
-  const [sortKey, setSortKey] = useState<LineSortKey | null>(null);
-  const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 200);
-    return () => window.clearTimeout(handle);
-  }, [searchInput]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, skuFilter, sortKey, sortDirection, pageSize]);
 
   const workspace = useMemo(
     () =>
@@ -220,68 +197,11 @@ export function IncomingOrderDetailPage() {
     prepareMutation.isPending ||
     fulfillMutation.isPending;
 
-  const orderLines = query.data?.lines ?? [];
-
-  const filteredSortedLines = useMemo(() => {
-    const queryText = debouncedSearch.toLowerCase();
-    let rows = orderLines.filter((line) => {
-      const sku = line.skuSnapshot?.trim() ?? "";
-      if (skuFilter === "hasSku" && !sku) {
-        return false;
-      }
-      if (skuFilter === "noSku" && sku) {
-        return false;
-      }
-      if (!queryText) {
-        return true;
-      }
-      return (
-        line.nameSnapshot.toLowerCase().includes(queryText) ||
-        sku.toLowerCase().includes(queryText)
-      );
-    });
-
-    if (sortKey && sortDirection) {
-      const dir = sortDirection === "asc" ? 1 : -1;
-      rows = [...rows].sort((a, b) => {
-        switch (sortKey) {
-          case "product":
-            return a.nameSnapshot.localeCompare(b.nameSnapshot) * dir;
-          case "sku":
-            return (a.skuSnapshot ?? "").localeCompare(b.skuSnapshot ?? "") * dir;
-          case "quantity":
-            return (a.qty - b.qty) * dir;
-          case "unitCost":
-            return (a.unitPriceSnapshot - b.unitPriceSnapshot) * dir;
-          case "lineTotal":
-            return (a.lineTotal - b.lineTotal) * dir;
-          default:
-            return 0;
-        }
-      });
-    }
-
-    return rows;
-  }, [orderLines, debouncedSearch, skuFilter, sortKey, sortDirection]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredSortedLines.length / pageSize) || 1);
-  const safePage = Math.min(page, pageCount);
-  const pagedLines = useMemo(() => {
-    const start = (safePage - 1) * pageSize;
-    return filteredSortedLines.slice(start, start + pageSize);
-  }, [filteredSortedLines, safePage, pageSize]);
-
-  function toggleSort(key: LineSortKey) {
-    const next = cycleExitsTableSort(sortKey, sortDirection, key);
-    setSortKey(next.key as LineSortKey | null);
-    setSortDirection(next.direction);
-  }
-
   function buildExportModel() {
     if (!query.data) {
       throw new Error("Order is not loaded");
     }
-    return buildIncomingOrderExportModel(query.data, filteredSortedLines, new Set());
+    return buildIncomingOrderExportModel(query.data, query.data.lines, new Set());
   }
 
   async function runOutput(action: "csv" | "xlsx" | "pdf" | "print") {
@@ -340,8 +260,34 @@ export function IncomingOrderDetailPage() {
   const isNew = order.status === "New";
   const isAccepted = order.status === "Accepted";
   const isPreparing = order.status === "Preparing";
+  const isDeclined = order.status === "Declined";
   const canAct = allowManage && online && !busy;
-  const printModel = buildIncomingOrderExportModel(order, filteredSortedLines, new Set());
+  const printModel = buildIncomingOrderExportModel(order, order.lines, new Set());
+  const documentLines = toDocumentLines(order.lines);
+  const resolvedStatusLabel = statusLabel(t, order.status, order.displayStatus);
+  const statusTone = incomingOrderStatusTone(order.status);
+
+  const summaryFields = [
+    ...(order.supplierBranchName
+      ? [
+          {
+            key: "fulfill",
+            label: t("incomingOrders.deliverTo"),
+            value: order.supplierBranchName,
+          },
+        ]
+      : []),
+    {
+      key: "payment",
+      label: t("purchasing.paymentTerm"),
+      value: order.paymentTermLabel || order.paymentTerm || "—",
+    },
+    {
+      key: "orderDate",
+      label: t("incomingOrders.orderDate"),
+      value: order.orderDate,
+    },
+  ];
 
   return (
     <div
@@ -369,9 +315,7 @@ export function IncomingOrderDetailPage() {
               <tr key={line.productId}>
                 <td>{line.product}</td>
                 <td>{line.sku || "—"}</td>
-                <td>
-                  {line.unit ? `${line.quantity} ${line.unit}` : line.quantity}
-                </td>
+                <td>{line.unit ? `${line.quantity} ${line.unit}` : line.quantity}</td>
                 <td>{formatPeso(line.unitCost)}</td>
                 <td>{formatPeso(line.lineTotal)}</td>
               </tr>
@@ -381,236 +325,108 @@ export function IncomingOrderDetailPage() {
         <p>
           <strong>{t("incomingOrders.orderTotal")}</strong> {formatPeso(printModel.orderTotal)}
         </p>
-        {printModel.scope === "selected" ? (
-          <p>
-            {t("exitsTable.selectedLinesTotal")} {formatPeso(printModel.selectedLinesTotal)}
-          </p>
-        ) : null}
       </div>
+
       <PageHeader
         title={order.buyerPoNumber ?? t("incomingOrders.unnamedPo")}
-        description={t("incomingOrders.detailLede")}
         backTo="/purchasing/incoming-orders"
         backLabel={t("incomingOrders.backList")}
         backTestId="page-header-back-incoming-order-detail"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
+            <PoDocumentExportActions
+              printLabel={t("exitsTable.print")}
+              exportLabel={t("purchasing.export")}
+              csvLabel={t("exitsTable.exportCsv")}
+              xlsxLabel={t("exitsTable.exportExcel")}
+              pdfLabel={t("exitsTable.exportPdf")}
+              onPrint={() => runOutput("print")}
+              onCsv={() => runOutput("csv")}
+              onXlsx={() => runOutput("xlsx")}
+              onPdf={() => runOutput("pdf")}
+            />
+          </div>
+        }
       />
 
-      <Card className="grid gap-2 p-3" data-testid="incoming-order-summary">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("incomingOrders.buyer")}</p>
-            <p className="m-0 font-semibold">
-              {order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
-            </p>
-          </div>
-          <StatusChip tone={incomingOrderStatusTone(order.status)}>
-            {statusLabel(t, order.status, order.displayStatus)}
-          </StatusChip>
-        </div>
-        {order.supplierBranchName ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)]">
-            <span className="text-muted">{t("incomingOrders.deliverTo")}: </span>
-            {order.supplierBranchName}
-          </p>
-        ) : null}
-        <p className="m-0 text-[length:var(--exits-text-sm)]">
-          <span className="text-muted">{t("incomingOrders.orderDate")}: </span>
-          {order.orderDate}
-        </p>
-        <p className="m-0 text-[length:var(--exits-text-sm)]">
-          <span className="text-muted">{t("purchasing.paymentTerm")}: </span>
-          {order.paymentTermLabel || order.paymentTerm}
-        </p>
-        {order.buyerReceivingStatus ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="incoming-order-receiving">
-            {order.buyerReceivingStatus}
-          </p>
-        ) : null}
-      </Card>
+      {isNew ? (
+        <Notice tone="info" testId="incoming-order-accept-notice">
+          {t("incomingOrders.detailLede")}
+        </Notice>
+      ) : null}
+
+      <PoDocumentSummary
+        counterpartyLabel={t("incomingOrders.buyer")}
+        counterpartyName={order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
+        status={{ label: resolvedStatusLabel, tone: statusTone }}
+        fields={summaryFields}
+        testId="incoming-order-summary"
+        footer={
+          <>
+            {order.buyerReceivingStatus ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="incoming-order-receiving"
+              >
+                {order.buyerReceivingStatus}
+              </p>
+            ) : null}
+            {isDeclined && (order.declineReason || order.declineNote) ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="incoming-order-decline-info">
+                {order.declineReason
+                  ? declineReasonLabel(t, order.declineReason)
+                  : null}
+                {order.declineReason && order.declineNote ? " — " : null}
+                {order.declineNote}
+              </p>
+            ) : null}
+          </>
+        }
+      />
 
       {actionError ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert" data-testid="incoming-order-action-error">
+        <Notice tone="danger" testId="incoming-order-action-error">
           {actionError}
-        </p>
+        </Notice>
       ) : null}
 
       {order.lines.length === 0 ? (
         <EmptyState
-              variant="setup"
-              align="center"
-              icon={<ClipboardList className="size-5" strokeWidth={1.75} />} title={t("purchasing.linesEmpty")} detail={t("purchasing.linesRequired")} />
+          variant="setup"
+          align="center"
+          icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+          title={t("purchasing.linesEmpty")}
+          detail={t("purchasing.linesRequired")}
+        />
       ) : (
-        <ExitsTableContainer data-testid="incoming-order-lines">
-          <ExitsTableToolbar
-            search={
-              <SearchField
-                label={t("exitsTable.searchProducts")}
-                value={searchInput}
-                placeholder={t("exitsTable.searchProducts")}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onClear={() => setSearchInput("")}
-                data-testid="incoming-order-lines-search"
-              />
-            }
-            filter={
-              <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                <span className="sr-only">{t("exitsTable.filter")}</span>
-                <select
-                  className="exits-select"
-                  value={skuFilter}
-                  onChange={(e) => setSkuFilter(e.target.value as LineSkuFilter)}
-                  data-testid="incoming-order-lines-filter"
-                  aria-label={t("exitsTable.filter")}
-                >
-                  <option value="all">{t("exitsTable.filterAll")}</option>
-                  <option value="hasSku">{t("exitsTable.filterHasSku")}</option>
-                  <option value="noSku">{t("exitsTable.filterNoSku")}</option>
-                </select>
-              </label>
-            }
-            output={
-              <ExitsTableOutputActions
-                csvLabel={t("exitsTable.exportCsv")}
-                xlsxLabel={t("exitsTable.exportExcel")}
-                pdfLabel={t("exitsTable.exportPdf")}
-                printLabel={t("exitsTable.print")}
-                menuLabel={t("exitsTable.exportPrintMenu")}
-                onCsv={() => runOutput("csv")}
-                onXlsx={() => runOutput("xlsx")}
-                onPdf={() => runOutput("pdf")}
-                onPrint={() => runOutput("print")}
-              />
-            }
+        <>
+          <PoDocumentLineItems
+            title={t("purchasing.orderItems")}
+            emptyTitle={t("purchasing.linesEmpty")}
+            emptyDetail={t("purchasing.linesRequired")}
+            lines={documentLines}
+            productColLabel={t("purchasing.colProduct")}
+            skuColLabel={t("catalog.sku")}
+            qtyColLabel={t("purchasing.qty")}
+            unitCostColLabel={t("purchasing.unitCost")}
+            lineTotalColLabel={t("purchasing.lineTotal")}
+            testId="incoming-order-lines"
+            lineTestIdPrefix="incoming-order-line"
           />
-
-          <ExitsTable>
-            <ExitsTableHeader>
-              <ExitsTableRow>
-                <ExitsTableHead
-                  cellAlign="text"
-                  sortable
-                  sortDirection={sortKey === "product" ? sortDirection : null}
-                  onSort={() => toggleSort("product")}
-                  data-testid="incoming-order-sort-product"
-                >
-                  {t("purchasing.colProduct")}
-                </ExitsTableHead>
-                <ExitsTableHead
-                  cellAlign="text"
-                  sortable
-                  sortDirection={sortKey === "sku" ? sortDirection : null}
-                  onSort={() => toggleSort("sku")}
-                  data-testid="incoming-order-sort-sku"
-                >
-                  {t("catalog.sku")}
-                </ExitsTableHead>
-                <ExitsTableHead
-                  cellAlign="numeric"
-                  sortable
-                  sortDirection={sortKey === "quantity" ? sortDirection : null}
-                  onSort={() => toggleSort("quantity")}
-                  data-testid="incoming-order-sort-quantity"
-                >
-                  {t("purchasing.qty")}
-                </ExitsTableHead>
-                <ExitsTableHead
-                  cellAlign="money"
-                  sortable
-                  sortDirection={sortKey === "unitCost" ? sortDirection : null}
-                  onSort={() => toggleSort("unitCost")}
-                  data-testid="incoming-order-sort-unit-cost"
-                >
-                  {t("purchasing.unitCost")}
-                </ExitsTableHead>
-                <ExitsTableHead
-                  cellAlign="money"
-                  sortable
-                  sortDirection={sortKey === "lineTotal" ? sortDirection : null}
-                  onSort={() => toggleSort("lineTotal")}
-                  data-testid="incoming-order-sort-line-total"
-                >
-                  {t("purchasing.lineTotal")}
-                </ExitsTableHead>
-              </ExitsTableRow>
-            </ExitsTableHeader>
-            <ExitsTableBody>
-              {pagedLines.map((line) => (
-                <ExitsTableRow
-                  key={line.productId}
-                  interactive
-                  data-testid={`incoming-order-line-${line.productId}`}
-                >
-                  <ExitsTableCell cellAlign="text" className="font-medium">
-                    {line.nameSnapshot}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="text" className="text-muted">
-                    {line.skuSnapshot?.trim() || "—"}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="numeric">{lineQtyLabel(line)}</ExitsTableCell>
-                  <ExitsTableCell cellAlign="money">
-                    <MoneyDisplay amount={line.unitPriceSnapshot} />
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="money" emphasis="semibold">
-                    <MoneyDisplay
-                      amount={line.lineTotal}
-                      testId={`incoming-order-line-total-${line.productId}`}
-                    />
-                  </ExitsTableCell>
-                </ExitsTableRow>
-              ))}
-            </ExitsTableBody>
-            <ExitsTableFooter data-testid="incoming-order-total">
-              <ExitsTableRow>
-                <ExitsTableCell cellAlign="actions" colSpan={4} emphasis="bold">
-                  {t("incomingOrders.orderTotal")}
-                </ExitsTableCell>
-                <ExitsTableCell cellAlign="money" emphasis="bold">
-                  <MoneyDisplay amount={order.totalAmount} testId="incoming-order-total-amount" />
-                </ExitsTableCell>
-              </ExitsTableRow>
-            </ExitsTableFooter>
-          </ExitsTable>
-
-          <ExitsTableMobile data-testid="incoming-order-lines-mobile">
-            {pagedLines.map((line) => (
-              <ExitsTableMobileRow
-                key={line.productId}
-                data-testid={`incoming-order-line-mobile-${line.productId}`}
-              >
-                <div className="exits-table-mobile__title-row">
-                  <p className="exits-table-mobile__title">{line.nameSnapshot}</p>
-                  <p className="exits-table-mobile__total">{formatPeso(line.lineTotal)}</p>
-                </div>
-                {line.skuSnapshot?.trim() ? (
-                  <p className="exits-table-mobile__meta">{line.skuSnapshot.trim()}</p>
-                ) : null}
-                <p className="exits-table-mobile__math">
-                  {lineQtyLabel(line)} × {formatPeso(line.unitPriceSnapshot)}
-                </p>
-              </ExitsTableMobileRow>
-            ))}
-            <li className="exits-table-mobile__footer" data-testid="incoming-order-total-mobile">
-              <span>{t("incomingOrders.orderTotal")}</span>
-              <MoneyDisplay amount={order.totalAmount} />
-            </li>
-          </ExitsTableMobile>
-
-          <ExitsTablePagination
-            page={safePage}
-            pageSize={pageSize}
-            total={filteredSortedLines.length}
-            pageSizeOptions={PAGE_SIZE_OPTIONS}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
-            rowsPerPageLabel={t("exitsTable.rowsPerPage")}
-            previousLabel={t("exitsTable.previous")}
-            nextLabel={t("exitsTable.next")}
-            rangeLabel={t("exitsTable.range")}
+          <PoDocumentTotals
+            rows={[
+              {
+                key: "orderTotal",
+                label: t("incomingOrders.orderTotal"),
+                amount: order.totalAmount,
+                emphasis: "strong",
+                testId: "incoming-order-total-amount",
+              },
+            ]}
+            testId="incoming-order-total"
           />
-        </ExitsTableContainer>
+        </>
       )}
 
       {isNew && showDecline ? (
@@ -641,12 +457,7 @@ export function IncomingOrderDetailPage() {
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={busy}
-              onClick={() => setShowDecline(false)}
-            >
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => setShowDecline(false)}>
               {t("purchasing.cancel")}
             </Button>
             <Button
@@ -663,51 +474,57 @@ export function IncomingOrderDetailPage() {
       ) : null}
 
       {isNew && !showDecline ? (
-        <div className="flex flex-wrap gap-2" data-testid="incoming-order-pending-actions">
+        <div className="po-document-actions" data-testid="incoming-order-pending-actions">
           <Button
             type="button"
             variant="destructive"
-            className="flex-1"
             disabled={!canAct}
             data-testid="incoming-order-decline"
             onClick={() => setShowDecline(true)}
           >
             {t("incomingOrders.decline")}
           </Button>
-          <Button
-            type="button"
-            className="flex-1"
-            disabled={!canAct}
-            data-testid="incoming-order-accept"
-            onClick={() => acceptMutation.mutate()}
-          >
-            {t("incomingOrders.accept")}
-          </Button>
+          <div className="po-document-actions__primary">
+            <Button
+              type="button"
+              disabled={!canAct}
+              data-testid="incoming-order-accept"
+              onClick={() => acceptMutation.mutate()}
+            >
+              {t("incomingOrders.accept")}
+            </Button>
+          </div>
         </div>
       ) : null}
 
       {isAccepted ? (
-        <Button
-          type="button"
-          className="w-full"
-          disabled={!canAct}
-          data-testid="incoming-order-prepare"
-          onClick={() => prepareMutation.mutate()}
-        >
-          {t("incomingOrders.startPreparing")}
-        </Button>
+        <div className="po-document-actions">
+          <div className="po-document-actions__primary">
+            <Button
+              type="button"
+              disabled={!canAct}
+              data-testid="incoming-order-prepare"
+              onClick={() => prepareMutation.mutate()}
+            >
+              {t("incomingOrders.startPreparing")}
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {isPreparing ? (
-        <Button
-          type="button"
-          className="w-full"
-          disabled={!canAct}
-          data-testid="incoming-order-fulfill"
-          onClick={() => fulfillMutation.mutate()}
-        >
-          {t("incomingOrders.markReady")}
-        </Button>
+        <div className="po-document-actions">
+          <div className="po-document-actions__primary">
+            <Button
+              type="button"
+              disabled={!canAct}
+              data-testid="incoming-order-fulfill"
+              onClick={() => fulfillMutation.mutate()}
+            >
+              {t("incomingOrders.markReady")}
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {!allowManage ? (

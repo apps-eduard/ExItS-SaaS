@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { catalogs } from "@/i18n/messages";
@@ -418,14 +418,13 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.getByTestId(`po-line-math-${buyerProductId}`)).toHaveTextContent("₱12");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱12.00");
 
-    const card = screen.getByTestId(`po-connected-product-${buyerProductId}`);
-    await user.click(within(card).getByRole("button", { name: "Increase quantity" }));
+    await user.click(screen.getByRole("button", { name: "Increase quantity" }));
     expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
     expect(screen.getByTestId(`po-line-math-${buyerProductId}`)).toHaveTextContent("₱24");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱24.00");
 
-    await user.click(within(card).getByRole("button", { name: "Decrease quantity" }));
-    await user.click(within(card).getByRole("button", { name: "Decrease quantity" }));
+    await user.click(screen.getByRole("button", { name: "Decrease quantity" }));
+    await user.click(screen.getByRole("button", { name: "Decrease quantity" }));
     expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeInTheDocument();
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱0.00");
   });
@@ -454,10 +453,9 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(getConnectedOrderStock).toHaveBeenCalled();
 
     await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
-    const card = screen.getByTestId(`po-connected-product-${buyerProductId}`);
-    await user.click(within(card).getByRole("button", { name: "Increase quantity" }));
+    await user.click(screen.getByRole("button", { name: "Increase quantity" }));
     expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
-    expect(within(card).getByRole("button", { name: "Increase quantity" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Increase quantity" })).toBeDisabled();
   });
 
   it("disables Add when supplier stock is zero", async () => {

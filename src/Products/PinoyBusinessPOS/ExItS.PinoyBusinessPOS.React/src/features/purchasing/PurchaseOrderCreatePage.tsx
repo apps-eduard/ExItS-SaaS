@@ -27,10 +27,10 @@ import {
 } from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
@@ -52,6 +52,8 @@ import {
   type ConnectedPoDraftLine,
   type ConnectedPoReadyProduct,
 } from "@/features/purchasing/purchase-order-create-connected";
+import { PoDocumentSelectedItems } from "@/features/purchasing/PoDocumentSelectedItems";
+import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import {
   isBulkConnectSelectable,
   partitionBulkConnectSelection,
@@ -665,74 +667,91 @@ export function PurchaseOrderCreatePage() {
     <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-create-page">
       <PageHeader
         title={t("purchasing.createTitle")}
-        description={t("purchasing.createLede")}
         backTo="/purchasing/orders"
         backLabel={t("purchasing.backOrders")}
         backTestId="page-header-back-purchasing"
       />
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("purchasing.ordersNoStock")}
-      </p>
+
+      {allowManage ? (
+        <Notice tone="info" testId="po-create-notice">
+          {t("purchasing.ordersNoStock")}
+        </Notice>
+      ) : null}
+
       {!online ? (
-        <Card>
-          <p className="m-0">{t("purchasing.offline")}</p>
-        </Card>
+        <Notice tone="warning">{t("purchasing.offline")}</Notice>
       ) : null}
       {!allowManage ? (
-        <Card>
-          <p className="m-0">{t("purchasing.manageDenied")}</p>
-        </Card>
+        <Notice tone="danger">{t("purchasing.manageDenied")}</Notice>
       ) : null}
 
-      <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-branch">
-        {t("purchasing.receivingBranch")}
-        {": "}
-        <span className="font-medium text-foreground">
-          {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
-        </span>
-      </p>
-
-      <div className="po-create-meta grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start">
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("purchasing.supplier")}
-          <select
-            className="exits-select"
-            value={supplierId}
-            onChange={(e) => onSupplierChange(e.target.value)}
-            disabled={!allowManage || !online}
-            data-testid="po-supplier"
-          >
-            <option value="">{t("purchasing.selectSupplier")}</option>
-            {(suppliersQuery.data?.items ?? []).map((s) => (
-              <option key={s.supplierId} value={s.supplierId}>
-                {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("purchasing.orderDate")}
-          <input
-            type="date"
-            className="rounded-md border border-border bg-background px-3"
-            value={orderDate}
-            onChange={(e) => setOrderDate(e.target.value)}
-            disabled={!allowManage || !online}
-            data-testid="po-order-date"
-          />
-        </label>
-      </div>
-
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.notes")}
-        <textarea
-          className="min-h-20 rounded-md border border-border bg-background px-3 py-2"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          disabled={!allowManage || !online}
-        />
-      </label>
+      <PoDocumentSummary
+        counterpartyLabel={t("purchasing.seller")}
+        counterpartyName={
+          selectedSupplier
+            ? selectedSupplier.supplierBranchName
+              ? `${selectedSupplier.name} — ${selectedSupplier.supplierBranchName}`
+              : selectedSupplier.name
+            : t("purchasing.selectSupplier")
+        }
+        fields={[
+          {
+            key: "receiving",
+            label: t("purchasing.receivingBranch"),
+            value: boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—",
+          },
+          {
+            key: "orderDate",
+            label: t("purchasing.orderDate"),
+            value: (
+              <input
+                type="date"
+                className="rounded-md border border-border bg-background px-2 py-1"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+                disabled={!allowManage || !online}
+                data-testid="po-order-date"
+              />
+            ),
+          },
+        ]}
+        testId="po-create-summary"
+        footer={
+          <div className="grid gap-3">
+            <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.supplier")}
+              <select
+                className="exits-select"
+                value={supplierId}
+                onChange={(e) => onSupplierChange(e.target.value)}
+                disabled={!allowManage || !online}
+                data-testid="po-supplier"
+              >
+                <option value="">{t("purchasing.selectSupplier")}</option>
+                {(suppliersQuery.data?.items ?? []).map((s) => (
+                  <option key={s.supplierId} value={s.supplierId}>
+                    {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.notes")}
+              <textarea
+                className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                disabled={!allowManage || !online}
+              />
+            </label>
+            <p className="m-0 sr-only" data-testid="po-branch">
+              {t("purchasing.receivingBranch")}
+              {": "}
+              {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
+            </p>
+          </div>
+        }
+      />
 
       {supplierId && connected ? (
         <section
@@ -829,7 +848,6 @@ export function PurchaseOrderCreatePage() {
                     const qty = qtyByProductId.get(product.buyerProductId) ?? 0;
                     const availability = resolveSupplierAvailability(product);
                     const maxQty = maxOrderablePurchaseQty(product);
-                    const atMax = maxQty != null && qty >= maxQty;
                     const cannotAdd =
                       availability.kind === "out_of_stock" || (maxQty != null && maxQty <= 0);
                     return (
@@ -886,25 +904,11 @@ export function PurchaseOrderCreatePage() {
                                 <Plus className="size-4" aria-hidden />
                               </Button>
                             ) : (
-                              <span className="po-order-table__qty-wrap">
-                                <span
-                                  className="po-order-table__line-math tabular-nums"
-                                  data-testid={`po-line-math-${product.buyerProductId}`}
-                                >
-                                  {formatLineMath(qty, product.unitPurchaseCost)}
-                                </span>
-                                <QuantityStepper
-                                  compact
-                                  value={qty}
-                                  valueTestId={`po-qty-${product.buyerProductId}`}
-                                  increaseLabel={t("purchasing.increaseQty")}
-                                  decreaseLabel={t("purchasing.decreaseQty")}
-                                  incrementDisabled={
-                                    !allowManage || !online || saving || atMax
-                                  }
-                                  onIncrement={() => setConnectedQty(product, qty + 1)}
-                                  onDecrement={() => setConnectedQty(product, qty - 1)}
-                                />
+                              <span
+                                className="po-order-table__line-math tabular-nums text-muted"
+                                data-testid={`po-line-math-${product.buyerProductId}`}
+                              >
+                                {formatLineMath(qty, product.unitPurchaseCost)}
                               </span>
                             )}
                           </span>
@@ -914,6 +918,58 @@ export function PurchaseOrderCreatePage() {
                   })}
                 </ul>
               </div>
+              <PoDocumentSelectedItems
+                title={t("purchasing.orderItems")}
+                emptyTitle={t("purchasing.orderItemsEmpty")}
+                emptyDetail={t("purchasing.orderItemsEmptyHelp")}
+                productColLabel={t("purchasing.colProduct")}
+                qtyColLabel={t("purchasing.qty")}
+                unitCostColLabel={t("purchasing.unitCost")}
+                lineTotalColLabel={t("purchasing.lineTotal")}
+                actionsColLabel={t("purchasing.colActions")}
+                removeLabel={t("purchasing.removeLine")}
+                testId="po-connected-selected-items"
+                lineTestIdPrefix="po-connected-selected"
+                lines={connectedLines.map((line) => {
+                  const product = readyProducts.find((p) => p.buyerProductId === line.productId);
+                  const maxQty = product ? maxOrderablePurchaseQty(product) : null;
+                  const atMax = maxQty != null && line.orderedQty >= maxQty;
+                  const uom =
+                    line.uom ||
+                    (product
+                      ? formatUnitOfMeasureLabel(
+                          product.packageLabel || product.unitOfMeasure || "",
+                        )
+                      : "");
+                  return {
+                    id: line.productId,
+                    productName: line.name,
+                    sku: product?.supplierSku,
+                    quantity: line.orderedQty,
+                    unitOfMeasure: uom,
+                    unitCost: line.unitPurchaseCost,
+                    lineTotal: line.orderedQty * line.unitPurchaseCost,
+                    quantityControl: product ? (
+                      <QuantityStepper
+                        compact
+                        value={line.orderedQty}
+                        valueTestId={`po-qty-${line.productId}`}
+                        increaseLabel={t("purchasing.increaseQty")}
+                        decreaseLabel={t("purchasing.decreaseQty")}
+                        incrementDisabled={!allowManage || !online || saving || atMax}
+                        onIncrement={() => setConnectedQty(product, line.orderedQty + 1)}
+                        onDecrement={() => setConnectedQty(product, line.orderedQty - 1)}
+                      />
+                    ) : undefined,
+                    onRemove: product
+                      ? () => setConnectedQty(product, 0)
+                      : () =>
+                          setConnectedLines((prev) =>
+                            prev.filter((l) => l.productId !== line.productId),
+                          ),
+                  };
+                })}
+              />
             </>
           ) : (
             <>
@@ -1197,11 +1253,11 @@ export function PurchaseOrderCreatePage() {
             ))}
           </ul>
           {selectedProduct ? (
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.qty")}
                 <input
-                  className="rounded-md border border-border bg-background px-3"
+                  className="po-document-create-qty rounded-md border border-border bg-background px-3"
                   value={qtyText}
                   onChange={(e) => setQtyText(e.target.value)}
                   data-testid="po-line-qty"
@@ -1210,87 +1266,81 @@ export function PurchaseOrderCreatePage() {
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.unitCost")}
                 <input
-                  className="rounded-md border border-border bg-background px-3"
+                  className="po-document-create-cost rounded-md border border-border bg-background px-3"
                   value={costText}
                   onChange={(e) => setCostText(e.target.value)}
                   data-testid="po-line-cost"
                 />
               </label>
-              <div className="flex items-end">
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={addExternalLine}
-                  data-testid="po-add-line"
-                >
-                  {t("purchasing.addLine")}
-                </Button>
-              </div>
+              <Button type="button" onClick={addExternalLine} data-testid="po-add-line">
+                {t("purchasing.addLine")}
+              </Button>
             </div>
           ) : null}
 
-          <section aria-labelledby="po-lines-heading">
-            <h2
-              id="po-lines-heading"
-              className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
-            >
-              {t("purchasing.lines")}
-            </h2>
-            {externalLines.length === 0 ? (
-              <p className="m-0 text-muted">{t("purchasing.linesEmpty")}</p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {externalLines.map((line) => (
-                  <li
-                    key={line.productId}
-                    className="rounded-md border border-border p-3"
-                    data-testid={`po-draft-line-${line.productId}`}
-                  >
-                    <div className="font-medium">{line.name}</div>
-                    <div className="text-[length:var(--exits-text-sm)] text-muted">
-                      {line.orderedQty} {line.uom} · {formatPeso(line.unitPurchaseCost)}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-2"
-                      onClick={() =>
-                        setExternalLines((prev) =>
-                          prev.filter((l) => l.productId !== line.productId),
-                        )
-                      }
-                    >
-                      {t("purchasing.removeLine")}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <PoDocumentSelectedItems
+            title={t("purchasing.orderItems")}
+            emptyTitle={t("purchasing.orderItemsEmpty")}
+            emptyDetail={t("purchasing.orderItemsEmptyHelp")}
+            productColLabel={t("purchasing.colProduct")}
+            qtyColLabel={t("purchasing.qty")}
+            unitCostColLabel={t("purchasing.unitCost")}
+            lineTotalColLabel={t("purchasing.lineTotal")}
+            actionsColLabel={t("purchasing.colActions")}
+            removeLabel={t("purchasing.removeLine")}
+            lines={externalLines.map((line) => ({
+              id: line.productId,
+              productName: line.name,
+              quantity: line.orderedQty,
+              unitOfMeasure: line.uom,
+              unitCost: line.unitPurchaseCost,
+              lineTotal: line.orderedQty * line.unitPurchaseCost,
+              quantityControl: (
+                <span className="tabular-nums">
+                  {line.orderedQty} {line.uom}
+                </span>
+              ),
+              onRemove: () =>
+                setExternalLines((prev) => prev.filter((l) => l.productId !== line.productId)),
+            }))}
+          />
         </section>
       ) : null}
 
       {error ? (
-        <Card data-testid="po-create-error">
-          <p className="m-0 text-destructive">{error}</p>
-        </Card>
+        <Notice tone="danger" testId="po-create-error">
+          {error}
+        </Notice>
       ) : null}
 
       {supplierId ? (
-        <Card className="grid gap-3 p-3" data-testid="po-order-summary">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("purchasing.draftSummary")
-                .replace("{products}", String(activeLines.length))
-                .replace("{units}", String(unitCount))}
-            </p>
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("purchasing.subtotal")} <MoneyDisplay amount={subtotal} testId="po-subtotal" />
-            </p>
+        <div className="flex flex-col gap-3" data-testid="po-order-summary">
+          <div className="po-document-totals">
+            <div className="po-document-totals__row">
+              <span className="po-document-totals__label">{t("purchasing.items")}</span>
+              <span className="po-document-totals__value tabular-nums">{activeLines.length}</span>
+            </div>
+            <div className="po-document-totals__row">
+              <span className="po-document-totals__label">{t("purchasing.subtotal")}</span>
+              <span className="po-document-totals__value tabular-nums">
+                <MoneyDisplay amount={subtotal} testId="po-subtotal" />
+              </span>
+            </div>
+            <div className="po-document-totals__row po-document-totals__row--strong">
+              <span className="po-document-totals__label">{t("purchasing.orderTotal")}</span>
+              <span className="po-document-totals__value tabular-nums">
+                <MoneyDisplay amount={subtotal} />
+              </span>
+            </div>
           </div>
+          <p className="m-0 text-end text-[length:var(--exits-text-sm)] text-muted">
+            {t("purchasing.draftSummary")
+              .replace("{products}", String(activeLines.length))
+              .replace("{units}", String(unitCount))}
+          </p>
           <Button
             type="button"
-            className="w-full"
+            className="w-full sm:ms-auto sm:w-auto"
             disabled={
               !allowManage ||
               !online ||
@@ -1304,13 +1354,9 @@ export function PurchaseOrderCreatePage() {
           >
             {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
           </Button>
-        </Card>
+        </div>
       ) : (
-        <Button
-          type="button"
-          disabled
-          data-testid="po-create-submit"
-        >
+        <Button type="button" disabled data-testid="po-create-submit">
           {t("purchasing.createOrder")}
         </Button>
       )}

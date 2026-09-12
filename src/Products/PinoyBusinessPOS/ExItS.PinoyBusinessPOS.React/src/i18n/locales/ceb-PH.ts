@@ -8529,6 +8529,13 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.enableInventoryTracking": "Enable inventory tracking",
 
   "purchasing.lines": "Lines",
+  "purchasing.orderItems": "Order items",
+  "purchasing.addItems": "Add items",
+  "purchasing.orderItemsEmpty": "No items added yet",
+  "purchasing.orderItemsEmptyHelp": "Search or browse products to add items to this purchase order.",
+  "purchasing.seller": "Seller",
+  "purchasing.export": "Export",
+  "purchasing.colActions": "Actions",
 
   "purchasing.linesCount": "{count} lines",
 

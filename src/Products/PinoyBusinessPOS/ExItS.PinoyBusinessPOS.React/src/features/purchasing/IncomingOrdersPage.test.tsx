@@ -254,62 +254,26 @@ describe("IncomingOrders React flow", () => {
     await waitFor(() => expect(screen.queryByTestId("incoming-order-fulfill")).not.toBeInTheDocument());
   });
 
-  it("supports search, sort, and pagination without changing order total", async () => {
-    const user = userEvent.setup();
+  it("renders document line items without table chrome and keeps order total", async () => {
     getIncomingOrder.mockResolvedValue(twoLineOrder("New"));
     renderDetail();
 
     await waitFor(() => screen.getByTestId("incoming-order-lines"));
     expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
     expect(screen.getAllByText("Order total").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByTestId("exits-table-pagination-range")).toHaveTextContent("1–2 of 2");
-    expect(screen.getByTestId("exits-table-prev")).toBeDisabled();
-    expect(screen.getByTestId("exits-table-next")).toBeDisabled();
-    expect(screen.getByTestId("exits-table-toolbar-output")).toBeInTheDocument();
-    expect(screen.getByTestId("exits-table-output-csv")).toHaveAttribute("aria-label", "Export CSV");
-    expect(screen.getByTestId("exits-table-output-xlsx")).toHaveAttribute(
-      "aria-label",
-      "Export Excel",
-    );
-    expect(screen.getByTestId("exits-table-output-pdf")).toHaveAttribute("aria-label", "Export PDF");
-    expect(screen.getByTestId("exits-table-output-print")).toHaveAttribute("aria-label", "Print");
-    expect(screen.getByTestId("exits-table-output-menu")).toHaveAttribute(
-      "aria-label",
-      "Export & Print",
-    );
-    expect(screen.queryByTestId("incoming-order-select-all")).not.toBeInTheDocument();
-    expect(screen.queryByTestId(`incoming-order-select-${productId}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`incoming-order-line-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`incoming-order-line-${productIdBanana}`)).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Unit cost" })).toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-lines-search")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-lines-filter")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-pagination-range")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("exits-table-page-size")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-sort-product")).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-document-print")).toBeInTheDocument();
+    expect(screen.getByTestId("po-document-export-menu")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-print-root")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-print-root").querySelector("input")).toBeNull();
     expect(screen.getByTestId("incoming-order-print-root")).not.toHaveTextContent("Accept order");
-    const pageSize = screen.getByTestId("exits-table-page-size");
-    expect(pageSize).toHaveValue("25");
-    expect([...pageSize.querySelectorAll("option")].map((opt) => opt.getAttribute("value"))).toEqual([
-      "10",
-      "25",
-      "50",
-      "100",
-    ]);
-
-    await user.type(screen.getByTestId("incoming-order-lines-search"), "Banana");
-    await waitFor(() => {
-      expect(screen.queryByTestId(`incoming-order-line-${productId}`)).not.toBeInTheDocument();
-      expect(screen.getByTestId(`incoming-order-line-${productIdBanana}`)).toBeInTheDocument();
-    });
-    expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
-
-    await user.clear(screen.getByTestId("incoming-order-lines-search"));
-    await waitFor(() => screen.getByTestId(`incoming-order-line-${productId}`));
-
-    await user.click(screen.getByTestId("incoming-order-sort-line-total-sort"));
-    const rows = screen
-      .getAllByTestId(/incoming-order-line-/)
-      .filter((el) => /^incoming-order-line-[0-9a-f-]+$/i.test(el.getAttribute("data-testid") ?? ""));
-    expect(rows[0]).toHaveAttribute("data-testid", `incoming-order-line-${productIdBanana}`);
-    expect(rows[1]).toHaveAttribute("data-testid", `incoming-order-line-${productId}`);
-
-    await user.selectOptions(screen.getByTestId("exits-table-page-size"), "10");
-    expect(screen.getByTestId("exits-table-page-size")).toHaveValue("10");
-    expect(screen.getByTestId("incoming-order-total-amount")).toHaveTextContent("₱1,280.00");
+    expect(screen.getByTestId("incoming-order-accept-notice")).toBeInTheDocument();
   });
 });

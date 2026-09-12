@@ -8528,6 +8528,20 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.lines": "Mga linya",
 
+  "purchasing.orderItems": "Mga item ng order",
+
+  "purchasing.addItems": "Magdagdag ng item",
+
+  "purchasing.orderItemsEmpty": "Wala pang item",
+
+  "purchasing.orderItemsEmptyHelp": "Maghanap o mag-browse ng produkto para idagdag sa purchase order.",
+
+  "purchasing.seller": "Seller",
+
+  "purchasing.export": "I-export",
+
+  "purchasing.colActions": "Mga aksyon",
+
   "purchasing.linesCount": "{count} na linya",
 
   "purchasing.linesEmpty": "Wala pang linya.",
