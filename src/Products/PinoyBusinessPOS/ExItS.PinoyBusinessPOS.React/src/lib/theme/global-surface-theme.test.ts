@@ -49,16 +49,19 @@ describe("POS global surface theme tokens", () => {
   });
 
   it("keeps light page background neutral (not mint-tinted)", () => {
-    expect(globalsCss).toMatch(/--exits-bg:\s*#f3f4f6/);
+    expect(globalsCss).toMatch(/--exits-bg:\s*#f4f5f7/);
     expect(globalsCss).not.toMatch(/\[data-theme="light"\][\s\S]{0,400}--exits-bg:\s*#f3f6f4/);
-    expect(globalsCss).toMatch(/--exits-surface-muted:\s*#eceef1/);
+    expect(globalsCss).toMatch(/--exits-surface-muted:\s*#eef0f3/);
     expect(globalsCss).toMatch(/--exits-primary-soft:\s*#eef6f1/);
   });
 
-  it("preserves dark page/surface direction", () => {
-    expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,200}--exits-bg:\s*#0e1411/);
-    expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,400}--exits-surface:\s*#161e1a/);
+  it("preserves dark page/surface direction with cool neutrals", () => {
+    expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,200}--exits-bg:\s*#0f1218/);
+    expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,400}--exits-surface:\s*#171b22/);
     expect(globalsCss).toMatch(/\[data-theme="dark"\][\s\S]{0,600}--exits-primary:\s*#4ade80/);
+    expect(globalsCss).toMatch(
+      /\[data-theme="dark"\][\s\S]{0,1200}--exits-shadow-sm:\s*0 1px 2px color-mix\(in srgb, #000 12%, transparent\)/,
+    );
   });
 
   it("exposes surface primitives and primary palette selectors", () => {

@@ -55,7 +55,7 @@ describe("POS global typography hierarchy", () => {
     expect(block).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
   });
 
-  it("uses semibold page / section / card titles and regular body/muted", () => {
+  it("uses restrained page/card titles, semibold section titles, and tabular KPIs", () => {
     expect(pageHeaderSource).toContain("exits-type-page-title");
     expect(pageHeaderSource).not.toContain("font-bold");
 
@@ -65,14 +65,17 @@ describe("POS global typography hierarchy", () => {
     const cardTitle = globalsCss.match(/\.exits-type-card-title\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const body = globalsCss.match(/\.exits-type-body\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const muted = globalsCss.match(/\.exits-type-muted\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const kpi = globalsCss.match(/\.exits-type-kpi\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const heroKpi = globalsCss.match(/\.exits-type-hero-kpi\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
 
-    expect(pageTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
+    expect(pageTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
     expect(sectionTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
-    expect(cardTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
+    expect(cardTitle).toMatch(/font-weight:\s*var\(--exits-font-weight-medium\)/);
     expect(body).toMatch(/font-weight:\s*var\(--exits-font-weight-regular\)/);
     expect(muted).toMatch(/font-weight:\s*var\(--exits-font-weight-regular\)/);
+    expect(kpi).toMatch(/font-variant-numeric:\s*tabular-nums/);
     expect(heroKpi).toMatch(/font-weight:\s*var\(--exits-font-weight-semibold\)/);
+    expect(heroKpi).toMatch(/font-variant-numeric:\s*tabular-nums/);
   });
 
   it("keeps empty-state title medium and detail muted/regular", () => {
@@ -94,7 +97,7 @@ describe("POS global typography hierarchy", () => {
     expect(globalsCss).toMatch(
       /\[data-density="comfort"\][\s\S]*?--exits-control-height:\s*2\.75rem/,
     );
-    expect(globalsCss).toMatch(/--exits-bg:\s*#f3f4f6/);
+    expect(globalsCss).toMatch(/--exits-bg:\s*#f4f5f7/);
     expect(globalsCss).toContain('[data-accent="green"]');
   });
 });
