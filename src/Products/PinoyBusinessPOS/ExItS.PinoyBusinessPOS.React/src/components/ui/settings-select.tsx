@@ -29,13 +29,13 @@ export function SettingsSelect<T extends string>({
   // Prefer container width over viewport: preferences live in a narrow right drawer,
   // where viewport-based 3-up columns truncates labels (Sy… / Li… / D…).
   // Theme/Density (3): stack until the control is wide enough for readable 3-up.
-  // Language (5+): 2 columns; odd last option spans full width.
+  // Language (5+): single column when narrow; 2 columns only when comfortable.
   const layoutClass =
     options.length === 3
       ? "grid grid-cols-1 gap-2 @min-[28rem]:grid-cols-3"
       : options.length === 2
         ? "grid grid-cols-2 gap-2"
-        : "grid grid-cols-2 gap-2";
+        : "grid grid-cols-1 gap-2 @min-[20rem]:grid-cols-2";
   const oddLastSpansFull = options.length > 3 && options.length % 2 === 1;
 
   return (

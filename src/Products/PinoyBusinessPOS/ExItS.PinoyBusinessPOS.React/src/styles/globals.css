@@ -14648,8 +14648,30 @@ a.exits-chip--primary:hover {
 }
 
 .exits-side-drawer__panel--preferences {
-  /* Compact Preferences panel (~608px) — icon top nav, no left menu */
-  width: min(100%, 38rem);
+  /* Mobile: full viewport width — never force 440px overflow */
+  width: 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 40rem) {
+  .exits-side-drawer__panel--preferences {
+    /* Tablet: up to 480px, capped by ~70vw */
+    width: min(30rem, 70vw);
+    max-width: min(30rem, 70vw);
+  }
+}
+
+@media (min-width: 64rem) {
+  .exits-side-drawer__panel--preferences {
+    /* Desktop preferred: 440px — not half-screen */
+    width: 27.5rem;
+    max-width: 27.5rem;
+  }
+}
+
+/* Preferences drawer body: restrained horizontal padding (16px) */
+.exits-side-drawer__panel--preferences .exits-side-drawer__body {
+  padding-inline: 1rem;
 }
 
 

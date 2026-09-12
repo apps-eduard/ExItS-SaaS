@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderAuthenticatedAt } from "@/test/render";
@@ -11,6 +14,13 @@ import {
   parsePreferencesSection,
   preferencesSectionPath,
 } from "@/features/preferences/preferences-sections";
+
+const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const globalsCss = readFileSync(resolve(rootDir, "styles/globals.css"), "utf8");
+const settingsSelectSource = readFileSync(
+  resolve(rootDir, "components/ui/settings-select.tsx"),
+  "utf8",
+);
 
 describe("preferences sections helpers", () => {
   it("defaults Appearance path and parses section ids", () => {
@@ -184,5 +194,21 @@ describe("Preferences icon top navigation", () => {
     expect(screen.getByTestId("preferences-section-content").className).not.toContain(
       "sm:max-w-[30rem]",
     );
+  });
+
+  it("keeps the outer Preferences drawer compact on desktop (440px preferred)", () => {
+    const block = globalsCss.match(
+      /\.exits-side-drawer__panel--preferences\s*\{[\s\S]*?(?=\n\/\*|\n\.exits-|\n@media|\n:root|\n\[|$)/,
+    )?.[0];
+    expect(globalsCss).toMatch(
+      /@media\s*\(min-width:\s*64rem\)\s*\{[\s\S]*?\.exits-side-drawer__panel--preferences[\s\S]*?width:\s*27\.5rem/,
+    );
+    expect(globalsCss).toMatch(
+      /@media\s*\(min-width:\s*40rem\)\s*\{[\s\S]*?\.exits-side-drawer__panel--preferences[\s\S]*?min\(30rem,\s*70vw\)/,
+    );
+    expect(globalsCss).not.toMatch(/\.exits-side-drawer__panel--preferences\s*\{[^}]*38rem/);
+    expect(globalsCss).not.toMatch(/\.exits-side-drawer__panel--preferences\s*\{[^}]*50rem/);
+    expect(block ?? globalsCss).toMatch(/width:\s*100%/);
+    expect(settingsSelectSource).toContain("@min-[20rem]:grid-cols-2");
   });
 });
