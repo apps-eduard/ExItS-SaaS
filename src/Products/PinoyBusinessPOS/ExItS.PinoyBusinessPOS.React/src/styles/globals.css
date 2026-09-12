@@ -14648,15 +14648,30 @@ a.exits-chip--primary:hover {
 }
 
 .exits-side-drawer__panel--preferences {
+  /* Mobile / narrow: full usable drawer width */
   width: min(100%, 24rem);
 }
 
 @media (min-width: 40rem) {
   .exits-side-drawer__panel--preferences {
-    /* Two-area Preferences menu + content */
-    width: min(100%, 42rem);
+    /*
+     * Compact Preferences two-column shell (~800px).
+     * Left rail ~212px + gap ~20px + content max ~480px + body padding.
+     */
+    width: min(100%, 50rem);
   }
 }
+
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  /*
+   * Tablet: allow the content column to use remaining drawer width
+   * (do not force the desktop content max-width).
+   */
+  .exits-side-drawer__panel--preferences .preferences-section-content {
+    max-width: none;
+  }
+}
+
 
 /* Manager / Cashier role home */
 .manager-ops-home {

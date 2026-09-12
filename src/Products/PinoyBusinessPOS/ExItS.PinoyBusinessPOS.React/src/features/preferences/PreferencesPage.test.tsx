@@ -138,10 +138,14 @@ describe("Preferences menu foundation", () => {
     await waitFor(() => {
       expect(screen.getByTestId("preferences-layout")).toBeInTheDocument();
     });
+    const layout = screen.getByTestId("preferences-layout");
+    expect(layout.className).toMatch(/\bsm:gap-5\b/);
     const rail = screen.getByTestId("preferences-section-nav").parentElement;
+    expect(rail?.className).toContain("sm:w-[13.25rem]");
     expect(rail?.className).toMatch(/\bsm:border-e\b/);
-    expect(rail?.className).toMatch(/\bsm:pe-3\b/);
+    expect(rail?.className).toMatch(/\bsm:pe-4\b/);
     expect(rail?.className).not.toMatch(/\bborder-r\b/);
-    expect(rail?.className).not.toMatch(/\bpr-3\b/);
+    expect(rail?.className).not.toMatch(/\bpr-4\b/);
+    expect(screen.getByTestId("preferences-section-content").className).toContain("sm:max-w-[30rem]");
   });
 });
