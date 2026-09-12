@@ -70,7 +70,10 @@ Precedence: **explicit shape > global Control Shape > standard default radius**.
 - Rest: subtle neutral border  
 - Hover: slightly stronger border  
 - Focus-within: **1px Primary border** + **1px Primary-soft outer ring**  
+- Tokens: `--exits-field-border-focus` / `--exits-field-focus-ring` (shared with Form Field Focus Standard)  
 - Not: thick `ring-2` / neon glow  
+
+See also: `Docs/UI/exits-form-field-focus-standard.md`
 
 ---
 

@@ -34,12 +34,11 @@ import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const qtyFieldClassName = cn(
-  "box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
-  "w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface",
+  "exits-input box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
+  "w-full min-w-0 rounded-[var(--exits-field-radius)] border border-border bg-surface",
   "px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] font-normal text-foreground",
   "outline-none transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
-  "placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-border-strong)]",
-  "focus-visible:border-[var(--exits-ring)] focus-visible:ring-2 focus-visible:ring-[var(--exits-ring)]",
+  "placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-field-border-hover)]",
   "exits-input--no-spin",
 );
 

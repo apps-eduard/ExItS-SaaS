@@ -159,6 +159,16 @@
    * Intentionally independent of Control Shape (Pill must NOT pill form fields).
    */
   --exits-field-radius: var(--exits-radius-md);
+  /* ---- Form Field Focus Standard (thin Primary-aware; matches Search restraint) ---- */
+  --exits-field-border: var(--exits-border);
+  --exits-field-border-hover: var(--exits-border-strong);
+  --exits-field-border-focus: var(--exits-primary);
+  --exits-field-focus-ring: color-mix(in srgb, var(--exits-primary) 28%, transparent);
+  --exits-field-focus-ring-width: 1px;
+  --exits-field-border-error: var(--exits-danger);
+  --exits-field-focus-ring-error: color-mix(in srgb, var(--exits-danger) 28%, transparent);
+  /** Alias used by a few older classNames — same soft Primary ring. */
+  --exits-focus-ring: var(--exits-field-focus-ring);
   --exits-space-1: 0.25rem;
   --exits-space-2: 0.5rem;
   --exits-space-3: 0.75rem;
@@ -1218,9 +1228,9 @@ html {
 .exits-table__editor--stealth input:focus-visible,
 .exits-table__editor--stealth select:focus-visible {
   outline: none !important;
-  border-color: var(--exits-primary) !important;
+  border-color: var(--exits-field-border-focus) !important;
   background: color-mix(in srgb, var(--exits-primary-soft, #e8f5e9) 40%, transparent) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--exits-primary) 18%, transparent) !important;
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring) !important;
   --tw-ring-shadow: 0 0 #0000 !important;
 }
 
@@ -1243,9 +1253,9 @@ html {
 
 .exits-table__editor--stealth.exits-table__editor--error input:focus-visible,
 .exits-table__editor--stealth.exits-table__editor--error select:focus-visible {
-  border-color: var(--exits-danger);
+  border-color: var(--exits-field-border-error);
   background: color-mix(in srgb, var(--exits-danger-soft, #fee2e2) 35%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--exits-danger) 16%, transparent);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring-error);
 }
 
 .exits-table__editor-error {
@@ -3630,9 +3640,11 @@ html:has(.admin-shell) #root {
   color: var(--exits-text);
 }
 
+.sell-weight-entry__input:focus,
 .sell-weight-entry__input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--exits-ring);
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 .sell-weight-entry__units {
@@ -10398,9 +10410,11 @@ a.dashboard-metric-card:focus-visible {
   animation: exits-toolbar-in var(--exits-motion-normal) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.customer-form-notes:focus,
 .customer-form-notes:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 .customer-personal-link__icon {
@@ -10483,9 +10497,11 @@ a.dashboard-metric-card:focus-visible {
   font-size: var(--exits-text-sm);
 }
 
+.inventory-expiry-custom__input:focus,
 .inventory-expiry-custom__input:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 @media (max-width: 480px) {
@@ -12594,10 +12610,30 @@ textarea.exits-input {
   resize: vertical;
 }
 
+.exits-input:hover:not(:disabled):not([aria-invalid="true"]) {
+  border-color: var(--exits-field-border-hover);
+}
+
+/* Canonical form field focus — 1px Primary border + 1px Primary-soft outer ring (no thick outline/ring-2). */
+.exits-input:focus,
 .exits-input:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
-  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.exits-input[aria-invalid="true"],
+.exits-input.border-destructive {
+  border-color: var(--exits-field-border-error);
+}
+
+.exits-input[aria-invalid="true"]:focus,
+.exits-input[aria-invalid="true"]:focus-visible,
+.exits-input.border-destructive:focus,
+.exits-input.border-destructive:focus-visible {
+  outline: none;
+  border-color: var(--exits-field-border-error);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring-error);
 }
 
 .exits-input:disabled {
@@ -12643,8 +12679,8 @@ textarea.exits-input {
 }
 
 .exits-search-field:focus-within:not(.exits-search-field--disabled) {
-  border-color: var(--exits-primary);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 .exits-search-field--disabled {
@@ -12787,14 +12823,27 @@ input[type="week"].exits-input {
   line-height: 1.25;
 }
 
+input[type="date"]:hover:not(:disabled),
+input[type="datetime-local"]:hover:not(:disabled),
+input[type="time"]:hover:not(:disabled),
+input[type="month"]:hover:not(:disabled),
+input[type="week"]:hover:not(:disabled) {
+  border-color: var(--exits-field-border-hover);
+}
+
+input[type="date"]:focus,
 input[type="date"]:focus-visible,
+input[type="datetime-local"]:focus,
 input[type="datetime-local"]:focus-visible,
+input[type="time"]:focus,
 input[type="time"]:focus-visible,
+input[type="month"]:focus,
 input[type="month"]:focus-visible,
+input[type="week"]:focus,
 input[type="week"]:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
-  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 input[type="date"]:disabled,
@@ -13160,20 +13209,44 @@ select.pc-field__control:hover:not(:disabled):not(:focus-visible) {
   border-color: var(--exits-border-strong);
 }
 
+.exits-select:focus-visible,
+.catalog-form-select:focus-visible,
+select.exits-input:focus-visible,
+select.pc-field__control:focus-visible,
 .exits-select:focus,
 .catalog-form-select:focus,
 select.exits-input:focus,
 select.pc-field__control:focus {
   outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
-.exits-select:focus-visible,
-.catalog-form-select:focus-visible,
-select.exits-input:focus-visible,
-select.pc-field__control:focus-visible {
+.exits-select[aria-invalid="true"],
+.catalog-form-select[aria-invalid="true"],
+select.exits-input[aria-invalid="true"],
+select.pc-field__control[aria-invalid="true"],
+.exits-select.border-destructive,
+.catalog-form-select.border-destructive,
+select.exits-input.border-destructive {
+  border-color: var(--exits-field-border-error);
+}
+
+.exits-select[aria-invalid="true"]:focus,
+.exits-select[aria-invalid="true"]:focus-visible,
+.catalog-form-select[aria-invalid="true"]:focus,
+.catalog-form-select[aria-invalid="true"]:focus-visible,
+select.exits-input[aria-invalid="true"]:focus,
+select.exits-input[aria-invalid="true"]:focus-visible,
+.exits-select.border-destructive:focus,
+.exits-select.border-destructive:focus-visible,
+.catalog-form-select.border-destructive:focus,
+.catalog-form-select.border-destructive:focus-visible,
+select.exits-input.border-destructive:focus,
+select.exits-input.border-destructive:focus-visible {
   outline: none;
-  border-color: var(--exits-ring);
-  box-shadow: 0 0 0 2px var(--exits-ring);
+  border-color: var(--exits-field-border-error);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring-error);
 }
 
 .exits-select:disabled,
@@ -14691,9 +14764,11 @@ a.exits-chip--primary:hover {
     box-shadow var(--exits-motion-fast) ease;
 }
 
+.connected-request-input:focus,
 .connected-request-input:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 .connected-request-selected {
@@ -15458,10 +15533,11 @@ a.exits-chip--primary:hover {
   overflow-y: auto;
 }
 
+.supplier-form-control:focus,
 .supplier-form-control:focus-visible {
-  outline: 2px solid var(--exits-focus);
-  outline-offset: 2px;
-  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 @keyframes exits-panel-in {

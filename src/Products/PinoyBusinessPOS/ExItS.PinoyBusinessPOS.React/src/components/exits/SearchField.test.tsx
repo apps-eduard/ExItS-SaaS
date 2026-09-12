@@ -101,7 +101,7 @@ describe("SearchField standard foundation", () => {
   it("uses thin semantic focus tokens (not legacy thick ring-2 utilities)", () => {
     expect(globalsCss).toMatch(/\.exits-search-field:focus-within/);
     expect(globalsCss).toMatch(
-      /\.exits-search-field:focus-within[\s\S]*?box-shadow:\s*0\s+0\s+0\s+1px/,
+      /\.exits-search-field:focus-within[\s\S]*?box-shadow:\s*0\s+0\s+0\s+(?:1px|var\(--exits-field-focus-ring-width\))/,
     );
     expect(globalsCss).toMatch(/\.exits-search-field\[data-shape="pill"\]/);
     expect(globalsCss).toMatch(/--exits-search-radius:\s*var\(--exits-control-radius\)/);

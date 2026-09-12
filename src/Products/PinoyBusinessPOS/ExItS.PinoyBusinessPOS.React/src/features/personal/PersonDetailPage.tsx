@@ -417,7 +417,7 @@ export function PersonDetailPage() {
 
               onChange={(event) => setAmount(event.target.value)}
 
-              className="h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
+              className="exits-input h-[var(--exits-control-height)] rounded-[var(--exits-field-radius)] border border-border bg-surface px-3 outline-none"
 
             />
 
