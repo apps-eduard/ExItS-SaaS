@@ -181,11 +181,8 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
               E
             </span>
             <div className="app-top-bar__brand-copy">
-              {showWorkspaceControl ? (
-                renderWorkspaceButton("workspace-context-mobile", true)
-              ) : (
-                <p className="app-top-bar__app-name">{t("app.name")}</p>
-              )}
+              {/* Mobile topbar: no branch selector — switch via Account menu → Workspace. */}
+              <p className="app-top-bar__app-name">{t("app.name")}</p>
             </div>
           </div>
         ) : (
@@ -193,20 +190,13 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
             <span className="app-top-bar__mark" aria-hidden="true">
               E
             </span>
-            <div className="app-top-bar__brand-copy md:hidden">
-              {showWorkspaceControl ? (
-                renderWorkspaceButton("workspace-context-mobile", true)
-              ) : (
-                <p className="app-top-bar__app-name">{t("app.name")}</p>
-              )}
-            </div>
-            <div className="app-top-bar__brand-copy hidden md:block">
+            <div className="app-top-bar__brand-copy">
               <p className="app-top-bar__app-name">{t("app.name")}</p>
             </div>
           </div>
         )}
 
-        <div className="app-top-bar__center hidden md:flex">
+        <div className="app-top-bar__center hidden lg:flex">
           {showWorkspaceControl ? (
             renderWorkspaceButton("workspace-context", false)
           ) : (

@@ -11708,11 +11708,15 @@ a.dashboard-metric-card:focus-visible {
 
 @media (min-width: 768px) {
   .app-top-bar__row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
 @media (min-width: 1024px) {
+  .app-top-bar__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) auto;
+  }
+
   .app-top-bar__row--shell-desktop {
     grid-template-columns: minmax(0, 1fr) auto;
   }

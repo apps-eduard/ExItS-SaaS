@@ -50,7 +50,8 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       <div
         className={cn(
           "admin-shell__column flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-          "lg:ps-[max(0.75rem,env(safe-area-inset-left))] lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
+          /* No padding-inline-start: sidebar border-inline-end is the only divider (no shell gutter). */
+          "lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
         )}
       >
         {header}

@@ -101,9 +101,11 @@ describe("account shell", () => {
     const trigger = screen.getByTestId("account-menu-trigger");
     expect(trigger).toHaveTextContent("OM");
     expect(screen.getByTestId("workspace-context")).toHaveTextContent("Main Branch");
-    const mobileContext = screen.getByTestId("workspace-context-mobile");
-    expect(mobileContext).toHaveTextContent("Main Branch");
-    expect(mobileContext).not.toHaveTextContent("Kizy Store");
+    expect(screen.queryByTestId("workspace-context-mobile")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workspace-context").closest(".app-top-bar__center")).toHaveClass(
+      "hidden",
+      "lg:flex",
+    );
     expect(screen.queryByRole("button", { name: "Preferences" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 

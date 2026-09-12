@@ -87,8 +87,11 @@ describe("AppTopBar desktop brand ownership", () => {
     expect(topBar).toHaveAttribute("data-hide-desktop-brand", "true");
     expect(topBar.className).toMatch(/app-top-bar--shell-desktop/);
     expect(topBar.querySelector(".app-top-bar__brand--shell-mobile")).toBeInTheDocument();
-    // No separate md:block desktop product-name node.
-    expect(topBar.querySelector(".app-top-bar__brand-copy.hidden.md\\:block")).not.toBeInTheDocument();
+    // Mobile topbar shows product name — branch selector is lg+ only (center).
+    expect(screen.queryByTestId("workspace-context-mobile")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workspace-context").closest(".app-top-bar__center")).toHaveClass(
+      "lg:flex",
+    );
   });
 
   it("keeps full brand composition when not in a sidebar shell", () => {
@@ -97,5 +100,6 @@ describe("AppTopBar desktop brand ownership", () => {
     expect(topBar).toHaveAttribute("data-hide-desktop-brand", "false");
     expect(topBar.querySelector(".app-top-bar__brand--shell-mobile")).not.toBeInTheDocument();
     expect(topBar.querySelector(".app-top-bar__mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("workspace-context-mobile")).not.toBeInTheDocument();
   });
 });
