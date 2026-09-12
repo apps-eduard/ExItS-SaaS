@@ -4095,7 +4095,7 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "transfer.sent": "Sent",
 
-  "transfer.singleBranchDetail": "Add another branch before using inventory transfers.",
+  "transfer.singleBranchDetail": "Add another branch to start transferring stock.",
 
   "transfer.sourceBranch": "Source branch",
 

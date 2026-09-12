@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 
 export function LoadingSkeleton({
   count = 3,
@@ -26,11 +27,19 @@ export function LoadingSkeleton({
 }
 
 export function AccessDeniedState({ title, detail }: { title: string; detail: string }) {
-  return <EmptyState title={title} detail={detail} />;
+  return (
+    <Notice tone="danger" title={title}>
+      {detail}
+    </Notice>
+  );
 }
 
 export function ConflictState({ title, detail }: { title: string; detail: string }) {
-  return <EmptyState title={title} detail={detail} />;
+  return (
+    <Notice tone="warning" title={title}>
+      {detail}
+    </Notice>
+  );
 }
 
 export function OfflineBanner({

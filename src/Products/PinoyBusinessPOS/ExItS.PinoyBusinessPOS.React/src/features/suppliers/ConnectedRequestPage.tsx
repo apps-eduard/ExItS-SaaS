@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Inbox, PenLine, Send } from "lucide-react";
+import { Inbox, PenLine, Send } from "lucide-react";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import { requestConnection } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -10,6 +10,7 @@ import {
   type PublicStoreBranchLocationDto,
 } from "@/api/platform/public-store-client";
 import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import {
@@ -220,15 +221,10 @@ export function ConnectedRequestPage() {
       />
 
       {error ? (
-        <div className="exits-alert exits-alert--error" data-testid="connected-request-error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-        </div>
+        <Notice tone="danger" testId="connected-request-error">{error}</Notice>
       ) : null}
       {success ? (
-        <div className="exits-alert exits-alert--success" data-testid="connected-request-success" role="status">
-          <CheckCircle2 className="size-4 shrink-0" aria-hidden />
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{success}</p>
-        </div>
+        <Notice tone="success" testId="connected-request-success">{success}</Notice>
       ) : null}
 
       <section className="connected-request-panel">

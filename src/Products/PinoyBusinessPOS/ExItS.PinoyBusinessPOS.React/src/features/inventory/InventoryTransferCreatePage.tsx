@@ -458,7 +458,13 @@ export function InventoryTransferCreatePage() {
           backLabel={t("transfer.backList")}
           backTestId="page-header-back-transfers"
         />
-        <EmptyState title={t("transfer.requiresTwoBranches")} detail={t("transfer.singleBranchDetail")} />
+        <EmptyState
+          align="center"
+          variant="setup"
+          icon={<ArrowRightLeft className="size-5" strokeWidth={1.75} />}
+          title={t("transfer.requiresTwoBranches")}
+          detail={t("transfer.singleBranchDetail")}
+        />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   CalendarClock,
   Check,
   ChevronRight,
@@ -19,9 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { ActionChipBar } from "@/components/exits/ActionChipBar";
 import { CountBadge, CountChip } from "@/components/exits/CountChip";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { FilterChip } from "@/components/exits/FilterChip";
 import { ModuleSubnav } from "@/components/exits/ModuleSubnav";
+import { Notice } from "@/components/exits/Notice";
 import { RemovableChip } from "@/components/exits/RemovableChip";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TagChip } from "@/components/exits/TagChip";
@@ -58,15 +61,17 @@ const TAG_ICONS = {
 } as const;
 
 const SIMPLE_V2_NAV = [
-  { id: "buttons", labelKey: "uiStandards.tabButtons" as const },
-  { id: "chips", labelKey: "uiStandards.tabChips" as const },
-  { id: "badges", labelKey: "uiStandards.tabBadges" as const },
-  { id: "action-chips", labelKey: "uiStandards.tabActionChips" as const },
-  { id: "tabs", labelKey: "uiStandards.tabTabs" as const },
-  { id: "module-subnav", labelKey: "uiStandards.tabModuleSubnav" as const },
-  { id: "filters", labelKey: "uiStandards.tabFilters" as const },
-  { id: "cards", labelKey: "uiStandards.tabCards" as const },
-  { id: "tables", labelKey: "uiStandards.tabTables" as const },
+  { id: "buttons", label: "Buttons" },
+  { id: "chips", label: "Chips" },
+  { id: "badges", label: "Badges" },
+  { id: "action-chips", label: "Action chips" },
+  { id: "tabs", label: "Tabs" },
+  { id: "module-subnav", label: "Module subnav" },
+  { id: "filters", label: "Filters" },
+  { id: "cards", label: "Cards" },
+  { id: "tables", label: "Tables" },
+  { id: "empty-states", label: "Empty States" },
+  { id: "notices", label: "Notices" },
 ] as const;
 
 const DEMO_ROWS = [
@@ -149,7 +154,7 @@ export function UiStandardsSimpleCatalogV2() {
                 href={`#simple-v2-${item.id}`}
                 className="inline-flex rounded-full border border-border bg-surface px-2.5 py-1 text-[length:var(--exits-text-xs)] font-medium text-foreground no-underline hover:bg-[var(--exits-surface-muted)]"
               >
-                {t(item.labelKey)}
+                {item.label}
               </a>
             </li>
           ))}
@@ -920,6 +925,84 @@ export function UiStandardsSimpleCatalogV2() {
             </div>
           </div>
         </SimpleV2Sample>
+      </SimpleV2Showcase>
+
+      <SimpleV2Showcase
+        id="simple-v2-empty-states"
+        title="Empty States"
+        status="LOCKED"
+        testId="ui-standards-simple-v2-empty-states"
+      >
+        <SimpleV2Group title="Variants">
+          <SimpleV2Sample
+            label="Default"
+            standard="Empty State"
+            command="EMPTY STATE + CENTER + WITH ICON"
+            testId="simple-v2-empty-default"
+            contentClassName="min-w-0"
+          >
+            <EmptyState
+              align="center"
+              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+              title="No purchase orders yet"
+              detail="Create a purchase order when you are ready to restock."
+            />
+          </SimpleV2Sample>
+          <SimpleV2Sample
+            label="Filtered"
+            standard="Empty State"
+            command="EMPTY STATE + FILTERED + CENTER"
+            testId="simple-v2-empty-filtered"
+            contentClassName="min-w-0"
+          >
+            <EmptyState
+              align="center"
+              variant="filtered"
+              size="compact"
+              icon={<Info className="size-5" strokeWidth={1.75} />}
+              title="No matching customers"
+              detail="Try changing your search or filters."
+              action={<Button type="button" variant="outline" shape="soft">Clear filters</Button>}
+            />
+          </SimpleV2Sample>
+          <SimpleV2Sample
+            label="Setup required"
+            standard="Empty State"
+            command="EMPTY STATE + SETUP + CENTER + WITH ICON"
+            testId="simple-v2-empty-setup"
+            contentClassName="min-w-0"
+          >
+            <EmptyState
+              align="center"
+              variant="setup"
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
+              title="No inventory transfers yet"
+              detail="Add another branch to start transferring stock."
+            />
+          </SimpleV2Sample>
+        </SimpleV2Group>
+      </SimpleV2Showcase>
+
+      <SimpleV2Showcase
+        id="simple-v2-notices"
+        title="Notices"
+        status="LOCKED"
+        testId="ui-standards-simple-v2-notices"
+      >
+        <SimpleV2Group title="Tones">
+          <SimpleV2Sample label="Info" standard="Notice" command="NOTICE + INFO" testId="simple-v2-notice-info" contentClassName="min-w-0">
+            <Notice tone="info">Inventory transfers require at least two branches.</Notice>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Warning" standard="Notice" command="NOTICE + WARNING" testId="simple-v2-notice-warning" contentClassName="min-w-0">
+            <Notice tone="warning">Some products are low in stock.</Notice>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Error" standard="Notice" command="NOTICE + DANGER" testId="simple-v2-notice-danger" contentClassName="min-w-0">
+            <Notice tone="danger">Unable to load customers.</Notice>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Success" standard="Notice" command="NOTICE + SUCCESS" testId="simple-v2-notice-success" contentClassName="min-w-0">
+            <Notice tone="success">Import completed successfully.</Notice>
+          </SimpleV2Sample>
+        </SimpleV2Group>
       </SimpleV2Showcase>
     </div>
   );

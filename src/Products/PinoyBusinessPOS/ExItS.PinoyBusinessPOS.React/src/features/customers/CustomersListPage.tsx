@@ -12,6 +12,7 @@ import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers
 import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
 import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -343,11 +344,9 @@ export function CustomersListPage() {
       </div>
 
       {usingCache ? (
-        <div className="exits-alert" data-testid="customers-cached-notice" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.cachedCustomersNotice")}
-          </p>
-        </div>
+        <Notice tone="info" testId="customers-cached-notice">
+          {t("offline.cachedCustomersNotice")}
+        </Notice>
       ) : null}
 
       {showPeople ? (
@@ -376,14 +375,15 @@ export function CustomersListPage() {
               <div data-testid="customers-people-empty">
                 <EmptyState
                   align="center"
+                  size="compact"
                   icon={<UserRound className="size-5" strokeWidth={1.75} />}
                   title={t("customers.peopleEmptyCompact")}
-                  detail=""
                 />
               </div>
             ) : (
               <EmptyState
                 align="center"
+                variant={debounced || status ? "filtered" : "default"}
                 icon={<Users className="size-5" strokeWidth={1.75} />}
                 title={t("customers.empty")}
                 detail={t("customers.emptyDetail")}

@@ -20,6 +20,7 @@ import { findExistingCheckoutCustomerForPersonalId } from "@/features/checkout/f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -383,20 +384,14 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         backTestId="page-header-back-customers"
       />
       {!online ? (
-        <div className="exits-alert" data-testid="customer-form-offline-notice" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.customerWillQueue")}
-          </p>
-        </div>
+        <Notice tone="info" testId="customer-form-offline-notice">
+          {t("offline.customerWillQueue")}
+        </Notice>
       ) : null}
       {error ? (
-        <div
-          className="exits-alert exits-alert--error"
-          data-testid="customer-form-error"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-        </div>
+        <Notice tone="danger" testId="customer-form-error">
+          {error}
+        </Notice>
       ) : null}
 
       {mode === "create" ? (

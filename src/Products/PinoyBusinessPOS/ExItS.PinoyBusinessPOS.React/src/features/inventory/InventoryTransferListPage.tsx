@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { ArrowLeftRight, ChevronRight, Plus, Store } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { TagChip } from "@/components/exits/TagChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
@@ -143,12 +145,17 @@ export function InventoryTransferListPage() {
         }
       />
 
-      <p
-        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-        data-testid="transfer-current-branch"
+      <TagChip
+        tone="info"
+        shape="soft"
+        icon={<Store aria-hidden />}
+        className="w-fit max-w-full"
+        title={`${t("transfer.currentBranch")}: ${currentBranchName}`}
       >
-        {t("transfer.currentBranch")}: {currentBranchName}
-      </p>
+        <span data-testid="transfer-current-branch">
+          {t("transfer.currentBranch")}: {currentBranchName}
+        </span>
+      </TagChip>
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
@@ -232,24 +239,26 @@ export function InventoryTransferListPage() {
         {!query.isLoading && !query.isError && items.length === 0 ? (
           <>
             <EmptyState
+              align="center"
+              variant={multiBranch ? "default" : "setup"}
+              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
               title={t("transfer.empty")}
               detail={multiBranch ? t("transfer.emptyDetail") : t("transfer.singleBranchDetail")}
+              action={
+                canCreate ? (
+                  <Button asChild>
+                    <Link to="/inventory/transfers/new" data-testid="transfer-empty-cta">
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                      {t("transfer.new")}
+                    </Link>
+                  </Button>
+                ) : undefined
+              }
             />
-            {canCreate ? (
-              <Button asChild>
-                <Link to="/inventory/transfers/new" data-testid="transfer-empty-cta">
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                  {t("transfer.new")}
-                </Link>
-              </Button>
-            ) : null}
             {!multiBranch ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="transfer-single-branch"
-              >
+              <Notice tone="info" testId="transfer-single-branch">
                 {t("transfer.requiresTwoBranches")}
-              </p>
+              </Notice>
             ) : null}
           </>
         ) : null}

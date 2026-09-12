@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, TriangleAlert, UserRoundCheck } from "lucide-react";
+import { Loader2, UserRoundCheck } from "lucide-react";
 import {
   resolvePublicUserId,
   type ResolvedPublicUserDto,
 } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/exits/Notice";
 import { QrScanOrEnter } from "@/features/qr/QrScanOrEnter";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -117,16 +118,12 @@ export function CustomerPersonalLinkPanel({
       ) : null}
 
       {alreadyInContacts && existingMatch ? (
-        <div
-          className="exits-alert exits-alert--warning customer-already-in-contacts"
-          data-testid="customer-already-in-contacts"
-          role="alert"
-        >
-          <TriangleAlert className="exits-alert__icon size-5 shrink-0" aria-hidden />
-          <div className="exits-alert__content">
-            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("customers.alreadyInContacts").replace("{name}", existingMatch.displayName)}
-            </p>
+        <Notice
+          tone="warning"
+          className="customer-already-in-contacts"
+          testId="customer-already-in-contacts"
+          title={t("customers.alreadyInContacts").replace("{name}", existingMatch.displayName)}
+          action={
             <Button asChild className="w-full sm:w-auto">
               <Link
                 to={`/customers/${existingMatch.customerId}`}
@@ -135,8 +132,8 @@ export function CustomerPersonalLinkPanel({
                 {t("customers.openExisting")}
               </Link>
             </Button>
-          </div>
-        </div>
+          }
+        />
       ) : null}
 
       {error ? (

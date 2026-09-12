@@ -3937,7 +3937,7 @@ export const en = {
   "transfer.selectDiscrepancy": "Select reason",
   "transfer.selectLot": "Select lot",
   "transfer.sent": "Sent",
-  "transfer.singleBranchDetail": "Add another branch before using inventory transfers.",
+  "transfer.singleBranchDetail": "Add another branch to start transferring stock.",
   "transfer.sourceBranch": "Source branch",
   "transfer.sourceFixedHint": "Source is always your current branch. Switch branch to transfer from elsewhere.",
   "transfer.status.cancelled": "Cancelled",
