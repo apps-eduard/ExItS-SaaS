@@ -15,9 +15,7 @@ type AdminManagementShellProps = {
 /**
  * Responsive Manage Business shell.
  * Below lg: stacked content + Admin bottom nav (Home / Manage / Review / More).
- * lg+: persistent expanded Admin sidebar (no tablet rail).
- * XL: optional usage context panel on /org/manage* when capacity APIs return data.
- * Overview (/org) renders Plan/Usage in-page — not in this shell column.
+ * lg+: full-height sidebar + content column (topbar + main). Reveal overlays content.
  */
 export function AdminManagementShell({ children, header }: AdminManagementShellProps) {
   const { t } = useI18n();
@@ -30,8 +28,8 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       className={cn(
         "admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
         "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
-        // Bottom nav remains through tablet (< lg); reserve space until desktop sidebar.
-        "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
+        "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-0",
+        "lg:flex-row lg:gap-0 lg:px-0 lg:pt-0",
       )}
       data-testid="admin-management-shell"
     >
@@ -41,43 +39,51 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       >
         {t("app.skipToContent")}
       </a>
-      {header}
 
-      <header
-        className="admin-shell__header shrink-0 lg:hidden mt-2"
-        data-testid="admin-mobile-header"
+      <div
+        className="admin-sidebar-rail hidden min-h-0 lg:block"
+        data-testid="admin-desktop-sidebar"
       >
-        <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-          {t("admin.shell.manageBusiness")}
-        </p>
-        <h1 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-          {boundWorkspace?.organizationDisplayName ?? t("admin.shell.productName")}
-        </h1>
-      </header>
+        <AdminSidebar />
+      </div>
 
-      <div className="admin-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-3">
-        <div
-          className="admin-sidebar-rail hidden min-h-0 lg:block"
-          data-testid="admin-desktop-sidebar"
+      <div
+        className={cn(
+          "admin-shell__column flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          "lg:ps-[max(0.75rem,env(safe-area-inset-left))] lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
+        )}
+      >
+        {header}
+
+        <header
+          className="admin-shell__header shrink-0 lg:hidden mt-2"
+          data-testid="admin-mobile-header"
         >
-          <AdminSidebar />
-        </div>
+          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+            {t("admin.shell.manageBusiness")}
+          </p>
+          <h1 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+            {boundWorkspace?.organizationDisplayName ?? t("admin.shell.productName")}
+          </h1>
+        </header>
 
-        <div className="admin-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
-          <main
-            id="main-content"
-            className="admin-shell__content min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
-            tabIndex={-1}
-          >
-            {children}
-          </main>
-        </div>
-
-        {showContextPanel ? (
-          <div className="hidden min-h-0 xl:block" data-testid="admin-xl-context">
-            <AdminContextPanel />
+        <div className="admin-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:mt-0 lg:gap-3">
+          <div className="admin-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
+            <main
+              id="main-content"
+              className="admin-shell__content min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain"
+              tabIndex={-1}
+            >
+              {children}
+            </main>
           </div>
-        ) : null}
+
+          {showContextPanel ? (
+            <div className="hidden min-h-0 xl:block" data-testid="admin-xl-context">
+              <AdminContextPanel />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <AdminMobileNav />

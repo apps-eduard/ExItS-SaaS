@@ -77,9 +77,19 @@ describe("AdminManagementShell", () => {
     expect(screen.getByTestId("admin-nav-areas")).toBeInTheDocument();
     expect(screen.getByTestId("admin-sidebar-switch-workspace")).toBeInTheDocument();
     expect(screen.getByTestId("admin-sidebar-switch-workspace")).toHaveAttribute("href", "/workspace");
-    expect(screen.getByTestId("admin-management-shell").className).toContain(
-      "lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
-    );
+    expect(screen.getByTestId("admin-management-shell").className).toContain("lg:pb-0");
+    expect(screen.getByTestId("admin-management-shell").className).toMatch(/lg:flex-row/);
+    expect(screen.getByTestId("admin-sidebar-brand")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-desktop-sidebar").className).toMatch(/\badmin-sidebar-rail\b/);
+  });
+
+  it("places desktop sidebar brand inside the full-height rail ahead of content", () => {
+    renderShell("/org");
+    const rail = screen.getByTestId("admin-desktop-sidebar");
+    const brand = screen.getByTestId("admin-sidebar-brand");
+    expect(rail.contains(brand)).toBe(true);
+    expect(brand.querySelector(".admin-sidebar__mark")).toBeInTheDocument();
+    expect(brand.querySelector(".admin-sidebar__brand-label")).toBeInTheDocument();
   });
 
   it("does not inject XL Plan Usage on Overview; keeps it for /org/manage*", () => {

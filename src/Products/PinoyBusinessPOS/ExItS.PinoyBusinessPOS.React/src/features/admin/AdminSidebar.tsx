@@ -1,5 +1,7 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { ArrowLeftRight } from "lucide-react";
+import { ExitsTooltip } from "@/components/exits/ExitsTooltip";
+import { SidebarBrandHeader } from "@/components/exits/SidebarBrandHeader";
 import {
   buildAdminNavGroups,
   flattenAdminNavItems,
@@ -10,19 +12,21 @@ import {
   isPreferencesDestination,
   preferencesNavigationState,
 } from "@/features/preferences/preferences-return";
+import { useSidebarNavTooltipEnabled } from "@/features/shell/useSidebarNavTooltipEnabled";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-/** Desktop (lg+) Manage Business sidebar — Standard labels or Compact icon rail via data-navigation-mode. */
+/** Desktop (lg+) Manage Business sidebar — Standard / Compact / Reveal via data-navigation-mode. */
 export function AdminSidebar() {
   const { t } = useI18n();
   const location = useLocation();
-  const { sessionGrant, boundWorkspace } = useWorkspace();
+  const { sessionGrant } = useWorkspace();
   const groups = buildAdminNavGroups(sessionGrant);
   const items = flattenAdminNavItems(groups);
   const activeId = matchAdminNavItem(location.pathname, items);
   const switchLabel = t("workspace.switch");
+  const tooltipEnabled = useSidebarNavTooltipEnabled();
 
   if (groups.length === 0) {
     return null;
@@ -34,15 +38,7 @@ export function AdminSidebar() {
       data-testid="admin-sidebar"
       aria-label={t("admin.nav.aria")}
     >
-      <div className="admin-sidebar__brand">
-        <p className="admin-sidebar__product m-0">{t("admin.shell.productName")}</p>
-        <p className="admin-sidebar__experience m-0">{t("admin.shell.manageBusiness")}</p>
-        {boundWorkspace?.organizationDisplayName ? (
-          <p className="admin-sidebar__org m-0 truncate" title={boundWorkspace.organizationDisplayName}>
-            {boundWorkspace.organizationDisplayName}
-          </p>
-        ) : null}
-      </div>
+      <SidebarBrandHeader testId="admin-sidebar-brand" />
 
       <nav className="admin-sidebar__nav">
         {groups.map((group) => (
@@ -60,39 +56,43 @@ export function AdminSidebar() {
                   item.locked && item.lockedReasonKey
                     ? `${label} · ${t(item.lockedReasonKey)}`
                     : label;
+                const link = (
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    state={preferencesState}
+                    onClick={
+                      preferencesState
+                        ? () =>
+                            capturePreferencesReturnFrom(location.pathname, location.search)
+                        : undefined
+                    }
+                    data-testid={item.testId}
+                    aria-label={accessibleLabel}
+                    aria-current={isActive ? "page" : undefined}
+                    className={cn(
+                      "admin-sidebar__link",
+                      isActive && "admin-sidebar__link--active",
+                      item.locked && "admin-sidebar__link--locked",
+                    )}
+                  >
+                    <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
+                    <span className="admin-sidebar__label min-w-0 flex-1 truncate">
+                      {label}
+                      {item.locked && item.lockedReasonKey ? (
+                        <span className="admin-sidebar__lock-hint">
+                          {" "}
+                          · {t(item.lockedReasonKey)}
+                        </span>
+                      ) : null}
+                    </span>
+                  </NavLink>
+                );
                 return (
                   <li key={item.id}>
-                    <NavLink
-                      to={item.to}
-                      end={item.end}
-                      state={preferencesState}
-                      onClick={
-                        preferencesState
-                          ? () =>
-                              capturePreferencesReturnFrom(location.pathname, location.search)
-                          : undefined
-                      }
-                      data-testid={item.testId}
-                      data-tooltip={accessibleLabel}
-                      aria-label={accessibleLabel}
-                      aria-current={isActive ? "page" : undefined}
-                      className={cn(
-                        "admin-sidebar__link",
-                        isActive && "admin-sidebar__link--active",
-                        item.locked && "admin-sidebar__link--locked",
-                      )}
-                    >
-                      <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
-                      <span className="admin-sidebar__label min-w-0 flex-1 truncate">
-                        {label}
-                        {item.locked && item.lockedReasonKey ? (
-                          <span className="admin-sidebar__lock-hint">
-                            {" "}
-                            · {t(item.lockedReasonKey)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </NavLink>
+                    <ExitsTooltip content={label} disabled={!tooltipEnabled}>
+                      {link}
+                    </ExitsTooltip>
                   </li>
                 );
               })}
@@ -102,16 +102,17 @@ export function AdminSidebar() {
       </nav>
 
       <div className="admin-sidebar__footer">
-        <Link
-          to="/workspace"
-          className="admin-sidebar__switch"
-          data-testid="admin-sidebar-switch-workspace"
-          data-tooltip={switchLabel}
-          aria-label={switchLabel}
-        >
-          <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
-          <span className="admin-sidebar__label">{switchLabel}</span>
-        </Link>
+        <ExitsTooltip content={switchLabel} disabled={!tooltipEnabled}>
+          <Link
+            to="/workspace"
+            className="admin-sidebar__switch"
+            data-testid="admin-sidebar-switch-workspace"
+            aria-label={switchLabel}
+          >
+            <ArrowLeftRight className="size-4 shrink-0" aria-hidden />
+            <span className="admin-sidebar__label">{switchLabel}</span>
+          </Link>
+        </ExitsTooltip>
       </div>
     </aside>
   );

@@ -68,12 +68,12 @@ export function RootLayout() {
       <WorkspaceBootNavigator />
       <PersonalMerchantCartProvider>
         {useAdminShell ? (
-          <AdminManagementShell header={<AppTopBar />}>
+          <AdminManagementShell header={<AppTopBar hideDesktopBrand />}>
             <Outlet />
           </AdminManagementShell>
         ) : useOpsShell ? (
           <OperationsShell
-            header={<AppTopBar />}
+            header={<AppTopBar hideDesktopBrand />}
             sellFloor={isSellFloor}
             hideBottomNav={operationsHideBottomNav}
           >

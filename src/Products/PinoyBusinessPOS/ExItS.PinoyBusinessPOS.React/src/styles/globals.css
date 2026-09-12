@@ -11684,6 +11684,17 @@ a.dashboard-metric-card:focus-visible {
   }
 }
 
+@media (min-width: 1024px) {
+  .app-top-bar__row--shell-desktop {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .app-top-bar--shell-desktop {
+    /* Content-column topbar: no bleed past sidebar edge. */
+    margin-inline-start: 0;
+  }
+}
+
 .app-top-bar__brand {
   display: flex;
   min-width: 0;
@@ -17139,10 +17150,17 @@ a.exits-chip--primary:hover {
   min-width: 0;
 }
 
-.admin-shell {
+.admin-shell,
+.operations-shell {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
+}
+
+.admin-shell__column,
+.operations-shell__column {
+  min-width: 0;
+  min-height: 0;
 }
 
 .admin-shell__body {
@@ -17182,7 +17200,7 @@ a.exits-chip--primary:hover {
   border: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface);
-  padding: 0.65rem 0.45rem;
+  padding: 0;
 }
 
 .admin-sidebar--expanded {
@@ -17196,14 +17214,78 @@ a.exits-chip--primary:hover {
   flex-shrink: 0;
   min-height: 0;
   height: 100%;
+  width: 15.5rem;
+  flex: 0 0 15.5rem;
 }
 
 [dir="rtl"] {
   --exits-sidebar-label-slide: 0.25rem;
 }
 
+/* Portaled Compact tooltip surface (escapes sidebar overflow). */
+.exits-tooltip {
+  position: fixed;
+  max-width: min(16rem, calc(100vw - 1rem));
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--exits-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  background: var(--exits-surface-elevated);
+  color: var(--exits-text);
+  box-shadow: var(--exits-shadow-sm);
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: 1.25;
+  letter-spacing: var(--exits-tracking-normal);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: exits-tooltip-in var(--exits-motion-fast) var(--exits-ease-standard) both;
+}
+
+[data-motion="reduced"] .exits-tooltip,
+html[data-motion="reduced"] .exits-tooltip {
+  animation: none;
+}
+
+@keyframes exits-tooltip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Compact + Reveal icon-rail modes — desktop (lg+) only; mobile bottom nav unchanged. */
 @media (min-width: 1024px) {
+  .admin-shell .admin-sidebar,
+  .operations-shell .admin-sidebar {
+    border-radius: 0;
+    border-block: none;
+    border-inline-start: none;
+    border-inline-end: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
+    height: 100%;
+    max-height: 100dvh;
+    box-shadow: none;
+  }
+
+  .admin-shell .admin-sidebar-rail,
+  .operations-shell .admin-sidebar-rail {
+    height: 100%;
+    max-height: 100dvh;
+    align-self: stretch;
+  }
+
+  /* —— STANDARD: reserved + visual 15.5rem —— */
+  [data-navigation-mode="standard"] .admin-sidebar-rail {
+    width: 15.5rem;
+    flex: 0 0 15.5rem;
+  }
+
+  [data-navigation-mode="standard"] .admin-sidebar.admin-sidebar--expanded {
+    position: relative;
+    width: 100%;
+  }
+
   /* —— COMPACT: permanent icon rail (no hover/focus expand) —— */
   [data-navigation-mode="compact"] .admin-sidebar-rail {
     width: 3.75rem;
@@ -17212,14 +17294,27 @@ a.exits-chip--primary:hover {
   }
 
   [data-navigation-mode="compact"] .admin-sidebar.admin-sidebar--expanded {
-    width: 3.75rem;
-    padding-inline: 0.35rem;
-    padding-block: 0.5rem;
+    position: relative;
+    width: 100%;
+    max-width: 3.75rem;
     box-shadow: none;
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__brand {
-    display: none;
+    justify-content: center;
+    padding-inline: 0.35rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__brand-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   [data-navigation-mode="compact"] .admin-sidebar__group-title {
@@ -17272,55 +17367,28 @@ a.exits-chip--primary:hover {
     padding-top: 0.45rem;
   }
 
+  [data-navigation-mode="compact"] .admin-sidebar__nav {
+    padding-inline: 0.35rem;
+  }
+
+  [data-navigation-mode="compact"] .admin-sidebar__footer {
+    padding-inline: 0.35rem;
+  }
+
   [data-navigation-mode="compact"] .admin-sidebar__link:focus-visible,
   [data-navigation-mode="compact"] .admin-sidebar__switch:focus-visible {
     outline: 2px solid var(--exits-focus);
     outline-offset: 2px;
   }
 
-  /* Compact professional tooltip (CSS; no native title). */
-  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]::after,
-  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    inset-inline-start: calc(100% + 0.45rem);
-    top: 50%;
-    translate: 0 -50%;
-    z-index: 40;
-    padding: 0.3rem 0.5rem;
-    border-radius: var(--exits-radius-sm);
-    border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
-    background: var(--exits-surface-elevated);
-    color: var(--exits-text);
-    box-shadow: var(--exits-shadow-sm);
-    font-size: var(--exits-text-xs);
-    font-weight: var(--exits-font-weight-medium);
-    line-height: 1.2;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity var(--exits-motion-fast) var(--exits-ease-standard),
-      visibility var(--exits-motion-fast) var(--exits-ease-standard);
-  }
-
-  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]:hover::after,
-  [data-navigation-mode="compact"] .admin-sidebar__link[data-tooltip]:focus-visible::after,
-  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]:hover::after,
-  [data-navigation-mode="compact"] .admin-sidebar__switch[data-tooltip]:focus-visible::after {
-    opacity: 1;
-    visibility: visible;
-  }
-
-  /* —— REVEAL: compact idle + smooth overlay expand on hover/focus —— */
+  /* —— REVEAL: compact reservation + absolute overlay panel —— */
+  [data-navigation-mode="reveal"] .admin-shell__column,
+  [data-navigation-mode="reveal"] .operations-shell__column,
   [data-navigation-mode="reveal"] .admin-shell__body,
-  [data-navigation-mode="reveal"] .operations-shell__body {
-    overflow: visible;
-  }
-
+  [data-navigation-mode="reveal"] .operations-shell__body,
   [data-navigation-mode="reveal"] .admin-shell__main,
   [data-navigation-mode="reveal"] .operations-shell__main {
+    /* Content track must not grow with the overlay panel. */
     overflow: hidden;
   }
 
@@ -17328,7 +17396,7 @@ a.exits-chip--primary:hover {
     width: 3.75rem;
     flex: 0 0 3.75rem;
     overflow: visible;
-    z-index: 25;
+    z-index: 35;
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded {
@@ -17336,21 +17404,37 @@ a.exits-chip--primary:hover {
     inset-block: 0;
     inset-inline-start: 0;
     width: 3.75rem;
+    max-width: none;
     height: 100%;
     max-height: 100%;
-    padding-inline: 0.35rem;
-    padding-block: 0.5rem;
-    z-index: 25;
+    z-index: 35;
     box-shadow: none;
     /* Collapse: slightly faster + small grace so pointer can re-enter. */
     transition:
       width var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
-      box-shadow var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace),
-      padding var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace);
+      box-shadow var(--exits-sidebar-collapse-duration) var(--exits-ease-standard) var(--exits-sidebar-collapse-grace);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar__brand {
-    display: none;
+    justify-content: center;
+    padding-inline: 0.35rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__brand-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+    translate: var(--exits-sidebar-label-slide) 0;
+    transition:
+      opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard),
+      translate var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar__group-title {
@@ -17368,6 +17452,15 @@ a.exits-chip--primary:hover {
 
   [data-navigation-mode="reveal"] .admin-sidebar__group + .admin-sidebar__group {
     margin-top: 0.45rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__nav {
+    padding-inline: 0.35rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar__footer {
+    padding-inline: 0.35rem;
+    padding-top: 0.45rem;
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar__link,
@@ -17408,31 +17501,45 @@ a.exits-chip--primary:hover {
       inset-inline-end var(--exits-sidebar-collapse-duration) var(--exits-ease-standard);
   }
 
-  [data-navigation-mode="reveal"] .admin-sidebar__footer {
-    padding-top: 0.45rem;
-  }
-
   [data-navigation-mode="reveal"] .admin-sidebar__link:focus-visible,
   [data-navigation-mode="reveal"] .admin-sidebar__switch:focus-visible {
     outline: 2px solid var(--exits-focus);
     outline-offset: 2px;
   }
 
-  /* Reveal open — immediate expand response; labels fade after width starts. */
+  /* Reveal open — overlay expands; layout rail stays 3.75rem. */
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover,
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within {
     width: 15.5rem;
-    padding: 0.65rem 0.45rem;
     box-shadow: var(--exits-shadow-md);
     transition:
       width var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
-      box-shadow var(--exits-sidebar-reveal-duration) var(--exits-ease-standard),
-      padding var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
+      box-shadow var(--exits-sidebar-reveal-duration) var(--exits-ease-standard);
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand,
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand {
-    display: block;
+    justify-content: flex-start;
+    padding-inline: 0.85rem;
+    gap: 0.65rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__brand-label,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__brand-label {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip: auto;
+    white-space: nowrap;
+    border: 0;
+    opacity: 1;
+    translate: 0 0;
+    transition:
+      opacity var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 80ms,
+      translate var(--exits-sidebar-label-fade-duration) var(--exits-ease-standard) 80ms;
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group-title,
@@ -17453,6 +17560,13 @@ a.exits-chip--primary:hover {
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__group + .admin-sidebar__group,
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__group + .admin-sidebar__group {
     margin-top: 0.85rem;
+  }
+
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__nav,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__footer,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__nav,
+  [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:focus-within .admin-sidebar__footer {
+    padding-inline: 0.45rem;
   }
 
   [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover .admin-sidebar__link,
@@ -17500,46 +17614,33 @@ a.exits-chip--primary:hover {
   }
 
   /*
-   * No-hover / touch desktop: keep Reveal as a stable compact rail with focus expand + tooltip fallback.
-   * Keyboard :focus-within still expands.
+   * No-hover / touch desktop: keep Reveal as a stable compact rail with focus expand.
+   * Compact-style portaled tooltips are enabled from JS when (hover: none).
    */
   @media (hover: none) {
     [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) {
       width: 3.75rem;
-      padding-inline: 0.35rem;
-      padding-block: 0.5rem;
       box-shadow: none;
     }
 
-    [data-navigation-mode="reveal"] .admin-sidebar__link[data-tooltip]::after,
-    [data-navigation-mode="reveal"] .admin-sidebar__switch[data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      inset-inline-start: calc(100% + 0.45rem);
-      top: 50%;
-      translate: 0 -50%;
-      z-index: 40;
-      padding: 0.3rem 0.5rem;
-      border-radius: var(--exits-radius-sm);
-      border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
-      background: var(--exits-surface-elevated);
-      color: var(--exits-text);
-      box-shadow: var(--exits-shadow-sm);
-      font-size: var(--exits-text-xs);
-      font-weight: var(--exits-font-weight-medium);
-      line-height: 1.2;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__brand {
+      justify-content: center;
+      padding-inline: 0.35rem;
     }
 
-    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:not(:focus-within)
-      .admin-sidebar__link[data-tooltip]:focus-visible::after,
-    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:not(:focus-within)
-      .admin-sidebar__switch[data-tooltip]:focus-visible::after {
-      opacity: 1;
-      visibility: visible;
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__brand-label,
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__label,
+    [data-navigation-mode="reveal"] .admin-sidebar.admin-sidebar--expanded:hover:not(:focus-within) .admin-sidebar__group-title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+      opacity: 0;
     }
   }
 }
@@ -17553,16 +17654,42 @@ a.exits-chip--primary:hover {
 }
 
 .admin-sidebar__brand {
-  padding: 0.25rem 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--exits-border);
-  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 4rem;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--exits-border) 78%, transparent);
   flex-shrink: 0;
 }
 
-.admin-sidebar__product {
+.admin-sidebar__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-primary);
+  color: var(--exits-primary-foreground, #0b1220);
+  font-size: var(--exits-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--exits-primary) 35%, transparent);
+}
+
+.admin-sidebar__product,
+.admin-sidebar__brand-label {
   font-size: var(--exits-text-xs);
   font-weight: var(--exits-font-weight-semibold);
-  letter-spacing: var(--exits-tracking-normal);
+  letter-spacing: var(--exits-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--exits-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .admin-sidebar__experience {
@@ -17581,7 +17708,7 @@ a.exits-chip--primary:hover {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: 0.5rem;
+  padding: 0.65rem 0.45rem 0.5rem;
 }
 
 .admin-sidebar__group + .admin-sidebar__group {
@@ -17635,7 +17762,7 @@ a.exits-chip--primary:hover {
 .admin-sidebar__footer {
   flex-shrink: 0;
   margin-top: auto;
-  padding-top: 0.65rem;
+  padding: 0.65rem 0.45rem;
   border-top: 1px solid var(--exits-border);
 }
 

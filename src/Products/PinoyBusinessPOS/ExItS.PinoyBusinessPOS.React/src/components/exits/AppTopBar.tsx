@@ -27,7 +27,15 @@ type OrgNotificationsLinkState = {
   returnTo: string;
 };
 
-export function AppTopBar() {
+type AppTopBarProps = {
+  /**
+   * Desktop admin/ops shells own branding in the sidebar.
+   * Hide the duplicate logo/name at lg+ while keeping mobile brand chrome.
+   */
+  hideDesktopBrand?: boolean;
+};
+
+export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -156,9 +164,18 @@ export function AppTopBar() {
   }
 
   return (
-    <header className="app-top-bar" data-testid="app-top-bar">
-      <div className="app-top-bar__row">
-        <div className="app-top-bar__brand">
+    <header
+      className={cn("app-top-bar", hideDesktopBrand && "app-top-bar--shell-desktop")}
+      data-testid="app-top-bar"
+      data-hide-desktop-brand={hideDesktopBrand ? "true" : "false"}
+    >
+      <div
+        className={cn(
+          "app-top-bar__row",
+          hideDesktopBrand && "app-top-bar__row--shell-desktop",
+        )}
+      >
+        <div className={cn("app-top-bar__brand", hideDesktopBrand && "lg:hidden")}>
           <span className="app-top-bar__mark" aria-hidden="true">
             E
           </span>

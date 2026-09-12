@@ -19,8 +19,7 @@ type OperationsShellProps = {
  * Manager / Operations responsive shell.
  * Always viewport-locked; main content scrolls when needed.
  * <1024: bottom nav (Retail or Warehouse).
- * >=1024: persistent left sidebar (no tablet rail).
- * Completely separate IA from AdminManagementShell.
+ * >=1024: full-height left sidebar + content column (topbar + main).
  */
 export function OperationsShell({
   children,
@@ -38,8 +37,9 @@ export function OperationsShell({
         "operations-shell operations-shell--viewport-lock flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
         "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         hideBottomNav
-          ? "pb-[max(2rem,env(safe-area-inset-bottom))]"
-          : "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]",
+          ? "pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-0"
+          : "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-0",
+        "lg:flex-row lg:gap-0 lg:px-0 lg:pt-0",
         sellFloor && "operations-shell--sell-floor",
       )}
       data-testid="operations-shell"
@@ -51,44 +51,55 @@ export function OperationsShell({
       >
         {t("app.skipToContent")}
       </a>
-      {header}
 
-      {!sellFloor ? (
-        <header className="operations-shell__header shrink-0 lg:hidden mt-2" data-testid="operations-mobile-header">
-          <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
-            {t("operations.shell.operations")}
-          </p>
-          <h1 className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold">
-            {boundWorkspace?.organizationDisplayName ?? t("operations.shell.productName")}
-            {boundWorkspace?.branchName ? (
-              <span className="font-medium text-muted">
-                {" "}
-                · {boundWorkspace.branchName}
-              </span>
-            ) : null}
-          </h1>
-        </header>
-      ) : null}
+      <div
+        className="admin-sidebar-rail hidden min-h-0 lg:block"
+        data-testid="operations-desktop-sidebar"
+      >
+        <OperationsSidebar />
+      </div>
 
-      <div className="operations-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:gap-3">
-        <div
-          className="admin-sidebar-rail hidden min-h-0 lg:block"
-          data-testid="operations-desktop-sidebar"
-        >
-          <OperationsSidebar />
-        </div>
+      <div
+        className={cn(
+          "operations-shell__column flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+          "lg:ps-[max(0.75rem,env(safe-area-inset-left))] lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
+        )}
+      >
+        {header}
 
-        <div className="operations-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
-          <main
-            id="main-content"
-            className={cn(
-              "operations-shell__content flex min-h-0 min-w-0 flex-1 flex-col",
-              sellFloor ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto overscroll-y-contain",
-            )}
-            tabIndex={-1}
+        {!sellFloor ? (
+          <header
+            className="operations-shell__header shrink-0 lg:hidden mt-2"
+            data-testid="operations-mobile-header"
           >
-            {children}
-          </main>
+            <p className="m-0 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted">
+              {t("operations.shell.operations")}
+            </p>
+            <h1 className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold">
+              {boundWorkspace?.organizationDisplayName ?? t("operations.shell.productName")}
+              {boundWorkspace?.branchName ? (
+                <span className="font-medium text-muted">
+                  {" "}
+                  · {boundWorkspace.branchName}
+                </span>
+              ) : null}
+            </h1>
+          </header>
+        ) : null}
+
+        <div className="operations-shell__body mt-2 flex min-h-0 min-w-0 flex-1 gap-3 overflow-hidden lg:mt-0 lg:gap-0">
+          <div className="operations-shell__main flex min-h-0 min-w-0 flex-1 flex-col gap-0 overflow-hidden">
+            <main
+              id="main-content"
+              className={cn(
+                "operations-shell__content flex min-h-0 min-w-0 flex-1 flex-col",
+                sellFloor ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto overscroll-y-contain",
+              )}
+              tabIndex={-1}
+            >
+              {children}
+            </main>
+          </div>
         </div>
       </div>
 

@@ -26,6 +26,8 @@ type PreferencesContextValue = {
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
+export { PreferencesContext };
+
 function persist(next: UiPreferences) {
   writeUiPreferences(next);
   applyUiPreferences(next);
