@@ -1891,11 +1891,14 @@ html {
   }
 
   body.exits-printing .incoming-order-print-root,
-  body.exits-printing .incoming-order-print-root * {
+  body.exits-printing .incoming-order-print-root *,
+  body.exits-printing .purchase-order-receive-print-root,
+  body.exits-printing .purchase-order-receive-print-root * {
     visibility: visible !important;
   }
 
-  body.exits-printing .incoming-order-print-root {
+  body.exits-printing .incoming-order-print-root,
+  body.exits-printing .purchase-order-receive-print-root {
     display: block !important;
     position: absolute;
     inset: 0 auto auto 0;
@@ -1905,13 +1908,16 @@ html {
     background: #fff;
   }
 
-  body.exits-printing .incoming-order-print-root table {
+  body.exits-printing .incoming-order-print-root table,
+  body.exits-printing .purchase-order-receive-print-root table {
     width: 100%;
     border-collapse: collapse;
   }
 
   body.exits-printing .incoming-order-print-root th,
-  body.exits-printing .incoming-order-print-root td {
+  body.exits-printing .incoming-order-print-root td,
+  body.exits-printing .purchase-order-receive-print-root th,
+  body.exits-printing .purchase-order-receive-print-root td {
     border-bottom: 1px solid #ccc;
     padding: 0.35rem 0.4rem;
     text-align: left;
@@ -1919,7 +1925,9 @@ html {
   }
 
   body.exits-printing .incoming-order-print-root th:nth-child(n + 3),
-  body.exits-printing .incoming-order-print-root td:nth-child(n + 3) {
+  body.exits-printing .incoming-order-print-root td:nth-child(n + 3),
+  body.exits-printing .purchase-order-receive-print-root th:nth-child(n + 3),
+  body.exits-printing .purchase-order-receive-print-root td:nth-child(n + 3) {
     text-align: right;
   }
 }
@@ -15209,6 +15217,16 @@ a.exits-chip--primary:hover {
   border-top: 1px solid var(--exits-border);
   background: color-mix(in srgb, var(--exits-bg) 94%, transparent);
   backdrop-filter: blur(10px);
+}
+
+.purchase-order-receive-page .receive-qty-input {
+  width: 100%;
+  min-width: 5.5rem;
+  max-width: 7.5rem;
+}
+
+.purchase-order-receive-print-root {
+  display: none;
 }
 
 /* Stock count create */

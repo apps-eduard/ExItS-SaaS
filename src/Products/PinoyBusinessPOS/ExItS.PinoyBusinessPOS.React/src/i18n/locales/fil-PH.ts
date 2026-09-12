@@ -8743,6 +8743,17 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.receiveSubtitle": "Kumpirmahin ang dami ng natanggap.",
 
   "purchasing.receiveTitle": "Tumanggap ng goods",
+  "purchasing.searchReceiveLines": "Search products on this order",
+  "purchasing.receiveLineFilter": "Receive line filter",
+  "purchasing.receiveFilterOutstanding": "Outstanding",
+  "purchasing.receiveFilterAll": "All lines",
+  "purchasing.receiveLinesEmpty": "No lines on this order",
+  "purchasing.receiveLinesEmptyDetail": "This purchase order has no products to receive.",
+  "purchasing.receiveLinesNoMatch": "No matching lines",
+  "purchasing.receiveLinesNoMatchDetail": "Try another search or show all lines.",
+  "purchasing.receiveProduct": "Product",
+  "purchasing.yes": "Yes",
+  "purchasing.no": "No",
 
   "purchasing.received": "Natanggap",
 
