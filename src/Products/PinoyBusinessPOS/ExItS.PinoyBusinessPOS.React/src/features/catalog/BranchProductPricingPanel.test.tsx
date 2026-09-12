@@ -4,11 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BranchProductPricingPanel } from "@/features/catalog/BranchProductPricingPanel";
 import { ToastProvider } from "@/components/exits/ToastProvider";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
     t: (key: string) =>
       ({
+        "catalog.sellingPrice.title": "Selling price",
+        "catalog.sellingPrice.hint":
+          "Manage the organization default and this branch's selling price.",
         "catalog.branchPricing.title": "{branch} price",
         "catalog.branchPricing.hint":
           "Use the organization default price or set a custom selling price for {branch}.",
@@ -16,19 +21,25 @@ vi.mock("@/i18n/I18nProvider", () => ({
         "catalog.branchPricing.unitPrice": "Unit: {name}",
         "catalog.branchPricing.organizationDefault": "Organization default",
         "catalog.branchPricing.inheritedByBranches":
-          "Used when this branch has no custom price.",
+          "Used by branches without their own custom price.",
         "catalog.branchPricing.branchSellingPrice": "{branch} selling price",
-        "catalog.branchPricing.useOrganizationDefaultMode": "Use organization default",
-        "catalog.branchPricing.customBranchPriceMode": "Custom branch price",
+        "catalog.branchPricing.priceSource": "Price source",
+        "catalog.branchPricing.useOrganizationDefaultMode": "Organization default",
+        "catalog.branchPricing.customBranchPriceMode": "Custom price",
         "catalog.branchPricing.inheritMode": "Uses organization default",
         "catalog.branchPricing.useOrganizationDefault": "Use organization default",
-        "catalog.branchPricing.customPriceInput": "Custom branch price",
+        "catalog.branchPricing.customPriceInput": "Custom selling price",
         "catalog.branchPricing.effectivePrice": "Effective price",
         "catalog.branchPricing.saveCustom": "Save branch price",
         "catalog.branchPricing.saving": "Saving…",
         "catalog.branchPricing.removing": "Removing…",
         "catalog.branchPricing.saved": "Saved",
         "catalog.branchPricing.removed": "Removed",
+        "catalog.organizationPricing.defaultPrice": "Default selling price",
+        "catalog.organizationPricing.hint":
+          "Used by branches without their own custom price.",
+        "catalog.organizationPricing.changeWarning":
+          "Organization default. Branches without a custom price will use this price.",
         "catalog.invalidPrice": "Invalid price",
         "loading.label": "Loading…",
       })[key] ?? key,
@@ -70,7 +81,20 @@ const orgStandardProduct = {
   ],
 };
 
-function renderPanel(canGovern = true, branchName = "Main Branch") {
+const globalsCss = readFileSync(
+  resolve(__dirname, "../../styles/globals.css"),
+  "utf8",
+);
+
+function renderPanel(
+  canGovern = true,
+  branchName = "Main Branch",
+  organizationEditor?: {
+    value: string;
+    onChange: (value: string) => void;
+    warning?: string | null;
+  } | null,
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -81,13 +105,14 @@ function renderPanel(canGovern = true, branchName = "Main Branch") {
           product={orgStandardProduct}
           canGovern={canGovern}
           branchName={branchName}
+          organizationEditor={organizationEditor}
         />
       </ToastProvider>
     </QueryClientProvider>,
   );
 }
 
-describe("BranchProductPricingPanel", () => {
+describe("BranchProductPricingPanel / Selling price card", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getBranchProductPricing.mockResolvedValue({
@@ -113,15 +138,19 @@ describe("BranchProductPricingPanel", () => {
     removeBranchProductPriceOverride.mockResolvedValue(undefined);
   });
 
-  it("renders dynamic branch title without nested Base unit price card", async () => {
-    renderPanel(true, "Main Branch");
-    expect(await screen.findByTestId("catalog-branch-pricing")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Main Branch price" })).toBeInTheDocument();
-    const baseRow = await screen.findByTestId("branch-pricing-base");
-    expect(screen.queryByText("Base unit price")).not.toBeInTheDocument();
+  it("renders one Selling price card without legacy headings", async () => {
+    renderPanel(true, "Main Branch", {
+      value: "100",
+      onChange: () => undefined,
+    });
+    expect(await screen.findByTestId("catalog-selling-price")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Selling price" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Main Branch" })).toBeInTheDocument();
+    expect(screen.queryByText("Organization pricing")).not.toBeInTheDocument();
     expect(screen.queryByText("Branch pricing")).not.toBeInTheDocument();
-    expect(baseRow.className).toContain("branch-pricing-row");
-    expect(baseRow.className).not.toContain("branch-pricing-card");
+    expect(screen.queryByText("Base unit price")).not.toBeInTheDocument();
+    expect(screen.getByTestId("catalog-organization-pricing")).toBeInTheDocument();
+    expect(screen.getByTestId("catalog-organization-default-price")).toBeInTheDocument();
   });
 
   it("BRPRICE-UX-01 displays organization default separately from branch price", async () => {
@@ -130,9 +159,6 @@ describe("BranchProductPricingPanel", () => {
     expect(screen.getByTestId("base-effective-price")).toHaveTextContent("₱100.00");
     expect(screen.getByTestId("u1-organization-default")).toHaveTextContent("₱1,000.00");
     expect(screen.getByTestId("u1-effective-price")).toHaveTextContent("₱120.00");
-    expect(
-      screen.getAllByText("Used when this branch has no custom price.").length,
-    ).toBeGreaterThan(0);
   });
 
   it("BRPRICE-UX-02 saves custom branch price via setBranchProductPriceOverride", async () => {
@@ -184,22 +210,30 @@ describe("BranchProductPricingPanel", () => {
     });
   });
 
-  it("preserves Use organization default and Custom branch price modes", async () => {
+  it("shows custom selling price only when Custom is selected", async () => {
     const user = userEvent.setup();
     renderPanel();
     await screen.findByTestId("branch-pricing-base");
-    expect(screen.getByTestId("base-mode-inherit")).toBeChecked();
-    await user.click(screen.getByTestId("base-mode-custom"));
-    expect(screen.getByTestId("base-mode-custom")).toBeChecked();
-    expect(screen.getByTestId("base-custom-price-input")).toBeInTheDocument();
-    await user.click(screen.getByTestId("base-mode-inherit"));
-    expect(screen.getByTestId("base-mode-inherit")).toBeChecked();
+    expect(screen.getByTestId("base-mode-inherit")).toHaveAttribute("aria-checked", "true");
     expect(screen.queryByTestId("base-custom-price-input")).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("base-mode-custom"));
+    expect(screen.getByTestId("base-custom-price-input")).toBeInTheDocument();
+    expect(screen.getByTestId("base-custom-price-input")).toHaveAttribute(
+      "name",
+      "branchOverride-base",
+    );
+  });
+
+  it("keeps price inputs on field radius under Pill control shape", () => {
+    expect(globalsCss).toMatch(
+      /\[data-control-shape="pill"\][\s\S]*?--exits-field-radius:\s*var\(--exits-radius-md\)/,
+    );
+    expect(globalsCss).toContain(".selling-price-card__columns");
   });
 
   it("BRPRICE-UX-13 hides panel for unauthorized users", () => {
     renderPanel(false);
-    expect(screen.queryByTestId("catalog-branch-pricing")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("catalog-selling-price")).not.toBeInTheDocument();
     expect(setBranchProductPriceOverride).not.toHaveBeenCalled();
   });
 
@@ -218,7 +252,7 @@ describe("BranchProductPricingPanel", () => {
         </ToastProvider>
       </QueryClientProvider>,
     );
-    expect(screen.queryByTestId("catalog-branch-pricing")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("catalog-selling-price")).not.toBeInTheDocument();
   });
 });
 

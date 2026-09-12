@@ -97,7 +97,13 @@ export const actionChipItemVariants = cva(baseItem, {
     },
     tone: {
       neutral: "",
-      primary: "",
+      primary: [
+        "border-[color-mix(in_srgb,var(--exits-primary)_45%,var(--exits-border))]",
+        "bg-surface",
+        "text-[var(--exits-primary)]",
+        "hover:bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))]",
+        "hover:border-[var(--exits-primary)]",
+      ].join(" "),
       info: [
         "border-[color-mix(in_srgb,var(--exits-info)_35%,var(--exits-border))]",
         "bg-[color-mix(in_srgb,var(--exits-info)_8%,var(--exits-surface))]",

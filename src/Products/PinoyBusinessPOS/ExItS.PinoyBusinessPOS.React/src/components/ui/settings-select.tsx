@@ -6,6 +6,7 @@ export type SettingsOption<T extends string> = {
   value: T;
   label: string;
   icon?: ReactNode;
+  testId?: string;
 };
 
 type SettingsSelectProps<T extends string> = {
@@ -38,7 +39,7 @@ export function SettingsSelect<T extends string>({
   if (variant === "segmented") {
     return (
       <div
-        className="@container flex min-w-0 flex-col gap-2 py-3"
+        className="@container flex min-w-0 flex-col gap-1.5 py-0"
         data-testid={testId}
         data-settings-variant="segmented"
       >
@@ -48,7 +49,7 @@ export function SettingsSelect<T extends string>({
         <div
           role="radiogroup"
           aria-labelledby={labelId}
-          className="flex min-w-0 flex-wrap gap-1 rounded-[var(--exits-radius-md)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-surface))] p-1"
+          className="flex min-w-0 flex-wrap gap-1 rounded-[var(--exits-control-radius)] border border-border bg-[color-mix(in_srgb,var(--exits-surface-muted)_55%,var(--exits-surface))] p-1"
         >
           {options.map((option) => {
             const selected = option.value === value;
@@ -59,8 +60,9 @@ export function SettingsSelect<T extends string>({
                 role="radio"
                 aria-checked={selected}
                 aria-label={`${label}: ${option.label}`}
+                data-testid={option.testId}
                 className={cn(
-                  "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[calc(var(--exits-radius-md)-2px)] px-2.5 py-1.5",
+                  "inline-flex min-h-8 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[var(--exits-control-radius)] px-2.5 py-1.5",
                   "text-[length:var(--exits-text-sm)] font-medium transition-[background-color,color,box-shadow,border-color] duration-[var(--exits-motion-fast)]",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   selected

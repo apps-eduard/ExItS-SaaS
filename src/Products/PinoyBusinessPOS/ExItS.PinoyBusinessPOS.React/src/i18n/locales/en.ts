@@ -3364,6 +3364,9 @@ export const en = {
     "Select a branch workspace before creating a branch product.",
   "catalog.governance.importRequiresOrgGovernance":
     "Importing into the organization catalog requires organization owner or admin access.",
+  "catalog.sellingPrice.title": "Selling price",
+  "catalog.sellingPrice.hint":
+    "Manage the organization default and this branch's selling price.",
   "catalog.branchPricing.title": "{branch} price",
   "catalog.branchPricing.hint":
     "Use the organization default price or set a custom selling price for {branch}.",
@@ -3371,13 +3374,14 @@ export const en = {
   "catalog.branchPricing.unitPrice": "Unit: {name}",
   "catalog.branchPricing.organizationDefault": "Organization default",
   "catalog.branchPricing.inheritedByBranches":
-    "Used when this branch has no custom price.",
+    "Used by branches without their own custom price.",
   "catalog.branchPricing.branchSellingPrice": "{branch} selling price",
-  "catalog.branchPricing.useOrganizationDefaultMode": "Use organization default",
-  "catalog.branchPricing.customBranchPriceMode": "Custom branch price",
+  "catalog.branchPricing.priceSource": "Price source",
+  "catalog.branchPricing.useOrganizationDefaultMode": "Organization default",
+  "catalog.branchPricing.customBranchPriceMode": "Custom price",
   "catalog.branchPricing.inheritMode": "Uses organization default",
   "catalog.branchPricing.useOrganizationDefault": "Use organization default",
-  "catalog.branchPricing.customPriceInput": "Custom branch price",
+  "catalog.branchPricing.customPriceInput": "Custom selling price",
   "catalog.branchPricing.branchOverride": "Branch override",
   "catalog.branchPricing.effectivePrice": "Effective price",
   "catalog.branchPricing.saveCustom": "Save branch price",
@@ -3398,7 +3402,7 @@ export const en = {
   "catalog.organizationPricing.title": "Organization default price",
   "catalog.organizationPricing.defaultPrice": "Default selling price",
   "catalog.organizationPricing.hint":
-    "Sets the default selling price used by branches without their own custom price.",
+    "Used by branches without their own custom price.",
   "catalog.organizationPricing.changeWarning":
     "Organization default. Branches without a custom price will use this price.",
   "catalog.organizationPricing.confirmBody":

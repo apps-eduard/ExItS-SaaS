@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Ban, Loader2, Plus, RotateCcw, Save } from "lucide-react";
+import { Ban, CalendarClock, Loader2, Plus, RotateCcw, Save, Settings2 } from "lucide-react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,6 +52,8 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { PageHeader } from "@/components/exits/PageHeader";
 
 import { StatusChip } from "@/components/exits/StatusChip";
+import { TagChip } from "@/components/exits/TagChip";
+import { ActionChipBar } from "@/components/exits/ActionChipBar";
 
 import { useBrowserOnline } from "@/connectivity/browser-online";
 
@@ -1242,48 +1244,32 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           </div>
         </section>
 
-        {showOrganizationPricingSection ? (
-          <section
-            className="catalog-form-section exits-animate-panel"
-            data-testid="catalog-organization-pricing"
-          >
-            <h2 className="catalog-form-section__title">
-              {t("catalog.organizationPricing.title")}
-            </h2>
-            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("catalog.organizationPricing.hint")}
-            </p>
-            <div className="catalog-form-section__grid">
-              <Input
-                label={t("catalog.organizationPricing.defaultPrice")}
-                name="organizationDefaultSellingPrice"
-                inputMode="decimal"
-                value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
-                data-testid="catalog-organization-default-price"
-              />
-              {orgDefaultChanged ? (
-                <p
-                  className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="catalog-organization-default-warning"
-                >
-                  {t("catalog.organizationPricing.changeWarning")}
-                </p>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
-
         {mode === "edit" && productId && workspace && productQuery.data ? (
           <BranchProductPricingPanel
             workspace={workspace}
             productId={productId}
             product={productQuery.data}
             canGovern={canGovern}
-            branchName={boundWorkspace?.branchName ?? branchNameById.get(workspace.branchId ?? "") ?? null}
+            branchName={
+              boundWorkspace?.branchName ??
+              branchNameById.get(workspace.branchId ?? "") ??
+              null
+            }
+            organizationEditor={
+              showOrganizationPricingSection
+                ? {
+                    value: sellingPrice,
+                    onChange: setSellingPrice,
+                    warning: orgDefaultChanged
+                      ? t("catalog.organizationPricing.changeWarning")
+                      : null,
+                  }
+                : null
+            }
           />
         ) : null}
 
+        <div className="catalog-form-section-row" data-testid="catalog-inventory-expiration-row">
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionInventory")}</h2>
 
@@ -1411,25 +1397,48 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 className="catalog-form-field--full flex flex-col gap-2"
                 data-testid="catalog-expiration-settings-summary"
               >
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {productQuery.data?.tracksExpiration
-                    ? t("inventory.expirationTrackingOnWithWarning").replace(
-                        "{days}",
-                        String(productQuery.data.expirationWarningDays ?? 7),
-                      )
-                    : t("inventory.expirationTrackingOff")}
-                </p>
+                {productQuery.data?.tracksExpiration ? (
+                  <TagChip
+                    tone="success"
+                    shape="soft"
+                    icon={<CalendarClock aria-hidden />}
+                    title={t("inventory.expirationTrackingOnWithWarning").replace(
+                      "{days}",
+                      String(productQuery.data.expirationWarningDays ?? 7),
+                    )}
+                  >
+                    {t("inventory.expirationTrackingOnWithWarning").replace(
+                      "{days}",
+                      String(productQuery.data.expirationWarningDays ?? 7),
+                    )}
+                  </TagChip>
+                ) : (
+                  <TagChip tone="neutral" shape="soft" icon={<Ban aria-hidden />}>
+                    {t("inventory.expirationTrackingOff")}
+                  </TagChip>
+                )}
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("catalog.expirationManagedInSettings")}
                 </p>
                 {productId ? (
-                  <Link
-                    to={`/inventory/${productId}/expiration`}
-                    className="inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
-                    data-testid="catalog-manage-expiration-settings"
-                  >
-                    {t("inventory.manageExpirationSettings")}
-                  </Link>
+                  <ActionChipBar
+                    ariaLabel={t("inventory.manageExpirationSettings")}
+                    variant="outline"
+                    shape="soft"
+                    groupRole="none"
+                    testId="catalog-manage-expiration-settings"
+                    items={[
+                      {
+                        key: "manage-expiration",
+                        label: t("inventory.manageExpirationSettings"),
+                        icon: Settings2,
+                        href: `/inventory/${productId}/expiration`,
+                        visual: "outline",
+                        tone: "primary",
+                        testId: "catalog-manage-expiration-settings-chip",
+                      },
+                    ]}
+                  />
                 ) : null}
               </div>
             ) : (
@@ -1472,6 +1481,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             )}
           </div>
         </section>
+        </div>
 
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionPackages")}</h2>
