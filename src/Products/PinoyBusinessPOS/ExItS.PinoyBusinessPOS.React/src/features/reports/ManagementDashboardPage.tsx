@@ -476,7 +476,7 @@ export function ManagementDashboardPage() {
               <KpiStripItem
                 label={t("dashboard.transactions")}
                 icon={Receipt}
-                tone="info"
+                tone="emphasis"
                 testId="kpi-period-txns"
                 metricScope="branch"
               >
@@ -496,7 +496,7 @@ export function ManagementDashboardPage() {
                 icon={Banknote}
                 testId="kpi-period-cash"
                 metricScope="branch"
-                tone="success"
+                tone="emphasis"
               >
                 <MoneyDisplay amount={dashboard.cashSalesTotal} />
               </KpiStripItem>
@@ -505,7 +505,7 @@ export function ManagementDashboardPage() {
                 icon={Smartphone}
                 testId="kpi-period-gcash"
                 metricScope="branch"
-                tone="info"
+                tone="emphasis"
               >
                 <MoneyDisplay amount={dashboard.manualGCashSalesTotal} />
               </KpiStripItem>
@@ -514,7 +514,7 @@ export function ManagementDashboardPage() {
                 icon={Wallet}
                 testId="kpi-period-utang"
                 metricScope="branch"
-                tone="warning"
+                tone="emphasis"
               >
                 <MoneyDisplay amount={dashboard.utangSalesTotal} />
               </KpiStripItem>
@@ -532,7 +532,7 @@ export function ManagementDashboardPage() {
                 icon={CircleDollarSign}
                 testId="kpi-period-expenses"
                 metricScope="organization"
-                tone="warning"
+                tone="emphasis"
               >
                 <span data-testid="scope-period-expenses" className="sr-only">
                   {organizationScopeLabel}
@@ -776,7 +776,7 @@ export function ManagementDashboardPage() {
                   <KpiStripItem
                     label={t("dashboard.businessDate")}
                     icon={CalendarDays}
-                    tone="info"
+                    tone="emphasis"
                     testId="kpi-business-date"
                   >
                     {overview.businessDate}
@@ -785,7 +785,7 @@ export function ManagementDashboardPage() {
                     label={t("dashboard.openUtang")}
                     icon={Wallet}
                     testId="kpi-open-utang"
-                    tone={overview.openUtangOutstanding > 0 ? "attention" : "success"}
+                    tone={overview.openUtangOutstanding > 0 ? "attention" : "emphasis"}
                   >
                     <MoneyDisplay amount={overview.openUtangOutstanding} />
                   </KpiStripItem>
@@ -808,7 +808,7 @@ export function ManagementDashboardPage() {
                   <KpiStripItem
                     label={t("dashboard.activeRegisters")}
                     icon={Store}
-                    tone="info"
+                    tone="success"
                     testId="kpi-active-registers"
                   >
                     {overview.activeRegisterCount}
@@ -816,7 +816,7 @@ export function ManagementDashboardPage() {
                   <KpiStripItem
                     label={t("dashboard.todaySales")}
                     icon={CircleDollarSign}
-                    tone="success"
+                    tone="emphasis"
                     testId="kpi-today-sales"
                     metricScope="organization"
                   >

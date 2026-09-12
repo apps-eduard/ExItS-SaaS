@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ClipboardList,
@@ -25,17 +25,16 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
-import { ExitsTabs, type ExitsTabCountTone, type ExitsTabItem } from "@/components/exits/ExitsTabs";
+import { CountBadge } from "@/components/exits/CountChip";
+import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { useMediaMin } from "@/hooks/useMediaQuery";
 import {
   purchasingHubDirectPurchasesQueryKey,
   purchasingHubIncomingPendingQueryKey,
   purchasingHubPurchaseOrdersQueryKey,
   purchasingHubSuppliersQueryKey,
 } from "@/features/purchasing/purchasing-nav-activity";
-import { cn } from "@/lib/cn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -49,17 +48,13 @@ type BrowseDef = {
   href: string;
   testId: string;
   count: number;
-  countTone: ExitsTabCountTone;
+  countTone: "neutral" | "warning";
 };
 
 export function PurchasingHubPage() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
-  const [browseValue, setBrowseValue] = useState("");
-  /** Desktop keeps Soft Tabs; mobile uses continuous Pill Bar (solid Primary active + scroll). */
-  const wideBrowseBar = useMediaMin(768);
 
   const workspace = useMemo(
     () =>
@@ -187,15 +182,21 @@ export function PurchasingHubPage() {
     t,
   ]);
 
-  const browseItems: ExitsTabItem[] = browseDefs.map((item) => ({
-    key: item.key,
-    label: item.label,
-    icon: item.icon,
-    count: item.count,
-    countTone: item.countTone,
-    testId: item.testId,
-    title: item.label,
-  }));
+  const browseItems: ExitsChipItem[] = browseDefs.map((item) => {
+    const Icon = item.icon;
+    return {
+      key: item.key,
+      href: item.href,
+      testId: item.testId,
+      icon: <Icon />,
+      label: (
+        <>
+          <span>{item.label}</span>
+          <CountBadge count={item.count} tone={item.countTone} />
+        </>
+      ),
+    };
+  });
 
   return (
     <div
@@ -244,26 +245,11 @@ export function PurchasingHubPage() {
       </div>
 
       {browseItems.length > 0 ? (
-        <ExitsTabs
-          variant={wideBrowseBar ? "soft" : "pillBar"}
-          layout="content"
-          activeTreatment="solid"
-          scrollable
+        <ExitsChipBar
+          variant="actions"
           ariaLabel={t("purchasing.title")}
           testId="purchasing-toolbar"
-          listClassName={cn(
-            "[&_.exits-tabs__trigger]:text-[length:var(--exits-text-md)]",
-            "bg-[var(--exits-surface)] border-[var(--exits-border)]",
-            "[&_.exits-tabs__trigger]:text-[var(--exits-text)]",
-            "[&_.exits-tabs__trigger]:hover:text-[var(--exits-text)]",
-            !wideBrowseBar && "shadow-[var(--exits-shadow-sm)]",
-          )}
-          value={browseValue}
-          onValueChange={(key) => {
-            setBrowseValue(key);
-            const target = browseDefs.find((item) => item.key === key);
-            if (target) navigate(target.href);
-          }}
+          className="exits-chip-bar--scroll exits-animate-toolbar"
           items={browseItems}
         />
       ) : null}

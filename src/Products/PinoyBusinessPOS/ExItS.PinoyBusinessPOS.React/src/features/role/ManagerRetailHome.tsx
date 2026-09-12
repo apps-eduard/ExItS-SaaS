@@ -480,14 +480,14 @@ export function ManagerRetailHome() {
                 value={formatPeso(salesTotal)}
                 hint={salesTotal <= 0 ? t("managerHome.today.noSales") : undefined}
                 icon={CircleDollarSign}
-                tone="success"
+                tone="primary"
                 testId="manager-today-sales"
               />
               <ManagerMetricCard
                 label={t("managerHome.today.transactions")}
                 value={saleCount}
                 icon={Receipt}
-                tone="info"
+                tone="primary"
                 testId="manager-today-transactions"
               />
               {canShifts ? (
@@ -515,7 +515,7 @@ export function ManagerRetailHome() {
                   label={t("managerHome.today.register")}
                   value={registerLabel}
                   icon={Store}
-                  tone="info"
+                  tone="primary"
                   valueScale="restrained"
                   testId="manager-today-register"
                   to={registerMetricTo}

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDays, Check, FileBarChart, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
 import {
   isReportRangeValid,
@@ -109,16 +110,19 @@ export function DashboardToolbar({
             <FileBarChart className="size-4 shrink-0" aria-hidden />
             {t("reports.open")}
           </Link>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
+            shape="auto"
             className="dashboard-toolbar__icon-btn"
             data-testid="dashboard-refresh"
             aria-label={t("dashboard.refresh")}
             disabled={refreshing}
             onClick={onRefresh}
           >
-            <RefreshCw className={cn("size-4", refreshing && "dashboard-refresh-spin")} />
-          </button>
+            <RefreshCw className={cn("size-4", refreshing && "dashboard-refresh-spin")} aria-hidden />
+          </Button>
         </div>
       </div>
 
@@ -158,8 +162,9 @@ export function DashboardToolbar({
               data-testid="report-to-date"
             />
           </label>
-          <button
+          <Button
             type="button"
+            shape="auto"
             className="dashboard-toolbar__apply"
             data-testid="report-apply"
             disabled={loading || !customValid}
@@ -167,7 +172,7 @@ export function DashboardToolbar({
           >
             <Check className="size-4 shrink-0" aria-hidden />
             {t("reports.apply")}
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

@@ -18,6 +18,7 @@ import {
   listPurchaseOrders,
 } from "@/api/pos/pos-purchase-orders-client";
 import { listIncomingStockRequests } from "@/api/pos/pos-stock-requests-client";
+import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -327,16 +328,19 @@ export function WarehouseManagementDashboardPage() {
                 {t("reports.open")}
               </Link>
             ) : null}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
+              shape="auto"
               className="dashboard-toolbar__icon-btn"
               data-testid="dashboard-refresh"
               aria-label={t("dashboard.refresh")}
               disabled={refreshing}
               onClick={onRefresh}
             >
-              <RefreshCw className={cn("size-4", refreshing && "dashboard-refresh-spin")} />
-            </button>
+              <RefreshCw className={cn("size-4", refreshing && "dashboard-refresh-spin")} aria-hidden />
+            </Button>
           </div>
         </div>
         <p className="dashboard-toolbar__range m-0" data-testid="dashboard-period-range">

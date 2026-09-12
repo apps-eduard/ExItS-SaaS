@@ -24,7 +24,7 @@ export function ManagerHomeSection({
   );
 }
 
-export type ManagerMetricTone = "default" | "attention" | "success" | "info" | "warning";
+export type ManagerMetricTone = "default" | "primary" | "attention" | "success" | "info" | "warning";
 
 export function ManagerMetricCard({
   label,
@@ -52,6 +52,7 @@ export function ManagerMetricCard({
 }) {
   const classes = cn(
     "manager-metric-cell",
+    tone === "primary" && "manager-metric-cell--primary",
     tone === "attention" && "manager-metric-cell--attention",
     tone === "success" && "manager-metric-cell--success",
     tone === "info" && "manager-metric-cell--info",
@@ -130,7 +131,9 @@ export function ManagerActionCard(props: ManagerActionCardProps) {
   const { label, detail, icon: Icon, testId, quiet = false, badge } = props;
   const classes = cn(
     "manager-action-card inline-flex w-full min-w-0 items-center gap-2 border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3 py-2 text-left no-underline text-foreground",
-    "rounded-[var(--exits-radius-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+    "rounded-[var(--exits-radius-md)] transition-[background-color,border-color] duration-[var(--exits-motion-fast)]",
+    "hover:border-[color-mix(in_srgb,var(--exits-primary)_28%,var(--exits-border))] hover:bg-[color-mix(in_srgb,var(--exits-primary-soft)_45%,var(--exits-surface))]",
+    "focus-visible:outline-none focus-visible:border-[var(--exits-primary)] focus-visible:shadow-[0_0_0_1px_color-mix(in_srgb,var(--exits-primary)_28%,transparent)]",
     quiet && "manager-action-card--quiet",
   );
 

@@ -80,7 +80,7 @@ function renderPage() {
   );
 }
 
-describe("PurchasingHubPage browse tabs", () => {
+describe("PurchasingHubPage browse chips", () => {
   beforeEach(() => {
     listPurchaseOrders.mockReset();
     listIncomingOrders.mockReset();
@@ -130,39 +130,16 @@ describe("PurchasingHubPage browse tabs", () => {
     listSuppliers.mockResolvedValue({ items: [], totalCount: 9, page: 1, pageSize: 1 });
   });
 
-  function stubMatchMedia(matchesMin768: boolean) {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: (query: string) => ({
-        matches: matchesMin768 && query.includes("min-width: 768px"),
-        media: query,
-        onchange: null,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        dispatchEvent: () => false,
-      }),
-    });
-  }
-
-  it("uses mobile pill bar: continuous outer, solid active, scrollable single row", async () => {
-    stubMatchMedia(false);
+  it("uses ExitsChipBar actions with counts and control-shape class", async () => {
     renderPage();
 
-    const toolbar = await screen.findByTestId("purchasing-toolbar-list");
-    expect(toolbar).toHaveAttribute("data-variant", "pillBar");
-    expect(toolbar).toHaveAttribute("data-active-treatment", "solid");
-    expect(toolbar).toHaveAttribute("data-layout", "content");
-    expect(toolbar.className).toMatch(/overflow-x-auto/);
-    expect(toolbar.className).toMatch(/flex-nowrap/);
-    expect(toolbar.className).toMatch(/rounded-full/);
-    expect(toolbar.className).toMatch(/shadow-\[var\(--exits-shadow-sm\)\]/);
-    expect(toolbar.className).toMatch(/bg-\[var\(--exits-surface\)\]/);
-    expect(toolbar.className).toMatch(/exits-tabs__trigger\]:text-\[var\(--exits-text\)\]/);
+    const toolbar = await screen.findByTestId("purchasing-toolbar");
+    expect(toolbar).toHaveAttribute("role", "toolbar");
+    expect(toolbar.className).toMatch(/exits-chip-bar--actions/);
+    expect(toolbar.className).toMatch(/exits-chip-bar--scroll/);
 
-    expect(screen.getByTestId("purchasing-orders")).toBeInTheDocument();
-    expect(screen.getByTestId("purchasing-incoming-orders")).toBeInTheDocument();
+    expect(screen.getByTestId("purchasing-orders")).toHaveClass("exits-chip");
+    expect(screen.getByTestId("purchasing-incoming-orders")).toHaveClass("exits-chip");
 
     await waitFor(() => {
       expect(within(screen.getByTestId("purchasing-orders")).getByText("12")).toBeInTheDocument();
@@ -171,17 +148,7 @@ describe("PurchasingHubPage browse tabs", () => {
     });
   });
 
-  it("keeps soft tabs on wider viewports", async () => {
-    stubMatchMedia(true);
-    renderPage();
-
-    const toolbar = await screen.findByTestId("purchasing-toolbar-list");
-    expect(toolbar).toHaveAttribute("data-variant", "soft");
-    expect(toolbar.className).toMatch(/overflow-x-auto/);
-  });
-
-  it("navigates from tab selection while preserving destinations", async () => {
-    stubMatchMedia(false);
+  it("navigates from chip links while preserving destinations", async () => {
     const user = userEvent.setup();
     renderPage();
 

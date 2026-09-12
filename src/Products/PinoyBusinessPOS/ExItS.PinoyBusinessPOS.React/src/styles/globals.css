@@ -5338,10 +5338,6 @@ html:has(.admin-shell) #root {
   color: var(--exits-text-muted);
 }
 
-.purchasing-hub-page [data-testid="purchasing-toolbar"] .exits-chip__icon {
-  color: var(--exits-primary);
-}
-
 .purchasing-hub-page [data-testid="purchasing-toolbar"] .exits-chip__icon > svg {
   stroke-width: 2.5;
 }
@@ -9155,7 +9151,7 @@ a.dashboard-metric-card:focus-visible {
   gap: 0.25rem;
   padding: 0.2rem;
   border: 1px solid var(--exits-border);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-control-radius);
   background: var(--exits-surface-muted);
 }
 
@@ -9166,14 +9162,15 @@ a.dashboard-metric-card:focus-visible {
   font-size: var(--exits-text-xs);
   font-weight: var(--exits-font-weight-medium);
   padding: 0.35rem 0.65rem;
-  border-radius: calc(var(--exits-radius-md) - 2px);
+  border-radius: var(--exits-control-radius);
   cursor: pointer;
 }
 
 .dashboard-rank-toggle__btn--active {
-  background: var(--exits-surface);
-  color: var(--exits-text);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-text) 8%, transparent);
+  background: color-mix(in srgb, var(--exits-primary-soft) 80%, var(--exits-surface));
+  color: var(--exits-primary);
+  font-weight: var(--exits-font-weight-semibold);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-primary) 12%, transparent);
 }
 
 .dashboard-skeleton {
@@ -9293,7 +9290,7 @@ a.dashboard-metric-card:focus-visible {
   box-sizing: border-box;
   padding: 0.2rem;
   border: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-control-radius);
   background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
 }
 
@@ -9304,7 +9301,7 @@ a.dashboard-metric-card:focus-visible {
   font-size: var(--exits-text-sm);
   font-weight: var(--exits-font-weight-medium);
   padding: 0.25rem 0.7rem;
-  border-radius: calc(var(--exits-radius-md) - 2px);
+  border-radius: var(--exits-control-radius);
   cursor: pointer;
   height: calc(var(--exits-control-height) - 0.4rem);
   min-height: calc(var(--exits-control-height) - 0.4rem);
@@ -9360,10 +9357,11 @@ a.dashboard-metric-card:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: 2.25rem;
-  padding: 0 0.75rem;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  padding: 0 var(--exits-control-padding-x);
   border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-control-radius);
   background: color-mix(in srgb, var(--exits-primary-soft) 70%, var(--exits-surface));
   color: var(--exits-primary);
   font-size: var(--exits-text-sm);
@@ -9376,22 +9374,38 @@ a.dashboard-metric-card:focus-visible {
   background: color-mix(in srgb, var(--exits-primary-soft) 88%, var(--exits-surface));
 }
 
+.dashboard-toolbar__reports:focus-visible {
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
+}
+
 .dashboard-toolbar__icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid color-mix(in srgb, var(--exits-info) 28%, var(--exits-border));
-  border-radius: var(--exits-radius-md);
-  background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
-  color: var(--exits-info);
+  box-sizing: border-box;
+  width: var(--exits-control-height);
+  height: var(--exits-control-height);
+  min-width: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  border-radius: var(--exits-control-radius);
+  background: color-mix(in srgb, var(--exits-surface-muted) 55%, var(--exits-surface));
+  color: var(--exits-primary);
   cursor: pointer;
 }
 
 .dashboard-toolbar__icon-btn:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--exits-info) 42%, var(--exits-border));
-  background: color-mix(in srgb, var(--exits-info) 14%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary-soft) 70%, var(--exits-surface));
+}
+
+.dashboard-toolbar__icon-btn:focus-visible {
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 28%, transparent);
 }
 
 .dashboard-toolbar__icon-btn:disabled {
@@ -9416,7 +9430,7 @@ a.dashboard-metric-card:focus-visible {
   width: 0.85rem;
   height: 0.85rem;
   flex-shrink: 0;
-  color: var(--exits-info);
+  color: var(--exits-primary);
 }
 
 .dashboard-toolbar__custom {
@@ -9460,7 +9474,7 @@ a.dashboard-metric-card:focus-visible {
   min-height: var(--exits-control-height);
   padding: 0 0.9rem;
   border: 1px solid color-mix(in srgb, var(--exits-primary) 35%, transparent);
-  border-radius: var(--exits-radius-md);
+  border-radius: var(--exits-control-radius);
   background: var(--exits-primary);
   color: var(--exits-primary-foreground);
   font-size: var(--exits-text-sm);
@@ -9579,10 +9593,10 @@ a.dashboard-metric-card:focus-visible {
   align-items: center;
   gap: 0.35rem;
   padding: 0.28rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--exits-success) 42%, var(--exits-border));
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 32%, var(--exits-border));
   border-radius: 9999px;
-  background: color-mix(in srgb, var(--exits-success) 14%, var(--exits-surface));
-  color: color-mix(in srgb, var(--exits-success) 78%, var(--exits-text));
+  background: color-mix(in srgb, var(--exits-primary-soft) 72%, var(--exits-surface));
+  color: var(--exits-primary);
   line-height: 1.2;
 }
 
@@ -9607,9 +9621,9 @@ a.dashboard-metric-card:focus-visible {
   gap: 0.35rem;
   margin-top: 0.15rem;
   padding: 0.85rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--exits-success) 28%, var(--exits-border));
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 22%, var(--exits-border));
   border-radius: var(--exits-radius-md);
-  background: color-mix(in srgb, var(--exits-success-soft) 72%, var(--exits-surface));
+  background: color-mix(in srgb, var(--exits-primary-soft) 55%, var(--exits-surface));
 }
 
 .dashboard-hero__label {
@@ -9635,7 +9649,7 @@ a.dashboard-metric-card:focus-visible {
   font-weight: var(--exits-font-weight-bold);
   letter-spacing: -0.02em;
   line-height: var(--exits-leading-tight);
-  color: var(--exits-success);
+  color: var(--exits-primary);
 }
 
 .dashboard-hero__sep {
@@ -13767,7 +13781,11 @@ button.exits-chip {
 }
 
 .exits-chip__label {
+  display: inline-flex;
   max-width: 18rem;
+  min-width: 0;
+  align-items: center;
+  gap: 0.35rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -13815,7 +13833,13 @@ button.exits-chip:active:not(:disabled) {
 
 a.exits-chip {
   text-decoration: none;
-  color: inherit;
+  /* Do not use color: inherit — it overrides --primary/--active on <Link> chips. */
+  color: var(--exits-text);
+}
+
+a.exits-chip--primary,
+a.exits-chip--active {
+  color: var(--exits-primary);
 }
 
 a.exits-chip:hover {
@@ -13842,6 +13866,16 @@ a.exits-chip--primary:hover {
   justify-content: center;
   width: 1em;
   height: 1em;
+  color: inherit;
+}
+
+/* Action / nav chips: icons use Primary so they stay visible against text. */
+.exits-chip-bar--actions .exits-chip__icon {
+  color: var(--exits-primary);
+}
+
+.exits-chip-bar--actions .exits-chip__icon > svg {
+  stroke-width: 2.25;
 }
 
 .exits-chip__icon > svg {
@@ -15097,6 +15131,16 @@ a.exits-chip--primary:hover {
 .manager-metric-cell--attention .manager-metric-cell__icon,
 .manager-metric-cell--attention .manager-metric-cell__value {
   color: var(--exits-danger);
+}
+
+.manager-metric-cell--primary {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary-soft) 72%, var(--exits-surface));
+}
+
+.manager-metric-cell--primary .manager-metric-cell__icon,
+.manager-metric-cell--primary .manager-metric-cell__value {
+  color: var(--exits-primary);
 }
 
 .manager-metric-cell--success {
