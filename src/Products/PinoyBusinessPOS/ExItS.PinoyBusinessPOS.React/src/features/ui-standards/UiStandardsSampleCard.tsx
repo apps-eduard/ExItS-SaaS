@@ -19,6 +19,8 @@ export type UiStandardsSampleCardProps = {
   /** Explicit semantic Cursor shorthand for this sample. */
   command?: string;
   commandContext?: string;
+  /** Pilot vs locked clipboard wording. Default locked. */
+  standardStatus?: "locked" | "pilot";
   /**
    * Explanatory / non-implementable chrome (notes, legends).
    * Excluded from coverage audits when true.
@@ -40,6 +42,7 @@ export function UiStandardsSampleCard({
   standard,
   command,
   commandContext,
+  standardStatus,
   explanatory = false,
 }: UiStandardsSampleCardProps) {
   const hasCopy = Boolean(standard && command?.trim());
@@ -62,6 +65,7 @@ export function UiStandardsSampleCard({
         standard={standard}
         command={command}
         commandContext={commandContext}
+        standardStatus={standardStatus}
       />
     </div>
   );

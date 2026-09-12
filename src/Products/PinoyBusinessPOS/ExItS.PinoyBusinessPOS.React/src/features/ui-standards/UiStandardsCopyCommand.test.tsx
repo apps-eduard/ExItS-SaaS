@@ -24,6 +24,18 @@ describe("formatUiStandardsCursorClipboard", () => {
     expect(text.indexOf("Apply:")).toBeLessThan(text.indexOf("Context:"));
     expect(text.indexOf("Context:")).toBeLessThan(text.indexOf("Preserve existing"));
   });
+
+  it("uses pilot wording without claiming locked", () => {
+    const text = formatUiStandardsCursorClipboard(
+      "Module Subnav",
+      "MODULE SUBNAV + UNDERLINE",
+      undefined,
+      "pilot",
+    );
+    expect(text).toContain("Use the approved ExItS Module Subnav pilot.");
+    expect(text).not.toMatch(/locked ExItS Module Subnav/i);
+    expect(text).toContain("Preserve existing routing");
+  });
 });
 
 describe("UiStandardsCopyCommand", () => {

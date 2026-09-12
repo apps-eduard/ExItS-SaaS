@@ -3,10 +3,12 @@ import { Check, ChevronDown, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
+export type UiStandardsStandardStatus = "locked" | "pilot";
+
 export type UiStandardsStandardName = "Table" | "Button" | "Chip" | "Tabs" | "Card" | (string & {});
 
 export type UiStandardsCopyCommandProps = {
-  /** Locked standard name(s), e.g. "Tabs" or ["Card", "Chip"]. */
+  /** Locked or pilot standard name(s), e.g. "Tabs" or "Module Subnav". */
   standard: UiStandardsStandardName | UiStandardsStandardName[];
   /** Compact semantic shorthand shown in the UI and used in Apply:. */
   command: string;
@@ -16,10 +18,24 @@ export type UiStandardsCopyCommandProps = {
    * Shown compactly under the command; included in clipboard as Context: …
    */
   context?: string;
+  /** Pilot standards must not claim LOCKED. Default: locked. */
+  standardStatus?: UiStandardsStandardStatus;
 };
 
-function formatStandardLine(standard: UiStandardsStandardName | UiStandardsStandardName[]): string {
+function formatStandardLine(
+  standard: UiStandardsStandardName | UiStandardsStandardName[],
+  status: UiStandardsStandardStatus = "locked",
+): string {
   const standards = (Array.isArray(standard) ? standard : [standard]).map((s) => s.trim()).filter(Boolean);
+  if (status === "pilot") {
+    if (standards.length === 0) {
+      return "Use the approved ExItS pilot.";
+    }
+    if (standards.length === 1) {
+      return `Use the approved ExItS ${standards[0]} pilot.`;
+    }
+    return `Use the approved ExItS ${standards.join(" + ")} pilot.`;
+  }
   if (standards.length === 0) {
     return "Use the locked ExItS Standard.";
   }
@@ -51,12 +67,17 @@ export function formatUiStandardsCursorClipboard(
   standard: UiStandardsStandardName | UiStandardsStandardName[],
   command: string,
   context?: string,
+  status: UiStandardsStandardStatus = "locked",
 ): string {
   const apply = command.trim().replace(/\s+/g, " ");
+  const preserve =
+    status === "pilot"
+      ? "Preserve existing routing, business behavior, domain rules, permissions, data flow, and API behavior unless explicitly instructed otherwise."
+      : "Preserve existing business behavior, domain rules, permissions, data flow, and API behavior unless explicitly instructed otherwise.";
   const lines = [
-    formatStandardLine(standard),
+    formatStandardLine(standard, status),
     `Apply: ${apply}.`,
-    "Preserve existing business behavior, domain rules, permissions, data flow, and API behavior unless explicitly instructed otherwise.",
+    preserve,
   ];
   const ctx = context?.trim() ? formatContextBlock(context) : "";
   if (ctx) {
@@ -101,12 +122,13 @@ export function UiStandardsCopyCommand({
   command,
   className,
   context,
+  standardStatus = "locked",
 }: UiStandardsCopyCommandProps) {
   const [status, setStatus] = useState<CopyStatus>("idle");
   const [expanded, setExpanded] = useState(false);
   const resetTimer = useRef<number | null>(null);
   const detailsId = useId();
-  const fullText = formatUiStandardsCursorClipboard(standard, command, context);
+  const fullText = formatUiStandardsCursorClipboard(standard, command, context, standardStatus);
   const standardAttr = Array.isArray(standard) ? standard.join("+") : standard;
 
   useEffect(() => {
@@ -239,15 +261,24 @@ export type UiStandardsSampleCommandProps = {
   standard?: UiStandardsStandardName | UiStandardsStandardName[];
   command?: string;
   commandContext?: string;
+  standardStatus?: UiStandardsStandardStatus;
 };
 
 export function UiStandardsSampleCommandFooter({
   standard,
   command,
   commandContext,
+  standardStatus,
 }: UiStandardsSampleCommandProps): ReactNode {
   if (!standard || !command?.trim()) {
     return null;
   }
-  return <UiStandardsCopyCommand standard={standard} command={command} context={commandContext} />;
+  return (
+    <UiStandardsCopyCommand
+      standard={standard}
+      command={command}
+      context={commandContext}
+      standardStatus={standardStatus}
+    />
+  );
 }

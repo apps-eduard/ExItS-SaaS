@@ -4,6 +4,7 @@ import { catalogs } from "@/i18n/messages";
 import { UiStandardsButtonsPanel } from "@/features/ui-standards/UiStandardsButtonsPanel";
 import { UiStandardsChipsPanel } from "@/features/ui-standards/UiStandardsChipsPanel";
 import { UiStandardsTabsPanel } from "@/features/ui-standards/UiStandardsTabsPanel";
+import { UiStandardsModuleSubnavPanel } from "@/features/ui-standards/UiStandardsModuleSubnavPanel";
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
 import { formatUiStandardsCursorClipboard } from "@/features/ui-standards/UiStandardsCopyCommand";
@@ -95,6 +96,34 @@ describe("UI Standards every-sample copy coverage", () => {
     ).toHaveAttribute("data-command", "PILL TABS + WITH COUNT");
 
     expect(counts.implementable).toBeGreaterThan(30);
+  });
+
+  it("covers every implementable Module Subnav sample including real-world", () => {
+    render(<UiStandardsModuleSubnavPanel {...alwaysOpen} />);
+    const counts = assertEveryImplementableSampleHasCopy("ui-standards-module-subnav-section");
+
+    expect(screen.getByTestId("ui-standards-module-subnav-rw-purchasing")).toHaveAttribute(
+      "data-has-copy",
+      "true",
+    );
+    expect(
+      within(screen.getByTestId("ui-standards-module-subnav-rw-purchasing")).getByTestId(
+        "ui-standards-copy-command",
+      ),
+    ).toHaveAttribute(
+      "data-command",
+      "MODULE SUBNAV + PILL BAR + WITH ICON + WITH COUNT + SOLID PRIMARY ACTIVE",
+    );
+    expect(
+      within(screen.getByTestId("ui-standards-module-subnav-pillbar-recommended")).getByTestId(
+        "ui-standards-copy-command",
+      ),
+    ).toHaveAttribute(
+      "data-command",
+      "MODULE SUBNAV + PILL BAR + WITH ICON + WITH COUNT + SOLID PRIMARY ACTIVE",
+    );
+
+    expect(counts.implementable).toBeGreaterThan(20);
   });
 
   it("covers every implementable Card sample including footers and header actions", () => {

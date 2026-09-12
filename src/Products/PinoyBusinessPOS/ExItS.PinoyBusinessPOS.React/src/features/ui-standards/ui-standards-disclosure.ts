@@ -67,11 +67,18 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "cards.motion": true,
   "cards.featured-effects": true,
   "cards.cheatsheet": false,
+
+  "module-subnav.comparison": true,
+  "module-subnav.icons": true,
+  "module-subnav.counts": true,
+  "module-subnav.pill-bar": true,
+  "module-subnav.real-world": true,
+  "module-subnav.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
 
-export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs" | "cards";
+export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs" | "cards" | "module-subnav";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };
