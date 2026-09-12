@@ -15,6 +15,8 @@ export type UiStandardsSampleCardProps = {
   contentClassName?: string;
   /** When false, omit the bordered muted sample chrome (tables/cards frames). */
   bordered?: boolean;
+  /** Default = Classic gallery chrome. Compact = Simple catalog denser sample. */
+  density?: "default" | "compact";
   standard?: UiStandardsStandardName | UiStandardsStandardName[];
   /** Explicit semantic Cursor shorthand for this sample. */
   command?: string;
@@ -39,6 +41,7 @@ export function UiStandardsSampleCard({
   className,
   contentClassName,
   bordered = true,
+  density = "default",
   standard,
   command,
   commandContext,
@@ -46,17 +49,22 @@ export function UiStandardsSampleCard({
   explanatory = false,
 }: UiStandardsSampleCardProps) {
   const hasCopy = Boolean(standard && command?.trim());
+  const compact = density === "compact";
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-1.5",
+        "flex min-w-0 flex-col",
+        compact ? "gap-1" : "gap-1.5",
         bordered &&
-          "rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2",
+          (compact
+            ? "rounded-[var(--exits-radius-sm)] border border-border bg-[var(--exits-surface)] p-1.5"
+            : "rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/40 p-2"),
         className,
       )}
       data-testid={testId}
       data-ui-standards-sample={explanatory ? "explanatory" : "implementable"}
       data-has-copy={hasCopy ? "true" : "false"}
+      data-density={density}
     >
       <span className="text-[length:var(--exits-text-xs)] uppercase tracking-wide text-muted">{label}</span>
       <div className={cn("min-w-0", contentClassName)}>{children}</div>

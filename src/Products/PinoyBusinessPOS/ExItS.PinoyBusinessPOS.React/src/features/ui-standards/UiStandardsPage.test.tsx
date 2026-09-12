@@ -293,6 +293,82 @@ describe("UiStandardsPage", () => {
   });
 });
 
+describe("UiStandardsPage Classic / Simple views", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("defaults to Classic and keeps Classic content available", () => {
+    renderPage();
+    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "classic");
+    expect(screen.getByTestId("ui-standards-sticky-nav")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-simple-catalog")).not.toBeInTheDocument();
+  });
+
+  it("switches to Simple catalog and renders required sections with copy", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-view-simple"));
+    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple");
+    expect(screen.getByTestId("ui-standards-simple-catalog")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-simple-lede")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-simple-nav")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standards-sticky-nav")).not.toBeInTheDocument();
+
+    for (const id of [
+      "buttons",
+      "chips",
+      "badges",
+      "action-chips",
+      "tabs",
+      "module-subnav",
+      "filters",
+      "cards",
+      "tables",
+    ]) {
+      expect(screen.getByTestId(`ui-standards-simple-section-${id}`)).toBeInTheDocument();
+    }
+
+    expect(screen.getByTestId("simple-btn-intent-default")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-status-success")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-badge-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-action-default")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-tabs-underline")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-subnav-pillBar")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-filter-status")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-card-bordered")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-table-basic")).toBeInTheDocument();
+
+    const catalog = screen.getByTestId("ui-standards-simple-catalog");
+    const implementable = catalog.querySelectorAll('[data-ui-standards-sample="implementable"]');
+    expect(implementable.length).toBeGreaterThan(20);
+    implementable.forEach((node) => {
+      expect(node).toHaveAttribute("data-has-copy", "true");
+      expect(node.querySelector('[data-testid="ui-standards-copy-command"]')).not.toBeNull();
+    });
+
+    expect(window.localStorage.getItem("exits.uiStandards.view.v1")).toBe("simple");
+
+    await user.click(screen.getByTestId("ui-standards-view-classic"));
+    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "classic");
+    expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
+  });
+
+  it("honors ?view=simple query param", () => {
+    render(
+      <MemoryRouter initialEntries={["/ui-standards?view=simple"]}>
+        <Routes>
+          <Route path="/ui-standards" element={<UiStandardsPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple");
+    expect(screen.getByTestId("ui-standards-simple-catalog")).toBeInTheDocument();
+  });
+});
+
 describe("ShellUiStandardsButton", () => {
   it("renders an icon-only Palette control with UI Standards a11y labels", () => {
     render(

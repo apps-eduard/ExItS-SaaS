@@ -9,6 +9,7 @@ import { UiStandardsModuleSubnavPanel } from "@/features/ui-standards/UiStandard
 import { UiStandardsActionChipsPanel } from "@/features/ui-standards/UiStandardsActionChipsPanel";
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
+import { UiStandardsSimpleCatalog } from "@/features/ui-standards/UiStandardsSimpleCatalog";
 import { formatUiStandardsCursorClipboard } from "@/features/ui-standards/UiStandardsCopyCommand";
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -196,6 +197,21 @@ describe("UI Standards every-sample copy coverage", () => {
     const counts = assertEveryImplementableSampleHasCopy("ui-standards-tables-section");
     expect(screen.getAllByTestId("ui-standards-copy-command").length).toBeGreaterThan(15);
     expect(counts.implementable).toBeGreaterThan(15);
+  });
+
+  it("covers every implementable Simple catalog sample", () => {
+    render(
+      <MemoryRouter>
+        <UiStandardsSimpleCatalog />
+      </MemoryRouter>,
+    );
+    const counts = assertEveryImplementableSampleHasCopy("ui-standards-simple-catalog");
+    expect(screen.getByTestId("simple-btn-treatment-gradient")).toHaveAttribute("data-has-copy", "true");
+    expect(screen.getByTestId("simple-action-icons")).toHaveAttribute("data-has-copy", "true");
+    expect(
+      within(screen.getByTestId("simple-action-icons")).getByTestId("ui-standards-copy-command"),
+    ).toHaveAttribute("data-command", "ACTION CHIP + SOFT + WITH ICON");
+    expect(counts.implementable).toBeGreaterThan(40);
   });
 
   it("formats cross-standard clipboard text with Context prefix", () => {
