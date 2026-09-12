@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { LayoutDashboard, Search } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import {
   canViewDashboard,
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { SearchField } from "@/components/exits/SearchField";
 import { Button } from "@/components/ui/button";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportHubCard, ReportHubCardGrid } from "@/features/reports/ReportHubCard";
@@ -78,7 +79,10 @@ export function ReportsHubPage() {
   );
 
   return (
-    <div className="reports-hub-page exits-page" data-testid="reports-hub-page">
+    <div
+      className="reports-hub-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="reports-hub-page"
+    >
       <PageHeader
         title={t("reports.title")}
         description={t("reports.lede")}
@@ -103,19 +107,16 @@ export function ReportsHubPage() {
       ) : null}
 
       <div className="reports-hub-toolbar" data-testid="reports-hub-toolbar">
-        <label className="reports-hub-search">
-          <Search className="reports-hub-search__icon size-4 shrink-0" aria-hidden />
-          <span className="sr-only">{t("reports.hub.searchLabel")}</span>
-          <input
-            type="search"
-            className="reports-hub-search__input exits-input"
-            placeholder={t("reports.hub.searchPlaceholder")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            data-testid="reports-hub-search"
-            autoComplete="off"
-          />
-        </label>
+        <SearchField
+          data-testid="reports-hub-search"
+          containerClassName="reports-hub-search"
+          label={t("reports.hub.searchLabel")}
+          placeholder={t("reports.hub.searchPlaceholder")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          autoComplete="off"
+        />
 
         {!searching && catalog.categories.length > 0 ? (
           <ExitsChipBar

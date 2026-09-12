@@ -28,6 +28,33 @@ describe("PageHeader", () => {
     expect(screen.getByTestId("page-header").className).toMatch(/page-header/);
   });
 
+  it("renders icon-only info control when description is collapsible", () => {
+    renderHeader(
+      <PageHeader
+        title="Manager home"
+        description="Operations hub"
+        descriptionCollapsible
+      />,
+    );
+    expect(screen.getByTestId("page-header-info-toggle")).toBeInTheDocument();
+  });
+
+  it("supports compact operational variant without description chrome", () => {
+    renderHeader(
+      <PageHeader
+        variant="compact"
+        title="New Sale"
+        description="Should not render"
+        actions={<button type="button">Exit selling</button>}
+      />,
+    );
+    const header = screen.getByTestId("page-header");
+    expect(header).toHaveAttribute("data-variant", "compact");
+    expect(header.className).toMatch(/page-header--compact/);
+    expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
+    expect(screen.getByTestId("page-header-actions")).toHaveTextContent("Exit selling");
+  });
+
   it("renders canonical back link with accessible name and density-sized control", () => {
     renderHeader(
       <PageHeader

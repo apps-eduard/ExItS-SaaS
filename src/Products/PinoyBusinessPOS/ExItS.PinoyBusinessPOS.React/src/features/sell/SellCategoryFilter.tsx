@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { FilterChip } from "@/components/exits/FilterChip";
 import { resolveSellCategoryIcon } from "@/features/sell/sell-category-icon";
 
 export type SellCategoryOption = {
@@ -77,16 +78,15 @@ function CategoryChip({
   const Icon = resolveSellCategoryIcon(isAll ? "all" : label);
 
   return (
-    <button
-      type="button"
+    <FilterChip
       role="listitem"
       data-testid={testId}
-      className={cn("sell-category-chip", pressed && "sell-category-chip--active")}
-      aria-pressed={pressed}
+      selected={pressed}
       onClick={onClick}
+      className={cn("sell-category-chip shrink-0", pressed && "sell-category-chip--active")}
+      icon={<Icon className="sell-category-chip__icon" aria-hidden strokeWidth={1.75} />}
     >
-      <Icon className="sell-category-chip__icon" aria-hidden strokeWidth={1.75} />
-      <span className="sell-category-chip__label">{label}</span>
-    </button>
+      {label}
+    </FilterChip>
   );
 }

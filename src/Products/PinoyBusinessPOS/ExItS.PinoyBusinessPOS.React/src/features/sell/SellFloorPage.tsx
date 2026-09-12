@@ -29,6 +29,8 @@ import {
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { Button } from "@/components/ui/button";
+import { FilterChip } from "@/components/exits/FilterChip";
+import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
@@ -876,44 +878,47 @@ export function SellFloorPage() {
           testId="sell-online-required"
         />
       ) : null}
-      <header className="sell-floor-toolbar shrink-0">
-        <div className="sell-floor-toolbar__title">
-          <h1 className="sell-floor-toolbar__heading">{t("sell.title")}</h1>
-          <button
-            type="button"
-            data-testid="sell-info-toggle"
-            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
-            aria-label={t("sell.infoToggle")}
-            aria-expanded={infoOpen}
-            aria-controls="sell-info-panel"
-            onClick={() => setInfoOpen((open) => !open)}
-          >
-            <Info className="size-3.5" aria-hidden />
-            <span>{t("sell.infoChip")}</span>
-          </button>
-          <button
-            type="button"
-            data-testid="sell-out-of-stock-toggle"
-            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
-            aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
-            aria-pressed={showOutOfStock}
-            onClick={() => setShowOutOfStock((open) => !open)}
-          >
-            <PackageX className="sell-floor-toolbar__chip-icon--oos" aria-hidden />
-            <span>{t("sell.stockOut")}</span>
-          </button>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          className="sell-floor-toolbar__exit"
-          onClick={() => {
-            exit();
-            navigate(returnRoute ?? "/");
-          }}
-        >
-          {t("sell.exitSelling")}
-        </Button>
+      <div className="sell-floor-toolbar shrink-0 flex min-w-0 flex-col gap-1.5">
+        <PageHeader
+          variant="compact"
+          title={t("sell.title")}
+          actions={
+            <div className="page-header__actions-cluster">
+              <FilterChip
+                data-testid="sell-info-toggle"
+                selected={infoOpen}
+                aria-label={t("sell.infoToggle")}
+                aria-expanded={infoOpen}
+                aria-controls="sell-info-panel"
+                onClick={() => setInfoOpen((open) => !open)}
+                icon={<Info className="size-3.5" aria-hidden />}
+              >
+                {t("sell.infoChip")}
+              </FilterChip>
+              <FilterChip
+                data-testid="sell-out-of-stock-toggle"
+                selected={showOutOfStock}
+                aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
+                onClick={() => setShowOutOfStock((open) => !open)}
+                icon={<PackageX className="size-3.5" aria-hidden />}
+              >
+                {t("sell.stockOut")}
+              </FilterChip>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="sell-floor-toolbar__exit"
+                onClick={() => {
+                  exit();
+                  navigate(returnRoute ?? "/");
+                }}
+              >
+                {t("sell.exitSelling")}
+              </Button>
+            </div>
+          }
+        />
         {infoOpen ? (
           <div
             id="sell-info-panel"
@@ -921,7 +926,7 @@ export function SellFloorPage() {
             className="sell-info-panel sell-floor-toolbar__tips"
           >
             <div className="sell-info-panel__bar">
-              <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
+              <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 ps-4 text-[length:var(--exits-text-xs)] text-muted">
                 <li>{t("sell.info.search")}</li>
                 <li>{t("sell.info.shift")}</li>
                 {deviceEnforcementEnabled !== false ? (
@@ -942,7 +947,7 @@ export function SellFloorPage() {
             </div>
           </div>
         ) : null}
-      </header>
+      </div>
 
       <SellReadinessStrip
         continuedOffline={continuedOffline}

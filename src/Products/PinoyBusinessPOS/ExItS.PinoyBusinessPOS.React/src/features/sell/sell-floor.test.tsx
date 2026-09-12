@@ -200,6 +200,7 @@ describe("SellFloorPage", () => {
       expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId("page-header")).toHaveAttribute("data-variant", "compact");
     expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     expect(screen.getByTestId("sell-info-toggle")).toHaveTextContent("Info");
     expect(screen.getByTestId("sell-out-of-stock-toggle")).toHaveTextContent("Out of stock");

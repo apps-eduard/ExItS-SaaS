@@ -69,6 +69,16 @@ describe("POS-REPORTS-HUB-V2", () => {
     });
   });
 
+  it("uses shared Page Header and canonical search field", () => {
+    renderHub();
+    expect(screen.getByTestId("page-header")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reports" })).toBeInTheDocument();
+    expect(screen.getByTestId("page-header-description")).toHaveTextContent(
+      "Analyze your business across the locations you can access.",
+    );
+    expect(screen.getByTestId("reports-hub-search")).toBeInTheDocument();
+  });
+
   it("removes duplicated Business/classic section and keeps Dashboard", async () => {
     renderHub();
 
