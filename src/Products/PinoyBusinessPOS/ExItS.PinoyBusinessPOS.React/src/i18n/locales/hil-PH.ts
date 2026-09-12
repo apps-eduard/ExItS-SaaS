@@ -916,17 +916,17 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "catalog.governance.importRequiresOrgGovernance": "Importing into the organization catalog requires organization owner or admin access.",
 
-  "catalog.branchPricing.title": "Branch pricing",
+  "catalog.branchPricing.title": "{branch} price",
 
-  "catalog.branchPricing.hint": "Set a custom selling price for {branch} only. Other branches keep the organization default unless they have their own custom price.",
+  "catalog.branchPricing.hint": "Use the organization default price or set a custom selling price for {branch}.",
 
   "catalog.branchPricing.basePrice": "Base unit price",
 
   "catalog.branchPricing.unitPrice": "Unit: {name}",
 
-  "catalog.branchPricing.organizationDefault": "Organization default price",
+  "catalog.branchPricing.organizationDefault": "Organization default",
 
-  "catalog.branchPricing.inheritedByBranches": "Inherited by branches without a custom price.",
+  "catalog.branchPricing.inheritedByBranches": "Used when this branch has no custom price.",
 
   "catalog.branchPricing.branchSellingPrice": "{branch} selling price",
 
@@ -974,11 +974,11 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "catalog.stockNotTracked": "Stock not tracked",
 
-  "catalog.organizationPricing.title": "Organization pricing",
+  "catalog.organizationPricing.title": "Organization default price",
 
-  "catalog.organizationPricing.defaultPrice": "Organization default selling price",
+  "catalog.organizationPricing.defaultPrice": "Default selling price",
 
-  "catalog.organizationPricing.hint": "Changing this updates the inherited price for every branch that does not have a custom branch price.",
+  "catalog.organizationPricing.hint": "Sets the default selling price used by branches without their own custom price.",
 
   "catalog.organizationPricing.changeWarning": "Organization default. Branches without a custom price will use this price.",
 

@@ -9,12 +9,14 @@ vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
     t: (key: string) =>
       ({
-        "catalog.branchPricing.title": "Branch pricing",
-        "catalog.branchPricing.hint": "Hint for {branch}",
+        "catalog.branchPricing.title": "{branch} price",
+        "catalog.branchPricing.hint":
+          "Use the organization default price or set a custom selling price for {branch}.",
         "catalog.branchPricing.basePrice": "Base unit price",
         "catalog.branchPricing.unitPrice": "Unit: {name}",
-        "catalog.branchPricing.organizationDefault": "Organization default price",
-        "catalog.branchPricing.inheritedByBranches": "Inherited by branches without a custom price.",
+        "catalog.branchPricing.organizationDefault": "Organization default",
+        "catalog.branchPricing.inheritedByBranches":
+          "Used when this branch has no custom price.",
         "catalog.branchPricing.branchSellingPrice": "{branch} selling price",
         "catalog.branchPricing.useOrganizationDefaultMode": "Use organization default",
         "catalog.branchPricing.customBranchPriceMode": "Custom branch price",
@@ -68,7 +70,7 @@ const orgStandardProduct = {
   ],
 };
 
-function renderPanel(canGovern = true) {
+function renderPanel(canGovern = true, branchName = "Main Branch") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -78,7 +80,7 @@ function renderPanel(canGovern = true) {
           productId="prod-1"
           product={orgStandardProduct}
           canGovern={canGovern}
-          branchName="Branch A"
+          branchName={branchName}
         />
       </ToastProvider>
     </QueryClientProvider>,
@@ -111,12 +113,26 @@ describe("BranchProductPricingPanel", () => {
     removeBranchProductPriceOverride.mockResolvedValue(undefined);
   });
 
+  it("renders dynamic branch title without nested Base unit price card", async () => {
+    renderPanel(true, "Main Branch");
+    expect(await screen.findByTestId("catalog-branch-pricing")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Main Branch price" })).toBeInTheDocument();
+    const baseRow = await screen.findByTestId("branch-pricing-base");
+    expect(screen.queryByText("Base unit price")).not.toBeInTheDocument();
+    expect(screen.queryByText("Branch pricing")).not.toBeInTheDocument();
+    expect(baseRow.className).toContain("branch-pricing-row");
+    expect(baseRow.className).not.toContain("branch-pricing-card");
+  });
+
   it("BRPRICE-UX-01 displays organization default separately from branch price", async () => {
     renderPanel();
     expect(await screen.findByTestId("base-organization-default")).toHaveTextContent("₱100.00");
     expect(screen.getByTestId("base-effective-price")).toHaveTextContent("₱100.00");
     expect(screen.getByTestId("u1-organization-default")).toHaveTextContent("₱1,000.00");
     expect(screen.getByTestId("u1-effective-price")).toHaveTextContent("₱120.00");
+    expect(
+      screen.getAllByText("Used when this branch has no custom price.").length,
+    ).toBeGreaterThan(0);
   });
 
   it("BRPRICE-UX-02 saves custom branch price via setBranchProductPriceOverride", async () => {
@@ -166,6 +182,19 @@ describe("BranchProductPricingPanel", () => {
         "u1",
       );
     });
+  });
+
+  it("preserves Use organization default and Custom branch price modes", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await screen.findByTestId("branch-pricing-base");
+    expect(screen.getByTestId("base-mode-inherit")).toBeChecked();
+    await user.click(screen.getByTestId("base-mode-custom"));
+    expect(screen.getByTestId("base-mode-custom")).toBeChecked();
+    expect(screen.getByTestId("base-custom-price-input")).toBeInTheDocument();
+    await user.click(screen.getByTestId("base-mode-inherit"));
+    expect(screen.getByTestId("base-mode-inherit")).toBeChecked();
+    expect(screen.queryByTestId("base-custom-price-input")).not.toBeInTheDocument();
   });
 
   it("BRPRICE-UX-13 hides panel for unauthorized users", () => {
