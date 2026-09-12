@@ -74,11 +74,26 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "module-subnav.pill-bar": true,
   "module-subnav.real-world": true,
   "module-subnav.cheatsheet": false,
+
+  "action-chips.overview": true,
+  "action-chips.variants": true,
+  "action-chips.shapes": true,
+  "action-chips.content": true,
+  "action-chips.groups": true,
+  "action-chips.real-world": true,
+  "action-chips.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
 
-export type UiStandardsTab = "tables" | "buttons" | "chips" | "tabs" | "cards" | "module-subnav";
+export type UiStandardsTab =
+  | "tables"
+  | "buttons"
+  | "chips"
+  | "tabs"
+  | "cards"
+  | "module-subnav"
+  | "action-chips";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };

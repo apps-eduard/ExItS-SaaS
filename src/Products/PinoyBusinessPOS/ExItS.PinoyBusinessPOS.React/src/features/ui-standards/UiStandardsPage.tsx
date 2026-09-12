@@ -8,6 +8,7 @@ import { UiStandardsButtonsPanel } from "@/features/ui-standards/UiStandardsButt
 import { UiStandardsChipsPanel } from "@/features/ui-standards/UiStandardsChipsPanel";
 import { UiStandardsTabsPanel } from "@/features/ui-standards/UiStandardsTabsPanel";
 import { UiStandardsModuleSubnavPanel } from "@/features/ui-standards/UiStandardsModuleSubnavPanel";
+import { UiStandardsActionChipsPanel } from "@/features/ui-standards/UiStandardsActionChipsPanel";
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
 import { UiStandardsDisclosureToolbar } from "@/features/ui-standards/UiStandardsDisclosureToolbar";
@@ -53,6 +54,11 @@ export function UiStandardsPage() {
               label: t("uiStandards.tabModuleSubnav"),
               testId: "ui-standards-tab-module-subnav",
             },
+            {
+              key: "action-chips",
+              label: t("uiStandards.tabActionChips"),
+              testId: "ui-standards-tab-action-chips",
+            },
             { key: "cards", label: t("uiStandards.tabCards"), testId: "ui-standards-tab-cards" },
           ]}
         />
@@ -72,6 +78,9 @@ export function UiStandardsPage() {
       {tab === "tabs" ? <UiStandardsTabsPanel isOpen={isOpen} setOpen={setOpen} /> : null}
       {tab === "module-subnav" ? (
         <UiStandardsModuleSubnavPanel isOpen={isOpen} setOpen={setOpen} />
+      ) : null}
+      {tab === "action-chips" ? (
+        <UiStandardsActionChipsPanel isOpen={isOpen} setOpen={setOpen} />
       ) : null}
       {tab === "cards" ? <UiStandardsCardsPanel isOpen={isOpen} setOpen={setOpen} /> : null}
     </div>

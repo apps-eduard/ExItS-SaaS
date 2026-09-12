@@ -1,3 +1,4 @@
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { catalogs } from "@/i18n/messages";
@@ -5,6 +6,7 @@ import { UiStandardsButtonsPanel } from "@/features/ui-standards/UiStandardsButt
 import { UiStandardsChipsPanel } from "@/features/ui-standards/UiStandardsChipsPanel";
 import { UiStandardsTabsPanel } from "@/features/ui-standards/UiStandardsTabsPanel";
 import { UiStandardsModuleSubnavPanel } from "@/features/ui-standards/UiStandardsModuleSubnavPanel";
+import { UiStandardsActionChipsPanel } from "@/features/ui-standards/UiStandardsActionChipsPanel";
 import { UiStandardsCardsPanel } from "@/features/ui-standards/UiStandardsCardsPanel";
 import { UiStandardsTablesPanel } from "@/features/ui-standards/UiStandardsTablesPanel";
 import { formatUiStandardsCursorClipboard } from "@/features/ui-standards/UiStandardsCopyCommand";
@@ -124,6 +126,30 @@ describe("UI Standards every-sample copy coverage", () => {
     );
 
     expect(counts.implementable).toBeGreaterThan(20);
+  });
+
+  it("covers every implementable Action Chip sample including real-world", () => {
+    render(
+      <MemoryRouter>
+        <UiStandardsActionChipsPanel {...alwaysOpen} />
+      </MemoryRouter>,
+    );
+    const counts = assertEveryImplementableSampleHasCopy("ui-standards-action-chips-section");
+
+    expect(screen.getByTestId("ui-standards-action-chip-rw-inventory-responsiveAuto")).toHaveAttribute(
+      "data-has-copy",
+      "true",
+    );
+    expect(
+      within(screen.getByTestId("ui-standards-action-chip-rw-inventory-responsiveAuto")).getByTestId(
+        "ui-standards-copy-command",
+      ),
+    ).toHaveAttribute("data-command", "ACTION CHIP GROUP + RESPONSIVE AUTO + WITH ICON");
+    expect(screen.getByTestId("ui-standards-action-chip-group-wrap")).toHaveAttribute(
+      "data-has-copy",
+      "true",
+    );
+    expect(counts.implementable).toBeGreaterThan(30);
   });
 
   it("covers every implementable Card sample including footers and header actions", () => {
