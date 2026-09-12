@@ -573,9 +573,9 @@ export function UiStandardsSimpleCatalogV2() {
           ))}
         </SimpleV2Sample>
         <SimpleV2Sample label="With counts" standard="Chip" command="FILTER CHIP + WITH COUNT" testId="simple-v2-filter-counts">
-          <FilterChip selected>All 24</FilterChip>
-          <FilterChip>Pending 6</FilterChip>
-          <FilterChip>Completed 16</FilterChip>
+          <FilterChip selected count={24}>All</FilterChip>
+          <FilterChip count={6}>Pending</FilterChip>
+          <FilterChip count={16}>Completed</FilterChip>
         </SimpleV2Sample>
       </SimpleV2Showcase>
 

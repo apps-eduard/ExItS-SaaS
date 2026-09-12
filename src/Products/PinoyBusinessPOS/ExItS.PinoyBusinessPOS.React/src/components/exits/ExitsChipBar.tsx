@@ -1,11 +1,17 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
+import { CountBadge } from "@/components/exits/CountChip";
 
 export type ExitsChipItem = {
   key: string;
   label: ReactNode;
   icon?: ReactNode;
+  /**
+   * Authoritative contextual count. `0` renders; `undefined`/`null` omits the badge
+   * (unknown / unavailable — never fake zero).
+   */
+  count?: number | null;
   /** Visual state for flow/status chips. */
   state?: "idle" | "active" | "done";
   /** Accent for primary actions (e.g. Add supplier) — density-aware like filters. */
@@ -37,6 +43,16 @@ function chipClassName(item: ExitsChipItem): string {
   );
 }
 
+function chipAccessibleName(item: ExitsChipItem): string | undefined {
+  if (typeof item.label !== "string") {
+    return undefined;
+  }
+  if (item.count == null) {
+    return undefined;
+  }
+  return `${item.label}, ${item.count}`;
+}
+
 function ChipContent({
   item,
   index,
@@ -46,6 +62,7 @@ function ChipContent({
   index: number;
   showStepIndex: boolean;
 }) {
+  const active = (item.state ?? "idle") === "active";
   return (
     <>
       {showStepIndex ? (
@@ -59,6 +76,9 @@ function ChipContent({
         </span>
       ) : null}
       <span className="exits-chip__label">{item.label}</span>
+      {item.count != null ? (
+        <CountBadge count={item.count} tone={active ? "primary" : "neutral"} />
+      ) : null}
     </>
   );
 }
@@ -90,6 +110,7 @@ export function ExitsChipBar({
         const content = (
           <ChipContent item={item} index={index} showStepIndex={showStepIndex} />
         );
+        const accessibleName = chipAccessibleName(item);
 
         if (item.href && !item.disabled) {
           return (
@@ -100,6 +121,7 @@ export function ExitsChipBar({
               aria-selected={
                 variant === "filter" ? (item.state ?? "idle") === "active" : undefined
               }
+              aria-label={accessibleName}
               data-testid={item.testId}
               className={classNameChip}
             >
@@ -118,6 +140,7 @@ export function ExitsChipBar({
               aria-current={
                 variant === "steps" && (item.state ?? "idle") === "active" ? "step" : undefined
               }
+              aria-label={accessibleName}
               disabled={item.disabled}
               data-testid={item.testId}
               className={classNameChip}
@@ -135,6 +158,7 @@ export function ExitsChipBar({
             aria-current={
               variant === "steps" && (item.state ?? "idle") === "active" ? "step" : undefined
             }
+            aria-label={accessibleName}
             data-testid={item.testId}
             className={classNameChip}
           >

@@ -475,9 +475,9 @@ export function UiStandardsSimpleCatalog() {
             ))}
           </SimpleSample>
           <SimpleSample label="WITH COUNT" standard="Chip" command="FILTER CHIP + WITH COUNT" testId="simple-filter-count" contentClassName="flex flex-wrap gap-1.5">
-            <FilterChip selected>All 24</FilterChip>
-            <FilterChip>Pending 6</FilterChip>
-            <FilterChip>Completed 16</FilterChip>
+            <FilterChip selected count={24}>All</FilterChip>
+            <FilterChip count={6}>Pending</FilterChip>
+            <FilterChip count={16}>Completed</FilterChip>
           </SimpleSample>
         </SimpleGroup>
       </SimpleCatalogSection>

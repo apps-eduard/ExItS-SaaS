@@ -1,6 +1,7 @@
 import { ChevronRight, Link2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
@@ -203,7 +204,7 @@ export function PeopleListSection({
           </p>
         </div>
         {summary.total > 0 ? (
-          <StatusChip tone="neutral">{String(summary.total)}</StatusChip>
+          <CountBadge count={summary.total} tone="neutral" />
         ) : null}
       </div>
 
@@ -224,7 +225,8 @@ export function PeopleListSection({
         className="exits-animate-toolbar"
         items={FILTERS.map((item) => ({
           key: item.key,
-          label: `${t(item.labelKey)}${filterCounts[item.key] > 0 ? ` (${filterCounts[item.key]})` : ""}`,
+          label: t(item.labelKey),
+          count: filterCounts[item.key],
           state: filter === item.key ? "active" : "idle",
           testId: `people-filter-${item.key}`,
           onSelect: () => setFilter(item.key),

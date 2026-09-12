@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { Building2, ChevronRight, Plus, UserRound, Users } from "lucide-react";
 import { canCreateCustomer, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   listBusinessCustomers,
@@ -10,6 +10,7 @@ import {
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
 import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
@@ -248,15 +249,10 @@ export function CustomersListPage() {
         ? t("customers.business.search")
         : t("customers.search");
 
-  const kindLabel = (filter: (typeof KIND_FILTERS)[number]): string => {
-    const base = t(filter.labelKey);
-    const count =
-      filter.value === "all"
-        ? allCount
-        : filter.value === "people"
-          ? peopleCount
-          : businessCount;
-    return count != null ? `${base} ${count}` : base;
+  const kindCount = (filter: (typeof KIND_FILTERS)[number]): number | null => {
+    if (filter.value === "all") return allCount;
+    if (filter.value === "people") return peopleCount;
+    return businessCount;
   };
 
   if (!workspace) {
@@ -297,7 +293,8 @@ export function CustomersListPage() {
             testId="customers-kind-filters"
             items={KIND_FILTERS.map((filter) => ({
               key: filter.value,
-              label: kindLabel(filter),
+              label: t(filter.labelKey),
+              count: kindCount(filter),
               state: kind === filter.value ? "active" : "idle",
               testId: `customers-kind-${filter.value}`,
               onSelect: () => setKind(filter.value),
@@ -362,7 +359,11 @@ export function CustomersListPage() {
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindPeople")}</h2>
               {peopleReady ? (
-                <span className="customers-section__count">{peopleItems.length}</span>
+                <CountBadge
+                  count={peopleItems.length}
+                  tone="neutral"
+                  className="customers-section__count"
+                />
               ) : null}
             </div>
           ) : null}
@@ -372,11 +373,21 @@ export function CustomersListPage() {
           ) : null}
           {peopleReady && peopleItems.length === 0 ? (
             kind === "all" ? (
-              <p className="customers-section__empty-inline" data-testid="customers-people-empty">
-                {t("customers.peopleEmptyCompact")}
-              </p>
+              <div data-testid="customers-people-empty">
+                <EmptyState
+                  align="center"
+                  icon={<UserRound className="size-5" strokeWidth={1.75} />}
+                  title={t("customers.peopleEmptyCompact")}
+                  detail=""
+                />
+              </div>
             ) : (
-              <EmptyState title={t("customers.empty")} detail={t("customers.emptyDetail")} />
+              <EmptyState
+                align="center"
+                icon={<Users className="size-5" strokeWidth={1.75} />}
+                title={t("customers.empty")}
+                detail={t("customers.emptyDetail")}
+              />
             )
           ) : null}
           <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
@@ -433,7 +444,11 @@ export function CustomersListPage() {
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindBusinesses")}</h2>
               {businessesReady ? (
-                <span className="customers-section__count">{businessRows.length}</span>
+                <CountBadge
+                  count={businessRows.length}
+                  tone="neutral"
+                  className="customers-section__count"
+                />
               ) : null}
             </div>
           ) : null}
@@ -460,6 +475,8 @@ export function CustomersListPage() {
           ) : null}
           {businessesReady && businessRows.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
               title={t("customers.business.empty")}
               detail={t("customers.business.emptyHelp")}
             />

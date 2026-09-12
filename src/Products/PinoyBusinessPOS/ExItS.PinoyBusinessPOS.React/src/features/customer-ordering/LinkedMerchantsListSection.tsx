@@ -18,6 +18,7 @@ import {
 } from "@/api/platform/customer-link-requests-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { SearchField } from "@/components/exits/SearchField";
@@ -323,7 +324,7 @@ export function LinkedMerchantsListSection({
           </p>
         </div>
         {rows.length > 0 ? (
-          <span className="pc-store-list-section__count">{rows.length}</span>
+          <CountBadge count={rows.length} tone="neutral" className="pc-store-list-section__count" />
         ) : null}
       </div>
 
@@ -344,7 +345,8 @@ export function LinkedMerchantsListSection({
         className="exits-animate-toolbar"
         items={FILTERS.map((item) => ({
           key: item.key,
-          label: `${t(item.labelKey)}${filterCounts[item.key] > 0 ? ` (${filterCounts[item.key]})` : ""}`,
+          label: t(item.labelKey),
+          count: filterCounts[item.key],
           state: filter === item.key ? "active" : "idle",
           testId: `linked-merchants-filter-${item.key}`,
           onSelect: () => setFilter(item.key),

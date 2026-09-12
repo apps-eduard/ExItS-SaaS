@@ -486,7 +486,7 @@ export function PersonalTodoHubPage() {
           items={TABS.map((item) => {
             const count =
               counts == null
-                ? 0
+                ? null
                 : item.id === "today"
                   ? counts.today
                   : item.id === "upcoming"
@@ -500,7 +500,8 @@ export function PersonalTodoHubPage() {
                         : counts.cancelled;
             return {
               key: item.id,
-              label: `${t(item.labelKey)} (${count})`,
+              label: t(item.labelKey),
+              count,
               testId: `todo-tab-${item.id}`,
             };
           })}

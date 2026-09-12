@@ -6,6 +6,8 @@ export type UnderlineTabItem = {
   key: string;
   label: ReactNode;
   icon?: LucideIcon;
+  /** Authoritative count — `0` shows; omit when unknown. */
+  count?: number | null;
   testId?: string;
   disabled?: boolean;
 };
@@ -43,6 +45,7 @@ export function UnderlineTabBar({
           key: item.key,
           label: item.label,
           icon: Icon ? <Icon /> : undefined,
+          count: item.count,
           state: activeKey === item.key ? "active" : "idle",
           testId: item.testId,
           disabled: item.disabled,

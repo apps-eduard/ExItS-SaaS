@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { CountBadge } from "@/components/exits/CountChip";
 import { filterChipVariants, type FilterChipShape } from "@/components/exits/chip-variants";
 
 export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
@@ -14,6 +15,8 @@ export type FilterChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
   /** Show a check when selected (multi-select clarity). */
   showCheck?: boolean;
   icon?: ReactNode;
+  /** Authoritative count — `0` shows; omit when unknown. */
+  count?: number | null;
 };
 
 /**
@@ -27,15 +30,21 @@ export function FilterChip({
   shape = "auto",
   showCheck = false,
   icon,
+  count,
   type = "button",
   disabled,
+  "aria-label": ariaLabelProp,
   ...props
 }: FilterChipProps) {
+  const accessibleName =
+    ariaLabelProp ??
+    (typeof children === "string" && count != null ? `${children}, ${count}` : undefined);
   return (
     <button
       type={type}
       disabled={disabled}
       aria-pressed={selected}
+      aria-label={accessibleName}
       className={cn(filterChipVariants({ selected, shape }), className)}
       data-selected={selected ? "true" : "false"}
       data-shape={shape}
@@ -53,6 +62,9 @@ export function FilterChip({
         </span>
       ) : null}
       <span className="min-w-0 truncate">{children}</span>
+      {count != null ? (
+        <CountBadge count={count} tone={selected ? "primary" : "neutral"} />
+      ) : null}
     </button>
   );
 }
