@@ -291,7 +291,7 @@ export function IncomingOrdersListPage() {
                 <ExitsTableHead cellAlign="text">{t("incomingOrders.buyer")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("incomingOrders.deliverTo")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("incomingOrders.orderDate")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric">{t("purchasing.lines")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.lines")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="numeric">{t("incomingOrders.total")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.fieldStatus")}</ExitsTableHead>
               </ExitsTableRow>
@@ -318,7 +318,7 @@ export function IncomingOrdersListPage() {
                     <ExitsTableCell cellAlign="text">{buyer}</ExitsTableCell>
                     <ExitsTableCell cellAlign="text">{branch}</ExitsTableCell>
                     <ExitsTableCell cellAlign="text">{order.orderDate}</ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                    <ExitsTableCell cellAlign="text" className="tabular-nums">
                       {t("incomingOrders.summary")
                         .replace("{products}", String(products))
                         .replace("{units}", String(units))}

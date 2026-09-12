@@ -284,7 +284,7 @@ export function PurchasingHubPage() {
                 variant="actions"
                 ariaLabel={t("purchasing.buyingTitle")}
                 testId="purchasing-buying-actions"
-                className="exits-chip-bar--scroll exits-animate-toolbar"
+                className="purchasing-hub-direction__actions exits-animate-toolbar"
                 items={buyingItems}
               />
             </Card>
@@ -313,7 +313,7 @@ export function PurchasingHubPage() {
                 variant="actions"
                 ariaLabel={t("purchasing.sellingTitle")}
                 testId="purchasing-selling-actions"
-                className="exits-chip-bar--scroll exits-animate-toolbar"
+                className="purchasing-hub-direction__actions exits-animate-toolbar"
                 items={sellingItems}
               />
             </Card>

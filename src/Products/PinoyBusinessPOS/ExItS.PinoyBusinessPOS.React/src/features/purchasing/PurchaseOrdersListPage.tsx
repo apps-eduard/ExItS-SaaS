@@ -341,7 +341,7 @@ export function PurchaseOrdersListPage() {
                 <ExitsTableHead cellAlign="text">{t("purchasing.poNumber")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.supplier")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.orderDate")}</ExitsTableHead>
-                <ExitsTableHead cellAlign="numeric">{t("purchasing.lines")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.lines")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.fieldStatus")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="text">{t("purchasing.paymentTerm")}</ExitsTableHead>
               </ExitsTableRow>
@@ -363,7 +363,7 @@ export function PurchaseOrdersListPage() {
                       {po.supplierName ?? t("purchasing.unknownSupplier")}
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">{po.orderDate}</ExitsTableCell>
-                    <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                    <ExitsTableCell cellAlign="text" className="tabular-nums">
                       {po.lines.length}
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">
