@@ -222,15 +222,14 @@ function BranchPricingRow(props: {
           <Button
             type="button"
             variant="outline"
-            size="sm"
             disabled={props.disabled || !canSaveCustom || props.saving || props.removing}
             data-testid={`${rowId}-save-override`}
             onClick={props.onSaveCustom}
           >
             {props.saving ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              <Loader2 className="size-4 shrink-0 animate-spin text-[var(--exits-primary)]" aria-hidden />
             ) : (
-              <Save className="size-4 shrink-0" aria-hidden />
+              <Save className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
             )}
             {props.saving ? props.savingLabel : props.saveLabel}
           </Button>
@@ -239,15 +238,14 @@ function BranchPricingRow(props: {
           <Button
             type="button"
             variant="outline"
-            size="sm"
             disabled={props.disabled || props.saving || props.removing}
             data-testid={`${rowId}-use-organization-default`}
             onClick={props.onUseOrganizationDefault}
           >
             {props.removing ? (
-              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              <Loader2 className="size-4 shrink-0 animate-spin text-[var(--exits-primary)]" aria-hidden />
             ) : (
-              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              <RotateCcw className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
             )}
             {props.removing ? props.removingLabel : props.useOrganizationDefaultLabel}
           </Button>

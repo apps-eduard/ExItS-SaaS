@@ -386,7 +386,7 @@ export function CatalogBranchAvailabilitySection(props: {
   return (
     <section className="catalog-form-section exits-animate-panel" data-testid="catalog-branch-availability">
       <h2 className="catalog-form-section__title">{t("catalog.governance.branchAvailability")}</h2>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
         {t("catalog.governance.branchAvailabilityHint")}
       </p>
       {error ? (

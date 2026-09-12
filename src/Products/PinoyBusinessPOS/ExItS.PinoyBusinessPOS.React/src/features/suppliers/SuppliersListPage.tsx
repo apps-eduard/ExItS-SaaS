@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { PackageSearch } from "lucide-react";
 import { canManageSuppliers, canViewPurchasing, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   isRelationshipActive,
@@ -206,28 +207,33 @@ export function SuppliersListPage() {
         ]}
       />
 
-      <SearchField
-        label={t("suppliers.search")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("suppliers.search")}
-        data-testid="suppliers-search"
-        containerClassName="suppliers-page__search exits-page__search"
-      />
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("suppliers.statusFilter")}
-        testId="suppliers-status-filters"
-        items={STATUS_FILTERS.map((filter) => ({
-          key: filter.key,
-          label: t(filter.labelKey),
-          state: (status || "all") === filter.key ? "active" : "idle",
-          testId: `suppliers-status-${filter.key === "all" ? "all" : filter.key}`,
-          onSelect: () => setStatus(filter.value),
-        }))}
-      />
+      <div
+        className="suppliers-page__filters-search flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+        data-testid="suppliers-filters-search"
+      >
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("suppliers.statusFilter")}
+          testId="suppliers-status-filters"
+          className="shrink-0"
+          items={STATUS_FILTERS.map((filter) => ({
+            key: filter.key,
+            label: t(filter.labelKey),
+            state: (status || "all") === filter.key ? "active" : "idle",
+            testId: `suppliers-status-${filter.key === "all" ? "all" : filter.key}`,
+            onSelect: () => setStatus(filter.value),
+          }))}
+        />
+        <SearchField
+          label={t("suppliers.search")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={t("suppliers.search")}
+          data-testid="suppliers-search"
+          containerClassName="suppliers-page__search exits-page__search min-w-0 flex-1"
+        />
+      </div>
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isFetching && !query.isLoading && query.data ? (
@@ -237,7 +243,12 @@ export function SuppliersListPage() {
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
       {query.isSuccess && query.data.items.length === 0 ? (
-        <EmptyState title={t("suppliers.empty")} detail={t("suppliers.emptyDetail")} />
+        <EmptyState
+          align="center"
+          icon={<PackageSearch className="size-5" strokeWidth={1.75} />}
+          title={t("suppliers.empty")}
+          detail={t("suppliers.emptyDetail")}
+        />
       ) : null}
 
       <ul className="exits-list suppliers-list m-0 grid list-none gap-2 p-0" data-testid="suppliers-list">

@@ -53,7 +53,6 @@ import { PageHeader } from "@/components/exits/PageHeader";
 
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TagChip } from "@/components/exits/TagChip";
-import { ActionChipBar } from "@/components/exits/ActionChipBar";
 
 import { useBrowserOnline } from "@/connectivity/browser-online";
 
@@ -1417,28 +1416,19 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                     {t("inventory.expirationTrackingOff")}
                   </TagChip>
                 )}
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                   {t("catalog.expirationManagedInSettings")}
                 </p>
                 {productId ? (
-                  <ActionChipBar
-                    ariaLabel={t("inventory.manageExpirationSettings")}
-                    variant="outline"
-                    shape="soft"
-                    groupRole="none"
-                    testId="catalog-manage-expiration-settings"
-                    items={[
-                      {
-                        key: "manage-expiration",
-                        label: t("inventory.manageExpirationSettings"),
-                        icon: Settings2,
-                        href: `/inventory/${productId}/expiration`,
-                        visual: "outline",
-                        tone: "primary",
-                        testId: "catalog-manage-expiration-settings-chip",
-                      },
-                    ]}
-                  />
+                  <Button asChild variant="outline" className="w-fit">
+                    <Link
+                      to={`/inventory/${productId}/expiration`}
+                      data-testid="catalog-manage-expiration-settings"
+                    >
+                      <Settings2 className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      {t("inventory.manageExpirationSettings")}
+                    </Link>
+                  </Button>
                 ) : null}
               </div>
             ) : (
