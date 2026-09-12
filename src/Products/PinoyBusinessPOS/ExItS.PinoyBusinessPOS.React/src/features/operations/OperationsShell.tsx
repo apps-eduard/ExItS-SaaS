@@ -35,7 +35,7 @@ export function OperationsShell({
     <div
       className={cn(
         "operations-shell operations-shell--viewport-lock flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
-        "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        "px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         hideBottomNav
           ? "pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-0"
           : "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-0",
@@ -62,8 +62,8 @@ export function OperationsShell({
       <div
         className={cn(
           "operations-shell__column flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-          /* No padding-inline-start: sidebar border-inline-end is the only divider (no shell gutter). */
-          "lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
+          /* End inset only — start edge stays flush with sidebar (no shell seam gap). */
+          "lg:pe-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))]",
         )}
       >
         {header}

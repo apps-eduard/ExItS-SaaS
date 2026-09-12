@@ -454,8 +454,7 @@ export function ManagerRetailHome() {
         title={t("role.managerTitle")}
         subtitle={boundWorkspace?.branchName?.trim() || undefined}
         description={t("managerHome.lede")}
-        descriptionCollapsible={false}
-        trailing={
+        actions={
           <span data-testid="manager-home-badge">
             <StatusChip className="manager-home-role-chip">{t("role.managerBadge")}</StatusChip>
           </span>

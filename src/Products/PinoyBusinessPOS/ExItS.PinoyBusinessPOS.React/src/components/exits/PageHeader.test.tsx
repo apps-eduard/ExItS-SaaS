@@ -17,13 +17,15 @@ function renderHeader(ui: React.ReactElement) {
 }
 
 describe("PageHeader", () => {
-  it("renders icon-only info control when description is collapsible", () => {
-    renderHeader(<PageHeader title="Manager home" description="Operations hub" />);
+  it("renders title and optional always-visible description by default", () => {
+    renderHeader(
+      <PageHeader title="Manager home" description="Operations hub" />,
+    );
     expect(screen.queryByTestId("page-header-back")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Manager home" })).toBeInTheDocument();
-    const toggle = screen.getByTestId("page-header-info-toggle");
-    expect(toggle).toBeInTheDocument();
-    expect(toggle).not.toHaveTextContent("Info");
+    expect(screen.getByTestId("page-header-description")).toHaveTextContent("Operations hub");
+    expect(screen.queryByTestId("page-header-info-toggle")).not.toBeInTheDocument();
+    expect(screen.getByTestId("page-header").className).toMatch(/page-header/);
   });
 
   it("renders canonical back link with accessible name and density-sized control", () => {
@@ -42,9 +44,29 @@ describe("PageHeader", () => {
     expect(back.className).toMatch(/exits-control-height/);
   });
 
-  it("reveals description on hover and hides on mouse leave", () => {
+  it("renders actions / badge slot when provided", () => {
     renderHeader(
-      <PageHeader title="Products" description="Manage catalog products for this organization." />,
+      <PageHeader
+        title="Customers"
+        description="Manage customers."
+        actions={<button type="button">Add customer</button>}
+      />,
+    );
+    expect(screen.getByTestId("page-header-actions")).toHaveTextContent("Add customer");
+  });
+
+  it("omits description when not provided", () => {
+    renderHeader(<PageHeader title="Shifts" />);
+    expect(screen.queryByTestId("page-header-description")).not.toBeInTheDocument();
+  });
+
+  it("reveals description on hover when collapsible", () => {
+    renderHeader(
+      <PageHeader
+        title="Products"
+        description="Manage catalog products for this organization."
+        descriptionCollapsible
+      />,
     );
 
     const toggle = screen.getByTestId("page-header-info-toggle");
@@ -61,10 +83,14 @@ describe("PageHeader", () => {
     expect(shell).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("pins description open on tap until tapped again", async () => {
+  it("pins description open on tap until tapped again when collapsible", async () => {
     const user = userEvent.setup();
     renderHeader(
-      <PageHeader title="Products" description="Manage catalog products for this organization." />,
+      <PageHeader
+        title="Products"
+        description="Manage catalog products for this organization."
+        descriptionCollapsible
+      />,
     );
 
     const toggle = screen.getByTestId("page-header-info-toggle");

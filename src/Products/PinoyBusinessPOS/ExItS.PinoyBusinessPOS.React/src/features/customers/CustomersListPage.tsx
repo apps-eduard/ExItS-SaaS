@@ -274,7 +274,7 @@ export function CustomersListPage() {
         backTo={pageBackNav.managerHome.to}
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-customers"
-        trailing={
+        actions={
           showAdd ? (
             <Link
               to="/customers/new"

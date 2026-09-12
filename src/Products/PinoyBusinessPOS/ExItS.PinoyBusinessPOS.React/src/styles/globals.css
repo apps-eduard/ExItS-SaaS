@@ -219,6 +219,15 @@
   --exits-control-padding-y: 0;
   --exits-control-height-lg: 2.75rem;
   --exits-page-padding: 1rem;
+  /*
+   * Internal page-content gutter (inside the content region — not a shell/sidebar gap).
+   * Balance default = 20px; density + breakpoints adjust below.
+   */
+  --exits-page-gutter-inline: 1.25rem;
+  --exits-page-gutter-block: 0.75rem;
+  --exits-page-header-padding-block: 0.625rem;
+  --exits-page-header-padding-inline: 0.75rem;
+  --exits-page-header-to-content-gap: 0.75rem;
 
   --exits-chip-min-height: 2.25rem;
   --exits-chip-padding-y: 0.35rem;
@@ -469,6 +478,11 @@
   --exits-control-height: 2.25rem;
   --exits-control-padding-x: 0.875rem;
   --exits-control-padding-y: 0;
+  --exits-page-gutter-inline: 1.25rem;
+  --exits-page-gutter-block: 0.75rem;
+  --exits-page-header-padding-block: 0.625rem;
+  --exits-page-header-padding-inline: 0.75rem;
+  --exits-page-header-to-content-gap: 0.75rem;
   --exits-chip-min-height: 2.25rem;
   --exits-chip-padding-y: 0.35rem;
   --exits-chip-padding-x: 0.85rem;
@@ -508,6 +522,11 @@
   --exits-control-height: 2.75rem;
   --exits-control-padding-x: 1rem;
   --exits-control-padding-y: 0;
+  --exits-page-gutter-inline: 1.5rem;
+  --exits-page-gutter-block: 1rem;
+  --exits-page-header-padding-block: 0.75rem;
+  --exits-page-header-padding-inline: 0.875rem;
+  --exits-page-header-to-content-gap: 1rem;
   --exits-chip-min-height: 2.75rem;
   --exits-chip-padding-y: 0.5rem;
   --exits-chip-padding-x: 1rem;
@@ -547,6 +566,11 @@
   --exits-control-height: 2rem;
   --exits-control-padding-x: 0.7rem;
   --exits-control-padding-y: 0;
+  --exits-page-gutter-inline: 1rem;
+  --exits-page-gutter-block: 0.625rem;
+  --exits-page-header-padding-block: 0.5rem;
+  --exits-page-header-padding-inline: 0.625rem;
+  --exits-page-header-to-content-gap: 0.75rem;
   --exits-chip-min-height: 2rem;
   --exits-chip-padding-y: 0.2rem;
   --exits-chip-padding-x: 0.65rem;
@@ -1635,6 +1659,33 @@ html:has(.admin-shell) #root {
 .exits-page {
   background: var(--exits-bg);
   color: var(--exits-text);
+  width: 100%;
+  min-width: 0;
+}
+
+/* Mobile / narrow: slightly tighter content gutter (shell may also apply safe-area). */
+@media (max-width: 767px) {
+  :root,
+  [data-density="balance"],
+  [data-density="compact"],
+  [data-density="comfort"] {
+    --exits-page-gutter-inline: 0.875rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root,
+  [data-density="balance"] {
+    --exits-page-gutter-inline: 1rem;
+  }
+
+  [data-density="compact"] {
+    --exits-page-gutter-inline: 0.875rem;
+  }
+
+  [data-density="comfort"] {
+    --exits-page-gutter-inline: 1.25rem;
+  }
 }
 
 .exits-panel,
@@ -1698,7 +1749,7 @@ html:has(.admin-shell) #root {
 /* ---- Global typography primitives ---- */
 .exits-type-page-title {
   font-size: var(--exits-type-page-title);
-  font-weight: var(--exits-font-weight-medium);
+  font-weight: var(--exits-font-weight-semibold);
   line-height: var(--exits-leading-tight);
   letter-spacing: -0.015em;
   color: var(--exits-text);
@@ -11544,6 +11595,29 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-text-muted);
 }
 
+/*
+ * Canonical ExItS Page Header surface — compact, subtle, structural radius.
+ * Does not follow Control Shape (Pill) or Primary surface tint.
+ */
+.page-header {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding-block: var(--exits-page-header-padding-block);
+  padding-inline: var(--exits-page-header-padding-inline);
+  border: 1px solid color-mix(in srgb, var(--exits-border) 88%, transparent);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface);
+  box-shadow: none;
+  color: var(--exits-text);
+}
+
+.exits-page > .page-header {
+  /* Prefer flex gap on the page; keep header compact against following sections. */
+  flex-shrink: 0;
+}
+
 .page-header__title-icon {
   display: inline-flex;
   align-items: center;
@@ -17297,12 +17371,33 @@ a.exits-chip--primary:hover {
 
 .operations-shell--viewport-lock .operations-shell__content {
   display: flex;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  /* Block padding only here — inline start gutter is desktop-only (sidebar breathing room). */
+  padding-block: var(--exits-page-gutter-block);
+}
+
+/*
+ * Desktop content gutter: internal padding after the sidenav divider.
+ * Not a shell column gap — sidebar and content region still touch.
+ */
+@media (min-width: 1024px) {
+  .operations-shell--viewport-lock:not(.operations-shell--sell-floor) .operations-shell__content {
+    padding-inline-start: var(--exits-page-gutter-inline);
+  }
+
+  .admin-shell__content {
+    padding-inline-start: var(--exits-page-gutter-inline);
+    padding-block: var(--exits-page-gutter-block);
+    box-sizing: border-box;
+  }
 }
 
 .operations-shell--sell-floor .operations-shell__body {
@@ -17311,6 +17406,8 @@ a.exits-chip--primary:hover {
 
 .operations-shell--sell-floor .operations-shell__content {
   overflow: hidden;
+  padding-block: 0;
+  padding-inline: 0;
 }
 
 /* Ops sidebar: stretch to locked shell height with internal nav scroll. */
@@ -17379,12 +17476,15 @@ a.exits-chip--primary:hover {
   display: flex;
   width: 100%;
   max-width: 1200px;
+  min-width: 0;
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
+  padding-block: var(--exits-page-gutter-block);
 }
 
 .admin-sidebar {

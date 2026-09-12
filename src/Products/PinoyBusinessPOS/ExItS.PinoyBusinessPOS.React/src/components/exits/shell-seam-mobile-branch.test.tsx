@@ -72,8 +72,9 @@ describe("Shell seam + mobile branch polish", () => {
   it("removes desktop content-column start gutter so sidebar touches topbar/content", () => {
     expect(opsShellSrc).not.toMatch(/lg:ps-\[max\(0\.75rem/);
     expect(adminShellSrc).not.toMatch(/lg:ps-\[max\(0\.75rem/);
-    expect(opsShellSrc).toMatch(/lg:pe-\[max\(var\(--exits-page-padding\)/);
-    expect(adminShellSrc).toMatch(/lg:pe-\[max\(var\(--exits-page-padding\)/);
+    // End inset uses page content gutter token (not a start seam gap).
+    expect(opsShellSrc).toMatch(/lg:pe-\[max\(var\(--exits-page-gutter-inline\)/);
+    expect(adminShellSrc).toMatch(/lg:pe-\[max\(var\(--exits-page-gutter-inline\)/);
     expect(opsShellSrc).toMatch(/lg:gap-0/);
     expect(globalsCss).toMatch(
       /\.admin-sidebar[\s\S]*?border-inline-end:\s*1px solid/,

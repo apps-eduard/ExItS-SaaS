@@ -23,7 +23,7 @@ export function AppShell({
   return (
     <div
       className={cn(
-        "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         sellFloor && "app-shell--sell-floor",
         withOrgBottomNav
           ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))]"

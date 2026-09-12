@@ -27,7 +27,7 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
     <div
       className={cn(
         "admin-shell flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
-        "px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        "px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-0",
         "lg:flex-row lg:gap-0 lg:px-0 lg:pt-0",
       )}
@@ -50,8 +50,8 @@ export function AdminManagementShell({ children, header }: AdminManagementShellP
       <div
         className={cn(
           "admin-shell__column flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-          /* No padding-inline-start: sidebar border-inline-end is the only divider (no shell gutter). */
-          "lg:pe-[max(var(--exits-page-padding),env(safe-area-inset-right))]",
+          /* End inset only — start edge stays flush with sidebar (no shell seam gap). */
+          "lg:pe-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))]",
         )}
       >
         {header}
