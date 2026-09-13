@@ -26,6 +26,9 @@ export const FEATURE_STORE_EXPENSES_VIEW = "store-expenses-view";
 export const FEATURE_STORE_EXPENSES_MANAGE = "store-expenses-manage";
 export const FEATURE_STORE_AREA_MANAGEMENT = "store-area-management";
 export const FEATURE_STORE_WAREHOUSE = "store-warehouse";
+export const FEATURE_STORE_BASIC_PAYMENTS = "store-basic-payments";
+export const FEATURE_STORE_PAYMENT_MANAGEMENT = "store-payment-management";
+export const FEATURE_STORE_ONLINE_PAYMENTS = "store-online-payments";
 
 function featureGrantDenied(
   grant: PosSessionGrantFacts | null | undefined,
@@ -550,6 +553,24 @@ export function canManageStoreAreas(grant: PosSessionGrantFacts | null | undefin
 /** Warehouse branch entitlement (`store-warehouse`). Server remains authoritative. */
 export function canUseWarehouseBranches(grant: PosSessionGrantFacts | null | undefined): boolean {
   return grantHasFeatureCode(grant, FEATURE_STORE_WAREHOUSE) === true;
+}
+
+/** Everyday tenders: Cash / ManualGCash / Utang (`store-basic-payments`). */
+export function canUseBasicPayments(grant: PosSessionGrantFacts | null | undefined): boolean {
+  const coded = grantHasFeatureCode(grant, FEATURE_STORE_BASIC_PAYMENTS);
+  if (coded === false) return false;
+  // Legacy sessions without the code still allow basic payments when POS access is allowed.
+  return grant?.productAccessAllowed === true;
+}
+
+/** Manual payment method management (`store-payment-management`). */
+export function canManagePaymentMethods(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_PAYMENT_MANAGEMENT) === true;
+}
+
+/** Online payment integrations foundation (`store-online-payments`). */
+export function canUseOnlinePayments(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_ONLINE_PAYMENTS) === true;
 }
 
 /**

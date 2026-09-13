@@ -38,6 +38,9 @@ public static class MvpPosPlanCatalog
         bool WarehouseEnabled,
         bool CustomerOrderingEnabled,
         bool DeliveryOrdersEnabled,
+        bool BasicPaymentsEnabled,
+        bool PaymentManagementEnabled,
+        bool OnlinePaymentsEnabled,
         bool TrialAllowed,
         int DefaultTrialDays,
         int SortOrder,
@@ -47,7 +50,7 @@ public static class MvpPosPlanCatalog
 
     /// <summary>
     /// DEVELOPMENT/default placeholder PHP prices — not final launch prices.
-    /// Feature differentiation reuses existing codes; warehouse/area use dedicated grants.
+    /// Feature differentiation reuses existing codes; warehouse/area/payment use dedicated grants.
     /// </summary>
     public static readonly IReadOnlyList<Spec> Plans =
     [
@@ -66,6 +69,9 @@ public static class MvpPosPlanCatalog
             WarehouseEnabled: false,
             CustomerOrderingEnabled: false,
             DeliveryOrdersEnabled: false,
+            BasicPaymentsEnabled: true,
+            PaymentManagementEnabled: false,
+            OnlinePaymentsEnabled: false,
             TrialAllowed: true,
             DefaultTrialDays: 14,
             SortOrder: 10,
@@ -86,6 +92,9 @@ public static class MvpPosPlanCatalog
             WarehouseEnabled: false,
             CustomerOrderingEnabled: true,
             DeliveryOrdersEnabled: true,
+            BasicPaymentsEnabled: true,
+            PaymentManagementEnabled: false,
+            OnlinePaymentsEnabled: false,
             TrialAllowed: true,
             DefaultTrialDays: 14,
             SortOrder: 20,
@@ -106,6 +115,9 @@ public static class MvpPosPlanCatalog
             WarehouseEnabled: true,
             CustomerOrderingEnabled: true,
             DeliveryOrdersEnabled: true,
+            BasicPaymentsEnabled: true,
+            PaymentManagementEnabled: true,
+            OnlinePaymentsEnabled: false,
             TrialAllowed: false,
             DefaultTrialDays: 0,
             SortOrder: 30,
@@ -126,6 +138,9 @@ public static class MvpPosPlanCatalog
             WarehouseEnabled: true,
             CustomerOrderingEnabled: true,
             DeliveryOrdersEnabled: true,
+            BasicPaymentsEnabled: true,
+            PaymentManagementEnabled: true,
+            OnlinePaymentsEnabled: true,
             TrialAllowed: false,
             DefaultTrialDays: 0,
             SortOrder: 40,

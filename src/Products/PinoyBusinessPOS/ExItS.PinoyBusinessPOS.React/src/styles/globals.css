@@ -5568,15 +5568,23 @@ html:has(.admin-shell) #root {
 
 .inventory-list-page .exits-list__card.inventory-row:hover,
 .inventory-list-page .exits-list__card.inventory-row:active {
-  background: #fff;
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
   transform: none;
-  border-color: var(--exits-border-strong);
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
   box-shadow: var(--exits-shadow-md);
 }
 
 :root:not([data-theme="dark"]) .inventory-list-page .exits-list__card.inventory-row,
 [data-theme="light"] .inventory-list-page .exits-list__card.inventory-row {
   background: #fff;
+}
+
+:root:not([data-theme="dark"]) .inventory-list-page .exits-list__card.inventory-row:hover,
+:root:not([data-theme="dark"]) .inventory-list-page .exits-list__card.inventory-row:active,
+[data-theme="light"] .inventory-list-page .exits-list__card.inventory-row:hover,
+[data-theme="light"] .inventory-list-page .exits-list__card.inventory-row:active {
+  background: color-mix(in srgb, var(--exits-primary) 6%, #fff);
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
 }
 
 .inventory-row--untracked {
@@ -14185,16 +14193,30 @@ select.pc-field__control:disabled {
 }
 
 .plan-selection-card--popular {
-  border-color: color-mix(in srgb, var(--exits-accent, #0f766e) 55%, var(--exits-border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-accent, #0f766e) 35%, transparent);
+  border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 22%, transparent);
 }
 
 .plan-selection-card--complete {
-  border-color: color-mix(in srgb, var(--exits-border) 70%, #334155);
+  border-color: color-mix(in srgb, var(--exits-border) 80%, var(--exits-primary));
 }
 
 .plan-selection-card--current {
-  background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface));
+}
+
+.plan-payment-section {
+  margin-top: 0.35rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
+}
+
+.plan-payment-section__title {
+  font-size: var(--exits-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--exits-muted, var(--muted));
 }
 
 .plan-badge {
@@ -14208,8 +14230,8 @@ select.pc-field__control:disabled {
 }
 
 .plan-badge--popular {
-  background: color-mix(in srgb, var(--exits-accent, #0f766e) 18%, transparent);
-  color: var(--exits-accent, #0f766e);
+  background: color-mix(in srgb, var(--exits-primary) 16%, transparent);
+  color: var(--exits-primary);
 }
 
 .plan-badge--complete {

@@ -93,6 +93,15 @@ public static class DomainErrorCodes
     public const string InvalidSaleStatus = "pos.sale.status.invalid";
     public const string InvalidSaleStatusTransition = "pos.sale.status.invalid_transition";
     public const string InvalidSalePaymentMethod = "pos.sale.payment_method.invalid";
+    public const string PaymentMethodNotEntitled = "pos.payment_method.not_entitled";
+    public const string PaymentMethodDisabled = "pos.payment_method.disabled";
+    public const string PaymentMethodNotAvailableForBranch = "pos.payment_method.branch_unavailable";
+    public const string PaymentMethodNotConfigurable = "pos.payment_method.not_configurable";
+    public const string PaymentMethodBranchesRequired = "pos.payment_method.branches_required";
+    public const string InvalidPaymentMethodDisplayName = "pos.payment_method.display_name.invalid";
+    public const string InvalidPaymentMethodInstructions = "pos.payment_method.instructions.invalid";
+    public const string InvalidPaymentMethodAccountHint = "pos.payment_method.account_hint.invalid";
+    public const string InvalidCheckSettlementStatus = "pos.sale.check_settlement.invalid";
     public const string InvalidSaleActor = "pos.sale.actor.invalid";
     public const string SaleRequiresAtLeastOneLine = "pos.sale.lines.required";
     public const string SaleTotalTooLarge = "pos.sale.total.too_large";

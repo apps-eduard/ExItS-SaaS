@@ -81,6 +81,9 @@ public sealed class MvpPlanCommercialPackageTests
         Assert.False(grants.Single(g => g.FeatureCode.Value == FeatureCode.StoreAdvancedReports).Enabled);
         Assert.False(grants.Single(g => g.FeatureCode.Value == FeatureCode.StoreExport).Enabled);
         Assert.False(grants.Single(g => g.FeatureCode.Value == FeatureCode.StoreCustomerOrdering).Enabled);
+        Assert.True(grants.Single(g => g.FeatureCode.Value == FeatureCode.StoreBasicPayments).Enabled);
+        Assert.False(grants.Single(g => g.FeatureCode.Value == FeatureCode.StorePaymentManagement).Enabled);
+        Assert.False(grants.Single(g => g.FeatureCode.Value == FeatureCode.StoreOnlinePayments).Enabled);
     }
 
     [Fact]
@@ -107,6 +110,10 @@ public sealed class MvpPlanCommercialPackageTests
         Assert.True(proPlus.Single(g => g.FeatureCode.Value == FeatureCode.StoreAreaManagement).Enabled);
         Assert.Equal(10, proPlus.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxAreas).NumericLimit);
         Assert.Equal(25, proPlus.Single(g => g.FeatureCode.Value == FeatureCode.PlanMaxBranches).NumericLimit);
+        Assert.True(pro.Single(g => g.FeatureCode.Value == FeatureCode.StorePaymentManagement).Enabled);
+        Assert.False(pro.Single(g => g.FeatureCode.Value == FeatureCode.StoreOnlinePayments).Enabled);
+        Assert.True(proPlus.Single(g => g.FeatureCode.Value == FeatureCode.StorePaymentManagement).Enabled);
+        Assert.True(proPlus.Single(g => g.FeatureCode.Value == FeatureCode.StoreOnlinePayments).Enabled);
     }
 
     [Fact]

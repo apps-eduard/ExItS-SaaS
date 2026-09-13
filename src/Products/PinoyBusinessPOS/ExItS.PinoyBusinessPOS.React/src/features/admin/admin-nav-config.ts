@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Building2,
+  CreditCard,
   KeyRound,
   LayoutDashboard,
   Map,
@@ -41,6 +42,7 @@ export type AdminNavItemId =
   | "roles"
   | "devices"
   | "cash"
+  | "paymentMethods"
   | "businessQr"
   | "dashboard"
   | "reports"
@@ -186,6 +188,14 @@ export function buildAdminNavGroups(
         icon: Wallet,
         testId: "admin-nav-cash",
         matchPrefixes: ["/org/cash-handling"],
+      },
+      {
+        id: "paymentMethods",
+        to: "/org/payment-methods",
+        labelKey: "admin.nav.paymentMethods",
+        icon: CreditCard,
+        testId: "admin-nav-payment-methods",
+        matchPrefixes: ["/org/payment-methods"],
       },
       {
         id: "businessQr",
@@ -380,6 +390,7 @@ export function matchAdminMobileTab(
   }
   if (
     path.startsWith("/org/cash-handling") ||
+    path.startsWith("/org/payment-methods") ||
     path.startsWith("/org/business-qr") ||
     path.startsWith("/org/ownership-transfer") ||
     path.startsWith("/settings/preferences")

@@ -80,6 +80,7 @@ import { NavigationPreferences } from "@/features/preferences/NavigationPreferen
 import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPreferences";
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
+import { PaymentMethodsSettingsPage } from "@/features/settings/PaymentMethodsSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
 import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
@@ -608,6 +609,7 @@ export const appRoutes = [
               },
               { path: "devices", element: <OrgPosDevicesPage /> },
               { path: "cash-handling", element: <CashHandlingSettingsPage /> },
+              { path: "payment-methods", element: <PaymentMethodsSettingsPage /> },
               {
                 path: "branches",
                 element: (

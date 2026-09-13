@@ -22,6 +22,7 @@ import {
   type PlanBillingCycle,
   type PlanCtaKind,
 } from "@/features/personal/start-business/plan-selection-meta";
+import { PlanPaymentFeatureList } from "@/features/personal/start-business/PlanPaymentFeatureList";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -271,6 +272,8 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                         <li key={key}>{t(key)}</li>
                       ))}
                     </ul>
+
+                    <PlanPaymentFeatureList planKey={planKey} t={t} />
 
                     <div className="mt-auto flex flex-wrap gap-2 pt-2">
                       {ctaKind === "current" ? (

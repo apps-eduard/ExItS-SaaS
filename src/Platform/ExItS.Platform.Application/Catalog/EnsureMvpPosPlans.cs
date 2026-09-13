@@ -57,7 +57,10 @@ public sealed class EnsureMvpPosPlans
         (FeatureCode.StoreRegistersView, FeatureValueType.Boolean),
         (FeatureCode.StoreRegistersManage, FeatureValueType.Boolean),
         (FeatureCode.StoreCustomerOrdering, FeatureValueType.Boolean),
-        (FeatureCode.StoreDeliveryOrders, FeatureValueType.Boolean)
+        (FeatureCode.StoreDeliveryOrders, FeatureValueType.Boolean),
+        (FeatureCode.StoreBasicPayments, FeatureValueType.Boolean),
+        (FeatureCode.StorePaymentManagement, FeatureValueType.Boolean),
+        (FeatureCode.StoreOnlinePayments, FeatureValueType.Boolean)
     ];
 
     private static readonly string[] BasicStoreFeatureCodes =
@@ -682,7 +685,16 @@ public sealed class EnsureMvpPosPlans
                 spec.CustomerOrderingEnabled),
             FeatureGrantSpec.Boolean(
                 FeatureCode.Create(FeatureCode.StoreDeliveryOrders),
-                spec.DeliveryOrdersEnabled)
+                spec.DeliveryOrdersEnabled),
+            FeatureGrantSpec.Boolean(
+                FeatureCode.Create(FeatureCode.StoreBasicPayments),
+                spec.BasicPaymentsEnabled),
+            FeatureGrantSpec.Boolean(
+                FeatureCode.Create(FeatureCode.StorePaymentManagement),
+                spec.PaymentManagementEnabled),
+            FeatureGrantSpec.Boolean(
+                FeatureCode.Create(FeatureCode.StoreOnlinePayments),
+                spec.OnlinePaymentsEnabled)
         };
 
         foreach (var code in BasicStoreFeatureCodes)

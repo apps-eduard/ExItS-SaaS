@@ -10,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -301,6 +302,8 @@ public sealed class CheckoutSale
     private readonly PartyBranchAccessService? _branchAccess;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly IConnectedSupplierRelationshipRepository? _connectedRelationships;
+    private readonly IOrganizationPaymentMethodSettingRepository? _paymentMethodSettings;
+    private readonly IPosCommercialAccessAccessor? _commercialAccess;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -323,7 +326,9 @@ public sealed class CheckoutSale
         IEffectivePriceResolver? effectivePrices = null,
         PartyBranchAccessService? branchAccess = null,
         IOrganizationBranchDirectory? branches = null,
-        IConnectedSupplierRelationshipRepository? connectedRelationships = null)
+        IConnectedSupplierRelationshipRepository? connectedRelationships = null,
+        IOrganizationPaymentMethodSettingRepository? paymentMethodSettings = null,
+        IPosCommercialAccessAccessor? commercialAccess = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -346,6 +351,8 @@ public sealed class CheckoutSale
         _branchAccess = branchAccess;
         _branches = branches;
         _connectedRelationships = connectedRelationships;
+        _paymentMethodSettings = paymentMethodSettings;
+        _commercialAccess = commercialAccess;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -433,6 +440,26 @@ public sealed class CheckoutSale
             var method = SalePaymentMethods.Parse(paymentMethod);
             var isElectronic = SalePaymentMethods.IsElectronic(method);
             var isUtang = method == SalePaymentMethod.Utang;
+
+            if (_paymentMethodSettings is not null
+                && branchId is Guid paymentBranch
+                && paymentBranch != Guid.Empty)
+            {
+                var paymentSettings = await _paymentMethodSettings
+                    .ListByOrganizationAsync(orgId, cancellationToken)
+                    .ConfigureAwait(false);
+                var entitlement = _commercialAccess?.Current;
+                var paymentGate = PaymentMethodAccessGuard.EnsureCheckoutMethodAllowed(
+                    method,
+                    paymentBranch,
+                    entitlement?.SubscriptionStatus,
+                    entitlement?.EnabledFeatureCodes,
+                    paymentSettings);
+                if (!paymentGate.IsSuccess)
+                {
+                    return ApplicationResult<Sale>.Failure(paymentGate.ErrorCode!, paymentGate.ErrorMessage!);
+                }
+            }
 
             if (!isUtang && (dueDate is not null || creditEntryId is not null))
             {

@@ -872,7 +872,10 @@ public sealed class Sale
         if (paymentMethod is SalePaymentMethod.ManualGCash
             or SalePaymentMethod.Utang
             or SalePaymentMethod.Card
-            or SalePaymentMethod.GCash)
+            or SalePaymentMethod.GCash
+            or SalePaymentMethod.BankTransfer
+            or SalePaymentMethod.Check
+            or SalePaymentMethod.ManualMaya)
         {
             if (amountTendered is not null)
             {
@@ -884,6 +887,8 @@ public sealed class Sale
                             "Utang sales are recorded for the exact total and must not carry a tendered amount.",
                         SalePaymentMethod.Card or SalePaymentMethod.GCash =>
                             "Card and GCash sales are recorded for the exact total and must not carry a tendered amount.",
+                        SalePaymentMethod.BankTransfer or SalePaymentMethod.Check or SalePaymentMethod.ManualMaya =>
+                            "Manual payment methods are recorded for the exact total and must not carry a tendered amount.",
                         _ => "Manual GCash sales are recorded for the exact total and must not carry a tendered amount."
                     });
             }
@@ -931,8 +936,8 @@ public sealed class Sale
     }
 
     /// <summary>
-    /// Trims an optional manual GCash reference. The reference is operator-typed evidence only and
-    /// is never validated against GCash.
+    /// Trims an optional operator-typed payment reference (manual GCash / Bank Transfer / Maya / Check).
+    /// Never validated against a payment provider.
     /// </summary>
     public static string? NormalizeGCashReference(SalePaymentMethod paymentMethod, string? gcashReference)
     {
@@ -941,11 +946,15 @@ public sealed class Sale
             return null;
         }
 
-        if (paymentMethod != SalePaymentMethod.ManualGCash)
+        if (paymentMethod is not (
+            SalePaymentMethod.ManualGCash
+            or SalePaymentMethod.BankTransfer
+            or SalePaymentMethod.ManualMaya
+            or SalePaymentMethod.Check))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidSaleGCashReference,
-                "A GCash reference can only be recorded on a manual GCash sale.");
+                "A payment reference can only be recorded on a manual payment method sale.");
         }
 
         var trimmed = gcashReference.Trim();
@@ -953,7 +962,7 @@ public sealed class Sale
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidSaleGCashReference,
-                $"GCash reference must be at most {GCashReferenceMaxLength} characters.");
+                $"Payment reference must be at most {GCashReferenceMaxLength} characters.");
         }
 
         return trimmed;
