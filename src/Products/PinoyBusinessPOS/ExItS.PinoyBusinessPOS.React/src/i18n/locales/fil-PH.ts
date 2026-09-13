@@ -2229,6 +2229,25 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditsEmptyDetail": "Lalabas dito ang Utang sales para sa customer na ito.",
 
   "customers.creditsTitle": "Mga utang charge",
+  "customers.branchAccess.title": "Manage branch access",
+  "customers.branchAccess.help":
+    "Customer stays organization-owned. Areas only help select branches — access is saved as an explicit branch list.",
+  "customers.branchAccess.homeBranch": "Home branch",
+  "customers.branchAccess.homeUnknown": "Not set",
+  "customers.branchAccess.homeBadge": "Home",
+  "customers.branchAccess.visibility": "Visibility",
+  "customers.branchAccess.modeThisBranch": "This branch only",
+  "customers.branchAccess.modeSelected": "Selected branches",
+  "customers.branchAccess.modeAll": "All branches",
+  "customers.branchAccess.selectedBranches": "Selected branches",
+  "customers.branchAccess.unassigned": "Unassigned branches",
+  "customers.branchAccess.branches": "Branches",
+  "customers.branchAccess.save": "Save branch access",
+  "customers.branchAccess.saving": "Saving…",
+  "customers.branchAccess.saveError": "Could not save branch access.",
+  "customers.branchAccess.loadError": "Could not load branches.",
+  "customers.branchAccess.offline": "Branch access can be managed when you are online.",
+
 
   "customers.deactivate": "I-deactivate",
 

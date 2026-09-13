@@ -150,6 +150,16 @@ export function isPosOwnerRole(grant: PosSessionGrantFacts | null | undefined): 
   return lower === "owner" || lower === "admin";
 }
 
+/**
+ * Customer branch visibility grant/revoke UI gate — mirrors PartyBranchExplicitAssignService
+ * Owner/Admin / org-management governance (not Area Manager alone, not Cashier).
+ */
+export function canManageCustomerBranchAccess(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return isPosOwnerRole(grant) || hasOrganizationManagementAuthority(grant);
+}
+
 /** POS StoreManager / Manager — operations, not Organization Web admin. */
 export function isPosOperationsManager(grant: PosSessionGrantFacts | null | undefined): boolean {
   const role = resolveEffectivePosRoleCode(grant);

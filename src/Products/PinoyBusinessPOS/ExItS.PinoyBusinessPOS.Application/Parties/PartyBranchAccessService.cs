@@ -182,6 +182,24 @@ public sealed class PartyBranchAccessService
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<CustomerBranchAccess>> ListCustomerAccessAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerId == Guid.Empty)
+        {
+            return [];
+        }
+
+        return await _customerAccess
+            .ListByCustomerAsync(
+                PosOrganizationId.From(organizationId),
+                POSCustomerId.From(customerId),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task GrantSupplierExplicitAssignAsync(
         Guid organizationId,
         Guid branchId,

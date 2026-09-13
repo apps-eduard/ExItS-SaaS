@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, FileText, Link2, MapPin, NotebookPen, Pencil, Phone, RotateCcw, UserRound, Users, Wallet } from "lucide-react";
-import { canEditCustomer, canManageCustomerCreditPolicy, canApproveCustomerCreditPolicy, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
+import { canEditCustomer, canManageCustomerBranchAccess, canManageCustomerCreditPolicy, canApproveCustomerCreditPolicy, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
 import {
   createCustomerLinkRequestForCustomer,
   getCustomerLinkStatus,
@@ -49,6 +49,7 @@ import {
 } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
+import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -84,6 +85,7 @@ export function CustomerDetailPage() {
   const allowStatement = canViewStatement(sessionGrant);
   const allowManageCreditPolicy = canManageCustomerCreditPolicy(sessionGrant);
   const allowApproveCreditPolicy = canApproveCustomerCreditPolicy(sessionGrant);
+  const allowManageBranchAccess = canManageCustomerBranchAccess(sessionGrant);
 
   const enabledOnline = Boolean(workspace) && Boolean(customerId) && online;
 
@@ -625,6 +627,16 @@ export function CustomerDetailPage() {
           subjectIdentity={[customer.displayName, personalExItsId]
             .filter((part): part is string => Boolean(part))
             .join(" · ")}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <CustomerBranchVisibilitySection
+          workspace={workspace}
+          organizationId={workspace.organizationId}
+          customerId={customerId}
+          online={online}
+          canManage={allowManageBranchAccess}
         />
       ) : null}
 
