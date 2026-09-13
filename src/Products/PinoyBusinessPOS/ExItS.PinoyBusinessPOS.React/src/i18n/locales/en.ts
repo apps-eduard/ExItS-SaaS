@@ -5078,8 +5078,8 @@ export const en = {
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
   "purchasing.noMatchingProductsDetail": "Try changing the search or category filters.",
-  "purchasing.draftEmptyDetailLeft":
-    "Add products from the table on the left to build this receipt.",
+  "purchasing.draftEmptyDetailLeft": "Add products to build this receipt.",
+  "purchasing.closeFindProducts": "Close",
   "purchasing.unit": "Unit",
   "purchasing.action": "Action",
   "purchasing.removeNamed": "Remove {name}",

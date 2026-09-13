@@ -152,16 +152,28 @@ function renderPage() {
   );
 }
 
+async function openFinder(user: ReturnType<typeof userEvent.setup>) {
+  const trigger = screen.getByTestId("direct-add-products-trigger");
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
+  });
+  expect(trigger).toHaveAttribute("aria-expanded", "true");
+}
+
 async function addLine(
   user: ReturnType<typeof userEvent.setup>,
   opts?: { qty?: string; cost?: string },
 ) {
+  await openFinder(user);
   await waitFor(() => {
     expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
   });
   await user.click(screen.getByTestId(`direct-add-${productId}`));
   await waitFor(() => {
     expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
+    expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
   });
   const qty = screen.getByTestId(`direct-line-qty-${productId}`);
   const cost = screen.getByTestId(`direct-line-cost-${productId}`);
@@ -281,7 +293,7 @@ describe("ReceiveStockPage payment at receipt", () => {
   });
 });
 
-describe("ReceiveStockPage dual table workspace", () => {
+describe("ReceiveStockPage receipt-first collapsible picker", () => {
   beforeEach(() => {
     listSuppliers.mockResolvedValue({
       items: [],
@@ -341,8 +353,34 @@ describe("ReceiveStockPage dual table workspace", () => {
     vi.clearAllMocks();
   });
 
-  it("shows all eligible products when All is active", async () => {
+  it("starts with receipt visible and find products collapsed", async () => {
     renderPage();
+    expect(screen.getByTestId("direct-receipt-items")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-add-products-trigger")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
+  });
+
+  it("opens and closes the product picker without changing receipt", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinder(user);
+    expect(screen.getByTestId("direct-receipt-items")).toBeInTheDocument();
+    await user.click(screen.getByTestId("direct-close-finder"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
+  });
+
+  it("shows all eligible products when All is active", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinder(user);
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
@@ -355,6 +393,7 @@ describe("ReceiveStockPage dual table workspace", () => {
   it("supports multi-category OR filtering with removable chips", async () => {
     const user = userEvent.setup();
     renderPage();
+    await openFinder(user);
     await waitFor(() => {
       expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
     });
@@ -392,10 +431,11 @@ describe("ReceiveStockPage dual table workspace", () => {
     });
   });
 
-  it("moves qty/cost editing to receipt table only", async () => {
+  it("adds a product, collapses picker, and keeps qty/cost on receipt only", async () => {
     const user = userEvent.setup();
     renderPage();
     expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    await openFinder(user);
     await waitFor(() => {
       expect(screen.getByTestId(`direct-add-${productId}`)).toBeInTheDocument();
     });
@@ -408,8 +448,12 @@ describe("ReceiveStockPage dual table workspace", () => {
     await user.click(screen.getByTestId(`direct-add-${productId}`));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
-      expect(screen.getByTestId(`direct-added-${productId}`)).toBeInTheDocument();
+      expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
     });
+    expect(screen.getByTestId("direct-add-products-trigger")).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(screen.getByTestId("direct-review")).toBeDisabled();
 
     await user.clear(screen.getByTestId(`direct-line-qty-${productId}`));
@@ -418,7 +462,29 @@ describe("ReceiveStockPage dual table workspace", () => {
     expect(screen.getByTestId("direct-review")).not.toBeDisabled();
     expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
 
+    await openFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-added-${productId}`)).toBeInTheDocument();
+    });
+
     await user.click(screen.getByTestId(`direct-remove-${productId}`));
     expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+  });
+
+  it("preserves category filters across reopen", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
+    await user.click(screen.getByTestId(`direct-category-option-${categoryFruits}`));
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-category-chip-${categoryFruits}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("direct-close-finder"));
+    await openFinder(user);
+    expect(screen.getByTestId(`direct-category-chip-${categoryFruits}`)).toBeInTheDocument();
   });
 });
