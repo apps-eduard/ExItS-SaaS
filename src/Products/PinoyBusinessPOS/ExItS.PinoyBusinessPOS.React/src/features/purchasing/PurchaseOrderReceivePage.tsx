@@ -546,67 +546,112 @@ export function PurchaseOrderReceivePage() {
           backLabel={t("purchasing.backDetail")}
           backTestId="page-header-back-purchasing"
         />
-        <Card data-testid="receive-completed-panel">
-          <ul className="m-0 flex list-none flex-col gap-3 p-0">
-            {completedReceipt.lines.map((line) => {
-              const qty = line.quantityReceived ?? line.receivedQty ?? 0;
-              const amount = line.lineTotalSnapshot;
-              return (
-                <li
-                  key={line.lineId}
-                  className="rounded-md border border-border p-3"
-                  data-testid={`receive-completed-line-${line.productId}`}
-                >
-                  <div className="font-medium">{line.nameSnapshot}</div>
-                  <dl className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]">
-                    <div className="flex flex-wrap gap-x-2">
-                      <dt className="text-muted">{t("purchasing.received")}:</dt>
-                      <dd className="m-0">
+        <div className="flex min-w-0 flex-col gap-4" data-testid="receive-completed-panel">
+          <ExitsTableContainer data-testid="receive-completed-table">
+            <ExitsTable>
+              <ExitsTableHeader>
+                <ExitsTableRow>
+                  <ExitsTableHead cellAlign="text">{t("purchasing.receiveProduct")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">{t("purchasing.received")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="money">{t("purchasing.purchaseAmount")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="numeric">{t("purchasing.previousTrackedStock")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="numeric">{t("purchasing.newTrackedStock")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">{t("purchasing.inventoryTracking")}</ExitsTableHead>
+                </ExitsTableRow>
+              </ExitsTableHeader>
+              <ExitsTableBody>
+                {completedReceipt.lines.map((line) => {
+                  const qty = line.quantityReceived ?? line.receivedQty ?? 0;
+                  return (
+                    <ExitsTableRow key={line.lineId} data-testid={`receive-completed-row-${line.productId}`}>
+                      <ExitsTableCell cellAlign="text" className="font-medium">
+                        {line.nameSnapshot}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="text" className="tabular-nums">
                         {qty} {line.uomSnapshot}
-                      </dd>
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="money">
+                        <MoneyDisplay amount={line.lineTotalSnapshot} />
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                        {line.previousTrackedStock != null ? line.previousTrackedStock : "—"}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                        {line.newTrackedStock != null ? line.newTrackedStock : "—"}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="text">
+                        {line.inventoryTrackingEnabled ? t("purchasing.inventoryTrackingEnabled") : "—"}
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  );
+                })}
+              </ExitsTableBody>
+            </ExitsTable>
+
+            <ExitsTableMobile className="gap-3 p-3" data-testid="receive-completed-mobile">
+              {completedReceipt.lines.map((line) => {
+                const qty = line.quantityReceived ?? line.receivedQty ?? 0;
+                const amount = line.lineTotalSnapshot;
+                return (
+                  <ExitsTableMobileRow
+                    key={line.lineId}
+                    className="rounded-md border border-border border-b p-3"
+                    data-testid={`receive-completed-line-${line.productId}`}
+                  >
+                    <div className="exits-table-mobile__title-row">
+                      <p className="exits-table-mobile__title">{line.nameSnapshot}</p>
                     </div>
-                    <div className="flex flex-wrap items-baseline gap-x-2">
-                      <dt className="text-muted">{t("purchasing.purchaseAmount")}:</dt>
-                      <dd className="m-0">
-                        <MoneyDisplay amount={amount} />
-                      </dd>
-                    </div>
-                    {line.inventoryTrackingEnabled ? (
-                      <>
-                        <div className="text-muted">{t("purchasing.inventoryTrackingEnabled")}</div>
-                        {line.newTrackedStock != null ? (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="text-muted">{t("purchasing.newTrackedStock")}:</dt>
-                            <dd className="m-0">{line.newTrackedStock}</dd>
-                          </div>
-                        ) : null}
-                      </>
-                    ) : line.previousTrackedStock != null || line.newTrackedStock != null ? (
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        {line.previousTrackedStock != null ? (
-                          <span>
-                            <span className="text-muted">{t("purchasing.previousTrackedStock")}: </span>
-                            {line.previousTrackedStock}
-                          </span>
-                        ) : null}
-                        <span>
-                          <span className="text-muted">{t("purchasing.received")}: </span>
-                          {qty}
-                        </span>
-                        {line.newTrackedStock != null ? (
-                          <span>
-                            <span className="text-muted">{t("purchasing.newTrackedStock")}: </span>
-                            {line.newTrackedStock}
-                          </span>
-                        ) : null}
+                    <dl className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]">
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-muted">{t("purchasing.received")}:</dt>
+                        <dd className="m-0">
+                          {qty} {line.uomSnapshot}
+                        </dd>
                       </div>
-                    ) : null}
-                  </dl>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="mt-4">
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <dt className="text-muted">{t("purchasing.purchaseAmount")}:</dt>
+                        <dd className="m-0">
+                          <MoneyDisplay amount={amount} />
+                        </dd>
+                      </div>
+                      {line.inventoryTrackingEnabled ? (
+                        <>
+                          <div className="text-muted">{t("purchasing.inventoryTrackingEnabled")}</div>
+                          {line.newTrackedStock != null ? (
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="text-muted">{t("purchasing.newTrackedStock")}:</dt>
+                              <dd className="m-0">{line.newTrackedStock}</dd>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : line.previousTrackedStock != null || line.newTrackedStock != null ? (
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          {line.previousTrackedStock != null ? (
+                            <span>
+                              <span className="text-muted">{t("purchasing.previousTrackedStock")}: </span>
+                              {line.previousTrackedStock}
+                            </span>
+                          ) : null}
+                          <span>
+                            <span className="text-muted">{t("purchasing.received")}: </span>
+                            {qty}
+                          </span>
+                          {line.newTrackedStock != null ? (
+                            <span>
+                              <span className="text-muted">{t("purchasing.newTrackedStock")}: </span>
+                              {line.newTrackedStock}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </dl>
+                  </ExitsTableMobileRow>
+                );
+              })}
+            </ExitsTableMobile>
+          </ExitsTableContainer>
+
+          <div>
             <Button
               type="button"
               onClick={() => navigate(`/purchasing/${purchaseOrderId}`, { replace: true })}
@@ -615,7 +660,7 @@ export function PurchaseOrderReceivePage() {
               {t("purchasing.backDetail")}
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }

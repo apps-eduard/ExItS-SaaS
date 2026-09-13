@@ -143,7 +143,9 @@ describe("PurchaseOrderReceivePage tracking confirmation", () => {
     await waitFor(() => {
       expect(screen.getByTestId("receive-completed-panel")).toBeInTheDocument();
     });
-    expect(screen.getByText("Inventory tracking enabled")).toBeInTheDocument();
+    expect(screen.getByTestId("receive-completed-table")).toBeInTheDocument();
+    expect(screen.getByTestId("receive-completed-mobile")).toBeInTheDocument();
+    expect(screen.getAllByText("Inventory tracking enabled").length).toBeGreaterThan(0);
     expect(screen.getByText("Receipt completed")).toBeInTheDocument();
   });
 });
