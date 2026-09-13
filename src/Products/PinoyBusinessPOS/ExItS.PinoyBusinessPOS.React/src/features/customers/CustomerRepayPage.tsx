@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Equal, Wallet } from "lucide-react";
 import {
   createCustomerRepayment,
   getCustomer,
   getCustomerCreditSummary,
   getRepayment,
 } from "@/api/pos/pos-customers-client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonIconMotion } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -250,18 +251,31 @@ export function CustomerRepayPage() {
           htmlFor="customer-payment-amount"
         >
           {t("customers.payment")}
-          <input
-            id="customer-payment-amount"
-            data-testid="customer-payment-amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            inputMode="decimal"
-            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-            value={paymentAmount}
-            disabled={saving || amountOwed <= 0}
-            onChange={(event) => setPaymentAmount(event.target.value)}
-          />
+          <span className="checkout-cash-received-row">
+            <input
+              id="customer-payment-amount"
+              data-testid="customer-payment-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputMode="decimal"
+              className="checkout-cash-received-row__input min-w-0 flex-1 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+              value={paymentAmount}
+              disabled={saving || amountOwed <= 0}
+              onChange={(event) => setPaymentAmount(event.target.value)}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="checkout-cash-received-row__exact shrink-0"
+              data-testid="customer-payment-exact"
+              disabled={saving || amountOwed <= 0}
+              onClick={() => setPaymentAmount(amountOwed.toFixed(2))}
+            >
+              <Equal className={`size-4 shrink-0 ${buttonIconMotion.view}`} aria-hidden />
+              {t("checkout.cashExact")}
+            </Button>
+          </span>
         </label>
         <label
           className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
@@ -290,10 +304,12 @@ export function CustomerRepayPage() {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
+          variant="success"
           data-testid="customer-payment-submit"
           disabled={saving || statusLocked || amountOwed <= 0}
           onClick={() => void onSubmit()}
         >
+          <Wallet className={`size-4 shrink-0 ${buttonIconMotion.add}`} aria-hidden />
           {saving ? t("customers.saving") : t("customers.recordPayment")}
         </Button>
       </div>

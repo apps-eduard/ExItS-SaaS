@@ -81,7 +81,12 @@ public sealed record CheckoutCustomerSearchItemDto(
     decimal? OutstandingAmount = null,
     decimal? AvailableCredit = null,
     int? DefaultTermDays = null,
-    string? LinkedPersonalPublicUserId = null)
+    string? LinkedPersonalPublicUserId = null,
+    /// <summary>
+    /// Platform BusinessCustomer id for Personal link overlay (Pending/Connected).
+    /// Required so checkout Utang Connection matches org link requests / linked users.
+    /// </summary>
+    Guid? PlatformBusinessCustomerId = null)
 {
     public const string KindCustomer = "Customer";
     public const string KindBusiness = "Business";

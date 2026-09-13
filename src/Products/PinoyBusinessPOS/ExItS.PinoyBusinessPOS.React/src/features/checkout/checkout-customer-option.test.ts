@@ -7,12 +7,15 @@ import {
 
 describe("checkout-customer-option", () => {
   it("maps Customer and Business search rows", () => {
+    const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const person = mapCheckoutSearchItemToOption({
       kind: "Customer",
       customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       displayName: "Juan",
       status: "Active",
       mobileNumber: "0917",
+      linkedPersonalPublicUserId: "EX-1111-2222",
+      platformBusinessCustomerId: platformId,
       creditStatus: "Approved",
       availableCredit: 12500,
       creditLimit: 50000,
@@ -23,6 +26,7 @@ describe("checkout-customer-option", () => {
     expect(person && checkoutOptionKey(person)).toBe("c:aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
     expect(person && person.kind === "Customer" && person.creditStatus).toBe("Approved");
     expect(person && person.kind === "Customer" && person.availableCredit).toBe(12500);
+    expect(person && person.kind === "Customer" && person.platformBusinessCustomerId).toBe(platformId);
 
     const business = mapCheckoutSearchItemToOption({
       kind: "Business",

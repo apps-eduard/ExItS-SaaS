@@ -326,6 +326,8 @@ export const checkoutCustomerSearchItemSchema = z.object({
   availableCredit: z.number().nullable().optional(),
   defaultTermDays: z.number().int().nullable().optional(),
   linkedPersonalPublicUserId: z.string().nullable().optional(),
+  /** Platform BusinessCustomer id — Personal Pending/Connected overlay match key. */
+  platformBusinessCustomerId: guidSchema.nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({

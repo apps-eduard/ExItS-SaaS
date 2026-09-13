@@ -168,7 +168,8 @@ public sealed class POSCustomerQueryService
             customer.Status.ToString(),
             customer.Id.Value,
             customer.MobileNumber,
-            LinkedPersonalPublicUserId: customer.LinkedPersonalPublicUserId);
+            LinkedPersonalPublicUserId: customer.LinkedPersonalPublicUserId,
+            PlatformBusinessCustomerId: customer.PlatformBusinessCustomerId);
     }
 
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
@@ -257,7 +258,8 @@ public sealed class POSCustomerQueryService
                     c.Status.ToString(),
                     c.Id.Value,
                     c.MobileNumber,
-                    LinkedPersonalPublicUserId: c.LinkedPersonalPublicUserId)));
+                    LinkedPersonalPublicUserId: c.LinkedPersonalPublicUserId,
+                    PlatformBusinessCustomerId: c.PlatformBusinessCustomerId)));
         }
 
         if (includeBusiness)

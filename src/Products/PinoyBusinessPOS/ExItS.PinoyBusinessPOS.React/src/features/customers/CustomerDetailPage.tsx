@@ -575,7 +575,7 @@ export function CustomerDetailPage() {
 
         <div className="customer-detail-overview__actions">
           {allowEdit ? (
-            <Button asChild variant="outline" data-testid="customer-edit">
+            <Button asChild variant="default" data-testid="customer-edit">
               <Link to={`/customers/${customerId}/edit`}>
                 <Pencil className="size-4 shrink-0" aria-hidden />
                 {t("customers.edit")}
@@ -583,7 +583,7 @@ export function CustomerDetailPage() {
             </Button>
           ) : null}
           {allowRepay ? (
-            <Button asChild variant="outline" data-testid="customer-repay">
+            <Button asChild variant="success" data-testid="customer-repay">
               <Link to={`/customers/${customerId}/repay`}>
                 <Wallet className="size-4 shrink-0" aria-hidden />
                 {t("customers.recordPayment")}
@@ -591,7 +591,7 @@ export function CustomerDetailPage() {
             </Button>
           ) : null}
           {allowStatement && online ? (
-            <Button asChild variant="outline" data-testid="customer-statement">
+            <Button asChild variant="info" data-testid="customer-statement">
               <Link to={`/customers/${customerId}/statement`}>
                 <FileText className="size-4 shrink-0" aria-hidden />
                 {t("customers.viewStatement")}
@@ -601,7 +601,7 @@ export function CustomerDetailPage() {
           {allowEdit ? (
             <Button
               type="button"
-              variant="outline"
+              variant={isActive ? "destructive" : "success"}
               data-testid="customer-toggle-status"
               disabled={acting}
               onClick={() => void toggleStatus()}

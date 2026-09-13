@@ -28,10 +28,12 @@ public sealed class LinkedPersonalCustomerQueryTests
             new EmptyBusinessCredits());
 
         var now = DateTimeOffset.Parse("2026-08-01T00:00:00Z");
+        var platformId = Guid.Parse("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
         var active = POSCustomer.Create(
             PosOrganizationId.From(orgA),
             "Rosa",
             now,
+            platformBusinessCustomerId: platformId,
             linkedPersonalPublicUserId: publicId);
         var inactive = POSCustomer.Create(
             PosOrganizationId.From(orgA),
@@ -53,6 +55,7 @@ public sealed class LinkedPersonalCustomerQueryTests
         Assert.NotNull(found);
         Assert.Equal(active.Id.Value, found!.CustomerId);
         Assert.Equal("Rosa", found.DisplayName);
+        Assert.Equal(platformId, found.PlatformBusinessCustomerId);
 
         Assert.Null(await queries.GetByLinkedPersonalPublicUserIdForCheckoutAsync(orgA, "EX-1111-2222"));
 

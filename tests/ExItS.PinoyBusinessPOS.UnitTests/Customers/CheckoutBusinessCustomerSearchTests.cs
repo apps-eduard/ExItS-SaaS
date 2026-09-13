@@ -171,6 +171,28 @@ public sealed class CheckoutBusinessCustomerSearchTests
     }
 
     [Fact]
+    public async Task Customer_kind_projects_platform_business_customer_id_for_personal_link_overlay()
+    {
+        var platformId = Guid.Parse("dddddddd-dddd-4ddd-8ddd-dddddddddddd");
+        var repo = new InMemoryCustomers();
+        var person = POSCustomer.Create(
+            PosOrganizationId.From(Org),
+            "Mica Uy",
+            Utc,
+            platformBusinessCustomerId: platformId,
+            linkedPersonalPublicUserId: "EX-1111-2222");
+        await repo.AddAsync(person);
+
+        var queries = CreateQueries(repo);
+        var result = await queries.SearchForCheckoutAsync(Org, search: null, page: 1, pageSize: 20, kind: "Customer");
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        var hit = Assert.Single(result.Value!.Items);
+        Assert.Equal(platformId, hit.PlatformBusinessCustomerId);
+        Assert.Equal("EX-1111-2222", hit.LinkedPersonalPublicUserId);
+    }
+
+    [Fact]
     public async Task Business_kind_projects_b2b_credit_statuses_and_available_for_approved()
     {
         var buyerPending = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1");

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, MapPinned } from "lucide-react";
+import { ChevronDown, ChevronRight, MapPinned, Save } from "lucide-react";
 import {
   grantCustomerBranchAccess,
   listCustomerBranchAccess,
@@ -10,7 +10,7 @@ import { listOrganizationAreas } from "@/api/platform/organization-areas-client"
 import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { PosApiError } from "@/api/pos/pos-http";
-import { Button } from "@/components/ui/button";
+import { Button, buttonIconMotion } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CountBadge } from "@/components/exits/CountChip";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -439,6 +439,7 @@ export function CustomerBranchVisibilitySection({
               data-testid="customer-branch-access-save"
               onClick={() => saveMutation.mutate()}
             >
+              <Save className={`size-4 shrink-0 ${buttonIconMotion.add}`} aria-hidden />
               {saveMutation.isPending
                 ? t("customers.branchAccess.saving")
                 : t("customers.branchAccess.save")}
