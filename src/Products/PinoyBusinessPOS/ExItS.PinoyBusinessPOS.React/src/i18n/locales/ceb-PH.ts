@@ -8576,6 +8576,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.addNewProduct": "Add new product",
   "purchasing.qtyShort": "Qty",
   "purchasing.costShort": "Cost",
+  "purchasing.sellingPriceShort": "Selling price",
+  "purchasing.costZeroMarginWarning": "Purchase cost equals the current selling price (zero margin).",
+  "purchasing.costNegativeMarginWarning":
+    "Purchase cost is higher than the current selling price (negative margin).",
+  "purchasing.sellingPriceNeedsReview": "Selling price needs review",
+  "purchasing.sellingPriceNeedsReviewDetail":
+    "Purchase cost is equal to or higher than the current selling price. Review the selling price to avoid a zero or negative margin.",
+  "purchasing.sellingPriceNeedsReviewDetailMany":
+    "{count} received products have purchase costs equal to or higher than their current selling prices. Review their selling prices to avoid zero or negative margins.",
+  "purchasing.reviewPrice": "Review price",
+  "purchasing.reviewPrices": "Review prices",
 
 
   "purchasing.offline": "Purchasing needs an internet connection.",
@@ -8713,8 +8724,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.findProducts": "Find products",
   "purchasing.productAdded": "Added",
   "purchasing.categories": "Categories",
+  "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.selectAllCategories": "Pilia tanan",
+  "purchasing.deselectAllCategories": "Tangtangon tanan",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -8723,6 +8737,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.closeFindProducts": "Sirad-an",
   "purchasing.unit": "Unit",
   "purchasing.action": "Action",
+  "purchasing.inventoryTracking": "Inventory tracking",
+  "purchasing.trackedOnly": "Tracked only",
+  "purchasing.inventoryTrackingRequired": "Inventory tracking required",
+  "purchasing.inventoryTrackingRequiredDetail":
+    "{name} is not inventory-tracked. Enable tracking before receiving it.",
   "purchasing.removeNamed": "Remove {name}",
   "purchasing.recentCompletedReceipts": "Recent completed receipts",
   "purchasing.viewAllDirectPurchases": "View all direct purchases",

@@ -14,7 +14,8 @@ type ReceiveCategoryMultiSelectProps = {
   label: string;
   placeholder: string;
   selectedCountLabel: (count: number) => string;
-  clearLabel: string;
+  selectAllLabel: string;
+  deselectAllLabel: string;
   testId?: string;
 };
 
@@ -29,11 +30,15 @@ export function ReceiveCategoryMultiSelect({
   label,
   placeholder,
   selectedCountLabel,
-  clearLabel,
+  selectAllLabel,
+  deselectAllLabel,
   testId = "direct-category-multiselect",
 }: ReceiveCategoryMultiSelectProps) {
   const menu = useDismissibleOpen(false);
   const selected = new Set(selectedIds);
+  const allSelected =
+    categories.length > 0 && categories.every((category) => selected.has(category.categoryId));
+  const noneSelected = selectedIds.length === 0;
 
   function toggle(categoryId: string) {
     if (selected.has(categoryId)) {
@@ -41,6 +46,14 @@ export function ReceiveCategoryMultiSelect({
       return;
     }
     onChange([...selectedIds, categoryId]);
+  }
+
+  function selectAll() {
+    onChange(categories.map((category) => category.categoryId));
+  }
+
+  function deselectAll() {
+    onChange([]);
   }
 
   const triggerText =
@@ -75,6 +88,36 @@ export function ReceiveCategoryMultiSelect({
           </button>
         )}
       >
+        <div className="receive-stock-category-menu__bulk" role="group">
+          <button
+            type="button"
+            role="menuitem"
+            className="receive-stock-category-menu__bulk-action"
+            disabled={allSelected}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selectAll();
+            }}
+            data-testid={`${testId}-select-all`}
+          >
+            {selectAllLabel}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="receive-stock-category-menu__bulk-action"
+            disabled={noneSelected}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              deselectAll();
+            }}
+            data-testid={`${testId}-deselect-all`}
+          >
+            {deselectAllLabel}
+          </button>
+        </div>
         <div className="receive-stock-category-menu__list" role="group">
           {categories.map((category) => {
             const checked = selected.has(category.categoryId);
@@ -109,20 +152,6 @@ export function ReceiveCategoryMultiSelect({
             );
           })}
         </div>
-        {selectedIds.length > 0 ? (
-          <button
-            type="button"
-            role="menuitem"
-            className="receive-stock-category-menu__clear"
-            onClick={() => {
-              onChange([]);
-              menu.close();
-            }}
-            data-testid={`${testId}-clear`}
-          >
-            {clearLabel}
-          </button>
-        ) : null}
       </DropdownMenu>
     </label>
   );

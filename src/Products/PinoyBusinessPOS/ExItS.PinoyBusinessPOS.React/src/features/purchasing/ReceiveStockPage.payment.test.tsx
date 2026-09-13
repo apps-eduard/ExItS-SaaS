@@ -173,8 +173,8 @@ async function addLine(
   await user.click(screen.getByTestId(`direct-add-${productId}`));
   await waitFor(() => {
     expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
-    expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
   });
+  expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
   const qty = screen.getByTestId(`direct-line-qty-${productId}`);
   const cost = screen.getByTestId(`direct-line-cost-${productId}`);
   await user.clear(qty);
@@ -377,7 +377,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
   });
 
-  it("shows all eligible products when All is active", async () => {
+  it("shows all eligible products when no category is selected", async () => {
     const user = userEvent.setup();
     renderPage();
     await openFinder(user);
@@ -386,11 +386,12 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId3}`)).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("direct-category-all")).not.toBeInTheDocument();
     const last = listCatalogProducts.mock.calls.at(-1)?.[1];
     expect(last?.categoryId).toBeUndefined();
   });
 
-  it("supports multi-category OR filtering with removable chips", async () => {
+  it("supports multi-category OR filtering with select all and deselect all", async () => {
     const user = userEvent.setup();
     renderPage();
     await openFinder(user);
@@ -404,6 +405,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.queryByTestId(`direct-product-${productId2}`)).not.toBeInTheDocument();
     });
+    expect(screen.queryByTestId("direct-category-filters")).not.toBeInTheDocument();
 
     if (!screen.queryByTestId(`direct-category-option-${categoryFruits}`)) {
       await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
@@ -414,24 +416,51 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
       expect(screen.queryByTestId(`direct-product-${productId3}`)).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId(`direct-category-chip-${categoryCanned}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`direct-category-chip-${categoryFruits}`)).toBeInTheDocument();
 
-    await user.click(screen.getByTestId(`direct-category-chip-${categoryCanned}`));
+    await user.click(screen.getByTestId("direct-category-multiselect-select-all"));
     await waitFor(() => {
-      expect(screen.queryByTestId(`direct-product-${productId}`)).not.toBeInTheDocument();
+      expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
+      // "Other" is outside listed categories, so Select all does not include it.
+      expect(screen.queryByTestId(`direct-product-${productId3}`)).not.toBeInTheDocument();
     });
+    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+      "2 selected",
+    );
 
-    await user.click(screen.getByTestId("direct-category-all"));
+    await user.click(screen.getByTestId("direct-category-multiselect-deselect-all"));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId3}`)).toBeInTheDocument();
     });
+    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+      "Select categories",
+    );
   });
 
-  it("adds a product, collapses picker, and keeps qty/cost on receipt only", async () => {
+  it("preserves category filters across reopen", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await openFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
+    await user.click(screen.getByTestId(`direct-category-option-${categoryFruits}`));
+    await waitFor(() => {
+      expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+        "1 selected",
+      );
+    });
+    await user.click(screen.getByTestId("direct-close-finder"));
+    await openFinder(user);
+    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+      "1 selected",
+    );
+  });
+
+  it("keeps the product picker open after add so more products can be selected", async () => {
     const user = userEvent.setup();
     renderPage();
     expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
@@ -448,43 +477,327 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     await user.click(screen.getByTestId(`direct-add-${productId}`));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
-      expect(screen.queryByTestId("direct-add-products")).not.toBeInTheDocument();
+      expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
+      expect(screen.queryByTestId(`direct-product-${productId}`)).not.toBeInTheDocument();
     });
     expect(screen.getByTestId("direct-add-products-trigger")).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
+    );
+    expect(screen.getByTestId(`direct-line-selling-${productId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`direct-line-selling-${productId}`)).toHaveValue("1,200.00");
+    expect(screen.getByTestId(`direct-line-selling-${productId}`)).not.toHaveAttribute(
+      "aria-invalid",
     );
     expect(screen.getByTestId("direct-review")).toBeDisabled();
+    expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
 
     await user.clear(screen.getByTestId(`direct-line-qty-${productId}`));
     await user.type(screen.getByTestId(`direct-line-qty-${productId}`), "2");
     await user.type(screen.getByTestId(`direct-line-cost-${productId}`), "45.60");
+    await user.tab();
+    expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveValue("45.60");
     expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+    expect(screen.getByTestId(`direct-line-qty-${productId}`)).not.toHaveAttribute(
+      "aria-invalid",
+    );
+    expect(screen.getByTestId(`direct-line-cost-${productId}`)).not.toHaveAttribute(
+      "aria-invalid",
+    );
     expect(createDirectPurchaseReceipt).not.toHaveBeenCalled();
-
-    await openFinder(user);
-    await waitFor(() => {
-      expect(screen.getByTestId(`direct-added-${productId}`)).toBeInTheDocument();
-    });
 
     await user.click(screen.getByTestId(`direct-remove-${productId}`));
     expect(screen.getByTestId("direct-receipt-empty")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`direct-add-${productId}`)).toBeInTheDocument();
+    });
   });
 
-  it("preserves category filters across reopen", async () => {
+  it("shows tracking status chips and toasts when adding an untracked product", async () => {
+    const untrackedId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4";
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        canned(),
+        productDto({
+          productId: untrackedId,
+          name: "Service Fee",
+          sku: "SVC-1",
+          isTracked: false,
+          unitOfMeasure: "Each",
+        }),
+      ],
+      totalCount: 2,
+      page: 1,
+      pageSize: 100,
+    });
     const user = userEvent.setup();
     renderPage();
     await openFinder(user);
     await waitFor(() => {
-      expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
+      expect(screen.getByTestId(`direct-add-${untrackedId}`)).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
-    await user.click(screen.getByTestId(`direct-category-option-${categoryFruits}`));
-    await waitFor(() => {
-      expect(screen.getByTestId(`direct-category-chip-${categoryFruits}`)).toBeInTheDocument();
+    expect(within(screen.getByTestId("direct-product-results")).getByText("Action")).toBeInTheDocument();
+    expect(within(screen.getByTestId("direct-product-results")).getByText("Category")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("direct-product-results")).getByText("Inventory tracking"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("direct-tracking-filter-chip")).toHaveTextContent("Tracked only");
+    expect(
+      within(screen.getByTestId(`direct-product-${untrackedId}`)).getByText("Not tracked"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId(`direct-product-${productId}`)).getByText("Tracked"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("exits-table-page-size")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId(`direct-add-${untrackedId}`));
+    expect(screen.queryByTestId(`direct-receipt-line-${untrackedId}`)).not.toBeInTheDocument();
+    expect(await screen.findByTestId("exits-toast")).toHaveTextContent(
+      "Inventory tracking required",
+    );
+    expect(screen.getByTestId("exits-toast")).toHaveTextContent("Service Fee");
+    const action = screen.getByTestId("exits-toast-action");
+    expect(action).toHaveTextContent("Enable tracking");
+    expect(action).toHaveAttribute("href", `/inventory/${untrackedId}`);
+  });
+
+  it("filters to tracked products only when Tracked only chip is selected", async () => {
+    const untrackedId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4";
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        canned(),
+        fruit(),
+        productDto({
+          productId: untrackedId,
+          name: "Service Fee",
+          sku: "SVC-1",
+          isTracked: false,
+          categoryId: categoryCanned,
+          unitOfMeasure: "Each",
+        }),
+      ],
+      totalCount: 3,
+      page: 1,
+      pageSize: 100,
     });
-    await user.click(screen.getByTestId("direct-close-finder"));
+    const user = userEvent.setup();
+    renderPage();
     await openFinder(user);
-    expect(screen.getByTestId(`direct-category-chip-${categoryFruits}`)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`direct-product-${untrackedId}`)).toBeInTheDocument();
+    });
+
+    const chip = screen.getByTestId("direct-tracking-filter-chip");
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    await user.click(chip);
+    await waitFor(() => {
+      expect(chip).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
+      expect(screen.queryByTestId(`direct-product-${untrackedId}`)).not.toBeInTheDocument();
+    });
+
+    await user.click(chip);
+    await waitFor(() => {
+      expect(chip).toHaveAttribute("aria-pressed", "false");
+      expect(screen.getByTestId(`direct-product-${untrackedId}`)).toBeInTheDocument();
+    });
+  });
+});
+
+describe("ReceiveStockPage cost vs selling price margin warning", () => {
+  beforeEach(() => {
+    listSuppliers.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+    });
+    listCatalogCategories.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 50,
+    });
+    listDirectPurchases.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 8,
+    });
+    createDirectPurchaseReceipt.mockResolvedValue({
+      directPurchaseReceiptId: receiptId,
+      receiptNumber: "DPR-1",
+      organizationId: orgId,
+      branchId,
+      status: "Posted",
+      lines: [],
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  async function addPricedLine(
+    user: ReturnType<typeof userEvent.setup>,
+    product: PosCatalogProductDto,
+    cost: string,
+  ) {
+    listCatalogProducts.mockResolvedValue({
+      items: [product],
+      totalCount: 1,
+      page: 1,
+      pageSize: 100,
+    });
+    renderPage();
+    await openFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-product-${product.productId}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`direct-add-${product.productId}`));
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-receipt-line-${product.productId}`)).toBeInTheDocument();
+    });
+    const costInput = screen.getByTestId(`direct-line-cost-${product.productId}`);
+    await user.clear(costInput);
+    await user.type(costInput, cost);
+    await user.tab();
+  }
+
+  it("shows no warning when cost is below branch-effective selling price", async () => {
+    const user = userEvent.setup();
+    await addPricedLine(
+      user,
+      productDto({
+        sellingPrice: 999,
+        effectiveSellingPrice: 200,
+        hasBranchPriceOverride: true,
+      }),
+      "150",
+    );
+    expect(
+      screen.queryByTestId(`direct-line-margin-warning-${productId}`),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+  });
+
+  it("warns on zero margin when cost equals effective selling price", async () => {
+    const user = userEvent.setup();
+    await addPricedLine(
+      user,
+      productDto({
+        sellingPrice: 999,
+        effectiveSellingPrice: 200,
+        hasBranchPriceOverride: true,
+      }),
+      "200",
+    );
+    const warning = screen.getByTestId(`direct-line-margin-warning-${productId}`);
+    expect(warning).toHaveAttribute("data-margin", "zeroMargin");
+    expect(screen.getByTestId("direct-review")).not.toBeDisabled();
+    await user.click(screen.getByTestId("direct-review"));
+    expect(await screen.findByTestId("direct-review-margin-warning")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-confirm")).not.toBeDisabled();
+  });
+
+  it("warns on negative margin when cost exceeds effective selling price", async () => {
+    const user = userEvent.setup();
+    await addPricedLine(
+      user,
+      productDto({
+        sellingPrice: 999,
+        effectiveSellingPrice: 200,
+        hasBranchPriceOverride: true,
+      }),
+      "300",
+    );
+    expect(screen.getByTestId(`direct-line-margin-warning-${productId}`)).toHaveAttribute(
+      "data-margin",
+      "negativeMargin",
+    );
+  });
+
+  it("shows one consolidated post-save toast for multiple affected products", async () => {
+    listCatalogProducts.mockResolvedValue({
+      items: [
+        productDto({
+          productId,
+          name: "Rice",
+          sellingPrice: 100,
+          effectiveSellingPrice: 100,
+        }),
+        productDto({
+          productId: productId2,
+          name: "Oil",
+          sku: "OIL-1",
+          sellingPrice: 50,
+          effectiveSellingPrice: 50,
+        }),
+      ],
+      totalCount: 2,
+      page: 1,
+      pageSize: 100,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await openFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId(`direct-add-${productId}`));
+    await user.click(screen.getByTestId(`direct-add-${productId2}`));
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-receipt-line-${productId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`direct-receipt-line-${productId2}`)).toBeInTheDocument();
+    });
+
+    for (const id of [productId, productId2]) {
+      const costInput = screen.getByTestId(`direct-line-cost-${id}`);
+      await user.clear(costInput);
+      await user.type(costInput, "200");
+    }
+
+    await user.click(screen.getByTestId("direct-review"));
+    expect(await screen.findByTestId("direct-review-margin-warning")).toHaveTextContent(
+      "2 received products",
+    );
+    await user.click(screen.getByTestId("direct-confirm"));
+    await waitFor(() => {
+      expect(createDirectPurchaseReceipt).toHaveBeenCalledTimes(1);
+    });
+    const toast = await screen.findByTestId("exits-toast");
+    expect(toast).toHaveAttribute("data-tone", "warning");
+    expect(toast).toHaveTextContent("Selling price needs review");
+    expect(toast).toHaveTextContent("2 received products");
+    expect(screen.getAllByTestId("exits-toast")).toHaveLength(1);
+    const action = screen.getByTestId("exits-toast-action");
+    expect(action).toHaveTextContent("Review prices");
+    expect(action).toHaveAttribute("href", "/catalog/todays-prices");
+  });
+
+  it("links a single-product toast to edit product", async () => {
+    const user = userEvent.setup();
+    await addPricedLine(
+      user,
+      productDto({
+        sellingPrice: 200,
+        effectiveSellingPrice: 200,
+      }),
+      "200",
+    );
+    await user.click(screen.getByTestId("direct-review"));
+    await user.click(screen.getByTestId("direct-confirm"));
+    await waitFor(() => {
+      expect(createDirectPurchaseReceipt).toHaveBeenCalled();
+    });
+    const action = await screen.findByTestId("exits-toast-action");
+    expect(action).toHaveTextContent("Review price");
+    expect(action).toHaveAttribute("href", `/catalog/products/${productId}/edit`);
   });
 });

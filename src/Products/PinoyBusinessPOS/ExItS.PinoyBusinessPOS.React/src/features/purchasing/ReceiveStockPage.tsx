@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Check, ClipboardList, PackagePlus, Plus, Trash2, X } from "lucide-react";
+import { ArrowRight, AlertTriangle, ClipboardList, PackagePlus, Plus, Trash2, X } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -29,17 +29,27 @@ import {
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
+  ExitsTablePagination,
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
+import { FilterChip } from "@/components/exits/FilterChip";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
+import {
+  hasReceiveCostMarginWarning,
+  receiveCostMarginKind,
+  resolveReceiveEffectiveSellingPrice,
+} from "@/features/purchasing/receive-cost-margin";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
+import { normalizeMoneyAmountTyping } from "@/lib/money-input";
 import {
   directPurchaseCreditValidationKey,
   formatMoneyInput,
@@ -58,6 +68,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const OTHER_SOURCE = "__other__";
 const RECENT_COMPLETED_PAGE_SIZE = 8;
+const PRODUCT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 type DraftLine = {
   productId: string;
@@ -67,8 +78,12 @@ type DraftLine = {
   tracksExpiration: boolean;
   quantity: number;
   unitCost: number;
+  /** Branch-effective catalog selling price at add time (margin comparison source). */
+  effectiveSellingPrice: number;
+  sellingPrice: number;
   qtyInput: string;
   costInput: string;
+  sellingPriceInput: string;
   expiryDate: string;
   lotNumber: string;
 };
@@ -90,9 +105,13 @@ function formatHistoryDate(item: DirectPurchaseHistoryItem): string {
 }
 
 function lineIsComplete(line: DraftLine): boolean {
-  if (!(line.quantity > 0 && line.unitCost > 0)) return false;
+  if (!(line.quantity > 0 && line.unitCost > 0 && line.sellingPrice > 0)) return false;
   if (line.tracksExpiration && !line.expiryDate.trim()) return false;
   return true;
+}
+
+function lineHasCostMarginWarning(line: DraftLine): boolean {
+  return hasReceiveCostMarginWarning(line.unitCost, line.effectiveSellingPrice);
 }
 
 function prefersReducedMotion(): boolean {
@@ -105,6 +124,7 @@ function prefersReducedMotion(): boolean {
 
 export function ReceiveStockPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -120,8 +140,10 @@ export function ReceiveStockPage() {
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [finderOpen, setFinderOpen] = useState(false);
-  const [pendingFocusProductId, setPendingFocusProductId] = useState<string | null>(null);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
+  const [trackedOnly, setTrackedOnly] = useState(false);
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState<number>(PRODUCT_PAGE_SIZE_OPTIONS[0]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -163,7 +185,6 @@ export function ReceiveStockPage() {
     idempotencyKeyRef.current = null;
     setLines([]);
     setFinderOpen(false);
-    setPendingFocusProductId(null);
     setHighlightProductId(null);
     setSupplierChoice("");
     setSourceName("");
@@ -203,23 +224,6 @@ export function ReceiveStockPage() {
   }, [finderOpen]);
 
   useEffect(() => {
-    if (!pendingFocusProductId) {
-      return;
-    }
-    const productId = pendingFocusProductId;
-    const frame = window.requestAnimationFrame(() => {
-      const qty = document.querySelector(
-        `[data-testid="direct-line-qty-${productId}"]`,
-      );
-      if (qty instanceof HTMLInputElement) {
-        qty.focus({ preventScroll: true });
-      }
-      setPendingFocusProductId(null);
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [pendingFocusProductId]);
-
-  useEffect(() => {
     if (!highlightProductId) {
       return;
     }
@@ -239,6 +243,11 @@ export function ReceiveStockPage() {
 
   const linesValid = useMemo(
     () => lines.length > 0 && lines.every(lineIsComplete),
+    [lines],
+  );
+
+  const marginWarningLines = useMemo(
+    () => lines.filter(lineHasCostMarginWarning),
     [lines],
   );
 
@@ -361,36 +370,57 @@ export function ReceiveStockPage() {
   });
 
   const categories = categoriesQuery.data?.items ?? [];
-  const rawProductItems = productsQuery.data?.items ?? [];
-  const productItems = useMemo(() => {
-    if (categoryIds.length <= 1) {
-      return rawProductItems;
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const category of categories) {
+      map.set(category.categoryId, category.name);
     }
-    const allowed = new Set(categoryIds);
-    return rawProductItems.filter(
-      (product) => product.categoryId != null && allowed.has(product.categoryId),
-    );
-  }, [categoryIds, rawProductItems]);
-  const recentItems = recentCompletedQuery.data?.items ?? [];
-  const recentTotal = recentCompletedQuery.data?.totalCount ?? 0;
-  const reviewDisabled = !linesValid || !allowManage || !online;
+    return map;
+  }, [categories]);
+  const rawProductItems = productsQuery.data?.items ?? [];
   const addedProductIds = useMemo(
     () => new Set(lines.map((line) => line.productId)),
     [lines],
   );
-  const selectedCategories = useMemo(
-    () => categories.filter((category) => categoryIds.includes(category.categoryId)),
-    [categories, categoryIds],
-  );
-  const hasActiveFilters = categoryIds.length > 0 || debounced.length > 0;
+  const productItems = useMemo(() => {
+    const categoryFiltered =
+      categoryIds.length <= 1
+        ? rawProductItems
+        : rawProductItems.filter(
+            (product) => product.categoryId != null && categoryIds.includes(product.categoryId),
+          );
+    const available = categoryFiltered.filter(
+      (product) => !addedProductIds.has(product.productId),
+    );
+    if (trackedOnly) {
+      return available.filter((product) => product.isTracked !== false);
+    }
+    return available;
+  }, [addedProductIds, categoryIds, rawProductItems, trackedOnly]);
 
-  function clearCategoryFilters() {
-    setCategoryIds([]);
-  }
+  const productTotal = productItems.length;
+  const productPageCount = Math.max(1, Math.ceil(productTotal / productPageSize) || 1);
+  const safeProductPage = Math.min(Math.max(productPage, 1), productPageCount);
+  const pagedProductItems = useMemo(() => {
+    const start = (safeProductPage - 1) * productPageSize;
+    return productItems.slice(start, start + productPageSize);
+  }, [productItems, productPageSize, safeProductPage]);
 
-  function removeCategoryFilter(categoryId: string) {
-    setCategoryIds((prev) => prev.filter((id) => id !== categoryId));
-  }
+  useEffect(() => {
+    setProductPage(1);
+  }, [debounced, categoryIds, trackedOnly, addedProductIds]);
+
+  useEffect(() => {
+    if (productPage !== safeProductPage) {
+      setProductPage(safeProductPage);
+    }
+  }, [productPage, safeProductPage]);
+
+  const recentItems = recentCompletedQuery.data?.items ?? [];
+  const recentTotal = recentCompletedQuery.data?.totalCount ?? 0;
+  const reviewDisabled = !linesValid || !allowManage || !online;
+  const hasActiveFilters =
+    categoryIds.length > 0 || debounced.length > 0 || trackedOnly;
 
   function openFinder() {
     setFinderOpen(true);
@@ -406,13 +436,26 @@ export function ReceiveStockPage() {
 
   function addProductRow(product: PosCatalogProductDto) {
     if (product.isTracked === false) {
-      setError(t("purchasing.receiveStockNotTracked"));
+      showToast({
+        title: t("purchasing.inventoryTrackingRequired"),
+        description: t("purchasing.inventoryTrackingRequiredDetail").replace(
+          "{name}",
+          product.name,
+        ),
+        tone: "error",
+        action: {
+          label: t("inventory.enable"),
+          href: `/inventory/${product.productId}`,
+        },
+      });
       return;
     }
     if (lines.some((line) => line.productId === product.productId)) {
       return;
     }
     const tracksExpiration = product.tracksExpiration === true;
+    const effectiveSelling = resolveReceiveEffectiveSellingPrice(product);
+    const catalogSelling = effectiveSelling > 0 ? effectiveSelling : 0;
     const line: DraftLine = {
       productId: product.productId,
       name: product.name,
@@ -421,15 +464,16 @@ export function ReceiveStockPage() {
       tracksExpiration,
       quantity: 1,
       unitCost: 0,
+      effectiveSellingPrice: catalogSelling,
+      sellingPrice: catalogSelling,
       qtyInput: "1",
       costInput: "",
+      sellingPriceInput: catalogSelling > 0 ? formatMoneyInput(catalogSelling) : "",
       expiryDate: "",
       lotNumber: "",
     };
     setLines((prev) => [...prev, line]);
     setError(null);
-    setFinderOpen(false);
-    setPendingFocusProductId(product.productId);
     if (!prefersReducedMotion()) {
       setHighlightProductId(product.productId);
     }
@@ -437,7 +481,9 @@ export function ReceiveStockPage() {
 
   function patchLine(
     productId: string,
-    patch: Partial<Pick<DraftLine, "qtyInput" | "costInput" | "expiryDate" | "lotNumber">>,
+    patch: Partial<
+      Pick<DraftLine, "qtyInput" | "costInput" | "sellingPriceInput" | "expiryDate" | "lotNumber">
+    >,
   ) {
     setLines((prev) =>
       prev.map((line) => {
@@ -448,8 +494,12 @@ export function ReceiveStockPage() {
           next.quantity = Number.isFinite(qty) && qty > 0 ? qty : 0;
         }
         if (patch.costInput !== undefined) {
-          const cost = Number(patch.costInput);
-          next.unitCost = Number.isFinite(cost) && cost > 0 ? cost : 0;
+          const cost = parseMoneyInput(patch.costInput);
+          next.unitCost = cost !== null && cost > 0 ? cost : 0;
+        }
+        if (patch.sellingPriceInput !== undefined) {
+          const sell = parseMoneyInput(patch.sellingPriceInput);
+          next.sellingPrice = sell !== null && sell > 0 ? sell : 0;
         }
         return next;
       }),
@@ -458,6 +508,32 @@ export function ReceiveStockPage() {
 
   function removeLine(productId: string) {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
+  }
+
+  function showReceiveCostMarginToast(affected: DraftLine[]) {
+    if (affected.length === 0) {
+      return;
+    }
+    const single = affected.length === 1;
+    showToast({
+      title: t("purchasing.sellingPriceNeedsReview"),
+      description: single
+        ? t("purchasing.sellingPriceNeedsReviewDetail")
+        : t("purchasing.sellingPriceNeedsReviewDetailMany").replace(
+            "{count}",
+            String(affected.length),
+          ),
+      tone: "warning",
+      action: single
+        ? {
+            label: t("purchasing.reviewPrice"),
+            href: `/catalog/products/${affected[0].productId}/edit`,
+          }
+        : {
+            label: t("purchasing.reviewPrices"),
+            href: "/catalog/todays-prices",
+          },
+    });
   }
 
   function startReview() {
@@ -528,9 +604,13 @@ export function ReceiveStockPage() {
     };
     setSaving(true);
     setError(null);
+    const marginAffected = lines.filter(lineHasCostMarginWarning);
     try {
       const receipt = await createDirectPurchaseReceipt(workspace, payload);
       idempotencyKeyRef.current = null;
+      if (marginAffected.length > 0) {
+        showReceiveCostMarginToast(marginAffected);
+      }
       navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
         replace: true,
       });
@@ -542,6 +622,9 @@ export function ReceiveStockPage() {
         try {
           const receipt = await createDirectPurchaseReceipt(workspace, payload);
           idempotencyKeyRef.current = null;
+          if (marginAffected.length > 0) {
+            showReceiveCostMarginToast(marginAffected);
+          }
           navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
             replace: true,
           });
@@ -753,6 +836,9 @@ export function ReceiveStockPage() {
                             {t("purchasing.costShort")}
                           </ExitsTableHead>
                           <ExitsTableHead cellAlign="text">
+                            {t("purchasing.sellingPriceShort")}
+                          </ExitsTableHead>
+                          <ExitsTableHead cellAlign="text">
                             {t("purchasing.expiryDate")}
                           </ExitsTableHead>
                           <ExitsTableHead cellAlign="text">
@@ -762,11 +848,11 @@ export function ReceiveStockPage() {
                             {t("purchasing.lineTotal")}
                           </ExitsTableHead>
                           <ExitsTableHead
-                            cellAlign="actions"
+                            cellAlign="center"
                             colSize="actions"
-                            aria-label={t("purchasing.action")}
+                            className="receive-stock-receipt-table__action-col"
                           >
-                            <span className="sr-only">{t("purchasing.action")}</span>
+                            {t("purchasing.action")}
                           </ExitsTableHead>
                         </ExitsTableRow>
                       </ExitsTableHeader>
@@ -774,6 +860,21 @@ export function ReceiveStockPage() {
                         {lines.map((line) => {
                           const lineTotal = roundMoney(line.quantity * line.unitCost);
                           const highlighted = highlightProductId === line.productId;
+                          const qtyInvalid = !(line.quantity > 0);
+                          const costInvalid = !(line.unitCost > 0);
+                          const sellingInvalid = !(line.sellingPrice > 0);
+                          const expiryInvalid =
+                            line.tracksExpiration && !line.expiryDate.trim();
+                          const marginKind = receiveCostMarginKind(
+                            line.unitCost,
+                            line.effectiveSellingPrice,
+                          );
+                          const marginLabel =
+                            marginKind === "zeroMargin"
+                              ? t("purchasing.costZeroMarginWarning")
+                              : marginKind === "negativeMargin"
+                                ? t("purchasing.costNegativeMarginWarning")
+                                : null;
                           return (
                             <ExitsTableRow
                               key={line.productId}
@@ -799,6 +900,8 @@ export function ReceiveStockPage() {
                                       patchLine(line.productId, { qtyInput: e.target.value })
                                     }
                                     inputMode="decimal"
+                                    aria-invalid={qtyInvalid || undefined}
+                                    aria-required
                                     aria-label={t("purchasing.qtyShort")}
                                     data-testid={`direct-line-qty-${line.productId}`}
                                   />
@@ -809,16 +912,71 @@ export function ReceiveStockPage() {
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
                                 <input
-                                  className="exits-input receive-qty-input"
+                                  className="exits-input receive-qty-input tabular-nums"
                                   value={line.costInput}
                                   onChange={(e) =>
-                                    patchLine(line.productId, { costInput: e.target.value })
+                                    patchLine(line.productId, {
+                                      costInput: normalizeMoneyAmountTyping(e.target.value),
+                                    })
                                   }
+                                  onBlur={(e) => {
+                                    const parsed = parseMoneyInput(e.target.value);
+                                    if (parsed !== null) {
+                                      patchLine(line.productId, {
+                                        costInput: formatMoneyInput(parsed),
+                                      });
+                                    }
+                                  }}
                                   inputMode="decimal"
                                   placeholder="0.00"
+                                  autoComplete="off"
+                                  aria-invalid={costInvalid || undefined}
+                                  aria-required
                                   aria-label={t("purchasing.costShort")}
                                   data-testid={`direct-line-cost-${line.productId}`}
                                 />
+                              </ExitsTableCell>
+                              <ExitsTableCell cellAlign="text">
+                                <div className="receive-stock-selling-cell">
+                                  <input
+                                    className="exits-input receive-qty-input tabular-nums"
+                                    value={line.sellingPriceInput}
+                                    onChange={(e) =>
+                                      patchLine(line.productId, {
+                                        sellingPriceInput: normalizeMoneyAmountTyping(
+                                          e.target.value,
+                                        ),
+                                      })
+                                    }
+                                    onBlur={(e) => {
+                                      const parsed = parseMoneyInput(e.target.value);
+                                      if (parsed !== null) {
+                                        patchLine(line.productId, {
+                                          sellingPriceInput: formatMoneyInput(parsed),
+                                        });
+                                      }
+                                    }}
+                                    inputMode="decimal"
+                                    placeholder="0.00"
+                                    autoComplete="off"
+                                    aria-invalid={sellingInvalid || undefined}
+                                    aria-required
+                                    aria-label={t("purchasing.sellingPriceShort")}
+                                    data-testid={`direct-line-selling-${line.productId}`}
+                                  />
+                                  {marginLabel ? (
+                                    <span
+                                      className="receive-stock-margin-warning"
+                                      title={marginLabel}
+                                      role="img"
+                                      aria-label={marginLabel}
+                                      data-testid={`direct-line-margin-warning-${line.productId}`}
+                                      data-margin={marginKind}
+                                    >
+                                      <AlertTriangle aria-hidden strokeWidth={2} />
+                                    </span>
+                                  ) : null}
+                                </div>
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
                                 {line.tracksExpiration ? (
@@ -831,6 +989,8 @@ export function ReceiveStockPage() {
                                         expiryDate: e.target.value,
                                       })
                                     }
+                                    aria-invalid={expiryInvalid || undefined}
+                                    aria-required
                                     aria-label={t("purchasing.expiryDate")}
                                     data-testid={`direct-line-expiry-${line.productId}`}
                                   />
@@ -860,11 +1020,15 @@ export function ReceiveStockPage() {
                                   {formatPeso(lineTotal)}
                                 </span>
                               </ExitsTableCell>
-                              <ExitsTableCell cellAlign="actions" colSize="actions">
-                                <ExitsTableActions>
+                              <ExitsTableCell
+                                cellAlign="center"
+                                colSize="actions"
+                                className="receive-stock-receipt-table__action-col"
+                              >
+                                <ExitsTableActions className="justify-center">
                                   <Button
                                     type="button"
-                                    variant="ghost"
+                                    variant="destructive"
                                     size="icon"
                                     aria-label={t("purchasing.removeNamed").replace(
                                       "{name}",
@@ -936,8 +1100,8 @@ export function ReceiveStockPage() {
                   </Button>
                 </div>
 
-                {categories.length > 0 ? (
-                  <>
+                <div className="receive-stock-finder__filters">
+                  {categories.length > 0 ? (
                     <ReceiveCategoryMultiSelect
                       categories={categories}
                       selectedIds={categoryIds}
@@ -947,52 +1111,31 @@ export function ReceiveStockPage() {
                       selectedCountLabel={(count) =>
                         t("purchasing.categoriesSelected").replace("{count}", String(count))
                       }
-                      clearLabel={t("purchasing.clearCategories")}
+                      selectAllLabel={t("purchasing.selectAllCategories")}
+                      deselectAllLabel={t("purchasing.deselectAllCategories")}
                     />
-                    <div
-                      className="receive-stock-category-chips"
-                      data-testid="direct-category-filters"
+                  ) : null}
+                  <div className="receive-stock-finder__search-row">
+                    <SearchField
+                      id={productSearchInputId}
+                      label={t("purchasing.productSearch")}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onClear={() => setSearch("")}
+                      placeholder={t("purchasing.productSearch")}
+                      testId="direct-product-search"
+                      containerClassName="receive-stock-finder__search"
+                    />
+                    <FilterChip
+                      selected={trackedOnly}
+                      onClick={() => setTrackedOnly((prev) => !prev)}
+                      data-testid="direct-tracking-filter-chip"
+                      aria-label={t("purchasing.trackedOnly")}
                     >
-                      <button
-                        type="button"
-                        className={cn(
-                          "exits-chip",
-                          categoryIds.length === 0 && "exits-chip--active",
-                        )}
-                        onClick={clearCategoryFilters}
-                        data-testid="direct-category-all"
-                      >
-                        <span className="exits-chip__label">{t("purchasing.categoryAll")}</span>
-                      </button>
-                      {selectedCategories.map((category) => (
-                        <button
-                          key={category.categoryId}
-                          type="button"
-                          className="exits-chip exits-chip--active"
-                          onClick={() => removeCategoryFilter(category.categoryId)}
-                          data-testid={`direct-category-chip-${category.categoryId}`}
-                          aria-label={t("purchasing.removeCategory").replace(
-                            "{name}",
-                            category.name,
-                          )}
-                        >
-                          <span className="exits-chip__label">{category.name}</span>
-                          <X className="size-3.5 shrink-0" aria-hidden />
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
-
-                <SearchField
-                  id={productSearchInputId}
-                  label={t("purchasing.productSearch")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onClear={() => setSearch("")}
-                  placeholder={t("purchasing.productSearch")}
-                  testId="direct-product-search"
-                />
+                      {t("purchasing.trackedOnly")}
+                    </FilterChip>
+                  </div>
+                </div>
 
                 {productsQuery.isFetching ? <LoadingState label={t("loading.label")} /> : null}
 
@@ -1034,24 +1177,28 @@ export function ReceiveStockPage() {
                           <ExitsTableHead cellAlign="text">
                             {t("purchasing.receiveProduct")}
                           </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text" colSize="numeric">
-                            {t("purchasing.unit")}
+                          <ExitsTableHead cellAlign="text">
+                            {t("purchasing.category")}
+                          </ExitsTableHead>
+                          <ExitsTableHead cellAlign="text">
+                            {t("purchasing.inventoryTracking")}
                           </ExitsTableHead>
                           <ExitsTableHead
-                            cellAlign="actions"
+                            cellAlign="center"
                             colSize="actions"
-                            aria-label={t("purchasing.action")}
+                            className="receive-stock-product-table__action-col"
                           >
-                            <span className="inline-flex size-[var(--exits-table-action-size)] items-center justify-center rounded-full text-muted">
-                              <Plus className="size-4" aria-hidden />
-                            </span>
-                            <span className="sr-only">{t("purchasing.action")}</span>
+                            {t("purchasing.action")}
                           </ExitsTableHead>
                         </ExitsTableRow>
                       </ExitsTableHeader>
                       <ExitsTableBody>
-                        {productItems.map((product) => {
-                          const alreadyAdded = addedProductIds.has(product.productId);
+                        {pagedProductItems.map((product) => {
+                          const notTracked = product.isTracked === false;
+                          const categoryName =
+                            product.categoryId != null
+                              ? (categoryNameById.get(product.categoryId) ?? "—")
+                              : "—";
                           return (
                             <ExitsTableRow
                               key={product.productId}
@@ -1065,37 +1212,40 @@ export function ReceiveStockPage() {
                                   </div>
                                 ) : null}
                               </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text" colSize="numeric">
-                                {product.unitOfMeasure}
+                              <ExitsTableCell cellAlign="text">{categoryName}</ExitsTableCell>
+                              <ExitsTableCell cellAlign="text">
+                                <StatusChip tone={notTracked ? "neutral" : "primary"}>
+                                  {notTracked
+                                    ? t("inventory.notTracked")
+                                    : t("inventory.tracked")}
+                                </StatusChip>
                               </ExitsTableCell>
-                              <ExitsTableCell cellAlign="actions" colSize="actions">
-                                <ExitsTableActions>
-                                  {alreadyAdded ? (
-                                    <Button
-                                      type="button"
-                                      variant="secondary"
-                                      size="icon"
-                                      shape="round"
-                                      disabled
-                                      data-testid={`direct-added-${product.productId}`}
-                                      aria-label={t("purchasing.productAdded")}
-                                      title={t("purchasing.productAdded")}
-                                    >
-                                      <Check className="size-4" aria-hidden />
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      shape="round"
-                                      onClick={() => addProductRow(product)}
-                                      data-testid={`direct-add-${product.productId}`}
-                                      aria-label={t("purchasing.addProduct")}
-                                      title={t("purchasing.addProduct")}
-                                    >
-                                      <Plus className="size-4" aria-hidden />
-                                    </Button>
-                                  )}
+                              <ExitsTableCell
+                                cellAlign="center"
+                                colSize="actions"
+                                className="receive-stock-product-table__action-col"
+                              >
+                                <ExitsTableActions className="justify-center">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    shape="round"
+                                    variant={notTracked ? "secondary" : "default"}
+                                    onClick={() => addProductRow(product)}
+                                    data-testid={`direct-add-${product.productId}`}
+                                    aria-label={
+                                      notTracked
+                                        ? t("purchasing.inventoryTrackingRequired")
+                                        : t("purchasing.addProduct")
+                                    }
+                                    title={
+                                      notTracked
+                                        ? t("purchasing.inventoryTrackingRequired")
+                                        : t("purchasing.addProduct")
+                                    }
+                                  >
+                                    <Plus className="size-4" aria-hidden />
+                                  </Button>
                                 </ExitsTableActions>
                               </ExitsTableCell>
                             </ExitsTableRow>
@@ -1103,6 +1253,21 @@ export function ReceiveStockPage() {
                         })}
                       </ExitsTableBody>
                     </ExitsTable>
+                    <ExitsTablePagination
+                      page={safeProductPage}
+                      pageSize={productPageSize}
+                      total={productTotal}
+                      pageSizeOptions={PRODUCT_PAGE_SIZE_OPTIONS}
+                      onPageChange={setProductPage}
+                      onPageSizeChange={(size) => {
+                        setProductPageSize(size);
+                        setProductPage(1);
+                      }}
+                      rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+                      previousLabel={t("exitsTable.previous")}
+                      nextLabel={t("exitsTable.next")}
+                      rangeLabel={t("exitsTable.range")}
+                    />
                   </ExitsTableContainer>
                 ) : null}
               </Card>
@@ -1257,6 +1422,20 @@ export function ReceiveStockPage() {
           <Notice tone="info" testId="direct-review-notice">
             {t("purchasing.willIncreaseStock")}
           </Notice>
+          {marginWarningLines.length > 0 ? (
+            <Notice
+              tone="warning"
+              title={t("purchasing.sellingPriceNeedsReview")}
+              testId="direct-review-margin-warning"
+            >
+              {marginWarningLines.length === 1
+                ? t("purchasing.sellingPriceNeedsReviewDetail")
+                : t("purchasing.sellingPriceNeedsReviewDetailMany").replace(
+                    "{count}",
+                    String(marginWarningLines.length),
+                  )}
+            </Notice>
+          ) : null}
           <div className="receive-stock-review__meta">
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("purchasing.purchaseDate")}: {purchaseDate}
@@ -1289,6 +1468,7 @@ export function ReceiveStockPage() {
                 <span className="font-medium">{line.name}</span>
                 <span className="tabular-nums text-muted">
                   {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
+                  {` · ${t("purchasing.sellingPriceShort")} ${formatPeso(line.sellingPrice)}`}
                   {line.expiryDate ? ` · ${line.expiryDate}` : ""}
                 </span>
                 <span className="tabular-nums font-semibold">

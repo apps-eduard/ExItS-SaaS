@@ -11,7 +11,7 @@ import { X } from "lucide-react";
 import { getToastNavigate } from "@/components/exits/toast-navigation";
 import { cn } from "@/lib/cn";
 
-export type ToastTone = "success" | "error";
+export type ToastTone = "success" | "error" | "warning";
 
 export type ToastAction = {
   label: string;
@@ -129,7 +129,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             className={cn(
               "exits-toast",
-              toast.tone === "success" ? "exits-toast--success" : "exits-toast--error",
+              toast.tone === "success" && "exits-toast--success",
+              toast.tone === "error" && "exits-toast--error",
+              toast.tone === "warning" && "exits-toast--warning",
             )}
             role="status"
             data-testid="exits-toast"

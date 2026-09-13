@@ -8581,6 +8581,17 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.addNewProduct": "Add new product",
   "purchasing.qtyShort": "Qty",
   "purchasing.costShort": "Cost",
+  "purchasing.sellingPriceShort": "Selling price",
+  "purchasing.costZeroMarginWarning": "Purchase cost equals the current selling price (zero margin).",
+  "purchasing.costNegativeMarginWarning":
+    "Purchase cost is higher than the current selling price (negative margin).",
+  "purchasing.sellingPriceNeedsReview": "Selling price needs review",
+  "purchasing.sellingPriceNeedsReviewDetail":
+    "Purchase cost is equal to or higher than the current selling price. Review the selling price to avoid a zero or negative margin.",
+  "purchasing.sellingPriceNeedsReviewDetailMany":
+    "{count} received products have purchase costs equal to or higher than their current selling prices. Review their selling prices to avoid zero or negative margins.",
+  "purchasing.reviewPrice": "Review price",
+  "purchasing.reviewPrices": "Review prices",
 
 
   "purchasing.offline": "Kailangan ng internet ang pagbili.",
@@ -8718,9 +8729,12 @@ export const filPH: Record<keyof typeof en, string> = {
     "Itala ang mga binili at natanggap na. Kapag kinonfirma ang receipt, maidagdag ang mga ito sa inventory.",
   "purchasing.findProducts": "Hanapin ang produkto",
   "purchasing.productAdded": "Naidagdag",
-  "purchasing.categories": "Categories",
-  "purchasing.categoriesPlaceholder": "Select categories",
+  "purchasing.categories": "Mga kategorya",
+  "purchasing.category": "Kategorya",
+  "purchasing.categoriesPlaceholder": "Pumili ng kategorya",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.selectAllCategories": "Piliin lahat",
+  "purchasing.deselectAllCategories": "Alisin ang lahat",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -8728,7 +8742,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.draftEmptyDetailLeft": "Magdagdag ng produkto para buuin ang receipt na ito.",
   "purchasing.closeFindProducts": "Isara",
   "purchasing.unit": "Unit",
-  "purchasing.action": "Action",
+  "purchasing.action": "Aksyon",
+  "purchasing.inventoryTracking": "Inventory tracking",
+  "purchasing.trackedOnly": "Tracked only",
+  "purchasing.inventoryTrackingRequired": "Kailangan ang inventory tracking",
+  "purchasing.inventoryTrackingRequiredDetail":
+    "Hindi inventory-tracked ang {name}. I-enable ang tracking bago ito matanggap.",
   "purchasing.removeNamed": "Remove {name}",
   "purchasing.recentCompletedReceipts": "Kamakailang natapos na receipt",
   "purchasing.viewAllDirectPurchases": "Tingnan ang lahat ng direct purchase",

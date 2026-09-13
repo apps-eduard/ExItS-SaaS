@@ -11860,6 +11860,11 @@ a.dashboard-metric-card:focus-visible {
   background: color-mix(in srgb, var(--exits-danger) 12%, var(--exits-surface));
 }
 
+.exits-toast--warning {
+  border-color: color-mix(in srgb, var(--exits-warning) 50%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 14%, var(--exits-surface));
+}
+
 @keyframes exits-toast-in {
   from {
     opacity: 0;
@@ -15111,6 +15116,39 @@ a.exits-chip--primary:hover {
   gap: 0.4rem;
 }
 
+.receive-stock-finder__filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+@media (min-width: 40rem) {
+  .receive-stock-finder__filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  }
+}
+
+.receive-stock-finder__search-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.receive-stock-finder__search {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.receive-stock-finder__search-row .exits-filter-chip,
+.receive-stock-finder__search-row [data-testid="direct-tracking-filter-chip"] {
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 0;
+}
+
 .receive-stock-product-table,
 .receive-stock-receipt-table {
   min-width: 0;
@@ -15125,11 +15163,40 @@ a.exits-chip--primary:hover {
 
 .receive-stock-product-table .exits-table__col--actions,
 .receive-stock-product-table .exits-table__cell--actions,
-.receive-stock-product-table .exits-table__head.exits-table__cell--actions {
-  width: 3.25rem;
-  min-width: 3.25rem;
-  max-width: 3.25rem;
+.receive-stock-product-table .exits-table__head.exits-table__cell--actions,
+.receive-stock-product-table__action-col,
+.receive-stock-receipt-table__action-col {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 5.5rem;
   padding-inline: 0.35rem;
+  text-align: center;
+}
+
+.receive-stock-product-table__action-col .exits-table__actions,
+.receive-stock-receipt-table__action-col .exits-table__actions {
+  justify-content: center;
+}
+
+/* Incomplete required receipt fields: attention ring until fulfilled. */
+.receive-stock-receipt-table .exits-input[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--exits-warning) 55%, var(--exits-border));
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width)
+    color-mix(in srgb, var(--exits-warning) 32%, transparent);
+}
+
+.receive-stock-receipt-table .exits-input[aria-invalid="true"]:hover,
+.receive-stock-receipt-table .exits-input[aria-invalid="true"]:focus,
+.receive-stock-receipt-table .exits-input[aria-invalid="true"]:focus-visible {
+  border-color: var(--exits-warning);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width)
+    color-mix(in srgb, var(--exits-warning) 40%, transparent);
+}
+
+.receive-stock-receipt-table .exits-input:not([aria-invalid="true"]):focus,
+.receive-stock-receipt-table .exits-input:not([aria-invalid="true"]):focus-visible {
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
 }
 
 .receive-stock-receipt-row--highlight > td,
@@ -15148,26 +15215,111 @@ a.exits-chip--primary:hover {
   }
 }
 
-.receive-stock-expiry-input,
+.receive-stock-selling-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.receive-stock-selling-cell .receive-qty-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.receive-stock-margin-warning {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--exits-warning);
+}
+
+.receive-stock-margin-warning svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.receive-stock-expiry-input {
+  width: 100%;
+  min-width: calc(6.5rem + 3ch);
+  max-width: calc(10rem + 3ch);
+}
+
 .receive-stock-lot-input {
   width: 100%;
   min-width: 6.5rem;
   max-width: 10rem;
 }
 
-.receive-stock-category-trigger {
+.receive-stock-category-trigger.exits-select,
+.receive-stock-category-trigger.catalog-form-select {
   display: inline-flex;
   width: 100%;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  /* Drop native select caret; Lucide ChevronDown is the single indicator. */
+  background-image: none;
+  padding-inline-end: var(--exits-control-padding-x);
   text-align: start;
   cursor: pointer;
+}
+
+[data-theme="dark"] .receive-stock-category-trigger.exits-select,
+[data-theme="dark"] .receive-stock-category-trigger.catalog-form-select,
+[data-theme="system"] .receive-stock-category-trigger.exits-select,
+[data-theme="system"] .receive-stock-category-trigger.catalog-form-select,
+:root:not([data-theme]) .receive-stock-category-trigger.exits-select,
+:root:not([data-theme]) .receive-stock-category-trigger.catalog-form-select {
+  background-image: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] .receive-stock-category-trigger.exits-select,
+  [data-theme="system"] .receive-stock-category-trigger.catalog-form-select,
+  :root:not([data-theme]) .receive-stock-category-trigger.exits-select,
+  :root:not([data-theme]) .receive-stock-category-trigger.catalog-form-select {
+    background-image: none;
+  }
 }
 
 .receive-stock-category-menu {
   min-width: min(18rem, calc(100vw - 1.5rem)) !important;
   max-height: min(20rem, 60vh);
+}
+
+.receive-stock-category-menu__bulk {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.35rem 0.45rem 0.15rem;
+  border-bottom: 1px solid var(--exits-border);
+}
+
+.receive-stock-category-menu__bulk-action {
+  flex: 1 1 0;
+  border: 0;
+  border-radius: var(--exits-radius-sm);
+  background: transparent;
+  padding: 0.4rem 0.45rem;
+  color: var(--exits-primary);
+  font: inherit;
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.receive-stock-category-menu__bulk-action:hover:not(:disabled),
+.receive-stock-category-menu__bulk-action:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
+  outline: none;
+}
+
+.receive-stock-category-menu__bulk-action:disabled {
+  color: var(--exits-text-muted);
+  cursor: default;
+  opacity: 0.65;
 }
 
 .receive-stock-category-menu__list {
