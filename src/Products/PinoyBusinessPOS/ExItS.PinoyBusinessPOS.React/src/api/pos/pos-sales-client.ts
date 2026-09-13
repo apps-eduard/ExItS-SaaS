@@ -14,8 +14,18 @@ const guidSchema = z
   .string()
   .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
 
-/** Current checkout methods only — never Card or provider GCash in React UX (RMAP-12). */
-export const checkoutPaymentMethodSchema = z.enum(["Cash", "ManualGCash", "Utang"]);
+/**
+ * Checkout sale methods accepted by the API.
+ * Online/provider channels (Card, GCash provider, …) stay out of React checkout UX.
+ */
+export const checkoutPaymentMethodSchema = z.enum([
+  "Cash",
+  "ManualGCash",
+  "Utang",
+  "BankTransfer",
+  "Check",
+  "ManualMaya",
+]);
 export type CheckoutPaymentMethod = z.infer<typeof checkoutPaymentMethodSchema>;
 
 export const GCASH_REFERENCE_MAX_LENGTH = 64;
@@ -572,10 +582,16 @@ export async function voidSale(
   return parseSale(raw);
 }
 
-/** User-facing payment label — never show ManualGCash to operators. */
+/** User-facing payment label — never show ManualGCash / ManualMaya to operators. */
 export function formatPaymentMethodLabel(paymentMethod: string): string {
   if (paymentMethod === "ManualGCash") {
     return "GCash";
+  }
+  if (paymentMethod === "ManualMaya") {
+    return "Maya";
+  }
+  if (paymentMethod === "BankTransfer") {
+    return "Bank transfer";
   }
   return paymentMethod;
 }

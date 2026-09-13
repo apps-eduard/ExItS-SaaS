@@ -1499,6 +1499,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "checkout.paymentMethodChoose": "Pilien ti paagi iti bayad",
 
   "checkout.paymentUtang": "Utang",
+  "checkout.paymentBankTransfer": "Bank transfer",
+  "checkout.paymentCheck": "Check",
+  "checkout.paymentManualMaya": "Maya / Manual",
+  "checkout.paymentReference": "Payment reference",
+  "checkout.paymentReferenceHint": "Optional or required based on store payment settings. Not verified with a provider.",
+  "checkout.fieldOptional": "Optional",
 
   "checkout.personalCustomerHint": "Sapulen ti adda a customer a naka-link iti Personal ExItS identity.",
 

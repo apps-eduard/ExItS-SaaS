@@ -2436,6 +2436,12 @@ export const en = {
   "checkout.paymentGCashManual": "GCash / Manual",
   "checkout.paymentGCashHint": "Enter reference after payment",
   "checkout.paymentUtang": "Utang",
+  "checkout.paymentBankTransfer": "Bank transfer",
+  "checkout.paymentCheck": "Check",
+  "checkout.paymentManualMaya": "Maya / Manual",
+  "checkout.paymentReference": "Payment reference",
+  "checkout.paymentReferenceHint": "Optional or required based on store payment settings. Not verified with a provider.",
+  "checkout.fieldOptional": "Optional",
   "checkout.gcashReference": "GCash reference",
   "checkout.gcashReferenceRequired": "Enter the GCash reference (max 64 characters).",
   "checkout.gcashReferenceHint":

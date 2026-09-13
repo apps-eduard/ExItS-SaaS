@@ -25,15 +25,24 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, UserRoundX, WalletCards } from "lucide-react";
 import {
+  listCheckoutPaymentMethods,
+  listPaymentMethods,
+} from "@/api/pos/pos-payment-methods-client";
+import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
   getSale,
   quoteSale,
-  type CheckoutPaymentMethod,
   type CommercialDiscountIntentRequest,
   type PosSaleQuoteDto,
   type SalePriceOverrideIntentRequest,
 } from "@/api/pos/pos-sales-client";
+import {
+  DEFAULT_CHECKOUT_METHOD_CODES,
+  filterCheckoutUiChoices,
+  isManualReferencePaymentChoice,
+  toApiPaymentMethod,
+} from "@/features/checkout/checkout-payment-method-options";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
   isCheckoutBusiness,
@@ -121,14 +130,7 @@ function parseDiscountValue(raw: string): number | null {
   return value;
 }
 
-function toApiPaymentMethod(choice: UiPaymentChoice): CheckoutPaymentMethod {
-  if (choice === "GCash") {
-    return "ManualGCash";
-  }
-  return choice;
-}
-
-/** Checkout page — Cash / GCash (ManualGCash) / Utang. File kept as CheckoutCashPage for route stability. */
+/** Checkout page — Cash / manual methods / Utang. File kept as CheckoutCashPage for route stability. */
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -248,6 +250,61 @@ export function CheckoutCashPage() {
   const offlineContext = sellReadiness.offlineContext;
   const offlineDb = offlineContext?.db ?? null;
 
+  const checkoutMethodsQuery = useQuery({
+    queryKey: [
+      "pos-checkout-payment-methods",
+      boundWorkspace?.organizationId,
+      boundWorkspace?.branchId,
+    ],
+    enabled: online && !!boundWorkspace,
+    queryFn: ({ signal }) =>
+      listCheckoutPaymentMethods(boundWorkspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const paymentSettingsQuery = useQuery({
+    queryKey: ["pos-payment-method-settings", boundWorkspace?.organizationId],
+    enabled: online && !!boundWorkspace,
+    queryFn: ({ signal }) => listPaymentMethods(boundWorkspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const entitledUiChoices = useMemo(() => {
+    if (!online) {
+      return ["Cash"] as UiPaymentChoice[];
+    }
+    const codes = checkoutMethodsQuery.data ?? [...DEFAULT_CHECKOUT_METHOD_CODES];
+    return filterCheckoutUiChoices(codes);
+  }, [checkoutMethodsQuery.data, online]);
+
+  const requireReferenceByChoice = useMemo(() => {
+    const map = new Map<UiPaymentChoice, boolean>();
+    map.set("GCash", true);
+    map.set("BankTransfer", true);
+    map.set("Check", true);
+    map.set("ManualMaya", false);
+    for (const row of paymentSettingsQuery.data ?? []) {
+      const ui =
+        row.methodCode === "ManualGCash"
+          ? "GCash"
+          : row.methodCode === "BankTransfer" ||
+              row.methodCode === "Check" ||
+              row.methodCode === "ManualMaya"
+            ? (row.methodCode as UiPaymentChoice)
+            : null;
+      if (ui) {
+        map.set(ui, row.requireReference);
+      }
+    }
+    return map;
+  }, [paymentSettingsQuery.data]);
+
+  useEffect(() => {
+    if (!entitledUiChoices.includes(paymentChoice)) {
+      setPaymentChoice(entitledUiChoices[0] ?? "Cash");
+    }
+  }, [entitledUiChoices, paymentChoice]);
+
   /**
    * Offline price leases (RMAP-21 Review Repair 01). While offline the cart is priced by leases the
    * server signed before the network dropped, so the amount the customer pays is the amount the
@@ -304,8 +361,11 @@ export function CheckoutCashPage() {
         : null;
 
   const gcashRefTrimmed = gcashReference.trim();
+  const manualReferenceRequired =
+    isManualReferencePaymentChoice(paymentChoice) &&
+    (requireReferenceByChoice.get(paymentChoice) ?? paymentChoice === "GCash");
   const gcashRefOk =
-    paymentChoice !== "GCash" ||
+    !manualReferenceRequired ||
     zeroTotal ||
     (gcashRefTrimmed.length > 0 && gcashRefTrimmed.length <= GCASH_REFERENCE_MAX_LENGTH);
 
@@ -518,7 +578,8 @@ export function CheckoutCashPage() {
     const isUtang = paymentChoice === "Utang";
     // Cash/GCash/Utang share one checkout-safe directory (CreateSale → checkout-search).
     const isOptionalCashCustomer =
-      (paymentChoice === "Cash" || paymentChoice === "GCash") && allowCheckoutCustomerSearch;
+      (paymentChoice === "Cash" || isManualReferencePaymentChoice(paymentChoice)) &&
+      allowCheckoutCustomerSearch;
     if (!isUtang && !isOptionalCashCustomer) {
       return;
     }
@@ -645,7 +706,13 @@ export function CheckoutCashPage() {
       ? t("checkout.paymentGCashManual")
       : paymentChoice === "Utang"
         ? t("checkout.paymentUtang")
-        : t("checkout.paymentCash");
+        : paymentChoice === "BankTransfer"
+          ? t("checkout.paymentBankTransfer")
+          : paymentChoice === "Check"
+            ? t("checkout.paymentCheck")
+            : paymentChoice === "ManualMaya"
+              ? t("checkout.paymentManualMaya")
+              : t("checkout.paymentCash");
 
   function removeDiscount(localId: string) {
     setAppliedDiscounts((prev) => prev.filter((item) => item.localId !== localId));
@@ -742,7 +809,7 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.tenderInvalid"));
       return;
     }
-    if (paymentChoice === "GCash" && !zeroTotal && !gcashRefOk) {
+    if (manualReferenceRequired && !zeroTotal && !gcashRefOk) {
       setSubmitError(t("checkout.gcashReferenceRequired"));
       return;
     }
@@ -833,7 +900,9 @@ export function CheckoutCashPage() {
         ...(paymentChoice === "Cash"
           ? { amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)) }
           : {}),
-        ...(paymentChoice === "GCash" && !zeroTotal && gcashRefTrimmed
+        ...(isManualReferencePaymentChoice(paymentChoice) &&
+        !zeroTotal &&
+        gcashRefTrimmed
           ? { gCashReference: gcashRefTrimmed.slice(0, GCASH_REFERENCE_MAX_LENGTH) }
           : {}),
         ...(selectedCustomer && isCheckoutBusiness(selectedCustomer) && online
@@ -1096,29 +1165,56 @@ export function CheckoutCashPage() {
               setSubmitError(null);
               setPaymentMethodOpen(false);
             }}
-            options={[
-              {
-                value: "Cash",
-                label: t("checkout.paymentCash"),
-                Icon: CHECKOUT_PAYMENT_ICONS.Cash,
-                testId: "checkout-pay-cash",
-                disabled: saving,
-              },
-              {
-                value: "GCash",
-                label: t("checkout.paymentGCashManual"),
-                Icon: CHECKOUT_PAYMENT_ICONS.GCash,
-                testId: "checkout-pay-gcash",
-                disabled: saving || !online,
-              },
-              {
-                value: "Utang",
-                label: t("checkout.paymentUtang"),
-                Icon: CHECKOUT_PAYMENT_ICONS.Utang,
-                testId: "checkout-pay-utang",
-                disabled: saving || !online,
-              },
-            ]}
+            options={entitledUiChoices.map((choice) => {
+              const base = {
+                value: choice,
+                disabled: saving || (!online && choice !== "Cash"),
+              };
+              switch (choice) {
+                case "GCash":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentGCashManual"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.GCash,
+                    testId: "checkout-pay-gcash",
+                  };
+                case "Utang":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentUtang"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Utang,
+                    testId: "checkout-pay-utang",
+                  };
+                case "BankTransfer":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentBankTransfer"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.BankTransfer,
+                    testId: "checkout-pay-bank-transfer",
+                  };
+                case "Check":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentCheck"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Check,
+                    testId: "checkout-pay-check",
+                  };
+                case "ManualMaya":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentManualMaya"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.ManualMaya,
+                    testId: "checkout-pay-maya",
+                  };
+                default:
+                  return {
+                    ...base,
+                    label: t("checkout.paymentCash"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Cash,
+                    testId: "checkout-pay-cash",
+                  };
+              }
+            })}
           />
           {!online ? (
             <p
@@ -1129,7 +1225,7 @@ export function CheckoutCashPage() {
             </p>
           ) : null}
         </CheckoutCollapsibleSection>
-        {paymentChoice === "GCash" && !zeroTotal ? (
+        {isManualReferencePaymentChoice(paymentChoice) && !zeroTotal ? (
           <div
             data-testid="checkout-gcash-panel"
             className="checkout-gcash-under-method exits-animate-panel"
@@ -1139,17 +1235,23 @@ export function CheckoutCashPage() {
               htmlFor="checkout-gcash-reference"
             >
               <span className="inline-flex flex-wrap items-baseline gap-1">
-                {t("checkout.gcashReference")}
-                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
-                  {t("checkout.fieldRequired")}
-                </span>
+                {t("checkout.paymentReference")}
+                {manualReferenceRequired ? (
+                  <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                    {t("checkout.fieldRequired")}
+                  </span>
+                ) : (
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">
+                    {t("checkout.fieldOptional")}
+                  </span>
+                )}
               </span>
               <input
                 id="checkout-gcash-reference"
                 data-testid="checkout-gcash-reference"
                 type="text"
-                required
-                aria-required="true"
+                required={manualReferenceRequired}
+                aria-required={manualReferenceRequired}
                 maxLength={GCASH_REFERENCE_MAX_LENGTH}
                 value={gcashReference}
                 disabled={saving}
@@ -1158,7 +1260,7 @@ export function CheckoutCashPage() {
               />
             </label>
             <p className="mb-0 mt-1.5 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.gcashReferenceHint")}
+              {t("checkout.paymentReferenceHint")}
             </p>
           </div>
         ) : null}
@@ -1347,7 +1449,7 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      {(paymentChoice === "Cash" || paymentChoice === "GCash") &&
+      {(paymentChoice === "Cash" || isManualReferencePaymentChoice(paymentChoice)) &&
       allowCheckoutCustomerSearch &&
       online ? (
         <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">

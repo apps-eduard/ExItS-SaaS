@@ -1534,6 +1534,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.paymentMethodChoose": "Pumili ng paraan ng bayad",
 
   "checkout.paymentUtang": "Utang",
+  "checkout.paymentBankTransfer": "Bank transfer",
+  "checkout.paymentCheck": "Check",
+  "checkout.paymentManualMaya": "Maya / Manual",
+  "checkout.paymentReference": "Payment reference",
+  "checkout.paymentReferenceHint": "Optional or required based on store payment settings. Not verified with a provider.",
+  "checkout.fieldOptional": "Optional",
 
   "checkout.personalCustomerHint": "Hanapin ang umiiral na customer na naka-link sa Personal ExItS identity.",
 

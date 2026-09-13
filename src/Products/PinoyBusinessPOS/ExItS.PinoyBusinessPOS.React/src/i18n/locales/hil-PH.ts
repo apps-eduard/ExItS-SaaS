@@ -1499,6 +1499,12 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.paymentMethodChoose": "Pilia ang paagi sa bayad",
 
   "checkout.paymentUtang": "Utang",
+  "checkout.paymentBankTransfer": "Bank transfer",
+  "checkout.paymentCheck": "Check",
+  "checkout.paymentManualMaya": "Maya / Manual",
+  "checkout.paymentReference": "Payment reference",
+  "checkout.paymentReferenceHint": "Optional or required based on store payment settings. Not verified with a provider.",
+  "checkout.fieldOptional": "Optional",
 
   "checkout.personalCustomerHint": "Pangita sang existing customer nga naka-link sa Personal ExItS identity.",
 
