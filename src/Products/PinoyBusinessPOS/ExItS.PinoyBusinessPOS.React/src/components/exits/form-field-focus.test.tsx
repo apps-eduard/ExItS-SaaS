@@ -63,6 +63,21 @@ describe("Form Field Focus Standard", () => {
     );
   });
 
+  it("keeps currency field focus on the outer shell only (no nested input border)", () => {
+    expect(globalsCss).toMatch(
+      /\.exits-currency-field:focus-within[\s\S]*?border-color:\s*var\(--exits-field-border-focus\)/,
+    );
+    expect(globalsCss).toMatch(
+      /\.exits-currency-field:focus-within[\s\S]*?box-shadow:\s*0\s+0\s+0\s+var\(--exits-field-focus-ring-width\)/,
+    );
+    expect(globalsCss).toMatch(/\.exits-currency-field__input\s*\{[\s\S]*?border:\s*0/);
+    expect(globalsCss).toMatch(
+      /\.exits-currency-field__input:focus-visible[\s\S]*?outline:\s*none/,
+    );
+    expect(globalsCss).toMatch(/--exits-field-radius:\s*var\(--exits-radius-md\)/);
+    expect(globalsCss).not.toMatch(/\.exits-currency-field\[data-shape="pill"\]/);
+  });
+
   it("uses thin focus utilities on shared Input (no ring-2)", () => {
     expect(inputSource).toMatch(/exits-field-border-focus/);
     expect(inputSource).toMatch(/exits-field-focus-ring-width/);

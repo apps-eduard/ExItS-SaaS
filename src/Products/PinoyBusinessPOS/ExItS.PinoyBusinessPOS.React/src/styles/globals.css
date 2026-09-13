@@ -12838,6 +12838,94 @@ textarea.exits-input {
   color: var(--exits-text-muted);
 }
 
+/* ---- ExItS Currency Field (one shell; inline ₱ prefix; Form Field Focus) ---- */
+.exits-currency-field {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--exits-control-height);
+  border: 1px solid var(--exits-field-border, var(--exits-border));
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
+  background: var(--exits-surface);
+  padding-block: 0;
+  padding-inline: var(--exits-control-padding-x, 0.875rem);
+  color: var(--exits-text);
+  transition:
+    border-color var(--exits-motion-fast) var(--exits-ease-standard),
+    box-shadow var(--exits-motion-fast) var(--exits-ease-standard);
+}
+
+.exits-currency-field:hover:not(:has(input:disabled)) {
+  border-color: var(--exits-field-border-hover);
+}
+
+.exits-currency-field:focus-within:not(:has(input:disabled)) {
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.exits-currency-field:has(input[aria-invalid="true"]) {
+  border-color: var(--exits-field-border-error);
+}
+
+.exits-currency-field:has(input[aria-invalid="true"]):focus-within {
+  border-color: var(--exits-field-border-error);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring-error);
+}
+
+.exits-currency-field__prefix {
+  flex: 0 0 auto;
+  color: var(--exits-text-muted);
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+.exits-currency-field__input {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  min-height: calc(var(--exits-control-height) - 2px);
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+  color: var(--exits-text);
+  appearance: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.exits-currency-field__input:focus,
+.exits-currency-field__input:focus-visible {
+  outline: none !important;
+  border: 0;
+  box-shadow: none;
+}
+
+.exits-currency-field__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.exits-currency-field__input::placeholder {
+  color: var(--exits-text-muted);
+}
+
 /* ---- ExItS Search Field (Control Shape; not a form exits-input) ---- */
 .exits-search-field {
   --exits-search-radius: var(--exits-control-radius);

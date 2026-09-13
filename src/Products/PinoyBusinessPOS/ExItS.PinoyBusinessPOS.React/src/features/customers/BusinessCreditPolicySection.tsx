@@ -610,14 +610,14 @@ export function BusinessCreditPolicySection({
                 ) : null}
                 <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                   {t("customers.creditPolicy.limit")}
-                  <div className="flex items-center gap-1 rounded-md border border-border bg-background px-3">
-                    <span className="text-muted" aria-hidden>
+                  <div className="exits-currency-field">
+                    <span className="exits-currency-field__prefix" aria-hidden>
                       ₱
                     </span>
                     <input
                       type="text"
                       inputMode="decimal"
-                      className="min-w-0 flex-1 border-0 bg-transparent py-2 outline-none tabular-nums"
+                      className="exits-currency-field__input"
                       value={limitText}
                       onChange={(e) => setLimitText(normalizeMoneyAmountTyping(e.target.value))}
                       onBlur={() => {
