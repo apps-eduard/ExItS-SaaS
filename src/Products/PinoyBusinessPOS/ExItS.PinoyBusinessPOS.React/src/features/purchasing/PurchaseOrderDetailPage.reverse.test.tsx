@@ -130,6 +130,16 @@ function renderPage() {
   );
 }
 
+async function expandReceiptDetail(user: ReturnType<typeof userEvent.setup>, id = goodsReceiptId) {
+  await waitFor(() => {
+    expect(screen.getByTestId(`po-activity-expand-${id}`)).toBeInTheDocument();
+  });
+  await user.click(screen.getByTestId(`po-activity-expand-${id}`));
+  await waitFor(() => {
+    expect(screen.getByTestId(`po-receipt-GRN-000051`)).toBeInTheDocument();
+  });
+}
+
 describe("PurchaseOrderDetailPage receipt reversal", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -165,6 +175,8 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
 
     renderPage();
 
+    await expandReceiptDetail(user);
+
     await waitFor(() => {
       expect(screen.getByTestId(`po-receipt-reverse-${goodsReceiptId}`)).toBeInTheDocument();
     });
@@ -188,7 +200,7 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Reversed")).toBeInTheDocument();
+      expect(screen.getAllByText("Reversed").length).toBeGreaterThanOrEqual(1);
       expect(screen.queryByTestId(`po-receipt-reverse-${goodsReceiptId}`)).not.toBeInTheDocument();
     });
   });
@@ -202,11 +214,10 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
       organizationManagementAuthority: false,
     };
 
+    const user = userEvent.setup();
     renderPage();
+    await expandReceiptDetail(user);
 
-    await waitFor(() => {
-      expect(screen.getByTestId("po-receipt-GRN-000051")).toBeInTheDocument();
-    });
     expect(screen.queryByTestId(`po-receipt-reverse-${goodsReceiptId}`)).not.toBeInTheDocument();
   });
 
@@ -220,10 +231,12 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
       }),
     ]);
 
+    const user = userEvent.setup();
     renderPage();
+    await expandReceiptDetail(user);
 
     await waitFor(() => {
-      expect(screen.getByText("Reversed")).toBeInTheDocument();
+      expect(screen.getAllByText("Reversed").length).toBeGreaterThanOrEqual(1);
     });
     expect(screen.queryByTestId(`po-receipt-reverse-${goodsReceiptId}`)).not.toBeInTheDocument();
     expect(screen.getByTestId(`po-receipt-void-reason-${goodsReceiptId}`)).toHaveTextContent(
@@ -243,6 +256,7 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
     );
 
     renderPage();
+    await expandReceiptDetail(user);
 
     await waitFor(() => {
       expect(screen.getByTestId(`po-receipt-reverse-${goodsReceiptId}`)).toBeInTheDocument();
@@ -273,6 +287,7 @@ describe("PurchaseOrderDetailPage receipt reversal", () => {
     );
 
     renderPage();
+    await expandReceiptDetail(user);
 
     await waitFor(() => {
       expect(screen.getByTestId(`po-receipt-reverse-${goodsReceiptId}`)).toBeInTheDocument();

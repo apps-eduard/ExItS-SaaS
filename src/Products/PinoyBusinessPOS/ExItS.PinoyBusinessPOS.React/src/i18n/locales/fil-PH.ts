@@ -4903,6 +4903,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "common.receivedBy": "Tinanggap ni",
 
+  "common.by": "ni",
+
   "common.openedBy": "Binuksan ni",
 
   "common.closedBy": "Isinara ni",
@@ -4995,7 +4997,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.rejected": "Tinanggihan",
 
-  "purchasing.shortClosed": "Kulang",
+  "purchasing.shortClosed": "Kinanselang natitira",
 
   "purchasing.discrepancy": "Hindi pagtutugma",
 
@@ -5006,6 +5008,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.totalPurchaseCost": "Kabuuang halaga ng pagbili",
 
   "purchasing.items": "Mga item",
+  "purchasing.searchDirectLines": "Maghanap ng items sa receipt na ito",
+  "purchasing.directLineFilter": "Direct purchase line filter",
+  "purchasing.directFilterAll": "Lahat ng lines",
+  "purchasing.directFilterWithExpiry": "May expiry",
+  "purchasing.directFilterWithoutExpiry": "Walang expiry",
+  "purchasing.directLinesNoMatch": "Walang tumugmang items",
+  "purchasing.directLinesNoMatchDetail": "Subukan ang ibang search o ipakita ang lahat ng lines.",
+  "purchasing.directLinesEmpty": "Walang items sa receipt na ito",
+  "purchasing.directLinesEmptyDetail": "Walang line items ang direct purchase na ito.",
+  "purchasing.directLinesTotal": "Kabuuan ng items",
 
   "inventory.movementType.openingStock": "Opening stock",
 
@@ -8446,7 +8458,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.closeAsShort": "Isara ang natitira bilang short",
 
-  "purchasing.closeRemainingHelp": "Minamarkahan ang natitirang outstanding bilang short-closed.",
+  "purchasing.closeRemainingHelp": "Minamarkahan ang natitirang outstanding bilang kinanselang natitira.",
 
   "purchasing.confirmDirect": "Kumpirmahin ang direktang bili",
 
@@ -8540,6 +8552,48 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.receivingAt": "Receiving at",
 
   "purchasing.goodReceived": "Mabuting natanggap",
+
+  "purchasing.receivedBefore": "Natanggap dati",
+
+  "purchasing.receiveNow": "Tanggapin ngayon",
+
+  "purchasing.deliverLater": "Ihatid mamaya",
+
+  "purchasing.cancelRemaining": "Kanselahin ang natitira",
+
+  "purchasing.remainingQuestion": "Ano ang gagawin sa natitirang {qty}?",
+
+  "purchasing.remainingDecisionTitle": "Natitirang dami",
+
+  "purchasing.activity.created": "Nagawa ang purchase order",
+
+  "purchasing.activity.submitted": "Isinumite sa supplier",
+
+  "purchasing.activity.supplierAccepted": "Tinanggap ng supplier",
+
+  "purchasing.activity.supplierDeclined": "Tinanggihan ng supplier",
+
+  "purchasing.activity.changesProposed": "May iminungkahing pagbabago ang supplier",
+
+  "purchasing.activity.withdrawn": "Binawi",
+
+  "purchasing.activity.receipt": "Goods receipt {grn}",
+
+  "purchasing.activity.receiptReversed": "Binawi ang receipt {grn}",
+
+  "purchasing.activity.completed": "Ganap na natanggap",
+
+  "purchasing.activity.empty": "Wala pang aktibidad.",
+
+  "purchasing.activity.partialReceipt": "Bahagyang receipt",
+
+  "purchasing.activity.fullyReceived": "Ganap na natanggap",
+
+  "purchasing.activity.receivedLabel": "Natanggap",
+
+  "purchasing.activity.showReceiptDetail": "Ipakita ang detalye ng receipt",
+
+  "purchasing.activity.hideReceiptDetail": "Itago ang detalye ng receipt",
 
   "purchasing.hubLede": "Pamahalaan ang pagbili at pagbebenta ng negosyo.",
   "purchasing.buyingTitle": "Pagbili",

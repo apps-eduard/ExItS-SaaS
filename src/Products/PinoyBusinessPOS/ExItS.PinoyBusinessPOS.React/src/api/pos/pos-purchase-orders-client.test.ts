@@ -411,7 +411,7 @@ describe("partial receive math", () => {
         outstandingQty: 5,
         goodQty: 4,
         damagedQty: 2,
-        closeRemaining: false,
+        cancelRemaining: false,
       },
     ]);
     expect(over.ok).toBe(false);
@@ -425,7 +425,7 @@ describe("partial receive math", () => {
         outstandingQty: 10,
         goodQty: 4,
         damagedQty: 1,
-        closeRemaining: true,
+        cancelRemaining: true,
       },
     ]);
     expect(ok.ok).toBe(true);
@@ -434,6 +434,21 @@ describe("partial receive math", () => {
       expect(ok.lines[0]?.damagedQty).toBe(1);
       expect(ok.lines[0]?.shortClosedQty).toBe(5);
       expect(ok.lines[0]?.discrepancyKind).toBe("Damaged");
+    }
+
+    const deliverLater = buildReceivePlan([
+      {
+        productId,
+        outstandingQty: 10,
+        goodQty: 4,
+        damagedQty: 1,
+        cancelRemaining: false,
+      },
+    ]);
+    expect(deliverLater.ok).toBe(true);
+    if (deliverLater.ok) {
+      expect(deliverLater.lines[0]?.shortClosedQty).toBe(0);
+      expect(deliverLater.lines[0]?.remainingAfter).toBe(5);
     }
   });
 });

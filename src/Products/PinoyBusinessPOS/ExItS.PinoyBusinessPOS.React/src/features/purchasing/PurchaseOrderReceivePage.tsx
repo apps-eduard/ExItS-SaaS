@@ -56,7 +56,11 @@ import {
   downloadPurchaseOrderReceiveXlsx,
   printPurchaseOrderReceiveDocument,
 } from "@/features/purchasing/purchase-order-receive-output";
-import { buildReceivePlan, parseNonNegativeQty } from "@/features/purchasing/receive-math";
+import {
+  buildReceivePlan,
+  parseNonNegativeQty,
+  remainingAfterReceive,
+} from "@/features/purchasing/receive-math";
 import { selectUntrackedReceivingLines } from "@/features/purchasing/receive-tracking";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -77,13 +81,14 @@ type LineEdit = {
   isInventoryTracked: boolean;
   goodText: string;
   damagedText: string;
-  closeRemaining: boolean;
+  /** false = Deliver later; true = Cancel remaining (maps to shortClosedQty). */
+  cancelRemaining: boolean;
   expiryDate: string;
   lotNumber: string;
 };
 
 type LineFilter = "all" | "outstanding";
-type SortKey = "name" | "ordered" | "received" | "outstanding" | "unitCost";
+type SortKey = "name" | "ordered" | "received" | "outstanding";
 
 export function PurchaseOrderReceivePage() {
   const { t } = useI18n();
@@ -154,7 +159,7 @@ export function PurchaseOrderReceivePage() {
           isInventoryTracked: line.isInventoryTracked !== false,
           goodText: line.outstandingQty > 0 ? String(line.outstandingQty) : "",
           damagedText: "",
-          closeRemaining: false,
+          cancelRemaining: false,
           expiryDate: "",
           lotNumber: "",
         })),
@@ -220,9 +225,7 @@ export function PurchaseOrderReceivePage() {
               ? a.orderedQty
               : sortKey === "received"
                 ? a.receivedQty
-                : sortKey === "outstanding"
-                  ? a.outstandingQty
-                  : a.unitPurchaseCost;
+                : a.outstandingQty;
         const bv =
           sortKey === "name"
             ? b.name.toLowerCase()
@@ -230,9 +233,7 @@ export function PurchaseOrderReceivePage() {
               ? b.orderedQty
               : sortKey === "received"
                 ? b.receivedQty
-                : sortKey === "outstanding"
-                  ? b.outstandingQty
-                  : b.unitPurchaseCost;
+                : b.outstandingQty;
         if (av < bv) return -1 * dir;
         if (av > bv) return 1 * dir;
         return 0;
@@ -245,6 +246,20 @@ export function PurchaseOrderReceivePage() {
     const start = (page - 1) * pageSize;
     return filteredSortedLines.slice(start, start + pageSize);
   }, [filteredSortedLines, page, pageSize]);
+
+  const remainingDecisionLines = useMemo(() => {
+    if (!lines || !reviewing) {
+      return [];
+    }
+    return lines
+      .map((line) => {
+        const good = parseNonNegativeQty(line.goodText) ?? 0;
+        const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
+        const remaining = remainingAfterReceive(line.outstandingQty, good, damaged);
+        return { line, remaining };
+      })
+      .filter((entry) => entry.remaining > 1e-9);
+  }, [lines, reviewing]);
 
   useEffect(() => {
     if (paymentMode === "paidInFull") {
@@ -279,10 +294,8 @@ export function PurchaseOrderReceivePage() {
         ordered: line.orderedQty,
         received: line.receivedQty,
         outstanding: line.outstandingQty,
-        unitCost: line.unitPurchaseCost,
         goodReceived: line.goodText || "0",
         damaged: line.damagedText || "0",
-        closeRemaining: line.closeRemaining ? "Yes" : "No",
         expiry: line.expiryDate || "",
         lot: line.lotNumber || "",
       })),
@@ -354,7 +367,7 @@ export function PurchaseOrderReceivePage() {
         outstandingQty: line.outstandingQty,
         goodQty: good!,
         damagedQty: damaged!,
-        closeRemaining: line.closeRemaining,
+        cancelRemaining: line.cancelRemaining,
       })),
     );
     if (!result.ok) {
@@ -622,9 +635,9 @@ export function PurchaseOrderReceivePage() {
             <tr>
               <th>{t("purchasing.receiveProduct")}</th>
               <th>{t("purchasing.ordered")}</th>
-              <th>{t("purchasing.received")}</th>
+              <th>{t("purchasing.receivedBefore")}</th>
               <th>{t("purchasing.outstanding")}</th>
-              <th>{t("purchasing.goodReceived")}</th>
+              <th>{t("purchasing.receiveNow")}</th>
               <th>{t("purchasing.damaged")}</th>
             </tr>
           </thead>
@@ -815,7 +828,7 @@ export function PurchaseOrderReceivePage() {
                         sortDirection={sortKey === "received" ? sortDirection : null}
                         onSort={() => onSort("received")}
                       >
-                        {t("purchasing.received")}
+                        {t("purchasing.receivedBefore")}
                       </ExitsTableHead>
                       <ExitsTableHead
                         cellAlign="numeric"
@@ -825,17 +838,8 @@ export function PurchaseOrderReceivePage() {
                       >
                         {t("purchasing.outstanding")}
                       </ExitsTableHead>
-                      <ExitsTableHead
-                        cellAlign="numeric"
-                        sortable
-                        sortDirection={sortKey === "unitCost" ? sortDirection : null}
-                        onSort={() => onSort("unitCost")}
-                      >
-                        {t("purchasing.unitPurchaseCost")}
-                      </ExitsTableHead>
-                      <ExitsTableHead cellAlign="text">{t("purchasing.goodReceived")}</ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">{t("purchasing.receiveNow")}</ExitsTableHead>
                       <ExitsTableHead cellAlign="text">{t("purchasing.damaged")}</ExitsTableHead>
-                      <ExitsTableHead cellAlign="text">{t("purchasing.closeAsShort")}</ExitsTableHead>
                     </ExitsTableRow>
                   </ExitsTableHeader>
                   <ExitsTableBody>
@@ -894,12 +898,6 @@ export function PurchaseOrderReceivePage() {
                           <ExitsTableCell cellAlign="numeric" className="tabular-nums">
                             {line.outstandingQty}
                           </ExitsTableCell>
-                          <ExitsTableCell
-                            cellAlign="numeric"
-                            data-testid={`receive-line-unit-cost-${line.productId}`}
-                          >
-                            <MoneyDisplay amount={line.unitPurchaseCost} />
-                          </ExitsTableCell>
                           <ExitsTableCell cellAlign="text">
                             {editable ? (
                               <input
@@ -909,7 +907,7 @@ export function PurchaseOrderReceivePage() {
                                   updateLine(line.productId, { goodText: e.target.value })
                                 }
                                 inputMode="decimal"
-                                aria-label={t("purchasing.goodReceived")}
+                                aria-label={t("purchasing.receiveNow")}
                                 data-testid={`receive-good-${line.productId}`}
                               />
                             ) : (
@@ -934,26 +932,6 @@ export function PurchaseOrderReceivePage() {
                               <span className="tabular-nums">{line.damagedText || "0"}</span>
                             )}
                           </ExitsTableCell>
-                          <ExitsTableCell cellAlign="text">
-                            {editable ? (
-                              <label className="flex items-start gap-2 text-[length:var(--exits-text-sm)]">
-                                <input
-                                  type="checkbox"
-                                  className="mt-1"
-                                  checked={line.closeRemaining}
-                                  onChange={(e) =>
-                                    updateLine(line.productId, {
-                                      closeRemaining: e.target.checked,
-                                    })
-                                  }
-                                  data-testid={`receive-short-${line.productId}`}
-                                />
-                                <span className="text-muted">{t("purchasing.closeRemainingHelp")}</span>
-                              </label>
-                            ) : (
-                              <span>{line.closeRemaining ? t("purchasing.yes") : t("purchasing.no")}</span>
-                            )}
-                          </ExitsTableCell>
                         </ExitsTableRow>
                       );
                     })}
@@ -963,7 +941,7 @@ export function PurchaseOrderReceivePage() {
                       <ExitsTableCell cellAlign="text" colSpan={4}>
                         {t("purchasing.receiptTotal")}
                       </ExitsTableCell>
-                      <ExitsTableCell cellAlign="numeric" colSpan={4}>
+                      <ExitsTableCell cellAlign="numeric" colSpan={2}>
                         <span className="font-semibold tabular-nums" data-testid="receive-estimated-total">
                           <MoneyDisplay amount={estimatedTotal} />
                         </span>
@@ -984,17 +962,16 @@ export function PurchaseOrderReceivePage() {
                       >
                         <div className="exits-table-mobile__title-row">
                           <p className="exits-table-mobile__title">{line.name}</p>
-                          <MoneyDisplay amount={line.unitPurchaseCost} />
                         </div>
                         <p className="exits-table-mobile__meta">
-                          {t("purchasing.ordered")}: {line.orderedQty} · {t("purchasing.received")}:{" "}
-                          {line.receivedQty} · {t("purchasing.outstanding")}: {line.outstandingQty}{" "}
-                          {line.uom}
+                          {t("purchasing.ordered")}: {line.orderedQty} ·{" "}
+                          {t("purchasing.receivedBefore")}: {line.receivedQty} ·{" "}
+                          {t("purchasing.outstanding")}: {line.outstandingQty} {line.uom}
                         </p>
                         {editable ? (
                           <div className="mt-2 grid gap-2">
                             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                              {t("purchasing.goodReceived")}
+                              {t("purchasing.receiveNow")}
                               <input
                                 className="exits-input"
                                 value={line.goodText}
@@ -1042,28 +1019,10 @@ export function PurchaseOrderReceivePage() {
                                 </label>
                               </>
                             ) : null}
-                            <label className="flex items-start gap-2 text-[length:var(--exits-text-sm)]">
-                              <input
-                                type="checkbox"
-                                className="mt-1"
-                                checked={line.closeRemaining}
-                                onChange={(e) =>
-                                  updateLine(line.productId, {
-                                    closeRemaining: e.target.checked,
-                                  })
-                                }
-                                data-testid={`receive-short-mobile-${line.productId}`}
-                              />
-                              <span>
-                                <strong>{t("purchasing.closeAsShort")}</strong>
-                                <br />
-                                <span className="text-muted">{t("purchasing.closeRemainingHelp")}</span>
-                              </span>
-                            </label>
                           </div>
                         ) : (
                           <p className="exits-table-mobile__math">
-                            {t("purchasing.goodReceived")}: {line.goodText || "0"} ·{" "}
+                            {t("purchasing.receiveNow")}: {line.goodText || "0"} ·{" "}
                             {t("purchasing.damaged")}: {line.damagedText || "0"}
                           </p>
                         )}
@@ -1090,6 +1049,58 @@ export function PurchaseOrderReceivePage() {
               </>
             )}
           </ExitsTableContainer>
+
+          {reviewing && remainingDecisionLines.length > 0 ? (
+            <Card data-testid="receive-remaining-decisions">
+              <h2 className="m-0 mb-3 text-[length:var(--exits-text-md)] font-medium">
+                {t("purchasing.remainingDecisionTitle")}
+              </h2>
+              <ul className="m-0 flex list-none flex-col gap-4 p-0">
+                {remainingDecisionLines.map(({ line, remaining }) => (
+                  <li
+                    key={line.productId}
+                    className="rounded-md border border-border p-3"
+                    data-testid={`receive-remaining-${line.productId}`}
+                  >
+                    <p className="m-0 font-medium">{line.name}</p>
+                    <p className="mt-1 mb-2 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("purchasing.remainingQuestion").replace("{qty}", `${remaining} ${line.uom}`)}
+                    </p>
+                    <div
+                      className="flex flex-col gap-2"
+                      role="radiogroup"
+                      aria-label={t("purchasing.remainingDecisionTitle")}
+                    >
+                      <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                        <input
+                          type="radio"
+                          name={`receive-remaining-${line.productId}`}
+                          checked={!line.cancelRemaining}
+                          onChange={() =>
+                            updateLine(line.productId, { cancelRemaining: false })
+                          }
+                          data-testid={`receive-deliver-later-${line.productId}`}
+                        />
+                        {t("purchasing.deliverLater")}
+                      </label>
+                      <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                        <input
+                          type="radio"
+                          name={`receive-remaining-${line.productId}`}
+                          checked={line.cancelRemaining}
+                          onChange={() =>
+                            updateLine(line.productId, { cancelRemaining: true })
+                          }
+                          data-testid={`receive-cancel-remaining-${line.productId}`}
+                        />
+                        {t("purchasing.cancelRemaining")}
+                      </label>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
 
           {!reviewing && canReceive ? (
             <div className="grid gap-2">

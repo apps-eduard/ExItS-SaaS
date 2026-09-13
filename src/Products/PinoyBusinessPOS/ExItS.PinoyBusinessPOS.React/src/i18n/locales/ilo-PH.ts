@@ -4902,6 +4902,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "common.receivedBy": "Nawatwat ni",
 
+  "common.by": "ni",
+
   "common.openedBy": "Nalukatan ni",
 
   "common.closedBy": "Naserrahan ni",
@@ -4994,7 +4996,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.rejected": "Naituki",
 
-  "purchasing.shortClosed": "Akurang",
+  "purchasing.shortClosed": "Nakansela ti nabati",
 
   "purchasing.discrepancy": "Saan a agtunos",
 
@@ -5005,6 +5007,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.totalPurchaseCost": "Dagup a gastos ti gatang",
 
   "purchasing.items": "Dagiti item",
+  "purchasing.searchDirectLines": "Biruken dagiti items iti daytoy a receipt",
+  "purchasing.directLineFilter": "Direct purchase line filter",
+  "purchasing.directFilterAll": "Amin a lines",
+  "purchasing.directFilterWithExpiry": "Addaan expiry",
+  "purchasing.directFilterWithoutExpiry": "Awan ti expiry",
+  "purchasing.directLinesNoMatch": "Awan matching items",
+  "purchasing.directLinesNoMatchDetail": "Padasem ti sabali a search wenno ipakita amin a lines.",
+  "purchasing.directLinesEmpty": "Awan items iti daytoy a receipt",
+  "purchasing.directLinesEmptyDetail": "Awan line items daytoy a direct purchase.",
+  "purchasing.directLinesTotal": "Total dagiti items",
 
   "inventory.movementType.openingStock": "Opening stock",
 
@@ -8447,7 +8459,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.closeAsShort": "Close remaining as short",
 
-  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as short-closed.",
+  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as cancelled remaining.",
 
   "purchasing.confirmDirect": "Confirm direct purchase",
 
@@ -8541,6 +8553,48 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.receivingAt": "Receiving at",
 
   "purchasing.goodReceived": "Good received",
+
+  "purchasing.receivedBefore": "Received before",
+
+  "purchasing.receiveNow": "Receive now",
+
+  "purchasing.deliverLater": "Deliver later",
+
+  "purchasing.cancelRemaining": "Cancel remaining",
+
+  "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
+
+  "purchasing.remainingDecisionTitle": "Remaining quantity",
+
+  "purchasing.activity.created": "Purchase order created",
+
+  "purchasing.activity.submitted": "Submitted to supplier",
+
+  "purchasing.activity.supplierAccepted": "Supplier accepted",
+
+  "purchasing.activity.supplierDeclined": "Supplier declined",
+
+  "purchasing.activity.changesProposed": "Supplier proposed changes",
+
+  "purchasing.activity.withdrawn": "Withdrawn",
+
+  "purchasing.activity.receipt": "Goods receipt {grn}",
+
+  "purchasing.activity.receiptReversed": "Receipt {grn} reversed",
+
+  "purchasing.activity.completed": "Fully received",
+
+  "purchasing.activity.empty": "No activity yet.",
+
+  "purchasing.activity.partialReceipt": "Partial receipt",
+
+  "purchasing.activity.fullyReceived": "Fully received",
+
+  "purchasing.activity.receivedLabel": "Received",
+
+  "purchasing.activity.showReceiptDetail": "Show receipt detail",
+
+  "purchasing.activity.hideReceiptDetail": "Hide receipt detail",
 
   "purchasing.hubLede": "Manage business buying and selling activity.",
   "purchasing.buyingTitle": "Buying",

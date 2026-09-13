@@ -28,6 +28,7 @@ import {
   sumGoodsReceiptValue,
   sumPurchaseOrderLineTotals,
 } from "@/features/purchasing/purchase-cost-display";
+import { PurchaseOrderActivityTimeline } from "@/features/purchasing/PurchaseOrderActivityTimeline";
 import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
@@ -66,6 +67,10 @@ function buyerStatusLabel(status: string, displayStatus: string): string {
   switch (key) {
     case "New":
       return "Pending";
+    case "PartiallyReceived":
+      return "Partially received";
+    case "Received":
+      return "Fully received";
     default:
       return key;
   }
@@ -256,12 +261,15 @@ function GoodsReceiptCard({
               ) : null}
               {shortClosed > 0 ? (
                 <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.shortClosed")}: {shortClosed} {line.uomSnapshot}
+                  {t("purchasing.cancelRemaining")}: {shortClosed} {line.uomSnapshot}
                 </p>
               ) : null}
               {line.discrepancyKind && line.discrepancyKind !== "None" ? (
                 <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.discrepancy")}: {line.discrepancyKind}
+                  {t("purchasing.discrepancy")}:{" "}
+                  {line.discrepancyKind === "Short"
+                    ? t("purchasing.cancelRemaining")
+                    : line.discrepancyKind}
                 </p>
               ) : null}
               {discrepancyNote ? (
@@ -637,49 +645,58 @@ export function PurchaseOrderDetailPage() {
         />
       ) : null}
 
-      <section aria-labelledby="po-receipt-history" data-testid="po-receipt-history">
+      <section aria-labelledby="po-activity" data-testid="po-activity-section">
         <h2
-          id="po-receipt-history"
+          id="po-activity"
           className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
         >
-          {t("purchasing.receiptHistory")}
+          {t("orders.activity")}
         </h2>
         {receiptsQuery.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
-        {!receiptsQuery.isLoading && receipts.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("purchasing.receiptHistoryEmpty")}
-          </p>
+        {!receiptsQuery.isLoading ? (
+          <PurchaseOrderActivityTimeline
+            po={po}
+            receipts={receipts}
+            resolveActor={actors.resolve}
+            isResolving={actors.isResolving}
+            renderReceiptDetail={(receiptId) => {
+              const receipt = receipts.find((r) => r.goodsReceiptId === receiptId);
+              if (!receipt) {
+                return null;
+              }
+              return (
+                <GoodsReceiptCard
+                  receipt={receipt}
+                  workspace={workspace!}
+                  resolveActor={actors.resolve}
+                  isResolving={actors.isResolving}
+                  allowManage={allowManage}
+                  online={online}
+                  onReversed={async (updated) => {
+                    queryClient.setQueryData(
+                      ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
+                      (prev: PosGoodsReceiptDto[] | undefined) =>
+                        (prev ?? []).map((r) =>
+                          r.goodsReceiptId === updated.goodsReceiptId ? updated : r,
+                        ),
+                    );
+                    await queryClient.invalidateQueries({
+                      queryKey: ["purchase-order", workspace!.organizationId, purchaseOrderId],
+                    });
+                    await queryClient.invalidateQueries({
+                      queryKey: [
+                        "purchase-order-receipts",
+                        workspace!.organizationId,
+                        purchaseOrderId,
+                      ],
+                    });
+                    await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+                  }}
+                />
+              );
+            }}
+          />
         ) : null}
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {receipts.map((receipt) => (
-            <li key={receipt.goodsReceiptId}>
-              <GoodsReceiptCard
-                receipt={receipt}
-                workspace={workspace!}
-                resolveActor={actors.resolve}
-                isResolving={actors.isResolving}
-                allowManage={allowManage}
-                online={online}
-                onReversed={async (updated) => {
-                  queryClient.setQueryData(
-                    ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
-                    (prev: PosGoodsReceiptDto[] | undefined) =>
-                      (prev ?? []).map((r) =>
-                        r.goodsReceiptId === updated.goodsReceiptId ? updated : r,
-                      ),
-                  );
-                  await queryClient.invalidateQueries({
-                    queryKey: ["purchase-order", workspace!.organizationId, purchaseOrderId],
-                  });
-                  await queryClient.invalidateQueries({
-                    queryKey: ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
-                  });
-                  await queryClient.invalidateQueries({ queryKey: ["inventory"] });
-                }}
-              />
-            </li>
-          ))}
-        </ul>
       </section>
 
       <div className="po-document-actions" data-testid="po-detail-actions">

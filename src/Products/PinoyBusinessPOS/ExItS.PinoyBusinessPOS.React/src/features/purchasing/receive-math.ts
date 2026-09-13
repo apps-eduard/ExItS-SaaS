@@ -1,14 +1,19 @@
 /**
  * Partial receive math / over-receipt denial — UI helpers only.
  * Server remains authoritative for inventory quantities.
+ *
+ * cancelRemaining maps to domain short-close. Deliver-later leaves remaining outstanding.
  */
+
+export type RemainingDisposition = "deliver_later" | "cancel_remaining";
 
 export type ReceiveLineInput = {
   productId: string;
   outstandingQty: number;
   goodQty: number;
   damagedQty: number;
-  closeRemaining: boolean;
+  /** When remaining after good+damaged > 0: cancel maps to shortClosedQty. */
+  cancelRemaining: boolean;
 };
 
 export type ReceiveLinePlan = {
@@ -40,6 +45,15 @@ export function outstandingAfterPrior(orderedQty: number, receivedQty: number): 
   return Math.max(0, orderedQty - receivedQty);
 }
 
+/** Remaining after this receipt's good + damaged (before cancel decision). */
+export function remainingAfterReceive(
+  outstandingQty: number,
+  goodQty: number,
+  damagedQty: number,
+): number {
+  return Math.max(0, outstandingQty - goodQty - damagedQty);
+}
+
 export function buildReceivePlan(lines: ReceiveLineInput[]): BuildReceivePlanResult {
   const planned: ReceiveLinePlan[] = [];
 
@@ -57,8 +71,8 @@ export function buildReceivePlan(lines: ReceiveLineInput[]): BuildReceivePlanRes
       return { ok: false, error: "over_receive" };
     }
 
-    const remaining = line.outstandingQty - line.goodQty - line.damagedQty;
-    const shortClosed = line.closeRemaining ? remaining : 0;
+    const remaining = remainingAfterReceive(line.outstandingQty, line.goodQty, line.damagedQty);
+    const shortClosed = line.cancelRemaining && remaining > 1e-9 ? remaining : 0;
     if (line.goodQty + line.damagedQty + shortClosed <= 0) {
       continue;
     }

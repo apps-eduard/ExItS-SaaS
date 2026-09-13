@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as poClient from "@/api/pos/pos-purchase-orders-client";
@@ -145,6 +146,7 @@ describe("PurchaseOrderDetailPage cost and receipt history", () => {
   });
 
   it("shows PO purchase-unit cost, order total, and separate receipt history cards", async () => {
+    const user = userEvent.setup();
     render(
       <AppProviders>
         <MemoryRouter initialEntries={[`/purchasing/orders/${purchaseOrderId}`]}>
@@ -166,14 +168,23 @@ describe("PurchaseOrderDetailPage cost and receipt history", () => {
       formatPeso(480),
     );
     expect(screen.getAllByText(formatPeso(240)).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId("po-activity-timeline")).toBeInTheDocument();
+
+    await user.click(
+      screen.getByTestId("po-activity-expand-12121212-1212-4121-8121-121212121212"),
+    );
     expect(screen.getByTestId("po-receipt-GRN-000051")).toBeInTheDocument();
-    expect(screen.getByTestId("po-receipt-GRN-000052")).toBeInTheDocument();
     expect(screen.getByTestId("po-receipt-value-12121212-1212-4121-8121-121212121212")).toHaveTextContent(
       formatPeso(240),
     );
     expect(screen.getByText("DR-9912")).toBeInTheDocument();
     expect(screen.getByText("LOT-A123")).toBeInTheDocument();
-    expect(screen.getByText(/Short:/)).toBeInTheDocument();
+
+    await user.click(
+      screen.getByTestId("po-activity-expand-14141414-1414-4141-8141-141414141414"),
+    );
+    expect(screen.getByTestId("po-receipt-GRN-000052")).toBeInTheDocument();
+    expect(screen.getByText(/Cancel remaining:/)).toBeInTheDocument();
     expect(screen.getByText(/Supplier will replace next delivery/)).toBeInTheDocument();
     expect(screen.queryByText(/Damaged: 0/)).not.toBeInTheDocument();
     expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();

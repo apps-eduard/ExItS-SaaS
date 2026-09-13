@@ -1537,8 +1537,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.utangDueDate": "Due date (opsyonal)",
 
   "checkout.utangCustomerIdleEmpty":
-    "No checkout customers yet. People and businesses share this directory â Utang requires an Approved person with available credit.",
-  "checkout.directoryCredit.approvedAvailable": "Approved â¢ Available {amount}",
+    "No checkout customers yet. People and businesses share this directory Ã¢ÂÂ Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved Ã¢ÂÂ¢ Available {amount}",
   "checkout.directoryCredit.pending": "Pending approval",
   "checkout.directoryCredit.notConfigured": "Credit not enabled",
   "checkout.directoryCredit.disabled": "Paused",
@@ -1568,7 +1568,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "checkout.directoryCredit.status.PendingApproval": "Pending approval",
   "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
   "checkout.directoryCredit.status.Disabled": "Paused",
-  "checkout.directoryCredit.availableEmDash": "â",
+  "checkout.directoryCredit.availableEmDash": "Ã¢ÂÂ",
 
 
   "checkout.utangDueDateOverride": "Due date override (opsyonal)",
@@ -1672,11 +1672,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.buyerPrice": "Presyo para sa buyer",
   "connected.buyerPriceSellingRef": "Selling {price}",
   "connected.discountPercent": "Discount %",
-  "connected.discountPercentHelp": "Same % off each selected productâs Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.discountPercentHelp": "Same % off each selected productÃ¢ÂÂs Default PO (B2B discount). Fixed buyer price is only available for one product.",
   "connected.applyDiscountPercent": "Apply discount",
   "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
   "connected.increasePercent": "Increase %",
-  "connected.increasePercentHelp": "Same % up each selected productâs Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.increasePercentHelp": "Same % up each selected productÃ¢ÂÂs Default PO (B2B markup). Fixed buyer price is only available for one product.",
   "connected.applyIncreasePercent": "Apply increase",
   "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
   "connected.percentModeLabel": "Percent change type",
@@ -2302,7 +2302,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.orgConnectAsCustomer": "Add as business customer",
 
   "customers.orgNeedsBuyerConnection":
-    "Kinahanglan sang Active supplier connection para sa Direct B2B checkout. Sugua ini nga organization nga mag-connect sa imo sa Suppliers, dayon batuna ang request. Pagkatapos, magapakita sila sa Customers â Businesses kag sa Sell checkout.",
+    "Kinahanglan sang Active supplier connection para sa Direct B2B checkout. Sugua ini nga organization nga mag-connect sa imo sa Suppliers, dayon batuna ang request. Pagkatapos, magapakita sila sa Customers Ã¢ÂÂ Businesses kag sa Sell checkout.",
 
   "customers.orgNeedsConnectionAction": "Paano magkonekta",
   "customers.orgOpenExistingConnection": "Open existing connection",
@@ -3021,7 +3021,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
   "uiStandards.buttonMotionTitle": "Button motion",
   "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
-  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX â Cancel / dismiss. CornerUpLeft â Cancel and return / abandon edit. X â Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft â Back/navigation.",
+  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX Ã¢ÂÂ Cancel / dismiss. CornerUpLeft Ã¢ÂÂ Cancel and return / abandon edit. X Ã¢ÂÂ Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft Ã¢ÂÂ Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
@@ -3029,7 +3029,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
-  "uiStandards.buttonPilotBadge": "BUTTON STANDARD â APPROVED / LOCKED",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD Ã¢ÂÂ APPROVED / LOCKED",
   "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
@@ -3042,8 +3042,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.tabModuleSubnav": "Module Subnav",
   "uiStandards.tabActionChips": "Mga Action Chip",
   "uiStandards.tabCards": "Cards",
-  "uiStandards.tabsPilotBadge": "TABS STANDARD â APPROVED / LOCKED",
-  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED â Docs/UI/exits-tabs-standard.md.",
+  "uiStandards.tabsPilotBadge": "TABS STANDARD Ã¢ÂÂ APPROVED / LOCKED",
+  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED Ã¢ÂÂ Docs/UI/exits-tabs-standard.md.",
   "uiStandards.tabsVariantsTitle": "Tab variants",
   "uiStandards.tabsCountsTitle": "Tabs with counts",
   "uiStandards.tabsIconsTitle": "Icons",
@@ -3054,8 +3054,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.tabsRealWorldTitle": "Real-world examples",
   "uiStandards.tabsCheatTitle": "Cursor shorthand",
   "uiStandards.tabsCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
-  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV â PILOT / CANDIDATE",
-  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module â not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE â Docs/UI/exits-module-subnav-standard.md.",
+  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV Ã¢ÂÂ PILOT / CANDIDATE",
+  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module Ã¢ÂÂ not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE Ã¢ÂÂ Docs/UI/exits-module-subnav-standard.md.",
   "uiStandards.moduleSubnavComparisonTitle": "Variant comparison",
   "uiStandards.moduleSubnavIconsTitle": "Icons",
   "uiStandards.moduleSubnavCountsTitle": "Counts",
@@ -3063,14 +3063,14 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.moduleSubnavRealWorldTitle": "Real-world examples",
   "uiStandards.moduleSubnavCheatTitle": "Cursor shorthand",
   "uiStandards.moduleSubnavCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.actionChipsPilotBadge": "ACTION CHIP â PILOT / CANDIDATE (Hiligaynon)",
-  "uiStandards.actionChipsPilotLede": "ExItS Action Chip pilot (ExitsChipBar variant=actions + ActionChipBar). Magaan nga actions kag navigation shortcuts â indi Tabs, Filters, Module Subnav, ukon Buttons. Theme kag density hali sa Preferences. PILOT / CANDIDATE â Docs/UI/exits-action-chip-standard.md.",
+  "uiStandards.actionChipsPilotBadge": "ACTION CHIP Ã¢ÂÂ PILOT / CANDIDATE (Hiligaynon)",
+  "uiStandards.actionChipsPilotLede": "ExItS Action Chip pilot (ExitsChipBar variant=actions + ActionChipBar). Magaan nga actions kag navigation shortcuts Ã¢ÂÂ indi Tabs, Filters, Module Subnav, ukon Buttons. Theme kag density hali sa Preferences. PILOT / CANDIDATE Ã¢ÂÂ Docs/UI/exits-action-chip-standard.md.",
   "uiStandards.actionChipsOverviewTitle": "Semantic overview (Hil)",
-  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button â pareho ang label, lain ang trabaho.",
+  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button Ã¢ÂÂ pareho ang label, lain ang trabaho.",
   "uiStandards.actionChipsVariantsTitle": "Visual variants (Hil)",
   "uiStandards.actionChipsVariantsLede": "Soft, outline, ghost, primary treatments, elevated, kag special-use gradient. Pareho ang label para comparison.",
   "uiStandards.actionChipsShapesTitle": "Mga porma",
-  "uiStandards.actionChipsShapesLede": "Pill, soft, kag square â reuse sang locked Chip shape language nga may action touch targets.",
+  "uiStandards.actionChipsShapesLede": "Pill, soft, kag square Ã¢ÂÂ reuse sang locked Chip shape language nga may action touch targets.",
   "uiStandards.actionChipsContentTitle": "Content kag states",
   "uiStandards.actionChipsContentLede": "Text, icons, counts, primary emphasis, disabled, kag loading.",
   "uiStandards.actionChipsGroupsTitle": "Action Chip groups (Hil)",
@@ -3079,8 +3079,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.actionChipsRealWorldLede": "Static Inventory, Purchasing, Stock Count, Returns, kag Staff shortcuts para visual comparison. Wala APIs.",
   "uiStandards.actionChipsCheatTitle": "Cursor shorthand (Hil)",
   "uiStandards.actionChipsCheatLede": "Pilot vocabulary para sa Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.cardsPilotBadge": "CARD STANDARD â APPROVED / LOCKED",
-  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable kag status accents, motion. Theme kag density hali sa Preferences. APPROVED / LOCKED â Docs/UI/exits-card-standard.md.",
+  "uiStandards.cardsPilotBadge": "CARD STANDARD Ã¢ÂÂ APPROVED / LOCKED",
+  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable kag status accents, motion. Theme kag density hali sa Preferences. APPROVED / LOCKED Ã¢ÂÂ Docs/UI/exits-card-standard.md.",
   "uiStandards.cardsTreatmentsTitle": "Card treatments",
   "uiStandards.cardsBasicTitle": "Basic / content cards",
   "uiStandards.cardsKpiTitle": "KPI / Stat",
@@ -3095,8 +3095,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
-  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED â Docs/UI/exits-card-standard.md.",
-  "uiStandards.chipPilotBadge": "CHIP STANDARD â APPROVED / LOCKED",
+  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED Ã¢ÂÂ Docs/UI/exits-card-standard.md.",
+  "uiStandards.chipPilotBadge": "CHIP STANDARD Ã¢ÂÂ APPROVED / LOCKED",
   "uiStandards.chipPilotLede": "Approved ExItS chip language. Soft semantic surfaces, density from Preferences, primary via --exits-primary. See Docs/UI/exits-chip-standard.md.",
   "uiStandards.chipStatusTitle": "Status chips",
   "uiStandards.chipShapesTitle": "Chip shapes",
@@ -3125,7 +3125,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "uiStandards.simpleModuleSubnavNote": "Related route/page navigation.",
   "uiStandards.simpleFiltersNote": "Changes the current dataset/view; does not navigate to another page.",
   "uiStandards.tableCheatLede": "Use these terms in Cursor tasks. Explicit ON/OFF overrides FULL TABLE defaults. ACTIONS and INLINE EDIT are optional.",
-  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD â APPROVED / LOCKED",
+  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD Ã¢ÂÂ APPROVED / LOCKED",
   "uiStandards.tablesAlignmentTitle": "Table alignment",
   "uiStandards.tablesActionsTitle": "Table actions",
   "uiStandards.tablesInlineRowEditTitle": "Inline row edit",
@@ -3143,7 +3143,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "exitsTable.filterNoSku": "No SKU",
   "exitsTable.next": "Next",
   "exitsTable.previous": "Previous",
-  "exitsTable.range": "{from}â{to} of {total}",
+  "exitsTable.range": "{from}Ã¢ÂÂ{to} of {total}",
   "exitsTable.rowsPerPage": "Rows per page",
   "exitsTable.searchProducts": "Search products",
   "exitsTable.selectAll": "Select all visible rows",
@@ -3261,7 +3261,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} Â· Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} ÃÂ· Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Ipakita ang window",
 
@@ -3480,7 +3480,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Â· {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON ÃÂ· {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
 
@@ -4902,6 +4902,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "common.receivedBy": "Ginbaton ni",
 
+  "common.by": "ni",
+
   "common.openedBy": "Ginbuksan ni",
 
   "common.closedBy": "Ginsira ni",
@@ -4994,7 +4996,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.rejected": "Ginsikway",
 
-  "purchasing.shortClosed": "Kulang / short-closed",
+  "purchasing.shortClosed": "Ginkansela ang nabilin",
 
   "purchasing.discrepancy": "Wala maghambal",
 
@@ -5005,6 +5007,16 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.totalPurchaseCost": "Kabilugan nga gasto sang pagbakal",
 
   "purchasing.items": "Mga linya sang order",
+  "purchasing.searchDirectLines": "Pangitaa ang mga item sa sini nga receipt",
+  "purchasing.directLineFilter": "Direct purchase line filter",
+  "purchasing.directFilterAll": "Tanan nga lines",
+  "purchasing.directFilterWithExpiry": "May expiry",
+  "purchasing.directFilterWithoutExpiry": "Wala expiry",
+  "purchasing.directLinesNoMatch": "Wala matching items",
+  "purchasing.directLinesNoMatchDetail": "Tilawi ang iban nga search ukon ipakita tanan nga lines.",
+  "purchasing.directLinesEmpty": "Wala items sa sini nga receipt",
+  "purchasing.directLinesEmptyDetail": "Wala line items ang direct purchase nga ini.",
+  "purchasing.directLinesTotal": "Total sang items",
 
   "inventory.movementType.openingStock": "Opening stock / unang stock",
 
@@ -5012,9 +5024,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt / resibo sang PO",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment â dugang",
+  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢ÂÂ dugang",
 
-  "inventory.movementType.manualDecrease": "Stock adjustment â bawas",
+  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢ÂÂ bawas",
 
   "inventory.movementType.sale": "Baligya",
 
@@ -5028,9 +5040,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.transferCancel": "Pagbalik gikan sa ginsibat nga transfer",
 
-  "inventory.movementType.stockCountIncrease": "Stock count â dugang",
+  "inventory.movementType.stockCountIncrease": "Stock count Ã¢ÂÂ dugang",
 
-  "inventory.movementType.stockCountDecrease": "Stock count â bawas",
+  "inventory.movementType.stockCountDecrease": "Stock count Ã¢ÂÂ bawas",
 
   "inventory.movementType.stockUse": "Paggamit sang stock",
 
@@ -8447,7 +8459,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.closeAsShort": "Close remaining as short",
 
-  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as short-closed.",
+  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as cancelled remaining.",
 
   "purchasing.confirmDirect": "Confirm direct purchase",
 
@@ -8541,6 +8553,48 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.receivingAt": "Receiving at",
 
   "purchasing.goodReceived": "Good received",
+
+  "purchasing.receivedBefore": "Received before",
+
+  "purchasing.receiveNow": "Receive now",
+
+  "purchasing.deliverLater": "Deliver later",
+
+  "purchasing.cancelRemaining": "Cancel remaining",
+
+  "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
+
+  "purchasing.remainingDecisionTitle": "Remaining quantity",
+
+  "purchasing.activity.created": "Purchase order created",
+
+  "purchasing.activity.submitted": "Submitted to supplier",
+
+  "purchasing.activity.supplierAccepted": "Supplier accepted",
+
+  "purchasing.activity.supplierDeclined": "Supplier declined",
+
+  "purchasing.activity.changesProposed": "Supplier proposed changes",
+
+  "purchasing.activity.withdrawn": "Withdrawn",
+
+  "purchasing.activity.receipt": "Goods receipt {grn}",
+
+  "purchasing.activity.receiptReversed": "Receipt {grn} reversed",
+
+  "purchasing.activity.completed": "Fully received",
+
+  "purchasing.activity.empty": "No activity yet.",
+
+  "purchasing.activity.partialReceipt": "Partial receipt",
+
+  "purchasing.activity.fullyReceived": "Fully received",
+
+  "purchasing.activity.receivedLabel": "Received",
+
+  "purchasing.activity.showReceiptDetail": "Show receipt detail",
+
+  "purchasing.activity.hideReceiptDetail": "Hide receipt detail",
 
   "purchasing.hubLede": "Manage business buying and selling activity.",
   "purchasing.buyingTitle": "Buying",
@@ -9994,7 +10048,7 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Maghanap ukon magpili sang produkto para magsugod sang sale.",
 
-  "sell.linePreview": "{qty} {unit} Ã {price} = {amount}",
+  "sell.linePreview": "{qty} {unit} ÃÂ {price} = {amount}",
 
   "sell.midSession.deviceLost": "Indi na aprubado ang imo device para sa pagbaligya.",
 
@@ -11861,7 +11915,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "nav.backToWarehouseHome": "Back to Warehouse home",
 
   "catalog.cancel": "Kanselahon",
-  "catalog.category.creating": "Creatingâ¦",
+  "catalog.category.creating": "CreatingÃ¢ÂÂ¦",
   "catalog.category.deactivateConfirm": "Deactivate this category? It will remain on historical products but cannot be assigned to new products.",
   "catalog.categoryCreateFailed": "Could not create the category.",
   "catalog.categoryDeactivateFailed": "Could not deactivate the category.",
@@ -11876,7 +11930,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
   "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
   "production.recipes.lowMarginWarning": "Low estimated gross margin.",
-  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Â· Selling price: {price} Â· Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} ÃÂ· Selling price: {price} ÃÂ· Estimated loss: {loss} / {uom}",
   "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
   "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
   "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
@@ -11905,7 +11959,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.orgReviewIncomingRequest": "Review request",
   "customers.orgOpenPendingConnection": "Open pending connection",
   "customers.business.waitingForAccept": "Waiting for {name} to accept.",
-  "customers.business.actionRequired": "Action required â {name} wants to connect.",
+  "customers.business.actionRequired": "Action required Ã¢ÂÂ {name} wants to connect.",
   "customers.business.reviewRequest": "Review request",
   "customers.badge.pending": "Pending",
   "customers.badge.active": "Active",

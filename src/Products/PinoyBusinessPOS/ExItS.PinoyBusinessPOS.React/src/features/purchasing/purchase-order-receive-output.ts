@@ -10,10 +10,8 @@ export type PurchaseOrderReceiveExportRow = {
   ordered: number;
   received: number;
   outstanding: number;
-  unitCost: number;
   goodReceived: string;
   damaged: string;
-  closeRemaining: string;
   expiry: string;
   lot: string;
 };
@@ -31,12 +29,10 @@ function headers(): string[] {
     "Product",
     "Unit",
     "Ordered",
-    "Received",
+    "Received before",
     "Outstanding",
-    "Unit cost",
-    "Good received",
+    "Receive now",
     "Damaged",
-    "Close remaining",
     "Expiry",
     "Lot",
   ];
@@ -49,10 +45,8 @@ function bodyRows(rows: PurchaseOrderReceiveExportRow[]): Array<Array<string | n
     row.ordered,
     row.received,
     row.outstanding,
-    row.unitCost,
     row.goodReceived,
     row.damaged,
-    row.closeRemaining,
     row.expiry,
     row.lot,
   ]);
