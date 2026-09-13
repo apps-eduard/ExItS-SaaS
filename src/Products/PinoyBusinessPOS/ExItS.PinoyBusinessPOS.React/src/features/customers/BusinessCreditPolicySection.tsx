@@ -420,7 +420,7 @@ export function BusinessCreditPolicySection({
         {canShowConfigure ? (
           <Button
             type="button"
-            variant="outline"
+            variant={configureUsesSettingsIcon ? "outline" : "default"}
             data-testid="business-credit-policy-configure"
             onClick={openConfigure}
           >

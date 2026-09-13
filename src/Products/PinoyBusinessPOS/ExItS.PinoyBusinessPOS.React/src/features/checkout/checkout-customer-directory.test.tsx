@@ -326,7 +326,7 @@ describe("CheckoutCustomerDirectory", () => {
     expect(pendingConnRow).toHaveClass("checkout-credit-directory__row--blocked");
     expect(pendingConnRow).toHaveAttribute(
       "title",
-      "Connection pending. This business must accept the connection request before Utang can be used.",
+      "Customer connection is not yet confirmed.",
     );
     expect(
       pendingConnRow.querySelector("[data-testid='checkout-credit-directory-connection'] .exits-status-chip"),

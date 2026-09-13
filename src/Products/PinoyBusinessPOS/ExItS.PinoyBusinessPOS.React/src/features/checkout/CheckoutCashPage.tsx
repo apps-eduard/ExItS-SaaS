@@ -1574,6 +1574,7 @@ export function CheckoutCashPage() {
                     const block = resolveUtangDirectorySelectBlock({
                       customer,
                       thisSaleAmount: amountToPay,
+                      overlay: customerLinkOverlay,
                     });
                     if (block) {
                       showToast(utangDirectorySelectToastMessage(block, t), "error");
@@ -1606,6 +1607,7 @@ export function CheckoutCashPage() {
                     const block = resolveUtangDirectorySelectBlock({
                       customer,
                       thisSaleAmount: amountToPay,
+                      overlay: customerLinkOverlay,
                     });
                     if (block) {
                       showToast(utangDirectorySelectToastMessage(block, t), "error");

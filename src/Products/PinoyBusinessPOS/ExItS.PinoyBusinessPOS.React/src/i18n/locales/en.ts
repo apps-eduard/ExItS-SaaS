@@ -2422,7 +2422,7 @@ export const en = {
   "checkout.utangSelect.businessInactive":
     "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.connectionPending":
-    "Connection pending. This business must accept the connection request before Utang can be used.",
+    "Customer connection is not yet confirmed.",
   "checkout.utangSelect.b2bNotAvailable":
     "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",

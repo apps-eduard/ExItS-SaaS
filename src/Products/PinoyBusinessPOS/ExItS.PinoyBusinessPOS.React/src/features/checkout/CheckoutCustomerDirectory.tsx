@@ -299,7 +299,7 @@ export function CheckoutCustomerDirectory({
               const available = showCreditStatus ? directoryAvailableLabel(customer) : null;
               const exitsId = showCreditStatus ? null : directoryExItsId(customer);
               const connection = showCreditStatus
-                ? resolveCheckoutConnectionDisplay(customer)
+                ? resolveCheckoutConnectionDisplay(customer, overlay)
                 : null;
               const connectionPending =
                 showCreditStatus &&

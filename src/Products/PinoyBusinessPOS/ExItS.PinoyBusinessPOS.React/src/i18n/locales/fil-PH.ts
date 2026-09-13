@@ -1364,7 +1364,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.utangSelect.businessInactive":
     "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.connectionPending":
-    "Connection pending. This business must accept the connection request before Utang can be used.",
+    "Customer connection is not yet confirmed.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
   "checkout.directoryCredit.colType": "Type",

@@ -395,7 +395,7 @@ export function CreditPolicySection({
         {canShowConfigure ? (
           <Button
             type="button"
-            variant="outline"
+            variant={configureUsesSettingsIcon ? "outline" : "default"}
             data-testid="customer-credit-policy-configure"
             onClick={openConfigure}
           >

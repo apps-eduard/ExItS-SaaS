@@ -160,6 +160,41 @@ describe("checkout-utang-credit helpers", () => {
         status: "Active",
       }),
     ).toEqual({ kind: "chip", statusKey: "Connected", raw: "Active" });
+
+    const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const person = {
+      kind: "Customer" as const,
+      customerId: "11111111-1111-1111-1111-111111111111",
+      displayName: "Mica",
+      status: "Active",
+      linkedPersonalPublicUserId: "EX-1111-2222",
+      platformBusinessCustomerId: platformId,
+    };
+    expect(
+      resolveCheckoutConnectionDisplay(person, {
+        connectedBusinessCustomerIds: new Set([platformId]),
+        pendingBusinessCustomerIds: new Set(),
+        loaded: true,
+      }),
+    ).toEqual({ kind: "chip", statusKey: "Connected", raw: "Connected" });
+    expect(
+      resolveCheckoutConnectionDisplay(person, {
+        connectedBusinessCustomerIds: new Set(),
+        pendingBusinessCustomerIds: new Set([platformId]),
+        loaded: true,
+      }),
+    ).toEqual({ kind: "chip", statusKey: "Pending", raw: "Pending" });
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: { ...person, creditStatus: "Approved", availableCredit: 30000 },
+        thisSaleAmount: 10,
+        overlay: {
+          connectedBusinessCustomerIds: new Set(),
+          pendingBusinessCustomerIds: new Set([platformId]),
+          loaded: true,
+        },
+      })?.reason,
+    ).toBe("connection_pending");
   });
 
   it("allows Approved under limit and unknown projection", () => {

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Clock, UserRound } from "lucide-react";
+import { Bell, Clock, UserRound, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
@@ -166,6 +166,7 @@ export function CustomerPersonalLinkSection({
                 disabled={reminderCooldownActive || remindPending}
                 onClick={onRemind}
               >
+                <Bell className="size-4 shrink-0" aria-hidden />
                 {t("customers.linkRemind")}
               </Button>
               <Button
@@ -175,6 +176,7 @@ export function CustomerPersonalLinkSection({
                 disabled={revokePending}
                 onClick={onRevoke}
               >
+                <XCircle className="size-4 shrink-0" aria-hidden />
                 {t("customers.linkCancelInvitation")}
               </Button>
               {reminderCooldownActive ? (

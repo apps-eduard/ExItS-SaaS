@@ -1,11 +1,16 @@
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
   isCheckoutBusiness,
+  isCheckoutBusinessDirectoryRow,
   isCheckoutPerson,
 } from "@/features/checkout/checkout-customer-option";
 import type { StatusChipTone } from "@/components/exits/StatusChip";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
+import {
+  resolveCustomerListConnectionBadge,
+  type CustomerListConnectionOverlay,
+} from "@/features/customers/customer-list-connection";
 
 /** User-facing directory credit status (backend enum unchanged). */
 export function checkoutCreditStatusLabelKey(
@@ -40,7 +45,7 @@ export function checkoutCreditStatusTone(
   }
 }
 
-/** Canonical B2B relationship status for the Utang Connection column (not credit). */
+/** Canonical connection status for the Utang Connection column (not credit). */
 export type CheckoutConnectionDisplay =
   | { kind: "none" }
   | { kind: "chip"; statusKey: "Pending" | "Connected" | "Declined" | "Disconnected"; raw: string }
@@ -48,28 +53,41 @@ export type CheckoutConnectionDisplay =
 
 export function resolveCheckoutConnectionDisplay(
   customer: CheckoutCustomerOption,
+  overlay?: CustomerListConnectionOverlay | null,
 ): CheckoutConnectionDisplay {
-  if (!isCheckoutBusiness(customer)) {
+  if (isCheckoutBusiness(customer)) {
+    const raw = (customer.status ?? "").trim();
+    const normalized = raw.toLowerCase();
+    if (normalized === "pending") {
+      return { kind: "chip", statusKey: "Pending", raw };
+    }
+    if (normalized === "active") {
+      return { kind: "chip", statusKey: "Connected", raw };
+    }
+    if (normalized === "declined") {
+      return { kind: "chip", statusKey: "Declined", raw };
+    }
+    if (normalized === "disconnected") {
+      return { kind: "chip", statusKey: "Disconnected", raw };
+    }
+    if (!raw) {
+      return { kind: "none" };
+    }
+    return { kind: "raw", raw };
+  }
+
+  if (isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)) {
+    const badge = resolveCustomerListConnectionBadge(customer, overlay);
+    if (badge === "connected") {
+      return { kind: "chip", statusKey: "Connected", raw: "Connected" };
+    }
+    if (badge === "pending") {
+      return { kind: "chip", statusKey: "Pending", raw: "Pending" };
+    }
     return { kind: "none" };
   }
-  const raw = (customer.status ?? "").trim();
-  const normalized = raw.toLowerCase();
-  if (normalized === "pending") {
-    return { kind: "chip", statusKey: "Pending", raw };
-  }
-  if (normalized === "active") {
-    return { kind: "chip", statusKey: "Connected", raw };
-  }
-  if (normalized === "declined") {
-    return { kind: "chip", statusKey: "Declined", raw };
-  }
-  if (normalized === "disconnected") {
-    return { kind: "chip", statusKey: "Disconnected", raw };
-  }
-  if (!raw) {
-    return { kind: "none" };
-  }
-  return { kind: "raw", raw };
+
+  return { kind: "none" };
 }
 
 export function checkoutConnectionStatusLabelKey(
@@ -116,6 +134,7 @@ function normalizeCreditStatus(raw: string | null | undefined): string {
 export function resolveUtangDirectorySelectBlock(args: {
   customer: CheckoutCustomerOption;
   thisSaleAmount: number;
+  overlay?: CustomerListConnectionOverlay | null;
 }): { reason: UtangDirectorySelectBlockReason; availableCredit?: number } | null {
   if (isCheckoutBusiness(args.customer)) {
     const relationship = (args.customer.status ?? "").trim().toLowerCase();
@@ -143,6 +162,13 @@ export function resolveUtangDirectorySelectBlock(args: {
   }
   if (!isCheckoutPerson(args.customer)) {
     return { reason: "not_configured" };
+  }
+
+  if (!isCheckoutBusinessDirectoryRow(args.customer)) {
+    const badge = resolveCustomerListConnectionBadge(args.customer, args.overlay);
+    if (badge === "pending") {
+      return { reason: "connection_pending" };
+    }
   }
 
   const statusRaw = args.customer.creditStatus;
