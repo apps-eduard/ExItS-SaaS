@@ -14139,6 +14139,10 @@ select.pc-field__control:disabled {
 }
 
 /* POS subscription plan selection (Explore POS) */
+.plan-explore-shell {
+  max-width: 72rem;
+}
+
 .plan-billing-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -14148,7 +14152,7 @@ select.pc-field__control:disabled {
   border-radius: var(--exits-radius-md);
   background: var(--exits-surface-muted);
   width: 100%;
-  max-width: 36rem;
+  max-width: 42rem;
 }
 
 @media (min-width: 640px) {
@@ -14161,8 +14165,8 @@ select.pc-field__control:disabled {
 }
 
 .plan-billing-toggle button {
-  min-height: 2.5rem;
-  padding: 0.375rem 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.5rem;
   border: none;
   border-radius: calc(var(--exits-radius-md) - 2px);
   background: transparent;
@@ -14183,6 +14187,10 @@ select.pc-field__control:disabled {
   font-size: var(--exits-text-xs);
   font-weight: 500;
   opacity: 0.85;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 9.5rem;
 }
 
 .plan-billing-toggle button.is-active {
@@ -14215,13 +14223,17 @@ select.pc-field__control:disabled {
   min-height: 100%;
 }
 
+.plan-selection-card--compact {
+  min-height: 0;
+}
+
 .plan-selection-card--popular {
   border-color: color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--exits-primary) 22%, transparent);
 }
 
 .plan-selection-card--complete {
-  border-color: color-mix(in srgb, var(--exits-border) 80%, var(--exits-primary));
+  border-color: color-mix(in srgb, var(--exits-border) 70%, transparent);
 }
 
 .plan-selection-card--current {
@@ -14242,6 +14254,37 @@ select.pc-field__control:disabled {
   color: var(--exits-muted, var(--muted));
 }
 
+.plan-payment-summary {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid color-mix(in srgb, var(--exits-border) 80%, transparent);
+  line-height: 1.35;
+}
+
+.plan-payment-summary__label {
+  font-weight: 600;
+  color: var(--exits-text, inherit);
+}
+
+.plan-view-all-features {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--exits-primary);
+  font: inherit;
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.plan-view-all-features:hover {
+  opacity: 0.9;
+}
+
 .plan-badge {
   display: inline-block;
   padding: 0.15rem 0.45rem;
@@ -14258,8 +14301,10 @@ select.pc-field__control:disabled {
 }
 
 .plan-badge--complete {
-  background: color-mix(in srgb, #334155 12%, transparent);
-  color: #334155;
+  background: color-mix(in srgb, var(--exits-surface-muted) 80%, transparent);
+  color: var(--exits-text-muted, #64748b);
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .plan-compare-scroll {

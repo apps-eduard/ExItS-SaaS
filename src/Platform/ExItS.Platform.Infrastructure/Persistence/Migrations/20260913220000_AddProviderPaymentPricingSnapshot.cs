@@ -15,6 +15,7 @@ public partial class AddProviderPaymentPricingSnapshot : Migration
     {
         migrationBuilder.AddColumn<string>(
             name: "plan_key",
+            schema: "platform",
             table: "provider_payments",
             type: "character varying(64)",
             maxLength: 64,
@@ -22,6 +23,7 @@ public partial class AddProviderPaymentPricingSnapshot : Migration
 
         migrationBuilder.AddColumn<string>(
             name: "billing_cycle",
+            schema: "platform",
             table: "provider_payments",
             type: "character varying(32)",
             maxLength: 32,
@@ -29,24 +31,28 @@ public partial class AddProviderPaymentPricingSnapshot : Migration
 
         migrationBuilder.AddColumn<decimal>(
             name: "base_amount",
+            schema: "platform",
             table: "provider_payments",
             type: "numeric(18,2)",
             nullable: true);
 
         migrationBuilder.AddColumn<decimal>(
             name: "discount_amount",
+            schema: "platform",
             table: "provider_payments",
             type: "numeric(18,2)",
             nullable: true);
 
         migrationBuilder.AddColumn<decimal>(
             name: "discount_percent",
+            schema: "platform",
             table: "provider_payments",
             type: "numeric(8,2)",
             nullable: true);
 
         migrationBuilder.AddColumn<decimal>(
             name: "final_amount",
+            schema: "platform",
             table: "provider_payments",
             type: "numeric(18,2)",
             nullable: true);
@@ -55,11 +61,11 @@ public partial class AddProviderPaymentPricingSnapshot : Migration
     /// <inheritdoc />
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropColumn(name: "plan_key", table: "provider_payments");
-        migrationBuilder.DropColumn(name: "billing_cycle", table: "provider_payments");
-        migrationBuilder.DropColumn(name: "base_amount", table: "provider_payments");
-        migrationBuilder.DropColumn(name: "discount_amount", table: "provider_payments");
-        migrationBuilder.DropColumn(name: "discount_percent", table: "provider_payments");
-        migrationBuilder.DropColumn(name: "final_amount", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "plan_key", schema: "platform", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "billing_cycle", schema: "platform", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "base_amount", schema: "platform", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "discount_amount", schema: "platform", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "discount_percent", schema: "platform", table: "provider_payments");
+        migrationBuilder.DropColumn(name: "final_amount", schema: "platform", table: "provider_payments");
     }
 }

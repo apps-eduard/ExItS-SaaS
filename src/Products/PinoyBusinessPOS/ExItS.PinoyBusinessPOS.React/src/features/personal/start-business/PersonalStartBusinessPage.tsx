@@ -162,8 +162,13 @@ export function PersonalStartBusinessPage() {
 
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
       const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
+      const nextRoute =
+        result.requiresCheckout && result.paymentTransactionId
+          ? `/subscription-checkout/${result.paymentTransactionId}`
+          : "/onboarding";
       // Leave Personal-only routes before bind awaits (session is now Organization).
-      navigate("/onboarding", { replace: true });
+      // PayNow checkout goes to subscription-checkout first; trial/paid-complete still go to onboarding.
+      navigate(nextRoute, { replace: true });
 
       try {
         await refreshWorkspaces();
@@ -173,7 +178,7 @@ export function PersonalStartBusinessPage() {
           branchId: null,
           branchName: null,
           experience: "manage_business",
-          route: "/onboarding",
+          route: nextRoute,
           labelKey: "experience.manageBusiness",
         });
         if (bound) {

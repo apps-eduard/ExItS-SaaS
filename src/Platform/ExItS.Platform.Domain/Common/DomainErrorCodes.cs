@@ -155,6 +155,7 @@ public static class DomainErrorCodes
     public const string PaymentCurrencyInvalid = "platform.saas_payment.currency.invalid";
     public const string PaymentReferenceRequired = "platform.saas_payment.reference.required";
     public const string PaymentReasonRequired = "platform.saas_payment.reason.required";
+    public const string InvalidPaymentStatusTransition = "platform.subscription_payment.status.invalid_transition";
 
     public const string InvalidPlatformRoleAssignmentId = "platform.role_assignment.id.invalid";
     public const string InvalidPlatformSystemRole = "platform.role_assignment.role.invalid";

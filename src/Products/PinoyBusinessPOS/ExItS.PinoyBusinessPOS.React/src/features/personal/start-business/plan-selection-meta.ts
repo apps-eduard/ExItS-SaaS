@@ -126,14 +126,27 @@ export function parsePlanBillingCycle(raw: string | null | undefined): PlanBilli
   return match ?? "Monthly";
 }
 
-/** Prefer server-authored billingQuotes; never invent discount percents in the UI. */
+/** Server-authored quote only — never invent discount fields client-side. */
+export function getServerBillingQuote(
+  plan: CommercialPlanDto,
+  cycle: PlanBillingCycle,
+): PlanBillingQuoteDto | null {
+  return (
+    plan.billingQuotes?.find(
+      (q) => q.billingCycle.localeCompare(cycle, undefined, { sensitivity: "accent" }) === 0,
+    ) ?? null
+  );
+}
+
+/**
+ * Prefer server-authored billingQuotes.
+ * Amount fallbacks for Monthly/Annual list prices only; discountPercent/Amount stay 0 when invented.
+ */
 export function getPlanBillingQuote(
   plan: CommercialPlanDto,
   cycle: PlanBillingCycle,
 ): PlanBillingQuoteDto | null {
-  const fromApi = plan.billingQuotes?.find(
-    (q) => q.billingCycle.localeCompare(cycle, undefined, { sensitivity: "accent" }) === 0,
-  );
+  const fromApi = getServerBillingQuote(plan, cycle);
   if (fromApi) {
     return fromApi;
   }
@@ -152,18 +165,30 @@ export function getPlanBillingQuote(
     };
   }
   if (cycle === "Annual") {
-    const base = plan.monthlyPrice * 12;
-    const discountAmount = Math.max(0, base - plan.annualPrice);
     return {
       billingCycle: "Annual",
       periodMonths: 12,
-      baseAmount: base,
-      discountPercent: base > 0 ? Math.round((discountAmount / base) * 10000) / 100 : 0,
-      discountAmount,
+      baseAmount: plan.monthlyPrice * 12,
+      discountPercent: 0,
+      discountAmount: 0,
       finalAmount: plan.annualPrice,
       equivalentMonthlyAmount: Math.round((plan.annualPrice / 12) * 100) / 100,
       currencyCode: plan.currencyCode,
     };
+  }
+  return null;
+}
+
+/** Discount percent for billing toggle labels — only from server quotes across plans. */
+export function billingCycleDiscountPercentFromQuotes(
+  plans: CommercialPlanDto[],
+  cycle: PlanBillingCycle,
+): number | null {
+  for (const plan of plans) {
+    const quote = getServerBillingQuote(plan, cycle);
+    if (quote && quote.discountPercent > 0) {
+      return Math.round(quote.discountPercent);
+    }
   }
   return null;
 }

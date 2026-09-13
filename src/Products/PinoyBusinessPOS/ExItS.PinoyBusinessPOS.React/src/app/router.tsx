@@ -20,6 +20,9 @@ import { PersonalExplorePosPage } from "@/features/personal/start-business/Perso
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
+import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
+import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
+import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import { WarehouseIndexPage } from "@/features/warehouse/WarehouseIndexPage";
@@ -336,6 +339,30 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <PostSubscriptionOnboardingPage />
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "subscription-checkout/:paymentId",
+            element: (
+              <RequireOrganizationSession>
+                <SubscriptionCheckoutPage />
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "subscription-checkout/:paymentId/result",
+            element: (
+              <RequireOrganizationSession>
+                <PaymentResultPage />
+              </RequireOrganizationSession>
+            ),
+          },
+          {
+            path: "subscription-checkout/:paymentId/:channel",
+            element: (
+              <RequireOrganizationSession>
+                <SubscriptionPaymentSimulatorPage />
               </RequireOrganizationSession>
             ),
           },

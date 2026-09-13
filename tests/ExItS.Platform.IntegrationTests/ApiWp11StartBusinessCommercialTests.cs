@@ -289,9 +289,31 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         }
 
         var started = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
-        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
-        var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
+        Assert.True(started.GetProperty("requiresCheckout").GetBoolean());
+        Assert.True(started.TryGetProperty("paymentTransactionId", out var paymentIdEl));
+        var paymentId = paymentIdEl.GetGuid();
+        Assert.NotEqual(Guid.Empty, paymentId);
+        Assert.Equal(JsonValueKind.Null, started.GetProperty("subscriptionId").ValueKind);
+
+        var orgId = started.GetProperty("organizationId").GetGuid();
+        var orgToken = started.GetProperty("sessionToken").GetString()
+            ?? throw new InvalidOperationException("sessionToken missing from start-business response.");
+
+        using var process = Authed(
+            HttpMethod.Post,
+            $"/api/v1/platform/organizations/{orgId}/subscription-payments/{paymentId}/process",
+            orgToken,
+            new { channel = "GCash" });
+        var processResponse = await _client.SendAsync(process);
+        if (!processResponse.IsSuccessStatusCode)
+        {
+            Assert.Fail($"Process failed ({processResponse.StatusCode}): {await processResponse.Content.ReadAsStringAsync()}");
+        }
+
+        var paid = await processResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Paid", paid.GetProperty("status").GetString());
+        Assert.True(paid.GetProperty("subscriptionActivated").GetBoolean());
+        var subscriptionId = paid.GetProperty("subscriptionId").GetGuid();
         var subscription = await _admin.GetAsync($"/api/v1/platform/subscriptions/{subscriptionId}");
         subscription.EnsureSuccessStatusCode();
         var subBody = await subscription.Content.ReadFromJsonAsync<JsonElement>();

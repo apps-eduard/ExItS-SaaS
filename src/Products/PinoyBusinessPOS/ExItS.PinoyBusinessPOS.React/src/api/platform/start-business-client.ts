@@ -56,9 +56,14 @@ export const startBusinessResultSchema = z.object({
   productCode: z.string(),
   primaryBusinessTypeId: guidSchema.nullable().optional().default(null),
   primaryBranchId: guidSchema.nullable().optional().default(null),
+  paymentTransactionId: guidSchema.nullable().optional().default(null),
+  paymentReferenceNumber: z.string().nullable().optional().default(null),
+  requiresCheckout: z.boolean().optional().default(false),
 });
 
 export type StartBusinessResultDto = z.infer<typeof startBusinessResultSchema>;
+
+export type StartBusinessBillingCycle = "Monthly" | "Quarterly" | "SixMonths" | "Annual";
 
 export type StartBusinessRequest = {
   displayName: string;
@@ -66,7 +71,7 @@ export type StartBusinessRequest = {
   primaryBusinessTypeId: string;
   productCode?: string;
   planKey?: string | null;
-  billingCycle?: "Monthly" | "Annual";
+  billingCycle?: StartBusinessBillingCycle;
   startAsTrial?: boolean;
   payNow?: boolean;
   activatePosEntitlement?: boolean;
@@ -143,6 +148,9 @@ function normalizeStartBusinessResult(raw: unknown): unknown {
     productCode: pick(r, "productCode", "ProductCode"),
     primaryBusinessTypeId: pick(r, "primaryBusinessTypeId", "PrimaryBusinessTypeId") ?? null,
     primaryBranchId: pick(r, "primaryBranchId", "PrimaryBranchId") ?? null,
+    paymentTransactionId: pick(r, "paymentTransactionId", "PaymentTransactionId") ?? null,
+    paymentReferenceNumber: pick(r, "paymentReferenceNumber", "PaymentReferenceNumber") ?? null,
+    requiresCheckout: Boolean(pick(r, "requiresCheckout", "RequiresCheckout") ?? false),
   };
 }
 

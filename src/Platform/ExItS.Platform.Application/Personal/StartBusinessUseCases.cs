@@ -72,7 +72,11 @@ public sealed record StartBusinessResultDto(
     Guid? PrimaryBusinessTypeId = null,
     Guid? PrimaryBranchId = null,
     /// <summary>Idle expiry of the rotated Organization session (cookie refresh for browser clients).</summary>
-    DateTimeOffset? ExpiresAtUtc = null);
+    DateTimeOffset? ExpiresAtUtc = null,
+    /// <summary>Pending SaaS checkout payment (PayNow). Activation happens only after Paid.</summary>
+    Guid? PaymentTransactionId = null,
+    string? PaymentReferenceNumber = null,
+    bool RequiresCheckout = false);
 
 public sealed class StartBusinessForPersonalUser
 {
@@ -122,10 +126,8 @@ public sealed class StartBusinessForPersonalUser
     private readonly PublishExistingPlanVersion _publishVersion;
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
-    private readonly ActivatePaidSubscription _activatePaid;
     private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
-    private readonly IPaymentProvider _paymentProvider;
-    private readonly RecordLinkedSuccessfulProviderPayment _recordLinkedPayment;
+    private readonly CreatePendingSubscriptionPayment _createPendingPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly GrantProductAccess _grantProductAccess;
     private readonly IProductRepository _products;
@@ -159,10 +161,8 @@ public sealed class StartBusinessForPersonalUser
         PublishExistingPlanVersion publishVersion,
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
-        ActivatePaidSubscription activatePaid,
         EnsureMvpPosPlans ensureMvpPosPlans,
-        IPaymentProvider paymentProvider,
-        RecordLinkedSuccessfulProviderPayment recordLinkedPayment,
+        CreatePendingSubscriptionPayment createPendingPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         GrantProductAccess grantProductAccess,
         IProductRepository products,
@@ -195,10 +195,8 @@ public sealed class StartBusinessForPersonalUser
         _publishVersion = publishVersion;
         _createTrial = createTrial;
         _startTrial = startTrial;
-        _activatePaid = activatePaid;
         _ensureMvpPosPlans = ensureMvpPosPlans;
-        _paymentProvider = paymentProvider;
-        _recordLinkedPayment = recordLinkedPayment;
+        _createPendingPayment = createPendingPayment;
         _generateSnapshot = generateSnapshot;
         _grantProductAccess = grantProductAccess;
         _products = products;
@@ -394,6 +392,9 @@ public sealed class StartBusinessForPersonalUser
         string? roleCode = null;
         var entitlementActivated = false;
         var ownerRoleGranted = false;
+        Guid? paymentTransactionId = null;
+        string? paymentReferenceNumber = null;
+        var requiresCheckout = false;
 
         if (request.ActivatePosEntitlement)
         {
@@ -448,89 +449,25 @@ public sealed class StartBusinessForPersonalUser
                         "Plan was not found.");
                 }
 
-                // Payment rows FK to subscriptions — activate first, then charge with the real id.
-                var utcNow = _clock.UtcNow;
-                var (periodStart, periodEnd) = SubscriptionBillingPeriods.ComputePaidPeriod(utcNow, billingCycle);
-                var paid = await _activatePaid
+                // Create authoritative pending checkout payment. Subscription activates only after Paid.
+                var pending = await _createPendingPayment
                     .ExecuteAsync(
-                        organization.Id,
-                        catalog.Value.PlanId,
-                        catalog.Value.PlanVersionId,
-                        periodStart,
-                        periodEnd,
+                        userId,
+                        plan.PlanKey,
                         billingCycle,
-                        cancellationToken)
-                    .ConfigureAwait(false);
-                if (!paid.IsSuccess || paid.Value is null)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        paid.ErrorCode ?? ApplicationErrorCodes.SubscriptionIneligible,
-                        paid.ErrorMessage ?? "Paid subscription failed.");
-                }
-
-                var activated = paid.Value;
-                var idempotencyKey = $"start-business-{organization.Id.Value:N}-{activated.Id.Value:N}";
-                Domain.Payments.PaymentProviderResult paymentResult;
-                try
-                {
-                    var quote = SubscriptionBillingPricing.Quote(plan, billingCycle);
-                    paymentResult = await _paymentProvider.ChargeAsync(
-                        new Domain.Payments.PaymentChargeRequest(
-                            organization.Id.Value,
-                            activated.Id.Value,
-                            quote.FinalAmount,
-                            plan.CurrencyCode,
-                            idempotencyKey,
-                            Purpose: "start-business",
-                            PlanKey: quote.PlanKey,
-                            BillingCycle: quote.BillingCycle.ToString(),
-                            BaseAmount: quote.BaseAmount,
-                            DiscountAmount: quote.DiscountAmount,
-                            DiscountPercent: quote.DiscountPercent),
-                        cancellationToken).ConfigureAwait(false);
-                }
-                catch (NotSupportedException ex)
-                {
-                    activated.Cancel(_clock.UtcNow);
-                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.PaymentNotConfigured,
-                        ex.Message);
-                }
-
-                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                if (paymentResult.Status != Domain.Payments.PaymentProviderResultStatus.Succeeded)
-                {
-                    activated.Cancel(_clock.UtcNow);
-                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.PaymentNotConfirmed,
-                        paymentResult.FailureMessage ?? "Initial payment was not successful.");
-                }
-
-                var linked = await _recordLinkedPayment
-                    .ExecuteAsync(
                         organization.Id,
-                        ProductCode.Create(productCode),
-                        activated.Id,
-                        paymentResult,
-                        "start-business",
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (!linked.IsSuccess)
+                if (!pending.IsSuccess || pending.Value is null)
                 {
-                    activated.Cancel(_clock.UtcNow);
-                    await _subscriptions.UpdateAsync(activated, cancellationToken).ConfigureAwait(false);
-                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
                     return ApplicationResult<StartBusinessResultDto>.Failure(
-                        linked.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
-                        linked.ErrorMessage ?? "Successful payment could not be linked for administration.");
+                        pending.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                        pending.ErrorMessage ?? "Could not create subscription payment.");
                 }
 
-                subscriptionId = activated.Id.Value;
+                paymentTransactionId = pending.Value.Id;
+                paymentReferenceNumber = pending.Value.ReferenceNumber;
+                requiresCheckout = true;
             }
             else if (startAsTrial)
             {
@@ -567,18 +504,21 @@ public sealed class StartBusinessForPersonalUser
                     "Paid Start a Business requires PayNow with a successful payment. Start a trial, or subscribe with payment.");
             }
 
-            var snapshot = await _generateSnapshot
-                .ExecuteAsync(organization.Id, ProductCode.Create(productCode), cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-            if (!snapshot.IsSuccess || snapshot.Value is null)
+            if (!requiresCheckout)
             {
-                return ApplicationResult<StartBusinessResultDto>.Failure(
-                    snapshot.ErrorCode ?? ApplicationErrorCodes.EntitlementMissing,
-                    snapshot.ErrorMessage ?? "Entitlement snapshot failed.");
-            }
+                var snapshot = await _generateSnapshot
+                    .ExecuteAsync(organization.Id, ProductCode.Create(productCode), cancellationToken: cancellationToken)
+                    .ConfigureAwait(false);
+                if (!snapshot.IsSuccess || snapshot.Value is null)
+                {
+                    return ApplicationResult<StartBusinessResultDto>.Failure(
+                        snapshot.ErrorCode ?? ApplicationErrorCodes.EntitlementMissing,
+                        snapshot.ErrorMessage ?? "Entitlement snapshot failed.");
+                }
 
-            snapshotVersion = snapshot.Value.SnapshotVersion;
-            entitlementActivated = true;
+                snapshotVersion = snapshot.Value.SnapshotVersion;
+                entitlementActivated = true;
+            }
         }
 
         if (request.ActivateProductAccess && entitlementActivated)
@@ -679,7 +619,10 @@ public sealed class StartBusinessForPersonalUser
             ProductCode: productCode,
             PrimaryBusinessTypeId: organization.PrimaryBusinessTypeId?.Value,
             PrimaryBranchId: mainBranch.Id.Value,
-            ExpiresAtUtc: login.ExpiresAtUtc));
+            ExpiresAtUtc: login.ExpiresAtUtc,
+            PaymentTransactionId: paymentTransactionId,
+            PaymentReferenceNumber: paymentReferenceNumber,
+            RequiresCheckout: requiresCheckout));
     }
 
     private async Task<ApplicationResult<StartBusinessResultDto>> ResumeExistingStartBusinessAsync(

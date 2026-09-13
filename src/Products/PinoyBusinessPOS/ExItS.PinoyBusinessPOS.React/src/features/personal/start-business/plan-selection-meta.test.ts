@@ -2,12 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { CommercialPlanDto } from "@/api/platform/commercial-plans-client";
 import {
   annualSavingsPercent,
+  billingCycleDiscountPercentFromQuotes,
   buildPlanCompareRows,
   getPlanBillingQuote,
   getPlanDisplayMeta,
+  getServerBillingQuote,
   planPriceForCycle,
   resolvePlanCtaKind,
 } from "@/features/personal/start-business/plan-selection-meta";
+import { buildPlanPaymentSummaryText } from "@/features/personal/start-business/PlanPaymentSummary";
+import { en } from "@/i18n/locales/en";
+import type { MessageKey } from "@/i18n/messages";
 
 function plan(partial: Partial<CommercialPlanDto> & Pick<CommercialPlanDto, "code" | "displayName">): CommercialPlanDto {
   return {
@@ -49,15 +54,21 @@ describe("plan-selection-meta", () => {
     );
   });
 
-  it("computes annual savings from catalog prices", () => {
+  it("does not invent annual discount percent without server quotes", () => {
     expect(
       annualSavingsPercent(
         plan({ code: "starter", displayName: "Starter", monthlyPrice: 299, annualPrice: 2990 }),
       ),
-    ).toBe(17);
+    ).toBeNull();
+    expect(
+      getPlanBillingQuote(
+        plan({ code: "starter", displayName: "Starter", monthlyPrice: 299, annualPrice: 2990 }),
+        "Annual",
+      )?.discountPercent,
+    ).toBe(0);
   });
 
-  it("reads prepaid quotes from server billingQuotes", () => {
+  it("reads prepaid quotes and billing toggle discounts from server billingQuotes only", () => {
     const quoted = plan({
       code: "pro",
       displayName: "Pro",
@@ -74,10 +85,32 @@ describe("plan-selection-meta", () => {
           equivalentMonthlyAmount: 1424.05,
           currencyCode: "PHP",
         },
+        {
+          billingCycle: "SixMonths",
+          periodMonths: 6,
+          baseAmount: 8994,
+          discountPercent: 10,
+          discountAmount: 899.4,
+          finalAmount: 8094.6,
+          equivalentMonthlyAmount: 1349.1,
+          currencyCode: "PHP",
+        },
       ],
     });
+    expect(getServerBillingQuote(quoted, "Quarterly")?.finalAmount).toBe(4272.15);
     expect(getPlanBillingQuote(quoted, "Quarterly")?.finalAmount).toBe(4272.15);
     expect(planPriceForCycle(quoted, "Quarterly")).toBe(4272.15);
+    expect(billingCycleDiscountPercentFromQuotes([quoted], "Quarterly")).toBe(5);
+    expect(billingCycleDiscountPercentFromQuotes([quoted], "SixMonths")).toBe(10);
+    expect(billingCycleDiscountPercentFromQuotes([quoted], "Monthly")).toBeNull();
+  });
+
+  it("builds compact payment summary lines by entitlement tier", () => {
+    const t = (key: MessageKey) => en[key];
+    expect(buildPlanPaymentSummaryText("starter", t)).toBe("Cash · GCash · Utang");
+    expect(buildPlanPaymentSummaryText("growth", t)).toBe("Cash · GCash · Utang");
+    expect(buildPlanPaymentSummaryText("pro", t)).toContain("Bank transfer");
+    expect(buildPlanPaymentSummaryText("pro-plus", t)).toContain("Online payments");
   });
 
   it("resolves current / upgrade / downgrade CTAs from sort order", () => {

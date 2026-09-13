@@ -85,8 +85,8 @@ public static class DependencyInjection
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();
         services.AddScoped<IProviderPaymentRepository, ProviderPaymentRepository>();
-        services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();
-        services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
+        services.AddScoped<ISubscriptionPaymentTransactionRepository, SubscriptionPaymentTransactionRepository>();
+        services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();        services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IStaffNumberGenerator, EfStaffNumberGenerator>();

@@ -1,5 +1,5 @@
-import { Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Check, Users } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -11,18 +11,21 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
+  billingCycleDiscountPercentFromQuotes,
   buildPlanCompareRows,
   getPlanBillingQuote,
   getPlanDisplayMeta,
+  getServerBillingQuote,
   PLAN_BILLING_CYCLES,
   resolvePlanCtaKind,
   resolvePlanKey,
   type PlanBillingCycle,
   type PlanCtaKind,
 } from "@/features/personal/start-business/plan-selection-meta";
-import { PlanPaymentFeatureList } from "@/features/personal/start-business/PlanPaymentFeatureList";
+import { PlanPaymentSummary } from "@/features/personal/start-business/PlanPaymentSummary";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -90,12 +93,31 @@ function billingCyclePeriodLabel(cycle: PlanBillingCycle, t: (key: MessageKey) =
   }
 }
 
+function billingToggleSecondary(
+  cycle: PlanBillingCycle,
+  plans: CommercialPlanDto[],
+  t: (key: MessageKey) => string,
+): string | null {
+  const savePct = billingCycleDiscountPercentFromQuotes(plans, cycle);
+  if (cycle === "Annual") {
+    if (savePct != null) {
+      return t("personal.explore.billingBestValueSave").replace("{percent}", String(savePct));
+    }
+    return t("personal.explore.billingBestValue");
+  }
+  if (savePct != null) {
+    return t("personal.explore.billingSavePercent").replace("{percent}", String(savePct));
+  }
+  return null;
+}
+
 export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPageProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const localValidation = isFrontendLocalValidationMode();
   const [billing, setBilling] = useState<PlanBillingCycle>("Monthly");
   const [compareOpen, setCompareOpen] = useState(false);
+  const compareRef = useRef<HTMLDivElement>(null);
 
   const plansQuery = useQuery({
     queryKey: ["commercial", "plans", "pinoy-business-pos"],
@@ -109,6 +131,16 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
   }, [plans, currentPlanKey]);
 
   const compareRows = useMemo(() => buildPlanCompareRows(plans), [plans]);
+
+  function openCompare() {
+    setCompareOpen(true);
+    requestAnimationFrame(() => {
+      const el = compareRef.current;
+      if (el && typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
 
   if (plansQuery.isPending) {
     return <LoadingSkeleton label={t("personal.explore.loading")} />;
@@ -139,308 +171,347 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
 
   return (
     <div className="personal-page exits-page flex min-w-0 flex-col gap-3" data-testid="personal-explore-pos-page">
-      <PageHeader
-        title={t("personal.explore.title")}
-        description={t("personal.explore.lede")}
-        backTo={personalPageBackNav.more.to}
-        backLabel={t(personalPageBackNav.more.labelKey)}
-        backTestId="page-header-back-explore-pos"
-      />
-
-      {plans.length === 0 ? (
-        <EmptyState
-              align="center"
-              icon={<Users className="size-5" strokeWidth={1.75} />}
-          title={t("personal.explore.emptyTitle")}
-          detail={t("personal.explore.emptyDetail")}
+      <div className="plan-explore-shell mx-auto flex w-full min-w-0 flex-col gap-3">
+        <PageHeader
+          title={t("personal.explore.title")}
+          description={t("personal.explore.lede")}
+          backTo={personalPageBackNav.more.to}
+          backLabel={t(personalPageBackNav.more.labelKey)}
+          backTestId="page-header-back-explore-pos"
         />
-      ) : (
-        <>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted exits-animate-panel">
-            {t("personal.explore.selectHint")}
-          </p>
 
-          <div
-            className="plan-billing-toggle"
-            role="group"
-            aria-label={t("personal.explore.billingToggleAria")}
-            data-testid="explore-billing-toggle"
-          >
-            {PLAN_BILLING_CYCLES.map((cycle) => (
-              <button
-                key={cycle}
-                type="button"
-                className={billing === cycle ? "is-active" : undefined}
-                data-testid={`explore-billing-${cycle.toLowerCase()}`}
-                aria-pressed={billing === cycle}
-                onClick={() => setBilling(cycle)}
-              >
-                <span>{billingCycleShortLabel(cycle, t)}</span>
-                {cycle === "Quarterly" ? (
-                  <span className="plan-billing-toggle__hint">{t("personal.explore.billingPopular")}</span>
-                ) : null}
-                {cycle === "Annual" ? (
-                  <span className="plan-billing-toggle__hint">{t("personal.explore.billingBestValue")}</span>
-                ) : null}
-              </button>
-            ))}
-          </div>
+        {plans.length === 0 ? (
+          <EmptyState
+            align="center"
+            icon={<Users className="size-5" strokeWidth={1.75} />}
+            title={t("personal.explore.emptyTitle")}
+            detail={t("personal.explore.emptyDetail")}
+          />
+        ) : (
+          <>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted exits-animate-panel">
+              {t("personal.explore.selectHint")}
+            </p>
 
-          <ul className="plan-selection-grid m-0 list-none p-0" role="list">
-            {plans.map((plan) => {
-              const planKey = resolvePlanKey(plan);
-              const meta = getPlanDisplayMeta(plan);
-              const trialAvailable = plan.trialAllowed && plan.defaultTrialDays > 0;
-              const quote = getPlanBillingQuote(plan, billing);
-              const price = quote?.finalAmount ?? plan.monthlyPrice;
-              const periodLabel = billingCyclePeriodLabel(billing, t);
-              const savingsPct =
-                quote && quote.discountPercent > 0 ? Math.round(quote.discountPercent) : null;
-              const showEquivalent =
-                billing !== "Monthly" && quote && quote.equivalentMonthlyAmount > 0;
-              const includes = includesLabel(meta.includesEverythingIn, plans, t);
-              const ctaKind = resolvePlanCtaKind(
-                planKey,
-                currentPlanKey,
-                plan.sortOrder,
-                currentPlan?.sortOrder,
-              );
-              const cardClass = [
-                "plan-selection-card",
-                "exits-list__card",
-                "flex",
-                "flex-col",
-                "gap-2",
-                "p-4",
-                meta.badge === "most_popular" ? "plan-selection-card--popular" : "",
-                meta.badge === "complete" ? "plan-selection-card--complete" : "",
-                ctaKind === "current" ? "plan-selection-card--current" : "",
-              ]
-                .filter(Boolean)
-                .join(" ");
+            <Notice
+              tone="info"
+              testId="explore-simulated-payments-notice"
+              className="max-w-3xl"
+            >
+              {t("personal.explore.simulatedPaymentsNotice")}
+            </Notice>
 
-              return (
-                <li key={plan.id} className="min-w-0">
-                  <article className={cardClass} data-testid={`explore-plan-${planKey}`}>
-                    <header className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-                          {plan.displayName}
-                        </h2>
-                        <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                          {t(meta.taglineKey)}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {meta.badge === "most_popular" ? (
-                          <span className="plan-badge plan-badge--popular" data-testid="explore-badge-most-popular">
-                            {t("personal.explore.badge.mostPopular")}
-                          </span>
-                        ) : null}
-                        {meta.badge === "complete" ? (
-                          <span className="plan-badge plan-badge--complete" data-testid="explore-badge-complete">
-                            {t("personal.explore.badge.complete")}
-                          </span>
-                        ) : null}
-                        <span className="text-[length:var(--exits-text-xs)] text-muted">
-                          {trialAvailable
-                            ? t("personal.explore.trialDays").replace(
-                                "{days}",
-                                String(plan.defaultTrialDays),
-                              )
-                            : t("personal.explore.noTrial")}
+            <div
+              className="plan-billing-toggle"
+              role="group"
+              aria-label={t("personal.explore.billingToggleAria")}
+              data-testid="explore-billing-toggle"
+            >
+              {PLAN_BILLING_CYCLES.map((cycle) => {
+                const secondary = billingToggleSecondary(cycle, plans, t);
+                return (
+                  <button
+                    key={cycle}
+                    type="button"
+                    className={billing === cycle ? "is-active" : undefined}
+                    data-testid={`explore-billing-${cycle.toLowerCase()}`}
+                    aria-pressed={billing === cycle}
+                    onClick={() => setBilling(cycle)}
+                  >
+                    <span>{billingCycleShortLabel(cycle, t)}</span>
+                    {secondary ? (
+                      <span className="plan-billing-toggle__hint">{secondary}</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            <ul className="plan-selection-grid m-0 list-none p-0" role="list">
+              {plans.map((plan) => {
+                const planKey = resolvePlanKey(plan);
+                const meta = getPlanDisplayMeta(plan);
+                const trialAvailable = plan.trialAllowed && plan.defaultTrialDays > 0;
+                const quote = getPlanBillingQuote(plan, billing);
+                const serverQuote = getServerBillingQuote(plan, billing);
+                const price = quote?.finalAmount ?? plan.monthlyPrice;
+                const periodLabel = billingCyclePeriodLabel(billing, t);
+                const savingsPct =
+                  serverQuote && serverQuote.discountPercent > 0
+                    ? Math.round(serverQuote.discountPercent)
+                    : null;
+                const savingsAmount =
+                  serverQuote && serverQuote.discountAmount > 0
+                    ? serverQuote.discountAmount
+                    : null;
+                const showEquivalent =
+                  billing !== "Monthly" && quote && quote.equivalentMonthlyAmount > 0;
+                const includes = includesLabel(meta.includesEverythingIn, plans, t);
+                const ctaKind = resolvePlanCtaKind(
+                  planKey,
+                  currentPlanKey,
+                  plan.sortOrder,
+                  currentPlan?.sortOrder,
+                );
+                const highlightKeys = meta.highlightKeys.slice(0, 5);
+                const cardClass = [
+                  "plan-selection-card",
+                  "plan-selection-card--compact",
+                  "exits-list__card",
+                  "flex",
+                  "flex-col",
+                  "gap-1.5",
+                  "p-3.5",
+                  meta.badge === "most_popular" ? "plan-selection-card--popular" : "",
+                  meta.badge === "complete" ? "plan-selection-card--complete" : "",
+                  ctaKind === "current" ? "plan-selection-card--current" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <li key={plan.id} className="min-w-0">
+                    <article className={cardClass} data-testid={`explore-plan-${planKey}`}>
+                      <header className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold leading-tight">
+                            {plan.displayName}
+                          </h2>
+                          <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+                            {t(meta.taglineKey)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {meta.badge === "most_popular" ? (
+                            <span
+                              className="plan-badge plan-badge--popular"
+                              data-testid="explore-badge-most-popular"
+                            >
+                              {t("personal.explore.badge.mostPopular")}
+                            </span>
+                          ) : null}
+                          {meta.badge === "complete" ? (
+                            <span
+                              className="plan-badge plan-badge--complete"
+                              data-testid="explore-badge-complete"
+                            >
+                              {t("personal.explore.badge.complete")}
+                            </span>
+                          ) : null}
+                        </div>
+                      </header>
+
+                      <p
+                        className="m-0 text-[length:var(--exits-text-xl)] font-semibold leading-tight"
+                        data-testid={`explore-price-${planKey}`}
+                      >
+                        {formatMoney(price, plan.currencyCode)}
+                        <span className="ml-1 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                          {periodLabel}
                         </span>
-                      </div>
-                    </header>
+                      </p>
+                      {showEquivalent ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                          data-testid={`explore-equiv-${planKey}`}
+                        >
+                          {t("personal.explore.equivalentMonthly").replace(
+                            "{amount}",
+                            formatMoney(quote!.equivalentMonthlyAmount, plan.currencyCode),
+                          )}
+                        </p>
+                      ) : null}
+                      {savingsPct != null && savingsAmount != null ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-xs)] font-medium text-primary"
+                          data-testid={`explore-savings-${planKey}`}
+                        >
+                          {t("personal.explore.cycleSavingsDetail")
+                            .replace("{amount}", formatMoney(savingsAmount, plan.currencyCode))
+                            .replace("{percent}", String(savingsPct))}
+                        </p>
+                      ) : savingsPct != null ? (
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-primary">
+                          {t("personal.explore.cycleSavings").replace("{percent}", String(savingsPct))}
+                        </p>
+                      ) : null}
 
-                    <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold" data-testid={`explore-price-${planKey}`}>
-                      {formatMoney(price, plan.currencyCode)}
-                      <span className="ml-1 text-[length:var(--exits-text-sm)] font-normal text-muted">
-                        {periodLabel}
-                      </span>
-                    </p>
-                    {showEquivalent ? (
+                      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                        {trialAvailable
+                          ? t("personal.explore.trialDays").replace(
+                              "{days}",
+                              String(plan.defaultTrialDays),
+                            )
+                          : t("personal.explore.noTrial")}
+                      </p>
+
                       <p
                         className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-                        data-testid={`explore-equiv-${planKey}`}
+                        data-testid={`explore-capacity-${planKey}`}
                       >
-                        {t("personal.explore.equivalentMonthly").replace(
-                          "{amount}",
-                          formatMoney(quote!.equivalentMonthlyAmount, plan.currencyCode),
-                        )}
+                        {t("personal.explore.capacityLine")
+                          .replace("{branches}", String(plan.maxBranches))
+                          .replace("{staff}", String(plan.maxActiveStaff))
+                          .replace("{devices}", String(plan.maxActivePosDevices))}
                       </p>
-                    ) : null}
-                    {savingsPct != null ? (
-                      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                        {t("personal.explore.cycleSavings").replace("{percent}", String(savingsPct))}
-                      </p>
-                    ) : null}
 
-                    <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[length:var(--exits-text-sm)] text-muted">
-                      <li>{t("personal.explore.featureBranches").replace("{count}", String(plan.maxBranches))}</li>
-                      <li>{t("personal.explore.featureStaff").replace("{count}", String(plan.maxActiveStaff))}</li>
-                      <li>
-                        {t("personal.explore.featureDevices").replace(
-                          "{count}",
-                          String(plan.maxActivePosDevices),
-                        )}
-                      </li>
-                      <li>
-                        {t("personal.explore.featureBusinessTypes").replace(
-                          "{count}",
-                          String(plan.maxActiveBusinessTypes),
-                        )}
-                      </li>
-                      {plan.maxAreas > 0 ? (
-                        <li>
-                          {t("personal.explore.featureAreas").replace("{count}", String(plan.maxAreas))}
-                        </li>
+                      {includes ? (
+                        <p className="m-0 text-[length:var(--exits-text-xs)] font-medium">{includes}</p>
                       ) : null}
-                      {meta.warehouseIncluded ? (
-                        <li>{t("personal.explore.featureWarehouse")}</li>
-                      ) : null}
-                    </ul>
 
-                    {includes ? (
-                      <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">{includes}</p>
-                    ) : null}
+                      <ul className="plan-feature-checks m-0 list-none space-y-1 p-0">
+                        {highlightKeys.map((key) => (
+                          <li
+                            key={key}
+                            className="flex items-start gap-1.5 text-[length:var(--exits-text-xs)] text-muted"
+                          >
+                            <Check
+                              className="mt-0.5 size-3.5 shrink-0 text-primary"
+                              aria-hidden
+                              strokeWidth={2.25}
+                            />
+                            <span>{t(key)}</span>
+                          </li>
+                        ))}
+                      </ul>
 
-                    <ul className="m-0 list-disc space-y-1 pl-5 text-[length:var(--exits-text-sm)] text-muted">
-                      {meta.highlightKeys.map((key) => (
-                        <li key={key}>{t(key)}</li>
-                      ))}
-                    </ul>
+                      <PlanPaymentSummary planKey={planKey} t={t} />
 
-                    <PlanPaymentFeatureList planKey={planKey} t={t} />
-
-                    <div className="mt-auto flex flex-wrap gap-2 pt-2">
-                      {ctaKind === "current" ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          disabled
-                          data-testid={`explore-current-${planKey}`}
-                        >
-                          {ctaLabel(ctaKind, plan.displayName, t)}
-                        </Button>
-                      ) : (
-                        <>
-                          {trialAvailable ? (
+                      <div className="mt-auto flex flex-col gap-1.5 pt-1">
+                        <div className="flex flex-wrap gap-2">
+                          {ctaKind === "current" ? (
                             <Button
                               type="button"
-                              data-testid={`explore-start-trial-${planKey}`}
-                              onClick={() =>
-                                navigate(
-                                  `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=1&payNow=0&billing=${billing}`,
-                                )
-                              }
-                            >
-                              {t("personal.explore.startTrial")}
-                            </Button>
-                          ) : null}
-                          {localValidation ? (
-                            <Button
-                              type="button"
-                              variant={trialAvailable ? "ghost" : "default"}
-                              data-testid={`explore-subscribe-${planKey}`}
-                              onClick={() =>
-                                navigate(
-                                  `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=0&payNow=1&billing=${billing}`,
-                                )
-                              }
+                              variant="ghost"
+                              disabled
+                              data-testid={`explore-current-${planKey}`}
                             >
                               {ctaLabel(ctaKind, plan.displayName, t)}
                             </Button>
-                          ) : null}
-                          {!trialAvailable && !localValidation ? (
-                            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                              {t("personal.explore.paymentUnavailable")}
-                            </p>
-                          ) : null}
-                        </>
-                      )}
-                    </div>
-                  </article>
-                </li>
-              );
-            })}
-          </ul>
+                          ) : (
+                            <>
+                              {trialAvailable ? (
+                                <Button
+                                  type="button"
+                                  data-testid={`explore-start-trial-${planKey}`}
+                                  onClick={() =>
+                                    navigate(
+                                      `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=1&payNow=0&billing=${billing}`,
+                                    )
+                                  }
+                                >
+                                  {t("personal.explore.startTrial")}
+                                </Button>
+                              ) : null}
+                              {localValidation ? (
+                                <Button
+                                  type="button"
+                                  variant={trialAvailable ? "ghost" : "default"}
+                                  data-testid={`explore-subscribe-${planKey}`}
+                                  onClick={() =>
+                                    navigate(
+                                      `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=0&payNow=1&billing=${billing}`,
+                                    )
+                                  }
+                                >
+                                  {ctaLabel(ctaKind, plan.displayName, t)}
+                                </Button>
+                              ) : null}
+                              {!trialAvailable && !localValidation ? (
+                                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                                  {t("personal.explore.paymentUnavailable")}
+                                </p>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="plan-view-all-features"
+                          data-testid={`explore-view-all-${planKey}`}
+                          onClick={openCompare}
+                        >
+                          {t("personal.explore.viewAllFeatures")}
+                        </button>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
 
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-fit"
-              data-testid="explore-compare-toggle"
-              aria-expanded={compareOpen}
-              onClick={() => setCompareOpen((open) => !open)}
-            >
-              {compareOpen
-                ? t("personal.explore.compare.hide")
-                : t("personal.explore.compare.show")}
-            </Button>
+            <div className="flex flex-col gap-2" ref={compareRef}>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-fit"
+                data-testid="explore-compare-toggle"
+                aria-expanded={compareOpen}
+                onClick={() => setCompareOpen((open) => !open)}
+              >
+                {compareOpen
+                  ? t("personal.explore.compare.hide")
+                  : t("personal.explore.compare.show")}
+              </Button>
 
-            {compareOpen ? (
-              <div className="plan-compare-scroll" data-testid="explore-compare-matrix">
-                <table className="plan-compare-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">{t("personal.explore.compare.feature")}</th>
-                      {plans.map((plan) => (
-                        <th key={plan.id} scope="col">
-                          {plan.displayName}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {compareRows.map((row) => (
-                      <tr key={row.id}>
-                        <th scope="row">{t(row.labelKey)}</th>
-                        {plans.map((plan) => {
-                          const key = resolvePlanKey(plan);
-                          const value = row.values[key];
-                          return (
-                            <td key={`${row.id}-${key}`}>
-                              {typeof value === "boolean" ? (
-                                value ? (
-                                  <span aria-label={t("personal.explore.compare.yes")}>✓</span>
-                                ) : (
-                                  <span className="text-muted" aria-label={t("personal.explore.compare.no")}>
-                                    —
-                                  </span>
-                                )
-                              ) : (
-                                value
-                              )}
-                            </td>
-                          );
-                        })}
+              {compareOpen ? (
+                <div className="plan-compare-scroll" data-testid="explore-compare-matrix">
+                  <table className="plan-compare-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">{t("personal.explore.compare.feature")}</th>
+                        {plans.map((plan) => (
+                          <th key={plan.id} scope="col">
+                            {plan.displayName}
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
-          </div>
+                    </thead>
+                    <tbody>
+                      {compareRows.map((row) => (
+                        <tr key={row.id}>
+                          <th scope="row">{t(row.labelKey)}</th>
+                          {plans.map((plan) => {
+                            const key = resolvePlanKey(plan);
+                            const value = row.values[key];
+                            return (
+                              <td key={`${row.id}-${key}`}>
+                                {typeof value === "boolean" ? (
+                                  value ? (
+                                    <span aria-label={t("personal.explore.compare.yes")}>✓</span>
+                                  ) : (
+                                    <span
+                                      className="text-muted"
+                                      aria-label={t("personal.explore.compare.no")}
+                                    >
+                                      —
+                                    </span>
+                                  )
+                                ) : (
+                                  value
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </div>
 
-          {!localValidation ? (
-            <p
-              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-              data-testid="explore-payment-note"
-            >
-              {t("personal.explore.paymentNote")}
-            </p>
-          ) : (
-            <p
-              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-              data-testid="explore-local-validation-note"
-            >
-              {t("personal.explore.localValidationNote")}
-            </p>
-          )}
-        </>
-      )}
+            {!localValidation ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                data-testid="explore-payment-note"
+              >
+                {t("personal.explore.paymentNote")}
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
   );
 }

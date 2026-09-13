@@ -7,103 +7,182 @@ import { PersonalExplorePosPage } from "@/features/personal/start-business/Perso
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 
+const billingQuotes = [
+  {
+    BillingCycle: "Monthly",
+    PeriodMonths: 1,
+    BaseAmount: 0,
+    DiscountPercent: 0,
+    DiscountAmount: 0,
+    FinalAmount: 0,
+    EquivalentMonthlyAmount: 0,
+    CurrencyCode: "PHP",
+  },
+  {
+    BillingCycle: "Quarterly",
+    PeriodMonths: 3,
+    BaseAmount: 0,
+    DiscountPercent: 5,
+    DiscountAmount: 0,
+    FinalAmount: 0,
+    EquivalentMonthlyAmount: 0,
+    CurrencyCode: "PHP",
+  },
+  {
+    BillingCycle: "SixMonths",
+    PeriodMonths: 6,
+    BaseAmount: 0,
+    DiscountPercent: 10,
+    DiscountAmount: 0,
+    FinalAmount: 0,
+    EquivalentMonthlyAmount: 0,
+    CurrencyCode: "PHP",
+  },
+  {
+    BillingCycle: "Annual",
+    PeriodMonths: 12,
+    BaseAmount: 0,
+    DiscountPercent: 17,
+    DiscountAmount: 0,
+    FinalAmount: 0,
+    EquivalentMonthlyAmount: 0,
+    CurrencyCode: "PHP",
+  },
+];
+
+function withQuotes(plan: Record<string, unknown>, monthly: number, annual: number) {
+  return {
+    ...plan,
+    BillingQuotes: billingQuotes.map((q) => {
+      const months = q.PeriodMonths;
+      const base = monthly * months;
+      const discountAmount = Math.round(base * (q.DiscountPercent / 100) * 100) / 100;
+      const finalAmount =
+        q.BillingCycle === "Annual" ? annual : Math.round((base - discountAmount) * 100) / 100;
+      return {
+        ...q,
+        BaseAmount: base,
+        DiscountAmount: discountAmount,
+        FinalAmount: finalAmount,
+        EquivalentMonthlyAmount: Math.round((finalAmount / months) * 100) / 100,
+      };
+    }),
+  };
+}
+
 const plans = [
-  {
-    Id: "11111111-1111-1111-1111-111111111111",
-    ProductCode: "pinoy-business-pos",
-    Code: "starter",
-    DisplayName: "Starter",
-    Status: "Active",
-    CreatedAtUtc: "2026-01-01T00:00:00Z",
-    UpdatedAtUtc: "2026-01-01T00:00:00Z",
-    PlanKey: "starter",
-    MaxBranches: 1,
-    MaxActiveStaff: 3,
-    MaxActivePosDevices: 1,
-    MaxActiveBusinessTypes: 1,
-    MaxAreas: 0,
-    CustomerCreditEnabled: true,
-    AdvancedReportsEnabled: false,
-    ExportEnabled: false,
-    TrialAllowed: true,
-    DefaultTrialDays: 14,
-    SortOrder: 10,
-    MonthlyPrice: 299,
-    AnnualPrice: 2990,
-    CurrencyCode: "PHP",
-  },
-  {
-    Id: "22222222-2222-2222-2222-222222222222",
-    ProductCode: "pinoy-business-pos",
-    Code: "growth",
-    DisplayName: "Growth",
-    Status: "Active",
-    CreatedAtUtc: "2026-01-01T00:00:00Z",
-    UpdatedAtUtc: "2026-01-01T00:00:00Z",
-    PlanKey: "growth",
-    MaxBranches: 3,
-    MaxActiveStaff: 10,
-    MaxActivePosDevices: 3,
-    MaxActiveBusinessTypes: 3,
-    MaxAreas: 0,
-    CustomerCreditEnabled: true,
-    AdvancedReportsEnabled: false,
-    ExportEnabled: false,
-    TrialAllowed: true,
-    DefaultTrialDays: 14,
-    SortOrder: 20,
-    MonthlyPrice: 699,
-    AnnualPrice: 6990,
-    CurrencyCode: "PHP",
-  },
-  {
-    Id: "33333333-3333-3333-3333-333333333333",
-    ProductCode: "pinoy-business-pos",
-    Code: "pro",
-    DisplayName: "Pro",
-    Status: "Active",
-    CreatedAtUtc: "2026-01-01T00:00:00Z",
-    UpdatedAtUtc: "2026-01-01T00:00:00Z",
-    PlanKey: "pro",
-    MaxBranches: 10,
-    MaxActiveStaff: 30,
-    MaxActivePosDevices: 10,
-    MaxActiveBusinessTypes: 6,
-    MaxAreas: 3,
-    CustomerCreditEnabled: true,
-    AdvancedReportsEnabled: true,
-    ExportEnabled: true,
-    TrialAllowed: false,
-    DefaultTrialDays: 0,
-    SortOrder: 30,
-    MonthlyPrice: 1499,
-    AnnualPrice: 14990,
-    CurrencyCode: "PHP",
-  },
-  {
-    Id: "44444444-4444-4444-4444-444444444444",
-    ProductCode: "pinoy-business-pos",
-    Code: "pro-plus",
-    DisplayName: "Pro+",
-    Status: "Active",
-    CreatedAtUtc: "2026-01-01T00:00:00Z",
-    UpdatedAtUtc: "2026-01-01T00:00:00Z",
-    PlanKey: "pro-plus",
-    MaxBranches: 25,
-    MaxActiveStaff: 75,
-    MaxActivePosDevices: 25,
-    MaxActiveBusinessTypes: 12,
-    MaxAreas: 10,
-    CustomerCreditEnabled: true,
-    AdvancedReportsEnabled: true,
-    ExportEnabled: true,
-    TrialAllowed: false,
-    DefaultTrialDays: 0,
-    SortOrder: 40,
-    MonthlyPrice: 2499,
-    AnnualPrice: 24990,
-    CurrencyCode: "PHP",
-  },
+  withQuotes(
+    {
+      Id: "11111111-1111-1111-1111-111111111111",
+      ProductCode: "pinoy-business-pos",
+      Code: "starter",
+      DisplayName: "Starter",
+      Status: "Active",
+      CreatedAtUtc: "2026-01-01T00:00:00Z",
+      UpdatedAtUtc: "2026-01-01T00:00:00Z",
+      PlanKey: "starter",
+      MaxBranches: 1,
+      MaxActiveStaff: 3,
+      MaxActivePosDevices: 1,
+      MaxActiveBusinessTypes: 1,
+      MaxAreas: 0,
+      CustomerCreditEnabled: true,
+      AdvancedReportsEnabled: false,
+      ExportEnabled: false,
+      TrialAllowed: true,
+      DefaultTrialDays: 14,
+      SortOrder: 10,
+      MonthlyPrice: 299,
+      AnnualPrice: 2990,
+      CurrencyCode: "PHP",
+    },
+    299,
+    2990,
+  ),
+  withQuotes(
+    {
+      Id: "22222222-2222-2222-2222-222222222222",
+      ProductCode: "pinoy-business-pos",
+      Code: "growth",
+      DisplayName: "Growth",
+      Status: "Active",
+      CreatedAtUtc: "2026-01-01T00:00:00Z",
+      UpdatedAtUtc: "2026-01-01T00:00:00Z",
+      PlanKey: "growth",
+      MaxBranches: 3,
+      MaxActiveStaff: 10,
+      MaxActivePosDevices: 3,
+      MaxActiveBusinessTypes: 3,
+      MaxAreas: 0,
+      CustomerCreditEnabled: true,
+      AdvancedReportsEnabled: false,
+      ExportEnabled: false,
+      TrialAllowed: true,
+      DefaultTrialDays: 14,
+      SortOrder: 20,
+      MonthlyPrice: 699,
+      AnnualPrice: 6990,
+      CurrencyCode: "PHP",
+    },
+    699,
+    6990,
+  ),
+  withQuotes(
+    {
+      Id: "33333333-3333-3333-3333-333333333333",
+      ProductCode: "pinoy-business-pos",
+      Code: "pro",
+      DisplayName: "Pro",
+      Status: "Active",
+      CreatedAtUtc: "2026-01-01T00:00:00Z",
+      UpdatedAtUtc: "2026-01-01T00:00:00Z",
+      PlanKey: "pro",
+      MaxBranches: 10,
+      MaxActiveStaff: 30,
+      MaxActivePosDevices: 10,
+      MaxActiveBusinessTypes: 6,
+      MaxAreas: 3,
+      CustomerCreditEnabled: true,
+      AdvancedReportsEnabled: true,
+      ExportEnabled: true,
+      TrialAllowed: false,
+      DefaultTrialDays: 0,
+      SortOrder: 30,
+      MonthlyPrice: 1499,
+      AnnualPrice: 14990,
+      CurrencyCode: "PHP",
+    },
+    1499,
+    14990,
+  ),
+  withQuotes(
+    {
+      Id: "44444444-4444-4444-4444-444444444444",
+      ProductCode: "pinoy-business-pos",
+      Code: "pro-plus",
+      DisplayName: "Pro+",
+      Status: "Active",
+      CreatedAtUtc: "2026-01-01T00:00:00Z",
+      UpdatedAtUtc: "2026-01-01T00:00:00Z",
+      PlanKey: "pro-plus",
+      MaxBranches: 25,
+      MaxActiveStaff: 75,
+      MaxActivePosDevices: 25,
+      MaxActiveBusinessTypes: 12,
+      MaxAreas: 10,
+      CustomerCreditEnabled: true,
+      AdvancedReportsEnabled: true,
+      ExportEnabled: true,
+      TrialAllowed: false,
+      DefaultTrialDays: 0,
+      SortOrder: 40,
+      MonthlyPrice: 2499,
+      AnnualPrice: 24990,
+      CurrencyCode: "PHP",
+    },
+    2499,
+    24990,
+  ),
 ];
 
 function renderPage(currentPlanKey?: string) {
@@ -152,6 +231,24 @@ describe("PersonalExplorePosPage", () => {
     expect(screen.getByTestId("explore-badge-complete")).toBeInTheDocument();
   });
 
+  it("shows billing labels with server Save percents and compact payments notice", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByTestId("explore-billing-toggle")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("explore-billing-quarterly")).toHaveTextContent("Save 5%");
+    expect(screen.getByTestId("explore-billing-sixmonths")).toHaveTextContent("Save 10%");
+    expect(screen.getByTestId("explore-billing-annual")).toHaveTextContent("Best value");
+    expect(screen.getByTestId("explore-billing-annual")).toHaveTextContent("Save 17%");
+    expect(screen.getByTestId("explore-simulated-payments-notice")).toHaveTextContent(
+      "Payments are currently simulated",
+    );
+    expect(screen.getByTestId("explore-payments-starter")).toHaveTextContent("Cash · GCash · Utang");
+    expect(screen.getByTestId("explore-payments-pro")).toHaveTextContent("Bank transfer");
+    expect(screen.getByTestId("explore-payments-pro-plus")).toHaveTextContent("Online payments");
+    expect(screen.getByTestId("explore-capacity-starter")).toHaveTextContent("1 branch · 3 staff · 1 POS");
+  });
+
   it("toggles monthly/annual prices from catalog", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -162,14 +259,14 @@ describe("PersonalExplorePosPage", () => {
     expect(screen.getByTestId("explore-price-growth")).toHaveTextContent("6,990");
   });
 
-  it("shows current-plan CTA and opens compare matrix", async () => {
+  it("shows current-plan CTA and opens compare matrix from view-all", async () => {
     const user = userEvent.setup();
     renderPage("growth");
     await waitFor(() => {
       expect(screen.getByTestId("explore-current-growth")).toBeInTheDocument();
     });
     expect(screen.getByTestId("explore-current-growth")).toHaveTextContent("Current plan");
-    await user.click(screen.getByTestId("explore-compare-toggle"));
+    await user.click(screen.getByTestId("explore-view-all-growth"));
     expect(screen.getByTestId("explore-compare-matrix")).toBeInTheDocument();
   });
 });
