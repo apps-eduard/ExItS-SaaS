@@ -13,10 +13,10 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import {
-  annualSavingsPercent,
   buildPlanCompareRows,
+  getPlanBillingQuote,
   getPlanDisplayMeta,
-  planPriceForCycle,
+  PLAN_BILLING_CYCLES,
   resolvePlanCtaKind,
   resolvePlanKey,
   type PlanBillingCycle,
@@ -61,6 +61,32 @@ function ctaLabel(
       return t("personal.explore.cta.change").replace("{plan}", displayName);
     default:
       return t("personal.explore.cta.choose").replace("{plan}", displayName);
+  }
+}
+
+function billingCycleShortLabel(cycle: PlanBillingCycle, t: (key: MessageKey) => string): string {
+  switch (cycle) {
+    case "Quarterly":
+      return t("personal.explore.billingQuarterly");
+    case "SixMonths":
+      return t("personal.explore.billingSixMonths");
+    case "Annual":
+      return t("personal.explore.billingAnnual");
+    default:
+      return t("personal.explore.billingMonthly");
+  }
+}
+
+function billingCyclePeriodLabel(cycle: PlanBillingCycle, t: (key: MessageKey) => string): string {
+  switch (cycle) {
+    case "Quarterly":
+      return t("personal.explore.billingEvery3Months");
+    case "SixMonths":
+      return t("personal.explore.billingEvery6Months");
+    case "Annual":
+      return t("personal.explore.billingEveryYear");
+    default:
+      return t("personal.explore.billingEveryMonth");
   }
 }
 
@@ -140,24 +166,24 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
             aria-label={t("personal.explore.billingToggleAria")}
             data-testid="explore-billing-toggle"
           >
-            <button
-              type="button"
-              className={billing === "Monthly" ? "is-active" : undefined}
-              data-testid="explore-billing-monthly"
-              aria-pressed={billing === "Monthly"}
-              onClick={() => setBilling("Monthly")}
-            >
-              {t("personal.explore.billingMonthly")}
-            </button>
-            <button
-              type="button"
-              className={billing === "Annual" ? "is-active" : undefined}
-              data-testid="explore-billing-annual"
-              aria-pressed={billing === "Annual"}
-              onClick={() => setBilling("Annual")}
-            >
-              {t("personal.explore.billingAnnual")}
-            </button>
+            {PLAN_BILLING_CYCLES.map((cycle) => (
+              <button
+                key={cycle}
+                type="button"
+                className={billing === cycle ? "is-active" : undefined}
+                data-testid={`explore-billing-${cycle.toLowerCase()}`}
+                aria-pressed={billing === cycle}
+                onClick={() => setBilling(cycle)}
+              >
+                <span>{billingCycleShortLabel(cycle, t)}</span>
+                {cycle === "Quarterly" ? (
+                  <span className="plan-billing-toggle__hint">{t("personal.explore.billingPopular")}</span>
+                ) : null}
+                {cycle === "Annual" ? (
+                  <span className="plan-billing-toggle__hint">{t("personal.explore.billingBestValue")}</span>
+                ) : null}
+              </button>
+            ))}
           </div>
 
           <ul className="plan-selection-grid m-0 list-none p-0" role="list">
@@ -165,12 +191,13 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
               const planKey = resolvePlanKey(plan);
               const meta = getPlanDisplayMeta(plan);
               const trialAvailable = plan.trialAllowed && plan.defaultTrialDays > 0;
-              const price = planPriceForCycle(plan, billing);
-              const periodLabel =
-                billing === "Annual"
-                  ? t("personal.explore.billingYear")
-                  : t("personal.explore.billingMonth");
-              const savingsPct = billing === "Annual" ? annualSavingsPercent(plan) : null;
+              const quote = getPlanBillingQuote(plan, billing);
+              const price = quote?.finalAmount ?? plan.monthlyPrice;
+              const periodLabel = billingCyclePeriodLabel(billing, t);
+              const savingsPct =
+                quote && quote.discountPercent > 0 ? Math.round(quote.discountPercent) : null;
+              const showEquivalent =
+                billing !== "Monthly" && quote && quote.equivalentMonthlyAmount > 0;
               const includes = includesLabel(meta.includesEverythingIn, plans, t);
               const ctaKind = resolvePlanCtaKind(
                 planKey,
@@ -229,12 +256,23 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                     <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold" data-testid={`explore-price-${planKey}`}>
                       {formatMoney(price, plan.currencyCode)}
                       <span className="ml-1 text-[length:var(--exits-text-sm)] font-normal text-muted">
-                        / {periodLabel}
+                        {periodLabel}
                       </span>
                     </p>
+                    {showEquivalent ? (
+                      <p
+                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid={`explore-equiv-${planKey}`}
+                      >
+                        {t("personal.explore.equivalentMonthly").replace(
+                          "{amount}",
+                          formatMoney(quote!.equivalentMonthlyAmount, plan.currencyCode),
+                        )}
+                      </p>
+                    ) : null}
                     {savingsPct != null ? (
                       <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                        {t("personal.explore.annualSavings").replace("{percent}", String(savingsPct))}
+                        {t("personal.explore.cycleSavings").replace("{percent}", String(savingsPct))}
                       </p>
                     ) : null}
 

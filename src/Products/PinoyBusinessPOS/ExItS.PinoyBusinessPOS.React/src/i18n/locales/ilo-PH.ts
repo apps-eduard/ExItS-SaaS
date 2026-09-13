@@ -6745,6 +6745,20 @@ export const iloPH: Record<keyof typeof en, string> = {
   "personal.explore.billingMonthly": "Monthly",
 
   "personal.explore.billingAnnual": "Annual",
+  "personal.explore.billingQuarterly": "3 Months",
+  "personal.explore.billingSixMonths": "6 Months",
+  "personal.explore.billingEveryMonth": "every month",
+  "personal.explore.billingEvery3Months": "every 3 months",
+  "personal.explore.billingEvery6Months": "every 6 months",
+  "personal.explore.billingEveryYear": "every year",
+  "personal.explore.billingPopular": "Popular",
+  "personal.explore.billingBestValue": "Best value",
+  "personal.explore.cycleSavings": "Save {percent}%",
+  "personal.explore.equivalentMonthly": "{amount}/month equivalent",
+  "personal.startBusiness.baseAmount": "Base",
+  "personal.startBusiness.discount": "Discount ({percent}%)",
+  "personal.startBusiness.totalDueNow": "Total due now",
+  "personal.startBusiness.paymentMethodsHint": "Payment method: GCash / Maya / Card (simulated in Local Validation).",
 
   "personal.explore.billingToggleAria": "Billing period",
 

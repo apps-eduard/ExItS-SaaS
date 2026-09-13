@@ -10,6 +10,19 @@ function pick(raw: Record<string, unknown>, camel: string, pascal: string): unkn
   return raw[camel] ?? raw[pascal];
 }
 
+export const planBillingQuoteSchema = z.object({
+  billingCycle: z.string(),
+  periodMonths: z.number().int(),
+  baseAmount: z.number(),
+  discountPercent: z.number(),
+  discountAmount: z.number(),
+  finalAmount: z.number(),
+  equivalentMonthlyAmount: z.number(),
+  currencyCode: z.string(),
+});
+
+export type PlanBillingQuoteDto = z.infer<typeof planBillingQuoteSchema>;
+
 export const commercialPlanSchema = z.object({
   id: guidSchema,
   productCode: z.string(),
@@ -36,6 +49,7 @@ export const commercialPlanSchema = z.object({
   annualPrice: z.number(),
   currencyCode: z.string(),
   maxAreas: z.number().int().default(0),
+  billingQuotes: z.array(planBillingQuoteSchema).optional().default([]),
 });
 
 export type CommercialPlanDto = z.infer<typeof commercialPlanSchema>;
@@ -71,7 +85,35 @@ function normalizePlan(raw: unknown): unknown {
     annualPrice: Number(pick(r, "annualPrice", "AnnualPrice") ?? 0),
     currencyCode: String(pick(r, "currencyCode", "CurrencyCode") ?? "PHP"),
     maxAreas: Number(pick(r, "maxAreas", "MaxAreas") ?? 0),
+    billingQuotes: normalizeBillingQuotes(pick(r, "billingQuotes", "BillingQuotes")),
   };
+}
+
+function normalizeBillingQuotes(raw: unknown): PlanBillingQuoteDto[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const q = item as Record<string, unknown>;
+      const parsed = planBillingQuoteSchema.safeParse({
+        billingCycle: String(pick(q, "billingCycle", "BillingCycle") ?? ""),
+        periodMonths: Number(pick(q, "periodMonths", "PeriodMonths") ?? 0),
+        baseAmount: Number(pick(q, "baseAmount", "BaseAmount") ?? 0),
+        discountPercent: Number(pick(q, "discountPercent", "DiscountPercent") ?? 0),
+        discountAmount: Number(pick(q, "discountAmount", "DiscountAmount") ?? 0),
+        finalAmount: Number(pick(q, "finalAmount", "FinalAmount") ?? 0),
+        equivalentMonthlyAmount: Number(
+          pick(q, "equivalentMonthlyAmount", "EquivalentMonthlyAmount") ?? 0,
+        ),
+        currencyCode: String(pick(q, "currencyCode", "CurrencyCode") ?? "PHP"),
+      });
+      return parsed.success ? parsed.data : null;
+    })
+    .filter((q): q is PlanBillingQuoteDto => q != null);
 }
 
 export async function listCommercialPlans(

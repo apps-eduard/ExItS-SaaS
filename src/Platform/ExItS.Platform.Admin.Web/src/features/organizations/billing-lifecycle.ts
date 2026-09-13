@@ -6,7 +6,7 @@ import { isPinoyBusinessPosSubscription } from "@/features/organizations/subscri
 export const MANUAL_PAYMENT_METHODS = ["Cash", "BankTransfer", "GCash"] as const;
 export type ManualPaymentMethod = (typeof MANUAL_PAYMENT_METHODS)[number];
 
-export type BillingCycleChoice = "Monthly" | "Annual";
+export type BillingCycleChoice = "Monthly" | "Quarterly" | "SixMonths" | "Annual";
 
 export type BillingUpgradeContext = {
   upgradeSubscriptionId: string;
@@ -26,7 +26,7 @@ export type PaymentActionCapabilities = {
 export function supportedBillingCycles(plan: CatalogPlan): BillingCycleChoice[] {
   const cycles: BillingCycleChoice[] = [];
   if (typeof plan.monthlyPrice === "number" && plan.monthlyPrice > 0) {
-    cycles.push("Monthly");
+    cycles.push("Monthly", "Quarterly", "SixMonths");
   }
   if (typeof plan.annualPrice === "number" && plan.annualPrice > 0) {
     cycles.push("Annual");
@@ -137,6 +137,10 @@ export function computePaidPeriod(
   const end = new Date(start);
   if (billingCycle === "Annual") {
     end.setUTCFullYear(end.getUTCFullYear() + 1);
+  } else if (billingCycle === "Quarterly") {
+    end.setUTCMonth(end.getUTCMonth() + 3);
+  } else if (billingCycle === "SixMonths") {
+    end.setUTCMonth(end.getUTCMonth() + 6);
   } else {
     end.setUTCMonth(end.getUTCMonth() + 1);
   }
@@ -148,8 +152,24 @@ export function computeMonthlyPaidPeriod(reference = new Date()) {
   return computePaidPeriod("Monthly", reference);
 }
 
+function priceForCycle(plan: CatalogPlan, billingCycle: BillingCycleChoice): number | undefined {
+  if (billingCycle === "Annual") {
+    return typeof plan.annualPrice === "number" ? plan.annualPrice : undefined;
+  }
+  if (billingCycle === "Monthly") {
+    return typeof plan.monthlyPrice === "number" ? plan.monthlyPrice : undefined;
+  }
+  if (typeof plan.monthlyPrice !== "number" || plan.monthlyPrice <= 0) {
+    return undefined;
+  }
+  const months = billingCycle === "Quarterly" ? 3 : 6;
+  const discountPercent = billingCycle === "Quarterly" ? 5 : 10;
+  const base = plan.monthlyPrice * months;
+  return Math.round((base - base * (discountPercent / 100)) * 100) / 100;
+}
+
 export function planPriceLabel(plan: CatalogPlan, billingCycle: BillingCycleChoice = "Monthly"): string {
-  const amount = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
+  const amount = priceForCycle(plan, billingCycle);
   if (amount == null || !plan.currencyCode) {
     return "—";
   }
@@ -160,7 +180,7 @@ export function defaultPaymentAmountForPlan(
   plan: CatalogPlan,
   billingCycle: BillingCycleChoice = "Monthly",
 ): number | undefined {
-  const amount = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
+  const amount = priceForCycle(plan, billingCycle);
   return typeof amount === "number" && amount > 0 ? amount : undefined;
 }
 
@@ -187,7 +207,10 @@ export function parseBillingUpgradeContext(params: URLSearchParams): BillingUpgr
   if (!upgradeSubscriptionId || !targetPlanId) {
     return null;
   }
-  const billingCycle: BillingCycleChoice = billingCycleRaw === "Annual" ? "Annual" : "Monthly";
+  const allowed: BillingCycleChoice[] = ["Monthly", "Quarterly", "SixMonths", "Annual"];
+  const billingCycle = (allowed.find(
+    (c) => c.localeCompare(billingCycleRaw, undefined, { sensitivity: "accent" }) === 0,
+  ) ?? "Monthly") as BillingCycleChoice;
   return { upgradeSubscriptionId, targetPlanId, billingCycle };
 }
 

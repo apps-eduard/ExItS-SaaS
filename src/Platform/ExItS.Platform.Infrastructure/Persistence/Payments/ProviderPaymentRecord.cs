@@ -15,5 +15,11 @@ internal sealed class ProviderPaymentRecord
     public string? FailureMessage { get; set; }
     public string IdempotencyKey { get; set; } = string.Empty;
     public string? Purpose { get; set; }
+    public string? PlanKey { get; set; }
+    public string? BillingCycle { get; set; }
+    public decimal? BaseAmount { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public decimal? DiscountPercent { get; set; }
+    public decimal? FinalAmount { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
 }

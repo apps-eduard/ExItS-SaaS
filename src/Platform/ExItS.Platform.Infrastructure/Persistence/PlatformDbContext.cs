@@ -888,6 +888,12 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128).IsRequired();
             entity.HasIndex(e => e.IdempotencyKey).IsUnique();
             entity.Property(e => e.Purpose).HasColumnName("purpose").HasMaxLength(128);
+            entity.Property(e => e.PlanKey).HasColumnName("plan_key").HasMaxLength(64);
+            entity.Property(e => e.BillingCycle).HasColumnName("billing_cycle").HasMaxLength(32);
+            entity.Property(e => e.BaseAmount).HasColumnName("base_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountAmount).HasColumnName("discount_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountPercent).HasColumnName("discount_percent").HasColumnType("numeric(8,2)");
+            entity.Property(e => e.FinalAmount).HasColumnName("final_amount").HasColumnType("numeric(18,2)");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
 
             entity.HasOne<Subscriptions.SubscriptionRecord>()

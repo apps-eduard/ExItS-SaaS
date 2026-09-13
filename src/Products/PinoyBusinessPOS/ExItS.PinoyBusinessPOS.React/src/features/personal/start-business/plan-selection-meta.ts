@@ -1,7 +1,17 @@
-import type { CommercialPlanDto } from "@/api/platform/commercial-plans-client";
+import type {
+  CommercialPlanDto,
+  PlanBillingQuoteDto,
+} from "@/api/platform/commercial-plans-client";
 import type { MessageKey } from "@/i18n/messages";
 
-export type PlanBillingCycle = "Monthly" | "Annual";
+export type PlanBillingCycle = "Monthly" | "Quarterly" | "SixMonths" | "Annual";
+
+export const PLAN_BILLING_CYCLES: readonly PlanBillingCycle[] = [
+  "Monthly",
+  "Quarterly",
+  "SixMonths",
+  "Annual",
+] as const;
 
 export type PlanSelectionBadge = "most_popular" | "complete" | null;
 
@@ -108,26 +118,76 @@ export function getPlanDisplayMeta(plan: CommercialPlanDto): PlanDisplayMeta {
   );
 }
 
+export function parsePlanBillingCycle(raw: string | null | undefined): PlanBillingCycle {
+  const value = (raw ?? "Monthly").trim();
+  const match = PLAN_BILLING_CYCLES.find(
+    (cycle) => cycle.localeCompare(value, undefined, { sensitivity: "accent" }) === 0,
+  );
+  return match ?? "Monthly";
+}
+
+/** Prefer server-authored billingQuotes; never invent discount percents in the UI. */
+export function getPlanBillingQuote(
+  plan: CommercialPlanDto,
+  cycle: PlanBillingCycle,
+): PlanBillingQuoteDto | null {
+  const fromApi = plan.billingQuotes?.find(
+    (q) => q.billingCycle.localeCompare(cycle, undefined, { sensitivity: "accent" }) === 0,
+  );
+  if (fromApi) {
+    return fromApi;
+  }
+
+  // Fallback only when older catalog payloads omit quotes (Monthly / Annual list prices).
+  if (cycle === "Monthly") {
+    return {
+      billingCycle: "Monthly",
+      periodMonths: 1,
+      baseAmount: plan.monthlyPrice,
+      discountPercent: 0,
+      discountAmount: 0,
+      finalAmount: plan.monthlyPrice,
+      equivalentMonthlyAmount: plan.monthlyPrice,
+      currencyCode: plan.currencyCode,
+    };
+  }
+  if (cycle === "Annual") {
+    const base = plan.monthlyPrice * 12;
+    const discountAmount = Math.max(0, base - plan.annualPrice);
+    return {
+      billingCycle: "Annual",
+      periodMonths: 12,
+      baseAmount: base,
+      discountPercent: base > 0 ? Math.round((discountAmount / base) * 10000) / 100 : 0,
+      discountAmount,
+      finalAmount: plan.annualPrice,
+      equivalentMonthlyAmount: Math.round((plan.annualPrice / 12) * 100) / 100,
+      currencyCode: plan.currencyCode,
+    };
+  }
+  return null;
+}
+
 export function planPriceForCycle(plan: CommercialPlanDto, cycle: PlanBillingCycle): number {
-  return cycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
+  return getPlanBillingQuote(plan, cycle)?.finalAmount ?? plan.monthlyPrice;
 }
 
-/** Annual savings vs 12× monthly, from catalog prices only. */
+/** @deprecated Prefer getPlanBillingQuote(plan, "Annual").discountAmount */
 export function annualSavingsAmount(plan: CommercialPlanDto): number | null {
-  const twelveMonths = plan.monthlyPrice * 12;
-  const saved = twelveMonths - plan.annualPrice;
-  if (saved <= 0 || plan.monthlyPrice <= 0) {
+  const quote = getPlanBillingQuote(plan, "Annual");
+  if (!quote || quote.discountAmount <= 0) {
     return null;
   }
-  return saved;
+  return quote.discountAmount;
 }
 
+/** @deprecated Prefer getPlanBillingQuote(plan, "Annual").discountPercent */
 export function annualSavingsPercent(plan: CommercialPlanDto): number | null {
-  const saved = annualSavingsAmount(plan);
-  if (saved == null || plan.monthlyPrice <= 0) {
+  const quote = getPlanBillingQuote(plan, "Annual");
+  if (!quote || quote.discountPercent <= 0) {
     return null;
   }
-  return Math.round((saved / (plan.monthlyPrice * 12)) * 100);
+  return Math.round(quote.discountPercent);
 }
 
 export type PlanCompareRow = {

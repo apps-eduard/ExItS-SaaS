@@ -3,7 +3,9 @@ import type { CommercialPlanDto } from "@/api/platform/commercial-plans-client";
 import {
   annualSavingsPercent,
   buildPlanCompareRows,
+  getPlanBillingQuote,
   getPlanDisplayMeta,
+  planPriceForCycle,
   resolvePlanCtaKind,
 } from "@/features/personal/start-business/plan-selection-meta";
 
@@ -32,6 +34,7 @@ function plan(partial: Partial<CommercialPlanDto> & Pick<CommercialPlanDto, "cod
     monthlyPrice: 299,
     annualPrice: 2990,
     currencyCode: "PHP",
+    billingQuotes: [],
     ...partial,
   };
 }
@@ -52,6 +55,29 @@ describe("plan-selection-meta", () => {
         plan({ code: "starter", displayName: "Starter", monthlyPrice: 299, annualPrice: 2990 }),
       ),
     ).toBe(17);
+  });
+
+  it("reads prepaid quotes from server billingQuotes", () => {
+    const quoted = plan({
+      code: "pro",
+      displayName: "Pro",
+      monthlyPrice: 1499,
+      annualPrice: 14990,
+      billingQuotes: [
+        {
+          billingCycle: "Quarterly",
+          periodMonths: 3,
+          baseAmount: 4497,
+          discountPercent: 5,
+          discountAmount: 224.85,
+          finalAmount: 4272.15,
+          equivalentMonthlyAmount: 1424.05,
+          currencyCode: "PHP",
+        },
+      ],
+    });
+    expect(getPlanBillingQuote(quoted, "Quarterly")?.finalAmount).toBe(4272.15);
+    expect(planPriceForCycle(quoted, "Quarterly")).toBe(4272.15);
   });
 
   it("resolves current / upgrade / downgrade CTAs from sort order", () => {

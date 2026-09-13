@@ -10,11 +10,18 @@ import {
 } from "@/api/platform/start-business-client";
 import { ensureOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { writePendingPostSubscriptionOnboarding } from "@/features/onboarding/post-subscription-onboarding";
+import {
+  getPlanBillingQuote,
+  parsePlanBillingCycle,
+  PLAN_BILLING_CYCLES,
+  type PlanBillingCycle,
+} from "@/features/personal/start-business/plan-selection-meta";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { ensureOrganizationSlug } from "@/lib/organization-slug";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -40,8 +47,7 @@ export function PersonalStartBusinessPage() {
   const planKey = (searchParams.get("planKey") ?? "").trim();
   const startAsTrial = parseBoolFlag(searchParams.get("trial"), true);
   const payNow = parseBoolFlag(searchParams.get("payNow"), false);
-  const billingRaw = searchParams.get("billing");
-  const billingCycle = billingRaw === "Annual" || billingRaw === "Monthly" ? billingRaw : "Monthly";
+  const billingCycle = parsePlanBillingCycle(searchParams.get("billing"));
 
   const [displayName, setDisplayName] = useState("");
   const [slugPreview, setSlugPreview] = useState("");
@@ -239,7 +245,8 @@ export function PersonalStartBusinessPage() {
     );
   }
 
-  const selectedPrice = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
+  const quote = getPlanBillingQuote(plan, billingCycle);
+  const selectedPrice = quote?.finalAmount ?? plan.monthlyPrice;
   const modeLabel =
     startAsTrial && !payNow
       ? t("personal.startBusiness.modeTrial")
@@ -435,19 +442,60 @@ export function PersonalStartBusinessPage() {
           {plan.displayName}
         </h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {modeLabel} ·{" "}
-          {billingCycle === "Annual"
-            ? t("personal.explore.billingYear")
-            : t("personal.explore.billingMonth")}
+          {modeLabel} · {billingCycleSummaryLabel(billingCycle, t)}
         </p>
         {startAsTrial && !payNow ? (
           <p className="m-0 mt-2 text-[length:var(--exits-text-sm)]">
             {t("personal.startBusiness.trialDays").replace("{days}", String(plan.defaultTrialDays))}
           </p>
         ) : null}
-        <p className="m-0 mt-2 text-[length:var(--exits-text-base)] font-semibold">
-          {selectedPrice.toLocaleString()} {plan.currencyCode}
-        </p>
+        {payNow && quote ? (
+          <dl
+            className="m-0 mt-3 grid gap-1 text-[length:var(--exits-text-sm)]"
+            data-testid="start-business-price-breakdown"
+          >
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t("personal.startBusiness.baseAmount")}</dt>
+              <dd className="m-0 font-medium">
+                {quote.baseAmount.toLocaleString()} {plan.currencyCode}
+              </dd>
+            </div>
+            {quote.discountAmount > 0 ? (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">
+                  {t("personal.startBusiness.discount")
+                    .replace("{percent}", String(Math.round(quote.discountPercent)))}
+                </dt>
+                <dd className="m-0 font-medium">
+                  −{quote.discountAmount.toLocaleString()} {plan.currencyCode}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-3 border-t border-border pt-1">
+              <dt className="font-semibold">{t("personal.startBusiness.totalDueNow")}</dt>
+              <dd className="m-0 text-[length:var(--exits-text-base)] font-semibold">
+                {selectedPrice.toLocaleString()} {plan.currencyCode}
+              </dd>
+            </div>
+            {billingCycle !== "Monthly" ? (
+              <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                {t("personal.explore.equivalentMonthly").replace(
+                  "{amount}",
+                  `${quote.equivalentMonthlyAmount.toLocaleString()} ${plan.currencyCode}`,
+                )}
+              </p>
+            ) : null}
+          </dl>
+        ) : (
+          <p className="m-0 mt-2 text-[length:var(--exits-text-base)] font-semibold">
+            {selectedPrice.toLocaleString()} {plan.currencyCode}
+          </p>
+        )}
+        {payNow ? (
+          <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+            {t("personal.startBusiness.paymentMethodsHint")}
+          </p>
+        ) : null}
         <label className="mt-3 flex flex-col gap-1">
           <span className="text-[length:var(--exits-text-sm)] font-medium">
             {t("personal.startBusiness.billingCycle")}
@@ -458,14 +506,17 @@ export function PersonalStartBusinessPage() {
             disabled={mutation.isPending}
             data-testid="start-business-billing"
             onChange={(e) => {
-              const next = e.target.value === "Annual" ? "Annual" : "Monthly";
+              const next = parsePlanBillingCycle(e.target.value);
               const params = new URLSearchParams(searchParams);
               params.set("billing", next);
               navigate(`/personal/start-business?${params.toString()}`, { replace: true });
             }}
           >
-            <option value="Monthly">{t("personal.explore.billingMonth")}</option>
-            <option value="Annual">{t("personal.explore.billingYear")}</option>
+            {PLAN_BILLING_CYCLES.map((cycle) => (
+              <option key={cycle} value={cycle}>
+                {billingCycleSummaryLabel(cycle, t)}
+              </option>
+            ))}
           </select>
         </label>
       </section>
@@ -522,4 +573,20 @@ function Field({
       />
     </label>
   );
+}
+
+function billingCycleSummaryLabel(
+  cycle: PlanBillingCycle,
+  t: (key: MessageKey) => string,
+): string {
+  switch (cycle) {
+    case "Quarterly":
+      return t("personal.explore.billingQuarterly");
+    case "SixMonths":
+      return t("personal.explore.billingSixMonths");
+    case "Annual":
+      return t("personal.explore.billingAnnual");
+    default:
+      return t("personal.explore.billingMonthly");
+  }
 }

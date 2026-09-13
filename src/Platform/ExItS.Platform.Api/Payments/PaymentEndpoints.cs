@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Payments;
+using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
@@ -410,22 +411,8 @@ internal static class PaymentEndpoints
             cancellationToken: ct).ConfigureAwait(false);
     }
 
-    private static BillingCycle ParseBillingCycle(string? billingCycle)
-    {
-        if (string.IsNullOrWhiteSpace(billingCycle))
-        {
-            return BillingCycle.Monthly;
-        }
-
-        if (!Enum.TryParse<BillingCycle>(billingCycle, ignoreCase: true, out var parsed))
-        {
-            throw new DomainException(
-                ApplicationErrorCodes.InvalidBillingCycle,
-                "BillingCycle must be Monthly or Annual.");
-        }
-
-        return parsed;
-    }
+    private static BillingCycle ParseBillingCycle(string? billingCycle) =>
+        BillingCycleParsing.ParseOrDefault(billingCycle);
 
     private static async Task<IResult?> EnsurePaymentMutationAsync(
         PlatformAuthz authz,

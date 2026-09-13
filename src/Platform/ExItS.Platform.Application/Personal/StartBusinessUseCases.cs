@@ -473,14 +473,20 @@ public sealed class StartBusinessForPersonalUser
                 Domain.Payments.PaymentProviderResult paymentResult;
                 try
                 {
+                    var quote = SubscriptionBillingPricing.Quote(plan, billingCycle);
                     paymentResult = await _paymentProvider.ChargeAsync(
                         new Domain.Payments.PaymentChargeRequest(
                             organization.Id.Value,
                             activated.Id.Value,
-                            plan.PriceForCycle(billingCycle),
+                            quote.FinalAmount,
                             plan.CurrencyCode,
                             idempotencyKey,
-                            Purpose: "start-business"),
+                            Purpose: "start-business",
+                            PlanKey: quote.PlanKey,
+                            BillingCycle: quote.BillingCycle.ToString(),
+                            BaseAmount: quote.BaseAmount,
+                            DiscountAmount: quote.DiscountAmount,
+                            DiscountPercent: quote.DiscountPercent),
                         cancellationToken).ConfigureAwait(false);
                 }
                 catch (NotSupportedException ex)

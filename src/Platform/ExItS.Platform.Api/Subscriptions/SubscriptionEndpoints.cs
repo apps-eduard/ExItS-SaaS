@@ -953,22 +953,8 @@ internal static class SubscriptionEndpoints
         return false;
     }
 
-    private static BillingCycle ParseBillingCycle(string? billingCycle)
-    {
-        if (string.IsNullOrWhiteSpace(billingCycle))
-        {
-            return BillingCycle.Monthly;
-        }
-
-        if (Enum.TryParse<BillingCycle>(billingCycle, ignoreCase: true, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new DomainException(
-            ApplicationErrorCodes.InvalidBillingCycle,
-            $"Unrecognized billing cycle '{billingCycle}'.");
-    }
+    private static BillingCycle ParseBillingCycle(string? billingCycle) =>
+        BillingCycleParsing.ParseOrDefault(billingCycle);
 
     private static SubscriptionListSortBy ParseSort(string? sortBy) =>
         Enum.TryParse<SubscriptionListSortBy>(sortBy, ignoreCase: true, out var parsed)

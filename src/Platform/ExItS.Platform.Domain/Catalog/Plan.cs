@@ -247,12 +247,7 @@ public sealed class Plan
     }
 
     public decimal PriceForCycle(BillingCycle cycle) =>
-        cycle switch
-        {
-            BillingCycle.Monthly => MonthlyPrice,
-            BillingCycle.Annual => AnnualPrice,
-            _ => throw new ArgumentOutOfRangeException(nameof(cycle))
-        };
+        Payments.SubscriptionBillingPricing.Quote(this, cycle).FinalAmount;
 
     public void Activate(DateTimeOffset utcNow) => TransitionTo(PlanStatus.Active, utcNow);
 

@@ -2,7 +2,9 @@ using ExItS.Platform.Application.Common;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Catalog;
 using ExItS.Platform.Domain.Common;
+using ExItS.Platform.Domain.Payments;
 using ExItS.Platform.Domain.Products;
+using ExItS.Platform.Domain.Subscriptions;
 
 namespace ExItS.Platform.Application.Catalog;
 
@@ -36,6 +38,16 @@ public sealed record FeatureDefinitionDto(
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 
+public sealed record PlanBillingQuoteDto(
+    string BillingCycle,
+    int PeriodMonths,
+    decimal BaseAmount,
+    decimal DiscountPercent,
+    decimal DiscountAmount,
+    decimal FinalAmount,
+    decimal EquivalentMonthlyAmount,
+    string CurrencyCode);
+
 public sealed record PlanDto(
     Guid Id,
     string ProductCode,
@@ -61,7 +73,8 @@ public sealed record PlanDto(
     decimal MonthlyPrice = 0m,
     decimal AnnualPrice = 0m,
     string CurrencyCode = "PHP",
-    int MaxAreas = 1);
+    int MaxAreas = 1,
+    IReadOnlyList<PlanBillingQuoteDto>? BillingQuotes = null);
 
 public sealed record FeatureGrantDto(
     string FeatureCode,
@@ -324,7 +337,25 @@ public sealed class CatalogQueryService
             MonthlyPrice: plan.MonthlyPrice,
             AnnualPrice: plan.AnnualPrice,
             CurrencyCode: plan.CurrencyCode,
-            MaxAreas: plan.MaxAreas);
+            MaxAreas: plan.MaxAreas,
+            BillingQuotes: BuildBillingQuotes(plan));
+
+    private static IReadOnlyList<PlanBillingQuoteDto> BuildBillingQuotes(Plan plan) =>
+        SubscriptionBillingPricing.AllCycles
+            .Select(cycle =>
+            {
+                var quote = SubscriptionBillingPricing.Quote(plan, cycle);
+                return new PlanBillingQuoteDto(
+                    quote.BillingCycle.ToString(),
+                    quote.PeriodMonths,
+                    quote.BaseAmount,
+                    quote.DiscountPercent,
+                    quote.DiscountAmount,
+                    quote.FinalAmount,
+                    quote.EquivalentMonthlyAmount,
+                    quote.CurrencyCode);
+            })
+            .ToArray();
 
     private static PlanVersionDto MapPlanVersion(PlanVersion version) =>
         new(

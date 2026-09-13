@@ -127,15 +127,21 @@ public sealed class UpgradeOrganizationSubscription
         PaymentProviderResult payment;
         try
         {
+            var quote = SubscriptionBillingPricing.Quote(targetPlan, billingCycle);
             payment = await _paymentProvider
                 .ChargeAsync(
                     new PaymentChargeRequest(
                         organizationId.Value,
                         subscription.Id.Value,
-                        targetPlan.PriceForCycle(billingCycle),
+                        quote.FinalAmount,
                         targetPlan.CurrencyCode,
                         idempotencyKey,
-                        Purpose: "upgrade"),
+                        Purpose: "upgrade",
+                        PlanKey: quote.PlanKey,
+                        BillingCycle: quote.BillingCycle.ToString(),
+                        BaseAmount: quote.BaseAmount,
+                        DiscountAmount: quote.DiscountAmount,
+                        DiscountPercent: quote.DiscountPercent),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
