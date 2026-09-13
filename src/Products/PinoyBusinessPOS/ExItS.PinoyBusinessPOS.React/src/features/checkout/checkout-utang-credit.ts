@@ -41,11 +41,11 @@ export function checkoutCreditStatusTone(
 }
 
 export type UtangDirectorySelectBlockReason =
-  | "b2b_not_available"
   | "pending_approval"
   | "not_configured"
   | "disabled"
-  | "over_limit";
+  | "over_limit"
+  | "inactive";
 
 function normalizeCreditStatus(raw: string | null | undefined): string {
   return (raw ?? "").trim();
@@ -56,6 +56,9 @@ export function resolveUtangDirectorySelectBlock(args: {
   thisSaleAmount: number;
 }): { reason: UtangDirectorySelectBlockReason; availableCredit?: number } | null {
   if (isCheckoutBusiness(args.customer)) {
+    if ((args.customer.status ?? "").trim() !== "Active") {
+      return { reason: "inactive" };
+    }
     const status = normalizeCreditStatus(args.customer.creditStatus);
     if (status === "PendingApproval") {
       return { reason: "pending_approval" };
@@ -63,11 +66,14 @@ export function resolveUtangDirectorySelectBlock(args: {
     if (status === "Disabled") {
       return { reason: "disabled" };
     }
-    if (status === "Approved") {
-      // B2B Utang checkout is not implemented yet — keep Approved visible but block select.
-      return { reason: "b2b_not_available" };
+    if (status !== "Approved") {
+      return { reason: "not_configured" };
     }
-    return { reason: "not_configured" };
+    const available = args.customer.availableCredit ?? 0;
+    if (args.thisSaleAmount > available + 1e-9) {
+      return { reason: "over_limit", availableCredit: available };
+    }
+    return null;
   }
   if (!isCheckoutPerson(args.customer)) {
     return { reason: "not_configured" };
@@ -101,14 +107,14 @@ export function utangDirectorySelectToastMessage(
   t: (key: MessageKey) => string,
 ): string {
   switch (block.reason) {
-    case "b2b_not_available":
-      return t("checkout.utangSelect.b2bNotAvailable");
     case "pending_approval":
       return t("checkout.utangSelect.pendingApproval");
     case "not_configured":
       return t("checkout.utangSelect.notConfigured");
     case "disabled":
       return t("checkout.utangSelect.disabled");
+    case "inactive":
+      return t("checkout.utangSelect.businessInactive");
     case "over_limit":
       return t("checkout.utangSelect.overLimit").replace(
         "{amount}",

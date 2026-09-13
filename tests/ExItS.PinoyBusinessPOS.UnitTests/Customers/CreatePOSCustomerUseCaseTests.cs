@@ -27,7 +27,8 @@ public sealed class CreatePOSCustomerUseCaseTests
             new EmptyRelationships(),
             new EmptyCreditPolicies(),
             new ZeroOutstanding(),
-            new EmptyBusinessCreditPolicies());
+            new EmptyBusinessCreditPolicies(),
+            new EmptyBusinessCredits());
     }
 
     [Fact]
@@ -465,6 +466,43 @@ public sealed class CreatePOSCustomerUseCaseTests
                     Array.Empty<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCustomerCreditPolicyChange>(), 0));
 
         public Task AcquireBusinessCustomerCreditLockAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyBusinessCredits : ExItS.PinoyBusinessPOS.Application.Credit.IBusinessCreditEntryRepository
+    {
+        public Task<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry?>(null);
+
+        public Task AddAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry entry,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(
+            ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry entry,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
+
+        public Task AcquireBusinessCreditLockAsync(
             PosOrganizationId sellerOrganizationId,
             PosOrganizationId buyerOrganizationId,
             CancellationToken cancellationToken = default) =>

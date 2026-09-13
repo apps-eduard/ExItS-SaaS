@@ -132,6 +132,7 @@ public sealed class SaleQueryService
                 .ToList(),
             sale.CustomerId?.Value,
             sale.LinkedCreditEntryId?.Value,
+            sale.LinkedBusinessCreditEntryId?.Value,
             ShiftId: sale.CashierShiftId?.Value,
             BuyerPartyKind: SaleBuyerParty.ToCode(sale.BuyerParty.Kind),
             BuyerDisplayNameSnapshot: sale.BuyerParty.DisplayNameSnapshot,
@@ -284,8 +285,10 @@ public sealed class CheckoutSale
     private readonly ICatalogProductUnitRepository _units;
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _credits;
+    private readonly IBusinessCreditEntryRepository _businessCredits;
     private readonly ICreditDueDateChangeRepository _dueDateChanges;
     private readonly CustomerCreditAuthorizationService _creditAuthorization;
+    private readonly BusinessCustomerCreditAuthorizationService _businessCreditAuthorization;
     private readonly ISaleStockService _saleStock;
     private readonly ICashierShiftRepository _shifts;
     private readonly IPosOperationalSetupRepository _operationalSetups;
@@ -305,8 +308,10 @@ public sealed class CheckoutSale
         ICatalogProductUnitRepository units,
         IPOSCustomerRepository customers,
         ICreditEntryRepository credits,
+        IBusinessCreditEntryRepository businessCredits,
         ICreditDueDateChangeRepository dueDateChanges,
         CustomerCreditAuthorizationService creditAuthorization,
+        BusinessCustomerCreditAuthorizationService businessCreditAuthorization,
         ISaleStockService saleStock,
         ICashierShiftRepository shifts,
         IPosOperationalSetupRepository operationalSetups,
@@ -327,8 +332,10 @@ public sealed class CheckoutSale
         _units = units;
         _customers = customers;
         _credits = credits;
+        _businessCredits = businessCredits;
         _dueDateChanges = dueDateChanges;
         _creditAuthorization = creditAuthorization;
+        _businessCreditAuthorization = businessCreditAuthorization;
         _saleStock = saleStock;
         _shifts = shifts;
         _operationalSetups = operationalSetups;
@@ -436,6 +443,7 @@ public sealed class CheckoutSale
 
             POSCustomerId? linkedCustomerId = null;
             CreditEntryId? linkedCreditEntryId = null;
+            BusinessCreditEntryId? linkedBusinessCreditEntryId = null;
             POSCustomer? loadedCustomer = null;
 
             if (customerId is not null && customerId != Guid.Empty)
@@ -460,6 +468,7 @@ public sealed class CheckoutSale
             }
 
             SaleBuyerParty resolvedBuyerParty;
+            Guid? capturedB2bConnectionId = null;
             if (buyerConnectionId is Guid connectionOnly && connectionOnly != Guid.Empty)
             {
                 if (_connectedRelationships is null)
@@ -483,7 +492,8 @@ public sealed class CheckoutSale
                     return ApplicationResult<Sale>.Failure(b2b.ErrorCode!, b2b.ErrorMessage!);
                 }
 
-                resolvedBuyerParty = b2b.Value;
+                resolvedBuyerParty = b2b.Value.BuyerParty;
+                capturedB2bConnectionId = b2b.Value.ConnectionId;
                 linkedCustomerId = null;
                 loadedCustomer = null;
             }
@@ -527,7 +537,8 @@ public sealed class CheckoutSale
                         return ApplicationResult<Sale>.Failure(b2b.ErrorCode!, b2b.ErrorMessage!);
                     }
 
-                    resolvedBuyerParty = b2b.Value;
+                    resolvedBuyerParty = b2b.Value.BuyerParty;
+                    capturedB2bConnectionId = b2b.Value.ConnectionId;
                     linkedCustomerId = null;
                     loadedCustomer = null;
                 }
@@ -544,38 +555,76 @@ public sealed class CheckoutSale
 
             if (isUtang)
             {
-                if (linkedCustomerId is null)
+                if (resolvedBuyerParty.Kind == SaleBuyerPartyKind.Organization)
                 {
-                    return ApplicationResult<Sale>.Failure(
-                        DomainErrorCodes.SaleUtangCustomerRequired,
-                        "Product-Based Utang requires a customer.");
-                }
-
-                linkedCreditEntryId = creditEntryId is null || creditEntryId == Guid.Empty
-                    ? CreditEntryId.New()
-                    : CreditEntryId.From(creditEntryId.Value);
-
-                var existingCredit = await _credits
-                    .GetByIdAsync(orgId, linkedCustomerId, linkedCreditEntryId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (existingCredit is not null)
-                {
-                    // Idempotent client credit id already used — reject rather than orphan a sale.
-                    if (existingCredit.SourceSaleId is not null && clientSaleId is not null
-                        && existingCredit.SourceSaleId.Value == clientSaleId.Value)
+                    if (resolvedBuyerParty.BuyerOrganizationId is null)
                     {
-                        var linkedSale = await _sales
-                            .GetByIdAsync(orgId, SaleId.From(clientSaleId.Value), cancellationToken)
-                            .ConfigureAwait(false);
-                        if (linkedSale is not null)
-                        {
-                            return ApplicationResult<Sale>.Success(linkedSale);
-                        }
+                        return ApplicationResult<Sale>.Failure(
+                            DomainErrorCodes.InvalidSaleBuyerParty,
+                            "Organization Utang requires a buyer organization id.");
                     }
 
-                    return ApplicationResult<Sale>.Failure(
-                        ApplicationErrorCodes.ConcurrencyConflict,
-                        "The supplied credit entry id is already in use.");
+                    linkedBusinessCreditEntryId = creditEntryId is null || creditEntryId == Guid.Empty
+                        ? BusinessCreditEntryId.New()
+                        : BusinessCreditEntryId.From(creditEntryId.Value);
+
+                    var existingBusinessCredit = await _businessCredits
+                        .GetByIdAsync(orgId, linkedBusinessCreditEntryId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (existingBusinessCredit is not null)
+                    {
+                        if (existingBusinessCredit.SourceSaleId is not null && clientSaleId is not null
+                            && existingBusinessCredit.SourceSaleId.Value == clientSaleId.Value)
+                        {
+                            var linkedSale = await _sales
+                                .GetByIdAsync(orgId, SaleId.From(clientSaleId.Value), cancellationToken)
+                                .ConfigureAwait(false);
+                            if (linkedSale is not null)
+                            {
+                                return ApplicationResult<Sale>.Success(linkedSale);
+                            }
+                        }
+
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.ConcurrencyConflict,
+                            "The supplied credit entry id is already in use.");
+                    }
+                }
+                else
+                {
+                    if (linkedCustomerId is null)
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            DomainErrorCodes.SaleUtangCustomerRequired,
+                            "Product-Based Utang requires a customer.");
+                    }
+
+                    linkedCreditEntryId = creditEntryId is null || creditEntryId == Guid.Empty
+                        ? CreditEntryId.New()
+                        : CreditEntryId.From(creditEntryId.Value);
+
+                    var existingCredit = await _credits
+                        .GetByIdAsync(orgId, linkedCustomerId, linkedCreditEntryId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (existingCredit is not null)
+                    {
+                        // Idempotent client credit id already used — reject rather than orphan a sale.
+                        if (existingCredit.SourceSaleId is not null && clientSaleId is not null
+                            && existingCredit.SourceSaleId.Value == clientSaleId.Value)
+                        {
+                            var linkedSale = await _sales
+                                .GetByIdAsync(orgId, SaleId.From(clientSaleId.Value), cancellationToken)
+                                .ConfigureAwait(false);
+                            if (linkedSale is not null)
+                            {
+                                return ApplicationResult<Sale>.Success(linkedSale);
+                            }
+                        }
+
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.ConcurrencyConflict,
+                            "The supplied credit entry id is already in use.");
+                    }
                 }
             }
 
@@ -623,6 +672,9 @@ public sealed class CheckoutSale
             var utcNow = _clock.UtcNow;
             var capturedCustomerId = linkedCustomerId;
             var capturedCreditEntryId = linkedCreditEntryId;
+            var capturedBusinessCreditEntryId = linkedBusinessCreditEntryId;
+            var capturedBuyerParty = resolvedBuyerParty;
+            var capturedConnectionId = capturedB2bConnectionId;
             var capturedDueDate = dueDate;
             var capturedActorId = actorId;
             var capturedAllowDueDateOverride = allowDueDateOverride;
@@ -677,11 +729,12 @@ public sealed class CheckoutSale
                         linkedRegisterId,
                         capturedTaxAmount,
                         capturedTaxPricingMode,
-                        resolvedBuyerParty,
+                        capturedBuyerParty,
                         branchId is Guid saleBranch ? PosBranchId.From(saleBranch) : null,
                         intents,
                         overrideIntents,
-                        allowUnlimited),
+                        allowUnlimited,
+                        capturedBusinessCreditEntryId),
                     async (createdSale, ct) =>
                     {
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
@@ -705,6 +758,53 @@ public sealed class CheckoutSale
 
                         if (!isUtang)
                         {
+                            return;
+                        }
+
+                        if (capturedBuyerParty.Kind == SaleBuyerPartyKind.Organization)
+                        {
+                            var buyerOrgId = PosOrganizationId.From(capturedBuyerParty.BuyerOrganizationId!.Value);
+                            var businessAuth = await _businessCreditAuthorization
+                                .AuthorizeNewCreditAsync(
+                                    orgId,
+                                    buyerOrgId,
+                                    createdSale.Total,
+                                    SaleNumbers.BusinessDateOf(utcNow),
+                                    ct)
+                                .ConfigureAwait(false);
+                            if (!businessAuth.IsSuccess || businessAuth.Value is null)
+                            {
+                                throw new DomainException(businessAuth.ErrorCode!, businessAuth.ErrorMessage!);
+                            }
+
+                            var businessDefaultDue = businessAuth.Value.DefaultDueDate;
+                            DateOnly? businessAppliedDue;
+                            if (capturedDueDate is null || capturedDueDate == businessDefaultDue)
+                            {
+                                businessAppliedDue = businessDefaultDue;
+                            }
+                            else if (!capturedAllowDueDateOverride)
+                            {
+                                throw new DomainException(
+                                    ApplicationErrorCodes.CustomerCreditDueDateOverrideDenied,
+                                    "Manual due date override is not permitted for this actor.");
+                            }
+                            else
+                            {
+                                businessAppliedDue = capturedDueDate;
+                            }
+
+                            var businessEntry = BusinessCreditEntry.Create(
+                                orgId,
+                                buyerOrgId,
+                                createdSale.Total,
+                                ProductBasedUtangRemarks.ForSaleNumber(createdSale.SaleNumber),
+                                utcNow,
+                                capturedConnectionId,
+                                capturedBusinessCreditEntryId,
+                                createdSale.Id);
+                            businessEntry.ApplyCurrentDueDate(businessAppliedDue);
+                            await _businessCredits.AddAsync(businessEntry, ct).ConfigureAwait(false);
                             return;
                         }
 
@@ -1442,6 +1542,7 @@ public sealed class VoidSale
     private readonly ISaleRepository _sales;
     private readonly ISaleMutationLock _saleMutationLock;
     private readonly ICreditEntryRepository _credits;
+    private readonly IBusinessCreditEntryRepository _businessCredits;
     private readonly IOutstandingBalanceService _outstanding;
     private readonly ISaleStockService _saleStock;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -1451,6 +1552,7 @@ public sealed class VoidSale
         ISaleRepository sales,
         ISaleMutationLock saleMutationLock,
         ICreditEntryRepository credits,
+        IBusinessCreditEntryRepository businessCredits,
         IOutstandingBalanceService outstanding,
         ISaleStockService saleStock,
         IPosUnitOfWork unitOfWork,
@@ -1459,6 +1561,7 @@ public sealed class VoidSale
         _sales = sales;
         _saleMutationLock = saleMutationLock;
         _credits = credits;
+        _businessCredits = businessCredits;
         _outstanding = outstanding;
         _saleStock = saleStock;
         _unitOfWork = unitOfWork;
@@ -1512,58 +1615,114 @@ public sealed class VoidSale
 
                             if (current.PaymentMethod == SalePaymentMethod.Utang)
                             {
-                                if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                                if (current.LinkedBusinessCreditEntryId is not null
+                                    && current.BuyerParty.Kind == SaleBuyerPartyKind.Organization
+                                    && current.BuyerParty.BuyerOrganizationId is Guid buyerOrgGuid)
                                 {
-                                    return ApplicationResult<Sale>.Failure(
-                                        DomainErrorCodes.SaleUtangLinkageInvalid,
-                                        "Utang sale is missing customer or linked credit entry.");
-                                }
-
-                                var credit = await _credits
-                                    .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
-                                    .ConfigureAwait(false);
-                                if (credit is null)
-                                {
-                                    return ApplicationResult<Sale>.Failure(
-                                        ApplicationErrorCodes.CreditEntryNotFound,
-                                        "Linked credit entry was not found.");
-                                }
-
-                                if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
-                                {
-                                    return ApplicationResult<Sale>.Failure(
-                                        DomainErrorCodes.SaleUtangLinkageInvalid,
-                                        "Linked credit entry does not reference this sale.");
-                                }
-
-                                if (credit.Status == CreditEntryStatus.Reversed
-                                    && current.Status == SaleStatus.Completed)
-                                {
-                                    return ApplicationResult<Sale>.Failure(
-                                        ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                                        "The linked Utang credit is already reversed; voiding this sale is blocked.");
-                                }
-
-                                if (credit.Status == CreditEntryStatus.Active)
-                                {
-                                    var outstanding = await _outstanding
-                                        .GetOutstandingAsync(orgId, current.CustomerId, ct)
+                                    var buyerOrgId = PosOrganizationId.From(buyerOrgGuid);
+                                    var businessCredit = await _businessCredits
+                                        .GetByIdAsync(orgId, current.LinkedBusinessCreditEntryId, ct)
                                         .ConfigureAwait(false);
-                                    if (outstanding - credit.Amount < 0m)
+                                    if (businessCredit is null)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            ApplicationErrorCodes.BusinessCreditEntryNotFound,
+                                            "Linked business credit entry was not found.");
+                                    }
+
+                                    if (businessCredit.SourceSaleId is null
+                                        || businessCredit.SourceSaleId.Value != current.Id.Value)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            DomainErrorCodes.SaleUtangLinkageInvalid,
+                                            "Linked business credit entry does not reference this sale.");
+                                    }
+
+                                    if (businessCredit.Status == CreditEntryStatus.Reversed
+                                        && current.Status == SaleStatus.Completed)
                                     {
                                         return ApplicationResult<Sale>.Failure(
                                             ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
-                                            "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                                            "The linked Utang credit is already reversed; voiding this sale is blocked.");
+                                    }
+
+                                    if (businessCredit.Status == CreditEntryStatus.Active)
+                                    {
+                                        var businessOutstanding = await _businessCredits
+                                            .SumActiveAmountAsync(orgId, buyerOrgId, ct)
+                                            .ConfigureAwait(false);
+                                        if (businessOutstanding - businessCredit.Amount < 0m)
+                                        {
+                                            return ApplicationResult<Sale>.Failure(
+                                                ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                                "Voiding this Utang sale would make outstanding negative because of subsequent activity.");
+                                        }
+                                    }
+
+                                    current.Void(reason, actorId, _clock.UtcNow);
+                                    await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+
+                                    if (businessCredit.Status == CreditEntryStatus.Active)
+                                    {
+                                        businessCredit.Reverse(reason, _clock.UtcNow);
+                                        await _businessCredits.UpdateAsync(businessCredit, ct).ConfigureAwait(false);
                                     }
                                 }
-
-                                current.Void(reason, actorId, _clock.UtcNow);
-                                await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
-
-                                if (credit.Status == CreditEntryStatus.Active)
+                                else
                                 {
-                                    credit.Reverse(reason, _clock.UtcNow);
-                                    await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
+                                    if (current.LinkedCreditEntryId is null || current.CustomerId is null)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            DomainErrorCodes.SaleUtangLinkageInvalid,
+                                            "Utang sale is missing customer or linked credit entry.");
+                                    }
+
+                                    var credit = await _credits
+                                        .GetByIdAsync(orgId, current.CustomerId, current.LinkedCreditEntryId, ct)
+                                        .ConfigureAwait(false);
+                                    if (credit is null)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            ApplicationErrorCodes.CreditEntryNotFound,
+                                            "Linked credit entry was not found.");
+                                    }
+
+                                    if (credit.SourceSaleId is null || credit.SourceSaleId.Value != current.Id.Value)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            DomainErrorCodes.SaleUtangLinkageInvalid,
+                                            "Linked credit entry does not reference this sale.");
+                                    }
+
+                                    if (credit.Status == CreditEntryStatus.Reversed
+                                        && current.Status == SaleStatus.Completed)
+                                    {
+                                        return ApplicationResult<Sale>.Failure(
+                                            ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                            "The linked Utang credit is already reversed; voiding this sale is blocked.");
+                                    }
+
+                                    if (credit.Status == CreditEntryStatus.Active)
+                                    {
+                                        var outstanding = await _outstanding
+                                            .GetOutstandingAsync(orgId, current.CustomerId, ct)
+                                            .ConfigureAwait(false);
+                                        if (outstanding - credit.Amount < 0m)
+                                        {
+                                            return ApplicationResult<Sale>.Failure(
+                                                ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
+                                                "Voiding this Utang sale would make outstanding negative because of subsequent repayments. Reverse those repayments first, or leave the sale as recorded.");
+                                        }
+                                    }
+
+                                    current.Void(reason, actorId, _clock.UtcNow);
+                                    await _sales.UpdateAsync(current, ct).ConfigureAwait(false);
+
+                                    if (credit.Status == CreditEntryStatus.Active)
+                                    {
+                                        credit.Reverse(reason, _clock.UtcNow);
+                                        await _credits.UpdateAsync(credit, ct).ConfigureAwait(false);
+                                    }
                                 }
                             }
                             else

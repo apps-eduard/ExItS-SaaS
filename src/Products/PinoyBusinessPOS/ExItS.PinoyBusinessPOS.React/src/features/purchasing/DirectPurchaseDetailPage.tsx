@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
@@ -13,9 +13,14 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import {
+  buildReceiveMarginWarningToast,
+  type ReceiveMarginWarningFlash,
+} from "@/features/purchasing/receive-cost-margin";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -24,7 +29,10 @@ const RECEIPT_VOID_REASON_MAX = 512;
 
 export function DirectPurchaseDetailPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const online = useBrowserOnline();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { receiptId } = useParams<{ receiptId: string }>();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const queryClient = useQueryClient();
@@ -33,6 +41,26 @@ export function DirectPurchaseDetailPage() {
   const [voidOpen, setVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voiding, setVoiding] = useState(false);
+
+  useEffect(() => {
+    const flash = (location.state as { receiveMarginWarning?: ReceiveMarginWarningFlash } | null)
+      ?.receiveMarginWarning;
+    if (!flash || !(flash.count > 0)) {
+      return;
+    }
+    showToast(
+      buildReceiveMarginWarningToast({
+        count: flash.count,
+        productId: flash.productId,
+        title: t("purchasing.sellingPriceNeedsReview"),
+        detailSingle: t("purchasing.sellingPriceNeedsReviewDetail"),
+        detailMany: t("purchasing.sellingPriceNeedsReviewDetailMany"),
+        reviewPrice: t("purchasing.reviewPrice"),
+        reviewPrices: t("purchasing.reviewPrices"),
+      }),
+    );
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate, showToast, t]);
 
   const workspace = useMemo(
     () =>

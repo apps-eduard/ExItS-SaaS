@@ -43,6 +43,7 @@ public sealed class POSCustomerQueryService
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly ICustomerCreditPolicyRepository _creditPolicies;
     private readonly IBusinessCustomerCreditPolicyRepository _businessCreditPolicies;
+    private readonly IBusinessCreditEntryRepository _businessCredits;
     private readonly IOutstandingBalanceService _outstanding;
 
     public POSCustomerQueryService(
@@ -52,7 +53,8 @@ public sealed class POSCustomerQueryService
         IConnectedSupplierRelationshipRepository relationships,
         ICustomerCreditPolicyRepository creditPolicies,
         IOutstandingBalanceService outstanding,
-        IBusinessCustomerCreditPolicyRepository businessCreditPolicies)
+        IBusinessCustomerCreditPolicyRepository businessCreditPolicies,
+        IBusinessCreditEntryRepository businessCredits)
     {
         _customers = customers;
         _branchAccess = branchAccess;
@@ -61,6 +63,7 @@ public sealed class POSCustomerQueryService
         _creditPolicies = creditPolicies;
         _outstanding = outstanding;
         _businessCreditPolicies = businessCreditPolicies;
+        _businessCredits = businessCredits;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -360,6 +363,8 @@ public sealed class POSCustomerQueryService
             new Dictionary<Guid, decimal>();
         IReadOnlyDictionary<Guid, BusinessCustomerCreditPolicy> policyByBuyer =
             new Dictionary<Guid, BusinessCustomerCreditPolicy>();
+        IReadOnlyDictionary<Guid, decimal> outstandingByBuyer =
+            new Dictionary<Guid, decimal>();
 
         if (personCustomerIds.Count > 0)
         {
@@ -378,6 +383,9 @@ public sealed class POSCustomerQueryService
                 .ListBySellerAndBuyerIdsAsync(organizationId, businessBuyerIds, cancellationToken)
                 .ConfigureAwait(false);
             policyByBuyer = businessPolicies.ToDictionary(p => p.BuyerOrganizationId.Value);
+            outstandingByBuyer = await _businessCredits
+                .SumActiveAmountsByBuyerIdsAsync(organizationId, businessBuyerIds, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return pageItems.Select(item =>
@@ -414,28 +422,28 @@ public sealed class POSCustomerQueryService
             if (IsCheckoutBusinessConnectionRow(item))
             {
                 var buyerId = item.BuyerOrganizationId!.Value;
+                outstandingByBuyer.TryGetValue(buyerId, out var outstanding);
                 if (!policyByBuyer.TryGetValue(buyerId, out var businessPolicy))
                 {
                     return item with
                     {
                         CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
                         CreditLimit = null,
-                        OutstandingAmount = 0m,
+                        OutstandingAmount = outstanding,
                         AvailableCredit = 0m,
                         DefaultTermDays = null
                     };
                 }
 
-                // B2B outstanding is always 0 until a ledger exists.
                 return item with
                 {
                     CreditStatus = businessPolicy.Status.ToString(),
                     CreditLimit = businessPolicy.CreditLimit,
-                    OutstandingAmount = 0m,
+                    OutstandingAmount = outstanding,
                     AvailableCredit = BusinessCustomerCreditPolicy.AvailableCredit(
                         businessPolicy.Status,
                         businessPolicy.CreditLimit,
-                        outstanding: 0m),
+                        outstanding),
                     DefaultTermDays = businessPolicy.DefaultTermDays
                 };
             }

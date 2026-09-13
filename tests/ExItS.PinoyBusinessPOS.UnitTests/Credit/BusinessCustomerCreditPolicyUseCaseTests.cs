@@ -116,7 +116,7 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
     public async Task Get_returns_NotConfigured_200_when_no_row()
     {
         var (relationships, policies, _, connectionId) = await CreateActiveHarnessAsync();
-        var get = new GetBusinessCustomerCreditPolicy(relationships, policies);
+        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.NotConfigured), result.Value!.Status);
@@ -148,7 +148,7 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
         Assert.True((await upsert.ExecuteAsync(SellerOrgId, connectionId, 100m, 7, Actor, "cfg")).IsSuccess);
 
         relationships.Disconnect(connectionId, Now.AddHours(1));
-        var get = new GetBusinessCustomerCreditPolicy(relationships, policies);
+        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.PendingApproval), result.Value!.Status);
@@ -299,6 +299,39 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             Task.FromResult((IReadOnlyList<ConnectedSupplierRelationship>)_items);
 
         public Task UpdateAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class EmptyBusinessCredits : IBusinessCreditEntryRepository
+    {
+        public Task<BusinessCreditEntry?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessCreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessCreditEntry?>(null);
+
+        public Task AddAsync(BusinessCreditEntry entry, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(BusinessCreditEntry entry, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
+
+        public Task AcquireBusinessCreditLockAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
     }
 }

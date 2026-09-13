@@ -281,7 +281,41 @@ public sealed class CheckoutBusinessCustomerSearchTests
             relationships ?? new EmptyRelationships(),
             policies ?? new InMemoryCreditPolicies(),
             outstanding,
-            businessPolicies ?? new InMemoryBusinessCreditPolicies());
+            businessPolicies ?? new InMemoryBusinessCreditPolicies(),
+            new EmptyBusinessCredits());
+    }
+
+    private sealed class EmptyBusinessCredits : IBusinessCreditEntryRepository
+    {
+        public Task<BusinessCreditEntry?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessCreditEntryId entryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessCreditEntry?>(null);
+
+        public Task AddAsync(BusinessCreditEntry entry, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(BusinessCreditEntry entry, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByBuyerIdsAsync(
+            PosOrganizationId sellerOrganizationId,
+            IReadOnlyCollection<Guid> buyerOrganizationIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
+
+        public Task AcquireBusinessCreditLockAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock

@@ -16,6 +16,7 @@ public static class DomainErrorCodes
         "pos.customer.platform_business_customer.correlation_conflict";
 
     public const string InvalidCreditEntryId = "pos.credit_entry.id.invalid";
+    public const string InvalidBusinessCreditEntryId = "pos.business_credit_entry.id.invalid";
     public const string InvalidCreditAmount = "pos.credit_entry.amount.invalid";
     public const string InvalidCreditRemarks = "pos.credit_entry.remarks.invalid";
     public const string InvalidCreditReversalReason = "pos.credit_entry.reversal_reason.invalid";
@@ -26,6 +27,7 @@ public static class DomainErrorCodes
     public const string InvalidCreditDueDateReason = "pos.credit_due_date.reason.invalid";
     public const string InvalidCreditDueDateActor = "pos.credit_due_date.actor.invalid";
     public const string CreditDueDateUnchanged = "pos.credit_due_date.unchanged";
+
 
     public const string InvalidRepaymentId = "pos.repayment.id.invalid";
     public const string InvalidRepaymentAmount = "pos.repayment.amount.invalid";

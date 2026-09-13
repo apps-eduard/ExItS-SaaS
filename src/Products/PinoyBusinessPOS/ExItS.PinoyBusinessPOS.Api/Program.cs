@@ -108,6 +108,7 @@ builder.Services.AddScoped<CreditEntryQueryService>();
 builder.Services.AddScoped<CreateCreditEntry>();
 builder.Services.AddScoped<ReverseCreditEntry>();
 builder.Services.AddScoped<CustomerCreditAuthorizationService>();
+builder.Services.AddScoped<BusinessCustomerCreditAuthorizationService>();
 builder.Services.AddScoped<GetCustomerCreditPolicy>();
 builder.Services.AddScoped<UpsertCustomerCreditPolicy>();
 builder.Services.AddScoped<ApproveCustomerCreditPolicy>();

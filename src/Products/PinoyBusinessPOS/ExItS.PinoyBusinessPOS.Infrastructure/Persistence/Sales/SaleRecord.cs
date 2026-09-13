@@ -24,6 +24,7 @@ internal sealed class SaleRecord
     public Guid? BuyerOrganizationId { get; set; }
     public string? BuyerPublicOrganizationId { get; set; }
     public Guid? LinkedCreditEntryId { get; set; }
+    public Guid? LinkedBusinessCreditEntryId { get; set; }
     public Guid? CashierShiftId { get; set; }
     public Guid? RegisterId { get; set; }
     public Guid? BranchId { get; set; }

@@ -99,13 +99,16 @@ public sealed class GetBusinessCustomerCreditPolicy
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IBusinessCustomerCreditPolicyRepository _policies;
+    private readonly IBusinessCreditEntryRepository _businessCredits;
 
     public GetBusinessCustomerCreditPolicy(
         IConnectedSupplierRelationshipRepository relationships,
-        IBusinessCustomerCreditPolicyRepository policies)
+        IBusinessCustomerCreditPolicyRepository policies,
+        IBusinessCreditEntryRepository businessCredits)
     {
         _relationships = relationships;
         _policies = policies;
+        _businessCredits = businessCredits;
     }
 
     public async Task<ApplicationResult<BusinessCustomerCreditPolicyReadDto>> ExecuteAsync(
@@ -153,12 +156,21 @@ public sealed class GetBusinessCustomerCreditPolicy
                     ExpectedUpdatedAtUtc: null));
         }
 
-        return ApplicationResult<BusinessCustomerCreditPolicyReadDto>.Success(Map(policy, connectionId));
+        var outstanding = await _businessCredits
+            .SumActiveAmountAsync(
+                policy.SellerOrganizationId,
+                policy.BuyerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return ApplicationResult<BusinessCustomerCreditPolicyReadDto>.Success(
+            Map(policy, connectionId, outstanding));
     }
 
     internal static BusinessCustomerCreditPolicyReadDto Map(
         BusinessCustomerCreditPolicy policy,
-        Guid connectionId) =>
+        Guid connectionId,
+        decimal outstanding = 0m) =>
         new(
             connectionId,
             policy.SellerOrganizationId.Value,
@@ -166,8 +178,8 @@ public sealed class GetBusinessCustomerCreditPolicy
             policy.Status.ToString(),
             policy.CreditLimit,
             policy.DefaultTermDays,
-            OutstandingAmount: 0m,
-            BusinessCustomerCreditPolicy.AvailableCredit(policy.Status, policy.CreditLimit, outstanding: 0m),
+            outstanding,
+            BusinessCustomerCreditPolicy.AvailableCredit(policy.Status, policy.CreditLimit, outstanding),
             policy.ConfiguredByUserId,
             policy.ConfiguredAtUtc,
             policy.ApprovedByUserId,

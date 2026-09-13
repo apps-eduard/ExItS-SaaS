@@ -15155,10 +15155,52 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
-.receive-stock-product-table .exits-table,
+.receive-stock-product-table .exits-table {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Receipt table: compact control widths; product/lot can flex. */
 .receive-stock-receipt-table .exits-table {
   width: 100%;
   min-width: 0;
+  table-layout: auto;
+}
+
+.receive-stock-receipt-table .receive-qty-input {
+  box-sizing: border-box;
+  width: 3.75rem;
+  min-width: 3.75rem;
+  max-width: 3.75rem;
+  padding-inline: 0.4rem;
+}
+
+.receive-stock-receipt-table .receive-cost-input {
+  box-sizing: border-box;
+  width: 7rem;
+  min-width: 7rem;
+  max-width: 7rem;
+  padding-inline: 0.45rem;
+}
+
+.receive-stock-receipt-table__expiry-col {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.receive-stock-receipt-table__expiry-col .receive-stock-expiry-input,
+.receive-stock-expiry-input {
+  box-sizing: border-box;
+  width: 8.5rem;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+}
+
+.receive-stock-lot-input {
+  box-sizing: border-box;
+  width: 7rem;
+  min-width: 6.5rem;
+  max-width: 8rem;
 }
 
 .receive-stock-product-table .exits-table__col--actions,
@@ -15222,9 +15264,11 @@ a.exits-chip--primary:hover {
   min-width: 0;
 }
 
-.receive-stock-selling-cell .receive-qty-input {
-  flex: 1 1 auto;
+.receive-stock-selling-readonly {
+  display: inline-block;
   min-width: 0;
+  color: var(--exits-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .receive-stock-margin-warning {
@@ -15238,18 +15282,6 @@ a.exits-chip--primary:hover {
 .receive-stock-margin-warning svg {
   width: 1rem;
   height: 1rem;
-}
-
-.receive-stock-expiry-input {
-  width: 100%;
-  min-width: calc(6.5rem + 3ch);
-  max-width: calc(10rem + 3ch);
-}
-
-.receive-stock-lot-input {
-  width: 100%;
-  min-width: 6.5rem;
-  max-width: 10rem;
 }
 
 .receive-stock-category-trigger.exits-select,

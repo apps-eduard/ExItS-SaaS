@@ -26,8 +26,10 @@ describe("receive-cost-margin", () => {
     expect(receiveCostMarginKind(150, 200)).toBe("none");
     expect(receiveCostMarginKind(200, 200)).toBe("zeroMargin");
     expect(receiveCostMarginKind(300, 200)).toBe("negativeMargin");
+    expect(receiveCostMarginKind(300, 0)).toBe("negativeMargin");
     expect(hasReceiveCostMarginWarning(150, 200)).toBe(false);
     expect(hasReceiveCostMarginWarning(200, 200)).toBe(true);
     expect(hasReceiveCostMarginWarning(300, 200)).toBe(true);
+    expect(hasReceiveCostMarginWarning(151231, 0)).toBe(true);
   });
 });

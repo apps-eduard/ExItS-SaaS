@@ -7,6 +7,7 @@ import {
 } from "@/access/pos-capabilities";
 import { searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
 import { getCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client";
+import { getBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
 import {
   computeCreditPolicyDueDate,
   creditPolicyCheckoutBlockMessageKey,
@@ -318,8 +319,11 @@ export function CheckoutCashPage() {
     paymentChoice === "Utang" && personCustomerSelected
       ? selectedCustomer!.customerId
       : null;
+  const utangBusinessConnectionId =
+    paymentChoice === "Utang" && b2bSelected ? selectedCustomer!.connectionId : null;
+  const utangBuyerSelected = Boolean(utangPersonCustomerId || utangBusinessConnectionId);
 
-  const creditPolicyQuery = useQuery({
+  const personCreditPolicyQuery = useQuery({
     queryKey: [
       "checkout",
       "credit-policy",
@@ -331,13 +335,34 @@ export function CheckoutCashPage() {
       getCustomerCreditPolicy(workspaceScope!, utangPersonCustomerId!, signal),
   });
 
-  const creditPolicy = creditPolicyQuery.data;
+  const businessCreditPolicyQuery = useQuery({
+    queryKey: [
+      "checkout",
+      "business-credit-policy",
+      workspaceScope?.organizationId,
+      utangBusinessConnectionId,
+    ],
+    enabled: Boolean(workspaceScope && utangBusinessConnectionId && online),
+    queryFn: ({ signal }) =>
+      getBusinessCustomerCreditPolicy(workspaceScope!, utangBusinessConnectionId!, signal),
+  });
+
+  const creditPolicy = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.data
+    : personCreditPolicyQuery.data;
+  const creditPolicyLoading = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.isLoading
+    : Boolean(utangPersonCustomerId) && personCreditPolicyQuery.isLoading;
+  const creditPolicyError = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.isError
+    : Boolean(utangPersonCustomerId) && personCreditPolicyQuery.isError;
+
   const creditPolicyBlock = resolveUtangCreditPolicyBlock({
     paymentIsUtang: paymentChoice === "Utang",
-    personCustomerSelected,
+    utangBuyerSelected,
     policy: creditPolicy,
-    policyLoading: Boolean(utangPersonCustomerId) && creditPolicyQuery.isLoading,
-    policyError: Boolean(utangPersonCustomerId) && creditPolicyQuery.isError,
+    policyLoading: creditPolicyLoading,
+    policyError: creditPolicyError,
     thisSaleAmount: amountToPay,
   });
   const creditPolicyBlockMessageKey = creditPolicyCheckoutBlockMessageKey(creditPolicyBlock);
@@ -356,15 +381,11 @@ export function CheckoutCashPage() {
   const availableAfterSale =
     creditPolicy != null ? creditPolicy.availableCredit - amountToPay : null;
 
-  const utangB2bBlocked = paymentChoice === "Utang" && b2bSelected;
   const utangNeedsCustomerLookup =
     paymentChoice === "Utang" && !(allowCheckoutCustomerSearch && allowCreateCredit);
   const utangCustomerOk =
     paymentChoice !== "Utang" ||
-    (allowCheckoutCustomerSearch &&
-      allowCreateCredit &&
-      selectedCustomer != null &&
-      !b2bSelected);
+    (allowCheckoutCustomerSearch && allowCreateCredit && selectedCustomer != null);
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
   const utangPolicyOk = creditPolicyBlock === null;
 
@@ -579,7 +600,7 @@ export function CheckoutCashPage() {
   }, [online, selectedCustomer]);
 
   // Keep selectedCustomer across Cash ↔ GCash ↔ Utang. B2B stays selected on Utang so the
-  // cashier sees why confirm is blocked (utangB2bBlocked) instead of a mysterious clear.
+  // cashier sees why confirm is blocked (utang policy / customer) instead of a mysterious clear.
   function addDiscount() {
     setDiscountFormError(null);
     const reason = discountReason.trim();
@@ -729,10 +750,6 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.utangZeroBlocked"));
       return;
     }
-    if (utangB2bBlocked) {
-      setSubmitError(t("checkout.b2bUtangBlocked"));
-      return;
-    }
     if (utangNeedsCustomerLookup) {
       setSubmitError(t("checkout.utangCustomerDenied"));
       return;
@@ -827,6 +844,11 @@ export function CheckoutCashPage() {
               buyerPublicOrganizationId:
                 selectedCustomer.buyerPublicOrganizationId ?? undefined,
               buyerDisplayNameSnapshot: selectedCustomer.displayName,
+              ...(paymentChoice === "Utang" && policyDueDate
+                ? {
+                    dueDate: policyDueDate,
+                  }
+                : {}),
             }
           : selectedCustomer &&
               selectedCustomer.kind === "Customer" &&
@@ -893,7 +915,6 @@ export function CheckoutCashPage() {
     !tenderOk ||
     !gcashRefOk ||
     utangBlockedZero ||
-    utangB2bBlocked ||
     utangNeedsCustomerLookup ||
     !utangCustomerOk ||
     !utangCreditOk ||
@@ -1448,15 +1469,7 @@ export function CheckoutCashPage() {
             </p>
           ) : (
             <>
-              {utangB2bBlocked ? (
-                <p
-                  data-testid="checkout-utang-b2b-blocked"
-                  className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-                >
-                  {t("checkout.b2bUtangBlocked")}
-                </p>
-              ) : null}
-              {selectedCustomer && personCustomerSelected ? (
+              {selectedCustomer && (personCustomerSelected || b2bSelected) ? (
                 <div
                   className="checkout-utang-credit-summary"
                   data-testid="checkout-utang-credit-summary"
@@ -1487,7 +1500,7 @@ export function CheckoutCashPage() {
                       {t("checkout.customerClear")}
                     </Button>
                   </div>
-                  {creditPolicyQuery.isLoading ? (
+                  {creditPolicyLoading ? (
                     <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                       {t("checkout.creditPolicy.loading")}
                     </p>

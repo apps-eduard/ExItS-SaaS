@@ -62,6 +62,7 @@ public sealed class PosDbContext : DbContext
         Set<BusinessCustomerCreditPolicyRecord>();
     internal DbSet<BusinessCustomerCreditPolicyChangeRecord> BusinessCustomerCreditPolicyChanges =>
         Set<BusinessCustomerCreditPolicyChangeRecord>();
+    internal DbSet<BusinessCreditEntryRecord> BusinessCreditEntries => Set<BusinessCreditEntryRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
@@ -547,6 +548,58 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.BusinessCustomerCreditPolicyId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_business_customer_credit_policy_changes_policies");
+        });
+
+        modelBuilder.Entity<BusinessCreditEntryRecord>(entity =>
+        {
+            entity.ToTable("business_credit_entries", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_business_credit_entries_status",
+                    "status IN ('Active', 'Reversed')");
+                tb.HasCheckConstraint(
+                    "ck_business_credit_entries_amount_positive",
+                    "amount > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(e => e.ConnectionId).HasColumnName("connection_id");
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Remarks)
+                .HasColumnName("remarks")
+                .HasMaxLength(BusinessCreditEntry.RemarksMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ReversedAtUtc).HasColumnName("reversed_at_utc");
+            entity.Property(e => e.ReversalReason)
+                .HasColumnName("reversal_reason")
+                .HasMaxLength(BusinessCreditEntry.ReversalReasonMaxLength);
+            entity.Property(e => e.CurrentDueDate)
+                .HasColumnName("current_due_date")
+                .HasColumnType("date");
+            entity.Property(e => e.SourceSaleId).HasColumnName("source_sale_id");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_business_credit_entries_seller_buyer_created");
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId, e.Status })
+                .HasDatabaseName("ix_business_credit_entries_seller_buyer_status");
+
+            entity.HasIndex(e => e.ConnectionId)
+                .HasDatabaseName("ix_business_credit_entries_connection_id");
+
+            entity.HasIndex(e => e.SourceSaleId)
+                .HasDatabaseName("ix_business_credit_entries_source_sale_id")
+                .HasFilter("source_sale_id IS NOT NULL");
         });
 
         modelBuilder.Entity<RepaymentRecord>(entity =>
@@ -1348,10 +1401,11 @@ public sealed class PosDbContext : DbContext
                     "(status IN ('Completed', 'AwaitingPayment') AND voided_at_utc IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (status = 'Voided' AND voided_at_utc IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL)");
                 // Cash: tender + change; optional customer; never credit link.
                 // ManualGCash / Card / GCash: no tender/change/credit; optional customer.
-                // Utang: customer + linked credit; total > 0.
+                // Utang Person: customer + linked person credit; total > 0.
+                // Utang Organization: Organization buyer + linked business credit; no person customer/credit; total > 0.
                 tb.HasCheckConstraint(
                     "ck_sales_tender_consistency",
-                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
+                    "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND total > 0 AND ((customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND linked_business_credit_entry_id IS NULL) OR (buyer_party_kind = 'Organization' AND linked_business_credit_entry_id IS NOT NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL)))");
                 tb.HasCheckConstraint(
                     "ck_sales_buyer_party_kind",
                     "buyer_party_kind IN ('WalkIn', 'ExternalCustomer', 'Personal', 'Organization')");
@@ -1415,6 +1469,7 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("buyer_public_organization_id")
                 .HasMaxLength(SaleBuyerParty.PublicOrganizationIdMaxLength);
             entity.Property(e => e.LinkedCreditEntryId).HasColumnName("linked_credit_entry_id");
+            entity.Property(e => e.LinkedBusinessCreditEntryId).HasColumnName("linked_business_credit_entry_id");
             entity.Property(e => e.CashierShiftId).HasColumnName("cashier_shift_id");
             entity.Property(e => e.RegisterId).HasColumnName("register_id");
             entity.Property(e => e.BranchId).HasColumnName("branch_id");
@@ -1460,6 +1515,11 @@ public sealed class PosDbContext : DbContext
                 .IsUnique()
                 .HasDatabaseName("ux_sales_linked_credit_entry_id")
                 .HasFilter("linked_credit_entry_id IS NOT NULL");
+
+            entity.HasIndex(e => e.LinkedBusinessCreditEntryId)
+                .IsUnique()
+                .HasDatabaseName("ux_sales_linked_business_credit_entry_id")
+                .HasFilter("linked_business_credit_entry_id IS NOT NULL");
 
             entity.HasIndex(e => e.CustomerId)
                 .HasDatabaseName("ix_sales_customer_id");

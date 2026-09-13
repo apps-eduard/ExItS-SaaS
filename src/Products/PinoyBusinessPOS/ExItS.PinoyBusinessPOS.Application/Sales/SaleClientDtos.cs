@@ -44,6 +44,7 @@ public sealed record PosSaleDto(
     List<PosSaleLineDto> Lines,
     Guid? CustomerId = null,
     Guid? LinkedCreditEntryId = null,
+    Guid? LinkedBusinessCreditEntryId = null,
     string? CustomerDisplayName = null,
     DateOnly? LinkedCreditDueDate = null,
     decimal? CustomerOutstandingAfter = null,

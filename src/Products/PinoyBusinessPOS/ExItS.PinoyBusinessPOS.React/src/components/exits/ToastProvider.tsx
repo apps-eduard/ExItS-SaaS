@@ -43,6 +43,7 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const AUTO_DISMISS_MS = 4200;
+const WARNING_ACTION_DISMISS_MS = 10000;
 
 function isToastPayload(value: string | ToastPayload): value is ToastPayload {
   return typeof value === "object" && value !== null && "title" in value;
@@ -113,9 +114,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         };
 
     setToasts((current) => [...current, item]);
+    const dismissMs =
+      item.tone === "warning" && item.action ? WARNING_ACTION_DISMISS_MS : AUTO_DISMISS_MS;
     window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
-    }, AUTO_DISMISS_MS);
+    }, dismissMs);
   }, []);
 
   const value = useMemo(() => ({ showToast }), [showToast]);

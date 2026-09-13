@@ -7,12 +7,16 @@ using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Sales;
 
+public sealed record B2bCheckoutBuyerResolution(
+    SaleBuyerParty BuyerParty,
+    Guid ConnectionId);
+
 /// <summary>
 /// Derives Organization buyer identity for Direct Sale checkout from an Active B2B relationship.
 /// </summary>
 public static class B2bCheckoutBuyerAuthorization
 {
-    public static async Task<ApplicationResult<SaleBuyerParty>> ResolveAsync(
+    public static async Task<ApplicationResult<B2bCheckoutBuyerResolution>> ResolveAsync(
         PosOrganizationId sellerOrganizationId,
         IConnectedSupplierRelationshipRepository relationships,
         Guid? buyerConnectionId,
@@ -21,16 +25,13 @@ public static class B2bCheckoutBuyerAuthorization
         bool isUtang,
         CancellationToken cancellationToken = default)
     {
-        if (isUtang)
-        {
-            return ApplicationResult<SaleBuyerParty>.Failure(
-                DomainErrorCodes.SaleB2bUtangNotSupported,
-                "Direct credit is not configured for this business. Use Cash, GCash, or the Purchase Order payment terms.");
-        }
+        // isUtang is accepted: Business Utang uses BusinessCustomerCreditPolicy at checkout.
+        // Relationship validation below still applies for Cash/GCash/Utang.
+        _ = isUtang;
 
         if (customerId is Guid linked && linked != Guid.Empty)
         {
-            return ApplicationResult<SaleBuyerParty>.Failure(
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                 DomainErrorCodes.InvalidSaleBuyerParty,
                 "B2B Organization checkout must not attach a POS customer id.");
         }
@@ -44,7 +45,7 @@ public static class B2bCheckoutBuyerAuthorization
             if (relationship is null
                 || relationship.SupplierOrganizationId != sellerOrganizationId)
             {
-                return ApplicationResult<SaleBuyerParty>.Failure(
+                return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                     DomainErrorCodes.SaleB2bRelationshipRequired,
                     "Active B2B relationship was not found.");
             }
@@ -62,14 +63,14 @@ public static class B2bCheckoutBuyerAuthorization
         if (relationship is null
             || relationship.Status != ConnectedSupplierRelationshipStatus.Active)
         {
-            return ApplicationResult<SaleBuyerParty>.Failure(
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                 DomainErrorCodes.SaleB2bRelationshipRequired,
                 "Active B2B relationship was not found.");
         }
 
         if (relationship.BuyerOrganizationId == sellerOrganizationId)
         {
-            return ApplicationResult<SaleBuyerParty>.Failure(
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                 DomainErrorCodes.InvalidSaleBuyerParty,
                 "You can't sell to your own business as a B2B Organization buyer.");
         }
@@ -80,22 +81,23 @@ public static class B2bCheckoutBuyerAuthorization
         if (string.IsNullOrWhiteSpace(displayName)
             || string.IsNullOrWhiteSpace(relationship.BuyerPublicOrganizationIdSnapshot))
         {
-            return ApplicationResult<SaleBuyerParty>.Failure(
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                 DomainErrorCodes.InvalidSaleBuyerParty,
                 "B2B Organization buyer identity is incomplete on the relationship.");
         }
 
         try
         {
-            return ApplicationResult<SaleBuyerParty>.Success(
-                SaleBuyerParty.Organization(
-                    relationship.BuyerOrganizationId.Value,
-                    relationship.BuyerPublicOrganizationIdSnapshot!,
-                    displayName!));
+            var party = SaleBuyerParty.Organization(
+                relationship.BuyerOrganizationId.Value,
+                relationship.BuyerPublicOrganizationIdSnapshot!,
+                displayName!);
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Success(
+                new B2bCheckoutBuyerResolution(party, relationship.Id.Value));
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<SaleBuyerParty>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 }

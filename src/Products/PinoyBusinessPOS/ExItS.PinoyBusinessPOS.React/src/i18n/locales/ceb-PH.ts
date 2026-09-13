@@ -1548,6 +1548,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "checkout.utangSelect.disabled": "Customer credit is currently paused.",
   "checkout.utangSelect.overLimit": "Credit limit exceeded. Available credit is {amount}.",
   "checkout.utangSelect.b2bNotAvailable": "Business credit is approved, but Business Utang checkout is not available yet.",
+  "checkout.utangSelect.businessInactive":
+    "Business relationship is not active. Utang cannot be used.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
   "checkout.directoryCredit.colType": "Type",

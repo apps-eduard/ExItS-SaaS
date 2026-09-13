@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Credit;
 
 /// <summary>
 /// Seller-owned B2B credit authorization for one buyer organization (via connected-supplier relationship).
-/// Does not create a POSCustomer. Outstanding is always 0 until a B2B ledger exists.
+/// Does not create a POSCustomer. Outstanding comes from active <see cref="BusinessCreditEntry"/> rows
+/// (repayments/write-offs are not modeled in v1).
 /// Reuses <see cref="CustomerCreditPolicyStatus"/> and <see cref="CustomerCreditPolicyChangeAction"/>.
 /// </summary>
 public sealed class BusinessCustomerCreditPolicy
@@ -311,8 +312,8 @@ public sealed class BusinessCustomerCreditPolicy
     public bool PermitsNewUtang => Status == CustomerCreditPolicyStatus.Approved;
 
     /// <summary>
-    /// B2B outstanding is always 0 until a ledger exists.
     /// AvailableCredit = Approved ? max(0, limit - outstanding) : 0.
+    /// Pass outstanding from the business credit ledger (sum of Active entries).
     /// </summary>
     public static decimal AvailableCredit(CustomerCreditPolicyStatus status, decimal creditLimit, decimal outstanding = 0m) =>
         CustomerCreditPolicy.AvailableCredit(status, creditLimit, outstanding);

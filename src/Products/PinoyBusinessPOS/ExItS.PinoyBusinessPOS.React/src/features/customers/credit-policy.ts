@@ -110,16 +110,20 @@ export function isCreditPolicyApproved(policy: PosCustomerCreditPolicy | null | 
 
 /**
  * Client-side convenience gate for Utang checkout. Server still enforces policy.
+ * Works for Person and Business policies (status + availableCredit).
  */
 export function resolveUtangCreditPolicyBlock(args: {
   paymentIsUtang: boolean;
-  personCustomerSelected: boolean;
-  policy: PosCustomerCreditPolicy | null | undefined;
+  /** @deprecated Prefer utangBuyerSelected */
+  personCustomerSelected?: boolean;
+  utangBuyerSelected?: boolean;
+  policy: { status: string; availableCredit: number } | null | undefined;
   policyLoading: boolean;
   policyError: boolean;
   thisSaleAmount: number;
 }): CreditPolicyCheckoutBlockReason {
-  if (!args.paymentIsUtang || !args.personCustomerSelected) {
+  const buyerSelected = args.utangBuyerSelected ?? args.personCustomerSelected ?? false;
+  if (!args.paymentIsUtang || !buyerSelected) {
     return null;
   }
   if (args.policyLoading) {

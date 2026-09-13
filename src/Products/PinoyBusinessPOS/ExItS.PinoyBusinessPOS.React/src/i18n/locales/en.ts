@@ -2419,6 +2419,8 @@ export const en = {
   "checkout.utangSelect.disabled": "Customer credit is currently paused.",
   "checkout.utangSelect.overLimit":
     "Credit limit exceeded. Available credit is {amount}.",
+  "checkout.utangSelect.businessInactive":
+    "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.b2bNotAvailable":
     "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",
@@ -4378,7 +4380,7 @@ export const en = {
   "customers.business.creditPolicy.disabledHint":
     "New Utang is paused. Existing balances can still be paid.",
   "customers.business.creditPolicy.checkoutNote":
-    "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
+    "Business Utang checkout uses this approved credit policy and available credit.",
   "customers.business.identityNote":
     "This is the buyer's Organization identity. You manage relationship settings only — not their business name or logo.",
   "customers.business.incomingRequests": "Incoming connection requests",

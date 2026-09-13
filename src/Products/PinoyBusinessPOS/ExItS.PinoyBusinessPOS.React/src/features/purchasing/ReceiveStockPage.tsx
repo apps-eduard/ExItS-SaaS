@@ -47,6 +47,7 @@ import {
   hasReceiveCostMarginWarning,
   receiveCostMarginKind,
   resolveReceiveEffectiveSellingPrice,
+  type ReceiveMarginWarningFlash,
 } from "@/features/purchasing/receive-cost-margin";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import { normalizeMoneyAmountTyping } from "@/lib/money-input";
@@ -83,7 +84,6 @@ type DraftLine = {
   sellingPrice: number;
   qtyInput: string;
   costInput: string;
-  sellingPriceInput: string;
   expiryDate: string;
   lotNumber: string;
 };
@@ -105,7 +105,7 @@ function formatHistoryDate(item: DirectPurchaseHistoryItem): string {
 }
 
 function lineIsComplete(line: DraftLine): boolean {
-  if (!(line.quantity > 0 && line.unitCost > 0 && line.sellingPrice > 0)) return false;
+  if (!(line.quantity > 0 && line.unitCost > 0)) return false;
   if (line.tracksExpiration && !line.expiryDate.trim()) return false;
   return true;
 }
@@ -468,7 +468,6 @@ export function ReceiveStockPage() {
       sellingPrice: catalogSelling,
       qtyInput: "1",
       costInput: "",
-      sellingPriceInput: catalogSelling > 0 ? formatMoneyInput(catalogSelling) : "",
       expiryDate: "",
       lotNumber: "",
     };
@@ -482,7 +481,7 @@ export function ReceiveStockPage() {
   function patchLine(
     productId: string,
     patch: Partial<
-      Pick<DraftLine, "qtyInput" | "costInput" | "sellingPriceInput" | "expiryDate" | "lotNumber">
+      Pick<DraftLine, "qtyInput" | "costInput" | "expiryDate" | "lotNumber">
     >,
   ) {
     setLines((prev) =>
@@ -497,10 +496,6 @@ export function ReceiveStockPage() {
           const cost = parseMoneyInput(patch.costInput);
           next.unitCost = cost !== null && cost > 0 ? cost : 0;
         }
-        if (patch.sellingPriceInput !== undefined) {
-          const sell = parseMoneyInput(patch.sellingPriceInput);
-          next.sellingPrice = sell !== null && sell > 0 ? sell : 0;
-        }
         return next;
       }),
     );
@@ -510,30 +505,14 @@ export function ReceiveStockPage() {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }
 
-  function showReceiveCostMarginToast(affected: DraftLine[]) {
+  function marginWarningFlash(affected: DraftLine[]): ReceiveMarginWarningFlash | null {
     if (affected.length === 0) {
-      return;
+      return null;
     }
-    const single = affected.length === 1;
-    showToast({
-      title: t("purchasing.sellingPriceNeedsReview"),
-      description: single
-        ? t("purchasing.sellingPriceNeedsReviewDetail")
-        : t("purchasing.sellingPriceNeedsReviewDetailMany").replace(
-            "{count}",
-            String(affected.length),
-          ),
-      tone: "warning",
-      action: single
-        ? {
-            label: t("purchasing.reviewPrice"),
-            href: `/catalog/products/${affected[0].productId}/edit`,
-          }
-        : {
-            label: t("purchasing.reviewPrices"),
-            href: "/catalog/todays-prices",
-          },
-    });
+    return {
+      count: affected.length,
+      productId: affected.length === 1 ? affected[0].productId : null,
+    };
   }
 
   function startReview() {
@@ -608,11 +587,10 @@ export function ReceiveStockPage() {
     try {
       const receipt = await createDirectPurchaseReceipt(workspace, payload);
       idempotencyKeyRef.current = null;
-      if (marginAffected.length > 0) {
-        showReceiveCostMarginToast(marginAffected);
-      }
+      const flash = marginWarningFlash(marginAffected);
       navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
         replace: true,
+        state: flash ? { receiveMarginWarning: flash } : undefined,
       });
     } catch (err) {
       // No GET-by-idempotency-key API. Sticky key makes a same-payload retry safe;
@@ -622,11 +600,10 @@ export function ReceiveStockPage() {
         try {
           const receipt = await createDirectPurchaseReceipt(workspace, payload);
           idempotencyKeyRef.current = null;
-          if (marginAffected.length > 0) {
-            showReceiveCostMarginToast(marginAffected);
-          }
+          const flash = marginWarningFlash(marginAffected);
           navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
             replace: true,
+            state: flash ? { receiveMarginWarning: flash } : undefined,
           });
           return;
         } catch (retryErr) {
@@ -838,7 +815,10 @@ export function ReceiveStockPage() {
                           <ExitsTableHead cellAlign="text">
                             {t("purchasing.sellingPriceShort")}
                           </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
+                          <ExitsTableHead
+                            cellAlign="text"
+                            className="receive-stock-receipt-table__expiry-col"
+                          >
                             {t("purchasing.expiryDate")}
                           </ExitsTableHead>
                           <ExitsTableHead cellAlign="text">
@@ -862,7 +842,6 @@ export function ReceiveStockPage() {
                           const highlighted = highlightProductId === line.productId;
                           const qtyInvalid = !(line.quantity > 0);
                           const costInvalid = !(line.unitCost > 0);
-                          const sellingInvalid = !(line.sellingPrice > 0);
                           const expiryInvalid =
                             line.tracksExpiration && !line.expiryDate.trim();
                           const marginKind = receiveCostMarginKind(
@@ -875,6 +854,10 @@ export function ReceiveStockPage() {
                               : marginKind === "negativeMargin"
                                 ? t("purchasing.costNegativeMarginWarning")
                                 : null;
+                          const sellingDisplay =
+                            line.effectiveSellingPrice > 0
+                              ? formatMoneyInput(line.effectiveSellingPrice)
+                              : "0.00";
                           return (
                             <ExitsTableRow
                               key={line.productId}
@@ -912,7 +895,7 @@ export function ReceiveStockPage() {
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
                                 <input
-                                  className="exits-input receive-qty-input tabular-nums"
+                                  className="exits-input receive-cost-input tabular-nums"
                                   value={line.costInput}
                                   onChange={(e) =>
                                     patchLine(line.productId, {
@@ -938,32 +921,13 @@ export function ReceiveStockPage() {
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
                                 <div className="receive-stock-selling-cell">
-                                  <input
-                                    className="exits-input receive-qty-input tabular-nums"
-                                    value={line.sellingPriceInput}
-                                    onChange={(e) =>
-                                      patchLine(line.productId, {
-                                        sellingPriceInput: normalizeMoneyAmountTyping(
-                                          e.target.value,
-                                        ),
-                                      })
-                                    }
-                                    onBlur={(e) => {
-                                      const parsed = parseMoneyInput(e.target.value);
-                                      if (parsed !== null) {
-                                        patchLine(line.productId, {
-                                          sellingPriceInput: formatMoneyInput(parsed),
-                                        });
-                                      }
-                                    }}
-                                    inputMode="decimal"
-                                    placeholder="0.00"
-                                    autoComplete="off"
-                                    aria-invalid={sellingInvalid || undefined}
-                                    aria-required
+                                  <span
+                                    className="receive-stock-selling-readonly tabular-nums"
                                     aria-label={t("purchasing.sellingPriceShort")}
                                     data-testid={`direct-line-selling-${line.productId}`}
-                                  />
+                                  >
+                                    {sellingDisplay}
+                                  </span>
                                   {marginLabel ? (
                                     <span
                                       className="receive-stock-margin-warning"
@@ -978,7 +942,10 @@ export function ReceiveStockPage() {
                                   ) : null}
                                 </div>
                               </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
+                              <ExitsTableCell
+                                cellAlign="text"
+                                className="receive-stock-receipt-table__expiry-col"
+                              >
                                 {line.tracksExpiration ? (
                                   <input
                                     type="date"
@@ -1469,7 +1436,6 @@ export function ReceiveStockPage() {
                 <span className="tabular-nums text-muted">
                   {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
                   {` · ${t("purchasing.sellingPriceShort")} ${formatPeso(line.sellingPrice)}`}
-                  {line.expiryDate ? ` · ${line.expiryDate}` : ""}
                 </span>
                 <span className="tabular-nums font-semibold">
                   {formatPeso(roundMoney(line.quantity * line.unitCost))}

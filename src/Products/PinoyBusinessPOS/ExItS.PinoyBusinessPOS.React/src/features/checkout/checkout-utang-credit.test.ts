@@ -27,7 +27,7 @@ describe("checkout-utang-credit helpers", () => {
     expect(formatCreditDueDateLabel("2026-10-10")).toBe("Oct 10, 2026");
   });
 
-  it("blocks PendingApproval / NotConfigured / Disabled / over-limit / B2B", () => {
+  it("blocks PendingApproval / NotConfigured / Disabled / over-limit; allows approved Business under limit", () => {
     const pending: CheckoutCustomerOption = {
       kind: "Customer",
       customerId: "11111111-1111-1111-1111-111111111111",
@@ -94,8 +94,29 @@ describe("checkout-utang-credit helpers", () => {
       resolveUtangDirectorySelectBlock({
         customer: { ...businessBase, creditStatus: "Approved", availableCredit: 50000 },
         thisSaleAmount: 10,
+      }),
+    ).toBeNull();
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: {
+          ...businessBase,
+          creditStatus: "Approved",
+          availableCredit: 30000,
+        },
+        thisSaleAmount: 35000,
+      }),
+    ).toEqual({ reason: "over_limit", availableCredit: 30000 });
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: {
+          ...businessBase,
+          status: "Pending",
+          creditStatus: "Approved",
+          availableCredit: 50000,
+        },
+        thisSaleAmount: 10,
       })?.reason,
-    ).toBe("b2b_not_available");
+    ).toBe("inactive");
   });
 
   it("allows Approved under limit and unknown projection", () => {

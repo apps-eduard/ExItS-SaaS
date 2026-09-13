@@ -1,10 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useEffect } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
+import { useToast } from "@/components/exits/ToastProvider";
+import {
+  buildReceiveMarginWarningToast,
+  type ReceiveMarginWarningFlash,
+} from "@/features/purchasing/receive-cost-margin";
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
+import { useI18n } from "@/i18n/I18nProvider";
 
 const orgId = "11111111-1111-1111-1111-111111111111";
 const branchId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -132,6 +139,35 @@ const other = () =>
     unitOfMeasure: "Pack",
   });
 
+function DirectPurchaseDetailRedirect() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { t } = useI18n();
+
+  useEffect(() => {
+    const flash = (location.state as { receiveMarginWarning?: ReceiveMarginWarningFlash } | null)
+      ?.receiveMarginWarning;
+    if (!flash || !(flash.count > 0)) {
+      return;
+    }
+    showToast(
+      buildReceiveMarginWarningToast({
+        count: flash.count,
+        productId: flash.productId,
+        title: t("purchasing.sellingPriceNeedsReview"),
+        detailSingle: t("purchasing.sellingPriceNeedsReviewDetail"),
+        detailMany: t("purchasing.sellingPriceNeedsReviewDetailMany"),
+        reviewPrice: t("purchasing.reviewPrice"),
+        reviewPrices: t("purchasing.reviewPrices"),
+      }),
+    );
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate, showToast, t]);
+
+  return <div data-testid="direct-detail-redirect" />;
+}
+
 function renderPage() {
   return render(
     <AppProviders>
@@ -140,7 +176,7 @@ function renderPage() {
           <Route path="/purchasing/receive-stock" element={<ReceiveStockPage />} />
           <Route
             path="/purchasing/direct-purchases/:id"
-            element={<div data-testid="direct-detail-redirect" />}
+            element={<DirectPurchaseDetailRedirect />}
           />
           <Route
             path="/purchasing/direct-purchases"
@@ -485,10 +521,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       "true",
     );
     expect(screen.getByTestId(`direct-line-selling-${productId}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`direct-line-selling-${productId}`)).toHaveValue("1,200.00");
-    expect(screen.getByTestId(`direct-line-selling-${productId}`)).not.toHaveAttribute(
-      "aria-invalid",
-    );
+    expect(screen.getByTestId(`direct-line-selling-${productId}`)).toHaveTextContent("1,200.00");
     expect(screen.getByTestId("direct-review")).toBeDisabled();
     expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveAttribute(
       "aria-invalid",

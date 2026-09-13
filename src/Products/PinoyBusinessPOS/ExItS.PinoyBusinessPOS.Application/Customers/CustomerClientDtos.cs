@@ -63,7 +63,7 @@ public sealed record PosCustomerPagedResult(
 /// PartyKind is set for POS Business party Customer rows so the Businesses filter can show them.
 /// Credit* fields: Kind=Customer person rows use CustomerCreditPolicy;
 /// Kind=Business connection rows use BusinessCustomerCreditPolicy (seller + buyer).
-/// NotConfigured when no policy row. B2B outstanding is 0 until a ledger exists.
+/// NotConfigured when no policy row. Outstanding for Business comes from active business credits.
 /// </summary>
 public sealed record CheckoutCustomerSearchItemDto(
     string Kind,

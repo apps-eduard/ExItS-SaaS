@@ -29,10 +29,11 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
             isUtang: false);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.Equal(SaleBuyerPartyKind.Organization, result.Value!.Kind);
-        Assert.Equal(Buyer.Value, result.Value.BuyerOrganizationId);
-        Assert.Equal("ORG123456", result.Value.BuyerPublicOrganizationId);
-        Assert.Equal("ABC Trading", result.Value.DisplayNameSnapshot);
+        Assert.Equal(SaleBuyerPartyKind.Organization, result.Value!.BuyerParty.Kind);
+        Assert.Equal(Buyer.Value, result.Value.BuyerParty.BuyerOrganizationId);
+        Assert.Equal("ORG123456", result.Value.BuyerParty.BuyerPublicOrganizationId);
+        Assert.Equal("ABC Trading", result.Value.BuyerParty.DisplayNameSnapshot);
+        Assert.Equal(ConnectionId, result.Value.ConnectionId);
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
     }
 
     [Fact]
-    public async Task Utang_with_b2b_is_blocked()
+    public async Task Utang_with_active_b2b_relationship_is_allowed()
     {
         var relationships = new FakeRelationships(ActiveRelationship());
         var result = await B2bCheckoutBuyerAuthorization.ResolveAsync(
@@ -95,8 +96,9 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
             null,
             isUtang: true);
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(DomainErrorCodes.SaleB2bUtangNotSupported, result.ErrorCode);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(SaleBuyerPartyKind.Organization, result.Value!.BuyerParty.Kind);
+        Assert.Equal(ConnectionId, result.Value.ConnectionId);
     }
 
     [Fact]

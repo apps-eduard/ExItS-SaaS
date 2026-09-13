@@ -522,6 +522,35 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
+    public void Utang_checkout_allows_organization_buyer_with_business_credit()
+    {
+        var buyer = SaleBuyerParty.Organization(
+            Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+            "ORG123456",
+            "ABC Trading");
+        var businessCreditId = BusinessCreditEntryId.New();
+
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 2m)],
+            Actor,
+            Now,
+            amountTendered: null,
+            buyerParty: buyer,
+            linkedBusinessCreditEntryId: businessCreditId,
+            cashierShiftId: Shift,
+            registerId: Register);
+
+        Assert.Equal(SalePaymentMethod.Utang, sale.PaymentMethod);
+        Assert.Null(sale.CustomerId);
+        Assert.Null(sale.LinkedCreditEntryId);
+        Assert.Equal(businessCreditId, sale.LinkedBusinessCreditEntryId);
+        Assert.Equal(SaleBuyerPartyKind.Organization, sale.BuyerParty.Kind);
+    }
+
+    [Fact]
     public void Utang_checkout_rejects_a_tendered_amount()
     {
         var error = Assert.Throws<DomainException>(() => Sale.Checkout(
@@ -547,6 +576,7 @@ public sealed class SaleDomainTests
 
         Assert.Contains("CustomerId", names);
         Assert.Contains("LinkedCreditEntryId", names);
+        Assert.Contains("LinkedBusinessCreditEntryId", names);
         Assert.Contains("TaxAmount", names);
 
         // RMAP-B03 commercial discount: gross is kept alongside the net amounts the totals use.
