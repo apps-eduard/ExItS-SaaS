@@ -190,11 +190,15 @@ internal sealed class InventoryRepository : IInventoryRepository
 
     public async Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default)
     {
-        var record = await _db.InventoryAccounts
-            .FirstOrDefaultAsync(
-                a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value,
-                cancellationToken)
-            .ConfigureAwait(false);
+        // Prefer Local so same-UoW AddAccountAsync + UpdateAccountAsync works
+        // (e.g. PO receive enableTrackingIfNeeded creating a new account then posting stock).
+        var record = _db.InventoryAccounts.Local.FirstOrDefault(
+                a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value)
+            ?? await _db.InventoryAccounts
+                .FirstOrDefaultAsync(
+                    a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
         if (record is null)
         {
             throw new PersistenceConflictException(
