@@ -1603,21 +1603,6 @@ export function CheckoutCashPage() {
                   showCreditStatus
                   idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}
                   onSelect={(customer) => {
-                    if (
-                      customer.kind === "Business" &&
-                      customer.status.trim().toLowerCase() === "pending"
-                    ) {
-                      const name = customer.displayName.trim() || t("checkout.businessFallback");
-                      const sellerInitiated =
-                        (customer.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
-                      showToast(
-                        sellerInitiated
-                          ? t("checkout.pendingConnectionToast").replace("{name}", name)
-                          : t("checkout.pendingNeedsApprovalToast").replace("{name}", name),
-                        "success",
-                      );
-                      return;
-                    }
                     const block = resolveUtangDirectorySelectBlock({
                       customer,
                       thisSaleAmount: amountToPay,

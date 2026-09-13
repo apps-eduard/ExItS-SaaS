@@ -245,6 +245,16 @@ describe("CheckoutCustomerDirectory", () => {
       availableCredit: 50000,
       creditLimit: 50000,
     };
+    const pendingConnection: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222226",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333337",
+      buyerPublicOrganizationId: "ORG436356",
+      displayName: "Pending Connection Bakery",
+      status: "Pending",
+      creditStatus: "Approved",
+      availableCredit: 50000,
+    };
     const pending: CheckoutCustomerOption = {
       kind: "Business",
       connectionId: "22222222-2222-2222-2222-222222222223",
@@ -287,7 +297,7 @@ describe("CheckoutCustomerDirectory", () => {
           searchLabel="Search customers"
           searchValue=""
           onSearchChange={vi.fn()}
-          customers={[approved, pending, paused, notEnabled, person]}
+          customers={[approved, pendingConnection, pending, paused, notEnabled, person]}
           customersLoading={false}
           selectedCustomer={null}
           onSelect={vi.fn()}
@@ -297,12 +307,31 @@ describe("CheckoutCustomerDirectory", () => {
       </AppProviders>,
     );
 
+    expect(screen.getByText("Connection")).toBeInTheDocument();
+    expect(screen.queryByText("ExItS ID#")).not.toBeInTheDocument();
+
     const bakery = screen.getByTestId(`checkout-business-${approved.connectionId}`);
     expect(bakery).toHaveTextContent("Approved");
-    expect(bakery).toHaveTextContent("ORG436352");
+    expect(bakery).toHaveTextContent("Connected");
     expect(bakery.querySelector("[data-testid='checkout-credit-directory-available']")).toHaveTextContent(
       "₱",
     );
+    expect(bakery.querySelector("[data-testid='checkout-credit-directory-connection']")).toHaveTextContent(
+      "Connected",
+    );
+
+    const pendingConnRow = screen.getByTestId(`checkout-business-${pendingConnection.connectionId}`);
+    expect(pendingConnRow).toHaveTextContent("Pending");
+    expect(pendingConnRow).toHaveTextContent("Approved");
+    expect(pendingConnRow).toHaveClass("checkout-credit-directory__row--blocked");
+    expect(pendingConnRow).toHaveAttribute(
+      "title",
+      "Connection pending. This business must accept the connection request before Utang can be used.",
+    );
+    expect(
+      pendingConnRow.querySelector("[data-testid='checkout-credit-directory-connection'] .exits-status-chip"),
+    ).toHaveAttribute("data-tone", "warning");
+
     expect(screen.getByTestId(`checkout-business-${pending.connectionId}`)).toHaveTextContent(
       "Pending approval",
     );
@@ -310,10 +339,11 @@ describe("CheckoutCustomerDirectory", () => {
     expect(screen.getByTestId(`checkout-business-${notEnabled.connectionId}`)).toHaveTextContent(
       "Credit not enabled",
     );
-    expect(screen.getByTestId(`checkout-customer-${person.customerId}`)).toHaveTextContent("Approved");
-    expect(screen.getByTestId(`checkout-customer-${person.customerId}`)).toHaveTextContent(
-      "EX-4827-1936",
-    );
+    const personRow = screen.getByTestId(`checkout-customer-${person.customerId}`);
+    expect(personRow).toHaveTextContent("Approved");
+    expect(
+      personRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("—");
   });
 
   it("shows load error instead of empty when the directory request failed", () => {

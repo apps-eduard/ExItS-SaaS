@@ -4368,7 +4368,7 @@ html:has(.admin-shell) #root {
 .checkout-credit-directory__head,
 .checkout-credit-directory__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(6rem, 0.9fr) minmax(3.5rem, 0.4fr) minmax(7rem, 1fr) minmax(4.5rem, 0.7fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(3.5rem, 0.4fr) minmax(6.5rem, 0.9fr) minmax(7rem, 1fr) minmax(4.5rem, 0.7fr);
   gap: 0.5rem 0.75rem;
   align-items: center;
 }
@@ -4412,6 +4412,15 @@ html:has(.admin-shell) #root {
   background: color-mix(in srgb, var(--exits-primary) 10%, var(--exits-surface));
 }
 
+.checkout-credit-directory__row--blocked {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.checkout-credit-directory__row--blocked:hover {
+  background: transparent;
+}
+
 .checkout-credit-directory__name {
   display: flex;
   min-width: 0;
@@ -4439,6 +4448,10 @@ html:has(.admin-shell) #root {
 .checkout-credit-directory__available {
   font-size: var(--exits-text-xs);
   color: var(--exits-text-muted);
+}
+
+.checkout-credit-directory__connection {
+  min-width: 0;
 }
 
 .checkout-credit-directory__available {
@@ -4528,9 +4541,9 @@ html:has(.admin-shell) #root {
   .checkout-credit-directory__row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "name status"
-      "exitsId available"
-      "type type";
+      "name credit"
+      "type connection"
+      "available available";
     row-gap: 0.2rem;
   }
 
@@ -4553,8 +4566,13 @@ html:has(.admin-shell) #root {
     grid-area: type;
   }
 
+  .checkout-credit-directory__connection {
+    grid-area: connection;
+    justify-self: end;
+  }
+
   .checkout-credit-directory__status {
-    grid-area: status;
+    grid-area: credit;
     justify-self: end;
   }
 

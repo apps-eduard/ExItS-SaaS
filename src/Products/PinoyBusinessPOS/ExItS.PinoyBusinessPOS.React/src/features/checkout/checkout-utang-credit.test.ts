@@ -3,6 +3,7 @@ import type { CheckoutCustomerOption } from "@/features/checkout/checkout-custom
 import {
   checkoutCreditStatusLabelKey,
   formatCreditDueDateLabel,
+  resolveCheckoutConnectionDisplay,
   resolveUtangDirectorySelectBlock,
   utangDirectorySelectToastMessage,
 } from "@/features/checkout/checkout-utang-credit";
@@ -116,7 +117,49 @@ describe("checkout-utang-credit helpers", () => {
         },
         thisSaleAmount: 10,
       })?.reason,
+    ).toBe("connection_pending");
+    expect(
+      resolveUtangDirectorySelectBlock({
+        customer: {
+          ...businessBase,
+          status: "Declined",
+          creditStatus: "Approved",
+          availableCredit: 50000,
+        },
+        thisSaleAmount: 10,
+      })?.reason,
     ).toBe("inactive");
+  });
+
+  it("maps connection display separately from credit", () => {
+    expect(
+      resolveCheckoutConnectionDisplay({
+        kind: "Customer",
+        customerId: "11111111-1111-1111-1111-111111111111",
+        displayName: "Juan",
+        status: "Active",
+      }),
+    ).toEqual({ kind: "none" });
+    expect(
+      resolveCheckoutConnectionDisplay({
+        kind: "Business",
+        connectionId: "22222222-2222-2222-2222-222222222222",
+        buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+        buyerPublicOrganizationId: "ORG123",
+        displayName: "Kizy",
+        status: "Pending",
+      }),
+    ).toEqual({ kind: "chip", statusKey: "Pending", raw: "Pending" });
+    expect(
+      resolveCheckoutConnectionDisplay({
+        kind: "Business",
+        connectionId: "22222222-2222-2222-2222-222222222222",
+        buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+        buyerPublicOrganizationId: "ORG123",
+        displayName: "Kizy",
+        status: "Active",
+      }),
+    ).toEqual({ kind: "chip", statusKey: "Connected", raw: "Active" });
   });
 
   it("allows Approved under limit and unknown projection", () => {
@@ -144,6 +187,9 @@ describe("checkout-utang-credit helpers", () => {
     expect(
       utangDirectorySelectToastMessage({ reason: "pending_approval" }, t),
     ).toBe("checkout.utangSelect.pendingApproval");
+    expect(
+      utangDirectorySelectToastMessage({ reason: "connection_pending" }, t),
+    ).toBe("checkout.utangSelect.connectionPending");
     expect(
       utangDirectorySelectToastMessage({ reason: "over_limit", availableCredit: 12.5 }, (key) =>
         key === "checkout.utangSelect.overLimit" ? "Credit limit exceeded. Available credit is {amount}." : key,

@@ -2421,6 +2421,8 @@ export const en = {
     "Credit limit exceeded. Available credit is {amount}.",
   "checkout.utangSelect.businessInactive":
     "Business relationship is not active. Utang cannot be used.",
+  "checkout.utangSelect.connectionPending":
+    "Connection pending. This business must accept the connection request before Utang can be used.",
   "checkout.utangSelect.b2bNotAvailable":
     "Business credit is approved, but Business Utang checkout is not available yet.",
   "checkout.utangZeroBlocked": "Utang requires Amount to Pay greater than zero.",
@@ -2441,6 +2443,11 @@ export const en = {
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
   "checkout.directoryCredit.colType": "Type",
+  "checkout.directoryConnection.colConnection": "Connection",
+  "checkout.directoryConnection.status.Pending": "Pending",
+  "checkout.directoryConnection.status.Connected": "Connected",
+  "checkout.directoryConnection.status.Declined": "Declined",
+  "checkout.directoryConnection.status.Disconnected": "Disconnected",
   "checkout.directoryCredit.colStatus": "Credit status",
   "checkout.directoryCredit.colAvailable": "Available",
   "checkout.directoryCredit.typePerson": "Person",

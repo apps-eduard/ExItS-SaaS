@@ -7,8 +7,11 @@ import {
   isCheckoutPerson,
 } from "@/features/checkout/checkout-customer-option";
 import {
+  checkoutConnectionStatusLabelKey,
+  checkoutConnectionStatusTone,
   checkoutCreditStatusLabelKey,
   checkoutCreditStatusTone,
+  resolveCheckoutConnectionDisplay,
 } from "@/features/checkout/checkout-utang-credit";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 import type { KindFilter } from "@/features/customers/customers-kind";
@@ -270,16 +273,21 @@ export function CheckoutCustomerDirectory({
         >
           <div className="checkout-credit-directory__head" aria-hidden>
             <span>{t("checkout.directoryCredit.colCustomer")}</span>
-            <span>{t("checkout.directoryCredit.colExItsId")}</span>
-            <span>{t("checkout.directoryCredit.colType")}</span>
             {showCreditStatus ? (
               <>
+                <span>{t("checkout.directoryCredit.colType")}</span>
+                <span>{t("checkout.directoryConnection.colConnection")}</span>
                 <span>{t("checkout.directoryCredit.colStatus")}</span>
                 <span className="checkout-credit-directory__available-head">
                   {t("checkout.directoryCredit.colAvailable")}
                 </span>
               </>
-            ) : null}
+            ) : (
+              <>
+                <span>{t("checkout.directoryCredit.colExItsId")}</span>
+                <span>{t("checkout.directoryCredit.colType")}</span>
+              </>
+            )}
           </div>
           <ul className="checkout-credit-directory__list" data-testid="checkout-customer-list">
             {visible.map((customer) => {
@@ -289,7 +297,17 @@ export function CheckoutCustomerDirectory({
               const isB2b = isCheckoutBusinessDirectoryRow(customer);
               const status = showCreditStatus ? directoryCreditStatus(customer) : null;
               const available = showCreditStatus ? directoryAvailableLabel(customer) : null;
-              const exitsId = directoryExItsId(customer);
+              const exitsId = showCreditStatus ? null : directoryExItsId(customer);
+              const connection = showCreditStatus
+                ? resolveCheckoutConnectionDisplay(customer)
+                : null;
+              const connectionPending =
+                showCreditStatus &&
+                connection?.kind === "chip" &&
+                connection.statusKey === "Pending";
+              const connectionHelper = connectionPending
+                ? t("checkout.utangSelect.connectionPending")
+                : undefined;
               return (
                 <li key={key}>
                   <button
@@ -297,6 +315,7 @@ export function CheckoutCustomerDirectory({
                     className={cn(
                       "checkout-credit-directory__row",
                       selected && "checkout-credit-directory__row--selected",
+                      connectionPending && "checkout-credit-directory__row--blocked",
                     )}
                     data-testid={
                       isCheckoutBusiness(customer)
@@ -305,7 +324,13 @@ export function CheckoutCustomerDirectory({
                     }
                     disabled={disabled}
                     aria-pressed={selected}
-                    aria-label={checkoutCustomerTitle(customer, walkInLabel)}
+                    aria-disabled={connectionPending || undefined}
+                    title={connectionHelper}
+                    aria-label={
+                      connectionHelper
+                        ? `${checkoutCustomerTitle(customer, walkInLabel)}. ${connectionHelper}`
+                        : checkoutCustomerTitle(customer, walkInLabel)
+                    }
                     onClick={() => onSelect(customer)}
                   >
                     <span
@@ -316,22 +341,32 @@ export function CheckoutCustomerDirectory({
                         {checkoutCustomerTitle(customer, walkInLabel)}
                       </span>
                     </span>
-                    <span
-                      className="checkout-credit-directory__exits-id tabular-nums"
-                      data-testid="checkout-credit-directory-secondary"
-                    >
-                      {exitsId ?? t("checkout.directoryCredit.availableEmDash")}
-                    </span>
-                    <span
-                      className="checkout-credit-directory__type"
-                      data-testid="checkout-credit-directory-type"
-                    >
-                      {isB2b
-                        ? t("checkout.directoryCredit.typeB2b")
-                        : t("checkout.directoryCredit.typePerson")}
-                    </span>
                     {showCreditStatus ? (
                       <>
+                        <span
+                          className="checkout-credit-directory__type"
+                          data-testid="checkout-credit-directory-type"
+                        >
+                          {isB2b
+                            ? t("checkout.directoryCredit.typeB2b")
+                            : t("checkout.directoryCredit.typePerson")}
+                        </span>
+                        <span
+                          className="checkout-credit-directory__connection"
+                          data-testid="checkout-credit-directory-connection"
+                        >
+                          {connection?.kind === "chip" ? (
+                            <StatusChip tone={checkoutConnectionStatusTone(connection.statusKey)}>
+                              {t(checkoutConnectionStatusLabelKey(connection.statusKey))}
+                            </StatusChip>
+                          ) : connection?.kind === "raw" ? (
+                            <StatusChip tone="neutral">{connection.raw}</StatusChip>
+                          ) : (
+                            <span className="text-muted">
+                              {t("checkout.directoryCredit.availableEmDash")}
+                            </span>
+                          )}
+                        </span>
                         <span
                           className="checkout-credit-directory__status"
                           data-testid="checkout-customer-credit-line"
@@ -355,7 +390,24 @@ export function CheckoutCustomerDirectory({
                             : available}
                         </span>
                       </>
-                    ) : null}
+                    ) : (
+                      <>
+                        <span
+                          className="checkout-credit-directory__exits-id tabular-nums"
+                          data-testid="checkout-credit-directory-secondary"
+                        >
+                          {exitsId ?? t("checkout.directoryCredit.availableEmDash")}
+                        </span>
+                        <span
+                          className="checkout-credit-directory__type"
+                          data-testid="checkout-credit-directory-type"
+                        >
+                          {isB2b
+                            ? t("checkout.directoryCredit.typeB2b")
+                            : t("checkout.directoryCredit.typePerson")}
+                        </span>
+                      </>
+                    )}
                   </button>
                 </li>
               );

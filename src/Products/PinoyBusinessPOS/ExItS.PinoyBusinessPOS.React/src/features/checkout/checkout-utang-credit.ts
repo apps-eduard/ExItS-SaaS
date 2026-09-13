@@ -40,12 +40,74 @@ export function checkoutCreditStatusTone(
   }
 }
 
+/** Canonical B2B relationship status for the Utang Connection column (not credit). */
+export type CheckoutConnectionDisplay =
+  | { kind: "none" }
+  | { kind: "chip"; statusKey: "Pending" | "Connected" | "Declined" | "Disconnected"; raw: string }
+  | { kind: "raw"; raw: string };
+
+export function resolveCheckoutConnectionDisplay(
+  customer: CheckoutCustomerOption,
+): CheckoutConnectionDisplay {
+  if (!isCheckoutBusiness(customer)) {
+    return { kind: "none" };
+  }
+  const raw = (customer.status ?? "").trim();
+  const normalized = raw.toLowerCase();
+  if (normalized === "pending") {
+    return { kind: "chip", statusKey: "Pending", raw };
+  }
+  if (normalized === "active") {
+    return { kind: "chip", statusKey: "Connected", raw };
+  }
+  if (normalized === "declined") {
+    return { kind: "chip", statusKey: "Declined", raw };
+  }
+  if (normalized === "disconnected") {
+    return { kind: "chip", statusKey: "Disconnected", raw };
+  }
+  if (!raw) {
+    return { kind: "none" };
+  }
+  return { kind: "raw", raw };
+}
+
+export function checkoutConnectionStatusLabelKey(
+  statusKey: "Pending" | "Connected" | "Declined" | "Disconnected",
+): MessageKey {
+  switch (statusKey) {
+    case "Pending":
+      return "checkout.directoryConnection.status.Pending";
+    case "Connected":
+      return "checkout.directoryConnection.status.Connected";
+    case "Declined":
+      return "checkout.directoryConnection.status.Declined";
+    case "Disconnected":
+      return "checkout.directoryConnection.status.Disconnected";
+  }
+}
+
+export function checkoutConnectionStatusTone(
+  statusKey: "Pending" | "Connected" | "Declined" | "Disconnected",
+): StatusChipTone {
+  switch (statusKey) {
+    case "Connected":
+      return "success";
+    case "Pending":
+      return "warning";
+    case "Declined":
+    case "Disconnected":
+      return "neutral";
+  }
+}
+
 export type UtangDirectorySelectBlockReason =
   | "pending_approval"
   | "not_configured"
   | "disabled"
   | "over_limit"
-  | "inactive";
+  | "inactive"
+  | "connection_pending";
 
 function normalizeCreditStatus(raw: string | null | undefined): string {
   return (raw ?? "").trim();
@@ -56,7 +118,11 @@ export function resolveUtangDirectorySelectBlock(args: {
   thisSaleAmount: number;
 }): { reason: UtangDirectorySelectBlockReason; availableCredit?: number } | null {
   if (isCheckoutBusiness(args.customer)) {
-    if ((args.customer.status ?? "").trim() !== "Active") {
+    const relationship = (args.customer.status ?? "").trim().toLowerCase();
+    if (relationship === "pending") {
+      return { reason: "connection_pending" };
+    }
+    if (relationship !== "active") {
       return { reason: "inactive" };
     }
     const status = normalizeCreditStatus(args.customer.creditStatus);
@@ -115,6 +181,8 @@ export function utangDirectorySelectToastMessage(
       return t("checkout.utangSelect.disabled");
     case "inactive":
       return t("checkout.utangSelect.businessInactive");
+    case "connection_pending":
+      return t("checkout.utangSelect.connectionPending");
     case "over_limit":
       return t("checkout.utangSelect.overLimit").replace(
         "{amount}",
