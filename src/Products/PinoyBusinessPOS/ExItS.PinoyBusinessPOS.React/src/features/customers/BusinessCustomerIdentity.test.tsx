@@ -193,10 +193,9 @@ describe("Business Customer identity display", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByTestId("business-customer-display-name")).toHaveTextContent(
-      "Kizy Mini Store",
-    );
-    expect(screen.getByTestId("business-customer-public-id")).toHaveTextContent("ORGKIZY01");
+    expect(await screen.findByTestId("business-org-name")).toHaveTextContent("Kizy Mini Store");
+    expect(screen.getByTestId("business-org-exits-id")).toHaveTextContent("ORGKIZY01");
+    expect(screen.getByTestId("business-customer-status-chips")).toBeInTheDocument();
     expect(await screen.findByTestId("business-credit-policy-section")).toBeInTheDocument();
     expect(await screen.findByTestId("business-credit-policy-status")).toHaveTextContent(
       "Not configured",
@@ -269,10 +268,9 @@ describe("Business Customer identity display", () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByTestId("business-customer-display-name")).toHaveTextContent(
-      "Kizy Mini Store",
-    );
+    expect(await screen.findByTestId("business-org-name")).toHaveTextContent("Kizy Mini Store");
     expect(screen.queryByText("Kizy Wholesale Trading")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-customer-identity")).not.toBeInTheDocument();
   });
 
   it("pending detail never shows Connected since and shows request-sent copy", async () => {
@@ -328,6 +326,13 @@ describe("Business Customer identity display", () => {
     );
 
     expect(await screen.findByTestId("business-customer-connected-since")).toBeInTheDocument();
+    expect(screen.getByTestId("business-org-information")).toContainElement(
+      screen.getByTestId("business-customer-status-chips"),
+    );
+    expect(screen.getByTestId("business-org-information")).toContainElement(
+      screen.getByTestId("business-customer-connected-since"),
+    );
     expect(screen.queryByTestId("business-customer-pending-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-customer-identity")).not.toBeInTheDocument();
   });
 });

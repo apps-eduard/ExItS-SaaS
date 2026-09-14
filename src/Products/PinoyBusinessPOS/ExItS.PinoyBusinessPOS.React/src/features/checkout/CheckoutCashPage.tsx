@@ -146,9 +146,8 @@ export function CheckoutCashPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
-  const { identity: sellerDocumentIdentityPreview } = useBusinessDocumentIdentity(
-    boundWorkspace?.organizationId,
-  );
+  const { identity: sellerDocumentIdentityPreview, isLoading: sellerIdentityLoading } =
+    useBusinessDocumentIdentity(boundWorkspace?.organizationId);
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
@@ -870,6 +869,16 @@ export function CheckoutCashPage() {
       setSubmitError(creditPolicyBlockMessage);
       return;
     }
+    // Avoid persisting a branch-only seller snapshot while org profile is still loading.
+    if (
+      sellerIdentityLoading &&
+      !boundWorkspace?.organizationDisplayName?.trim() &&
+      (!sellerDocumentIdentityPreview.businessName ||
+        sellerDocumentIdentityPreview.businessName === "Business")
+    ) {
+      setSubmitError(t("loading.label"));
+      return;
+    }
 
     submittingRef.current = true;
     setSaving(true);
@@ -978,24 +987,33 @@ export function CheckoutCashPage() {
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
         priceOverrides:
           allowOverride && priceOverrideIntents.length > 0 ? priceOverrideIntents : undefined,
-        sellerDocumentIdentity: {
-          ...(sellerDocumentIdentityPreview.businessName &&
-          sellerDocumentIdentityPreview.businessName !== "Business"
-            ? { businessName: sellerDocumentIdentityPreview.businessName }
-            : {}),
-          logoUrl: sellerDocumentIdentityPreview.logoUrl ?? undefined,
-          address: sellerDocumentIdentityPreview.address ?? undefined,
-          phone: sellerDocumentIdentityPreview.phone ?? undefined,
-          email: sellerDocumentIdentityPreview.email ?? undefined,
-          branchName: sellerDocumentIdentityPreview.branchName ?? undefined,
-          branchAddress: sellerDocumentIdentityPreview.branchAddress ?? undefined,
-          showLogo: documentSettings?.header.showLogo,
-          showBusinessAddress: documentSettings?.header.showBusinessAddress,
-          showBusinessPhone: documentSettings?.header.showBusinessPhone,
-          showBusinessEmail: documentSettings?.header.showBusinessEmail,
-          showBranchName: documentSettings?.header.showBranchName,
-          showBranchAddress: documentSettings?.header.showBranchAddress,
-        },
+        sellerDocumentIdentity: (() => {
+          const fromProfile =
+            sellerDocumentIdentityPreview.businessName &&
+            sellerDocumentIdentityPreview.businessName !== "Business"
+              ? sellerDocumentIdentityPreview.businessName.trim()
+              : null;
+          const fromWorkspace = boundWorkspace?.organizationDisplayName?.trim() || null;
+          const businessName = fromProfile || fromWorkspace;
+          return {
+            ...(businessName ? { businessName } : {}),
+            logoUrl: sellerDocumentIdentityPreview.logoUrl ?? undefined,
+            address: sellerDocumentIdentityPreview.address ?? undefined,
+            phone: sellerDocumentIdentityPreview.phone ?? undefined,
+            email: sellerDocumentIdentityPreview.email ?? undefined,
+            branchName:
+              sellerDocumentIdentityPreview.branchName ??
+              boundWorkspace?.branchName ??
+              undefined,
+            branchAddress: sellerDocumentIdentityPreview.branchAddress ?? undefined,
+            showLogo: documentSettings?.header.showLogo,
+            showBusinessAddress: documentSettings?.header.showBusinessAddress,
+            showBusinessPhone: documentSettings?.header.showBusinessPhone,
+            showBusinessEmail: documentSettings?.header.showBusinessEmail,
+            showBranchName: documentSettings?.header.showBranchName,
+            showBranchAddress: documentSettings?.header.showBranchAddress,
+          };
+        })(),
         ...(pendingQuotationIdRef.current
           ? { quotationId: pendingQuotationIdRef.current }
           : {}),

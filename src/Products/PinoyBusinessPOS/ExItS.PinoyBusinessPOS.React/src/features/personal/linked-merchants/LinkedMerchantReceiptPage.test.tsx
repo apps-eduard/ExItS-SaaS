@@ -43,6 +43,18 @@ vi.mock("@/connectivity/browser-online", async (importOriginal) => {
   };
 });
 
+vi.mock("@/features/customer-ordering/useLinkedMerchantShopContext", () => ({
+  useLinkedMerchantShopContext: () => ({
+    data: {
+      organizationDisplayName: "Paul Coffee",
+      customerDisplayName: "Ada",
+      businessCustomerId: "22222222-2222-4222-8222-222222222222",
+      statementTo: null,
+    },
+    isLoading: false,
+  }),
+}));
+
 const organizationId = "11111111-1111-1111-1111-111111111111";
 const businessCustomerId = "22222222-2222-4222-8222-222222222222";
 const saleId = "33333333-3333-4333-8333-333333333333";

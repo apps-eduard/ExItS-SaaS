@@ -19,9 +19,10 @@ import {
   exportBusinessDocumentPdf,
   printBusinessDocument,
 } from "@/features/documents/print-business-document";
+import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
 import {
   getOrganizationDocumentPublicIdentity,
-  resolveCustomerSellerIdentity,
+  resolveCustomerSellerIdentityParts,
 } from "@/features/documents/resolve-customer-seller-identity";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -52,6 +53,11 @@ export function LinkedMerchantReceiptPage() {
     saleId: string;
   }>();
   const [state, setState] = useState<ReceiptState>({ kind: "loading" });
+  // Same merchant name source as statement page — survives when document-public-identity is unavailable.
+  const merchantContextQuery = useLinkedMerchantShopContext(
+    organizationId,
+    Boolean(organizationId),
+  );
 
   const backHref = `/personal/linked-merchants/${organizationId}/${businessCustomerId}`;
   const pageShell =
@@ -75,7 +81,7 @@ export function LinkedMerchantReceiptPage() {
           businessCustomerId,
           saleId,
         );
-        // Public profile fills logo/email gaps for legacy receipts; never fails the page.
+        // Public profile fills logo/email/address gaps for legacy receipts; never fails the page.
         const publicProfile = await getOrganizationDocumentPublicIdentity(organizationId);
         setState({ kind: "ready", receipt, publicProfile });
       } catch (err) {
@@ -173,8 +179,13 @@ export function LinkedMerchantReceiptPage() {
 
   const { receipt, publicProfile } = state;
   const view = customerPurchaseSummaryFromLinkedReceipt(receipt);
-  const { identity, headerVisibility } = resolveCustomerSellerIdentity({
-    receipt,
+  const { identity, headerVisibility } = resolveCustomerSellerIdentityParts({
+    sellerDocumentIdentity: receipt.sellerDocumentIdentity,
+    merchantDisplayName:
+      receipt.merchantDisplayName ||
+      merchantContextQuery.data?.organizationDisplayName ||
+      null,
+    branchDisplayName: receipt.branchDisplayName,
     publicProfile,
   });
 

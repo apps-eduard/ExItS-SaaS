@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, RefreshCw, Search } from "lucide-react";
 import {
   listBusinessCustomerOrganizationContacts,
   updateBusinessCustomerRelationshipContact,
@@ -13,8 +13,10 @@ import { FormDrawer } from "@/components/exits/FormDrawer";
 import { useToast } from "@/components/exits/ToastProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { StatusChip } from "@/components/ui/badge";
 import { SegmentedControl, SegmentedOption } from "@/components/ui/segmented-control";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 type ContactSourceMode = "OrganizationMember" | "Custom";
 
@@ -132,6 +134,8 @@ export function BusinessRelationshipContactEditDrawer({
     setFormError(null);
   }, [open, customer, canUseOrganizationContact]);
 
+  const buyerOrgName = customer.organizationDisplayName?.trim() || t("customers.business.relationshipContact.organization");
+
   const contactsQuery = useQuery({
     queryKey: [
       "business-customers",
@@ -149,6 +153,13 @@ export function BusinessRelationshipContactEditDrawer({
     return items.filter((c) => matchesStaffSearch(c, contactSearch.trim()));
   }, [contactsQuery.data, contactSearch]);
 
+  const directoryCountLabel =
+    contactsQuery.isSuccess
+      ? t("customers.business.relationshipContact.directoryCount")
+          .replace("{count}", String(contactsQuery.data?.length ?? 0))
+          .replace("{name}", buyerOrgName)
+      : null;
+
   const selectedContact = useMemo(() => {
     if (!selectedMemberId) {
       return null;
@@ -161,12 +172,13 @@ export function BusinessRelationshipContactEditDrawer({
     }
     // Snapshot fallback while list loads / member removed
     if (customer.organizationMemberId === selectedMemberId && customer.contactPersonName) {
+      const roleTitle = customer.contactRole ?? "";
       return {
         organizationMemberId: selectedMemberId,
         userId: selectedMemberId,
         displayName: customer.contactPersonName,
-        roleTitle: customer.contactRole ?? "",
-        isOwner: false,
+        roleTitle,
+        isOwner: /\bowner\b/i.test(roleTitle),
         department: customer.contactDepartment,
         phone: customer.contactPhone,
         email: customer.contactEmail,
@@ -413,7 +425,10 @@ export function BusinessRelationshipContactEditDrawer({
                   data-testid="b2b-org-contacts-empty"
                 >
                   <p className="m-0 text-[length:var(--exits-text-sm)] text-foreground">
-                    {t("customers.business.relationshipContact.noContactsAvailable")}
+                    {t("customers.business.relationshipContact.noContactsAvailable").replace(
+                      "{name}",
+                      buyerOrgName,
+                    )}
                   </p>
                   <Button
                     type="button"
@@ -432,9 +447,31 @@ export function BusinessRelationshipContactEditDrawer({
               && ((contactsQuery.data?.length ?? 0) > 0 || contactsQuery.isLoading || pickerOpen)
               && (pickerOpen || !selectedContact) ? (
                 <div className="b2b-staff-combobox" data-testid="b2b-organization-contact-picker">
-                  <span className="text-[length:var(--exits-text-sm)] font-medium">
-                    {t("customers.business.relationshipContact.organizationContact")}
-                  </span>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-[length:var(--exits-text-sm)] font-medium">
+                      {t("customers.business.relationshipContact.organizationContact").replace(
+                        "{name}",
+                        buyerOrgName,
+                      )}
+                    </span>
+                    <p
+                      className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                      data-testid="b2b-org-contact-directory-help"
+                    >
+                      {t("customers.business.relationshipContact.directoryHelp").replace(
+                        "{name}",
+                        buyerOrgName,
+                      )}
+                    </p>
+                    {directoryCountLabel ? (
+                      <p
+                        className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                        data-testid="b2b-org-contact-directory-count"
+                      >
+                        {directoryCountLabel}
+                      </p>
+                    ) : null}
+                  </div>
 
                   {!pickerOpen ? (
                     <button
@@ -453,15 +490,15 @@ export function BusinessRelationshipContactEditDrawer({
                     </button>
                   ) : (
                     <>
-                      <label className="relative block" htmlFor="b2b-staff-combobox-search">
+                      <div className="b2b-staff-combobox__search-wrap">
                         <Search
-                          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+                          className="b2b-staff-combobox__search-icon"
                           aria-hidden
                         />
                         <input
                           id="b2b-staff-combobox-search"
                           ref={searchInputRef}
-                          className="catalog-form-select w-full pl-9 font-normal"
+                          className="b2b-staff-combobox__search"
                           value={contactSearch}
                           onChange={(event) => {
                             setContactSearch(event.target.value);
@@ -506,7 +543,11 @@ export function BusinessRelationshipContactEditDrawer({
                           placeholder={t("customers.business.relationshipContact.selectStaffPlaceholder")}
                           data-testid="b2b-staff-combobox-search"
                         />
-                      </label>
+                        <ChevronDown
+                          className="b2b-staff-combobox__search-chevron"
+                          aria-hidden
+                        />
+                      </div>
 
                       <div className="b2b-staff-combobox__panel" data-testid="b2b-staff-combobox-panel">
                         {contactsQuery.isLoading ? (
@@ -515,7 +556,10 @@ export function BusinessRelationshipContactEditDrawer({
                           </p>
                         ) : filteredContacts.length === 0 ? (
                           <p className="b2b-staff-combobox__hint m-0">
-                            {t("customers.business.relationshipContact.noContacts")}
+                            {t("customers.business.relationshipContact.noContacts").replace(
+                              "{name}",
+                              buyerOrgName,
+                            )}
                           </p>
                         ) : (
                           <ul
@@ -531,11 +575,10 @@ export function BusinessRelationshipContactEditDrawer({
                                   id={`${listboxId}-opt-${index}`}
                                   role="option"
                                   aria-selected={highlight === index}
-                                  className={
-                                    highlight === index
-                                      ? "b2b-staff-combobox__option is-active"
-                                      : "b2b-staff-combobox__option"
-                                  }
+                                  className={cn(
+                                    "b2b-staff-combobox__option",
+                                    highlight === index && "is-active",
+                                  )}
                                   data-testid={`b2b-org-contact-${contact.organizationMemberId}`}
                                   onMouseDown={(event) => event.preventDefault()}
                                   onMouseEnter={() => setHighlight(index)}
@@ -550,9 +593,12 @@ export function BusinessRelationshipContactEditDrawer({
                                         {contact.displayName}
                                       </span>
                                       {contact.isOwner ? (
-                                        <span className="b2b-staff-combobox__owner-badge">
+                                        <StatusChip
+                                          tone="info"
+                                          className="b2b-staff-combobox__owner-badge"
+                                        >
                                           {t("customers.business.relationshipContact.ownerBadge")}
-                                        </span>
+                                        </StatusChip>
                                       ) : null}
                                     </span>
                                     <span className="mt-0.5 block truncate text-[length:var(--exits-text-xs)] text-muted">
@@ -582,14 +628,32 @@ export function BusinessRelationshipContactEditDrawer({
                       {t("customers.business.relationshipContact.contactUnavailable")}
                     </p>
                   ) : null}
-                  <p className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground">
-                    {selectedContact.displayName}
-                  </p>
-                  <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
-                    {[selectedContact.roleTitle, selectedContact.department]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
+                  <div className="b2b-staff-selected__header">
+                    <span className="b2b-staff-combobox__avatar" aria-hidden>
+                      {initials(selectedContact.displayName)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground">
+                          {selectedContact.displayName}
+                        </p>
+                        {selectedContact.isOwner ? (
+                          <StatusChip
+                            tone="info"
+                            className="b2b-staff-combobox__owner-badge"
+                            data-testid="b2b-selected-owner-badge"
+                          >
+                            {t("customers.business.relationshipContact.ownerBadge")}
+                          </StatusChip>
+                        ) : null}
+                      </div>
+                      <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
+                        {[selectedContact.roleTitle, selectedContact.department]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  </div>
                   <dl className="customer-ownership-dl mt-2">
                     {selectedContact.phone?.trim() ? (
                       <div>
@@ -605,13 +669,14 @@ export function BusinessRelationshipContactEditDrawer({
                     ) : null}
                   </dl>
                   <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-                    {t("customers.business.relationshipContact.organizationManagedReadonly")}
+                    {t("customers.business.relationshipContact.organizationManagedReadonly").replace(
+                      "{name}",
+                      buyerOrgName,
+                    )}
                   </p>
-                  <Button
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="mt-2"
+                    className="b2b-staff-selected__change"
                     data-testid="b2b-change-organization-contact"
                     disabled={saveMutation.isPending}
                     onClick={() => {
@@ -619,8 +684,9 @@ export function BusinessRelationshipContactEditDrawer({
                       setContactSearch("");
                     }}
                   >
+                    <RefreshCw className="size-3.5 shrink-0" aria-hidden />
                     {t("customers.business.relationshipContact.changeContact")}
-                  </Button>
+                  </button>
                 </div>
               ) : null}
 

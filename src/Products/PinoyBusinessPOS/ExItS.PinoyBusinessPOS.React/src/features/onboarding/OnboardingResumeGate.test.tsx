@@ -134,6 +134,34 @@ describe("OnboardingResumeGate", () => {
     expect(getProgress).not.toHaveBeenCalled();
   });
 
+  it("still resumes onboarding when only a pre-org pending checkout marker exists", async () => {
+    getProgress.mockResolvedValue(inProgressProgress());
+    writePendingSubscriptionCheckout({
+      paymentId: "payment-preorg",
+      planKey: "pro",
+      billingCycle: "Monthly",
+    });
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: <GateLayout />,
+          children: [
+            { path: "dashboard", element: <div>Dashboard</div> },
+            { path: "onboarding", element: <div>Onboarding redirected</div> },
+          ],
+        },
+      ],
+      { initialEntries: ["/dashboard"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText("Onboarding redirected")).toBeTruthy();
+    expect(getProgress).toHaveBeenCalled();
+  });
+
   it("still redirects incomplete onboarding when no pending checkout", async () => {
     getProgress.mockResolvedValue(inProgressProgress());
 

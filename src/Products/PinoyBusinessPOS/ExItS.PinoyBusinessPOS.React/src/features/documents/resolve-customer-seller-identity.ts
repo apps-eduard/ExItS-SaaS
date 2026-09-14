@@ -68,7 +68,8 @@ export async function getOrganizationDocumentPublicIdentity(
 
 /**
  * Resolve seller document identity for customer-facing purchase summaries.
- * Prefer sale-time snapshot → public document identity → merchant snapshot → "Store".
+ * Prefer sale-time snapshot fields → public document identity → merchant snapshot → "Store".
+ * Empty snap fields (common when checkout raced org-profile load) must still gap-fill.
  */
 export function resolveCustomerSellerIdentityParts(args: {
   sellerDocumentIdentity?: CustomerSellerDocumentIdentitySnap | null;
@@ -98,6 +99,16 @@ export function resolveCustomerSellerIdentityParts(args: {
   const branchName = snap?.branchName?.trim() || branchDisplayName?.trim() || null;
   const branchAddress = snap?.branchAddress?.trim() || null;
 
+  // Visibility: prefer snap flags when the snap carried durable branding; otherwise defaults
+  // so a branch-only / empty snap cannot hide public-profile email/address.
+  const snapHasDurable =
+    Boolean(fromSnapName) ||
+    Boolean(snap?.address?.trim()) ||
+    Boolean(snap?.phone?.trim()) ||
+    Boolean(snap?.email?.trim()) ||
+    Boolean(snap?.logoUrl?.trim()) ||
+    Boolean(snap?.publicOrganizationId?.trim());
+
   return {
     identity: {
       businessName,
@@ -110,11 +121,17 @@ export function resolveCustomerSellerIdentityParts(args: {
       branchAddress,
     },
     headerVisibility: {
-      showLogo: snap?.showLogo ?? defaults.showLogo,
+      showLogo: snapHasDurable ? (snap?.showLogo ?? defaults.showLogo) : defaults.showLogo,
       showBusinessName: true,
-      showBusinessAddress: snap?.showBusinessAddress ?? defaults.showBusinessAddress,
-      showBusinessPhone: snap?.showBusinessPhone ?? defaults.showBusinessPhone,
-      showBusinessEmail: snap?.showBusinessEmail ?? defaults.showBusinessEmail,
+      showBusinessAddress: snapHasDurable
+        ? (snap?.showBusinessAddress ?? defaults.showBusinessAddress)
+        : defaults.showBusinessAddress,
+      showBusinessPhone: snapHasDurable
+        ? (snap?.showBusinessPhone ?? defaults.showBusinessPhone)
+        : defaults.showBusinessPhone,
+      showBusinessEmail: snapHasDurable
+        ? (snap?.showBusinessEmail ?? defaults.showBusinessEmail)
+        : defaults.showBusinessEmail,
       showWebsite: defaults.showWebsite,
       showBranchName: snap?.showBranchName ?? defaults.showBranchName,
       showBranchAddress: snap?.showBranchAddress ?? defaults.showBranchAddress,

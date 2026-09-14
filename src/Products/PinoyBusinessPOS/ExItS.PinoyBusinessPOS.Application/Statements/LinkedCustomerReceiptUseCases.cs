@@ -186,12 +186,6 @@ public sealed class GetLinkedCustomerSaleReceipt
         Sale sale,
         CancellationToken cancellationToken)
     {
-        if (sale.SellerDocumentIdentity is { } snap && snap.HasAnyIdentityField())
-        {
-            return ToDto(snap, "saleSnapshot");
-        }
-
-        // Legacy fallback: live public/business operational identity (acceptable until snapshot exists).
         string? branchName = null;
         if (sale.BranchId is not null && _branches is not null)
         {
@@ -206,13 +200,57 @@ public sealed class GetLinkedCustomerSaleReceipt
             .GetByOrganizationIdAsync(sale.OrganizationId, cancellationToken)
             .ConfigureAwait(false);
 
-        var identity = SaleSellerDocumentIdentity.Create(
-            businessName: setup is { IsCompleted: true } ? setup.StoreDisplayName : null,
-            address: setup is { IsCompleted: true } ? setup.BusinessAddress : null,
-            phone: setup is { IsCompleted: true } ? setup.ContactPhone : null,
+        // Prefer completed setup; still use any populated fields when setup is incomplete.
+        var setupReady = setup is { IsCompleted: true };
+        var fromSetup = SaleSellerDocumentIdentity.Create(
+            businessName: FirstNonEmpty(
+                setupReady ? setup!.StoreDisplayName : null,
+                setup?.StoreDisplayName),
+            address: FirstNonEmpty(
+                setupReady ? setup!.BusinessAddress : null,
+                setup?.BusinessAddress),
+            phone: FirstNonEmpty(
+                setupReady ? setup!.ContactPhone : null,
+                setup?.ContactPhone),
             branchName: branchName);
 
-        return ToDto(identity, "operationalSetupFallback");
+        if (sale.SellerDocumentIdentity is { } snap)
+        {
+            // Always gap-fill empty snap fields from setup/branch. Branch-only snaps used to
+            // short-circuit HasAnyIdentityField and hide merchant email/address forever.
+            var merged = SaleSellerDocumentIdentity.Create(
+                businessName: FirstNonEmpty(snap.BusinessName, fromSetup.BusinessName),
+                publicOrganizationId: FirstNonEmpty(snap.PublicOrganizationId, fromSetup.PublicOrganizationId),
+                logoUrl: FirstNonEmpty(snap.LogoUrl, fromSetup.LogoUrl),
+                address: FirstNonEmpty(snap.Address, fromSetup.Address),
+                phone: FirstNonEmpty(snap.Phone, fromSetup.Phone),
+                email: FirstNonEmpty(snap.Email, fromSetup.Email),
+                branchName: FirstNonEmpty(snap.BranchName, fromSetup.BranchName),
+                branchAddress: FirstNonEmpty(snap.BranchAddress, fromSetup.BranchAddress),
+                showLogo: snap.ShowLogo,
+                showBusinessAddress: snap.ShowBusinessAddress,
+                showBusinessPhone: snap.ShowBusinessPhone,
+                showBusinessEmail: snap.ShowBusinessEmail,
+                showBranchName: snap.ShowBranchName,
+                showBranchAddress: snap.ShowBranchAddress);
+
+            var source = snap.HasDurableBusinessIdentity()
+                ? "saleSnapshot"
+                : "saleSnapshotGapFilled";
+            return ToDto(merged, source);
+        }
+
+        return ToDto(fromSetup, "operationalSetupFallback");
+    }
+
+    private static string? FirstNonEmpty(string? preferred, string? fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(preferred))
+        {
+            return preferred.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(fallback) ? null : fallback.Trim();
     }
 
     private static LinkedCustomerSellerDocumentIdentityDto ToDto(

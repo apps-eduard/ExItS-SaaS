@@ -53,6 +53,13 @@ export function hasPendingSubscriptionCheckout(): boolean {
   return readPendingSubscriptionCheckout() !== null;
 }
 
+/**
+ * Resolve a pending checkout that belongs to a specific organization context.
+ *
+ * Pre-org markers (organizationId null) apply only when organizationId is also
+ * null/empty. They must NOT match a concrete Manage Business org — that caused
+ * /onboarding → /subscription-checkout soft-locks for abandoned Explore checkouts.
+ */
 export function pendingSubscriptionCheckoutForOrganization(
   organizationId: string | null | undefined,
 ): PendingSubscriptionCheckout | null {
@@ -60,16 +67,22 @@ export function pendingSubscriptionCheckoutForOrganization(
   if (!pending) {
     return null;
   }
-  if (!organizationId?.trim()) {
-    // Pre-org pending checkout still blocks onboarding routes.
-    return pending.organizationId ? null : pending;
+
+  const org = organizationId?.trim() || null;
+  const pendingOrg = pending.organizationId?.trim() || null;
+
+  if (!org) {
+    return pendingOrg ? null : pending;
   }
-  if (!pending.organizationId) {
-    return pending;
-  }
-  if (pending.organizationId.toLowerCase() !== organizationId.trim().toLowerCase()) {
+
+  if (!pendingOrg) {
     return null;
   }
+
+  if (pendingOrg.toLowerCase() !== org.toLowerCase()) {
+    return null;
+  }
+
   return pending;
 }
 
@@ -82,10 +95,13 @@ export function shouldSkipOnboardingResume(pathname: string): boolean {
   );
 }
 
-/** Active unpaid checkout blocks onboarding resume even off the checkout route. */
+/**
+ * Block onboarding resume only when the pending checkout is scoped to this org.
+ * Pre-org Explore checkout is already protected by shouldSkipOnboardingResume on
+ * /personal and /subscription-checkout paths — do not sticky-block all orgs.
+ */
 export function shouldBlockOnboardingForPendingCheckout(
   organizationId: string | null | undefined,
 ): boolean {
-  return pendingSubscriptionCheckoutForOrganization(organizationId) !== null
-    || hasPendingSubscriptionCheckout();
+  return pendingSubscriptionCheckoutForOrganization(organizationId) !== null;
 }

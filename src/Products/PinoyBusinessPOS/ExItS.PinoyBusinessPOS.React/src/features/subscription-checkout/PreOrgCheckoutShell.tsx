@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { AccountMenu } from "@/components/exits/AccountMenu";
+import { clearPendingSubscriptionCheckout } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSession } from "@/session/SessionProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -26,6 +27,7 @@ export function PreOrgCheckoutShell() {
       setSigningOut(false);
       return;
     }
+    clearPendingSubscriptionCheckout();
     clearBoundWorkspace();
     navigate(result.nextRoute, { replace: true });
   }

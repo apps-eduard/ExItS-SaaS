@@ -3,7 +3,6 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
-  FileText,
   Link2,
   MapPin,
   NotebookPen,
@@ -12,7 +11,6 @@ import {
   RotateCcw,
   UserRound,
   Users,
-  Wallet,
 } from "lucide-react";
 import {
   canApproveCustomerCreditPolicy,
@@ -38,7 +36,6 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   deactivateCustomer,
   getCustomer,
-  getCustomerCreditSummary,
   listCustomerCreditEntries,
   listCustomerRepayments,
   reactivateCustomer,
@@ -64,8 +61,6 @@ import {
   resolveDisplayedPersonalExItsId,
   type CustomerLinkUiStatus,
 } from "@/features/customers/customer-link-status";
-import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
-import { mapOrgLinkStatusToRelationship } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
@@ -74,9 +69,7 @@ import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
-  cacheCustomerCreditSummary,
   getCachedCustomer,
-  getCachedCustomerCreditSummary,
 } from "@/offline/customer-cache";
 import { onlineRequiredDetailKey, ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
@@ -98,7 +91,6 @@ export function CustomerDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [afterCreateHintDismissed, setAfterCreateHintDismissed] = useState(false);
   const [cachedCustomer, setCachedCustomer] = useState<PosCustomerListItem | null>(null);
-  const [cachedOwed, setCachedOwed] = useState<number | null>(null);
 
   const allowEdit = canEditCustomer(sessionGrant);
   const allowRepay = canRecordRepayment(sessionGrant);
@@ -123,12 +115,6 @@ export function CustomerDetailPage() {
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
     enabled: enabledOnline,
     queryFn: ({ signal }) => getCustomer(workspace!, customerId!, signal),
-  });
-
-  const summaryQuery = useQuery({
-    queryKey: ["customers", "credit-summary", workspace?.organizationId, customerId],
-    enabled: enabledOnline,
-    queryFn: ({ signal }) => getCustomerCreditSummary(workspace!, customerId!, signal),
   });
 
   const platformCustomerId = customerQuery.data?.platformBusinessCustomerId ?? null;
@@ -319,30 +305,21 @@ export function CustomerDetailPage() {
         () => {},
       );
     }
-    if (summaryQuery.data) {
-      void cacheCustomerCreditSummary(
-        offlineContext.db,
-        offlineContext.scopeBinding,
-        summaryQuery.data,
-      ).catch(() => {});
-    }
-  }, [customerQuery.data, offlineContext, online, summaryQuery.data]);
+  }, [customerQuery.data, offlineContext, online]);
 
   useEffect(() => {
     if (!offlineContext || online || !customerId) {
       return;
     }
     let cancelled = false;
-    void Promise.all([
-      getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId),
-      getCachedCustomerCreditSummary(offlineContext.db, offlineContext.scopeBinding, customerId),
-    ]).then(([cachedRow, summary]) => {
-      if (cancelled) {
-        return;
-      }
-      setCachedCustomer(cachedRow);
-      setCachedOwed(summary?.outstandingAmount ?? null);
-    });
+    void getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId).then(
+      (cachedRow) => {
+        if (cancelled) {
+          return;
+        }
+        setCachedCustomer(cachedRow);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -372,7 +349,6 @@ export function CustomerDetailPage() {
   }
 
   const usingCachedCustomer = !customerQuery.data;
-  const amountOwed = summaryQuery.data?.outstandingAmount ?? cachedOwed ?? 0;
   const isActive = customer.status.toLowerCase() === "active";
 
   const linkUiStatus: CustomerLinkUiStatus = (() => {
@@ -455,42 +431,22 @@ export function CustomerDetailPage() {
     </Button>
   ) : null;
 
-  const ledgerActions = (
-    <div className="customer-detail-overview__actions">
-      {allowRepay ? (
-        <Button asChild variant="success" data-testid="customer-repay">
-          <Link to={`/customers/${customerId}/repay`}>
-            <Wallet className="size-4 shrink-0" aria-hidden />
-            {t("customers.recordPayment")}
-          </Link>
-        </Button>
-      ) : null}
-      {allowStatement && online ? (
-        <Button asChild variant="info" data-testid="customer-statement">
-          <Link to={`/customers/${customerId}/statement`}>
-            <FileText className="size-4 shrink-0" aria-hidden />
-            {t("customers.viewStatement")}
-          </Link>
-        </Button>
-      ) : null}
-      {allowEdit ? (
-        <Button
-          type="button"
-          variant={isActive ? "destructive" : "success"}
-          data-testid="customer-toggle-status"
-          disabled={acting}
-          onClick={() => void toggleStatus()}
-        >
-          {isActive ? (
-            <Ban className="size-4 shrink-0" aria-hidden />
-          ) : (
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-          )}
-          {isActive ? t("customers.deactivate") : t("customers.reactivate")}
-        </Button>
-      ) : null}
-    </div>
-  );
+  const statusToggleButton = allowEdit ? (
+    <Button
+      type="button"
+      variant={isActive ? "destructive" : "success"}
+      data-testid="customer-toggle-status"
+      disabled={acting}
+      onClick={() => void toggleStatus()}
+    >
+      {isActive ? (
+        <Ban className="size-4 shrink-0" aria-hidden />
+      ) : (
+        <RotateCcw className="size-4 shrink-0" aria-hidden />
+      )}
+      {isActive ? t("customers.deactivate") : t("customers.reactivate")}
+    </Button>
+  ) : null;
 
   return (
     <div className="exits-page flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
@@ -501,20 +457,13 @@ export function CustomerDetailPage() {
         backLabel={t(pageBackNav.customers.labelKey)}
         backTestId="page-header-back-customers"
       />
-      <div className="flex flex-wrap items-center gap-2">
-        {!isActive ? (
+      {!isActive ? (
+        <div className="flex flex-wrap items-center gap-2">
           <span data-testid="customer-account-status">
             <StatusChip tone="warning">{customer.status}</StatusChip>
           </span>
-        ) : null}
-        <span data-testid="customer-link-status">
-          <ConnectionStatusChip
-            state={mapOrgLinkStatusToRelationship(linkUiStatus)}
-            audience="organization"
-            testId="customer-connection-status-chip"
-          />
-        </span>
-      </div>
+        </div>
+      ) : null}
 
       {linkUiStatus !== "NotLinked" ? (
         <CustomerPersonalLinkSection
@@ -616,9 +565,7 @@ export function CustomerDetailPage() {
               <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
                 {t("customers.personalProfile.title")}
               </h2>
-              <span className="text-[length:var(--exits-text-xs)] text-muted">
-                {t("customers.personalProfile.readOnly")}
-              </span>
+              {statusToggleButton}
             </div>
             <p
               className="m-0 text-[length:var(--exits-text-xs)] text-muted"
@@ -719,7 +666,10 @@ export function CustomerDetailPage() {
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
               {t("customers.storeDetails.title")}
             </h2>
-            {editStoreDetailsButton}
+            <div className="flex flex-wrap items-center gap-2">
+              {editStoreDetailsButton}
+              {statusToggleButton}
+            </div>
           </div>
           <dl className="branch-mgmt-overview__grid">
             <div className="branch-mgmt-overview__item">
@@ -791,24 +741,6 @@ export function CustomerDetailPage() {
         </Card>
       )}
 
-      <Card className="flex flex-col gap-4 p-4" data-testid="customer-overview-card">
-        <div className="customer-detail-owed" data-testid="customer-amount-owed">
-          <div className="customer-detail-owed__copy">
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("customers.amountOwed")}
-            </p>
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
-              <MoneyDisplay amount={amountOwed} testId="customer-amount-owed-value" />
-            </p>
-          </div>
-          <span className="customer-detail-owed__icon" aria-hidden>
-            <Wallet className="size-5" />
-          </span>
-        </div>
-
-        {ledgerActions}
-      </Card>
-
       {workspace && customerId ? (
         <CreditPolicySection
           workspace={workspace}
@@ -816,6 +748,8 @@ export function CustomerDetailPage() {
           online={online}
           canManage={allowManageCreditPolicy}
           canApprove={allowApproveCreditPolicy}
+          canRecordPayment={allowRepay}
+          canViewStatement={allowStatement}
           subjectIdentity={[headerTitle, personalExItsId]
             .filter((part): part is string => Boolean(part))
             .join(" · ")}

@@ -1,6 +1,20 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CalendarDays, CheckCircle2, CircleDollarSign, History, Pencil, Receipt, Save, Settings2, Wallet, X } from "lucide-react";
+import {
+  Ban,
+  CalendarDays,
+  CheckCircle2,
+  CircleDollarSign,
+  FileText,
+  History,
+  Pencil,
+  Receipt,
+  Save,
+  Settings2,
+  Wallet,
+  X,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   approveCustomerCreditPolicy,
   disableCustomerCreditPolicy,
@@ -39,6 +53,8 @@ export type CreditPolicySectionProps = {
   online: boolean;
   canManage: boolean;
   canApprove: boolean;
+  canRecordPayment?: boolean;
+  canViewStatement?: boolean;
   /** Display under dialog title, e.g. "Juan Dela Cruz · PER123456". */
   subjectIdentity?: string | null;
   /** When set, skip fetch (used by unit tests). */
@@ -53,6 +69,8 @@ export function CreditPolicySection({
   online,
   canManage,
   canApprove,
+  canRecordPayment = false,
+  canViewStatement = false,
   subjectIdentity = null,
   policyOverride,
 }: CreditPolicySectionProps) {
@@ -418,7 +436,29 @@ export function CreditPolicySection({
         ) : null}
       </dl>
 
+      {status === "Approved" ? (
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+          {t("customers.creditPolicy.checkoutNote")}
+        </p>
+      ) : null}
+
       <div className="flex flex-wrap gap-2">
+        {canRecordPayment ? (
+          <Button asChild variant="success" data-testid="customer-credit-policy-repay">
+            <Link to={`/customers/${customerId}/repay`}>
+              <Wallet className="size-4 shrink-0" aria-hidden />
+              {t("customers.recordPayment")}
+            </Link>
+          </Button>
+        ) : null}
+        {canViewStatement && online ? (
+          <Button asChild variant="info" data-testid="customer-credit-policy-statement">
+            <Link to={`/customers/${customerId}/statement`}>
+              <FileText className="size-4 shrink-0" aria-hidden />
+              {t("customers.viewStatement")}
+            </Link>
+          </Button>
+        ) : null}
         {canShowConfigure ? (
           <Button
             type="button"

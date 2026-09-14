@@ -224,26 +224,23 @@ export function BusinessCustomerDetailPage() {
         backTestId="page-header-back-customers"
       />
 
-      <section className="catalog-form-section" data-testid="business-customer-identity">
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("customers.business.organizationLabel")}
+      <Card className="customer-ownership-section p-4" data-testid="business-org-information">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="customer-ownership-section__title">
+            {t("customers.business.orgInformation.title")}
+          </h2>
+          <span className="customer-ownership-section__hint">
+            {t("customers.business.orgInformation.readOnly")}
+          </span>
+        </div>
+        <p className="customer-ownership-section__hint" data-testid="business-org-managed-by">
+          {t("customers.business.orgInformation.managedBy").replace("{name}", name)}
         </p>
-        <p
-          className="m-0 mt-1 text-[length:var(--exits-text-lg)] font-semibold"
-          data-testid="business-customer-display-name"
-        >
-          {name}
-        </p>
-        {customer.organizationPublicId ? (
-          <p
-            className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="business-customer-public-id"
-          >
-            {customer.organizationPublicId}
-          </p>
-        ) : null}
 
-        <div className="mt-2 flex flex-wrap items-center gap-1.5" data-testid="business-customer-status-chips">
+        <div
+          className="mt-2 flex flex-wrap items-center gap-1.5"
+          data-testid="business-customer-status-chips"
+        >
           <StatusChip tone="success">{t("customers.badge.b2b")}</StatusChip>
           <StatusChip tone={relationshipStatusTone(relationship)}>
             {t(relationshipStatusLabelKey(relationship))}
@@ -269,20 +266,7 @@ export function BusinessCustomerDetailPage() {
             {t("customers.business.connectionInactive")}
           </p>
         ) : null}
-      </section>
 
-      <Card className="customer-ownership-section p-4" data-testid="business-org-information">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="customer-ownership-section__title">
-            {t("customers.business.orgInformation.title")}
-          </h2>
-          <span className="customer-ownership-section__hint">
-            {t("customers.business.orgInformation.readOnly")}
-          </span>
-        </div>
-        <p className="customer-ownership-section__hint" data-testid="business-org-managed-by">
-          {t("customers.business.orgInformation.managedBy").replace("{name}", name)}
-        </p>
         {(() => {
           const publicOrg = isConnected ? publicOrgQuery.data : null;
           const displayName = publicOrg?.displayName?.trim() || name;
@@ -293,7 +277,7 @@ export function BusinessCustomerDetailPage() {
           const address = publicOrg ? formatPublicBusinessAddress(publicOrg) : null;
           const logoUrl = publicOrg?.logoUrl?.trim() || null;
           return (
-            <div className="flex flex-col gap-3">
+            <div className="mt-3 flex flex-col gap-3">
               {logoUrl ? (
                 <img
                   src={logoUrl}
@@ -501,61 +485,70 @@ export function BusinessCustomerDetailPage() {
       ) : null}
 
       {workspace && connectionId ? (
-        <CustomerBranchVisibilitySection
-          workspace={workspace}
-          organizationId={workspace.organizationId}
-          customerId={connectionId}
-          online={online}
-          canManage={allowManageBranchAccess}
-          kind="business"
-          helpKey="customers.business.branchAccessHelp"
-        />
-      ) : null}
+        <div
+          className={
+            isConnected
+              ? "grid gap-3 lg:grid-cols-2 lg:items-start"
+              : undefined
+          }
+          data-testid="business-customer-branch-catalog-row"
+        >
+          <CustomerBranchVisibilitySection
+            workspace={workspace}
+            organizationId={workspace.organizationId}
+            customerId={connectionId}
+            online={online}
+            canManage={allowManageBranchAccess}
+            kind="business"
+            helpKey="customers.business.branchAccessHelp"
+          />
 
-      {isConnected ? (
-        <section className="catalog-form-section" data-testid="business-customer-catalog-summary">
-          <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-            {t("customers.business.catalogPricing")}
-          </h2>
-          <dl className="m-0 mt-2 grid gap-2 text-[length:var(--exits-text-sm)]">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t("customers.business.catalogMode")}</dt>
-              <dd className="m-0 font-medium">
-                {catalogModeLabel(
-                  customer.catalogSharingMode,
-                  t("customers.business.modeAllEligible"),
-                  t("customers.business.modeSelectedOnly"),
-                )}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t("customers.business.shared")}</dt>
-              <dd className="m-0 font-medium">{customer.sharedCount}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t("customers.business.excluded")}</dt>
-              <dd className="m-0 font-medium">{customer.excludedCount}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t("customers.business.overrides")}</dt>
-              <dd className="m-0 font-medium">{customer.overrideCount}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t("customers.business.customerPricing")}</dt>
-              <dd className="m-0 font-medium">{discountLabel}</dd>
-            </div>
-          </dl>
-          {allowManage ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button type="button" asChild data-testid="business-customer-manage-catalog">
-                <Link to={`/suppliers/connected/buyers/${customer.connectionId}/shared-products`}>
-                  <PackageOpen className="size-4 shrink-0" aria-hidden />
-                  {t("customers.business.manageCatalog")}
-                </Link>
-              </Button>
-            </div>
+          {isConnected ? (
+            <Card className="flex flex-col gap-3 p-3" data-testid="business-customer-catalog-summary">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("customers.business.catalogPricing")}
+              </h2>
+              <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{t("customers.business.catalogMode")}</dt>
+                  <dd className="m-0 font-medium">
+                    {catalogModeLabel(
+                      customer.catalogSharingMode,
+                      t("customers.business.modeAllEligible"),
+                      t("customers.business.modeSelectedOnly"),
+                    )}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{t("customers.business.shared")}</dt>
+                  <dd className="m-0 font-medium">{customer.sharedCount}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{t("customers.business.excluded")}</dt>
+                  <dd className="m-0 font-medium">{customer.excludedCount}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{t("customers.business.overrides")}</dt>
+                  <dd className="m-0 font-medium">{customer.overrideCount}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">{t("customers.business.customerPricing")}</dt>
+                  <dd className="m-0 font-medium">{discountLabel}</dd>
+                </div>
+              </dl>
+              {allowManage ? (
+                <div className="mt-auto flex flex-wrap gap-2">
+                  <Button type="button" asChild data-testid="business-customer-manage-catalog">
+                    <Link to={`/suppliers/connected/buyers/${customer.connectionId}/shared-products`}>
+                      <PackageOpen className="size-4 shrink-0" aria-hidden />
+                      {t("customers.business.manageCatalog")}
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
+            </Card>
           ) : null}
-        </section>
+        </div>
       ) : null}
 
       {workspace && connectionId && (isConnected || isPending) ? (

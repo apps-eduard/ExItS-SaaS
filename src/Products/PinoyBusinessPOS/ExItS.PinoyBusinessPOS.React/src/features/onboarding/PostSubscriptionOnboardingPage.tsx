@@ -127,7 +127,8 @@ export function PostSubscriptionOnboardingPage() {
     requestOnboardingGrant();
   }, [canWriteOnboarding, organizationId, requestOnboardingGrant, workspaceStatus]);
 
-  // Unpaid PayNow checkout must win over Choose Template / onboarding.
+  // Org-scoped unpaid checkout must win over Choose Template / onboarding.
+  // Pre-org Explore markers intentionally do not match here (see pending-subscription-checkout).
   useEffect(() => {
     const pendingCheckout = pendingSubscriptionCheckoutForOrganization(organizationId);
     if (!pendingCheckout) {

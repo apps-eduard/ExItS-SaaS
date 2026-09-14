@@ -77,16 +77,15 @@ export function SubscriptionCheckoutPage() {
     if (!payment) {
       return;
     }
+    // Keep marker for unpaid / in-flight checkout only. Terminal Paid is cleared on Continue;
+    // Failed/Cancelled/Expired keep the marker until retry or explicit leave (Back to plans).
     writePendingSubscriptionCheckout({
       paymentId: payment.id,
       organizationId: payment.organizationId,
       planKey: payment.planKey,
       billingCycle: payment.billingCycle,
     });
-    if (isPaidStatus(payment.status)) {
-      // Keep marker until Continue so refresh still knows Paid checkout context.
-    }
-  }, [payment]);
+  }, [payment?.id, payment?.organizationId, payment?.planKey, payment?.billingCycle, payment?.status]);
 
   const retryMutation = useMutation({
     mutationFn: () => retryPersonalSubscriptionPayment(paymentId),
@@ -179,7 +178,12 @@ export function SubscriptionCheckoutPage() {
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="ghost" asChild data-testid="subscription-back-to-plans">
-          <Link to="/personal/explore-pos">{t("subscriptionCheckout.backToPlans")}</Link>
+          <Link
+            to="/personal/explore-pos"
+            onClick={() => clearPendingSubscriptionCheckout()}
+          >
+            {t("subscriptionCheckout.backToPlans")}
+          </Link>
         </Button>
       </div>
 
@@ -364,10 +368,20 @@ export function SubscriptionCheckoutPage() {
               : t("subscriptionCheckout.tryAgain")}
           </Button>
           <Button type="button" variant="secondary" asChild data-testid="subscription-change-method-failed">
-            <Link to="/personal/explore-pos">{t("subscriptionCheckout.chooseAnotherMethod")}</Link>
+            <Link
+              to="/personal/explore-pos"
+              onClick={() => clearPendingSubscriptionCheckout()}
+            >
+              {t("subscriptionCheckout.chooseAnotherMethod")}
+            </Link>
           </Button>
           <Button type="button" variant="ghost" asChild>
-            <Link to="/personal/explore-pos">{t("subscriptionCheckout.backToPlans")}</Link>
+            <Link
+              to="/personal/explore-pos"
+              onClick={() => clearPendingSubscriptionCheckout()}
+            >
+              {t("subscriptionCheckout.backToPlans")}
+            </Link>
           </Button>
         </div>
       ) : null}

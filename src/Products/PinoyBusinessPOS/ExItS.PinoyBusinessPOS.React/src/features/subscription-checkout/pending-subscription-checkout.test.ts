@@ -9,6 +9,9 @@ import {
   writePendingSubscriptionCheckout,
 } from "@/features/subscription-checkout/pending-subscription-checkout";
 
+const ORG_A = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const ORG_B = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+
 describe("pending-subscription-checkout", () => {
   afterEach(() => {
     clearPendingSubscriptionCheckout();
@@ -32,6 +35,35 @@ describe("pending-subscription-checkout", () => {
     expect(shouldBlockOnboardingForPendingCheckout(null)).toBe(true);
     clearPendingSubscriptionCheckout();
     expect(hasPendingSubscriptionCheckout()).toBe(false);
+  });
+
+  it("does not treat pre-org pending as matching a concrete organization", () => {
+    writePendingSubscriptionCheckout({
+      paymentId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      planKey: "pro",
+      billingCycle: "Monthly",
+    });
+
+    expect(pendingSubscriptionCheckoutForOrganization(ORG_A)).toBeNull();
+    expect(shouldBlockOnboardingForPendingCheckout(ORG_A)).toBe(false);
+    expect(pendingSubscriptionCheckoutForOrganization(ORG_B)).toBeNull();
+  });
+
+  it("matches only the pending organization when organizationId is set", () => {
+    writePendingSubscriptionCheckout({
+      paymentId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      organizationId: ORG_A,
+      planKey: "growth",
+      billingCycle: "Monthly",
+    });
+
+    expect(pendingSubscriptionCheckoutForOrganization(ORG_A)?.paymentId).toBe(
+      "dddddddd-dddd-dddd-dddd-dddddddddddd",
+    );
+    expect(shouldBlockOnboardingForPendingCheckout(ORG_A)).toBe(true);
+    expect(pendingSubscriptionCheckoutForOrganization(ORG_B)).toBeNull();
+    expect(shouldBlockOnboardingForPendingCheckout(ORG_B)).toBe(false);
+    expect(pendingSubscriptionCheckoutForOrganization(null)).toBeNull();
   });
 
   it("skips onboarding resume on subscription-checkout paths", () => {

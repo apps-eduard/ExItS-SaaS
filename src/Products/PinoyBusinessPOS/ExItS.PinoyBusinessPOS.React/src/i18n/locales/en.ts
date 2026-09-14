@@ -4862,26 +4862,30 @@ export const en = {
   "customers.business.relationshipContact.orgIdentityManaged":
     "Organization identity is managed by {name}.",
   "customers.business.relationshipContact.contactSource": "Contact source",
-  "customers.business.relationshipContact.sourceOrganization": "Organization staff",
+  "customers.business.relationshipContact.sourceOrganization": "Customer’s staff",
   "customers.business.relationshipContact.sourceCustom": "Custom contact",
   "customers.business.relationshipContact.pendingCustomOnly":
     "Connection is still pending. Use a custom contact until the buyer accepts.",
-  "customers.business.relationshipContact.organizationContact": "Organization contact",
+  "customers.business.relationshipContact.organizationContact": "Contact at {name}",
+  "customers.business.relationshipContact.directoryHelp":
+    "Lists owner and staff from {name} - not your own organization.",
   "customers.business.relationshipContact.searchContacts": "Search staff…",
   "customers.business.relationshipContact.loadingContacts": "Loading contacts…",
-  "customers.business.relationshipContact.noContacts": "No eligible organization contacts found.",
+  "customers.business.relationshipContact.noContacts": "No matching people at {name}.",
   "customers.business.relationshipContact.noContactsAvailable":
-    "No organization contacts are available.",
+    "{name} has no owner or staff to choose yet. Invite staff on their side, or use a custom contact.",
   "customers.business.relationshipContact.contactsLoadFailed": "Could not load organization contacts.",
   "customers.business.relationshipContact.retry": "Retry",
-  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staff…",
+  "customers.business.relationshipContact.selectStaffPlaceholder": "Search owner or staff…",
   "customers.business.relationshipContact.changeContact": "Change contact",
   "customers.business.relationshipContact.ownerBadge": "Owner",
   "customers.business.relationshipContact.useCustomContact": "+ Use custom contact",
   "customers.business.relationshipContact.organizationManagedReadonly":
-    "Organization-managed contact information · Read-only",
+    "Managed by {name} · Read-only",
   "customers.business.relationshipContact.contactUnavailable": "Contact no longer available",
   "customers.business.relationshipContact.chooseAnother": "Choose another contact",
+  "customers.business.relationshipContact.directoryCount":
+    "{count} people at {name}",
   "customers.business.relationshipContact.contactPerson": "Contact person",
   "customers.business.relationshipContact.department": "Department",
   "customers.business.relationshipContact.role": "Role",
@@ -4989,7 +4993,7 @@ export const en = {
 
   "customers.creditsEmpty": "No charges yet",
   "customers.creditsEmptyDetail": "Utang sales for this customer appear here.",
-  "customers.creditPolicy.title": "Credit policy",
+  "customers.creditPolicy.title": "Credit & payment terms",
   "customers.creditPolicy.offline": "Credit policy requires an online connection.",
   "customers.creditPolicy.loadFailed": "Credit policy could not be loaded.",
   "customers.creditPolicy.retry": "Retry",
@@ -4998,6 +5002,8 @@ export const en = {
     "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.creditPolicy.disabledHint":
     "New Utang is paused. Existing balances can still be paid.",
+  "customers.creditPolicy.checkoutNote":
+    "Utang checkout uses this approved credit policy and available credit.",
   "customers.creditPolicy.limit": "Credit limit",
   "customers.creditPolicy.limitHelper":
     "Maximum unpaid credit this customer may have at one time.",

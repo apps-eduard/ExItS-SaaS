@@ -5,6 +5,7 @@ import type { PosCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { MemoryRouter } from "react-router-dom";
 
 vi.mock("@/i18n/I18nProvider", () => ({
   useI18n: () => ({
@@ -47,7 +48,11 @@ function wrap(ui: ReactNode) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <MemoryRouter>
+      <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+    </MemoryRouter>,
+  );
 }
 
 describe("CreditPolicySection", () => {
@@ -115,6 +120,8 @@ describe("CreditPolicySection", () => {
         online
         canManage
         canApprove
+        canRecordPayment
+        canViewStatement
         subjectIdentity="Juan Dela Cruz · PER123456"
         policyOverride={policy({
           status: "Approved",
@@ -129,6 +136,13 @@ describe("CreditPolicySection", () => {
       />,
     );
     expect(screen.getByTestId("customer-credit-policy-utang-allowed")).toBeInTheDocument();
+    expect(screen.getByText("customers.creditPolicy.checkoutNote")).toBeInTheDocument();
+    expect(screen.getByTestId("customer-credit-policy-repay")).toHaveTextContent(
+      "customers.recordPayment",
+    );
+    expect(screen.getByTestId("customer-credit-policy-statement")).toHaveTextContent(
+      "customers.viewStatement",
+    );
     expect(screen.getByTestId("customer-credit-policy-configure")).toHaveTextContent(
       "customers.creditPolicy.editCreditTerms",
     );

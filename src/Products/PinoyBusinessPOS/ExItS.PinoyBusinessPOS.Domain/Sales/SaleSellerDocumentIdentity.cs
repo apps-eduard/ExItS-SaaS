@@ -142,6 +142,18 @@ public sealed class SaleSellerDocumentIdentity
         || !string.IsNullOrWhiteSpace(BranchName)
         || !string.IsNullOrWhiteSpace(BranchAddress);
 
+    /// <summary>
+    /// True when the snapshot carries durable seller branding (not branch-only visibility flags).
+    /// Branch name alone is workspace context — it must not block operational/public fallbacks.
+    /// </summary>
+    public bool HasDurableBusinessIdentity() =>
+        !string.IsNullOrWhiteSpace(BusinessName)
+        || !string.IsNullOrWhiteSpace(PublicOrganizationId)
+        || !string.IsNullOrWhiteSpace(LogoUrl)
+        || !string.IsNullOrWhiteSpace(Address)
+        || !string.IsNullOrWhiteSpace(Phone)
+        || !string.IsNullOrWhiteSpace(Email);
+
     private static string? Normalize(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))

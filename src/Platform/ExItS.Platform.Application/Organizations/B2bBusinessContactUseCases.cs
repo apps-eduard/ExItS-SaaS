@@ -7,7 +7,7 @@ namespace ExItS.Platform.Application.Organizations;
 
 /// <summary>
 /// Privacy-safe B2B business contact projection for a Connected seller↔buyer relationship.
-/// Eligible: Active membership, Active user, IsBusinessContact=true.
+/// Eligible: Active membership, Active user (Owner/Administrator/Staff).
 /// Phone/email/department/job title come from OrganizationMember business profile only —
 /// never PlatformUser personal phone/email.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed record B2bBusinessContactDto(
     string? EmployeeCode);
 
 /// <summary>
-/// Lists Active organization Owner/staff eligible for B2B relationship contact selection.
+/// Lists Active organization Owner/staff for B2B relationship contact selection.
 /// Caller (POS) must verify Connected status before invoking — this use case does not see POS relationships.
 /// </summary>
 public sealed class ListOrganizationB2bBusinessContacts
@@ -98,7 +98,10 @@ public sealed class ListOrganizationB2bBusinessContacts
         OrganizationMembership membership,
         CancellationToken cancellationToken)
     {
-        if (membership.Status != MembershipStatus.Active || !membership.IsBusinessContact)
+        // Relationship-contact picker lists all Active org members (Owner/Admin/Staff).
+        // IsBusinessContact remains a work-profile preference, not a directory gate —
+        // otherwise staff are invisible by default and sellers cannot select them.
+        if (membership.Status != MembershipStatus.Active)
         {
             return null;
         }

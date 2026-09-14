@@ -181,6 +181,17 @@ describe("BusinessRelationshipContactEditDrawer", () => {
     expect(screen.getByTestId("b2b-preferred-method")).toBeInTheDocument();
     expect(screen.queryByTestId("b2b-contact-person")).not.toBeInTheDocument();
     expect(screen.getByTestId("b2b-change-organization-contact")).toBeInTheDocument();
+    expect(screen.queryByTestId("b2b-selected-owner-badge")).not.toBeInTheDocument();
+  });
+
+  it("shows Owner badge on selected owner contact", async () => {
+    const user = userEvent.setup();
+    renderDrawer(baseCustomer());
+
+    await user.click(await screen.findByTestId(`b2b-org-contact-${owner.organizationMemberId}`));
+
+    expect(await screen.findByTestId("b2b-selected-owner-badge")).toHaveTextContent("Owner");
+    expect(screen.getByTestId("b2b-change-organization-contact")).toHaveTextContent("Change contact");
   });
 
   it("shows custom editable fields when Custom contact is selected", async () => {

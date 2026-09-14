@@ -122,4 +122,43 @@ describe("resolveCustomerSellerIdentity", () => {
     expect(headerVisibility.showBusinessPhone).toBe(true);
     expect(headerVisibility.showBusinessEmail).toBe(false);
   });
+
+  it("gap-fills branch-only snapshot from public profile (checkout race)", () => {
+    const { identity, headerVisibility } = resolveCustomerSellerIdentity({
+      receipt: baseReceipt({
+        merchantDisplayName: null,
+        sellerDocumentIdentity: {
+          branchName: "Main Branch",
+          showLogo: true,
+          showBusinessName: true,
+          showBusinessAddress: true,
+          showBusinessPhone: true,
+          showBusinessEmail: true,
+          showBranchName: true,
+          showBranchAddress: false,
+          identitySource: "saleSnapshot",
+        },
+      }),
+      publicProfile: {
+        organizationId: "11111111-1111-1111-1111-111111111111",
+        displayName: "Mica store",
+        publicOrganizationId: "ORG421278",
+        logoUrl: null,
+        businessPhone: null,
+        businessEmail: "mica@gmail.com",
+        addressLine1: null,
+        addressLine2: null,
+        city: null,
+        region: null,
+        postalCode: null,
+        countryCode: "PH",
+      },
+    });
+
+    expect(identity.businessName).toBe("Mica store");
+    expect(identity.email).toBe("mica@gmail.com");
+    expect(identity.address).toBe("PH");
+    expect(identity.branchName).toBe("Main Branch");
+    expect(headerVisibility.showBusinessEmail).toBe(true);
+  });
 });
