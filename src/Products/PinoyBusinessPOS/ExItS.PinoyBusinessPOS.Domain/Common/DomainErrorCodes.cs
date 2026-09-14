@@ -184,6 +184,8 @@ public static class DomainErrorCodes
     public const string SaleB2bUtangNotSupported = "pos.sale.b2b.utang_not_supported";
     /// <summary>Organization buyer at checkout requires an Active seller-side B2B relationship.</summary>
     public const string SaleB2bRelationshipRequired = "pos.sale.b2b.relationship_required";
+    public const string SaleB2bCreditRequiresAcceptedRelationship =
+        "pos.sale.b2b.credit_requires_accepted_relationship";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
     public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
     public const string InvalidCustomerPartyKind = "pos.customer.party_kind.invalid";
@@ -575,4 +577,21 @@ public static class DomainErrorCodes
         "pos.business_customer_credit_policy.id.invalid";
     public const string InvalidBusinessCustomerCreditPolicyChangeId =
         "pos.business_customer_credit_policy_change.id.invalid";
+
+    public const string InvalidQuotationId = "pos.quotation.id.invalid";
+    public const string InvalidQuotationLineId = "pos.quotation_line.id.invalid";
+    public const string InvalidQuotationNumber = "pos.quotation.number.invalid";
+    public const string InvalidQuotationStatus = "pos.quotation.status.invalid";
+    public const string InvalidQuotationStatusTransition = "pos.quotation.status.invalid_transition";
+    public const string InvalidQuotationQuantity = "pos.quotation.quantity.invalid";
+    public const string InvalidQuotationUnitPrice = "pos.quotation.unit_price.invalid";
+    public const string InvalidQuotationLine = "pos.quotation.line.invalid";
+    public const string InvalidQuotationLineDiscount = "pos.quotation.line.discount.invalid";
+    public const string InvalidQuotationNotes = "pos.quotation.notes.invalid";
+    public const string InvalidQuotationTerms = "pos.quotation.terms.invalid";
+    public const string InvalidQuotationReference = "pos.quotation.reference.invalid";
+    public const string InvalidQuotationCustomerSnapshot = "pos.quotation.customer_snapshot.invalid";
+    public const string InvalidQuotationConvertedSaleId = "pos.quotation.converted_sale_id.invalid";
+    public const string QuotationRequiresLines = "pos.quotation.lines.required";
+    public const string QuotationDuplicateProduct = "pos.quotation.duplicate_product";
 }

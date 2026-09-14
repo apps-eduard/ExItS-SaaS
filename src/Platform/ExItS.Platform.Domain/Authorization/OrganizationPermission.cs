@@ -12,6 +12,8 @@ public static class OrganizationPermission
     public const string ManageRoles = "organization.permission.manage_roles";
     public const string ViewCommercial = "organization.permission.view_commercial";
     public const string ManageBranding = "organization.permission.manage_branding";
+    /// <summary>Edit organization public/business profile (name, contact, address, logo via branding).</summary>
+    public const string ManageProfile = "organization.permission.manage_profile";
 
     public static readonly IReadOnlyList<string> All =
     [
@@ -20,7 +22,8 @@ public static class OrganizationPermission
         ManageInvitations,
         ManageRoles,
         ViewCommercial,
-        ManageBranding
+        ManageBranding,
+        ManageProfile
     ];
 
     public static readonly IReadOnlyDictionary<string, string> Descriptions =
@@ -31,6 +34,7 @@ public static class OrganizationPermission
             [ManageInvitations] = "Create, resend, and revoke organization invitations.",
             [ManageRoles] = "Manage custom organization roles and their assignments.",
             [ViewCommercial] = "View organization subscription, entitlement, and commercial summaries.",
-            [ManageBranding] = "Update organization branding settings."
+            [ManageBranding] = "Update organization branding settings.",
+            [ManageProfile] = "Update organization business profile (name, phone, email, address)."
         };
 }

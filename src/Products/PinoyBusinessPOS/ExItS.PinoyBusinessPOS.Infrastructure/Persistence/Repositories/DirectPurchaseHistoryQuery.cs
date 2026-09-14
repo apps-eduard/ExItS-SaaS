@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Sales;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
@@ -156,6 +157,29 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
             relationship?.SupplierPublicOrganizationIdSnapshot,
             "Seller");
 
+        var snap = SaleSellerDocumentIdentityJson.Deserialize(sale.SellerDocumentIdentityJson);
+        DirectPurchaseSellerDocumentIdentityDto? sellerIdentity = null;
+        if (snap is not null && snap.HasAnyIdentityField())
+        {
+            sellerIdentity = new DirectPurchaseSellerDocumentIdentityDto(
+                snap.BusinessName,
+                snap.PublicOrganizationId,
+                snap.LogoUrl,
+                snap.Address,
+                snap.Phone,
+                snap.Email,
+                snap.BranchName ?? (string.IsNullOrWhiteSpace(storeName) ? null : storeName.Trim()),
+                snap.BranchAddress,
+                snap.ShowLogo,
+                snap.ShowBusinessName,
+                snap.ShowBusinessAddress,
+                snap.ShowBusinessPhone,
+                snap.ShowBusinessEmail,
+                snap.ShowBranchName,
+                snap.ShowBranchAddress,
+                "saleSnapshot");
+        }
+
         return new DirectPurchaseB2bDetailDto(
             sale.Id,
             sale.OrganizationId,
@@ -179,7 +203,11 @@ internal sealed class DirectPurchaseHistoryQuery : IDirectPurchaseHistoryQuery
                 l.UnitOfMeasureSnapshot,
                 l.UnitPrice,
                 l.LineDiscountAmount,
-                l.LineTotal)).ToList());
+                l.LineTotal)).ToList(),
+            string.IsNullOrWhiteSpace(sale.BuyerDisplayNameSnapshot)
+                ? null
+                : sale.BuyerDisplayNameSnapshot.Trim(),
+            sellerIdentity);
     }
 
     private static string BuildUnionSql(bool includeLocal, bool includeB2b)

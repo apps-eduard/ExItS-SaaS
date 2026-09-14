@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as linkStatusClient from "@/api/platform/customer-link-status-client";
+import * as publicIdentityClient from "@/api/platform/public-identity-client";
 import * as customersClient from "@/api/pos/pos-customers-client";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 
@@ -54,6 +55,25 @@ vi.mock("@/access/pos-capabilities", () => ({
   canEditCustomer: () => true,
   canRecordRepayment: () => true,
   canViewStatement: () => true,
+  canManageCustomerCreditPolicy: () => false,
+  canApproveCustomerCreditPolicy: () => false,
+  canManageCustomerBranchAccess: () => false,
+}));
+
+vi.mock("@/api/platform/public-identity-client", () => ({
+  resolvePublicUserId: vi.fn(),
+}));
+
+vi.mock("@/features/customers/CreditPolicySection", () => ({
+  CreditPolicySection: () => null,
+}));
+
+vi.mock("@/features/customers/CustomerBranchVisibilitySection", () => ({
+  CustomerBranchVisibilitySection: () => null,
+}));
+
+vi.mock("@/features/customers/CustomerStoreDetailsEditDrawer", () => ({
+  CustomerStoreDetailsEditDrawer: () => null,
 }));
 
 const customerId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -132,6 +152,14 @@ describe("CustomerDetailPage Platform link status", () => {
       pageSize: 20,
     });
     vi.mocked(linkStatusClient.listCustomerLinkRequestHistory).mockResolvedValue([]);
+    vi.mocked(publicIdentityClient.resolvePublicUserId).mockResolvedValue({
+      publicUserId: "EX-1234-5678",
+      userIdentityId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      displayName: "Ana Personal",
+      maskedEmail: "a***@example.com",
+      status: "Active",
+      isSelf: false,
+    });
   });
 
   async function expectStatus(label: RegExp | string) {
@@ -149,7 +177,10 @@ describe("CustomerDetailPage Platform link status", () => {
     });
     renderDetail();
     await expectStatus(/Local customer/i);
-    expect(linkStatusClient.getCustomerLinkStatus).not.toHaveBeenCalled();
+    expect(linkStatusClient.getCustomerLinkStatus).not.toBeCalled();
+    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
   });
 
   it("shows Request sent from Platform even when EX-ID is stored", async () => {
@@ -194,6 +225,12 @@ describe("CustomerDetailPage Platform link status", () => {
     renderDetail();
     await expectStatus(/^Linked$/);
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-edit")).not.toBeInTheDocument();
   });
 
   it("shows compact connection history when Platform returns link-requests", async () => {

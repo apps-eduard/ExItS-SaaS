@@ -118,11 +118,15 @@ import { CustomerBusinessAddChooserPage } from "@/features/customers/CustomerBus
 import { CustomerBusinessLocalFormPage } from "@/features/customers/CustomerBusinessLocalFormPage";
 import { CustomerBusinessOrgConnectPage } from "@/features/customers/CustomerBusinessOrgConnectPage";
 import { BusinessCustomerDetailPage } from "@/features/customers/BusinessCustomerDetailPage";
+import { BusinessCustomerRepayPage } from "@/features/customers/BusinessCustomerRepayPage";
+import { BusinessCustomerStatementPage } from "@/features/customers/BusinessCustomerStatementPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
 import { CustomerRepayPage } from "@/features/customers/CustomerRepayPage";
 import { CustomerStatementPage } from "@/features/customers/CustomerStatementPage";
 import { CustomersListPage } from "@/features/customers/CustomersListPage";
+import { QuotationsListPage } from "@/features/quotations/QuotationsListPage";
+import { QuotationEditorPage } from "@/features/quotations/QuotationEditorPage";
 import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsPage";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
@@ -193,6 +197,9 @@ import { DirectPurchaseB2bDetailPage } from "@/features/purchasing/DirectPurchas
 import { OrgStaffAssignPage } from "@/features/staff/OrgStaffAssignPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { OrgStaffPage } from "@/features/staff/OrgStaffPage";
+import { OrgStaffDetailPage } from "@/features/staff/OrgStaffDetailPage";
+import { OrgProfilePage } from "@/features/organization/OrgProfilePage";
+import { DocumentsPrintingSettingsPage } from "@/features/documents/DocumentsPrintingSettingsPage";
 import { OrgRoleDetailPage } from "@/features/staff/OrgRoleDetailPage";
 import { OrgRolesPage } from "@/features/staff/OrgRolesPage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
@@ -587,6 +594,14 @@ export const appRoutes = [
                 ),
               },
               {
+                path: "profile",
+                element: <OrgProfilePage />,
+              },
+              {
+                path: "documents-printing",
+                element: <DocumentsPrintingSettingsPage />,
+              },
+              {
                 path: "staff",
                 element: (
                   <RequireInviteStaff>
@@ -607,6 +622,14 @@ export const appRoutes = [
                 element: (
                   <RequireInviteStaff>
                     <OrgStaffAssignPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "staff/:membershipId",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgStaffDetailPage />
                   </RequireInviteStaff>
                 ),
               },
@@ -895,6 +918,22 @@ export const appRoutes = [
                 path: "business/:connectionId",
                 element: <BusinessCustomerDetailPage />,
               },
+              {
+                path: "business/:connectionId/repay",
+                element: (
+                  <RequireRecordRepayment>
+                    <BusinessCustomerRepayPage />
+                  </RequireRecordRepayment>
+                ),
+              },
+              {
+                path: "business/:connectionId/statement",
+                element: (
+                  <RequireViewStatement>
+                    <BusinessCustomerStatementPage />
+                  </RequireViewStatement>
+                ),
+              },
               { path: ":customerId", element: <CustomerDetailPage /> },
               {
                 path: ":customerId/edit",
@@ -1147,6 +1186,23 @@ export const appRoutes = [
                 ),
               },
               { path: ":returnId", element: <ReturnDetailPage /> },
+            ],
+          },
+          {
+            path: "quotations",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireCreateSale>
+                    <Outlet />
+                  </RequireCreateSale>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <QuotationsListPage /> },
+              { path: "new", element: <QuotationEditorPage /> },
+              { path: ":quotationId", element: <QuotationEditorPage /> },
             ],
           },
           {

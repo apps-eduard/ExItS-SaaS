@@ -2,8 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, MapPinned, Save } from "lucide-react";
 import {
+  grantBusinessCustomerBranchAccess,
   grantCustomerBranchAccess,
+  listBusinessCustomerBranchAccess,
   listCustomerBranchAccess,
+  revokeBusinessCustomerBranchAccess,
   revokeCustomerBranchAccess,
 } from "@/api/pos/pos-customer-branch-access-client";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
@@ -33,9 +36,12 @@ import { cn } from "@/lib/cn";
 type CustomerBranchVisibilitySectionProps = {
   workspace: PosWorkspaceScope;
   organizationId: string;
+  /** Personal POS customer id, or Business connection id when kind=business. */
   customerId: string;
   online: boolean;
   canManage: boolean;
+  kind?: "person" | "business";
+  helpKey?: string;
 };
 
 function AreaIndeterminateCheckbox({
@@ -81,6 +87,8 @@ export function CustomerBranchVisibilitySection({
   customerId,
   online,
   canManage,
+  kind = "person",
+  helpKey = "customers.branchAccess.help",
 }: CustomerBranchVisibilitySectionProps) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -89,11 +97,16 @@ export function CustomerBranchVisibilitySection({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const isBusiness = kind === "business";
+  const testId = isBusiness ? "business-customer-branch-access" : "customer-branch-access";
 
   const accessQuery = useQuery({
-    queryKey: ["customer-branch-access", organizationId, customerId],
+    queryKey: [isBusiness ? "business-customer-branch-access" : "customer-branch-access", organizationId, customerId],
     enabled: online && Boolean(customerId) && canManage,
-    queryFn: ({ signal }) => listCustomerBranchAccess(workspace, customerId, signal),
+    queryFn: ({ signal }) =>
+      isBusiness
+        ? listBusinessCustomerBranchAccess(workspace, customerId, signal)
+        : listCustomerBranchAccess(workspace, customerId, signal),
   });
 
   const branchesQuery = useQuery({
@@ -211,17 +224,25 @@ export function CustomerBranchVisibilitySection({
         homeBranchId,
       });
       for (const branchId of toGrant) {
-        await grantCustomerBranchAccess(workspace, customerId, branchId);
+        if (isBusiness) {
+          await grantBusinessCustomerBranchAccess(workspace, customerId, branchId);
+        } else {
+          await grantCustomerBranchAccess(workspace, customerId, branchId);
+        }
       }
       for (const branchId of toRevoke) {
-        await revokeCustomerBranchAccess(workspace, customerId, branchId);
+        if (isBusiness) {
+          await revokeBusinessCustomerBranchAccess(workspace, customerId, branchId);
+        } else {
+          await revokeCustomerBranchAccess(workspace, customerId, branchId);
+        }
       }
     },
     onSuccess: async () => {
       setError(null);
       setHydrated(false);
       await queryClient.invalidateQueries({
-        queryKey: ["customer-branch-access", organizationId, customerId],
+        queryKey: [isBusiness ? "business-customer-branch-access" : "customer-branch-access", organizationId, customerId],
       });
     },
     onError: (err) => {
@@ -241,7 +262,7 @@ export function CustomerBranchVisibilitySection({
 
   if (!online) {
     return (
-      <Card className="flex flex-col gap-2 p-3" data-testid="customer-branch-access-offline">
+      <Card className="flex flex-col gap-2 p-3" data-testid={`${testId}-offline`}>
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("customers.branchAccess.title")}
         </h2>
@@ -256,14 +277,14 @@ export function CustomerBranchVisibilitySection({
     accessQuery.isLoading || branchesQuery.isLoading || areasQuery.isLoading || !hydrated;
 
   return (
-    <Card className="flex flex-col gap-3 p-3" data-testid="customer-branch-access">
+    <Card className="flex flex-col gap-3 p-3" data-testid={testId}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
             {t("customers.branchAccess.title")}
           </h2>
           <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("customers.branchAccess.help")}
+            {t(helpKey)}
           </p>
         </div>
         <MapPinned className="size-4 shrink-0 text-muted" aria-hidden />
@@ -273,7 +294,7 @@ export function CustomerBranchVisibilitySection({
 
       {!loading ? (
         <>
-          <div data-testid="customer-branch-access-home">
+          <div data-testid={`${testId}-home`}>
             <p className="m-0 text-[length:var(--exits-text-xs)] font-medium text-muted">
               {t("customers.branchAccess.homeBranch")}
             </p>
@@ -300,9 +321,9 @@ export function CustomerBranchVisibilitySection({
                 >
                   <input
                     type="radio"
-                    name="customer-branch-visibility-mode"
+                    name={`${testId}-visibility-mode`}
                     checked={mode === value}
-                    data-testid={`customer-branch-access-mode-${value}`}
+                    data-testid={`${testId}-mode-${value}`}
                     onChange={() => {
                       setMode(value);
                       if (value === "selected") {
@@ -436,7 +457,7 @@ export function CustomerBranchVisibilitySection({
             <Button
               type="button"
               disabled={!dirty || saveMutation.isPending}
-              data-testid="customer-branch-access-save"
+              data-testid={`${testId}-save`}
               onClick={() => saveMutation.mutate()}
             >
               <Save className={`size-4 shrink-0 ${buttonIconMotion.add}`} aria-hidden />

@@ -24,12 +24,21 @@ const organizationProfileSchema = z.object({
   currencyCode: z.string().nullable().optional().default(null),
 });
 
+const organizationBrandingSchema = z.object({
+  brandDisplayName: z.string().nullable().optional().default(null),
+  logoUrl: z.string().nullable().optional().default(null),
+  primaryColor: z.string().nullable().optional().default(null),
+  accentColor: z.string().nullable().optional().default(null),
+});
+
 export const platformOrganizationSchema = z.object({
   id: guidSchema,
   displayName: z.string(),
   slug: z.string(),
   status: z.string(),
+  publicOrganizationId: z.string().nullable().optional().default(null),
   profile: organizationProfileSchema,
+  branding: organizationBrandingSchema,
   updatedAtUtc: z.string(),
   createdAtUtc: z.string(),
 });
@@ -57,6 +66,19 @@ function normalizeProfile(raw: unknown) {
   });
 }
 
+function normalizeBranding(raw: unknown) {
+  if (!raw || typeof raw !== "object") {
+    return organizationBrandingSchema.parse({});
+  }
+  const r = raw as Record<string, unknown>;
+  return organizationBrandingSchema.parse({
+    brandDisplayName: pick(r, "brandDisplayName", "BrandDisplayName") ?? null,
+    logoUrl: pick(r, "logoUrl", "LogoUrl") ?? null,
+    primaryColor: pick(r, "primaryColor", "PrimaryColor") ?? null,
+    accentColor: pick(r, "accentColor", "AccentColor") ?? null,
+  });
+}
+
 function normalizeOrganization(raw: unknown): unknown {
   if (!raw || typeof raw !== "object") return raw;
   const r = raw as Record<string, unknown>;
@@ -65,7 +87,9 @@ function normalizeOrganization(raw: unknown): unknown {
     displayName: pick(r, "displayName", "DisplayName"),
     slug: pick(r, "slug", "Slug"),
     status: pick(r, "status", "Status"),
+    publicOrganizationId: pick(r, "publicOrganizationId", "PublicOrganizationId") ?? null,
     profile: normalizeProfile(pick(r, "profile", "Profile")),
+    branding: normalizeBranding(pick(r, "branding", "Branding")),
     updatedAtUtc: pick(r, "updatedAtUtc", "UpdatedAtUtc"),
     createdAtUtc: pick(r, "createdAtUtc", "CreatedAtUtc"),
   };
@@ -104,6 +128,28 @@ export async function updateOrganizationProfile(
   const raw = await platformRequest<unknown>({
     method: "PUT",
     path: `/api/v1/platform/organizations/${organizationId}`,
+    body,
+    signal,
+  });
+  return platformOrganizationSchema.parse(normalizeOrganization(raw));
+}
+
+export type UpdateOrganizationBrandingRequest = {
+  brandDisplayName?: string | null;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  expectedUpdatedAtUtc: string;
+};
+
+export async function updateOrganizationBranding(
+  organizationId: string,
+  body: UpdateOrganizationBrandingRequest,
+  signal?: AbortSignal,
+): Promise<PlatformOrganizationDto> {
+  const raw = await platformRequest<unknown>({
+    method: "PUT",
+    path: `/api/v1/platform/organizations/${organizationId}/branding`,
     body,
     signal,
   });

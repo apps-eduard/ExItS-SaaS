@@ -45,7 +45,7 @@ function normalizeAccessList(raw: unknown): CustomerBranchAccessList {
   const list = Array.isArray(itemsRaw) ? itemsRaw : [];
   const home = r.homeBranchId ?? r.HomeBranchId;
   return {
-    customerId: String(r.customerId ?? r.CustomerId ?? ""),
+    customerId: String(r.customerId ?? r.CustomerId ?? r.connectionId ?? r.ConnectionId ?? ""),
     homeBranchId: home == null || home === "" ? null : String(home),
     items: list.map((item) => {
       const row = asRecord(item);
@@ -97,6 +97,52 @@ export async function revokeCustomerBranchAccess(
     method: "DELETE",
     workspace,
     path: `${PARTIES_CUSTOMERS}/${customerId}/branch-access`,
+    body: { branchId },
+    signal,
+  });
+}
+
+const BUSINESS_CUSTOMERS = "/api/v1/pos/connected-suppliers/business-customers";
+
+export async function listBusinessCustomerBranchAccess(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<CustomerBranchAccessList> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    path: `${BUSINESS_CUSTOMERS}/${connectionId}/branch-access`,
+    signal,
+  });
+  return normalizeAccessList(raw);
+}
+
+export async function grantBusinessCustomerBranchAccess(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  branchId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await posRequest({
+    method: "POST",
+    workspace,
+    path: `${BUSINESS_CUSTOMERS}/${connectionId}/branch-access`,
+    body: { branchId },
+    signal,
+  });
+}
+
+export async function revokeBusinessCustomerBranchAccess(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  branchId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await posRequest({
+    method: "DELETE",
+    workspace,
+    path: `${BUSINESS_CUSTOMERS}/${connectionId}/branch-access`,
     body: { branchId },
     signal,
   });

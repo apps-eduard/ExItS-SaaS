@@ -55,6 +55,9 @@ public static class DomainErrorCodes
         "platform.organization.business_type_activation.primary_forbidden";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";
+    public const string InvalidMembershipBusinessProfile = "platform.membership.business_profile.invalid";
+    public const string MembershipBusinessProfileSelfEditDenied =
+        "platform.membership.business_profile.self_edit_denied";
     public const string InvalidProductCode = "platform.product_code.invalid";
     public const string InvalidUtcTimestamp = "platform.timestamp.invalid";
 

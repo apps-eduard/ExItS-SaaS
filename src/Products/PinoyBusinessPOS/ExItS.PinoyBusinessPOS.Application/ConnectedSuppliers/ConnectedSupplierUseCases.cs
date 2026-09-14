@@ -36,6 +36,12 @@ public static class ConnectedSupplierErrorCodes
     /// <summary>Seller invite blocked because the buyer already has a Pending request to this supplier.</summary>
     public const string PendingBuyerRequestExists = "pos.connected_supplier.pending_buyer_request_exists";
     public const string InsufficientSupplierStock = "pos.connected_supplier.insufficient_stock";
+    public const string ConcurrencyConflict = "pos.connected_supplier.concurrency_conflict";
+    /// <summary>Staff directory / Organization contact only when Connected (Active).</summary>
+    public const string OrganizationContactNotConnected =
+        "pos.connected_supplier.organization_contact.not_connected";
+    public const string OrganizationContactInvalid =
+        "pos.connected_supplier.organization_contact.invalid";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(

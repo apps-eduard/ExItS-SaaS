@@ -272,6 +272,7 @@ public sealed class POSCustomerQueryService
                 .Where(r =>
                     r.Status == ConnectedSupplierRelationshipStatus.Active
                     || r.Status == ConnectedSupplierRelationshipStatus.Pending)
+                .Where(r => IsBusinessCustomerVisibleAtActingBranch(r))
                 .Where(r => !hasTerm || MatchesBusinessSearch(r, term))
                 .OrderBy(r => r.Status == ConnectedSupplierRelationshipStatus.Active ? 0 : 1)
                 .ThenBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
@@ -486,6 +487,19 @@ public sealed class POSCustomerQueryService
         }
 
         return "All";
+    }
+
+    private bool IsBusinessCustomerVisibleAtActingBranch(ConnectedSupplierRelationship r)
+    {
+        var actor = Actor;
+        var organizationWide =
+            actor.IsOrganizationGovernance
+            && (actor.ActingBranchId is null || actor.ActingBranchId == Guid.Empty);
+        return SupplierConnectionBranchRouting.IsVisibleAtSupplierBranch(
+            r.SupplierBranchId,
+            r.SharedSupplierBranchIds,
+            actor.ActingBranchId,
+            organizationWide);
     }
 
     private static bool MatchesBusinessSearch(ConnectedSupplierRelationship r, string term)

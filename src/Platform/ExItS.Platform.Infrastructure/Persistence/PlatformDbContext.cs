@@ -1409,6 +1409,11 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnName("branch_access_scope")
                 .HasMaxLength(32)
                 .IsRequired();
+            entity.Property(e => e.Department).HasColumnName("department").HasMaxLength(100);
+            entity.Property(e => e.JobTitle).HasColumnName("job_title").HasMaxLength(100);
+            entity.Property(e => e.WorkPhone).HasColumnName("work_phone").HasMaxLength(40);
+            entity.Property(e => e.WorkEmail).HasColumnName("work_email").HasMaxLength(320);
+            entity.Property(e => e.IsBusinessContact).HasColumnName("is_business_contact").IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");

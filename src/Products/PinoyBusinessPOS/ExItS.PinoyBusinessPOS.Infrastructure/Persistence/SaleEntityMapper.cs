@@ -120,7 +120,9 @@ internal static class SaleEntityMapper
             record.TotalCostSnapshot,
             record.LinkedBusinessCreditEntryId is null
                 ? null
-                : BusinessCreditEntryId.From(record.LinkedBusinessCreditEntryId.Value));
+                : BusinessCreditEntryId.From(record.LinkedBusinessCreditEntryId.Value),
+            SaleSellerDocumentIdentityJson.Deserialize(record.SellerDocumentIdentityJson),
+            record.SourceQuotationId);
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -160,7 +162,9 @@ internal static class SaleEntityMapper
             VoidReason = sale.VoidReason,
             UpdatedAtUtc = sale.UpdatedAtUtc,
             CostStatus = ProductionCostStatuses.ToCode(sale.CostStatus),
-            TotalCostSnapshot = sale.TotalCostSnapshot
+            TotalCostSnapshot = sale.TotalCostSnapshot,
+            SellerDocumentIdentityJson = SaleSellerDocumentIdentityJson.Serialize(sale.SellerDocumentIdentity),
+            SourceQuotationId = sale.SourceQuotationId
         };
 
     public static SaleLineRecord ToRecord(SaleLine line) =>

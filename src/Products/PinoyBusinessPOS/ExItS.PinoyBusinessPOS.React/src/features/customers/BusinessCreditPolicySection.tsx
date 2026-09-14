@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, CheckCircle2, History, Pencil, Save, Settings2, X } from "lucide-react";
+import { Ban, CalendarDays, CheckCircle2, CircleDollarSign, FileText, History, Pencil, Receipt, Save, Settings2, Wallet, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   approveBusinessCustomerCreditPolicy,
   disableBusinessCustomerCreditPolicy,
@@ -39,6 +40,8 @@ export type BusinessCreditPolicySectionProps = {
   online: boolean;
   canManage: boolean;
   canApprove: boolean;
+  canRecordPayment?: boolean;
+  canViewStatement?: boolean;
   /** Display under dialog title, e.g. "Kizy Bakery · ORG436352". */
   subjectIdentity?: string | null;
   /** When set, skip fetch (used by unit tests). */
@@ -53,6 +56,8 @@ export function BusinessCreditPolicySection({
   online,
   canManage,
   canApprove,
+  canRecordPayment = false,
+  canViewStatement = false,
   subjectIdentity = null,
   policyOverride,
 }: BusinessCreditPolicySectionProps) {
@@ -351,49 +356,76 @@ export function BusinessCreditPolicySection({
       ) : null}
 
       <dl
-        className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
+        className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]"
         data-testid="business-credit-policy-summary"
       >
-        {status === "Approved" ? (
-          <div className="sm:col-span-2" data-testid="business-credit-policy-utang-allowed">
-            <dt className="text-muted">{t("customers.creditPolicy.utangAllowed")}</dt>
-            <dd className="m-0 font-semibold">{t("customers.creditPolicy.utangAllowedYes")}</dd>
+        <div data-testid="business-credit-policy-utang-allowed">
+          <dt className="text-muted">{t("customers.creditPolicy.utangAllowed")}</dt>
+          <dd className="m-0">
+            <StatusChip tone={status === "Approved" ? "success" : "danger"}>
+              {status === "Approved"
+                ? t("customers.creditPolicy.utangAllowedYes")
+                : t("customers.creditPolicy.utangAllowedNo")}
+            </StatusChip>
+          </dd>
+        </div>
+        <div className="branch-mgmt-overview__grid">
+          <div className="branch-mgmt-overview__item">
+            <dt>
+              <CircleDollarSign
+                className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--limit"
+                aria-hidden
+              />
+              {t("customers.creditPolicy.limit")}
+            </dt>
+            <dd className="tabular-nums" data-testid="business-credit-policy-limit">
+              {limit == null ? "—" : <MoneyDisplay amount={limit} />}
+            </dd>
           </div>
-        ) : null}
-        <div>
-          <dt className="text-muted">{t("customers.creditPolicy.limit")}</dt>
-          <dd className="m-0 font-semibold tabular-nums" data-testid="business-credit-policy-limit">
-            {limit == null ? "—" : <MoneyDisplay amount={limit} />}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">{t("customers.creditPolicy.outstanding")}</dt>
-          <dd className="m-0 font-semibold tabular-nums">
-            <MoneyDisplay amount={outstanding} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">{t("customers.creditPolicy.available")}</dt>
-          <dd
-            className="m-0 font-semibold tabular-nums"
-            data-testid="business-credit-policy-available"
-          >
-            <MoneyDisplay amount={available} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted">{t("customers.creditPolicy.term")}</dt>
-          <dd className="m-0" data-testid="business-credit-policy-term">
-            {term == null
-              ? "—"
-              : t("customers.creditPolicy.termDays").replace("{days}", String(term))}
-            {termDaysHelperLabelKey(term) ? (
-              <span className="ml-1 text-muted">({t(termDaysHelperLabelKey(term)!)})</span>
-            ) : null}
-          </dd>
+          <div className="branch-mgmt-overview__item">
+            <dt>
+              <Receipt
+                className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--outstanding"
+                aria-hidden
+              />
+              {t("customers.creditPolicy.outstanding")}
+            </dt>
+            <dd className="tabular-nums">
+              <MoneyDisplay amount={outstanding} />
+            </dd>
+          </div>
+          <div className="branch-mgmt-overview__item">
+            <dt>
+              <Wallet
+                className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--available"
+                aria-hidden
+              />
+              {t("customers.creditPolicy.available")}
+            </dt>
+            <dd className="tabular-nums" data-testid="business-credit-policy-available">
+              <MoneyDisplay amount={available} />
+            </dd>
+          </div>
+          <div className="branch-mgmt-overview__item">
+            <dt>
+              <CalendarDays
+                className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--term"
+                aria-hidden
+              />
+              {t("customers.creditPolicy.term")}
+            </dt>
+            <dd data-testid="business-credit-policy-term">
+              {term == null
+                ? "—"
+                : t("customers.creditPolicy.termDays").replace("{days}", String(term))}
+              {termDaysHelperLabelKey(term) ? (
+                <span className="ml-1 text-muted">({t(termDaysHelperLabelKey(term)!)})</span>
+              ) : null}
+            </dd>
+          </div>
         </div>
         {policy?.approvedByUserId || policy?.approvedAtUtc ? (
-          <div className="sm:col-span-2">
+          <div>
             <dt className="text-muted">{t("customers.creditPolicy.approvedBy")}</dt>
             <dd className="m-0">
               <ActorAttribution
@@ -417,6 +449,22 @@ export function BusinessCreditPolicySection({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
+        {canRecordPayment ? (
+          <Button asChild variant="success" data-testid="business-credit-policy-repay">
+            <Link to={`/customers/business/${connectionId}/repay`}>
+              <Wallet className="size-4 shrink-0" aria-hidden />
+              {t("customers.recordPayment")}
+            </Link>
+          </Button>
+        ) : null}
+        {canViewStatement && online ? (
+          <Button asChild variant="info" data-testid="business-credit-policy-statement">
+            <Link to={`/customers/business/${connectionId}/statement`}>
+              <FileText className="size-4 shrink-0" aria-hidden />
+              {t("customers.viewStatement")}
+            </Link>
+          </Button>
+        ) : null}
         {canShowConfigure ? (
           <Button
             type="button"

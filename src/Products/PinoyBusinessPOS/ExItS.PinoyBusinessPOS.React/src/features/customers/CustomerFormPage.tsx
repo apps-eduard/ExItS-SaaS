@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CircleCheck, Contact, IdCard, Loader2, ArrowLeft, Save, UserRound, Users } from "lucide-react";
 import {
@@ -57,8 +57,13 @@ export function CustomerCreatePage() {
   return <CustomerFormPage mode="create" />;
 }
 
+/** Legacy edit route → detail page with store-details drawer open. */
 export function CustomerEditPage() {
-  return <CustomerFormPage mode="edit" />;
+  const { customerId } = useParams<{ customerId: string }>();
+  if (!customerId) {
+    return <Navigate to="/customers" replace />;
+  }
+  return <Navigate to={`/customers/${customerId}?edit=1`} replace />;
 }
 
 function CustomerFormPage({ mode }: { mode: Mode }) {

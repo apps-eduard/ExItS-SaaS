@@ -377,7 +377,9 @@ public sealed class SaleDomainTests
     [Fact]
     public void Payment_method_codes_are_stable_and_parseable()
     {
-        Assert.Equal(new[] { "Cash", "ManualGCash", "Utang", "Card", "GCash" }, SalePaymentMethods.Codes.ToArray());
+        Assert.Equal(
+            new[] { "Cash", "ManualGCash", "Utang", "Card", "GCash", "BankTransfer", "Check", "ManualMaya" },
+            SalePaymentMethods.Codes.ToArray());
         Assert.Equal("Cash", SalePaymentMethods.ToCode(SalePaymentMethod.Cash));
         Assert.Equal("ManualGCash", SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash));
         Assert.Equal("Utang", SalePaymentMethods.ToCode(SalePaymentMethod.Utang));
@@ -387,6 +389,11 @@ public sealed class SaleDomainTests
         Assert.Equal(SalePaymentMethod.Utang, SalePaymentMethods.Parse("utang"));
         Assert.Equal(SalePaymentMethod.Card, SalePaymentMethods.Parse("card"));
         Assert.Equal(SalePaymentMethod.GCash, SalePaymentMethods.Parse("gcash"));
+        Assert.True(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Utang));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Cash));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.ManualGCash));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Check));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.BankTransfer));
 
         var error = Assert.Throws<DomainException>(() => SalePaymentMethods.Parse("SplitTender"));
         Assert.Equal(DomainErrorCodes.InvalidSalePaymentMethod, error.ErrorCode);

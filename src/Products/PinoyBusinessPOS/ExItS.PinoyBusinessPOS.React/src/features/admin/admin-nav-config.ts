@@ -3,6 +3,7 @@ import {
   BarChart3,
   Building2,
   CreditCard,
+  FileText,
   KeyRound,
   LayoutDashboard,
   Map,
@@ -36,6 +37,8 @@ export type AdminNavGroupId =
 
 export type AdminNavItemId =
   | "overview"
+  | "profile"
+  | "documents"
   | "areas"
   | "branches"
   | "staff"
@@ -113,6 +116,25 @@ export function buildAdminNavGroups(
   });
 
   const organizationItems: AdminNavItem[] = [];
+  // Organization profile is visible to all Manage Business users (staff read-only).
+  organizationItems.push({
+    id: "profile",
+    to: "/org/profile",
+    labelKey: "admin.nav.profile",
+    icon: Building2,
+    testId: "admin-nav-profile",
+    matchPrefixes: ["/org/profile"],
+  });
+  if (canAdmin) {
+    organizationItems.push({
+      id: "documents",
+      to: "/org/documents-printing",
+      labelKey: "admin.nav.documentsPrinting",
+      icon: FileText,
+      testId: "admin-nav-documents-printing",
+      matchPrefixes: ["/org/documents-printing"],
+    });
+  }
   if (canInvite) {
     if (areasEntitled) {
       organizationItems.push({

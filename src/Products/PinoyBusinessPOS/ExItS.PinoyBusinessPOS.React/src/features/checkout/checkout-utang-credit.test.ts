@@ -3,6 +3,7 @@ import type { CheckoutCustomerOption } from "@/features/checkout/checkout-custom
 import {
   checkoutCreditStatusLabelKey,
   formatCreditDueDateLabel,
+  isPendingRelationshipCustomer,
   resolveCheckoutConnectionDisplay,
   resolveUtangDirectorySelectBlock,
   utangDirectorySelectToastMessage,
@@ -230,5 +231,41 @@ describe("checkout-utang-credit helpers", () => {
         key === "checkout.utangSelect.overLimit" ? "Credit limit exceeded. Available credit is {amount}." : key,
       ),
     ).toContain("₱");
+  });
+
+  it("detects Pending Personal and B2B relationships for debt-method gating", () => {
+    const pendingBiz: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222222",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+      buyerPublicOrganizationId: "ORG123",
+      displayName: "Pending Cafe",
+      status: "Pending",
+    };
+    expect(isPendingRelationshipCustomer(pendingBiz)).toBe(true);
+    expect(
+      isPendingRelationshipCustomer({
+        ...pendingBiz,
+        status: "Active",
+      }),
+    ).toBe(false);
+
+    const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const person: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "11111111-1111-1111-1111-111111111111",
+      displayName: "Kizy Uy",
+      status: "Active",
+      linkedPersonalPublicUserId: "EX-0456-4139",
+      platformBusinessCustomerId: platformId,
+    };
+    expect(
+      isPendingRelationshipCustomer(person, {
+        connectedBusinessCustomerIds: new Set(),
+        pendingBusinessCustomerIds: new Set([platformId]),
+        loaded: true,
+      }),
+    ).toBe(true);
+    expect(isPendingRelationshipCustomer(person, null)).toBe(false);
   });
 });

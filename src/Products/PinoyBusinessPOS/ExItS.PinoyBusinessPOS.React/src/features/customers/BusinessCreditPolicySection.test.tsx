@@ -138,6 +138,8 @@ describe("BusinessCreditPolicySection", () => {
       "customers.creditPolicy.pauseCredit",
     );
     expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-statement")).not.toBeInTheDocument();
   });
 
   it("renders Disabled as Paused with Set new credit terms", () => {

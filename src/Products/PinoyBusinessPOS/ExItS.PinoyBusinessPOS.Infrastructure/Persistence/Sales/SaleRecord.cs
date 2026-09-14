@@ -37,5 +37,9 @@ internal sealed class SaleRecord
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public string? CostStatus { get; set; }
     public decimal? TotalCostSnapshot { get; set; }
+    /// <summary>JSON snapshot of seller document identity for historical customer documents.</summary>
+    public string? SellerDocumentIdentityJson { get; set; }
+    /// <summary>Optional source quotation id when checkout converted a quotation.</summary>
+    public Guid? SourceQuotationId { get; set; }
     public uint Xmin { get; set; }
 }

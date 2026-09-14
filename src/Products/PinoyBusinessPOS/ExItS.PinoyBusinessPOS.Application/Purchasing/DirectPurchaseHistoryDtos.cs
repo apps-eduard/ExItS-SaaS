@@ -121,7 +121,28 @@ public sealed record DirectPurchaseB2bDetailDto(
     decimal DiscountTotal,
     decimal TaxAmount,
     decimal TotalAmount,
-    IReadOnlyList<DirectPurchaseB2bLineDto> Lines);
+    IReadOnlyList<DirectPurchaseB2bLineDto> Lines,
+    string? BuyerDisplayNameSnapshot = null,
+    DirectPurchaseSellerDocumentIdentityDto? SellerDocumentIdentity = null);
+
+/// <summary>Seller document identity on buyer B2B purchase detail (public/business fields only).</summary>
+public sealed record DirectPurchaseSellerDocumentIdentityDto(
+    string? BusinessName,
+    string? PublicOrganizationId,
+    string? LogoUrl,
+    string? Address,
+    string? Phone,
+    string? Email,
+    string? BranchName,
+    string? BranchAddress,
+    bool ShowLogo,
+    bool ShowBusinessName,
+    bool ShowBusinessAddress,
+    bool ShowBusinessPhone,
+    bool ShowBusinessEmail,
+    bool ShowBranchName,
+    bool ShowBranchAddress,
+    string IdentitySource);
 
 /// <summary>Raw unified history row from the read query (Infrastructure → Application).</summary>
 public sealed record DirectPurchaseHistoryRawRow(

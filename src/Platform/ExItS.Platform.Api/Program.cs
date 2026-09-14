@@ -405,6 +405,10 @@ builder.Services.AddScoped<SkipRecoveryEmailPrompt>();
 builder.Services.AddScoped<ClearRecoveryEmail>();
 
 builder.Services.AddScoped<MembershipQueryService>();
+builder.Services.AddScoped<ListOrganizationB2bBusinessContacts>();
+builder.Services.AddScoped<GetOrganizationB2bPublicProfile>();
+builder.Services.AddScoped<GetOrganizationDocumentPublicIdentity>();
+builder.Services.AddScoped<MembershipBusinessProfileUseCases>();
 builder.Services.AddScoped<ResolveOrganizationActorDisplayNames>();
 builder.Services.AddScoped<AddOrganizationMembership>();
 builder.Services.AddScoped<ChangeOrganizationRole>();

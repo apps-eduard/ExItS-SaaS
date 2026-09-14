@@ -65,6 +65,26 @@ export const linkedCustomerSaleReceiptLineSchema = z.object({
   sellingMode: z.string(),
   unitPriceSnapshot: z.number(),
   lineTotal: z.number(),
+  lineDiscountAmount: z.number().optional().default(0),
+});
+
+export const linkedCustomerSellerDocumentIdentitySchema = z.object({
+  businessName: z.string().nullable().optional(),
+  publicOrganizationId: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  branchName: z.string().nullable().optional(),
+  branchAddress: z.string().nullable().optional(),
+  showLogo: z.boolean().optional().default(true),
+  showBusinessName: z.boolean().optional().default(true),
+  showBusinessAddress: z.boolean().optional().default(true),
+  showBusinessPhone: z.boolean().optional().default(true),
+  showBusinessEmail: z.boolean().optional().default(true),
+  showBranchName: z.boolean().optional().default(true),
+  showBranchAddress: z.boolean().optional().default(false),
+  identitySource: z.string().optional().default("unknown"),
 });
 
 export const linkedCustomerSaleReceiptSchema = z.object({
@@ -86,8 +106,10 @@ export const linkedCustomerSaleReceiptSchema = z.object({
   total: z.number(),
   utangAmount: z.number().nullable().optional(),
   paidAmount: z.number().nullable().optional(),
+  changeAmount: z.number().nullable().optional(),
   outstandingEffect: z.number().nullable().optional(),
   lines: z.array(linkedCustomerSaleReceiptLineSchema),
+  sellerDocumentIdentity: linkedCustomerSellerDocumentIdentitySchema.nullable().optional(),
 });
 
 export type LinkedCustomerActivityItem = z.infer<typeof linkedCustomerActivityItemSchema>;
@@ -198,6 +220,10 @@ function normalizeReceipt(raw: unknown): unknown {
   }
   const r = raw as Record<string, unknown>;
   const lines = (r.lines ?? r.Lines ?? []) as unknown[];
+  const sellerRaw = (r.sellerDocumentIdentity ?? r.SellerDocumentIdentity ?? null) as Record<
+    string,
+    unknown
+  > | null;
   return {
     organizationId: r.organizationId ?? r.OrganizationId,
     platformBusinessCustomerId: r.platformBusinessCustomerId ?? r.PlatformBusinessCustomerId,
@@ -217,7 +243,30 @@ function normalizeReceipt(raw: unknown): unknown {
     total: r.total ?? r.Total,
     utangAmount: r.utangAmount ?? r.UtangAmount ?? null,
     paidAmount: r.paidAmount ?? r.PaidAmount ?? null,
+    changeAmount: r.changeAmount ?? r.ChangeAmount ?? null,
     outstandingEffect: r.outstandingEffect ?? r.OutstandingEffect ?? null,
+    sellerDocumentIdentity: sellerRaw
+      ? {
+          businessName: sellerRaw.businessName ?? sellerRaw.BusinessName ?? null,
+          publicOrganizationId:
+            sellerRaw.publicOrganizationId ?? sellerRaw.PublicOrganizationId ?? null,
+          logoUrl: sellerRaw.logoUrl ?? sellerRaw.LogoUrl ?? null,
+          address: sellerRaw.address ?? sellerRaw.Address ?? null,
+          phone: sellerRaw.phone ?? sellerRaw.Phone ?? null,
+          email: sellerRaw.email ?? sellerRaw.Email ?? null,
+          branchName: sellerRaw.branchName ?? sellerRaw.BranchName ?? null,
+          branchAddress: sellerRaw.branchAddress ?? sellerRaw.BranchAddress ?? null,
+          showLogo: sellerRaw.showLogo ?? sellerRaw.ShowLogo ?? true,
+          showBusinessName: sellerRaw.showBusinessName ?? sellerRaw.ShowBusinessName ?? true,
+          showBusinessAddress:
+            sellerRaw.showBusinessAddress ?? sellerRaw.ShowBusinessAddress ?? true,
+          showBusinessPhone: sellerRaw.showBusinessPhone ?? sellerRaw.ShowBusinessPhone ?? true,
+          showBusinessEmail: sellerRaw.showBusinessEmail ?? sellerRaw.ShowBusinessEmail ?? true,
+          showBranchName: sellerRaw.showBranchName ?? sellerRaw.ShowBranchName ?? true,
+          showBranchAddress: sellerRaw.showBranchAddress ?? sellerRaw.ShowBranchAddress ?? false,
+          identitySource: sellerRaw.identitySource ?? sellerRaw.IdentitySource ?? "unknown",
+        }
+      : null,
     lines: lines.map((line) => {
       const l = (line ?? {}) as Record<string, unknown>;
       return {
@@ -228,6 +277,7 @@ function normalizeReceipt(raw: unknown): unknown {
         sellingMode: l.sellingMode ?? l.SellingMode,
         unitPriceSnapshot: l.unitPriceSnapshot ?? l.UnitPriceSnapshot,
         lineTotal: l.lineTotal ?? l.LineTotal,
+        lineDiscountAmount: l.lineDiscountAmount ?? l.LineDiscountAmount ?? 0,
       };
     }),
   };

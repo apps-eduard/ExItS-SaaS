@@ -236,7 +236,7 @@ describe("CustomerFormPage save vs resolve link", () => {
     expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-personal-link-confirm-btn")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
-    expect(screen.getByTestId("customer-already-in-contacts")).toHaveAttribute("role", "alert");
+    expect(screen.getByTestId("customer-already-in-contacts")).toHaveAttribute("role", "status");
     expect(screen.getByTestId("customer-already-in-contacts-open")).toHaveAttribute(
       "href",
       `/customers/${posCustomerId}`,

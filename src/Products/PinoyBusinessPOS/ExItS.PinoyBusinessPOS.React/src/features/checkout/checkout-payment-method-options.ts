@@ -41,6 +41,11 @@ export function isManualReferencePaymentChoice(choice: CheckoutUiPaymentChoice):
   );
 }
 
+/** True when the UI payment choice creates receivables / credit (Utang). Check is deferred settlement, not debt. */
+export function isDebtCreatingPaymentChoice(choice: CheckoutUiPaymentChoice): boolean {
+  return choice === "Utang";
+}
+
 export function filterCheckoutUiChoices(
   methodCodes: readonly string[],
 ): CheckoutUiPaymentChoice[] {

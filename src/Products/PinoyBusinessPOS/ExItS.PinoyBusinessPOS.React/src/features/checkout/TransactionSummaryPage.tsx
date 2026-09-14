@@ -1,7 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, ChevronDown, Plus, Printer, RotateCcw } from "lucide-react";
+import { Ban, Eye, Plus, Printer, RotateCcw } from "lucide-react";
 import { canProcessReturn, canVoidSale } from "@/access/pos-capabilities";
 import {
   formatPaymentMethodLabel,
@@ -15,17 +12,35 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { LoadingSkeleton, StickyActionBar } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
+import { customerPurchaseSummaryFromPosSale } from "@/features/documents/customer-purchase-summary-view";
+import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
+import { printBusinessDocument } from "@/features/documents/print-business-document";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+function saleStatusTone(status: string, voided: boolean): "danger" | "success" | "info" {
+  if (voided) {
+    return "danger";
+  }
+  if (status === "Completed") {
+    return "success";
+  }
+  return "info";
+}
 
 /**
- * Transaction Summary — never labeled Invoice.
- * Disclaimer matches SalesDocumentWording / MAUI SalesDocument_DisclaimerBody.
- * Void for Owner/Admin/Manager (RMAP-12).
+ * Transaction Detail — operational staff UI for a completed sale.
+ * Customer Purchase Summary is a separate printable document opened via Preview / Print / PDF.
  */
 export function TransactionSummaryPage() {
   const { t } = useI18n();
@@ -33,13 +48,16 @@ export function TransactionSummaryPage() {
   const { saleId } = useParams<{ saleId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
+  const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [voidError, setVoidError] = useState<string | null>(null);
   const [voiding, setVoiding] = useState(false);
   const [voidConfirmOpen, setVoidConfirmOpen] = useState(false);
   const [voidSheetOpen, setVoidSheetOpen] = useState(false);
   const [returnConfirmOpen, setReturnConfirmOpen] = useState(false);
-  const [disclaimerOpen, setDisclaimerOpen] = useState(false);
   const [stickyVisible, setStickyVisible] = useState(false);
   const stickyGateRef = useRef<HTMLDivElement | null>(null);
 
@@ -115,6 +133,14 @@ export function TransactionSummaryPage() {
   const paymentLabel = formatPaymentMethodLabel(sale.paymentMethod);
   const showReturnAction = !isVoided && allowProcessReturn;
   const showVoidAction = !isVoided && allowVoid;
+  const isUtang = sale.paymentMethod.trim().toLowerCase() === "utang";
+  const discountTotal =
+    sale.discountTotal ??
+    sale.lines.reduce(
+      (sum, line) =>
+        sum + (line.lineDiscountAmount ?? 0) + (line.saleDiscountAllocatedAmount ?? 0),
+      0,
+    );
 
   const soldBy = saleActors.resolve(sale.recordedBy);
   const voidedBy = saleActors.resolve(sale.voidedBy);
@@ -126,6 +152,19 @@ export function TransactionSummaryPage() {
     saleActors.isResolving && !voidedBy
       ? "\u00a0"
       : voidedBy?.displayName?.trim() || t("common.notAvailable");
+
+  const documentNode = (
+    <CustomerPurchaseSummaryDocument
+      view={customerPurchaseSummaryFromPosSale(sale, paymentLabel)}
+      settings={documentSettings}
+      identity={identity}
+      headerVisibility={headerVisibility(documentSettings.header)}
+      cashierLabel={soldByLabel}
+      paymentLabel={paymentLabel}
+      audience="Seller"
+      preview={previewOpen}
+    />
+  );
 
   async function onVoid() {
     if (!workspaceScope || !saleId || voiding || isVoided) {
@@ -175,11 +214,21 @@ export function TransactionSummaryPage() {
         type="button"
         variant="outline"
         className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="summary-preview"
+        onClick={() => setPreviewOpen(true)}
+      >
+        <Eye className="size-4 shrink-0" aria-hidden />
+        {t("summary.preview")}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
         data-testid="summary-print"
-        onClick={() => window.print()}
+        onClick={() => printBusinessDocument()}
       >
         <Printer className="size-4 shrink-0" aria-hidden />
-        {t("summary.printSummary")}
+        {t("summary.print")}
       </Button>
       {showReturnAction ? (
         <Button
@@ -238,70 +287,73 @@ export function TransactionSummaryPage() {
         </Card>
       ) : null}
 
-      <Card data-testid="summary-body-card" className="flex flex-col gap-4">
+      <Card
+        data-testid="summary-body-card"
+        className="mx-auto flex w-full max-w-3xl flex-col gap-4 print:hidden"
+      >
         <section data-testid="summary-details-section">
           <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
             {t("summary.sectionDetails")}
           </h2>
-          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-            <div className="flex justify-between gap-2">
+          <dl className="m-0 grid gap-x-6 gap-y-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+            <div className="flex justify-between gap-2 sm:block">
               <dt className="text-muted">{t("summary.saleNumber")}</dt>
-              <dd className="m-0 text-right font-semibold" data-testid="summary-sale-number">
+              <dd className="m-0 text-right font-semibold sm:mt-0.5 sm:text-left" data-testid="summary-sale-number">
                 {sale.saleNumber}
               </dd>
             </div>
-            <div className="flex justify-between gap-2">
+            <div className="flex justify-between gap-2 sm:block">
               <dt className="text-muted">{t("summary.dateTime")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-date-time">
+              <dd className="m-0 text-right sm:mt-0.5 sm:text-left" data-testid="summary-date-time">
                 {new Date(sale.recordedAtUtc).toLocaleString()}
               </dd>
             </div>
-            <div className="flex justify-between gap-2">
+            <div className="flex justify-between gap-2 sm:block">
               <dt className="text-muted">{t("summary.paymentMethod")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-payment-method">
+              <dd className="m-0 text-right sm:mt-0.5 sm:text-left" data-testid="summary-payment-method">
                 {paymentLabel}
               </dd>
             </div>
-            <div className="flex justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 sm:block">
               <dt className="text-muted">{t("summary.status")}</dt>
-              <dd className="m-0 text-right" data-testid="summary-status">
-                {sale.status}
+              <dd className="m-0 flex justify-end sm:mt-0.5 sm:justify-start" data-testid="summary-status">
+                <StatusChip tone={saleStatusTone(sale.status, isVoided)}>{sale.status}</StatusChip>
               </dd>
             </div>
             {sale.shiftNumber ? (
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 sm:block">
                 <dt className="text-muted">{t("summary.shift")}</dt>
-                <dd className="m-0 text-right" data-testid="summary-shift">
+                <dd className="m-0 text-right sm:mt-0.5 sm:text-left" data-testid="summary-shift">
                   {sale.shiftNumber}
                 </dd>
               </div>
             ) : null}
-            <div className="flex justify-between gap-2" data-testid="summary-actor-attribution">
+            <div className="flex justify-between gap-2 sm:block" data-testid="summary-actor-attribution">
               <dt className="text-muted">{t("common.soldBy")}</dt>
-              <dd className="m-0 text-right font-medium" data-testid="summary-sold-by">
+              <dd className="m-0 text-right font-medium sm:mt-0.5 sm:text-left" data-testid="summary-sold-by">
                 {soldByLabel}
               </dd>
             </div>
             {isVoided ? (
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 sm:block">
                 <dt className="text-muted">{t("common.voidedBy")}</dt>
-                <dd className="m-0 text-right font-medium" data-testid="summary-voided-by">
+                <dd className="m-0 text-right font-medium sm:mt-0.5 sm:text-left" data-testid="summary-voided-by">
                   {voidedByLabel}
                 </dd>
               </div>
             ) : null}
             {sale.customerDisplayName ? (
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 sm:block sm:col-span-2">
                 <dt className="text-muted">{t("summary.customer")}</dt>
-                <dd className="m-0 text-right" data-testid="summary-customer">
+                <dd className="m-0 text-right sm:mt-0.5 sm:text-left" data-testid="summary-customer">
                   {sale.customerDisplayName}
                 </dd>
               </div>
             ) : null}
             {sale.gCashReference ? (
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 sm:block sm:col-span-2">
                 <dt className="text-muted">{t("summary.gcashReference")}</dt>
-                <dd className="m-0 text-right" data-testid="summary-gcash-reference">
+                <dd className="m-0 text-right sm:mt-0.5 sm:text-left" data-testid="summary-gcash-reference">
                   {sale.gCashReference}
                 </dd>
               </div>
@@ -316,40 +368,58 @@ export function TransactionSummaryPage() {
           <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
             {t("summary.sectionItems")}
           </h2>
-          <ul className="m-0 list-none space-y-2 p-0">
-            {sale.lines.map((line) => {
-              const override = sale.priceOverrides?.find(
-                (item) => item.lineNumber === line.lineNumber,
-              );
-              return (
-                <li
-                  key={line.saleLineId}
-                  className="flex items-start justify-between gap-2 text-[length:var(--exits-text-sm)]"
-                  data-testid={`summary-line-${line.lineNumber}`}
-                >
-                  <span className="min-w-0">
-                    <span className="truncate">
-                      {line.name} × {line.quantity} {line.unitOfMeasure}
-                    </span>
-                    {override ? (
-                      <span
-                        className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
-                        data-testid={`summary-line-price-changed-${line.lineNumber}`}
-                      >
-                        {t("sell.priceChanged")} · {t("summary.regularPrice")}: ₱
-                        {override.baselineUnitPrice.toFixed(2)} · {t("summary.sellingPrice")}: ₱
-                        {override.appliedUnitPrice.toFixed(2)}
-                        {override.reason
-                          ? ` · ${t("summary.priceOverrideReason")}: ${override.reason}`
-                          : null}
-                      </span>
-                    ) : null}
-                  </span>
-                  <MoneyDisplay amount={line.lineTotal} />
-                </li>
-              );
-            })}
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[20rem] border-collapse text-[length:var(--exits-text-sm)]">
+              <thead>
+                <tr className="border-b border-border text-left text-muted">
+                  <th className="pb-2 pr-3 font-medium">{t("summary.itemDescription")}</th>
+                  <th className="pb-2 pr-3 text-right font-medium">{t("summary.itemQty")}</th>
+                  <th className="pb-2 pr-3 text-right font-medium">{t("summary.itemUnitPrice")}</th>
+                  <th className="pb-2 text-right font-medium">{t("summary.itemLineTotal")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sale.lines.map((line) => {
+                  const override = sale.priceOverrides?.find(
+                    (item) => item.lineNumber === line.lineNumber,
+                  );
+                  return (
+                    <tr
+                      key={line.saleLineId}
+                      className="border-b border-border/60 align-top last:border-b-0"
+                      data-testid={`summary-line-${line.lineNumber}`}
+                    >
+                      <td className="py-2 pr-3">
+                        <span className="font-medium">{line.name}</span>
+                        {override ? (
+                          <span
+                            className="mt-0.5 block text-[length:var(--exits-text-xs)] text-muted"
+                            data-testid={`summary-line-price-changed-${line.lineNumber}`}
+                          >
+                            {t("sell.priceChanged")} · {t("summary.regularPrice")}: ₱
+                            {override.baselineUnitPrice.toFixed(2)} · {t("summary.sellingPrice")}: ₱
+                            {override.appliedUnitPrice.toFixed(2)}
+                            {override.reason
+                              ? ` · ${t("summary.priceOverrideReason")}: ${override.reason}`
+                              : null}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="py-2 pr-3 text-right whitespace-nowrap">
+                        {line.quantity} {line.unitOfMeasure}
+                      </td>
+                      <td className="py-2 pr-3 text-right">
+                        <MoneyDisplay amount={line.unitPrice} />
+                      </td>
+                      <td className="py-2 text-right">
+                        <MoneyDisplay amount={line.lineTotal} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section
@@ -359,11 +429,17 @@ export function TransactionSummaryPage() {
           <h2 className="m-0 mb-3 text-[length:var(--exits-text-sm)] font-semibold uppercase tracking-wide text-muted">
             {t("summary.sectionTotals")}
           </h2>
-          <div className="space-y-1 text-[length:var(--exits-text-sm)]">
+          <div className="ml-auto w-full max-w-xs space-y-1 text-[length:var(--exits-text-sm)]">
             <p className="m-0 flex justify-between gap-2">
               <span className="text-muted">{t("summary.subtotal")}</span>
               <MoneyDisplay amount={sale.subtotal} />
             </p>
+            {discountTotal > 0 ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-discount">
+                <span className="text-muted">{t("summary.discount")}</span>
+                <MoneyDisplay amount={discountTotal} />
+              </p>
+            ) : null}
             <p
               className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
               data-testid="summary-total"
@@ -371,48 +447,46 @@ export function TransactionSummaryPage() {
               <span>{t("summary.total")}</span>
               <MoneyDisplay amount={sale.total} />
             </p>
-            {sale.amountTendered != null ? (
+            {!isUtang && sale.amountTendered != null ? (
               <p className="m-0 flex justify-between gap-2" data-testid="summary-tendered">
                 <span className="text-muted">{t("summary.cashReceived")}</span>
                 <MoneyDisplay amount={sale.amountTendered} />
               </p>
             ) : null}
-            {sale.changeAmount != null ? (
+            {!isUtang && sale.changeAmount != null ? (
               <p className="m-0 flex justify-between gap-2" data-testid="summary-change">
                 <span className="text-muted">{t("summary.change")}</span>
                 <MoneyDisplay amount={sale.changeAmount} />
+              </p>
+            ) : null}
+            {isUtang ? (
+              <p className="m-0 flex justify-between gap-2" data-testid="summary-utang-balance">
+                <span className="text-muted">{t("summary.utangBalance")}</span>
+                <MoneyDisplay amount={sale.total} />
               </p>
             ) : null}
           </div>
         </section>
       </Card>
 
-      <Card data-testid="transaction-summary-disclaimer" className="flex flex-col gap-2 print:hidden">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent p-0 text-left font-semibold text-[length:var(--exits-text-sm)] text-foreground"
-          aria-expanded={disclaimerOpen}
-          data-testid="transaction-summary-disclaimer-toggle"
-          onClick={() => setDisclaimerOpen((open) => !open)}
+      {/* Single canonical document mount: preview dialog OR off-screen print host */}
+      {previewOpen ? (
+        <BusinessDocumentPreview
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          title={documentSettings.sales.title || t("summary.customerPurchaseSummary")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("summary.print")}
+          pdfLabel={t("summary.exportPdf")}
+          testId="summary-document-preview"
         >
-          <span>{t("summary.disclaimerTitle")}</span>
-          <ChevronDown
-            className={cn(
-              "size-4 shrink-0 transition-transform duration-150",
-              disclaimerOpen && "rotate-180",
-            )}
-            aria-hidden
-          />
-        </button>
-        {disclaimerOpen ? (
-          <p
-            className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="transaction-summary-disclaimer-body"
-          >
-            {t("summary.disclaimerBody")}
-          </p>
-        ) : null}
-      </Card>
+          {documentNode}
+        </BusinessDocumentPreview>
+      ) : (
+        <div className="exits-bizdoc-print-host" aria-hidden data-testid="summary-print-host">
+          {documentNode}
+        </div>
+      )}
 
       {showVoidAction ? (
         <>
@@ -488,7 +562,7 @@ export function TransactionSummaryPage() {
       {!isVoided && !allowVoid ? (
         <p
           data-testid="summary-void-denied"
-          className="m-0 text-[length:var(--exits-text-sm)] text-muted print:hidden"
+          className="mx-auto m-0 w-full max-w-3xl text-[length:var(--exits-text-sm)] text-muted print:hidden"
         >
           {t("summary.voidDenied")}
         </p>
@@ -532,10 +606,10 @@ export function TransactionSummaryPage() {
               variant="outline"
               className="min-w-0 flex-1 gap-2 sm:flex-none"
               data-testid="summary-print-sticky"
-              onClick={() => window.print()}
+              onClick={() => printBusinessDocument()}
             >
               <Printer className="size-4 shrink-0" aria-hidden />
-              {t("summary.printSummary")}
+              {t("summary.print")}
             </Button>
           </div>
         </StickyActionBar>

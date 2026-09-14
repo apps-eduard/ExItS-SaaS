@@ -146,7 +146,31 @@ public sealed record CheckoutSaleRequest(
     /// </summary>
     Guid? BuyerConnectionId = null,
     List<CommercialDiscountIntentRequest>? Discounts = null,
-    List<SalePriceOverrideIntentRequest>? PriceOverrides = null);
+    List<SalePriceOverrideIntentRequest>? PriceOverrides = null,
+    /// <summary>
+    /// Optional seller document branding snapshot (parity with seller Preview / Documents &amp; Printing).
+    /// Public/business fields only; server merges with operational setup and truncates.
+    /// </summary>
+    CheckoutSellerDocumentIdentityRequest? SellerDocumentIdentity = null,
+    /// <summary>Optional quotation to mark Converted after a successful checkout.</summary>
+    Guid? QuotationId = null);
+
+/// <summary>Seller-facing document identity captured at checkout for customer copies.</summary>
+public sealed record CheckoutSellerDocumentIdentityRequest(
+    string? BusinessName = null,
+    string? PublicOrganizationId = null,
+    string? LogoUrl = null,
+    string? Address = null,
+    string? Phone = null,
+    string? Email = null,
+    string? BranchName = null,
+    string? BranchAddress = null,
+    bool? ShowLogo = null,
+    bool? ShowBusinessAddress = null,
+    bool? ShowBusinessPhone = null,
+    bool? ShowBusinessEmail = null,
+    bool? ShowBranchName = null,
+    bool? ShowBranchAddress = null);
 
 /// <summary>
 /// One requested manual commercial discount. The client sends intent only — scope, method, value and

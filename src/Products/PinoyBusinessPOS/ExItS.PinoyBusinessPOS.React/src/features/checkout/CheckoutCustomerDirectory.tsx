@@ -12,6 +12,7 @@ import {
   checkoutCreditStatusLabelKey,
   checkoutCreditStatusTone,
   resolveCheckoutConnectionDisplay,
+  type CheckoutConnectionDisplay,
 } from "@/features/checkout/checkout-utang-credit";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 import type { KindFilter } from "@/features/customers/customers-kind";
@@ -26,6 +27,30 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import { UserRoundX } from "lucide-react";
+
+function DirectoryConnectionCell({
+  connection,
+}: {
+  connection: CheckoutConnectionDisplay;
+}) {
+  const { t } = useI18n();
+  return (
+    <span
+      className="checkout-credit-directory__connection"
+      data-testid="checkout-credit-directory-connection"
+    >
+      {connection.kind === "chip" ? (
+        <StatusChip tone={checkoutConnectionStatusTone(connection.statusKey)}>
+          {t(checkoutConnectionStatusLabelKey(connection.statusKey))}
+        </StatusChip>
+      ) : connection.kind === "raw" ? (
+        <StatusChip tone="neutral">{connection.raw}</StatusChip>
+      ) : (
+        <span className="text-muted">{t("checkout.directoryCredit.availableEmDash")}</span>
+      )}
+    </span>
+  );
+}
 
 type CheckoutCustomerSelectedCardProps = {
   customer: CheckoutCustomerOption;
@@ -286,6 +311,7 @@ export function CheckoutCustomerDirectory({
               <>
                 <span>{t("checkout.directoryCredit.colExItsId")}</span>
                 <span>{t("checkout.directoryCredit.colType")}</span>
+                <span>{t("checkout.directoryConnection.colConnection")}</span>
               </>
             )}
           </div>
@@ -298,12 +324,10 @@ export function CheckoutCustomerDirectory({
               const status = showCreditStatus ? directoryCreditStatus(customer) : null;
               const available = showCreditStatus ? directoryAvailableLabel(customer) : null;
               const exitsId = showCreditStatus ? null : directoryExItsId(customer);
-              const connection = showCreditStatus
-                ? resolveCheckoutConnectionDisplay(customer, overlay)
-                : null;
+              const connection = resolveCheckoutConnectionDisplay(customer, overlay);
               const connectionPending =
                 showCreditStatus &&
-                connection?.kind === "chip" &&
+                connection.kind === "chip" &&
                 connection.statusKey === "Pending";
               const connectionHelper = connectionPending
                 ? t("checkout.utangSelect.connectionPending")
@@ -351,22 +375,7 @@ export function CheckoutCustomerDirectory({
                             ? t("checkout.directoryCredit.typeB2b")
                             : t("checkout.directoryCredit.typePerson")}
                         </span>
-                        <span
-                          className="checkout-credit-directory__connection"
-                          data-testid="checkout-credit-directory-connection"
-                        >
-                          {connection?.kind === "chip" ? (
-                            <StatusChip tone={checkoutConnectionStatusTone(connection.statusKey)}>
-                              {t(checkoutConnectionStatusLabelKey(connection.statusKey))}
-                            </StatusChip>
-                          ) : connection?.kind === "raw" ? (
-                            <StatusChip tone="neutral">{connection.raw}</StatusChip>
-                          ) : (
-                            <span className="text-muted">
-                              {t("checkout.directoryCredit.availableEmDash")}
-                            </span>
-                          )}
-                        </span>
+                        <DirectoryConnectionCell connection={connection} />
                         <span
                           className="checkout-credit-directory__status"
                           data-testid="checkout-customer-credit-line"
@@ -406,6 +415,7 @@ export function CheckoutCustomerDirectory({
                             ? t("checkout.directoryCredit.typeB2b")
                             : t("checkout.directoryCredit.typePerson")}
                         </span>
+                        <DirectoryConnectionCell connection={connection} />
                       </>
                     )}
                   </button>

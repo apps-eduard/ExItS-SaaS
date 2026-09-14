@@ -994,9 +994,54 @@ export const businessCustomerSchema = z.object({
   displayNameIsLive: z.boolean().optional().default(false),
   initiatedByParty: z.string().optional().default("Buyer"),
   actionRequired: z.boolean().optional().default(false),
+  supplierBranchId: guidSchema.nullable().optional().default(null),
+  supplierBranchName: z.string().nullable().optional().default(null),
+  contactSource: z.string().optional().default("Custom"),
+  organizationMemberId: guidSchema.nullable().optional().default(null),
+  organizationMemberAvailable: z.boolean().nullable().optional().default(null),
+  contactPersonName: z.string().nullable().optional().default(null),
+  contactDepartment: z.string().nullable().optional().default(null),
+  contactRole: z.string().nullable().optional().default(null),
+  contactPhone: z.string().nullable().optional().default(null),
+  contactEmail: z.string().nullable().optional().default(null),
+  preferredContactMethod: z.string().nullable().optional().default(null),
+  deliveryInstructions: z.string().nullable().optional().default(null),
+  billingContactNotes: z.string().nullable().optional().default(null),
+  internalNotes: z.string().nullable().optional().default(null),
 });
 
 export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;
+
+const buyerOrganizationBusinessContactSchema = z.object({
+  organizationMemberId: guidSchema,
+  userId: guidSchema,
+  displayName: z.string(),
+  roleTitle: z.string(),
+  isOwner: z.boolean(),
+  department: z.string().nullable().optional().default(null),
+  phone: z.string().nullable().optional().default(null),
+  email: z.string().nullable().optional().default(null),
+  employeeCode: z.string().nullable().optional().default(null),
+});
+
+export type BuyerOrganizationBusinessContact = z.infer<
+  typeof buyerOrganizationBusinessContactSchema
+>;
+
+export type UpdateBusinessCustomerRelationshipContactInput = {
+  contactSource: "Custom" | "OrganizationMember";
+  organizationMemberId?: string | null;
+  contactPersonName?: string | null;
+  contactDepartment?: string | null;
+  contactRole?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  preferredContactMethod?: string | null;
+  deliveryInstructions?: string | null;
+  billingContactNotes?: string | null;
+  internalNotes?: string | null;
+  expectedUpdatedAtUtc: string;
+};
 
 export async function listBusinessCustomers(
   workspace: PosWorkspaceScope,
@@ -1027,6 +1072,54 @@ export async function getBusinessCustomer(
     path: `${PATH}/business-customers/${connectionId}`,
   });
   return businessCustomerSchema.parse(raw);
+}
+
+/** Seller-owned relationship contact only — never mutates buyer Organization identity. */
+export async function updateBusinessCustomerRelationshipContact(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: UpdateBusinessCustomerRelationshipContactInput,
+  signal?: AbortSignal,
+): Promise<BusinessCustomer> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/relationship-contact`,
+    body: {
+      contactSource: input.contactSource,
+      organizationMemberId: input.organizationMemberId ?? null,
+      contactPersonName: input.contactPersonName ?? null,
+      contactDepartment: input.contactDepartment ?? null,
+      contactRole: input.contactRole ?? null,
+      contactPhone: input.contactPhone ?? null,
+      contactEmail: input.contactEmail ?? null,
+      preferredContactMethod: input.preferredContactMethod ?? null,
+      deliveryInstructions: input.deliveryInstructions ?? null,
+      billingContactNotes: input.billingContactNotes ?? null,
+      internalNotes: input.internalNotes ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc,
+    },
+  });
+  return businessCustomerSchema.parse(raw);
+}
+
+/** Connected relationships only — privacy-safe buyer Owner/staff contacts. */
+export async function listBusinessCustomerOrganizationContacts(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options?: { search?: string },
+  signal?: AbortSignal,
+): Promise<BuyerOrganizationBusinessContact[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/organization-contacts`, {
+      search: options?.search,
+    }),
+  });
+  return z.array(buyerOrganizationBusinessContactSchema).parse(raw);
 }
 
 // --- Supplier incoming purchase orders (not connection requests) ---

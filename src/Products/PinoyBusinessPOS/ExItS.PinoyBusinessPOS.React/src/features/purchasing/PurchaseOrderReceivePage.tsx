@@ -49,6 +49,10 @@ import {
   type ReceivePaymentMethodCode,
   type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
+import { DocumentActions } from "@/features/documents/DocumentActions";
+import { GoodsReceiptBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import {
   buildPurchaseOrderReceiveExportModel,
   downloadPurchaseOrderReceiveCsv,
@@ -97,6 +101,9 @@ export function PurchaseOrderReceivePage() {
   const online = useBrowserOnline();
   const { purchaseOrderId } = useParams<{ purchaseOrderId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
+  const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
   const allowManage = canManagePurchasing(sessionGrant);
   const [lines, setLines] = useState<LineEdit[] | null>(null);
   const [deliveryReference, setDeliveryReference] = useState("");
@@ -545,8 +552,25 @@ export function PurchaseOrderReceivePage() {
           backTo={`/purchasing/${purchaseOrderId}`}
           backLabel={t("purchasing.backDetail")}
           backTestId="page-header-back-purchasing"
+          actions={
+            <DocumentActions
+              printLabel={t("exitsTable.print")}
+              pdfLabel={t("exitsTable.exportPdf")}
+              testId="grn-business-document-actions"
+            />
+          }
         />
-        <div className="flex min-w-0 flex-col gap-4" data-testid="receive-completed-panel">
+        <GoodsReceiptBusinessDocument
+          receipt={completedReceipt}
+          po={po}
+          poNumber={po.poNumber}
+          supplierName={po.supplierName}
+          settings={documentSettings}
+          identity={identity}
+          headerVisibility={headerVisibility(documentSettings.header)}
+          preview
+        />
+        <div className="flex min-w-0 flex-col gap-4 print:hidden" data-testid="receive-completed-panel">
           <ExitsTableContainer data-testid="receive-completed-table">
             <ExitsTable>
               <ExitsTableHeader>

@@ -10,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -200,9 +201,24 @@ public sealed class P24Wp12HistorySecurityRegressionTests
                 Credits = credits,
                 Repayments = repayments,
                 Receipt = new GetLinkedCustomerSaleReceipt(
-                    authorize, sales, credits, outstanding, entitlements, options, clock)
+                    authorize, sales, credits, outstanding, entitlements, options, clock,
+                    new EmptyOperationalSetups())
             };
         }
+    }
+
+    private sealed class EmptyOperationalSetups : IPosOperationalSetupRepository
+    {
+        public Task<PosOperationalSetup?> GetByOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PosOperationalSetup?>(null);
+
+        public Task AddAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakePlatform : ILinkedCustomerPlatformAuthorization

@@ -5,9 +5,11 @@ import { ShoppingCart, Banknote, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
+  getCatalogProduct,
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
+import { readPendingQuotationConvert } from "@/api/pos/pos-quotations-client";
 import type {
   PosCatalogProductDto,
   PosCatalogProductUnitDto,
@@ -168,6 +170,7 @@ export function SellFloorPage() {
   const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
+  const quotationSeededRef = useRef(false);
 
   const flashProduct = useCallback((productId: string) => {
     setFlashedProductId(productId);
@@ -187,6 +190,36 @@ export function SellFloorPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (quotationSeededRef.current || !boundWorkspace?.organizationId) {
+      return;
+    }
+    const pending = readPendingQuotationConvert();
+    if (!pending || pending.lines.length === 0) {
+      return;
+    }
+    quotationSeededRef.current = true;
+    const workspace = {
+      organizationId: boundWorkspace.organizationId,
+      branchId: boundWorkspace.branchId ?? undefined,
+    };
+    void (async () => {
+      cart.clear();
+      for (const line of pending.lines) {
+        try {
+          const product = await getCatalogProduct(workspace, line.productId);
+          cart.addLine(product, {
+            quantity: line.quantity,
+            replaceQuantity: true,
+          });
+        } catch {
+          // Skip missing products; cashier can adjust before checkout.
+        }
+      }
+      setCartSheetOpen(true);
+    })();
+  }, [boundWorkspace?.branchId, boundWorkspace?.organizationId, cart]);
 
   useEffect(() => {
     const hideNav = cartSheetOpen && !sideCartLayout;

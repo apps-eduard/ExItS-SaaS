@@ -50,6 +50,13 @@ public static class SalePaymentMethods
             or SalePaymentMethod.Check
             or SalePaymentMethod.ManualMaya;
 
+    /// <summary>
+    /// True when checkout creates a customer receivable / credit exposure (Utang).
+    /// Distinct from <see cref="PaymentSettlementMode.Deferred"/> (e.g. Check) which is not debt.
+    /// </summary>
+    public static bool CreatesReceivable(SalePaymentMethod method) =>
+        method is SalePaymentMethod.Utang;
+
     public static string ToCode(SalePaymentMethod method) => method.ToString();
 
     public static bool TryParse(string? code, out SalePaymentMethod method)

@@ -12,7 +12,9 @@ public sealed record B2bCheckoutBuyerResolution(
     Guid ConnectionId);
 
 /// <summary>
-/// Derives Organization buyer identity for Direct Sale checkout from an Active B2B relationship.
+/// Derives Organization buyer identity for Direct Sale checkout from a B2B relationship.
+/// Pending relationships may attach for immediate (non-receivable) payments only;
+/// Utang/credit requires an Active relationship.
 /// </summary>
 public static class B2bCheckoutBuyerAuthorization
 {
@@ -25,9 +27,7 @@ public static class B2bCheckoutBuyerAuthorization
         bool isUtang,
         CancellationToken cancellationToken = default)
     {
-        // isUtang is accepted: Business Utang uses BusinessCustomerCreditPolicy at checkout.
-        // Relationship validation below still applies for Cash/GCash/Utang.
-        _ = isUtang;
+        var createsReceivable = isUtang;
 
         if (customerId is Guid linked && linked != Guid.Empty)
         {
@@ -47,7 +47,7 @@ public static class B2bCheckoutBuyerAuthorization
             {
                 return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                     DomainErrorCodes.SaleB2bRelationshipRequired,
-                    "Active B2B relationship was not found.");
+                    "B2B relationship was not found.");
             }
         }
         else if (requestedBuyerOrganizationId is Guid buyerOrg && buyerOrg != Guid.Empty)
@@ -60,8 +60,23 @@ public static class B2bCheckoutBuyerAuthorization
                 .ConfigureAwait(false);
         }
 
-        if (relationship is null
-            || relationship.Status != ConnectedSupplierRelationshipStatus.Active)
+        if (relationship is null)
+        {
+            return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
+                DomainErrorCodes.SaleB2bRelationshipRequired,
+                "B2B relationship was not found.");
+        }
+
+        if (relationship.Status == ConnectedSupplierRelationshipStatus.Pending)
+        {
+            if (createsReceivable)
+            {
+                return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
+                    DomainErrorCodes.SaleB2bCreditRequiresAcceptedRelationship,
+                    "Credit is unavailable while this relationship is pending. The buyer must accept the connection before Utang can be used.");
+            }
+        }
+        else if (relationship.Status != ConnectedSupplierRelationshipStatus.Active)
         {
             return ApplicationResult<B2bCheckoutBuyerResolution>.Failure(
                 DomainErrorCodes.SaleB2bRelationshipRequired,

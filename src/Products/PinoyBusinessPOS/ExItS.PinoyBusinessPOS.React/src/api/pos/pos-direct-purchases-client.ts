@@ -47,6 +47,25 @@ export const directPurchaseB2bLineSchema = z.object({
   lineTotal: z.number(),
 });
 
+export const directPurchaseSellerDocumentIdentitySchema = z.object({
+  businessName: z.string().nullable().optional(),
+  publicOrganizationId: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  branchName: z.string().nullable().optional(),
+  branchAddress: z.string().nullable().optional(),
+  showLogo: z.boolean().optional().default(true),
+  showBusinessName: z.boolean().optional().default(true),
+  showBusinessAddress: z.boolean().optional().default(true),
+  showBusinessPhone: z.boolean().optional().default(true),
+  showBusinessEmail: z.boolean().optional().default(true),
+  showBranchName: z.boolean().optional().default(true),
+  showBranchAddress: z.boolean().optional().default(false),
+  identitySource: z.string().optional().default("unknown"),
+});
+
 export const directPurchaseB2bDetailSchema = z.object({
   saleId: guidSchema,
   sellerOrganizationId: guidSchema,
@@ -62,6 +81,8 @@ export const directPurchaseB2bDetailSchema = z.object({
   taxAmount: z.number(),
   totalAmount: z.number(),
   lines: z.array(directPurchaseB2bLineSchema),
+  buyerDisplayNameSnapshot: z.string().nullable().optional(),
+  sellerDocumentIdentity: directPurchaseSellerDocumentIdentitySchema.nullable().optional(),
 });
 
 export type DirectPurchaseHistoryItem = z.infer<typeof directPurchaseHistoryItemSchema>;
@@ -118,5 +139,50 @@ export async function getDirectPurchaseB2bDetail(
     signal,
     path: `${PATH}/b2b/${saleId}`,
   });
-  return directPurchaseB2bDetailSchema.parse(raw);
+  if (!raw || typeof raw !== "object") {
+    return directPurchaseB2bDetailSchema.parse(raw);
+  }
+  const r = raw as Record<string, unknown>;
+  const sellerRaw = (r.sellerDocumentIdentity ?? r.SellerDocumentIdentity ?? null) as Record<
+    string,
+    unknown
+  > | null;
+  return directPurchaseB2bDetailSchema.parse({
+    saleId: r.saleId ?? r.SaleId,
+    sellerOrganizationId: r.sellerOrganizationId ?? r.SellerOrganizationId,
+    sellerPublicOrganizationId: r.sellerPublicOrganizationId ?? r.SellerPublicOrganizationId ?? null,
+    sellerDisplayName: r.sellerDisplayName ?? r.SellerDisplayName,
+    sellerStoreDisplayName: r.sellerStoreDisplayName ?? r.SellerStoreDisplayName ?? null,
+    saleNumber: r.saleNumber ?? r.SaleNumber,
+    occurredAtUtc: r.occurredAtUtc ?? r.OccurredAtUtc,
+    status: r.status ?? r.Status,
+    paymentMethod: r.paymentMethod ?? r.PaymentMethod,
+    subtotal: r.subtotal ?? r.Subtotal,
+    discountTotal: r.discountTotal ?? r.DiscountTotal,
+    taxAmount: r.taxAmount ?? r.TaxAmount,
+    totalAmount: r.totalAmount ?? r.TotalAmount,
+    lines: r.lines ?? r.Lines,
+    buyerDisplayNameSnapshot: r.buyerDisplayNameSnapshot ?? r.BuyerDisplayNameSnapshot ?? null,
+    sellerDocumentIdentity: sellerRaw
+      ? {
+          businessName: sellerRaw.businessName ?? sellerRaw.BusinessName ?? null,
+          publicOrganizationId:
+            sellerRaw.publicOrganizationId ?? sellerRaw.PublicOrganizationId ?? null,
+          logoUrl: sellerRaw.logoUrl ?? sellerRaw.LogoUrl ?? null,
+          address: sellerRaw.address ?? sellerRaw.Address ?? null,
+          phone: sellerRaw.phone ?? sellerRaw.Phone ?? null,
+          email: sellerRaw.email ?? sellerRaw.Email ?? null,
+          branchName: sellerRaw.branchName ?? sellerRaw.BranchName ?? null,
+          branchAddress: sellerRaw.branchAddress ?? sellerRaw.BranchAddress ?? null,
+          showLogo: sellerRaw.showLogo ?? sellerRaw.ShowLogo,
+          showBusinessName: sellerRaw.showBusinessName ?? sellerRaw.ShowBusinessName,
+          showBusinessAddress: sellerRaw.showBusinessAddress ?? sellerRaw.ShowBusinessAddress,
+          showBusinessPhone: sellerRaw.showBusinessPhone ?? sellerRaw.ShowBusinessPhone,
+          showBusinessEmail: sellerRaw.showBusinessEmail ?? sellerRaw.ShowBusinessEmail,
+          showBranchName: sellerRaw.showBranchName ?? sellerRaw.ShowBranchName,
+          showBranchAddress: sellerRaw.showBranchAddress ?? sellerRaw.ShowBranchAddress,
+          identitySource: sellerRaw.identitySource ?? sellerRaw.IdentitySource,
+        }
+      : null,
+  });
 }

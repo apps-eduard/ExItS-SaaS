@@ -32,6 +32,15 @@ public enum CatalogSharingMode
     AllEligible = 1
 }
 
+/// <summary>Seller relationship contact identity source (not a duplicate OrganizationMember record).</summary>
+public enum RelationshipContactSource
+{
+    /// <summary>Seller-managed freeform contact (external purchasing/accounting contacts).</summary>
+    Custom = 0,
+    /// <summary>Linked to an Active buyer OrganizationMembership (snapshot + membership id).</summary>
+    OrganizationMember = 1
+}
+
 /// <summary>Server-side source for the buyer-facing effective purchase price.</summary>
 public enum ConnectedCustomerPriceSource
 {
@@ -173,10 +182,41 @@ public sealed class ConnectedSupplierRelationship
     public decimal? CustomerDiscountPercent { get; private set; }
     /// <summary>
     /// Operational supplier source branch (Platform branch id). Organization remains the relationship anchor.
+    /// This is the home branch for Business Customer visibility (CreateAtBranch equivalent).
     /// </summary>
     public Guid? SupplierBranchId { get; private set; }
     /// <summary>Display name of <see cref="SupplierBranchId"/> at set time (safe for buyer UX; no UUID).</summary>
     public string? SupplierBranchNameSnapshot { get; private set; }
+    /// <summary>
+    /// Additional supplier branches with explicit visibility (never Area ids).
+    /// Home (<see cref="SupplierBranchId"/>) is always visible and is never stored here.
+    /// </summary>
+    public IReadOnlyList<Guid> SharedSupplierBranchIds { get; private set; } = Array.Empty<Guid>();
+    /// <summary>How relationship contact identity was chosen (Custom vs linked Organization membership).</summary>
+    public RelationshipContactSource ContactSource { get; private set; } = RelationshipContactSource.Custom;
+    /// <summary>
+    /// Buyer <c>OrganizationMembershipId</c> when <see cref="ContactSource"/> is OrganizationMember.
+    /// Preserved for history when the member later leaves or is disabled.
+    /// </summary>
+    public Guid? OrganizationMemberId { get; private set; }
+    /// <summary>Contact person display (seller-owned Custom, or snapshot from Organization member).</summary>
+    public string? ContactPersonName { get; private set; }
+    /// <summary>Contact department for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactDepartment { get; private set; }
+    /// <summary>Contact role / title for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactRole { get; private set; }
+    /// <summary>Contact phone for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactPhone { get; private set; }
+    /// <summary>Contact email for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactEmail { get; private set; }
+    /// <summary>Optional freeform preference (e.g. Phone, Email, Either).</summary>
+    public string? PreferredContactMethod { get; private set; }
+    /// <summary>Seller-owned delivery notes for this relationship.</summary>
+    public string? DeliveryInstructions { get; private set; }
+    /// <summary>Seller-owned billing contact notes for this relationship.</summary>
+    public string? BillingContactNotes { get; private set; }
+    /// <summary>Seller-owned internal notes (not buyer Organization identity).</summary>
+    public string? InternalNotes { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -206,7 +246,19 @@ public sealed class ConnectedSupplierRelationship
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
-        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer)
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer,
+        IReadOnlyList<Guid>? sharedSupplierBranchIds = null,
+        RelationshipContactSource contactSource = RelationshipContactSource.Custom,
+        Guid? organizationMemberId = null,
+        string? contactPersonName = null,
+        string? contactDepartment = null,
+        string? contactRole = null,
+        string? contactPhone = null,
+        string? contactEmail = null,
+        string? preferredContactMethod = null,
+        string? deliveryInstructions = null,
+        string? billingContactNotes = null,
+        string? internalNotes = null)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; InitiatedByParty = initiatedByParty;
@@ -220,6 +272,13 @@ public sealed class ConnectedSupplierRelationship
         CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = CleanSnapshot(supplierBranchNameSnapshot, 128);
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(sharedSupplierBranchIds, SupplierBranchId);
+        ApplyContactIdentity(contactSource, organizationMemberId, contactPersonName, contactDepartment, contactRole,
+            contactPhone, contactEmail);
+        PreferredContactMethod = CleanSnapshot(preferredContactMethod, 32);
+        DeliveryInstructions = CleanSnapshot(deliveryInstructions, 1000);
+        BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
+        InternalNotes = CleanSnapshot(internalNotes, 2000);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
@@ -293,6 +352,64 @@ public sealed class ConnectedSupplierRelationship
                 "Supplier branch name is required.");
         SupplierBranchId = branchId;
         SupplierBranchNameSnapshot = name;
+        // Moving home never auto-shares the previous home; drop the new home from explicit shares.
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(SharedSupplierBranchIds, SupplierBranchId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Replaces explicit shared branch visibility. Home branch is always excluded from the stored set.
+    /// </summary>
+    public void ReplaceSharedSupplierBranchIds(IEnumerable<Guid> branchIds, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(branchIds, SupplierBranchId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ShareSupplierBranch(Guid branchId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = NormalizeBranchId(branchId)
+            ?? throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Branch is required.");
+        if (SupplierBranchId is Guid home && normalized == home)
+        {
+            return;
+        }
+
+        if (SharedSupplierBranchIds.Contains(normalized))
+        {
+            return;
+        }
+
+        SharedSupplierBranchIds = SharedSupplierBranchIds.Append(normalized).OrderBy(id => id).ToArray();
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UnshareSupplierBranch(Guid branchId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = NormalizeBranchId(branchId);
+        if (normalized is null)
+        {
+            return;
+        }
+
+        if (SupplierBranchId is Guid home && normalized == home)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Home branch visibility cannot be revoked.");
+        }
+
+        SharedSupplierBranchIds = SharedSupplierBranchIds.Where(id => id != normalized).ToArray();
         UpdatedAtUtc = utcNow;
     }
 
@@ -331,6 +448,89 @@ public sealed class ConnectedSupplierRelationship
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Seller-owned relationship contact fields only. Does not change Status, org ids,
+    /// identity snapshots, catalog settings, or branch sharing.
+    /// Allowed for Pending and Active relationships.
+    /// OrganizationMember source requires Active relationship (Pending = Custom only).
+    /// </summary>
+    public void UpdateRelationshipContact(
+        RelationshipContactSource contactSource,
+        Guid? organizationMemberId,
+        string? contactPersonName,
+        string? contactDepartment,
+        string? contactRole,
+        string? contactPhone,
+        string? contactEmail,
+        string? preferredContactMethod,
+        string? deliveryInstructions,
+        string? billingContactNotes,
+        string? internalNotes,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        if (contactSource == RelationshipContactSource.OrganizationMember
+            && Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Organization staff contacts are only available for Connected relationships.");
+        }
+
+        ApplyContactIdentity(
+            contactSource,
+            organizationMemberId,
+            contactPersonName,
+            contactDepartment,
+            contactRole,
+            contactPhone,
+            contactEmail);
+        PreferredContactMethod = CleanSnapshot(preferredContactMethod, 32);
+        DeliveryInstructions = CleanSnapshot(deliveryInstructions, 1000);
+        BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
+        InternalNotes = CleanSnapshot(internalNotes, 2000);
+        UpdatedAtUtc = utcNow;
+    }
+
+    private void ApplyContactIdentity(
+        RelationshipContactSource contactSource,
+        Guid? organizationMemberId,
+        string? contactPersonName,
+        string? contactDepartment,
+        string? contactRole,
+        string? contactPhone,
+        string? contactEmail)
+    {
+        if (contactSource == RelationshipContactSource.OrganizationMember)
+        {
+            if (organizationMemberId is null || organizationMemberId == Guid.Empty)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidId,
+                    "Organization member is required for Organization contact.");
+            }
+
+            ContactSource = RelationshipContactSource.OrganizationMember;
+            OrganizationMemberId = organizationMemberId;
+        }
+        else
+        {
+            ContactSource = RelationshipContactSource.Custom;
+            OrganizationMemberId = null;
+        }
+
+        ContactPersonName = CleanSnapshot(contactPersonName, 128);
+        ContactDepartment = CleanSnapshot(contactDepartment, 128);
+        ContactRole = CleanSnapshot(contactRole, 128);
+        ContactPhone = CleanSnapshot(contactPhone, 32);
+        ContactEmail = CleanSnapshot(contactEmail, 256);
+    }
+
     public static ConnectedSupplierRelationship Rehydrate(ConnectedSupplierRelationshipId id, PosOrganizationId buyer,
         PosOrganizationId supplier, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedBy, DateTimeOffset? respondedAtUtc, Guid? respondedBy, DateTimeOffset? disconnectedAtUtc,
@@ -341,15 +541,47 @@ public sealed class ConnectedSupplierRelationship
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
-        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer) =>
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer,
+        IReadOnlyList<Guid>? sharedSupplierBranchIds = null,
+        RelationshipContactSource contactSource = RelationshipContactSource.Custom,
+        Guid? organizationMemberId = null,
+        string? contactPersonName = null,
+        string? contactDepartment = null,
+        string? contactRole = null,
+        string? contactPhone = null,
+        string? contactEmail = null,
+        string? preferredContactMethod = null,
+        string? deliveryInstructions = null,
+        string? billingContactNotes = null,
+        string? internalNotes = null) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
             catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot,
-            initiatedByParty);
+            initiatedByParty, sharedSupplierBranchIds,
+            contactSource, organizationMemberId,
+            contactPersonName, contactDepartment, contactRole, contactPhone, contactEmail, preferredContactMethod,
+            deliveryInstructions, billingContactNotes, internalNotes);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;
+
+    private static IReadOnlyList<Guid> NormalizeSharedBranchIds(
+        IEnumerable<Guid>? branchIds,
+        Guid? homeBranchId)
+    {
+        if (branchIds is null)
+        {
+            return Array.Empty<Guid>();
+        }
+
+        return branchIds
+            .Where(id => id != Guid.Empty)
+            .Where(id => homeBranchId is null || id != homeBranchId.Value)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToArray();
+    }
 
     private static string? CleanSnapshot(string? value, int maxLength)
     {

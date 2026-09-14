@@ -1,15 +1,23 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { FileDown, Printer } from "lucide-react";
+import { getOrganizationB2bPublicProfile } from "@/api/platform/organization-b2b-public-profile-client";
 import { getDirectPurchaseB2bDetail } from "@/api/pos/pos-direct-purchases-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Button } from "@/components/ui/button";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { customerPurchaseSummaryFromB2bDetail } from "@/features/documents/customer-purchase-summary-view";
+import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
+import {
+  exportBusinessDocumentPdf,
+  printBusinessDocument,
+} from "@/features/documents/print-business-document";
+import { resolveCustomerSellerIdentityParts } from "@/features/documents/resolve-customer-seller-identity";
+import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function DirectPurchaseB2bDetailPage() {
@@ -17,7 +25,6 @@ export function DirectPurchaseB2bDetailPage() {
   const online = useBrowserOnline();
   const { saleId = "" } = useParams<{ saleId: string }>();
   const { boundWorkspace } = useWorkspace();
-  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
 
   const workspace = useMemo(
     () =>
@@ -34,6 +41,26 @@ export function DirectPurchaseB2bDetailPage() {
     queryKey: ["direct-purchase-b2b", workspace?.organizationId, saleId],
     enabled: Boolean(workspace) && Boolean(saleId) && online,
     queryFn: ({ signal }) => getDirectPurchaseB2bDetail(workspace!, saleId, signal),
+  });
+
+  const publicProfileQuery = useQuery({
+    queryKey: [
+      "seller-document-public-identity",
+      workspace?.organizationId,
+      query.data?.sellerOrganizationId,
+    ],
+    enabled:
+      Boolean(workspace?.organizationId) &&
+      Boolean(query.data?.sellerOrganizationId) &&
+      online &&
+      query.isSuccess,
+    queryFn: ({ signal }) =>
+      getOrganizationB2bPublicProfile(
+        query.data!.sellerOrganizationId,
+        workspace!.organizationId,
+        signal,
+      ).catch(() => null),
+    staleTime: 60_000,
   });
 
   const pageShell =
@@ -79,6 +106,64 @@ export function DirectPurchaseB2bDetailPage() {
   }
 
   const detail = query.data;
+  const view = customerPurchaseSummaryFromB2bDetail(detail);
+  const { identity, headerVisibility } = resolveCustomerSellerIdentityParts({
+    sellerDocumentIdentity: detail.sellerDocumentIdentity,
+    merchantDisplayName: detail.sellerDisplayName,
+    branchDisplayName: detail.sellerStoreDisplayName,
+    publicProfile: publicProfileQuery.data ?? null,
+  });
+
+  const customerDocumentSettings = {
+    ...DEFAULT_DOCUMENT_SETTINGS,
+    sales: {
+      ...DEFAULT_DOCUMENT_SETTINGS.sales,
+      showCashier: false,
+      showSku: false,
+      showCustomerName: Boolean(view.customerDisplayName),
+    },
+    footer: {
+      ...DEFAULT_DOCUMENT_SETTINGS.footer,
+      showDocumentDisclaimer: true,
+    },
+    header: {
+      ...DEFAULT_DOCUMENT_SETTINGS.header,
+      showLogo: headerVisibility.showLogo,
+      showBusinessAddress: headerVisibility.showBusinessAddress,
+      showBusinessPhone: headerVisibility.showBusinessPhone,
+      showBusinessEmail: headerVisibility.showBusinessEmail,
+      showBranchName: headerVisibility.showBranchName,
+      showBranchAddress: headerVisibility.showBranchAddress,
+    },
+  };
+
+  const headerActions = (
+    <div
+      className="flex min-w-0 flex-wrap items-center gap-2 print:hidden"
+      data-testid="b2b-document-actions"
+    >
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="b2b-print"
+        onClick={() => printBusinessDocument()}
+      >
+        <Printer className="size-4 shrink-0" aria-hidden />
+        {t("summary.print")}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="b2b-pdf"
+        onClick={() => exportBusinessDocumentPdf()}
+      >
+        <FileDown className="size-4 shrink-0" aria-hidden />
+        {t("summary.exportPdf")}
+      </Button>
+    </div>
+  );
 
   return (
     <div className={pageShell} data-testid="direct-purchase-b2b-detail-page">
@@ -88,111 +173,22 @@ export function DirectPurchaseB2bDetailPage() {
         backTo="/purchasing/direct-purchases"
         backLabel={t("purchasing.directPurchases")}
         backTestId="page-header-back-direct-purchases"
+        trailing={headerActions}
       />
 
-      <section className="pc-receipt-disclaimer exits-animate-panel" data-testid="b2b-disclaimer">
-        <button
-          type="button"
-          className="pc-receipt-disclaimer__toggle"
-          aria-expanded={disclaimerOpen}
-          data-testid="b2b-disclaimer-toggle"
-          onClick={() => setDisclaimerOpen((open) => !open)}
-        >
-          <span>{t("summary.disclaimerTitle")}</span>
-          <ChevronDown
-            className={cn(
-              "pc-receipt-disclaimer__chevron size-4 shrink-0",
-              disclaimerOpen && "pc-receipt-disclaimer__chevron--open",
-            )}
-            aria-hidden
-          />
-        </button>
-        {disclaimerOpen ? (
-          <p className="pc-receipt-disclaimer__body" data-testid="b2b-disclaimer-body">
-            {t("summary.disclaimerBody")}
-          </p>
-        ) : null}
-      </section>
-
-      <section className="pc-receipt-card exits-animate-panel" data-testid="b2b-summary">
-        <dl className="pc-receipt-card__meta-list m-0">
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("purchasing.b2bPurchasedFrom")}</dt>
-            <dd className="font-semibold" data-testid="b2b-seller-name">
-              {detail.sellerDisplayName}
-            </dd>
-          </div>
-          {detail.sellerPublicOrganizationId ? (
-            <div className="pc-receipt-card__meta-row">
-              <dt>{t("purchasing.b2bSellerOrgId")}</dt>
-              <dd data-testid="b2b-seller-org">{detail.sellerPublicOrganizationId}</dd>
-            </div>
-          ) : null}
-          {detail.sellerStoreDisplayName ? (
-            <div className="pc-receipt-card__meta-row">
-              <dt>{t("purchasing.b2bSellerStore")}</dt>
-              <dd data-testid="b2b-seller-store">{detail.sellerStoreDisplayName}</dd>
-            </div>
-          ) : null}
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.saleNumber")}</dt>
-            <dd className="font-semibold" data-testid="b2b-sale-number">
-              {detail.saleNumber}
-            </dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.dateTime")}</dt>
-            <dd data-testid="b2b-datetime">{new Date(detail.occurredAtUtc).toLocaleString()}</dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.paymentMethod")}</dt>
-            <dd data-testid="b2b-payment">{detail.paymentMethod}</dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.status")}</dt>
-            <dd data-testid="b2b-status">{detail.status}</dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("purchasing.directColType")}</dt>
-            <dd data-testid="b2b-source-badge">{t("purchasing.directBadgeB2b")}</dd>
-          </div>
-        </dl>
-
-        <ul className="pc-receipt-card__line-list m-0 list-none p-0" data-testid="b2b-lines">
-          {detail.lines.map((line) => (
-            <li
-              key={line.lineNumber}
-              className="pc-receipt-card__line"
-              data-testid={`b2b-line-${line.lineNumber}`}
-            >
-              <span className="min-w-0 truncate text-[length:var(--exits-text-sm)]">
-                {line.productNameSnapshot} × {line.quantity} {line.unitOfMeasure}
-                {line.lineDiscountAmount > 0
-                  ? ` (−${line.lineDiscountAmount.toFixed(2)})`
-                  : ""}
-              </span>
-              <MoneyDisplay amount={line.lineTotal} className="pc-receipt-line__total" />
-            </li>
-          ))}
-        </ul>
-
-        <div className="pc-receipt-card__totals">
-          <p className="pc-receipt-card__total-row">
-            <span className="text-muted">{t("summary.subtotal")}</span>
-            <MoneyDisplay amount={detail.subtotal} />
-          </p>
-          {detail.discountTotal > 0 ? (
-            <p className="pc-receipt-card__total-row">
-              <span className="text-muted">{t("purchasing.b2bDiscount")}</span>
-              <MoneyDisplay amount={detail.discountTotal} />
-            </p>
-          ) : null}
-          <p className="pc-receipt-card__total-row pc-receipt-card__total-row--emphasis">
-            <span>{t("summary.total")}</span>
-            <MoneyDisplay amount={detail.totalAmount} testId="b2b-total" />
-          </p>
-        </div>
-      </section>
+      <div
+        className="b2b-purchase-document mx-auto w-full min-w-0 max-w-[52rem] overflow-x-hidden"
+        data-testid="b2b-purchase-document"
+      >
+        <CustomerPurchaseSummaryDocument
+          view={view}
+          settings={customerDocumentSettings}
+          identity={identity}
+          headerVisibility={headerVisibility}
+          audience="Customer"
+          preview
+        />
+      </div>
     </div>
   );
 }

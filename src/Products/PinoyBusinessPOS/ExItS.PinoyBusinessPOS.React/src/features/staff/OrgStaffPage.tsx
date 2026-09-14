@@ -716,6 +716,16 @@ function StaffMemberRow({
               {showPosRoleAction ? (
                 <Button asChild variant="outline" className="staff-row__action">
                   <Link
+                    to={`/org/staff/${encodeURIComponent(row.membershipId)}`}
+                    data-testid={`org-staff-detail-${row.membershipId}`}
+                  >
+                    {t("staffBusinessProfile.viewProfile")}
+                  </Link>
+                </Button>
+              ) : null}
+              {showPosRoleAction ? (
+                <Button asChild variant="outline" className="staff-row__action">
+                  <Link
                     to={`/org/staff/assign?userId=${encodeURIComponent(row.userId)}`}
                     data-testid={`org-staff-assign-${row.membershipId}`}
                   >

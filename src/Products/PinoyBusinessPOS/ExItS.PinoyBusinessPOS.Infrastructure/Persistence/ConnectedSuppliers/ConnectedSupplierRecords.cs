@@ -22,6 +22,19 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public decimal? CustomerDiscountPercent { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
+    public Guid[] SharedSupplierBranchIds { get; set; } = [];
+    /// <summary>0 = Custom, 1 = OrganizationMember.</summary>
+    public int ContactSource { get; set; }
+    public Guid? OrganizationMemberId { get; set; }
+    public string? ContactPersonName { get; set; }
+    public string? ContactDepartment { get; set; }
+    public string? ContactRole { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? ContactEmail { get; set; }
+    public string? PreferredContactMethod { get; set; }
+    public string? DeliveryInstructions { get; set; }
+    public string? BillingContactNotes { get; set; }
+    public string? InternalNotes { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
 }
@@ -102,7 +115,19 @@ internal static class ConnectedSupplierEntityMapper
         r.CustomerDiscountPercent,
         r.SupplierBranchId,
         r.SupplierBranchNameSnapshot,
-        (ConnectionInitiatedByParty)r.InitiatedByParty);
+        (ConnectionInitiatedByParty)r.InitiatedByParty,
+        r.SharedSupplierBranchIds,
+        (RelationshipContactSource)r.ContactSource,
+        r.OrganizationMemberId,
+        r.ContactPersonName,
+        r.ContactDepartment,
+        r.ContactRole,
+        r.ContactPhone,
+        r.ContactEmail,
+        r.PreferredContactMethod,
+        r.DeliveryInstructions,
+        r.BillingContactNotes,
+        r.InternalNotes);
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
@@ -112,12 +137,23 @@ internal static class ConnectedSupplierEntityMapper
         SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode=(int)x.CatalogSharingMode,CustomerDiscountPercent=x.CustomerDiscountPercent,
         SupplierBranchId=x.SupplierBranchId,SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot,
+        SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray(),
+        ContactSource=(int)x.ContactSource,OrganizationMemberId=x.OrganizationMemberId,
+        ContactPersonName=x.ContactPersonName,ContactDepartment=x.ContactDepartment,ContactRole=x.ContactRole,ContactPhone=x.ContactPhone,ContactEmail=x.ContactEmail,
+        PreferredContactMethod=x.PreferredContactMethod,DeliveryInstructions=x.DeliveryInstructions,
+        BillingContactNotes=x.BillingContactNotes,InternalNotes=x.InternalNotes,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;
      r.InitiatedByParty=(int)x.InitiatedByParty;
      r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;
-     r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;r.UpdatedAtUtc=x.UpdatedAtUtc;}
+     r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;
+     r.SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray();
+     r.ContactSource=(int)x.ContactSource;r.OrganizationMemberId=x.OrganizationMemberId;
+     r.ContactPersonName=x.ContactPersonName;r.ContactDepartment=x.ContactDepartment;r.ContactRole=x.ContactRole;r.ContactPhone=x.ContactPhone;r.ContactEmail=x.ContactEmail;
+     r.PreferredContactMethod=x.PreferredContactMethod;r.DeliveryInstructions=x.DeliveryInstructions;
+     r.BillingContactNotes=x.BillingContactNotes;r.InternalNotes=x.InternalNotes;
+     r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
     public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r)=>SupplierProductExposure.Rehydrate(
         SupplierProductExposureId.From(r.Id),PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.ProductId),

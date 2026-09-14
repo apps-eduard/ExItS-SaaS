@@ -111,6 +111,7 @@ public static class PlatformAuditActions
 
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";
+    public const string MembershipBusinessProfileUpdated = "platform.membership.business_profile_updated";
     public const string MembershipSuspended = "platform.membership.suspended";
     public const string MembershipReactivated = "platform.membership.reactivated";
     public const string MembershipRevoked = "platform.membership.revoked";

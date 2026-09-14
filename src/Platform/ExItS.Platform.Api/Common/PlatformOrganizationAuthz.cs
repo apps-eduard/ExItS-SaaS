@@ -79,6 +79,22 @@ internal sealed class PlatformOrganizationAuthz(
 
         if (await HasTrustedActiveMembershipAsync(
                     organizationId,
+                    governingAdminOnly: false,
+                    requireSelectedOrganization: true,
+                    cancellationToken)
+                .ConfigureAwait(false)
+            && await HasOrganizationPermissionAsync(
+                    organizationId,
+                    OrganizationPermission.ManageProfile,
+                    cancellationToken)
+                .ConfigureAwait(false))
+        {
+            return (null, false);
+        }
+
+        // Owner/Administrator retain profile manage via built-in catalog (ManageProfile in All).
+        if (await HasTrustedActiveMembershipAsync(
+                    organizationId,
                     governingAdminOnly: true,
                     requireSelectedOrganization: true,
                     cancellationToken)
@@ -181,6 +197,38 @@ internal sealed class PlatformOrganizationAuthz(
         Guid? organizationId,
         CancellationToken cancellationToken = default) =>
         HasPlatformPermissionAsync(PlatformPermission.ManageOrganizations, organizationId, cancellationToken);
+
+    private async Task<bool> HasOrganizationPermissionAsync(
+        Guid organizationId,
+        string permission,
+        CancellationToken cancellationToken)
+    {
+        var actor = authz.CurrentActor;
+        if (actor.PlatformUserId is null)
+        {
+            return false;
+        }
+
+        if (actor.OrganizationId is null || actor.OrganizationId.Value != organizationId)
+        {
+            return false;
+        }
+
+        var membership = await memberships
+            .FindActiveByUserAndOrganizationAsync(
+                actor.PlatformUserId,
+                PlatformOrganizationId.From(organizationId),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (membership is null)
+        {
+            return false;
+        }
+
+        return OrganizationRolePermissionCatalog
+            .GetPermissions(membership.Role)
+            .Contains(permission);
+    }
 
     private async Task<bool> HasPlatformPermissionAsync(
         string permission,

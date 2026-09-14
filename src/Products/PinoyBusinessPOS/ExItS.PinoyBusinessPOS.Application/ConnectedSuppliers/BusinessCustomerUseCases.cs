@@ -1,6 +1,8 @@
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 
@@ -28,7 +30,36 @@ public sealed record BusinessCustomerDto(
     DateTimeOffset UpdatedAtUtc,
     bool DisplayNameIsLive = false,
     string InitiatedByParty = "Buyer",
-    bool ActionRequired = false);
+    bool ActionRequired = false,
+    Guid? SupplierBranchId = null,
+    string? SupplierBranchName = null,
+    string ContactSource = "Custom",
+    Guid? OrganizationMemberId = null,
+    bool? OrganizationMemberAvailable = null,
+    string? ContactPersonName = null,
+    string? ContactDepartment = null,
+    string? ContactRole = null,
+    string? ContactPhone = null,
+    string? ContactEmail = null,
+    string? PreferredContactMethod = null,
+    string? DeliveryInstructions = null,
+    string? BillingContactNotes = null,
+    string? InternalNotes = null);
+
+/// <summary>Seller-owned relationship contact update (does not modify buyer Organization identity).</summary>
+public sealed record UpdateBusinessCustomerRelationshipContactRequest(
+    string ContactSource,
+    Guid? OrganizationMemberId,
+    string? ContactPersonName,
+    string? ContactDepartment,
+    string? ContactRole,
+    string? ContactPhone,
+    string? ContactEmail,
+    string? PreferredContactMethod,
+    string? DeliveryInstructions,
+    string? BillingContactNotes,
+    string? InternalNotes,
+    DateTimeOffset ExpectedUpdatedAtUtc);
 
 /// <summary>
 /// Identity display policy for Business Customer list and detail.
@@ -46,21 +77,25 @@ public static class BusinessCustomerIdentityDisplay
 /// Lists supplier Business Customers = Active and Pending buyer relationships
 /// (optionally Disconnected/Declined history). Catalog aggregates are batch-loaded.
 /// Primary identity = relationship buyer snapshot (same as detail).
+/// Default visibility = home supplier branch only (Main does not auto-share).
 /// </summary>
 public sealed class ListBusinessCustomers
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
 
     public ListBusinessCustomers(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IPartyBranchAccessActorAccessor? actorAccessor = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
+        _actorAccessor = actorAccessor;
     }
 
     public async Task<ApplicationResult<IReadOnlyList<BusinessCustomerDto>>> ExecuteAsync(
@@ -87,6 +122,8 @@ public sealed class ListBusinessCustomers
                     && (r.Status == ConnectedSupplierRelationshipStatus.Disconnected
                         || r.Status == ConnectedSupplierRelationshipStatus.Declined)))
             .ToList();
+
+        filtered = ApplyHomeBranchVisibility(filtered);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -123,6 +160,28 @@ public sealed class ListBusinessCustomers
         return ApplicationResult<IReadOnlyList<BusinessCustomerDto>>.Success(result);
     }
 
+    private List<ConnectedSupplierRelationship> ApplyHomeBranchVisibility(
+        List<ConnectedSupplierRelationship> rows)
+    {
+        if (_actorAccessor is null)
+        {
+            return rows;
+        }
+
+        var actor = _actorAccessor.GetActor();
+        var organizationWide =
+            actor.IsOrganizationGovernance
+            && (actor.ActingBranchId is null || actor.ActingBranchId == Guid.Empty);
+
+        return rows
+            .Where(r => SupplierConnectionBranchRouting.IsVisibleAtSupplierBranch(
+                r.SupplierBranchId,
+                r.SharedSupplierBranchIds,
+                actor.ActingBranchId,
+                organizationWide))
+            .ToList();
+    }
+
     /// <summary>
     /// Search matches snapshot display name and public ORG id — the identity users see.
     /// </summary>
@@ -156,7 +215,18 @@ public sealed class ListBusinessCustomers
         BuyerRelationshipShareStats stats,
         bool displayNameIsLive,
         string? liveDisplayName = null,
-        string? livePublicId = null)
+        string? livePublicId = null,
+        bool? organizationMemberAvailable = null) =>
+        MapCore(r, eligibleCount, stats, displayNameIsLive, liveDisplayName, livePublicId, organizationMemberAvailable);
+
+    private static BusinessCustomerDto MapCore(
+        ConnectedSupplierRelationship r,
+        int eligibleCount,
+        BuyerRelationshipShareStats stats,
+        bool displayNameIsLive,
+        string? liveDisplayName,
+        string? livePublicId,
+        bool? organizationMemberAvailable)
     {
         var sharedCount = r.CatalogSharingMode == CatalogSharingMode.AllEligible
             ? Math.Max(0, eligibleCount - stats.ExcludedCount)
@@ -164,6 +234,11 @@ public sealed class ListBusinessCustomers
 
         var actionRequired = r.Status == ConnectedSupplierRelationshipStatus.Pending
             && r.IsRecipient(r.SupplierOrganizationId);
+
+        // ConnectedSince is only meaningful after acceptance — RespondedAtUtc only (never CreatedAtUtc).
+        DateTimeOffset? connectedSinceUtc = r.Status == ConnectedSupplierRelationshipStatus.Active
+            ? r.RespondedAtUtc
+            : null;
 
         return new BusinessCustomerDto(
             r.Id.Value,
@@ -182,12 +257,26 @@ public sealed class ListBusinessCustomers
             sharedCount,
             stats.ExcludedCount,
             stats.OverrideCount,
-            r.RespondedAtUtc ?? r.CreatedAtUtc,
+            connectedSinceUtc,
             r.CreatedAtUtc,
             r.UpdatedAtUtc,
             displayNameIsLive,
             r.InitiatedByParty.ToString(),
-            actionRequired);
+            actionRequired,
+            r.SupplierBranchId,
+            r.SupplierBranchNameSnapshot,
+            r.ContactSource.ToString(),
+            r.OrganizationMemberId,
+            organizationMemberAvailable,
+            r.ContactPersonName,
+            r.ContactDepartment,
+            r.ContactRole,
+            r.ContactPhone,
+            r.ContactEmail,
+            r.PreferredContactMethod,
+            r.DeliveryInstructions,
+            r.BillingContactNotes,
+            r.InternalNotes);
     }
 }
 
@@ -201,15 +290,21 @@ public sealed class GetBusinessCustomer
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
+    private readonly IConnectedBuyerBusinessContactDirectory? _contacts;
 
     public GetBusinessCustomer(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IPartyBranchAccessActorAccessor? actorAccessor = null,
+        IConnectedBuyerBusinessContactDirectory? contacts = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
+        _actorAccessor = actorAccessor;
+        _contacts = contacts;
     }
 
     public async Task<ApplicationResult<BusinessCustomerDto>> ExecuteAsync(
@@ -235,6 +330,282 @@ public sealed class GetBusinessCustomer
                 "Business customer relationship was not found.");
         }
 
+        if (_actorAccessor is not null)
+        {
+            var actor = _actorAccessor.GetActor();
+            var organizationWide =
+                actor.IsOrganizationGovernance
+                && (actor.ActingBranchId is null || actor.ActingBranchId == Guid.Empty);
+            if (!SupplierConnectionBranchRouting.IsVisibleAtSupplierBranch(
+                    r.SupplierBranchId,
+                    r.SharedSupplierBranchIds,
+                    actor.ActingBranchId,
+                    organizationWide))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                    ConnectedSupplierErrorCodes.NotFound,
+                    "Business customer relationship was not found.");
+            }
+        }
+
+        var eligibleCount = await _shares.CountEligibleSupplierProductsAsync(supplier, ct)
+            .ConfigureAwait(false);
+        var statsMap = await _shares.ListShareStatsByRelationshipsAsync([r.Id.Value], ct)
+            .ConfigureAwait(false);
+        var stats = statsMap.GetValueOrDefault(r.Id.Value, new BuyerRelationshipShareStats(0, 0, 0));
+
+        bool? memberAvailable = null;
+        if (r.ContactSource == RelationshipContactSource.OrganizationMember
+            && r.OrganizationMemberId is Guid memberId
+            && r.Status == ConnectedSupplierRelationshipStatus.Active
+            && _contacts is not null)
+        {
+            var live = await _contacts
+                .GetAsync(r.BuyerOrganizationId.Value, supplier.Value, memberId, ct)
+                .ConfigureAwait(false);
+            memberAvailable = live.IsSuccess && live.Value is not null;
+            if (memberAvailable == true && live.Value is { } contact)
+            {
+                // Refresh authoritative display snapshots for active linked members (do not persist here).
+                return ApplicationResult<BusinessCustomerDto>.Success(
+                    ListBusinessCustomers.Map(
+                        r,
+                        eligibleCount,
+                        stats,
+                        displayNameIsLive: false,
+                        organizationMemberAvailable: true)
+                    with
+                    {
+                        ContactPersonName = contact.DisplayName,
+                        ContactDepartment = contact.Department,
+                        ContactRole = contact.RoleTitle,
+                        ContactPhone = contact.Phone,
+                        ContactEmail = contact.Email
+                    });
+            }
+        }
+        else if (r.ContactSource == RelationshipContactSource.OrganizationMember)
+        {
+            memberAvailable = false;
+        }
+
+        return ApplicationResult<BusinessCustomerDto>.Success(
+            ListBusinessCustomers.Map(
+                r,
+                eligibleCount,
+                stats,
+                displayNameIsLive: false,
+                organizationMemberAvailable: memberAvailable));
+    }
+}
+
+/// <summary>
+/// Lists privacy-safe buyer Organization contacts for Connected relationships only.
+/// Pending relationships are refused (Custom contact only).
+/// </summary>
+public sealed class ListBusinessCustomerOrganizationContacts
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IConnectedBuyerBusinessContactDirectory _contacts;
+
+    public ListBusinessCustomerOrganizationContacts(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosCommercialAccessAccessor access,
+        IConnectedBuyerBusinessContactDirectory contacts)
+    {
+        _relationships = relationships;
+        _access = access;
+        _contacts = contacts;
+    }
+
+    public async Task<ApplicationResult<IReadOnlyList<BuyerOrganizationBusinessContactDto>>> ExecuteAsync(
+        Guid orgId,
+        Guid connectionId,
+        string? search = null,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ViewSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<BuyerOrganizationBusinessContactDto>>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var r = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(connectionId), ct)
+            .ConfigureAwait(false);
+        var supplier = PosOrganizationId.From(orgId);
+        if (r is null || r.SupplierOrganizationId != supplier)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<BuyerOrganizationBusinessContactDto>>(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Business customer relationship was not found.");
+        }
+
+        if (r.Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<BuyerOrganizationBusinessContactDto>>(
+                ConnectedSupplierErrorCodes.OrganizationContactNotConnected,
+                "Organization staff contacts are only available after the connection is accepted.");
+        }
+
+        return await _contacts
+            .ListAsync(r.BuyerOrganizationId.Value, supplier.Value, search, ct)
+            .ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Updates seller-owned relationship contact fields only.
+/// Never modifies buyer display name / public organization id snapshots,
+/// credit approval, relationship status, or branch access.
+/// </summary>
+public sealed class UpdateBusinessCustomerRelationshipContact
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IConnectedBuyerProductShareRepository _shares;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly IConnectedBuyerBusinessContactDirectory? _contacts;
+    private readonly TimeProvider _clock;
+
+    public UpdateBusinessCustomerRelationshipContact(
+        IConnectedSupplierRelationshipRepository relationships,
+        IConnectedBuyerProductShareRepository shares,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        IConnectedBuyerBusinessContactDirectory? contacts = null,
+        TimeProvider? clock = null)
+    {
+        _relationships = relationships;
+        _shares = shares;
+        _uow = uow;
+        _access = access;
+        _contacts = contacts;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<BusinessCustomerDto>> ExecuteAsync(
+        Guid orgId,
+        Guid connectionId,
+        UpdateBusinessCustomerRelationshipContactRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                gate.ErrorCode!,
+                gate.ErrorMessage!);
+        }
+
+        var r = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(connectionId), ct)
+            .ConfigureAwait(false);
+        var supplier = PosOrganizationId.From(orgId);
+        if (r is null || r.SupplierOrganizationId != supplier)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Business customer relationship was not found.");
+        }
+
+        if (r.Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                ConnectedSupplierErrorCodes.RelationshipInactive,
+                "Relationship contact can only be edited while Pending or Active.");
+        }
+
+        if (r.UpdatedAtUtc != request.ExpectedUpdatedAtUtc)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                ConnectedSupplierErrorCodes.ConcurrencyConflict,
+                "Business customer was modified by another request. Refresh and retry.");
+        }
+
+        if (!TryParseContactSource(request.ContactSource, out var source))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                ConnectedSupplierErrorCodes.OrganizationContactInvalid,
+                "Contact source must be Custom or OrganizationMember.");
+        }
+
+        string? person = request.ContactPersonName;
+        string? department = request.ContactDepartment;
+        string? role = request.ContactRole;
+        string? phone = request.ContactPhone;
+        string? email = request.ContactEmail;
+        Guid? memberId = request.OrganizationMemberId;
+
+        if (source == RelationshipContactSource.OrganizationMember)
+        {
+            if (r.Status != ConnectedSupplierRelationshipStatus.Active)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                    ConnectedSupplierErrorCodes.OrganizationContactNotConnected,
+                    "Organization staff contacts are only available after the connection is accepted.");
+            }
+
+            if (memberId is null || memberId == Guid.Empty || _contacts is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                    ConnectedSupplierErrorCodes.OrganizationContactInvalid,
+                    "Select an organization contact from the connected buyer.");
+            }
+
+            var live = await _contacts
+                .GetAsync(r.BuyerOrganizationId.Value, supplier.Value, memberId.Value, ct)
+                .ConfigureAwait(false);
+            if (!live.IsSuccess)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                    live.ErrorCode ?? ConnectedSupplierErrorCodes.OrganizationContactInvalid,
+                    live.ErrorMessage ?? "Could not validate organization contact.");
+            }
+
+            if (live.Value is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(
+                    ConnectedSupplierErrorCodes.OrganizationContactInvalid,
+                    "Selected organization contact is not eligible or does not belong to the buyer organization.");
+            }
+
+            // Authoritative identity fields — ignore client-supplied person/role/phone/email for org members.
+            person = live.Value.DisplayName;
+            department = live.Value.Department;
+            role = live.Value.RoleTitle;
+            phone = live.Value.Phone;
+            email = live.Value.Email;
+        }
+        else
+        {
+            memberId = null;
+        }
+
+        try
+        {
+            r.UpdateRelationshipContact(
+                source,
+                memberId,
+                person,
+                department,
+                role,
+                phone,
+                email,
+                request.PreferredContactMethod,
+                request.DeliveryInstructions,
+                request.BillingContactNotes,
+                request.InternalNotes,
+                _clock.GetUtcNow());
+            await _relationships.UpdateAsync(r, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<BusinessCustomerDto>(ex.ErrorCode, ex.Message);
+        }
+
         var eligibleCount = await _shares.CountEligibleSupplierProductsAsync(supplier, ct)
             .ConfigureAwait(false);
         var statsMap = await _shares.ListShareStatsByRelationshipsAsync([r.Id.Value], ct)
@@ -242,6 +613,33 @@ public sealed class GetBusinessCustomer
         var stats = statsMap.GetValueOrDefault(r.Id.Value, new BuyerRelationshipShareStats(0, 0, 0));
 
         return ApplicationResult<BusinessCustomerDto>.Success(
-            ListBusinessCustomers.MapFromSnapshot(r, eligibleCount, stats));
+            ListBusinessCustomers.Map(
+                r,
+                eligibleCount,
+                stats,
+                displayNameIsLive: false,
+                organizationMemberAvailable: source == RelationshipContactSource.OrganizationMember
+                    ? true
+                    : null));
+    }
+
+    private static bool TryParseContactSource(string? raw, out RelationshipContactSource source)
+    {
+        if (string.IsNullOrWhiteSpace(raw)
+            || string.Equals(raw, "Custom", StringComparison.OrdinalIgnoreCase))
+        {
+            source = RelationshipContactSource.Custom;
+            return true;
+        }
+
+        if (string.Equals(raw, "OrganizationMember", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(raw, "OrganizationStaff", StringComparison.OrdinalIgnoreCase))
+        {
+            source = RelationshipContactSource.OrganizationMember;
+            return true;
+        }
+
+        source = RelationshipContactSource.Custom;
+        return false;
     }
 }

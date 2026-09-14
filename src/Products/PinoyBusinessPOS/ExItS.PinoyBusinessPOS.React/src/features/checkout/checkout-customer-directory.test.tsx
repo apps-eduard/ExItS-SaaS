@@ -112,21 +112,33 @@ describe("CheckoutCustomerDirectory", () => {
       displayName: "Kizy Bakery",
       status: "Active",
     };
+    const pendingBusiness: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222229",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333339",
+      buyerPublicOrganizationId: "ORG436359",
+      displayName: "Pending Cafe",
+      status: "Pending",
+    };
     const overlay: CustomerListConnectionOverlay = {
       connectedBusinessCustomerIds: new Set([platformId]),
       pendingBusinessCustomerIds: new Set(),
       loaded: true,
     };
 
-    renderDirectory([named, linked, business], { overlay });
+    renderDirectory([named, linked, business, pendingBusiness], { overlay });
 
     expect(screen.getByText("ExItS ID#")).toBeInTheDocument();
+    expect(screen.getByText("Connection")).toBeInTheDocument();
 
     const linkedRow = screen.getByTestId(`checkout-customer-${linked.customerId}`);
     expect(linkedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
       "EX-4827-1936",
     );
     expect(linkedRow.querySelector("[data-testid='customer-list-badge-exits-id']")).not.toBeInTheDocument();
+    expect(
+      linkedRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("Connected");
 
     const businessRow = screen.getByTestId(`checkout-business-${business.connectionId}`);
     expect(businessRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
@@ -135,11 +147,23 @@ describe("CheckoutCustomerDirectory", () => {
     expect(businessRow.querySelector("[data-testid='checkout-credit-directory-type']")).toHaveTextContent(
       "B2B",
     );
+    expect(
+      businessRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("Connected");
+
+    const pendingRow = screen.getByTestId(`checkout-business-${pendingBusiness.connectionId}`);
+    expect(
+      pendingRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("Pending");
+    expect(pendingRow).not.toHaveClass("checkout-credit-directory__row--blocked");
 
     const namedRow = screen.getByTestId(`checkout-customer-${named.customerId}`);
     expect(namedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
       "—",
     );
+    expect(
+      namedRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("—");
   });
 
   it("keeps connection badges on the selected customer card only", () => {
@@ -326,7 +350,7 @@ describe("CheckoutCustomerDirectory", () => {
     expect(pendingConnRow).toHaveClass("checkout-credit-directory__row--blocked");
     expect(pendingConnRow).toHaveAttribute(
       "title",
-      "Customer connection is not yet confirmed.",
+      "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
     );
     expect(
       pendingConnRow.querySelector("[data-testid='checkout-credit-directory-connection'] .exits-status-chip"),

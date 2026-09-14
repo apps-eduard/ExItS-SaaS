@@ -17,6 +17,7 @@ import {
 import {
   checkoutCreditStatusLabelKey,
   formatCreditDueDateLabel,
+  isPendingRelationshipCustomer,
   resolveUtangDirectorySelectBlock,
   utangDirectorySelectToastMessage,
 } from "@/features/checkout/checkout-utang-credit";
@@ -40,6 +41,7 @@ import {
 import {
   DEFAULT_CHECKOUT_METHOD_CODES,
   filterCheckoutUiChoices,
+  isDebtCreatingPaymentChoice,
   isManualReferencePaymentChoice,
   toApiPaymentMethod,
 } from "@/features/checkout/checkout-payment-method-options";
@@ -60,8 +62,14 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import {
+  clearPendingQuotationConvert,
+  readPendingQuotationConvert,
+} from "@/api/pos/pos-quotations-client";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { readOrganizationDocumentSettings } from "@/features/documents/document-settings";
 import { formatPeso } from "@/lib/format-money";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
 import {
@@ -138,6 +146,9 @@ export function CheckoutCashPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const { identity: sellerDocumentIdentityPreview } = useBusinessDocumentIdentity(
+    boundWorkspace?.organizationId,
+  );
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
@@ -156,6 +167,7 @@ export function CheckoutCashPage() {
   const [customersError, setCustomersError] = useState(false);
   const [customersReloadToken, setCustomersReloadToken] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
+  const pendingQuotationIdRef = useRef<string | null>(null);
   const [customerPanelOpen, setCustomerPanelOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -177,6 +189,18 @@ export function CheckoutCashPage() {
   const completedRef = useRef(false);
   const lastSeededTotalRef = useRef<number | null>(null);
   const tenderEditedRef = useRef(false);
+
+  useEffect(() => {
+    const pending = readPendingQuotationConvert();
+    if (!pending) return;
+    pendingQuotationIdRef.current = pending.quotationId;
+    setSelectedCustomer({
+      kind: "Customer",
+      customerId: pending.customerId,
+      displayName: pending.customerDisplayName,
+      status: "Active",
+    });
+  }, []);
 
   const workspaceScope = useMemo(() => {
     if (!boundWorkspace?.branchId) {
@@ -375,6 +399,11 @@ export function CheckoutCashPage() {
     selectedCustomer != null &&
     selectedCustomer.kind === "Customer" &&
     !b2bSelected;
+  const pendingRelationshipSelected = isPendingRelationshipCustomer(
+    selectedCustomer,
+    customerLinkOverlay,
+  );
+  const utangBlockedByPendingRelationship = pendingRelationshipSelected;
   const utangPersonCustomerId =
     paymentChoice === "Utang" && personCustomerSelected
       ? selectedCustomer!.customerId
@@ -382,6 +411,14 @@ export function CheckoutCashPage() {
   const utangBusinessConnectionId =
     paymentChoice === "Utang" && b2bSelected ? selectedCustomer!.connectionId : null;
   const utangBuyerSelected = Boolean(utangPersonCustomerId || utangBusinessConnectionId);
+
+  useEffect(() => {
+    if (utangBlockedByPendingRelationship && isDebtCreatingPaymentChoice(paymentChoice)) {
+      const fallback =
+        entitledUiChoices.find((choice) => !isDebtCreatingPaymentChoice(choice)) ?? "Cash";
+      setPaymentChoice(fallback);
+    }
+  }, [utangBlockedByPendingRelationship, paymentChoice, entitledUiChoices]);
 
   const personCreditPolicyQuery = useQuery({
     queryKey: [
@@ -821,6 +858,10 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.utangCustomerDenied"));
       return;
     }
+    if (paymentChoice === "Utang" && utangBlockedByPendingRelationship) {
+      setSubmitError(t("checkout.utangSelect.connectionPending"));
+      return;
+    }
     if (paymentChoice === "Utang" && !utangCustomerOk) {
       setSubmitError(t("checkout.utangCustomerRequired"));
       return;
@@ -892,6 +933,9 @@ export function CheckoutCashPage() {
 
     try {
       await refresh();
+      const documentSettings = boundWorkspace?.organizationId
+        ? readOrganizationDocumentSettings(boundWorkspace.organizationId)
+        : null;
       const sale = await checkoutSale(workspaceScope, {
         lines,
         paymentMethod: apiPaymentMethod,
@@ -934,9 +978,32 @@ export function CheckoutCashPage() {
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
         priceOverrides:
           allowOverride && priceOverrideIntents.length > 0 ? priceOverrideIntents : undefined,
+        sellerDocumentIdentity: {
+          ...(sellerDocumentIdentityPreview.businessName &&
+          sellerDocumentIdentityPreview.businessName !== "Business"
+            ? { businessName: sellerDocumentIdentityPreview.businessName }
+            : {}),
+          logoUrl: sellerDocumentIdentityPreview.logoUrl ?? undefined,
+          address: sellerDocumentIdentityPreview.address ?? undefined,
+          phone: sellerDocumentIdentityPreview.phone ?? undefined,
+          email: sellerDocumentIdentityPreview.email ?? undefined,
+          branchName: sellerDocumentIdentityPreview.branchName ?? undefined,
+          branchAddress: sellerDocumentIdentityPreview.branchAddress ?? undefined,
+          showLogo: documentSettings?.header.showLogo,
+          showBusinessAddress: documentSettings?.header.showBusinessAddress,
+          showBusinessPhone: documentSettings?.header.showBusinessPhone,
+          showBusinessEmail: documentSettings?.header.showBusinessEmail,
+          showBranchName: documentSettings?.header.showBranchName,
+          showBranchAddress: documentSettings?.header.showBranchAddress,
+        },
+        ...(pendingQuotationIdRef.current
+          ? { quotationId: pendingQuotationIdRef.current }
+          : {}),
       });
       completedRef.current = true;
       cart.clear();
+      clearPendingQuotationConvert();
+      pendingQuotationIdRef.current = null;
       attemptSaleIdRef.current = allocateSecureId();
       await invalidatePosStockQueries(queryClient);
       showToast(t("summary.paidSuccess"), "success");
@@ -1166,9 +1233,14 @@ export function CheckoutCashPage() {
               setPaymentMethodOpen(false);
             }}
             options={entitledUiChoices.map((choice) => {
+              const debtBlocked =
+                isDebtCreatingPaymentChoice(choice) && utangBlockedByPendingRelationship;
               const base = {
                 value: choice,
-                disabled: saving || (!online && choice !== "Cash"),
+                disabled: saving || (!online && choice !== "Cash") || debtBlocked,
+                hint: debtBlocked
+                  ? t("checkout.utangPendingUnavailableHint")
+                  : undefined,
               };
               switch (choice) {
                 case "GCash":
@@ -1181,7 +1253,9 @@ export function CheckoutCashPage() {
                 case "Utang":
                   return {
                     ...base,
-                    label: t("checkout.paymentUtang"),
+                    label: debtBlocked
+                      ? t("checkout.paymentUtangUnavailable")
+                      : t("checkout.paymentUtang"),
                     Icon: CHECKOUT_PAYMENT_ICONS.Utang,
                     testId: "checkout-pay-utang",
                   };
@@ -1216,7 +1290,14 @@ export function CheckoutCashPage() {
               }
             })}
           />
-          {!online ? (
+          {utangBlockedByPendingRelationship ? (
+            <p
+              data-testid="checkout-pending-utang-helper"
+              className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
+            >
+              {t("checkout.utangPendingRelationshipHelper")}
+            </p>
+          ) : null}          {!online ? (
             <p
               data-testid="checkout-offline-method-hint"
               className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
@@ -1524,21 +1605,8 @@ export function CheckoutCashPage() {
                 kindFilter={customerKindFilter}
                 onKindFilterChange={setCustomerKindFilter}
                 onSelect={(customer) => {
-                  if (
-                    customer.kind === "Business" &&
-                    customer.status.trim().toLowerCase() === "pending"
-                  ) {
-                    const name = customer.displayName.trim() || t("checkout.businessFallback");
-                    const sellerInitiated =
-                      (customer.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
-                    showToast(
-                      sellerInitiated
-                        ? t("checkout.pendingConnectionToast").replace("{name}", name)
-                        : t("checkout.pendingNeedsApprovalToast").replace("{name}", name),
-                      "success",
-                    );
-                    return;
-                  }
+                  // Pending relationships may complete immediate (non-debt) sales.
+                  // Utang remains blocked via payment-method disable + directory select.
                   setSelectedCustomer(customer);
                   setCustomerPanelOpen(false);
                 }}

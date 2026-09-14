@@ -4,6 +4,7 @@ import {
   BarChart3,
   Boxes,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   MonitorSmartphone,
   Package,
@@ -517,6 +518,20 @@ export function buildOperationsSidebarGroups(input: {
       },
       canViewCustomers(grant),
       NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      customers,
+      {
+        id: "quotations",
+        to: "/quotations",
+        labelKey: "org.more.quotations",
+        icon: FileText,
+        testId: "ops-sidebar-quotations",
+        matchPrefixes: ["/quotations"],
+      },
+      canCreateSale(grant, input.branchType),
+      NAV_BOTH,
       navWorkspace,
     );
     if (customers.length > 0) {

@@ -15,6 +15,7 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Application.Quotations;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -110,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationOnboardingProgressRepository, OrganizationOnboardingProgressRepository>();
         services.AddScoped<IOrganizationCashDenominationRepository, OrganizationCashDenominationRepository>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IQuotationRepository, QuotationRepository>();
         services.AddScoped<ISaleStockService, SaleStockService>();
         services.AddScoped<ISaleReturnStockService, SaleReturnStockService>();
         services.AddScoped<IPurchaseStockService, PurchaseStockService>();

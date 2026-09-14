@@ -132,6 +132,18 @@ public sealed class Sale
     /// </summary>
     public SaleStockReservationState StockReservationState { get; private set; }
 
+    /// <summary>
+    /// Seller branding/identity snapshotted at checkout for customer documents.
+    /// Null on legacy sales recorded before seller-document identity snapshots.
+    /// </summary>
+    public SaleSellerDocumentIdentity? SellerDocumentIdentity { get; }
+
+    /// <summary>
+    /// Optional quotation this sale was converted from. Null for ordinary walk-in checkouts
+    /// and legacy sales recorded before quotation conversion.
+    /// </summary>
+    public Guid? SourceQuotationId { get; }
+
     public IReadOnlyList<SaleLine> Lines => _lines;
 
     /// <summary>
@@ -179,7 +191,9 @@ public sealed class Sale
         List<SaleLine> lines,
         SaleStockReservationState stockReservationState,
         List<SaleCommercialDiscountAdjustment> commercialDiscounts,
-        List<SalePriceOverrideAdjustment> priceOverrides)
+        List<SalePriceOverrideAdjustment> priceOverrides,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -212,6 +226,10 @@ public sealed class Sale
         VoidReason = voidReason;
         UpdatedAtUtc = updatedAtUtc;
         StockReservationState = stockReservationState;
+        SellerDocumentIdentity = sellerDocumentIdentity;
+        SourceQuotationId = sourceQuotationId is null || sourceQuotationId == Guid.Empty
+            ? null
+            : sourceQuotationId;
         _lines = lines;
         _commercialDiscounts = commercialDiscounts;
         _priceOverrides = priceOverrides;
@@ -250,7 +268,9 @@ public sealed class Sale
         IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
         IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
         bool allowUnlimitedSalePriceOverride = false,
-        BusinessCreditEntryId? linkedBusinessCreditEntryId = null)
+        BusinessCreditEntryId? linkedBusinessCreditEntryId = null,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -398,7 +418,9 @@ public sealed class Sale
             saleLines,
             SaleStockReservationState.None,
             discountAdjustments,
-            priceOverrideAdjustments);
+            priceOverrideAdjustments,
+            sellerDocumentIdentity,
+            sourceQuotationId);
     }
 
     /// <summary>
@@ -722,7 +744,9 @@ public sealed class Sale
         IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null,
         ProductionCostStatus costStatus = ProductionCostStatus.Unavailable,
         decimal? totalCostSnapshot = null,
-        BusinessCreditEntryId? linkedBusinessCreditEntryId = null) =>
+        BusinessCreditEntryId? linkedBusinessCreditEntryId = null,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null) =>
         new(
             id,
             organizationId,
@@ -758,7 +782,9 @@ public sealed class Sale
             lines.OrderBy(l => l.LineNumber).ToList(),
             stockReservationState,
             commercialDiscounts?.ToList() ?? [],
-            priceOverrides?.ToList() ?? []);
+            priceOverrides?.ToList() ?? [],
+            sellerDocumentIdentity,
+            sourceQuotationId);
 
     /// <summary>
     /// Marks inventory as reserved for an electronic sale awaiting payment.

@@ -194,6 +194,23 @@ export function resolveUtangDirectorySelectBlock(args: {
   return null;
 }
 
+/** Pending Personal overlay or Pending B2B relationship — blocks debt methods only. */
+export function isPendingRelationshipCustomer(
+  customer: CheckoutCustomerOption | null | undefined,
+  overlay?: CustomerListConnectionOverlay | null,
+): boolean {
+  if (!customer) {
+    return false;
+  }
+  if (isCheckoutBusiness(customer)) {
+    return (customer.status ?? "").trim().toLowerCase() === "pending";
+  }
+  if (!isCheckoutPerson(customer) || isCheckoutBusinessDirectoryRow(customer)) {
+    return false;
+  }
+  return resolveCustomerListConnectionBadge(customer, overlay) === "pending";
+}
+
 export function utangDirectorySelectToastMessage(
   block: { reason: UtangDirectorySelectBlockReason; availableCredit?: number },
   t: (key: MessageKey) => string,

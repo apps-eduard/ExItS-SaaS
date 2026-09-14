@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterCheckoutUiChoices,
+  isDebtCreatingPaymentChoice,
   isManualReferencePaymentChoice,
   toApiPaymentMethod,
   toUiPaymentChoice,
@@ -12,6 +13,15 @@ describe("checkout-payment-method-options", () => {
     expect(toApiPaymentMethod("GCash")).toBe("ManualGCash");
     expect(toApiPaymentMethod("BankTransfer")).toBe("BankTransfer");
     expect(isManualReferencePaymentChoice("Check")).toBe(true);
+  });
+
+  it("classifies only Utang as debt-creating (Check is deferred settlement, not credit)", () => {
+    expect(isDebtCreatingPaymentChoice("Utang")).toBe(true);
+    expect(isDebtCreatingPaymentChoice("Cash")).toBe(false);
+    expect(isDebtCreatingPaymentChoice("GCash")).toBe(false);
+    expect(isDebtCreatingPaymentChoice("BankTransfer")).toBe(false);
+    expect(isDebtCreatingPaymentChoice("Check")).toBe(false);
+    expect(isDebtCreatingPaymentChoice("ManualMaya")).toBe(false);
   });
 
   it("filters Starter-like lists to basic methods only", () => {

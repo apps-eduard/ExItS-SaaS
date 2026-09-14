@@ -14,6 +14,7 @@ using ExItS.PinoyBusinessPOS.Api.Offline;
 using ExItS.PinoyBusinessPOS.Api.Payments;
 using ExItS.PinoyBusinessPOS.Api.Privacy;
 using ExItS.PinoyBusinessPOS.Api.Purchasing;
+using ExItS.PinoyBusinessPOS.Api.Quotations;
 using ExItS.PinoyBusinessPOS.Api.Reporting;
 using ExItS.PinoyBusinessPOS.Api.Sales;
 using ExItS.PinoyBusinessPOS.Api.Statements;
@@ -39,6 +40,7 @@ using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Application.Quotations;
 using ExItS.PinoyBusinessPOS.Application.Returns;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Api.Registers;
@@ -201,6 +203,16 @@ builder.Services.AddHttpClient<IPlatformMerchantCatalogClient, PlatformMerchantC
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddHttpClient<IPlatformOrganizationPublicResolve, PlatformOrganizationPublicResolveClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddHttpClient<IConnectedBuyerBusinessContactDirectory, PlatformConnectedBuyerBusinessContactDirectory>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
     if (!string.IsNullOrWhiteSpace(options.BaseUrl))
@@ -437,6 +449,9 @@ builder.Services.AddScoped<GetConnectionCatalogSettings>();
 builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
 builder.Services.AddScoped<ListBusinessCustomers>();
 builder.Services.AddScoped<GetBusinessCustomer>();
+builder.Services.AddScoped<ListBusinessCustomerOrganizationContacts>();
+builder.Services.AddScoped<UpdateBusinessCustomerRelationshipContact>();
+builder.Services.AddScoped<BusinessCustomerBranchAccessService>();
 builder.Services.AddScoped<DisconnectConnectedSupplier>();
 builder.Services.AddScoped<CancelPendingConnection>();
 builder.Services.AddScoped<UpdateSupplierLocation>();
@@ -498,6 +513,15 @@ builder.Services.AddScoped<CancelPurchaseOrder>();
 builder.Services.AddScoped<AcceptConnectedPoChanges>();
 builder.Services.AddScoped<ReceivePurchaseOrder>();
 builder.Services.AddScoped<VoidGoodsReceipt>();
+builder.Services.AddScoped<QuotationQueryService>();
+builder.Services.AddScoped<CreateQuotationDraft>();
+builder.Services.AddScoped<UpdateQuotationDraft>();
+builder.Services.AddScoped<IssueQuotation>();
+builder.Services.AddScoped<CancelQuotation>();
+builder.Services.AddScoped<AcceptQuotation>();
+builder.Services.AddScoped<DeclineQuotation>();
+builder.Services.AddScoped<ExpireQuotation>();
+builder.Services.AddScoped<MarkQuotationConverted>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.DashboardQueryService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.ManagementOverviewQueryService>();
 builder.Services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.SalesReportService>();
@@ -552,6 +576,7 @@ app.MapCatalogEndpoints();
 app.MapCatalogImportEndpoints();
 app.MapPlatformSupportCatalogEndpoints();
 app.MapSaleEndpoints();
+app.MapQuotationEndpoints();
 app.MapOfflinePriceAuthorityEndpoints();
 app.MapOfflineOperatingGrantEndpoints();
 app.MapOperationalBranchEndpoints();

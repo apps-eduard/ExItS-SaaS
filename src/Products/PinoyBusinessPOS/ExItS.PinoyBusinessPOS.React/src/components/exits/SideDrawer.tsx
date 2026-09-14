@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode, type TransitionEvent } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref, type TransitionEvent } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ export function SideDrawer({
   closeTestId,
   side = "right",
   panelClassName,
+  panelRef,
 }: {
   open: boolean;
   onClose: () => void;
@@ -51,6 +52,7 @@ export function SideDrawer({
   closeTestId?: string;
   side?: "right" | "left";
   panelClassName?: string;
+  panelRef?: Ref<HTMLDivElement>;
 }) {
   const autoId = useId();
   const resolvedPanelId = panelId ?? `${testId}-panel`;
@@ -144,6 +146,7 @@ export function SideDrawer({
         onClick={onClose}
       />
       <div
+        ref={panelRef}
         id={resolvedPanelId}
         className={cn("exits-side-drawer__panel", panelClassName)}
         data-open={entered}
@@ -152,6 +155,7 @@ export function SideDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
+        tabIndex={-1}
         onTransitionEnd={onPanelTransitionEnd}
       >
         <div className="exits-side-drawer__header">

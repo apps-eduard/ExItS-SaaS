@@ -85,6 +85,23 @@ export const salePriceOverrideIntentRequestSchema = z.object({
   expectedBaselineUnitPrice: z.number().optional(),
 });
 
+export const checkoutSellerDocumentIdentityRequestSchema = z.object({
+  businessName: z.string().max(200).optional(),
+  publicOrganizationId: z.string().max(32).optional(),
+  logoUrl: z.string().max(2048).optional(),
+  address: z.string().max(512).optional(),
+  phone: z.string().max(64).optional(),
+  email: z.string().max(256).optional(),
+  branchName: z.string().max(200).optional(),
+  branchAddress: z.string().max(512).optional(),
+  showLogo: z.boolean().optional(),
+  showBusinessAddress: z.boolean().optional(),
+  showBusinessPhone: z.boolean().optional(),
+  showBusinessEmail: z.boolean().optional(),
+  showBranchName: z.boolean().optional(),
+  showBranchAddress: z.boolean().optional(),
+});
+
 export const checkoutSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
   paymentMethod: checkoutPaymentMethodSchema,
@@ -106,6 +123,8 @@ export const checkoutSaleRequestSchema = z.object({
   buyerConnectionId: guidSchema.optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
   priceOverrides: z.array(salePriceOverrideIntentRequestSchema).optional(),
+  sellerDocumentIdentity: checkoutSellerDocumentIdentityRequestSchema.optional(),
+  quotationId: guidSchema.optional(),
 });
 
 /** Quote uses the same line/discount/override contract; tender/saleId/shift are not required. */

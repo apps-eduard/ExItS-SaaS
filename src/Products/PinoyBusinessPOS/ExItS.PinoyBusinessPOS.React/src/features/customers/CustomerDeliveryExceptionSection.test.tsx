@@ -13,6 +13,9 @@ vi.mock("@/access/pos-capabilities", () => ({
   canEditCustomer: () => true,
   canRecordRepayment: () => false,
   canViewStatement: () => false,
+  canManageCustomerCreditPolicy: () => false,
+  canApproveCustomerCreditPolicy: () => false,
+  canManageCustomerBranchAccess: () => false,
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -43,6 +46,18 @@ vi.mock("@/offline/organization-offline-context", () => ({
 
 vi.mock("@/features/actors/useActorDirectory", () => ({
   useActorDirectory: () => ({ actorsById: new Map() }),
+}));
+
+vi.mock("@/features/customers/CreditPolicySection", () => ({
+  CreditPolicySection: () => null,
+}));
+
+vi.mock("@/features/customers/CustomerBranchVisibilitySection", () => ({
+  CustomerBranchVisibilitySection: () => null,
+}));
+
+vi.mock("@/features/customers/CustomerStoreDetailsEditDrawer", () => ({
+  CustomerStoreDetailsEditDrawer: () => null,
 }));
 
 vi.mock("@/api/pos/pos-customers-client", () => ({

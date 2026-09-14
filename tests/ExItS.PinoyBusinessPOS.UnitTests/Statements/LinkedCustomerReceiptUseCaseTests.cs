@@ -10,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -113,6 +114,135 @@ public sealed class LinkedCustomerReceiptUseCaseTests
         Assert.DoesNotContain(
             typeof(LinkedCustomerSaleReceiptLineDto).GetProperties().Select(p => p.Name),
             name => name is "Cost" or "Margin" or "SkuSnapshot" or "BarcodeSnapshot" or "ProductId");
+    }
+
+    [Fact]
+    public async Task Receipt_prefers_sale_seller_document_identity_snapshot()
+    {
+        var harness = await Harness.CreateAuthorizedAsync();
+        var snap = SaleSellerDocumentIdentity.Create(
+            businessName: "Mica Store",
+            address: "Iloilo City",
+            phone: "09171234567",
+            email: "mica@gmail.com",
+            branchName: "Main Branch",
+            showBusinessAddress: true,
+            showBusinessPhone: true,
+            showBusinessEmail: false);
+        var sale = Sale.Checkout(
+            PosOrganizationId.From(OrgA),
+            SaleNumbers.Format(new DateOnly(2026, 8, 12), 3),
+            SalePaymentMethod.Cash,
+            [
+                new SaleLineDraft(
+                    CatalogProductId.New(),
+                    "Espresso",
+                    null,
+                    null,
+                    UnitOfMeasure.Piece,
+                    50m,
+                    2m,
+                    SellingMode.PerItem)
+            ],
+            Actor,
+            T0,
+            amountTendered: 100m,
+            customerId: harness.PosCustomer.Id,
+            cashierShiftId: Shift,
+            registerId: Register,
+            sellerDocumentIdentity: snap);
+        await harness.Sales.AddAsync(sale);
+
+        var result = await harness.Receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        var dto = result.Value!;
+        Assert.Equal("Mica Store", dto.MerchantDisplayName);
+        Assert.Equal("Main Branch", dto.BranchDisplayName);
+        Assert.NotNull(dto.SellerDocumentIdentity);
+        Assert.Equal("saleSnapshot", dto.SellerDocumentIdentity!.IdentitySource);
+        Assert.Equal("Mica Store", dto.SellerDocumentIdentity.BusinessName);
+        Assert.Equal("Iloilo City", dto.SellerDocumentIdentity.Address);
+        Assert.Equal("09171234567", dto.SellerDocumentIdentity.Phone);
+        Assert.Equal("mica@gmail.com", dto.SellerDocumentIdentity.Email);
+        Assert.True(dto.SellerDocumentIdentity.ShowBusinessAddress);
+        Assert.True(dto.SellerDocumentIdentity.ShowBusinessPhone);
+        Assert.False(dto.SellerDocumentIdentity.ShowBusinessEmail);
+    }
+
+    [Fact]
+    public async Task Receipt_falls_back_to_operational_setup_when_snapshot_missing()
+    {
+        var customers = new InMemoryCustomers();
+        var sales = new InMemorySales();
+        var credits = new InMemoryCredits();
+        var repayments = new InMemoryRepayments();
+        var clock = new FixedClock(T0.AddDays(1));
+        var outstanding = new OutstandingBalanceService(credits, repayments, new InMemoryWriteOffRepository(), clock);
+        var entitlements = new FakeEntitlements(active: false);
+        var options = Microsoft.Extensions.Options.Options.Create(new PersonalStatementsOptions { FreeRecentMonths = 3 });
+        var posCustomer = POSCustomer.Create(
+            PosOrganizationId.From(OrgA),
+            "Rosa Customer",
+            T0,
+            platformBusinessCustomerId: PlatformCustomer);
+        await customers.AddAsync(posCustomer);
+        var authorize = new AuthorizeLinkedCustomerStatementAccess(FakePlatform.Authorized(), customers);
+        var setups = new FixedOperationalSetups(
+            PosOperationalSetup.Rehydrate(
+                PosOrganizationId.From(OrgA),
+                storeDisplayName: "Paul Coffee Live",
+                currencyCode: "PHP",
+                taxPricingMode: TaxPricingMode.TaxExclusive,
+                taxRatePercent: 0m,
+                receiptHeader: null,
+                receiptFooter: null,
+                businessAddress: "Legacy Address",
+                contactPhone: "0999",
+                defaultRegisterId: null,
+                isCompleted: true,
+                completedAtUtc: T0,
+                createdAtUtc: T0,
+                createdBy: Actor,
+                updatedAtUtc: T0,
+                updatedBy: Actor));
+        var receipt = new GetLinkedCustomerSaleReceipt(
+            authorize,
+            sales,
+            credits,
+            outstanding,
+            entitlements,
+            options,
+            clock,
+            setups);
+
+        var sale = Sale.Checkout(
+            PosOrganizationId.From(OrgA),
+            SaleNumbers.Format(new DateOnly(2026, 8, 12), 4),
+            SalePaymentMethod.Cash,
+            [
+                new SaleLineDraft(
+                    CatalogProductId.New(),
+                    "Latte",
+                    null,
+                    null,
+                    UnitOfMeasure.Piece,
+                    80m,
+                    1m,
+                    SellingMode.PerItem)
+            ],
+            Actor,
+            T0,
+            amountTendered: 80m,
+            customerId: posCustomer.Id,
+            cashierShiftId: Shift,
+            registerId: Register);
+        await sales.AddAsync(sale);
+
+        var result = await receipt.ExecuteAsync(OrgA, PlatformCustomer, sale.Id.Value);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("Paul Coffee Live", result.Value!.MerchantDisplayName);
+        Assert.Equal("operationalSetupFallback", result.Value.SellerDocumentIdentity!.IdentitySource);
+        Assert.Equal("Legacy Address", result.Value.SellerDocumentIdentity.Address);
     }
 
     [Fact]
@@ -491,9 +621,39 @@ public sealed class LinkedCustomerReceiptUseCaseTests
                     outstanding,
                     entitlements,
                     options,
-                    clock)
+                    clock,
+                    new EmptyOperationalSetups())
             };
         }
+    }
+
+    private sealed class EmptyOperationalSetups : IPosOperationalSetupRepository
+    {
+        public Task<PosOperationalSetup?> GetByOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PosOperationalSetup?>(null);
+
+        public Task AddAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class FixedOperationalSetups(PosOperationalSetup setup) : IPosOperationalSetupRepository
+    {
+        public Task<PosOperationalSetup?> GetByOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PosOperationalSetup?>(
+                organizationId.Value == setup.OrganizationId.Value ? setup : null);
+
+        public Task AddAsync(PosOperationalSetup next, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(PosOperationalSetup next, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeEntitlements(bool active) : IPersonalFeatureEntitlementClient

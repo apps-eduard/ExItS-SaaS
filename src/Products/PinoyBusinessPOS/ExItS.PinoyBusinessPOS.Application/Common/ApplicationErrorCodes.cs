@@ -168,6 +168,13 @@ public static class ApplicationErrorCodes
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
 
+    public const string QuotationNotFound = "pos.quotation.not_found";
+    public const string QuotationNumberConflict = "pos.quotation.number.conflict";
+    public const string QuotationConcurrencyConflict = "pos.quotation.concurrency_conflict";
+    public const string QuotationProductNotFound = "pos.quotation.product.not_found";
+    public const string QuotationProductNotActive = "pos.quotation.product.not_active";
+    public const string QuotationNotConvertible = "pos.quotation.not_convertible";
+
     public const string SupplierPayableNotFound = "pos.supplier_payable.not_found";
     public const string SupplierPayableConcurrencyConflict = "pos.supplier_payable.concurrency_conflict";
 

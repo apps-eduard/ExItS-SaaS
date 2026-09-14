@@ -33,6 +33,10 @@ import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
 import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
+import { DocumentActions } from "@/features/documents/DocumentActions";
+import { PurchaseOrderBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -374,6 +378,9 @@ export function PurchaseOrderDetailPage() {
   const { purchaseOrderId } = useParams<{ purchaseOrderId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
+  const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
   const allowManage = canManagePurchasing(sessionGrant);
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
@@ -514,7 +521,16 @@ export function PurchaseOrderDetailPage() {
         backTo="/purchasing/orders"
         backLabel={t("purchasing.backOrders")}
         backTestId="page-header-back-purchasing"
-        actions={<StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
+            <DocumentActions
+              printLabel={t("exitsTable.print")}
+              pdfLabel={t("exitsTable.exportPdf")}
+              testId="po-business-document-actions"
+            />
+          </div>
+        }
       />
 
       {!online ? (
@@ -762,6 +778,18 @@ export function PurchaseOrderDetailPage() {
           ) : null}
         </div>
       </div>
+
+      <section className="mt-2" data-testid="po-printable-document">
+        <PurchaseOrderBusinessDocument
+          po={po}
+          supplierName={sellerName}
+          settings={documentSettings}
+          identity={identity}
+          headerVisibility={headerVisibility(documentSettings.header)}
+          deliveryAddress={boundWorkspace?.branchName ?? null}
+          preview
+        />
+      </section>
     </div>
   );
 }

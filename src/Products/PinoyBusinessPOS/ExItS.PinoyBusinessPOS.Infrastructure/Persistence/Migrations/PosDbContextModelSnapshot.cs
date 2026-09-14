@@ -2060,6 +2060,68 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("supplier_branch_name_snapshot");
 
+                    b.Property<Guid[]>("SharedSupplierBranchIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("shared_supplier_branch_ids")
+                        .HasDefaultValueSql("'{}'::uuid[]");
+
+                    b.Property<int>("ContactSource")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("contact_source");
+
+                    b.Property<Guid?>("OrganizationMemberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_member_id");
+
+                    b.Property<string>("ContactPersonName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_person_name");
+
+                    b.Property<string>("ContactDepartment")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_department");
+
+                    b.Property<string>("ContactRole")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_role");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("contact_phone");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("contact_email");
+
+                    b.Property<string>("PreferredContactMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("preferred_contact_method");
+
+                    b.Property<string>("DeliveryInstructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("delivery_instructions");
+
+                    b.Property<string>("BillingContactNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("billing_contact_notes");
+
+                    b.Property<string>("InternalNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("internal_notes");
+
                     b.Property<string>("SupplierDisplayNameSnapshot")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -6934,6 +6996,233 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationLineRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("discount_amount");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_total");
+
+                    b.Property<string>("NameSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<string>("SkuSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_snapshot");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<string>("UomSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("uom_snapshot");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotation_lines_quotation_line_number");
+
+                    b.HasIndex("QuotationId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotation_lines_quotation_product");
+
+                    b.ToTable("quotation_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotation_lines_discount_nonnegative", "discount_amount IS NULL OR discount_amount >= 0");
+
+                            t.HasCheckConstraint("ck_quotation_lines_quantity_positive", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_quotation_lines_unit_price_nonnegative", "unit_price >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_quotation_number_sequences");
+
+                    b.ToTable("quotation_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotation_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("ConvertedSaleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("converted_sale_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CustomerAddressSnapshot")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("customer_address_snapshot");
+
+                    b.Property<string>("CustomerDisplayNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("customer_display_name_snapshot");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("CustomerMobileNumberSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("customer_mobile_number_snapshot");
+
+                    b.Property<string>("CustomerNotesSnapshot")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("customer_notes_snapshot");
+
+                    b.Property<bool>("IsCustomerVisible")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_customer_visible");
+
+                    b.Property<DateTimeOffset?>("IssuedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at_utc");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PreparedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepared_by");
+
+                    b.Property<string>("QuotationNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("quotation_number");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Terms")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("terms");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_quotations_org_branch");
+
+                    b.HasIndex("OrganizationId", "CustomerId")
+                        .HasDatabaseName("ix_quotations_org_customer");
+
+                    b.HasIndex("OrganizationId", "QuotationNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotations_org_quotation_number")
+                        .HasFilter("quotation_number IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_quotations_org_status");
+
+                    b.ToTable("quotations", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotations_status", "status IN ('Draft', 'Sent', 'Accepted', 'Declined', 'Expired', 'Converted', 'Cancelled')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Registers.RegisterCodeSequenceRecord", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -7727,6 +8016,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("total_cost_snapshot");
+
+                    b.Property<string>("SellerDocumentIdentityJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("seller_document_identity_json");
+
+                    b.Property<Guid?>("SourceQuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_quotation_id");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -8792,6 +9090,26 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_purchase_orders_suppliers");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotation_lines_quotations");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotations_customers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns.SaleReturnLineRecord", b =>

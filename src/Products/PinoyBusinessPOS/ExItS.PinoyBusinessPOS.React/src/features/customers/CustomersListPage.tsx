@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, ChevronRight, Plus, UserRound, Users } from "lucide-react";
+import { Building2, Plus, UserRound, Users } from "lucide-react";
 import { canCreateCustomer, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   listBusinessCustomers,
   listRelationships,
-  type BusinessCustomer,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
 import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
@@ -30,12 +29,17 @@ import {
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
-import { CustomerListConnectionBadges } from "@/features/customers/CustomerListConnectionBadges";
+import {
+  CustomerListCard,
+  resolveBusinessRelationshipStatus,
+  resolvePeopleRelationshipStatus,
+} from "@/features/customers/CustomerListCard";
 import {
   buildBusinessListRows,
   isBusinessPosCustomer,
   isPersonPosCustomer,
 } from "@/features/customers/customer-business-list";
+import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
 import { parseKindForTest, type KindFilter } from "@/features/customers/customers-kind";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
@@ -62,20 +66,6 @@ const KIND_FILTERS: Array<{
   { value: "people", labelKey: "customers.kindPeople" },
   { value: "businesses", labelKey: "customers.kindBusinesses" },
 ];
-
-function customerStatusTone(status: string): "success" | "warning" {
-  return status.toLowerCase() === "active" ? "success" : "warning";
-}
-
-function discountLabel(
-  customer: BusinessCustomer,
-  discountTemplate: string,
-): string | null {
-  if (customer.customerDiscountPercent != null && customer.customerDiscountPercent > 0) {
-    return discountTemplate.replace("{percent}", String(customer.customerDiscountPercent));
-  }
-  return null;
-}
 
 export function CustomersListPage() {
   const { t } = useI18n();
@@ -390,44 +380,40 @@ export function CustomersListPage() {
               />
             )
           ) : null}
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
+          <ul
+            className="exits-list customers-people-list m-0 grid list-none gap-2 p-0"
+            data-testid="customers-list"
+          >
             {peopleItems.map((customer) => {
-              const phone = customer.mobileNumber?.trim() || "";
+              const exitsId = resolveDisplayedPersonalExItsId(customer);
+              const relationshipStatus = resolvePeopleRelationshipStatus(
+                customer,
+                customerLinkOverlay,
+              );
+              const distanceException =
+                customer.platformBusinessCustomerId &&
+                distanceExceptionIds?.has(customer.platformBusinessCustomerId);
               return (
                 <li key={customer.customerId}>
-                  <Link
-                    className="exits-list__card customer-row customers-card block min-w-0 text-foreground no-underline"
-                    to={`/customers/${customer.customerId}`}
-                    data-testid={`customer-row-${customer.customerId}`}
-                  >
-                    <span className="customer-row__main min-w-0">
-                      <span className="exits-list__name block truncate font-semibold">
-                        {customer.displayName}
-                      </span>
-                      {phone ? (
-                        <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                          {phone}
-                        </span>
-                      ) : null}
-                      <CustomerListConnectionBadges
-                        customer={customer}
-                        overlay={customerLinkOverlay}
-                        className="customer-row__badges"
-                      />
-                      {customer.platformBusinessCustomerId &&
-                      distanceExceptionIds?.has(customer.platformBusinessCustomerId) ? (
+                  <CustomerListCard
+                    href={`/customers/${customer.customerId}`}
+                    testId={`customer-row-${customer.customerId}`}
+                    name={customer.displayName}
+                    kind="personal"
+                    relationshipStatus={relationshipStatus}
+                    accountStatus={customer.status}
+                    exitsId={exitsId}
+                    exitsIdTestId={`customer-exits-id-${customer.customerId}`}
+                    extraKindBadges={
+                      distanceException ? (
                         <StatusChip tone="info">
                           <span data-testid={`customer-distance-exception-badge-${customer.customerId}`}>
                             {t("customers.delivery.distanceExceptionBadge")}
                           </span>
                         </StatusChip>
-                      ) : null}
-                    </span>
-                    <span className="customer-row__aside">
-                      <StatusChip tone={customerStatusTone(customer.status)}>{customer.status}</StatusChip>
-                      <ChevronRight className="customer-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-                    </span>
-                  </Link>
+                      ) : null
+                    }
+                  />
                 </li>
               );
             })}
@@ -486,105 +472,49 @@ export function CustomersListPage() {
             data-testid="business-customers-list"
           >
             {businessRows.map((row) => {
-              const pricing =
+              const kind =
+                row.badges.includes("b2b") ? "b2b" : row.badges.includes("local") ? "local" : "b2b";
+              const relationshipStatus =
                 row.source === "connection"
-                  ? discountLabel(row.connection, t("customers.business.discountShort"))
-                  : null;
+                  ? resolveBusinessRelationshipStatus(row.relationshipStatus)
+                  : resolveBusinessRelationshipStatus(
+                      row.badges.includes("b2b") ? "Active" : "Inactive",
+                    );
+              const accountStatus = row.source === "connection" ? null : row.status;
               return (
                 <li key={row.key}>
-                  <Link
-                    className="exits-list__card business-customer-row customer-row customers-card block min-w-0 text-foreground no-underline"
-                    to={row.href}
-                    data-testid={
+                  <CustomerListCard
+                    className="business-customer-row"
+                    href={row.href}
+                    testId={
                       row.source === "connection"
                         ? `business-customer-row-${row.connection.connectionId}`
                         : `business-pos-customer-row-${row.customer.customerId}`
                     }
-                  >
-                    <span className="customer-row__main min-w-0">
-                      <span className="business-customer-row__title">
-                        <span
-                          className="exits-list__name truncate font-semibold"
-                          data-testid={
-                            row.source === "connection"
-                              ? `business-customer-name-${row.connection.connectionId}`
-                              : `business-pos-customer-name-${row.customer.customerId}`
-                          }
-                        >
-                          {row.displayName.trim() || t("customers.business.unknown")}
-                        </span>
-                      </span>
-                      <span className="mt-1 flex flex-wrap gap-1.5">
-                        {row.badges.map((badge) => (
-                          <StatusChip
-                            key={badge}
-                            tone={badge === "b2b" ? "success" : "neutral"}
-                          >
-                            {badge === "local"
-                              ? t("customers.badge.local")
-                              : t("customers.badge.b2b")}
-                          </StatusChip>
-                        ))}
-                        {row.alsoSupplier ? (
-                          <StatusChip tone="warning">{t("customers.badge.alsoSupplier")}</StatusChip>
-                        ) : null}
-                      </span>
-                      {row.source === "connection" ? (
-                        <span className="business-customer-row__facts">
-                          {row.publicOrganizationId ? (
-                            <span data-testid={`business-customer-org-${row.connection.connectionId}`}>
-                              {row.publicOrganizationId}
-                            </span>
-                          ) : null}
-                          {row.relationshipStatus.toLowerCase() === "pending" ? (
-                            <span data-testid={`business-customer-pending-hint-${row.connection.connectionId}`}>
-                              {row.connection.actionRequired
-                                ? t("customers.business.actionRequired").replace(
-                                    "{name}",
-                                    row.displayName,
-                                  )
-                                : t("customers.business.waitingForAccept").replace(
-                                    "{name}",
-                                    row.displayName,
-                                  )}
-                            </span>
-                          ) : (
-                            <span>
-                              {t("customers.business.sharedCountShort").replace(
-                                "{count}",
-                                String(row.connection.sharedCount),
-                              )}
-                            </span>
-                          )}
-                          {pricing && row.relationshipStatus.toLowerCase() !== "pending" ? (
-                            <span>{pricing}</span>
-                          ) : null}
-                        </span>
-                      ) : row.publicOrganizationId ? (
-                        <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                          {row.publicOrganizationId}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="customer-row__aside">
-                      <StatusChip
-                        tone={
-                          (row.source === "connection"
-                            ? row.relationshipStatus
-                            : row.status
-                          ).toLowerCase() === "active"
-                            ? "success"
-                            : "warning"
-                        }
-                      >
-                        {row.source === "connection" ? row.relationshipStatus : row.status}
-                      </StatusChip>
-                      <ChevronRight
-                        className="customer-row__chevron size-4 shrink-0 text-muted"
-                        aria-hidden
-                      />
-                    </span>
-                  </Link>
+                    name={row.displayName.trim() || t("customers.business.unknown")}
+                    nameTestId={
+                      row.source === "connection"
+                        ? `business-customer-name-${row.connection.connectionId}`
+                        : `business-pos-customer-name-${row.customer.customerId}`
+                    }
+                    kind={kind}
+                    relationshipStatus={relationshipStatus}
+                    accountStatus={accountStatus}
+                    exitsId={row.publicOrganizationId}
+                    exitsIdTestId={
+                      row.source === "connection"
+                        ? `business-customer-org-${row.connection.connectionId}`
+                        : `business-pos-customer-org-${row.customer.customerId}`
+                    }
+                    actionRequired={
+                      row.source === "connection" ? Boolean(row.connection.actionRequired) : false
+                    }
+                    extraKindBadges={
+                      row.alsoSupplier ? (
+                        <StatusChip tone="warning">{t("customers.badge.alsoSupplier")}</StatusChip>
+                      ) : null
+                    }
+                  />
                 </li>
               );
             })}

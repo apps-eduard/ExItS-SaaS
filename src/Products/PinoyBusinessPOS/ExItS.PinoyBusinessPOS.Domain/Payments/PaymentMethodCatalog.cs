@@ -30,6 +30,7 @@ public static class PaymentMethodCatalog
     [
         new(Cash, PaymentCapability.BasicPayments, PaymentIntegrationMode.None, PaymentSettlementMode.Immediate, PaymentMethodAvailability.BuiltIn, true, Cash),
         new(ManualGCash, PaymentCapability.BasicPayments, PaymentIntegrationMode.Manual, PaymentSettlementMode.Immediate, PaymentMethodAvailability.BuiltIn, true, ManualGCash),
+        // Utang completes immediately as recorded debt (SalePaymentMethods.CreatesReceivable) — not deferred settlement.
         new(Utang, PaymentCapability.BasicPayments, PaymentIntegrationMode.None, PaymentSettlementMode.Immediate, PaymentMethodAvailability.BuiltIn, true, Utang),
         new(BankTransfer, PaymentCapability.PaymentManagement, PaymentIntegrationMode.Manual, PaymentSettlementMode.Immediate, PaymentMethodAvailability.Configurable, true, BankTransfer),
         new(Check, PaymentCapability.PaymentManagement, PaymentIntegrationMode.Manual, PaymentSettlementMode.Deferred, PaymentMethodAvailability.Configurable, true, Check),

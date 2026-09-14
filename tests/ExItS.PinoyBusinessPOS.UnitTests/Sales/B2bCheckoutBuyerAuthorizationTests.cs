@@ -53,13 +53,48 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
     }
 
     [Fact]
-    public async Task Inactive_relationship_is_rejected()
+    public async Task Pending_relationship_allows_immediate_non_credit_payment()
     {
-        var pending = ConnectedSupplierRelationship.Rehydrate(
+        var pending = PendingRelationship();
+        var relationships = new FakeRelationships(pending);
+        var result = await B2bCheckoutBuyerAuthorization.ResolveAsync(
+            Seller,
+            relationships,
+            ConnectionId,
+            null,
+            null,
+            isUtang: false);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(ConnectionId, result.Value!.ConnectionId);
+        Assert.Equal(SaleBuyerPartyKind.Organization, result.Value.BuyerParty.Kind);
+    }
+
+    [Fact]
+    public async Task Pending_relationship_rejects_utang_credit()
+    {
+        var pending = PendingRelationship();
+        var relationships = new FakeRelationships(pending);
+        var result = await B2bCheckoutBuyerAuthorization.ResolveAsync(
+            Seller,
+            relationships,
+            ConnectionId,
+            null,
+            null,
+            isUtang: true);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(DomainErrorCodes.SaleB2bCreditRequiresAcceptedRelationship, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Declined_relationship_is_rejected_for_immediate_payment()
+    {
+        var declined = ConnectedSupplierRelationship.Rehydrate(
             ConnectedSupplierRelationshipId.From(ConnectionId),
             Buyer,
             Seller,
-            ConnectedSupplierRelationshipStatus.Pending,
+            ConnectedSupplierRelationshipStatus.Declined,
             Utc,
             null,
             null,
@@ -71,7 +106,7 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
             "ORG123456",
             "Seller Co",
             "ORG000001");
-        var relationships = new FakeRelationships(pending);
+        var relationships = new FakeRelationships(declined);
         var result = await B2bCheckoutBuyerAuthorization.ResolveAsync(
             Seller,
             relationships,
@@ -126,6 +161,24 @@ public sealed class B2bCheckoutBuyerAuthorizationTests
             Utc,
             null,
             Utc,
+            null,
+            null,
+            Utc,
+            Utc,
+            "ABC Trading",
+            "ORG123456",
+            "Seller Co",
+            "ORG000001");
+
+    private static ConnectedSupplierRelationship PendingRelationship() =>
+        ConnectedSupplierRelationship.Rehydrate(
+            ConnectedSupplierRelationshipId.From(ConnectionId),
+            Buyer,
+            Seller,
+            ConnectedSupplierRelationshipStatus.Pending,
+            Utc,
+            null,
+            null,
             null,
             null,
             Utc,

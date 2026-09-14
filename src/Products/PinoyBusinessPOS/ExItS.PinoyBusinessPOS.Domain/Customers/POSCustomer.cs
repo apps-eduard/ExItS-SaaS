@@ -173,7 +173,11 @@ public sealed class POSCustomer
             createdAtUtc,
             updatedAtUtc);
 
-    /// <summary>Updates permitted profile fields. OrganizationId cannot change.</summary>
+    /// <summary>
+    /// Updates seller-owned store customer details only (display/preferred name, contact phone,
+    /// address, notes). Never mutates Platform Personal profile or Organization identity.
+    /// When the customer is linked to Personal, DisplayName is the seller preferred/store name.
+    /// </summary>
     public void UpdateProfile(
         string displayName,
         string? mobileNumber,

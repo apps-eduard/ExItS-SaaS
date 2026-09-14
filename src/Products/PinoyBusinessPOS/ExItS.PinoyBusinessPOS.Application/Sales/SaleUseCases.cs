@@ -11,6 +11,7 @@ using ExItS.PinoyBusinessPOS.Application.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
+using ExItS.PinoyBusinessPOS.Application.Quotations;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -22,6 +23,7 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
+using ExItS.PinoyBusinessPOS.Domain.Quotations;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Sales;
@@ -304,6 +306,7 @@ public sealed class CheckoutSale
     private readonly IConnectedSupplierRelationshipRepository? _connectedRelationships;
     private readonly IOrganizationPaymentMethodSettingRepository? _paymentMethodSettings;
     private readonly IPosCommercialAccessAccessor? _commercialAccess;
+    private readonly IQuotationRepository? _quotations;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -328,7 +331,8 @@ public sealed class CheckoutSale
         IOrganizationBranchDirectory? branches = null,
         IConnectedSupplierRelationshipRepository? connectedRelationships = null,
         IOrganizationPaymentMethodSettingRepository? paymentMethodSettings = null,
-        IPosCommercialAccessAccessor? commercialAccess = null)
+        IPosCommercialAccessAccessor? commercialAccess = null,
+        IQuotationRepository? quotations = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -353,6 +357,7 @@ public sealed class CheckoutSale
         _connectedRelationships = connectedRelationships;
         _paymentMethodSettings = paymentMethodSettings;
         _commercialAccess = commercialAccess;
+        _quotations = quotations;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -378,6 +383,8 @@ public sealed class CheckoutSale
         bool allowUnlimitedSalePriceOverride = false,
         Guid? buyerConnectionId = null,
         bool allowDueDateOverride = false,
+        CheckoutSellerDocumentIdentityRequest? sellerDocumentIdentityRequest = null,
+        Guid? quotationId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -437,9 +444,55 @@ public sealed class CheckoutSale
                 }
             }
 
+            Quotation? sourceQuotation = null;
+            Guid? sourceQuotationId = null;
+            if (quotationId is Guid qid && qid != Guid.Empty)
+            {
+                if (_quotations is null)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        ApplicationErrorCodes.QuotationNotFound,
+                        "Quotation conversion is not available.");
+                }
+
+                sourceQuotation = await _quotations
+                    .GetByIdAsync(orgId, QuotationId.From(qid), cancellationToken)
+                    .ConfigureAwait(false);
+                if (sourceQuotation is null)
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        ApplicationErrorCodes.QuotationNotFound,
+                        "Quotation was not found in this organization.");
+                }
+
+                if (sourceQuotation.Status is QuotationStatus.Converted)
+                {
+                    if (clientSaleId is not null && sourceQuotation.ConvertedSaleId == clientSaleId)
+                    {
+                        sourceQuotationId = qid;
+                    }
+                    else
+                    {
+                        return ApplicationResult<Sale>.Failure(
+                            ApplicationErrorCodes.QuotationNotConvertible,
+                            "Quotation is already converted to a different sale.");
+                    }
+                }
+                else if (sourceQuotation.Status is not (QuotationStatus.Sent or QuotationStatus.Accepted))
+                {
+                    return ApplicationResult<Sale>.Failure(
+                        ApplicationErrorCodes.QuotationNotConvertible,
+                        "Only sent or accepted quotations can be converted to a sale.");
+                }
+                else
+                {
+                    sourceQuotationId = qid;
+                }
+            }
+
             var method = SalePaymentMethods.Parse(paymentMethod);
             var isElectronic = SalePaymentMethods.IsElectronic(method);
-            var isUtang = method == SalePaymentMethod.Utang;
+            var isUtang = SalePaymentMethods.CreatesReceivable(method);
 
             if (_paymentMethodSettings is not null
                 && branchId is Guid paymentBranch
@@ -736,6 +789,23 @@ public sealed class CheckoutSale
             var capturedTaxAmount = taxAmount;
             var capturedTaxPricingMode = taxPricingMode;
 
+            string? branchName = null;
+            if (branchId is Guid bid && _branches is not null)
+            {
+                var names = await _branches
+                    .GetNamesAsync(organizationId, [bid], cancellationToken)
+                    .ConfigureAwait(false);
+                names.TryGetValue(bid, out branchName);
+            }
+
+            var sellerDocumentIdentity = BuildSellerDocumentIdentity(
+                setup,
+                branchName,
+                sellerDocumentIdentityRequest);
+
+            var capturedSourceQuotation = sourceQuotation;
+            var capturedSourceQuotationId = sourceQuotationId;
+
             var sale = await _sales
                 .CheckoutAsync(
                     orgId,
@@ -761,9 +831,19 @@ public sealed class CheckoutSale
                         intents,
                         overrideIntents,
                         allowUnlimited,
-                        capturedBusinessCreditEntryId),
+                        capturedBusinessCreditEntryId,
+                        sellerDocumentIdentity,
+                        capturedSourceQuotationId),
                     async (createdSale, ct) =>
                     {
+                        if (capturedSourceQuotation is not null && _quotations is not null)
+                        {
+                            capturedSourceQuotation.MarkConverted(createdSale.Id.Value, utcNow);
+                            await _quotations
+                                .UpdateAsync(capturedSourceQuotation, ct)
+                                .ConfigureAwait(false);
+                        }
+
                         // Electronic Card/GCash sales await payment — reserve stock until Paid/Released.
                         if (isElectronic)
                         {
@@ -1556,6 +1636,42 @@ public sealed class CheckoutSale
         }
 
         return order.Select(id => (id, totals[id])).ToList();
+    }
+
+    /// <summary>
+    /// Prefer client document snapshot (seller Preview parity) and fill gaps from operational setup.
+    /// </summary>
+    private static SaleSellerDocumentIdentity BuildSellerDocumentIdentity(
+        PosOperationalSetup? setup,
+        string? branchName,
+        CheckoutSellerDocumentIdentityRequest? request)
+    {
+        var setupReady = setup is { IsCompleted: true };
+        return SaleSellerDocumentIdentity.Create(
+            businessName: FirstNonEmpty(request?.BusinessName, setupReady ? setup!.StoreDisplayName : null),
+            publicOrganizationId: request?.PublicOrganizationId,
+            logoUrl: request?.LogoUrl,
+            address: FirstNonEmpty(request?.Address, setupReady ? setup!.BusinessAddress : null),
+            phone: FirstNonEmpty(request?.Phone, setupReady ? setup!.ContactPhone : null),
+            email: request?.Email,
+            branchName: FirstNonEmpty(request?.BranchName, branchName),
+            branchAddress: request?.BranchAddress,
+            showLogo: request?.ShowLogo ?? true,
+            showBusinessAddress: request?.ShowBusinessAddress ?? true,
+            showBusinessPhone: request?.ShowBusinessPhone ?? true,
+            showBusinessEmail: request?.ShowBusinessEmail ?? true,
+            showBranchName: request?.ShowBranchName ?? true,
+            showBranchAddress: request?.ShowBranchAddress ?? false);
+    }
+
+    private static string? FirstNonEmpty(string? preferred, string? fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(preferred))
+        {
+            return preferred.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(fallback) ? null : fallback.Trim();
     }
 }
 
