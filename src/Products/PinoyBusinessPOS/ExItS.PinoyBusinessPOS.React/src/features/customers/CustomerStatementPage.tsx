@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { CircleDollarSign, Receipt, Users, Wallet, Banknote } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -191,29 +191,53 @@ export function CustomerStatementPage() {
 
       {statementQuery.data ? (
         <>
-          <Card data-testid="statement-summary">
-            <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-              <div>
-                <dt className="text-muted">{t("customers.amountOwed")}</dt>
-                <dd className="m-0 font-semibold">
+          <Card className="flex flex-col gap-3 p-4" data-testid="statement-summary">
+            <dl className="branch-mgmt-overview__grid m-0">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Receipt
+                    className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--outstanding"
+                    aria-hidden
+                  />
+                  {t("customers.amountOwed")}
+                </dt>
+                <dd className="tabular-nums">
                   <MoneyDisplay amount={statementQuery.data.outstandingBalance} />
                 </dd>
               </div>
-              <div>
-                <dt className="text-muted">{t("customers.remainingBalance")}</dt>
-                <dd className="m-0 font-semibold">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Wallet
+                    className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--available"
+                    aria-hidden
+                  />
+                  {t("customers.remainingBalance")}
+                </dt>
+                <dd className="tabular-nums">
                   <MoneyDisplay amount={statementQuery.data.closingBalance} />
                 </dd>
               </div>
-              <div>
-                <dt className="text-muted">{t("customers.periodCharges")}</dt>
-                <dd className="m-0">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <CircleDollarSign
+                    className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--limit"
+                    aria-hidden
+                  />
+                  {t("customers.periodCharges")}
+                </dt>
+                <dd className="tabular-nums">
                   <MoneyDisplay amount={statementQuery.data.periodCreditTotal} />
                 </dd>
               </div>
-              <div>
-                <dt className="text-muted">{t("customers.periodPayments")}</dt>
-                <dd className="m-0">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Banknote
+                    className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--term"
+                    aria-hidden
+                  />
+                  {t("customers.periodPayments")}
+                </dt>
+                <dd className="tabular-nums">
                   <MoneyDisplay amount={statementQuery.data.periodRepaymentTotal} />
                 </dd>
               </div>

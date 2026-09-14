@@ -91,6 +91,22 @@ internal sealed class BusinessCreditEntryRepository : IBusinessCreditEntryReposi
         return rows.ToDictionary(r => r.BuyerOrganizationId, r => r.Total);
     }
 
+    public async Task<IReadOnlyList<BusinessCreditEntry>> ListChronologicalForBuyerAsync(
+        PosOrganizationId sellerOrganizationId,
+        PosOrganizationId buyerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.BusinessCreditEntries.AsNoTracking()
+            .Where(e => e.SellerOrganizationId == sellerOrganizationId.Value
+                        && e.BuyerOrganizationId == buyerOrganizationId.Value)
+            .OrderBy(e => e.CreatedAtUtc)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return records.Select(BusinessCreditEntryEntityMapper.ToDomain).ToList();
+    }
+
     public async Task AcquireBusinessCreditLockAsync(
         PosOrganizationId sellerOrganizationId,
         PosOrganizationId buyerOrganizationId,

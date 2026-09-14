@@ -9105,6 +9105,12 @@ html:has(.admin-shell) #root {
   font-weight: 600;
 }
 
+/* Customer delivery overview card: keep switch copy regular weight. */
+[data-testid="customer-delivery-section"] .branch-switch__label,
+[data-testid="customer-delivery-section"] .branch-switch__hint {
+  font-weight: 400;
+}
+
 .branch-switch__hint {
   font-size: 0.75rem;
   color: var(--exits-text-muted);
@@ -9118,9 +9124,9 @@ html:has(.admin-shell) #root {
   flex-shrink: 0;
   align-items: center;
   padding: 0.15rem;
-  border: 1px solid var(--exits-border);
+  border: 1px solid color-mix(in srgb, var(--exits-border) 80%, var(--exits-text-muted));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
+  background: color-mix(in srgb, var(--exits-ink) 22%, var(--exits-surface-muted));
   cursor: pointer;
   transition:
     background-color var(--exits-motion-fast) ease,
@@ -9128,7 +9134,7 @@ html:has(.admin-shell) #root {
 }
 
 .branch-switch__control:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--exits-accent) 55%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--exits-primary) 55%, transparent);
   outline-offset: 2px;
 }
 
@@ -9138,8 +9144,8 @@ html:has(.admin-shell) #root {
 }
 
 .branch-switch__control--on {
-  border-color: color-mix(in srgb, var(--exits-success) 45%, var(--exits-border));
-  background: color-mix(in srgb, var(--exits-success) 28%, var(--exits-surface));
+  border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 42%, var(--exits-surface));
 }
 
 .branch-switch__control--pending {
@@ -9151,13 +9157,19 @@ html:has(.admin-shell) #root {
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 999px;
-  background: var(--exits-surface);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--exits-ink) 18%, transparent);
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--exits-border) 40%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--exits-ink) 35%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--exits-ink) 8%, transparent);
   transform: translateX(0);
   transition: transform var(--exits-motion-fast) ease;
 }
 
 .branch-switch__control--on .branch-switch__thumb {
+  background: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--exits-ink) 40%, transparent);
   transform: translateX(1.15rem);
 }
 
@@ -19382,6 +19394,10 @@ a.exits-chip--primary:hover {
   width: 0.9rem;
   height: 0.9rem;
   color: var(--exits-text-subtle);
+}
+
+.branch-mgmt-overview__icon--primary {
+  color: var(--exits-primary);
 }
 
 .credit-policy-stat-icon {

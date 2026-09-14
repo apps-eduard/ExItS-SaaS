@@ -294,6 +294,13 @@ public sealed class LinkedPersonalCustomerQueryTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
 
+        public Task<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry>> ListChronologicalForBuyerAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry>>(
+                Array.Empty<ExItS.PinoyBusinessPOS.Domain.Credit.BusinessCreditEntry>());
+
         public Task AcquireBusinessCreditLockAsync(
             PosOrganizationId sellerOrganizationId,
             PosOrganizationId buyerOrganizationId,

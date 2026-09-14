@@ -4775,9 +4775,9 @@ export const en = {
   "customers.business.repayLede": "Record a payment toward this business customer's Utang balance.",
   "customers.business.repayUnavailableDetail":
     "Business customer payment recording is not available yet. Charges will appear under Utang charges after Business Utang sales.",
-  "customers.business.statementLede": "Review Utang charges and payments for this business customer.",
+  "customers.business.statementLede": "Statement for {name}.",
   "customers.business.statementUnavailableDetail":
-    "Business customer statements are not available yet. Charges will appear under Utang charges after Business Utang sales.",
+    "No Utang charges in this period yet. Charges appear after Business Utang sales.",
   "customers.business.identityNote":
     "This is the buyer's Organization identity. You manage relationship settings only — not their business name or logo.",
   "customers.business.incomingRequests": "Incoming connection requests",

@@ -420,18 +420,15 @@ export function CreditPolicySection({
         </div>
         {policy?.approvedByUserId || policy?.approvedAtUtc ? (
           <div>
-            <dt className="text-muted">{t("customers.creditPolicy.approvedBy")}</dt>
-            <dd className="m-0">
-              <ActorAttribution
-                labelKey="customers.creditPolicy.approvedBy"
-                actorId={policy.approvedByUserId}
-                occurredAtUtc={policy.approvedAtUtc}
-                resolved={actors.resolve(policy.approvedByUserId)}
-                isLoading={actors.isResolving}
-                className="min-h-0"
-                testId="customer-credit-policy-approved-by"
-              />
-            </dd>
+            <ActorAttribution
+              labelKey="customers.creditPolicy.approvedBy"
+              actorId={policy.approvedByUserId}
+              occurredAtUtc={policy.approvedAtUtc}
+              resolved={actors.resolve(policy.approvedByUserId)}
+              isLoading={actors.isResolving}
+              className="min-h-0"
+              testId="customer-credit-policy-approved-by"
+            />
           </div>
         ) : null}
       </dl>

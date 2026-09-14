@@ -192,6 +192,19 @@ public sealed class BusinessCustomerCreditAuthorizationServiceTests
                     .GroupBy(e => e.BuyerOrganizationId.Value)
                     .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount)));
 
+        public Task<IReadOnlyList<BusinessCreditEntry>> ListChronologicalForBuyerAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessCreditEntry>>(
+                _entries
+                    .Where(e =>
+                        e.SellerOrganizationId == sellerOrganizationId
+                        && e.BuyerOrganizationId == buyerOrganizationId)
+                    .OrderBy(e => e.CreatedAtUtc)
+                    .ThenBy(e => e.Id.Value)
+                    .ToList());
+
         public Task AcquireBusinessCreditLockAsync(
             PosOrganizationId sellerOrganizationId,
             PosOrganizationId buyerOrganizationId,

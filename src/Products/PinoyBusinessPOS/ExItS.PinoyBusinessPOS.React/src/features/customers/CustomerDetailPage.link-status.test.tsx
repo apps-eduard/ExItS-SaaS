@@ -206,7 +206,7 @@ describe("CustomerDetailPage Platform link status", () => {
     await expectStatus(/Request sent/i);
     expect(screen.getByTestId("customer-link-pending-banner")).toBeInTheDocument();
     expect(screen.getByTestId("customer-exits-id")).toHaveTextContent("EX-1234-5678");
-    expect(screen.getByTestId("customer-link-exits-id-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-link-exits-id-panel")).not.toBeInTheDocument();
     expect(screen.getByTestId("customer-connection-status-chip-inline")).not.toHaveTextContent(
       /^Linked$/,
     );
@@ -247,7 +247,7 @@ describe("CustomerDetailPage Platform link status", () => {
     expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
   });
 
-  it("shows compact connection history when Platform returns link-requests", async () => {
+  it("shows Linked status and timestamp on Personal profile (not Connection history)", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status: "Linked",
@@ -272,11 +272,12 @@ describe("CustomerDetailPage Platform link status", () => {
     ]);
     renderDetail();
     await waitFor(() => {
-      expect(screen.getByTestId("customer-link-history")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Connection history/i);
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Linked/i);
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Request sent/i);
+    expect(screen.queryByTestId("customer-link-history")).not.toBeInTheDocument();
+    const linkRow = screen.getByTestId("customer-personal-profile-link-row");
+    expect(linkRow).toHaveTextContent(new Date("2026-08-18T08:00:00Z").toLocaleString());
+    expect(screen.getByTestId("customer-personal-profile-link-status")).toHaveTextContent(/Linked/i);
   });
 
   it("hides connection history when Platform returns an empty list", async () => {

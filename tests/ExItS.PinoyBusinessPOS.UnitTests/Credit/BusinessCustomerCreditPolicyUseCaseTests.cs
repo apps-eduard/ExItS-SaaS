@@ -328,6 +328,12 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyDictionary<Guid, decimal>>(new Dictionary<Guid, decimal>());
 
+        public Task<IReadOnlyList<BusinessCreditEntry>> ListChronologicalForBuyerAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessCreditEntry>>(Array.Empty<BusinessCreditEntry>());
+
         public Task AcquireBusinessCreditLockAsync(
             PosOrganizationId sellerOrganizationId,
             PosOrganizationId buyerOrganizationId,

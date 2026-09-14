@@ -1,3 +1,4 @@
+import { Truck } from "lucide-react";
 import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
 import type { MessageKey } from "@/i18n/messages";
 
@@ -12,6 +13,7 @@ type CustomerDeliveryExceptionSectionProps = {
 /**
  * Seller-managed org-customer delivery distance exception.
  * Does not bypass service area, entitlement, readiness, or fee rules.
+ * Renders as a Store customer details overview card item.
  */
 export function CustomerDeliveryExceptionSection({
   allowBeyond,
@@ -21,32 +23,26 @@ export function CustomerDeliveryExceptionSection({
   onToggle,
 }: CustomerDeliveryExceptionSectionProps) {
   return (
-    <section
-      className="catalog-form-section exits-animate-panel gap-3"
-      data-testid="customer-delivery-section"
-    >
-      <h2 className="catalog-form-section__title">{t("customers.delivery.title")}</h2>
-      <BranchFulfillmentSwitch
-        checked={allowBeyond}
-        disabled={!canEdit}
-        pending={pending}
-        label={t("customers.delivery.allowBeyond")}
-        hint={
-          allowBeyond
-            ? t("customers.delivery.exceptionHint")
-            : t("customers.delivery.normalHint")
-        }
-        testId="customer-delivery-distance-exception"
-        onCheckedChange={onToggle}
-      />
-      {allowBeyond ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-          data-testid="customer-delivery-exception-status"
-        >
-          {t("customers.delivery.distanceExceptionBadge")}
-        </p>
-      ) : null}
-    </section>
+    <div className="branch-mgmt-overview__item" data-testid="customer-delivery-section">
+      <dt>
+        <Truck className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary" aria-hidden />
+        {t("customers.delivery.title")}
+      </dt>
+      <dd className="flex flex-col gap-2">
+        <BranchFulfillmentSwitch
+          checked={allowBeyond}
+          disabled={!canEdit}
+          pending={pending}
+          label={t("customers.delivery.allowBeyond")}
+          hint={
+            allowBeyond
+              ? t("customers.delivery.exceptionHint")
+              : t("customers.delivery.normalHint")
+          }
+          testId="customer-delivery-distance-exception"
+          onCheckedChange={onToggle}
+        />
+      </dd>
+    </div>
   );
 }

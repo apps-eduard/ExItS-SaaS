@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Bell, Clock, UserRound, XCircle } from "lucide-react";
+import { Bell, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
@@ -16,7 +16,6 @@ type LinkHistoryItem = {
 
 export type CustomerPersonalLinkSectionProps = {
   linkUiStatus: CustomerLinkUiStatus;
-  personalExItsId: string | null;
   customerDisplayName: string;
   linkMeta: CustomerLinkStatusDto | undefined;
   linkHistoryItems: LinkHistoryItem[];
@@ -36,7 +35,6 @@ export type CustomerPersonalLinkSectionProps = {
 
 export function CustomerPersonalLinkSection({
   linkUiStatus,
-  personalExItsId,
   customerDisplayName,
   linkMeta,
   linkHistoryItems,
@@ -189,35 +187,12 @@ export function CustomerPersonalLinkSection({
         </Card>
       ) : null}
 
-      {personalExItsId || historyPeer || linkHistoryItems.length > 0 ? (
+      {historyPeer || (linkHistoryItems.length > 0 && linkUiStatus !== "Linked") ? (
         <div className="customer-link-peer-grid">
-          {personalExItsId ? (
-            <Card className="flex flex-col gap-3 p-4" data-testid="customer-link-exits-id-panel">
-              <div className="flex items-start gap-2">
-                <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--exits-border)_60%,transparent)] text-muted"
-                  aria-hidden
-                >
-                  <UserRound className="size-4" />
-                </span>
-                <div className="min-w-0 flex flex-col gap-1">
-                  <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                    {t("customers.exItsIdLabel")}
-                  </p>
-                  <p
-                    className="mb-0 font-mono text-[length:var(--exits-text-md)] font-semibold tracking-wide"
-                    data-testid="customer-exits-id"
-                  >
-                    {personalExItsId}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ) : null}
-
           {historyPeer}
 
-          {linkHistoryItems.length > 0 ? (
+          {/* Linked status + timestamp live on Personal profile; keep history for non-linked states. */}
+          {linkHistoryItems.length > 0 && linkUiStatus !== "Linked" ? (
             <Card className="flex min-w-0 flex-col gap-3 p-4" data-testid="customer-link-history">
               <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
                 {t("customers.linkHistoryTitle")}

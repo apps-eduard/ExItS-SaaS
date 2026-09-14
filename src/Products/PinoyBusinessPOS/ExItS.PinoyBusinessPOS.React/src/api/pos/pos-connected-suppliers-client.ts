@@ -1074,6 +1074,74 @@ export async function getBusinessCustomer(
   return businessCustomerSchema.parse(raw);
 }
 
+const businessCustomerStatementLineSchema = z.object({
+  entryId: guidSchema,
+  entryType: z.string(),
+  recordedAtUtc: isoDateSchema,
+  amount: z.number(),
+  signedEffect: z.number(),
+  status: z.string(),
+  remarks: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
+  dueStatus: z.string().nullable().optional(),
+  isOverdue: z.boolean(),
+  isReversed: z.boolean(),
+  runningBalance: z.number(),
+  sourceSaleId: guidSchema.nullable().optional(),
+});
+
+export const businessCustomerStatementSchema = z.object({
+  organizationId: guidSchema,
+  organizationDisplayName: z.string().nullable().optional(),
+  connectionId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  customerDisplayName: z.string(),
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  openingBalance: z.number(),
+  closingBalance: z.number(),
+  periodCreditTotal: z.number(),
+  periodRepaymentTotal: z.number(),
+  periodReversalCreditTotal: z.number(),
+  periodReversalRepaymentTotal: z.number(),
+  outstandingBalance: z.number(),
+  overdueAmount: z.number(),
+  overdueCreditCount: z.number(),
+  generatedAtUtc: isoDateSchema,
+  currencyCode: z.string(),
+  cultureName: z.string(),
+  lines: z.array(businessCustomerStatementLineSchema),
+});
+
+export type BusinessCustomerStatement = z.infer<typeof businessCustomerStatementSchema>;
+
+export async function getBusinessCustomerStatement(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options: {
+    periodStart: string;
+    periodEnd: string;
+    organizationDisplayName?: string;
+    currencyCode?: string;
+    culture?: string;
+  },
+  signal?: AbortSignal,
+): Promise<BusinessCustomerStatement> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/statement`, {
+      periodStart: options.periodStart,
+      periodEnd: options.periodEnd,
+      organizationDisplayName: options.organizationDisplayName,
+      currencyCode: options.currencyCode,
+      culture: options.culture,
+    }),
+  });
+  return businessCustomerStatementSchema.parse(raw);
+}
+
 /** Seller-owned relationship contact only — never mutates buyer Organization identity. */
 export async function updateBusinessCustomerRelationshipContact(
   workspace: PosWorkspaceScope,

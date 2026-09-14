@@ -15,6 +15,7 @@ import {
   linkProduct,
   listLinks,
   listRelationships,
+  getBusinessCustomerStatement,
   prepareIncomingOrder,
   queryBuyerProductShares,
   requestConnection,
@@ -310,5 +311,44 @@ describe("pos-connected-suppliers-client", () => {
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
     expect(url).toContain(`/incoming-orders/${relationshipId}/fulfill`);
     expect(vi.mocked(fetch).mock.calls[0]?.[1]?.method).toBe("POST");
+  });
+
+  it("getBusinessCustomerStatement GETs connection statement with period query", async () => {
+    const connectionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        organizationId: workspace.organizationId,
+        organizationDisplayName: "Seller",
+        connectionId,
+        buyerOrganizationId: "22222222-2222-4222-8222-222222222222",
+        customerDisplayName: "Buyer Bakery",
+        periodStart: "2026-08-15",
+        periodEnd: "2026-09-14",
+        openingBalance: 0,
+        closingBalance: 542,
+        periodCreditTotal: 542,
+        periodRepaymentTotal: 0,
+        periodReversalCreditTotal: 0,
+        periodReversalRepaymentTotal: 0,
+        outstandingBalance: 542,
+        overdueAmount: 0,
+        overdueCreditCount: 0,
+        generatedAtUtc: "2026-09-14T12:00:00Z",
+        currencyCode: "PHP",
+        cultureName: "en-PH",
+        lines: [],
+      }),
+    );
+
+    const statement = await getBusinessCustomerStatement(workspace, connectionId, {
+      periodStart: "2026-08-15",
+      periodEnd: "2026-09-14",
+    });
+
+    expect(statement.outstandingBalance).toBe(542);
+    const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
+    expect(url).toContain(`/business-customers/${connectionId}/statement`);
+    expect(url).toContain("periodStart=2026-08-15");
+    expect(url).toContain("periodEnd=2026-09-14");
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Ban,
@@ -10,7 +10,6 @@ import {
   Phone,
   RotateCcw,
   UserRound,
-  Users,
 } from "lucide-react";
 import {
   canApproveCustomerCreditPolicy,
@@ -36,8 +35,6 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   deactivateCustomer,
   getCustomer,
-  listCustomerCreditEntries,
-  listCustomerRepayments,
   reactivateCustomer,
   type PosCustomerListItem,
 } from "@/api/pos/pos-customers-client";
@@ -46,10 +43,8 @@ import { CustomerStoreDetailsEditDrawer } from "@/features/customers/CustomerSto
 import { extractDeliveryInstructions } from "@/features/customers/customer-store-details";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -61,11 +56,11 @@ import {
   resolveDisplayedPersonalExItsId,
   type CustomerLinkUiStatus,
 } from "@/features/customers/customer-link-status";
+import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
+import { mapOrgLinkStatusToRelationship } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
-import { ActorAttribution } from "@/features/actors/ActorAttribution";
-import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
@@ -276,26 +271,6 @@ export function CustomerDetailPage() {
     },
   });
 
-  const creditsQuery = useQuery({
-    queryKey: ["customers", "credits", workspace?.organizationId, customerId],
-    enabled: enabledOnline,
-    queryFn: ({ signal }) =>
-      listCustomerCreditEntries(workspace!, customerId!, { pageSize: 20 }, signal),
-  });
-
-  const repaymentsQuery = useQuery({
-    queryKey: ["customers", "repayments", workspace?.organizationId, customerId],
-    enabled: enabledOnline,
-    queryFn: ({ signal }) =>
-      listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
-  });
-
-  const repaymentActorIds = (repaymentsQuery.data?.items ?? []).flatMap((payment) => [
-    payment.recordedBy,
-    payment.reversedBy,
-  ]);
-  const actors = useActorDirectory(workspace?.organizationId, repaymentActorIds);
-
   useEffect(() => {
     if (!offlineContext || !online) {
       return;
@@ -386,6 +361,12 @@ export function CustomerDetailPage() {
     new Date(linkMeta!.nextReminderEligibleAtUtc!).getTime() > Date.now();
 
   const linkHistoryItems = (linkHistoryQuery.data ?? []).slice(0, 8);
+  const linkedAtUtc =
+    linkHistoryItems.find((item) => mapOrgLinkStatusToRelationship(item.status) === "Linked")
+      ?.createdAtUtc ??
+    linkHistoryItems[0]?.createdAtUtc ??
+    linkMeta?.invitationSentAtUtc ??
+    null;
 
   const personalExItsId = resolveDisplayedPersonalExItsId({
     linkedPersonalPublicUserId: customer.linkedPersonalPublicUserId,
@@ -448,6 +429,17 @@ export function CustomerDetailPage() {
     </Button>
   ) : null;
 
+  const deliveryCard =
+    platformCustomerId && online ? (
+      <CustomerDeliveryExceptionSection
+        allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
+        canEdit={allowEdit}
+        pending={deliveryExceptionMutation.isPending}
+        t={t}
+        onToggle={(next) => deliveryExceptionMutation.mutate(next)}
+      />
+    ) : null;
+
   return (
     <div className="exits-page flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
       <PageHeader
@@ -468,21 +460,9 @@ export function CustomerDetailPage() {
       {linkUiStatus !== "NotLinked" ? (
         <CustomerPersonalLinkSection
           linkUiStatus={linkUiStatus}
-          personalExItsId={personalExItsId}
           customerDisplayName={customer.displayName}
           linkMeta={linkMeta}
           linkHistoryItems={linkHistoryItems}
-          historyPeer={
-            platformCustomerId && online ? (
-              <CustomerDeliveryExceptionSection
-                allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
-                canEdit={allowEdit && !deliveryPrefsQuery.isLoading}
-                pending={deliveryExceptionMutation.isPending}
-                t={t}
-                onToggle={(next) => deliveryExceptionMutation.mutate(next)}
-              />
-            ) : null
-          }
           showAfterCreateHint={showAfterCreateHint}
           afterCreateHintDismissed={afterCreateHintDismissed}
           onDismissAfterCreateHint={() => setAfterCreateHintDismissed(true)}
@@ -493,14 +473,6 @@ export function CustomerDetailPage() {
           revokePending={revokeMutation.isPending}
           onRemind={() => remindMutation.mutate()}
           onRevoke={() => revokeMutation.mutate()}
-        />
-      ) : platformCustomerId && online ? (
-        <CustomerDeliveryExceptionSection
-          allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
-          canEdit={allowEdit && !deliveryPrefsQuery.isLoading}
-          pending={deliveryExceptionMutation.isPending}
-          t={t}
-          onToggle={(next) => deliveryExceptionMutation.mutate(next)}
         />
       ) : null}
 
@@ -562,17 +534,15 @@ export function CustomerDetailPage() {
         <>
           <Card className="flex flex-col gap-3 p-4" data-testid="customer-personal-profile">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+              <h2 className="m-0 flex min-w-0 items-center gap-2 text-[length:var(--exits-text-md)] font-semibold">
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary size-4"
+                  aria-hidden
+                />
                 {t("customers.personalProfile.title")}
               </h2>
               {statusToggleButton}
             </div>
-            <p
-              className="m-0 text-[length:var(--exits-text-xs)] text-muted"
-              data-testid="customer-personal-profile-managed-by"
-            >
-              {t("customers.personalProfile.managedBy")}
-            </p>
             {!online ? (
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("customers.personalProfile.unavailable")}
@@ -606,6 +576,18 @@ export function CustomerDetailPage() {
                     <dd data-testid="customer-personal-profile-email">…</dd>
                   </div>
                 ) : null}
+                <div data-testid="customer-personal-profile-link-row">
+                  <dt>
+                    <ConnectionStatusChip
+                      state={mapOrgLinkStatusToRelationship(linkUiStatus)}
+                      audience="organization"
+                      testId="customer-personal-profile-link-status"
+                    />
+                  </dt>
+                  <dd className="!font-normal text-muted tabular-nums">
+                    {linkedAtUtc ? new Date(linkedAtUtc).toLocaleString() : "—"}
+                  </dd>
+                </div>
               </dl>
             )}
           </Card>
@@ -620,28 +602,40 @@ export function CustomerDetailPage() {
             <dl className="branch-mgmt-overview__grid">
               <div className="branch-mgmt-overview__item">
                 <dt>
-                  <UserRound className="branch-mgmt-overview__icon" aria-hidden />
+                  <UserRound
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
                   {t("customers.storeDetails.preferredName")}
                 </dt>
                 <dd data-testid="customer-store-preferred-name">{customer.displayName}</dd>
               </div>
               <div className="branch-mgmt-overview__item">
                 <dt>
-                  <Phone className="branch-mgmt-overview__icon" aria-hidden />
+                  <Phone
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
                   {t("customers.storeDetails.contactPhone")}
                 </dt>
                 <dd>{customer.mobileNumber?.trim() || "—"}</dd>
               </div>
               <div className="branch-mgmt-overview__item">
                 <dt>
-                  <MapPin className="branch-mgmt-overview__icon" aria-hidden />
+                  <MapPin
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
                   {t("customers.storeDetails.deliveryAddress")}
                 </dt>
                 <dd>{customer.address?.trim() || "—"}</dd>
               </div>
               <div className="branch-mgmt-overview__item">
                 <dt>
-                  <NotebookPen className="branch-mgmt-overview__icon" aria-hidden />
+                  <NotebookPen
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
                   {t("customers.storeDetails.deliveryInstructions")}
                 </dt>
                 <dd className="whitespace-pre-wrap" data-testid="customer-delivery-instructions">
@@ -650,13 +644,17 @@ export function CustomerDetailPage() {
               </div>
               <div className="branch-mgmt-overview__item">
                 <dt>
-                  <NotebookPen className="branch-mgmt-overview__icon" aria-hidden />
+                  <NotebookPen
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
                   {t("customers.storeDetails.internalNotes")}
                 </dt>
                 <dd className="whitespace-pre-wrap" data-testid="customer-notes-display">
                   {storeNotes.internalNotes || "—"}
                 </dd>
               </div>
+              {deliveryCard}
             </dl>
           </Card>
         </>
@@ -674,28 +672,40 @@ export function CustomerDetailPage() {
           <dl className="branch-mgmt-overview__grid">
             <div className="branch-mgmt-overview__item">
               <dt>
-                <UserRound className="branch-mgmt-overview__icon" aria-hidden />
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.displayName")}
               </dt>
               <dd>{customer.displayName}</dd>
             </div>
             <div className="branch-mgmt-overview__item">
               <dt>
-                <Phone className="branch-mgmt-overview__icon" aria-hidden />
+                <Phone
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.storeDetails.contactPhone")}
               </dt>
               <dd>{customer.mobileNumber?.trim() || "—"}</dd>
             </div>
             <div className="branch-mgmt-overview__item">
               <dt>
-                <MapPin className="branch-mgmt-overview__icon" aria-hidden />
+                <MapPin
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.storeDetails.deliveryAddress")}
               </dt>
               <dd>{customer.address?.trim() || "—"}</dd>
             </div>
             <div className="branch-mgmt-overview__item">
               <dt>
-                <NotebookPen className="branch-mgmt-overview__icon" aria-hidden />
+                <NotebookPen
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.storeDetails.deliveryInstructions")}
               </dt>
               <dd className="whitespace-pre-wrap" data-testid="customer-delivery-instructions">
@@ -704,29 +714,37 @@ export function CustomerDetailPage() {
             </div>
             <div className="branch-mgmt-overview__item">
               <dt>
-                <NotebookPen className="branch-mgmt-overview__icon" aria-hidden />
+                <NotebookPen
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.storeDetails.internalNotes")}
               </dt>
               <dd className="whitespace-pre-wrap" data-testid="customer-notes-display">
                 {storeNotes.internalNotes || "—"}
               </dd>
             </div>
+            {deliveryCard}
           </dl>
           <dl className="branch-mgmt-overview__grid">
             <div className="branch-mgmt-overview__item">
               <dt>
-                <UserRound className="branch-mgmt-overview__icon" aria-hidden />
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.exItsIdLabel")}
               </dt>
-              <dd
-                data-testid={linkUiStatus === "Pending" ? undefined : "customer-exits-id"}
-              >
+              <dd data-testid="customer-exits-id">
                 {personalExItsId ?? t("customers.exItsIdNone")}
               </dd>
             </div>
             <div className="branch-mgmt-overview__item">
               <dt>
-                <Link2 className="branch-mgmt-overview__icon" aria-hidden />
+                <Link2
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
                 {t("customers.linkStatusLabel")}
               </dt>
               <dd className="branch-mgmt-overview__value--status" data-testid="customer-link-status-label">
@@ -765,166 +783,6 @@ export function CustomerDetailPage() {
           canManage={allowManageBranchAccess}
         />
       ) : null}
-
-      <section className="flex flex-col gap-2" data-testid="customer-credits-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditsTitle")}
-        </h2>
-        {creditsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        {creditsQuery.isSuccess && creditsQuery.data.items.length === 0 ? (
-          <EmptyState
-            align="center"
-            icon={<Users className="size-5" strokeWidth={1.75} />}
-            title={t("customers.creditsEmpty")}
-            detail={t("customers.creditsEmptyDetail")}
-          />
-        ) : null}
-        {creditsQuery.data && creditsQuery.data.items.length > 0 ? (
-          <Card className="overflow-hidden p-0">
-            <div className="min-w-0 overflow-x-auto">
-              <table className="customer-ledger-table w-full min-w-[32rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("expense.amount")}
-                    </th>
-                    <th className="min-w-[12rem] px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("expense.description")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("customers.statusLabel")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {creditsQuery.data.items.map((entry) => (
-                    <tr
-                      key={entry.creditEntryId}
-                      className="border-b border-border last:border-b-0"
-                      data-testid={`customer-credit-${entry.creditEntryId}`}
-                    >
-                      <td className="whitespace-nowrap px-3 py-2.5 align-middle font-semibold tabular-nums">
-                        <MoneyDisplay amount={entry.amount} />
-                      </td>
-                      <td className="max-w-[24rem] px-3 py-2.5 align-middle text-muted">
-                        {entry.sourceSaleId ? (
-                          <Link
-                            to={`/sell/sales/${entry.sourceSaleId}/summary`}
-                            className="line-clamp-2 font-medium text-[var(--exits-primary)] underline-offset-2 hover:underline"
-                            data-testid={`customer-credit-sale-link-${entry.creditEntryId}`}
-                          >
-                            {entry.remarks?.trim() || t("transactions.viewSummary")}
-                          </Link>
-                        ) : (
-                          <span className="line-clamp-2">{entry.remarks || "—"}</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 align-middle">
-                        <StatusChip
-                          tone={entry.status.toLowerCase() === "active" ? "success" : "neutral"}
-                        >
-                          {entry.status}
-                        </StatusChip>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        ) : null}
-      </section>
-
-      <section className="flex flex-col gap-2" data-testid="customer-payments-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.paymentsTitle")}
-        </h2>
-        {repaymentsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        {repaymentsQuery.isSuccess && repaymentsQuery.data.items.length === 0 ? (
-          <EmptyState
-            align="center"
-            icon={<Users className="size-5" strokeWidth={1.75} />}
-            title={t("customers.paymentsEmpty")}
-            detail={t("customers.paymentsEmptyDetail")}
-          />
-        ) : null}
-        {repaymentsQuery.data && repaymentsQuery.data.items.length > 0 ? (
-          <Card className="overflow-hidden p-0">
-            <div className="min-w-0 overflow-x-auto">
-              <table className="customer-ledger-table w-full min-w-[40rem] border-collapse text-left text-[length:var(--exits-text-sm)]">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("expense.amount")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("customers.statusLabel")}
-                    </th>
-                    <th className="min-w-[10rem] px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("common.recordedBy")}
-                    </th>
-                    <th className="whitespace-nowrap px-3 py-2.5 text-[length:var(--exits-text-xs)] font-medium text-muted">
-                      {t("expense.description")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {repaymentsQuery.data.items.map((payment) => (
-                    <tr
-                      key={payment.repaymentId}
-                      className="border-b border-border last:border-b-0"
-                      data-testid={`customer-payment-${payment.repaymentId}`}
-                    >
-                      <td className="whitespace-nowrap px-3 py-2.5 align-middle font-semibold tabular-nums">
-                        <MoneyDisplay amount={payment.amount} />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 align-middle">
-                        <StatusChip
-                          tone={payment.status.toLowerCase() === "active" ? "success" : "neutral"}
-                        >
-                          {payment.status}
-                        </StatusChip>
-                      </td>
-                      <td className="px-3 py-2.5 align-middle">
-                        <ActorAttribution
-                          labelKey="common.recordedBy"
-                          actorId={payment.recordedBy}
-                          occurredAtUtc={payment.recordedAtUtc}
-                          resolved={actors.resolve(payment.recordedBy)}
-                          isLoading={actors.isResolving}
-                          className="min-h-0"
-                          testId={`customer-payment-recorded-by-${payment.repaymentId}`}
-                        />
-                        {payment.reversedAtUtc || payment.reversedBy ? (
-                          <div className="mt-2">
-                            <ActorAttribution
-                              labelKey="common.reversedBy"
-                              actorId={payment.reversedBy}
-                              occurredAtUtc={payment.reversedAtUtc}
-                              resolved={actors.resolve(payment.reversedBy)}
-                              isLoading={actors.isResolving}
-                              className="min-h-0"
-                              testId={`customer-payment-reversed-by-${payment.repaymentId}`}
-                            />
-                            {payment.reversalReason ? (
-                              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                                {t("common.reason")}: {payment.reversalReason}
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="max-w-[16rem] px-3 py-2.5 align-middle text-muted">
-                        <span className="line-clamp-2">{payment.remarks?.trim() || "—"}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        ) : null}
-      </section>
 
       {customerQuery.data ? (
         <CustomerStoreDetailsEditDrawer
