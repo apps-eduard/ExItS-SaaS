@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  getSubscriptionPayment,
-  processSubscriptionPaymentSimulator,
+  getPersonalSubscriptionPayment,
+  processPersonalSubscriptionPaymentSimulator,
   SUBSCRIPTION_CARD_SIMULATOR,
   type SubscriptionPaymentChannel,
 } from "@/api/platform/subscription-payment-client";
@@ -18,7 +18,6 @@ import {
   paymentResultPath,
 } from "@/features/subscription-checkout/checkout-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
-import { useSession } from "@/session/SessionProvider";
 
 type ChannelSlug = "gcash" | "maya" | "card";
 
@@ -40,8 +39,6 @@ export function SubscriptionPaymentSimulatorPage() {
   const navigate = useNavigate();
   const { paymentId = "", channel: channelSlug } = useParams();
   const channel = channelFromSlug(channelSlug);
-  const { session } = useSession();
-  const organizationId = session?.selectedOrganizationId ?? "";
 
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -53,9 +50,9 @@ export function SubscriptionPaymentSimulatorPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const paymentQuery = useQuery({
-    queryKey: ["subscription-payment", organizationId, paymentId],
-    queryFn: ({ signal }) => getSubscriptionPayment(organizationId, paymentId, signal),
-    enabled: Boolean(organizationId && paymentId && channel),
+    queryKey: ["subscription-payment", "personal", paymentId],
+    queryFn: ({ signal }) => getPersonalSubscriptionPayment(paymentId, signal),
+    enabled: Boolean(paymentId && channel),
   });
 
   const processMutation = useMutation({
@@ -73,7 +70,7 @@ export function SubscriptionPaymentSimulatorPage() {
         }
       }
 
-      const result = await processSubscriptionPaymentSimulator(organizationId, paymentId, {
+      const result = await processPersonalSubscriptionPaymentSimulator(paymentId, {
         channel,
         cardNumber: channel === "Card" ? cardNumber.replace(/\D/g, "") : null,
         cardExpiry: channel === "Card" ? cardExpiry.trim() : null,
@@ -114,7 +111,7 @@ export function SubscriptionPaymentSimulatorPage() {
     );
   }
 
-  if (!organizationId || paymentQuery.isPending) {
+  if (paymentQuery.isPending) {
     return <LoadingSkeleton label={t("subscriptionCheckout.loading")} />;
   }
 

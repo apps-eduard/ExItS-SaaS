@@ -116,4 +116,42 @@ public sealed class SubscriptionPaymentTransactionTests
         Assert.StartsWith("SIM-MY-260913-", my);
         Assert.StartsWith("SIM-CC-260913-", cc);
     }
+
+    [Fact]
+    public void SelectChannel_keeps_pending_and_records_activity()
+    {
+        var utc = DateTimeOffset.Parse("2026-09-13T21:14:00Z");
+        var payment = SubscriptionPaymentTransaction.CreatePending(
+            "PAY-20260913-000010",
+            UserId,
+            "pro",
+            BillingCycle.Monthly,
+            Quote(final: 1499m, baseAmount: 1499m, discountPercent: 0m, discountAmount: 0m),
+            utc);
+
+        payment.SelectChannel(SubscriptionPaymentChannel.GCash, utc);
+        Assert.Equal(SubscriptionPaymentStatus.Pending, payment.Status);
+        Assert.Equal(SubscriptionPaymentChannel.GCash, payment.Channel);
+        Assert.Contains(payment.Activities, a => a.EventType == "ChannelSelected");
+    }
+
+    [Fact]
+    public void Pre_org_pending_can_attach_organization_after_paid()
+    {
+        var utc = DateTimeOffset.Parse("2026-09-13T21:14:00Z");
+        var payment = SubscriptionPaymentTransaction.CreatePending(
+            "PAY-20260913-000011",
+            UserId,
+            "pro",
+            BillingCycle.Monthly,
+            Quote(final: 1499m, baseAmount: 1499m, discountPercent: 0m, discountAmount: 0m),
+            utc);
+
+        Assert.Null(payment.OrganizationId);
+        payment.BeginProcessing(SubscriptionPaymentChannel.Maya, "SIM-MY-260913-AAAAAA", utc);
+        payment.MarkPaid(utc.AddMinutes(1), utc, utc.AddMonths(1));
+        payment.AttachOrganization(OrgId);
+        Assert.Equal(OrgId, payment.OrganizationId);
+        Assert.False(payment.SubscriptionActivated);
+    }
 }

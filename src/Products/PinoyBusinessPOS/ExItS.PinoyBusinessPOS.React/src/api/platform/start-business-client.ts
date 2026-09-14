@@ -74,6 +74,7 @@ export type StartBusinessRequest = {
   billingCycle?: StartBusinessBillingCycle;
   startAsTrial?: boolean;
   payNow?: boolean;
+  paidPaymentTransactionId?: string | null;
   activatePosEntitlement?: boolean;
   activateProductAccess?: boolean;
   assignPosOwnerRole?: boolean;
@@ -202,6 +203,7 @@ export async function startBusiness(
     billingCycle: request.billingCycle ?? "Monthly",
     startAsTrial: request.startAsTrial ?? true,
     payNow: request.payNow ?? false,
+    paidPaymentTransactionId: request.paidPaymentTransactionId ?? null,
     activatePosEntitlement: request.activatePosEntitlement ?? true,
     activateProductAccess: request.activateProductAccess ?? true,
     assignPosOwnerRole: request.assignPosOwnerRole ?? true,

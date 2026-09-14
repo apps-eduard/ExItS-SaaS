@@ -53,9 +53,14 @@ internal static class SubscriptionPaymentTransactionMapper
 
     public static void ApplyToRecord(
         SubscriptionPaymentTransaction payment,
-        SubscriptionPaymentTransactionRecord record)
+        SubscriptionPaymentTransactionRecord record,
+        bool assignIdentity = false)
     {
-        record.Id = payment.Id.Value;
+        if (assignIdentity || record.Id == Guid.Empty)
+        {
+            record.Id = payment.Id.Value;
+        }
+
         record.ReferenceNumber = payment.ReferenceNumber;
         record.InitiatedByUserId = payment.InitiatedByUserId.Value;
         record.OrganizationId = payment.OrganizationId?.Value;
@@ -76,7 +81,10 @@ internal static class SubscriptionPaymentTransactionMapper
         record.CardLast4 = payment.CardLast4;
         record.FailureCode = payment.FailureCode;
         record.FailureReason = payment.FailureReason;
-        record.CreatedAtUtc = payment.CreatedAtUtc;
+        if (assignIdentity || record.CreatedAtUtc == default)
+        {
+            record.CreatedAtUtc = payment.CreatedAtUtc;
+        }
         record.ProcessingAtUtc = payment.ProcessingAtUtc;
         record.PaidAtUtc = payment.PaidAtUtc;
         record.FailedAtUtc = payment.FailedAtUtc;
@@ -113,7 +121,7 @@ internal static class SubscriptionPaymentTransactionMapper
     public static SubscriptionPaymentTransactionRecord ToNewRecord(SubscriptionPaymentTransaction payment)
     {
         var record = new SubscriptionPaymentTransactionRecord();
-        ApplyToRecord(payment, record);
+        ApplyToRecord(payment, record, assignIdentity: true);
         return record;
     }
 }

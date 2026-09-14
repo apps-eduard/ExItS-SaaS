@@ -37,6 +37,7 @@ import {
   loadPostSubscriptionOnboardingProgress,
   readPendingPostSubscriptionOnboarding,
 } from "@/features/onboarding/post-subscription-onboarding";
+import { pendingSubscriptionCheckoutForOrganization } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -125,6 +126,15 @@ export function PostSubscriptionOnboardingPage() {
     }
     requestOnboardingGrant();
   }, [canWriteOnboarding, organizationId, requestOnboardingGrant, workspaceStatus]);
+
+  // Unpaid PayNow checkout must win over Choose Template / onboarding.
+  useEffect(() => {
+    const pendingCheckout = pendingSubscriptionCheckoutForOrganization(organizationId);
+    if (!pendingCheckout) {
+      return;
+    }
+    navigate(`/subscription-checkout/${pendingCheckout.paymentId}`, { replace: true });
+  }, [navigate, organizationId]);
 
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId],

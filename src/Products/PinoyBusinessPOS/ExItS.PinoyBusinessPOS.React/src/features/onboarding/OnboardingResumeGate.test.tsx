@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, waitFor } from "@testing-library/react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { render, screen, waitFor } from "@testing-library/react";
 import { getOnboardingProgress } from "@/api/pos/pos-onboarding-client";
+import { createMemoryRouter, Outlet, RouterProvider } from "react-router-dom";
 import { OnboardingResumeGate } from "@/features/onboarding/OnboardingResumeGate";
+import {
+  clearPendingSubscriptionCheckout,
+  writePendingSubscriptionCheckout,
+} from "@/features/subscription-checkout/pending-subscription-checkout";
 import type { BoundWorkspace } from "@/workspace/types";
 
 vi.mock("@/api/pos/pos-onboarding-client", () => ({
@@ -29,100 +33,151 @@ vi.mock("@/workspace/WorkspaceProvider", () => ({
 
 const getProgress = vi.mocked(getOnboardingProgress);
 
-function completedProgress() {
+function inProgressProgress() {
   return {
     organizationId: boundWorkspace.organizationId,
     organizationSetupStatus: "Completed" as const,
     businessSetupStatus: "Completed" as const,
-    productTemplateStatus: "Completed" as const,
-    overallStatus: "Completed" as const,
+    productTemplateStatus: "NotStarted" as const,
+    overallStatus: "InProgress" as const,
     primaryBusinessTypeId: null,
     updatedAtUtc: "2026-08-27T00:00:00.000Z",
     createdAtUtc: "2026-08-27T00:00:00.000Z",
   };
 }
 
+function completedProgress() {
+  return {
+    ...inProgressProgress(),
+    productTemplateStatus: "Completed" as const,
+    overallStatus: "Completed" as const,
+  };
+}
+
+/** Gate is an effect-only sibling of routed content (same as App.tsx). */
+function GateLayout() {
+  return (
+    <>
+      <OnboardingResumeGate />
+      <Outlet />
+    </>
+  );
+}
+
 describe("OnboardingResumeGate", () => {
   afterEach(() => {
-    getProgress.mockReset();
+    clearPendingSubscriptionCheckout();
     workspaceState = {
       status: "bound",
       boundWorkspace,
       sessionGrant: { accessToken: "test-grant", productAccessAllowed: true },
     };
+    getProgress.mockReset();
   });
 
-  it("checks onboarding progress once per organization, not on every tab path", async () => {
-    getProgress.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          window.setTimeout(() => resolve(completedProgress()), 20);
-        }),
-    );
+  it("does not redirect away from subscription checkout while payment is Pending", async () => {
+    getProgress.mockResolvedValue(inProgressProgress());
 
     const router = createMemoryRouter(
       [
         {
           path: "/",
-          element: <OnboardingResumeGate />,
+          element: <GateLayout />,
           children: [
-            { path: "role/manager", element: <div>home</div> },
-            { path: "catalog", element: <div>catalog</div> },
-            { path: "orders", element: <div>orders</div> },
+            {
+              path: "subscription-checkout/:paymentId",
+              element: <div>Checkout methods visible</div>,
+            },
+            { path: "onboarding", element: <div>Onboarding redirected</div> },
           ],
         },
       ],
-      { initialEntries: ["/role/manager"] },
+      { initialEntries: ["/subscription-checkout/payment-1"] },
     );
 
     render(<RouterProvider router={router} />);
 
-    await waitFor(() => expect(getProgress).toHaveBeenCalledTimes(1));
-
-    await router.navigate("/catalog");
-    await router.navigate("/orders");
-    await router.navigate("/role/manager");
-
-    await new Promise((resolve) => window.setTimeout(resolve, 50));
-    expect(getProgress).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Checkout methods visible")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText("Onboarding redirected")).toBeNull();
+    });
+    expect(getProgress).not.toHaveBeenCalled();
   });
 
-  it("does not call progress while on personal routes", async () => {
+  it("does not redirect when pending checkout marker is set for the bound org", async () => {
+    getProgress.mockResolvedValue(inProgressProgress());
+    writePendingSubscriptionCheckout({
+      paymentId: "payment-1",
+      organizationId: boundWorkspace.organizationId,
+    });
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: <GateLayout />,
+          children: [
+            { path: "dashboard", element: <div>Dashboard stay</div> },
+            { path: "onboarding", element: <div>Onboarding redirected</div> },
+          ],
+        },
+      ],
+      { initialEntries: ["/dashboard"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText("Dashboard stay")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText("Onboarding redirected")).toBeNull();
+    });
+    expect(getProgress).not.toHaveBeenCalled();
+  });
+
+  it("still redirects incomplete onboarding when no pending checkout", async () => {
+    getProgress.mockResolvedValue(inProgressProgress());
+
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: <GateLayout />,
+          children: [
+            { path: "dashboard", element: <div>Dashboard</div> },
+            { path: "onboarding", element: <div>Onboarding redirected</div> },
+          ],
+        },
+      ],
+      { initialEntries: ["/dashboard"] },
+    );
+
+    render(<RouterProvider router={router} />);
+
+    expect(await screen.findByText("Onboarding redirected")).toBeTruthy();
+  });
+
+  it("does not redirect completed onboarding", async () => {
     getProgress.mockResolvedValue(completedProgress());
 
     const router = createMemoryRouter(
       [
         {
           path: "/",
-          element: <OnboardingResumeGate />,
-          children: [{ path: "personal", element: <div>personal</div> }],
+          element: <GateLayout />,
+          children: [
+            { path: "dashboard", element: <div>Dashboard stay</div> },
+            { path: "onboarding", element: <div>Onboarding redirected</div> },
+          ],
         },
       ],
-      { initialEntries: ["/personal"] },
+      { initialEntries: ["/dashboard"] },
     );
 
     render(<RouterProvider router={router} />);
-    await new Promise((resolve) => window.setTimeout(resolve, 30));
-    expect(getProgress).not.toHaveBeenCalled();
-  });
 
-  it("does not call POS progress until a session grant exists", async () => {
-    workspaceState.sessionGrant = { accessToken: "", productAccessAllowed: false };
-    getProgress.mockResolvedValue(completedProgress());
-
-    const router = createMemoryRouter(
-      [
-        {
-          path: "/",
-          element: <OnboardingResumeGate />,
-          children: [{ path: "role/manager", element: <div>home</div> }],
-        },
-      ],
-      { initialEntries: ["/role/manager"] },
-    );
-
-    render(<RouterProvider router={router} />);
-    await new Promise((resolve) => window.setTimeout(resolve, 30));
-    expect(getProgress).not.toHaveBeenCalled();
+    expect(await screen.findByText("Dashboard stay")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText("Onboarding redirected")).toBeNull();
+    });
   });
 });

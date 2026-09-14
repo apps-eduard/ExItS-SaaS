@@ -49,7 +49,11 @@ public sealed record StartBusinessRequest(
     string? City = null,
     string? Region = null,
     string? PostalCode = null,
-    string? CountryCode = null);
+    string? CountryCode = null,
+    /// <summary>
+    /// Paid pre-organization checkout payment to attach and activate after org create.
+    /// </summary>
+    Guid? PaidPaymentTransactionId = null);
 
 public sealed record StartBusinessResultDto(
     Guid OrganizationId,
@@ -127,7 +131,7 @@ public sealed class StartBusinessForPersonalUser
     private readonly CreateTrialDefinition _createTrial;
     private readonly StartTrialSubscription _startTrial;
     private readonly EnsureMvpPosPlans _ensureMvpPosPlans;
-    private readonly CreatePendingSubscriptionPayment _createPendingPayment;
+    private readonly AttachAndActivatePaidSubscriptionPayment _attachAndActivatePaidPayment;
     private readonly GenerateEntitlementSnapshot _generateSnapshot;
     private readonly GrantProductAccess _grantProductAccess;
     private readonly IProductRepository _products;
@@ -162,7 +166,7 @@ public sealed class StartBusinessForPersonalUser
         CreateTrialDefinition createTrial,
         StartTrialSubscription startTrial,
         EnsureMvpPosPlans ensureMvpPosPlans,
-        CreatePendingSubscriptionPayment createPendingPayment,
+        AttachAndActivatePaidSubscriptionPayment attachAndActivatePaidPayment,
         GenerateEntitlementSnapshot generateSnapshot,
         GrantProductAccess grantProductAccess,
         IProductRepository products,
@@ -196,7 +200,7 @@ public sealed class StartBusinessForPersonalUser
         _createTrial = createTrial;
         _startTrial = startTrial;
         _ensureMvpPosPlans = ensureMvpPosPlans;
-        _createPendingPayment = createPendingPayment;
+        _attachAndActivatePaidPayment = attachAndActivatePaidPayment;
         _generateSnapshot = generateSnapshot;
         _grantProductAccess = grantProductAccess;
         _products = products;
@@ -439,35 +443,35 @@ public sealed class StartBusinessForPersonalUser
                 }
             }
 
-            if (request.PayNow)
+            if (request.PayNow && request.PaidPaymentTransactionId is null)
             {
-                var plan = await _plans.GetByIdAsync(catalog.Value.PlanId, cancellationToken).ConfigureAwait(false);
-                if (plan is null)
-                {
-                    return ApplicationResult<StartBusinessResultDto>.Failure(
-                        ApplicationErrorCodes.PlanNotFound,
-                        "Plan was not found.");
-                }
+                return ApplicationResult<StartBusinessResultDto>.Failure(
+                    ApplicationErrorCodes.PaymentNotConfirmed,
+                    "Complete subscription checkout before creating the organization. Create a personal subscription payment first.");
+            }
 
-                // Create authoritative pending checkout payment. Subscription activates only after Paid.
-                var pending = await _createPendingPayment
+            if (request.PaidPaymentTransactionId is Guid paidPaymentId)
+            {
+                var attached = await _attachAndActivatePaidPayment
                     .ExecuteAsync(
+                        paidPaymentId,
                         userId,
-                        plan.PlanKey,
-                        billingCycle,
                         organization.Id,
                         cancellationToken)
                     .ConfigureAwait(false);
-                if (!pending.IsSuccess || pending.Value is null)
+                if (!attached.IsSuccess || attached.Value is null)
                 {
                     return ApplicationResult<StartBusinessResultDto>.Failure(
-                        pending.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
-                        pending.ErrorMessage ?? "Could not create subscription payment.");
+                        attached.ErrorCode ?? ApplicationErrorCodes.PaymentNotConfirmed,
+                        attached.ErrorMessage ?? "Could not activate paid subscription payment.");
                 }
 
-                paymentTransactionId = pending.Value.Id;
-                paymentReferenceNumber = pending.Value.ReferenceNumber;
-                requiresCheckout = true;
+                paymentTransactionId = attached.Value.Id;
+                paymentReferenceNumber = attached.Value.ReferenceNumber;
+                subscriptionId = attached.Value.SubscriptionId;
+                entitlementActivated = attached.Value.SubscriptionActivated;
+                // Product access / owner role are granted inside attach+activate.
+                ownerRoleGranted = attached.Value.SubscriptionActivated;
             }
             else if (startAsTrial)
             {
@@ -504,7 +508,7 @@ public sealed class StartBusinessForPersonalUser
                     "Paid Start a Business requires PayNow with a successful payment. Start a trial, or subscribe with payment.");
             }
 
-            if (!requiresCheckout)
+            if (!requiresCheckout && request.PaidPaymentTransactionId is null)
             {
                 var snapshot = await _generateSnapshot
                     .ExecuteAsync(organization.Id, ProductCode.Create(productCode), cancellationToken: cancellationToken)
@@ -521,7 +525,7 @@ public sealed class StartBusinessForPersonalUser
             }
         }
 
-        if (request.ActivateProductAccess && entitlementActivated)
+        if (request.ActivateProductAccess && entitlementActivated && request.PaidPaymentTransactionId is null)
         {
             var access = await _grantProductAccess
                 .ExecuteAsync(

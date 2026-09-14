@@ -32,7 +32,7 @@ export function OrgBottomNav() {
     return null;
   }
 
-  if (location.pathname.startsWith("/onboarding")) {
+  if (location.pathname.startsWith("/onboarding") || location.pathname.startsWith("/subscription-checkout")) {
     return null;
   }
 

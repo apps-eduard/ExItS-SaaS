@@ -10,6 +10,7 @@ import {
 } from "@/api/platform/start-business-client";
 import { ensureOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { writePendingPostSubscriptionOnboarding } from "@/features/onboarding/post-subscription-onboarding";
+import { writePendingSubscriptionCheckout } from "@/features/subscription-checkout/pending-subscription-checkout";
 import {
   getPlanBillingQuote,
   parsePlanBillingCycle,
@@ -47,6 +48,8 @@ export function PersonalStartBusinessPage() {
   const planKey = (searchParams.get("planKey") ?? "").trim();
   const startAsTrial = parseBoolFlag(searchParams.get("trial"), true);
   const payNow = parseBoolFlag(searchParams.get("payNow"), false);
+  const paidContinue = parseBoolFlag(searchParams.get("paid"), false);
+  const paidPaymentTransactionId = (searchParams.get("paymentId") ?? "").trim();
   const billingCycle = parsePlanBillingCycle(searchParams.get("billing"));
 
   const [displayName, setDisplayName] = useState("");
@@ -62,6 +65,41 @@ export function PersonalStartBusinessPage() {
   const [countryCode, setCountryCode] = useState("PH");
   const [formError, setFormError] = useState<string | null>(null);
   const displayNameInputRef = useRef<HTMLInputElement>(null);
+
+  // Legacy payNow deep-link: send user through pre-org checkout first.
+  useEffect(() => {
+    if (!payNow || paidContinue || !planKey || !billingCycle) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { createPersonalSubscriptionPayment } = await import(
+          "@/api/platform/subscription-payment-client"
+        );
+        const payment = await createPersonalSubscriptionPayment({
+          planKey,
+          billingCycle,
+        });
+        if (cancelled) {
+          return;
+        }
+        writePendingSubscriptionCheckout({
+          paymentId: payment.id,
+          planKey: payment.planKey,
+          billingCycle: payment.billingCycle,
+        });
+        navigate(`/subscription-checkout/${payment.id}`, { replace: true });
+      } catch (error) {
+        if (!cancelled) {
+          setFormError(error instanceof Error ? error.message : t("subscriptionCheckout.errorDetail"));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [billingCycle, navigate, paidContinue, payNow, planKey, t]);
 
   function selectPrimaryBusinessType(typeId: string) {
     setPrimaryBusinessTypeId(typeId);
@@ -123,14 +161,16 @@ export function PersonalStartBusinessPage() {
       }
 
       const slug = slugPreview || ensureOrganizationSlug(name);
+      const usingPaidPayment = paidContinue && paidPaymentTransactionId.length > 0;
       return startBusiness({
         displayName: name,
         slug,
         primaryBusinessTypeId,
         planKey,
         billingCycle,
-        startAsTrial: startAsTrial && !payNow,
-        payNow,
+        startAsTrial: startAsTrial && !usingPaidPayment,
+        payNow: usingPaidPayment,
+        paidPaymentTransactionId: usingPaidPayment ? paidPaymentTransactionId : null,
         useMyContactDetails,
         contactEmail: nullIfBlank(contactEmail),
         contactPhone: nullIfBlank(contactPhone),
@@ -153,6 +193,8 @@ export function PersonalStartBusinessPage() {
         businessTypeDescription: selectedType?.description ?? null,
       });
 
+      const nextRoute = "/onboarding";
+
       clearBoundWorkspace();
       const sessionStatus = await refreshSession();
       if (sessionStatus !== "authenticated") {
@@ -162,12 +204,6 @@ export function PersonalStartBusinessPage() {
 
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
       const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
-      const nextRoute =
-        result.requiresCheckout && result.paymentTransactionId
-          ? `/subscription-checkout/${result.paymentTransactionId}`
-          : "/onboarding";
-      // Leave Personal-only routes before bind awaits (session is now Organization).
-      // PayNow checkout goes to subscription-checkout first; trial/paid-complete still go to onboarding.
       navigate(nextRoute, { replace: true });
 
       try {
@@ -198,6 +234,17 @@ export function PersonalStartBusinessPage() {
       setFormError(error instanceof Error ? error.message : t("personal.startBusiness.failed"));
     },
   });
+
+  if (payNow && !paidContinue) {
+    return (
+      <div data-testid="personal-start-business-redirect-checkout">
+        <LoadingSkeleton label={t("subscriptionCheckout.loading")} />
+        {formError ? (
+          <ErrorState title={t("subscriptionCheckout.errorTitle")} detail={formError} />
+        ) : null}
+      </div>
+    );
+  }
 
   if (!planKey) {
     return (

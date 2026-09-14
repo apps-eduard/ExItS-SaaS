@@ -1,11 +1,13 @@
 import { Check, Users } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   listCommercialPlans,
   type CommercialPlanDto,
 } from "@/api/platform/commercial-plans-client";
+import { createPersonalSubscriptionPayment } from "@/api/platform/subscription-payment-client";
+import { PlatformApiError } from "@/api/platform/platform-http";
 import { isFrontendLocalValidationMode } from "@/api/platform/local-validation-gate";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
@@ -26,6 +28,7 @@ import {
   type PlanCtaKind,
 } from "@/features/personal/start-business/plan-selection-meta";
 import { PlanPaymentSummary } from "@/features/personal/start-business/PlanPaymentSummary";
+import { writePendingSubscriptionCheckout } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
@@ -131,6 +134,47 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
   }, [plans, currentPlanKey]);
 
   const compareRows = useMemo(() => buildPlanCompareRows(plans), [plans]);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPlanKey, setCheckoutPlanKey] = useState<string | null>(null);
+
+  const startCheckoutMutation = useMutation({
+    mutationFn: async (args: { planKey: string; billingCycle: PlanBillingCycle }) => {
+      const payment = await createPersonalSubscriptionPayment({
+        planKey: args.planKey,
+        billingCycle: args.billingCycle,
+      });
+      writePendingSubscriptionCheckout({
+        paymentId: payment.id,
+        planKey: payment.planKey,
+        billingCycle: payment.billingCycle,
+      });
+      return payment;
+    },
+    onSuccess: (payment) => {
+      setCheckoutError(null);
+      setCheckoutPlanKey(null);
+      navigate(`/subscription-checkout/${payment.id}`, { replace: false });
+    },
+    onError: (error) => {
+      setCheckoutPlanKey(null);
+      if (error instanceof PlatformApiError) {
+        if (error.status === 404) {
+          setCheckoutError(
+            error.problem.detail?.trim()
+            || t("personal.explore.checkoutApiMissing"),
+          );
+          return;
+        }
+        setCheckoutError(
+          error.problem.detail?.trim()
+          || error.message
+          || t("subscriptionCheckout.errorDetail"),
+        );
+        return;
+      }
+      setCheckoutError(error instanceof Error ? error.message : t("subscriptionCheckout.errorDetail"));
+    },
+  });
 
   function openCompare() {
     setCompareOpen(true);
@@ -179,6 +223,12 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
           backLabel={t(personalPageBackNav.more.labelKey)}
           backTestId="page-header-back-explore-pos"
         />
+
+        {checkoutError ? (
+          <Notice tone="danger" title={t("personal.explore.checkoutFailedTitle")} testId="explore-checkout-error">
+            {checkoutError}
+          </Notice>
+        ) : null}
 
         {plans.length === 0 ? (
           <EmptyState
@@ -408,13 +458,18 @@ export function PersonalExplorePosPage({ currentPlanKey = null }: ExplorePosPage
                                   type="button"
                                   variant={trialAvailable ? "ghost" : "default"}
                                   data-testid={`explore-subscribe-${planKey}`}
-                                  onClick={() =>
-                                    navigate(
-                                      `/personal/start-business?planKey=${encodeURIComponent(planKey)}&trial=0&payNow=1&billing=${billing}`,
-                                    )
-                                  }
+                                  disabled={startCheckoutMutation.isPending}
+                                  onClick={() => {
+                                    setCheckoutPlanKey(planKey);
+                                    startCheckoutMutation.mutate({
+                                      planKey,
+                                      billingCycle: billing,
+                                    });
+                                  }}
                                 >
-                                  {ctaLabel(ctaKind, plan.displayName, t)}
+                                  {startCheckoutMutation.isPending && checkoutPlanKey === planKey
+                                    ? t("subscriptionCheckout.processing")
+                                    : ctaLabel(ctaKind, plan.displayName, t)}
                                 </Button>
                               ) : null}
                               {!trialAvailable && !localValidation ? (

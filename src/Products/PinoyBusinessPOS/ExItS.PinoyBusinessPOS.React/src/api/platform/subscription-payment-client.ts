@@ -135,11 +135,95 @@ function paymentPath(organizationId: string, paymentId: string, suffix = ""): st
   return `/api/v1/platform/organizations/${organizationId}/subscription-payments/${paymentId}${suffix}`;
 }
 
+function personalPaymentPath(paymentId: string, suffix = ""): string {
+  return `/api/v1/personal/subscription-payments/${paymentId}${suffix}`;
+}
+
+export async function createPersonalSubscriptionPayment(
+  request: { planKey: string; billingCycle: string },
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: "/api/v1/personal/subscription-payments",
+    body: {
+      planKey: request.planKey,
+      billingCycle: request.billingCycle,
+    },
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function getPersonalSubscriptionPayment(
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    path: personalPaymentPath(paymentId),
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function processPersonalSubscriptionPaymentSimulator(
+  paymentId: string,
+  request: ProcessSubscriptionPaymentRequest,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const body = {
+    channel: request.channel,
+    cardNumber: request.cardNumber ?? null,
+    cardExpiry: request.cardExpiry ?? null,
+    cardName: request.cardName ?? null,
+    cardCvv: request.cardCvv ?? null,
+    simulationOutcome: request.simulationOutcome ?? null,
+  };
+
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/process"),
+    body,
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function retryPersonalSubscriptionPayment(
+  paymentId: string,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/retry"),
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+export async function selectPersonalSubscriptionPaymentChannel(
+  paymentId: string,
+  channel: SubscriptionPaymentChannel,
+  signal?: AbortSignal,
+): Promise<SubscriptionPaymentTransactionDto> {
+  const raw = await platformRequest<unknown>({
+    method: "POST",
+    path: personalPaymentPath(paymentId, "/select-channel"),
+    body: { channel },
+    signal,
+  });
+  return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
+}
+
+/** @deprecated Prefer personal pre-org APIs for new checkout. Kept for org-attached payments. */
 export async function getSubscriptionPayment(
   organizationId: string,
   paymentId: string,
   signal?: AbortSignal,
 ): Promise<SubscriptionPaymentTransactionDto> {
+  if (!organizationId) {
+    return getPersonalSubscriptionPayment(paymentId, signal);
+  }
   const raw = await platformRequest<unknown>({
     path: paymentPath(organizationId, paymentId),
     signal,
@@ -147,12 +231,16 @@ export async function getSubscriptionPayment(
   return subscriptionPaymentTransactionSchema.parse(normalizePayment(raw));
 }
 
+/** @deprecated Prefer personal pre-org APIs for new checkout. Kept for org-attached payments. */
 export async function processSubscriptionPaymentSimulator(
   organizationId: string,
   paymentId: string,
   request: ProcessSubscriptionPaymentRequest,
   signal?: AbortSignal,
 ): Promise<SubscriptionPaymentTransactionDto> {
+  if (!organizationId) {
+    return processPersonalSubscriptionPaymentSimulator(paymentId, request, signal);
+  }
   const body = {
     channel: request.channel,
     cardNumber: request.cardNumber ?? null,

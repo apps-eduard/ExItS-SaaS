@@ -15,6 +15,7 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
         var record = await db.SubscriptionPaymentTransactions
             .Include(p => p.Activities)
             .AsSplitQuery()
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id.Value, cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : SubscriptionPaymentTransactionMapper.ToDomain(record);
@@ -27,6 +28,7 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
         var record = await db.SubscriptionPaymentTransactions
             .Include(p => p.Activities)
             .AsSplitQuery()
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.ReferenceNumber == referenceNumber, cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : SubscriptionPaymentTransactionMapper.ToDomain(record);
@@ -34,8 +36,6 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
 
     public async Task<long> GetNextSequenceAsync(CancellationToken cancellationToken = default)
     {
-        // Postgres sequence-like counter via max+1 under advisory lock is overkill for LV;
-        // use count+1 with unique constraint on reference for safety.
         var count = await db.SubscriptionPaymentTransactions.LongCountAsync(cancellationToken)
             .ConfigureAwait(false);
         return count + 1;
@@ -54,11 +54,64 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
         SubscriptionPaymentTransaction payment,
         CancellationToken cancellationToken = default)
     {
-        var record = await db.SubscriptionPaymentTransactions
-            .Include(p => p.Activities)
-            .FirstAsync(p => p.Id == payment.Id.Value, cancellationToken)
+        var affected = await db.SubscriptionPaymentTransactions
+            .Where(p => p.Id == payment.Id.Value)
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(p => p.OrganizationId, payment.OrganizationId?.Value)
+                    .SetProperty(p => p.SubscriptionId, payment.SubscriptionId?.Value)
+                    .SetProperty(p => p.Channel, payment.Channel?.ToString())
+                    .SetProperty(p => p.Status, payment.Status.ToString())
+                    .SetProperty(p => p.ProviderReference, payment.ProviderReference)
+                    .SetProperty(p => p.CardBrand, payment.CardBrand)
+                    .SetProperty(p => p.CardLast4, payment.CardLast4)
+                    .SetProperty(p => p.FailureCode, payment.FailureCode)
+                    .SetProperty(p => p.FailureReason, payment.FailureReason)
+                    .SetProperty(p => p.ProcessingAtUtc, payment.ProcessingAtUtc)
+                    .SetProperty(p => p.PaidAtUtc, payment.PaidAtUtc)
+                    .SetProperty(p => p.FailedAtUtc, payment.FailedAtUtc)
+                    .SetProperty(p => p.CancelledAtUtc, payment.CancelledAtUtc)
+                    .SetProperty(p => p.ExpiredAtUtc, payment.ExpiredAtUtc)
+                    .SetProperty(p => p.PeriodStartUtc, payment.PeriodStartUtc)
+                    .SetProperty(p => p.PeriodEndUtc, payment.PeriodEndUtc)
+                    .SetProperty(p => p.SubscriptionActivated, payment.SubscriptionActivated),
+                cancellationToken)
             .ConfigureAwait(false);
-        SubscriptionPaymentTransactionMapper.ApplyToRecord(payment, record);
+
+        if (affected == 0)
+        {
+            throw new InvalidOperationException(
+                $"Subscription payment {payment.Id.Value:D} was not found for update.");
+        }
+
+        var existingActivityIds = await db.SubscriptionPaymentActivities
+            .AsNoTracking()
+            .Where(a => a.PaymentId == payment.Id.Value)
+            .Select(a => a.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var known = existingActivityIds.ToHashSet();
+
+        foreach (var activity in payment.Activities)
+        {
+            if (known.Contains(activity.Id))
+            {
+                continue;
+            }
+
+            await db.SubscriptionPaymentActivities
+                .AddAsync(
+                    new SubscriptionPaymentActivityRecord
+                    {
+                        Id = activity.Id,
+                        PaymentId = payment.Id.Value,
+                        EventType = activity.EventType,
+                        Message = activity.Message,
+                        OccurredAtUtc = activity.OccurredAtUtc
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     public async Task<IReadOnlyList<SubscriptionPaymentTransaction>> ListRecentAsync(
@@ -68,6 +121,7 @@ internal sealed class SubscriptionPaymentTransactionRepository(PlatformDbContext
         var records = await db.SubscriptionPaymentTransactions
             .Include(p => p.Activities)
             .AsSplitQuery()
+            .AsNoTracking()
             .OrderByDescending(p => p.CreatedAtUtc)
             .Take(take)
             .ToListAsync(cancellationToken)

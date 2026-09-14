@@ -194,6 +194,30 @@ public sealed class SubscriptionPaymentTransaction
         OrganizationId ??= organizationId;
     }
 
+    /// <summary>
+    /// Records channel choice while remaining Pending (pre-process UX).
+    /// Does not begin provider processing.
+    /// </summary>
+    public void SelectChannel(SubscriptionPaymentChannel channel, DateTimeOffset utcNow)
+    {
+        DomainTime.EnsureUtc(utcNow);
+        EnsureMutable();
+        if (Status != SubscriptionPaymentStatus.Pending)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPaymentStatusTransition,
+                $"Cannot select channel from status {Status}.");
+        }
+
+        if (Channel == channel)
+        {
+            return;
+        }
+
+        Channel = channel;
+        AddActivity("ChannelSelected", $"{channel} selected", utcNow);
+    }
+
     public void BeginProcessing(
         SubscriptionPaymentChannel channel,
         string providerReference,

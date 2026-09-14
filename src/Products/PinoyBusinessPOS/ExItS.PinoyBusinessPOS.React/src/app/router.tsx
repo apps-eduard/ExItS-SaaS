@@ -23,6 +23,7 @@ import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscr
 import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
 import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
 import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
+import { PreOrgCheckoutShell } from "@/features/subscription-checkout/PreOrgCheckoutShell";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
 import { WarehouseIndexPage } from "@/features/warehouse/WarehouseIndexPage";
@@ -320,6 +321,21 @@ export const appRoutes = [
         ),
       },
       {
+        path: "/subscription-checkout",
+        element: (
+          <RequireSession>
+            <RequirePersonalSession>
+              <PreOrgCheckoutShell />
+            </RequirePersonalSession>
+          </RequireSession>
+        ),
+        children: [
+          { path: ":paymentId", element: <SubscriptionCheckoutPage /> },
+          { path: ":paymentId/result", element: <PaymentResultPage /> },
+          { path: ":paymentId/:channel", element: <SubscriptionPaymentSimulatorPage /> },
+        ],
+      },
+      {
         path: "/",
         element: (
           <RequireSession>
@@ -339,30 +355,6 @@ export const appRoutes = [
             element: (
               <RequireOrganizationSession>
                 <PostSubscriptionOnboardingPage />
-              </RequireOrganizationSession>
-            ),
-          },
-          {
-            path: "subscription-checkout/:paymentId",
-            element: (
-              <RequireOrganizationSession>
-                <SubscriptionCheckoutPage />
-              </RequireOrganizationSession>
-            ),
-          },
-          {
-            path: "subscription-checkout/:paymentId/result",
-            element: (
-              <RequireOrganizationSession>
-                <PaymentResultPage />
-              </RequireOrganizationSession>
-            ),
-          },
-          {
-            path: "subscription-checkout/:paymentId/:channel",
-            element: (
-              <RequireOrganizationSession>
-                <SubscriptionPaymentSimulatorPage />
               </RequireOrganizationSession>
             ),
           },
