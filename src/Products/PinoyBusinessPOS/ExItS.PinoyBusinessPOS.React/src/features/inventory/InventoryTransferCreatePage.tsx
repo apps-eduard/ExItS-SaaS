@@ -18,7 +18,11 @@ import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
+import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
+import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { SearchField } from "@/components/exits/SearchField";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
 import {
@@ -28,6 +32,7 @@ import {
   productDemandExcludingLine,
   type TransferLineStockIssue,
 } from "@/features/inventory/inventory-transfer-stock-guard";
+import { InventoryTransferProductSelection } from "@/features/inventory/InventoryTransferProductSelection";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -73,6 +78,7 @@ export function InventoryTransferCreatePage() {
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [lotByProduct, setLotByProduct] = useState<Record<string, string>>({});
@@ -80,6 +86,9 @@ export function InventoryTransferCreatePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const operationIdRef = useRef<string | null>(null);
+  const { layout: pickerLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
+  });
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -152,10 +161,40 @@ export function InventoryTransferCreatePage() {
     );
   }, [availabilityByProduct]);
 
-  const pickerRows = useMemo(
-    () => (pickerQuery.data?.items ?? []).filter((row) => row.isTracked),
-    [pickerQuery.data?.items],
-  );
+  const pickerRows = useMemo(() => {
+    const tracked = (pickerQuery.data?.items ?? []).filter((row) => row.isTracked);
+    if (categoryIds.length === 0) {
+      return tracked;
+    }
+    const selected = new Set(categoryIds);
+    return tracked.filter(
+      (row) => row.categoryId != null && selected.has(row.categoryId),
+    );
+  }, [pickerQuery.data?.items, categoryIds]);
+
+  const transferCategoryOptions = useMemo(() => {
+    const counts = new Map<string, { name: string; count: number }>();
+    for (const row of (pickerQuery.data?.items ?? []).filter((r) => r.isTracked)) {
+      const id = row.categoryId?.trim();
+      if (!id) {
+        continue;
+      }
+      const name = row.categoryName?.trim() || id;
+      const existing = counts.get(id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(id, { name, count: 1 });
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => a[1].name.localeCompare(b[1].name, undefined, { sensitivity: "base" }))
+      .map(([categoryId, meta]) => ({
+        categoryId,
+        name: meta.name,
+        count: meta.count,
+      }));
+  }, [pickerQuery.data?.items]);
 
   function stockIssueMessage(issue: TransferLineStockIssue, available: number, uom: string): string {
     switch (issue) {
@@ -659,123 +698,66 @@ export function InventoryTransferCreatePage() {
           </h2>
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.baseUomHint")}</p>
         </div>
-        <SearchField
-          label={t("transfer.searchProducts")}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onClear={() => setSearch("")}
-          placeholder={t("transfer.searchProducts")}
-          data-testid="transfer-product-search"
-        />
+        <ProductSelectionToolbar
+          className="transfer-product-selection__filters"
+          testId="transfer-product-filters"
+        >
+          {transferCategoryOptions.length > 0 ? (
+            <ProductCategoryMultiSelect
+              categories={transferCategoryOptions}
+              selectedIds={categoryIds}
+              onChange={setCategoryIds}
+              placeholder={t("purchasing.categoriesPlaceholder")}
+              selectedCountLabel={(count) =>
+                t("purchasing.categoriesSelected").replace("{count}", String(count))
+              }
+              selectAllLabel={t("purchasing.selectAllCategories")}
+              clearAllLabel={t("purchasing.deselectAllCategories")}
+              searchPlaceholder={t("catalog.searchCategories")}
+              menuLabel={t("purchasing.categoryFilter")}
+              aria-label={t("purchasing.categoryFilter")}
+              testId="transfer-category-multiselect"
+              className="transfer-category-multiselect"
+            />
+          ) : null}
+          <SearchField
+            label={t("transfer.searchProducts")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={t("transfer.searchProducts")}
+            data-testid="transfer-product-search"
+            containerClassName="transfer-product-selection__search"
+          />
+        </ProductSelectionToolbar>
         {pickerQuery.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
         {!pickerQuery.isLoading && pickerRows.length === 0 ? (
           <EmptyState
-              align="center"
-              icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />} title={t("transfer.noProducts")} detail={t("transfer.noProductsDetail")} />
+            align="center"
+            icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
+            title={t("transfer.noProducts")}
+            detail={t("transfer.noProductsDetail")}
+          />
         ) : null}
         {pickerRows.length > 0 ? (
-          <ul
-            className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2"
-            data-testid="transfer-product-picker"
-          >
-            {pickerRows.map((row) => {
-              const tracksExpiration = row.tracksExpiration === true;
-              const lots = lotsCache[row.productId] ?? [];
-              const available = Math.max(0, row.onHandQuantity);
-              const outOfStock = available <= 0;
-              const selectedLotId = lotByProduct[row.productId] ?? "";
-              const selectedLot = lots.find((l) => l.lotId === selectedLotId);
-              const lotOut =
-                tracksExpiration && selectedLot != null && selectedLot.quantityOnHand <= 0;
-              const addDisabled = !online || outOfStock || lotOut;
-              return (
-                <li
-                  key={row.productId}
-                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-                  data-testid={`transfer-picker-row-${row.productId}`}
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium text-foreground">
-                        {row.name}
-                      </p>
-                      <p
-                        className={cn(
-                          "m-0 truncate text-[length:var(--exits-text-xs)]",
-                          outOfStock ? "text-danger" : "text-muted",
-                        )}
-                        data-testid={`transfer-picker-available-${row.productId}`}
-                      >
-                        {outOfStock
-                          ? t("transfer.outOfStock")
-                          : formatAvailable(available, row.unitOfMeasure)}
-                        {tracksExpiration ? ` · ${t("transfer.tracksExpiry")}` : ""}
-                      </p>
-                    </div>
-                    {outOfStock ? (
-                      <span
-                        className="shrink-0 text-[length:var(--exits-text-xs)] text-muted"
-                        data-testid={`transfer-picker-unavailable-${row.productId}`}
-                      >
-                        {t("transfer.unavailable")}
-                      </span>
-                    ) : (
-                      <>
-                        <label className="sr-only" htmlFor={`transfer-qty-${row.productId}`}>
-                          {t("transfer.quantity")}
-                        </label>
-                        <input
-                          id={`transfer-qty-${row.productId}`}
-                          type="number"
-                          inputMode="decimal"
-                          step="any"
-                          min={0}
-                          className={cn(qtyFieldClassName, "w-[5.5rem] shrink-0")}
-                          placeholder={t("transfer.quantity")}
-                          value={qtyByProduct[row.productId] ?? ""}
-                          onChange={(e) =>
-                            setQtyByProduct((prev) => ({ ...prev, [row.productId]: e.target.value }))
-                          }
-                          data-testid={`transfer-picker-qty-${row.productId}`}
-                        />
-                        <Button
-                          type="button"
-                          size="icon"
-                          className="shrink-0 rounded-full"
-                          disabled={addDisabled}
-                          aria-label={t("transfer.addProduct")}
-                          onClick={() => void addLine(row)}
-                          data-testid={`transfer-add-${row.productId}`}
-                        >
-                          <Plus className="size-4" aria-hidden />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  {tracksExpiration && !outOfStock ? (
-                    <select
-                      className="exits-select mt-2"
-                      value={lotByProduct[row.productId] ?? ""}
-                      onFocus={() => void ensureLots(row.productId, true)}
-                      onChange={(e) =>
-                        setLotByProduct((prev) => ({ ...prev, [row.productId]: e.target.value }))
-                      }
-                      data-testid={`transfer-lot-${row.productId}`}
-                    >
-                      <option value="">{t("transfer.selectLot")}</option>
-                      {lots.map((lot) => (
-                        <option key={lot.lotId} value={lot.lotId} disabled={lot.quantityOnHand <= 0}>
-                          {(lot.lotNumber ?? t("transfer.lot")) +
-                            ` · ${lot.expirationDate ?? "—"} · ${lot.quantityOnHand}`}
-                          {lot.quantityOnHand <= 0 ? ` (${t("transfer.outOfStock")})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+          <InventoryTransferProductSelection
+            layout={pickerLayout}
+            products={pickerRows}
+            qtyByProduct={qtyByProduct}
+            lotByProduct={lotByProduct}
+            lotsCache={lotsCache}
+            online={online}
+            formatAvailable={formatAvailable}
+            onQtyChange={(productId, value) =>
+              setQtyByProduct((prev) => ({ ...prev, [productId]: value }))
+            }
+            onLotChange={(productId, lotId) =>
+              setLotByProduct((prev) => ({ ...prev, [productId]: lotId }))
+            }
+            onLotFocus={(productId) => void ensureLots(productId, true)}
+            onAddProduct={(row) => void addLine(row)}
+            t={t}
+          />
         ) : null}
       </section>
 

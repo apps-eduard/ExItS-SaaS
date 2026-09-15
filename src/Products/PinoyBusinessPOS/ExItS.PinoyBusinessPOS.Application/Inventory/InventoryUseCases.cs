@@ -875,6 +875,15 @@ public sealed class DisableInventoryTracking
                 IngredientInventoryTracking.RequiresTrackedMessage);
         }
 
+        var shareGate = ConnectedBuyerSharingRules.ValidateCanDisableTracking(
+            product.CanExposeToConnectedBuyers);
+        if (!shareGate.IsSuccess)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                shareGate.ErrorCode!,
+                shareGate.ErrorMessage!);
+        }
+
         try
         {
             account.Disable(_clock.UtcNow);

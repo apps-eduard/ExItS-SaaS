@@ -522,6 +522,7 @@ builder.Services.AddScoped<UpdatePurchaseOrder>();
 builder.Services.AddScoped<SubmitPurchaseOrder>();
 builder.Services.AddScoped<CancelPurchaseOrder>();
 builder.Services.AddScoped<AcceptConnectedPoChanges>();
+builder.Services.AddScoped<DeclineConnectedPoChanges>();
 builder.Services.AddScoped<ReceivePurchaseOrder>();
 builder.Services.AddScoped<VoidGoodsReceipt>();
 builder.Services.AddScoped<QuotationQueryService>();

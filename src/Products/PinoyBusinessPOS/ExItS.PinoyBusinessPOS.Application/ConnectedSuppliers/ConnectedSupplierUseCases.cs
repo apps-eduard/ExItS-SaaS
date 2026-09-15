@@ -134,7 +134,9 @@ public sealed record ConnectedPurchaseOrderLineDto(
     decimal? ConfirmedQty = null,
     string Availability = "Pending",
     decimal ProposedLineTotal = 0m,
-    decimal ConfirmedLineTotal = 0m);
+    decimal ConfirmedLineTotal = 0m,
+    decimal? ProposedUnitPrice = null,
+    decimal? ConfirmedUnitPrice = null);
 public sealed record ConnectedPurchaseOrderDto(
     Guid ConnectedPurchaseOrderId,
     Guid RelationshipId,
@@ -161,6 +163,10 @@ public sealed record ConnectedPurchaseOrderDto(
     string? BuyerReceivingStatus = null,
     string PaymentTerm = "Cash",
     string PaymentTermLabel = "Cash",
+    string? SubmittedPaymentTerm = null,
+    string? SubmittedPaymentTermLabel = null,
+    string? ProposedPaymentTerm = null,
+    string? ProposedPaymentTermLabel = null,
     decimal ProposedTotalAmount = 0m,
     decimal ConfirmedTotalAmount = 0m,
     DateTimeOffset? ChangesProposedAtUtc = null,
@@ -168,8 +174,14 @@ public sealed record ConnectedPurchaseOrderDto(
     Guid? SupplierBranchId = null,
     string? SupplierBranchName = null);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
-public sealed record ProposeIncomingOrderLineRequest(Guid ProductId, decimal ProposedQty, bool Unavailable = false);
-public sealed record ProposeIncomingOrderChangesRequest(IReadOnlyList<ProposeIncomingOrderLineRequest> Lines);
+public sealed record ProposeIncomingOrderLineRequest(
+    Guid ProductId,
+    decimal ProposedQty,
+    bool Unavailable = false,
+    decimal? ProposedUnitPrice = null);
+public sealed record ProposeIncomingOrderChangesRequest(
+    IReadOnlyList<ProposeIncomingOrderLineRequest> Lines,
+    string? ProposedPaymentTerm = null);
 public sealed record DraftReviewLineRequest(Guid SupplierProductId, decimal UnitPriceSnapshot);
 public sealed record RevalidateConnectedPoDraftRequest(IReadOnlyList<DraftReviewLineRequest> Lines);
 public enum ConnectedPoDraftReviewStatus { Unchanged, PriceChanged, Unavailable, RelationshipInactive }
@@ -372,8 +384,12 @@ public static class ConnectedSupplierMapper
         ConnectedPoDisplayStatus.ForSupplier(x),
         buyerDisplayName,
         buyerReceivingStatus,
+        ConnectedPoPaymentTerms.ToApi(x.EffectivePaymentTerm),
+        ConnectedPoPaymentTerms.ToUiLabel(x.EffectivePaymentTerm),
         ConnectedPoPaymentTerms.ToApi(x.PaymentTerm),
         ConnectedPoPaymentTerms.ToUiLabel(x.PaymentTerm),
+        x.ProposedPaymentTerm is { } ppt ? ConnectedPoPaymentTerms.ToApi(ppt) : null,
+        x.ProposedPaymentTerm is { } ppt2 ? ConnectedPoPaymentTerms.ToUiLabel(ppt2) : null,
         x.ProposedTotalAmount,
         x.ConfirmedTotalAmount,
         x.ChangesProposedAtUtc,
@@ -393,7 +409,9 @@ public static class ConnectedSupplierMapper
         l.ConfirmedQty,
         l.Availability.ToString(),
         l.ProposedLineTotal,
-        l.ConfirmedLineTotal);
+        l.ConfirmedLineTotal,
+        l.ProposedUnitPrice,
+        l.ConfirmedUnitPrice);
 }
 
 internal static class ConnectedSupplierUseCaseGuard
@@ -783,6 +801,7 @@ public sealed class RespondConnection
     private readonly PartyBranchAccessService? _partyBranchAccess;
     private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
     private readonly IOrganizationBranchDirectory? _orgBranches;
+    private readonly Inventory.IInventoryRepository? _inventory;
     private readonly TimeProvider _clock;
 
     public RespondConnection(
@@ -797,7 +816,8 @@ public sealed class RespondConnection
         ISupplierRepository? suppliers = null,
         PartyBranchAccessService? partyBranchAccess = null,
         IPartyBranchAccessActorAccessor? actorAccessor = null,
-        IOrganizationBranchDirectory? orgBranches = null)
+        IOrganizationBranchDirectory? orgBranches = null,
+        Inventory.IInventoryRepository? inventory = null)
     {
         _relationships = relationships;
         _uow = uow;
@@ -811,6 +831,7 @@ public sealed class RespondConnection
         _partyBranchAccess = partyBranchAccess;
         _actorAccessor = actorAccessor;
         _orgBranches = orgBranches;
+        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -875,7 +896,8 @@ public sealed class RespondConnection
                                 _products,
                                 _exposures,
                                 utcNow,
-                                ct)
+                                ct,
+                                _inventory)
                             .ConfigureAwait(false);
                     }
                 }
@@ -895,7 +917,8 @@ public sealed class RespondConnection
                                 _products,
                                 _exposures,
                                 utcNow,
-                                ct)
+                                ct,
+                                _inventory)
                             .ConfigureAwait(false);
                     }
                 }
@@ -1510,6 +1533,7 @@ public sealed class SetBuyerProductShares
     private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly ICatalogProductRepository _products;
+    private readonly Inventory.IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -1518,6 +1542,7 @@ public sealed class SetBuyerProductShares
         ISupplierProductExposureRepository exposures,
         IConnectedBuyerProductShareRepository shares,
         ICatalogProductRepository products,
+        Inventory.IInventoryRepository inventory,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null)
@@ -1526,6 +1551,7 @@ public sealed class SetBuyerProductShares
         _exposures = exposures;
         _shares = shares;
         _products = products;
+        _inventory = inventory;
         _uow = uow;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -1575,6 +1601,17 @@ public sealed class SetBuyerProductShares
 
             if (item.IsShared)
             {
+                var tracked = await Catalog.ConnectedBuyerSharingRules
+                    .IsTrackedAsync(_inventory, supplier, productId, ct)
+                    .ConfigureAwait(false);
+                var shareGate = Catalog.ConnectedBuyerSharingRules.ValidateCanEnableSharing(tracked);
+                if (!shareGate.IsSuccess)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedBuyerProductShareDto>>(
+                        shareGate.ErrorCode!,
+                        shareGate.ErrorMessage!);
+                }
+
                 if (product.DefaultConnectedPoPrice is null)
                 {
                     if (item.EstablishDefaultPoPrice is null)
@@ -1596,12 +1633,12 @@ public sealed class SetBuyerProductShares
                     }
 
                     await _products.UpdateAsync(product, ct).ConfigureAwait(false);
-                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct)
+                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct, _inventory)
                         .ConfigureAwait(false);
                 }
                 else if (!product.IsBlockedFromConnectedBuyers)
                 {
-                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct)
+                    await Catalog.ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct, _inventory)
                         .ConfigureAwait(false);
                 }
             }
@@ -2159,9 +2196,16 @@ public sealed class ProposeIncomingOrderChanges
                 .Select(l => new ConnectedPoLineProposal(
                     CatalogProductId.From(l.ProductId),
                     l.ProposedQty,
-                    l.Unavailable))
+                    l.Unavailable,
+                    l.ProposedUnitPrice))
                 .ToList();
-            o.ProposeLineChanges(proposals, _clock.GetUtcNow(), actorId);
+            ConnectedPoPaymentTerm? proposedPayment = null;
+            if (!string.IsNullOrWhiteSpace(request.ProposedPaymentTerm))
+            {
+                proposedPayment = ConnectedPoPaymentTerms.ParseRequired(request.ProposedPaymentTerm);
+            }
+
+            o.ProposeLineChanges(proposals, _clock.GetUtcNow(), actorId, proposedPayment);
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 

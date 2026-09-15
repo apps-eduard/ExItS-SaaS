@@ -5,22 +5,23 @@ import type {
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
   applyConnectedQuantityDelta,
+  availablePurchaseQty,
   buildConnectedCategoryOptions,
   buildConnectedReadyProducts,
   connectedCategoryFilterFromValues,
   connectedCategoryFilterToValues,
-  connectedLinesViolateStock,
   emptyConnectedCategoryFilter,
   filterConnectedReadyProducts,
   formatLineMath,
+  formatSupplierAvailabilityLabel,
   formatUnitOfMeasureLabel,
   formatUnitPriceLabel,
   isConnectedCategoryFilterActive,
   lineTotal,
-  maxOrderablePurchaseQty,
   mergeConnectedStock,
   orderSubtotal,
   PO_CATEGORY_NONE_OPTION,
+  requestedExceedsSupplierAvailability,
   resolveSupplierAvailability,
   retainCompatibleDraftLines,
 } from "@/features/purchasing/purchase-order-create-connected";
@@ -214,6 +215,81 @@ describe("purchase-order-create-connected", () => {
     expect(connectedCategoryFilterToValues(noneOnly)).toEqual([PO_CATEGORY_NONE_OPTION]);
   });
 
+  it("uses supplier exposure category for linked products, never buyer local category", () => {
+    const ready = buildConnectedReadyProducts(
+      [
+        link({
+          linkId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          buyerProductId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          supplierProductId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          supplierNameSnapshot: "Apple",
+          lastKnownOrderPrice: 40,
+        }),
+        link({
+          linkId: "10101010-1010-4010-8010-101010101010",
+          buyerProductId: "12121212-1212-4212-8212-121212121212",
+          supplierProductId: "13131313-1313-4313-8313-131313131313",
+          supplierNameSnapshot: "Banana",
+          lastKnownOrderPrice: 25,
+        }),
+        link({
+          linkId: "17171717-1717-4717-8717-171717171717",
+          buyerProductId: "18181818-1818-4818-8818-181818181818",
+          supplierProductId: "19191919-1919-4919-8919-191919191919",
+          supplierNameSnapshot: "Uncategorized Snack",
+          lastKnownOrderPrice: 10,
+        }),
+      ],
+      [
+        exposure({
+          exposureId: "14141414-1414-4414-8414-141414141414",
+          productId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          nameSnapshot: "Apple",
+          categoryNameSnapshot: "Fruits",
+          supplierOrderPrice: 40,
+          effectiveSupplierOrderPrice: 40,
+        }),
+        exposure({
+          exposureId: "15151515-1515-4515-8515-151515151515",
+          productId: "13131313-1313-4313-8313-131313131313",
+          nameSnapshot: "Banana",
+          categoryNameSnapshot: "Fruits",
+          supplierOrderPrice: 25,
+          effectiveSupplierOrderPrice: 25,
+        }),
+        exposure({
+          exposureId: "16161616-1616-4616-8616-161616161616",
+          productId: "19191919-1919-4919-8919-191919191919",
+          nameSnapshot: "Uncategorized Snack",
+          categoryNameSnapshot: null,
+          supplierOrderPrice: 10,
+          effectiveSupplierOrderPrice: 10,
+        }),
+      ],
+    );
+
+    expect(ready.map((p) => [p.productName, p.categoryName])).toEqual([
+      ["Apple", "Fruits"],
+      ["Banana", "Fruits"],
+      ["Uncategorized Snack", null],
+    ]);
+    // Buyer local category names must not appear on Create PO rows.
+    expect(ready.every((p) => p.categoryName !== "Fresh Produce")).toBe(true);
+    expect(ready.every((p) => p.categoryName !== "Produce")).toBe(true);
+
+    const options = buildConnectedCategoryOptions(ready, { noCategory: "No category" });
+    expect(options).toEqual([
+      { value: "Fruits", label: "Fruits", count: 2 },
+      { value: PO_CATEGORY_NONE_OPTION, label: "No category", count: 1 },
+    ]);
+
+    const fruitsOnly = connectedCategoryFilterFromValues(["Fruits"]);
+    expect(filterConnectedReadyProducts(ready, "", fruitsOnly).map((p) => p.productName)).toEqual([
+      "Apple",
+      "Banana",
+    ]);
+  });
+
   it("supports + Add, +/- qty, line total, and qty 0 remove", () => {
     const product = buildConnectedReadyProducts([
       link({
@@ -240,7 +316,13 @@ describe("purchase-order-create-connected", () => {
     expect(lines).toEqual([]);
   });
 
-  it("enforces supplier stock max and blocks out-of-stock add", () => {
+  it("allows over-order and surfaces availability labels / warnings", () => {
+    const t = (key: string) => {
+      if (key === "purchasing.supplierOutOfStock") return "Out of stock";
+      if (key === "purchasing.supplierAvailableNow") return "Available now: {qty} {unit}";
+      if (key === "purchasing.stockNotTracked") return "Stock not tracked";
+      return key;
+    };
     const base = buildConnectedReadyProducts([
       link({
         linkId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -252,32 +334,48 @@ describe("purchase-order-create-connected", () => {
 
     const out = { ...base, stockTracked: true, availableBaseQuantity: 0 };
     expect(resolveSupplierAvailability(out)).toEqual({ kind: "out_of_stock" });
-    expect(applyConnectedQuantityDelta([], out, 1)).toEqual([]);
+    expect(formatSupplierAvailabilityLabel(out, t)).toBe("Out of stock");
+    let lines = applyConnectedQuantityDelta([], out, 1);
+    expect(lines[0]?.orderedQty).toBe(1);
+    expect(requestedExceedsSupplierAvailability(out, 1)).toBe(true);
 
-    const limited = { ...base, stockTracked: true, availableBaseQuantity: 10 };
-    expect(resolveSupplierAvailability(limited)).toEqual({ kind: "available", quantity: 10 });
-    let lines = applyConnectedQuantityDelta([], limited, 1);
-    lines = applyConnectedQuantityDelta(lines, limited, 20);
-    expect(lines[0]?.orderedQty).toBe(10);
-    expect(connectedLinesViolateStock(lines, [limited])).toBe(false);
-    expect(connectedLinesViolateStock([{ ...lines[0]!, orderedQty: 11 }], [limited])).toBe(true);
+    const limited = {
+      ...base,
+      stockTracked: true,
+      availableBaseQuantity: 5,
+      unitOfMeasure: "Kg",
+      packageLabel: "Kg",
+    };
+    expect(resolveSupplierAvailability(limited)).toEqual({ kind: "available", quantity: 5 });
+    expect(formatSupplierAvailabilityLabel(limited, t)).toBe("Available now: 5 Kg");
+    expect(requestedExceedsSupplierAvailability(limited, 3)).toBe(false);
+    expect(requestedExceedsSupplierAvailability(limited, 5)).toBe(false);
+    expect(requestedExceedsSupplierAvailability(limited, 8)).toBe(true);
+    lines = applyConnectedQuantityDelta([], limited, 1);
+    lines = applyConnectedQuantityDelta(lines, limited, 7);
+    expect(lines[0]?.orderedQty).toBe(8);
 
     const cases = {
       ...base,
       multiplierToBase: 12,
       stockTracked: true,
       availableBaseQuantity: 24,
+      unitOfMeasure: "Pack",
+      packageLabel: "Pack",
     };
-    expect(maxOrderablePurchaseQty(cases)).toBe(2);
+    expect(availablePurchaseQty(cases)).toBe(2);
+    expect(formatSupplierAvailabilityLabel(cases, t)).toBe("Available now: 2 Pack");
     lines = applyConnectedQuantityDelta([], cases, 1);
     lines = applyConnectedQuantityDelta(lines, cases, 5);
-    expect(lines[0]?.orderedQty).toBe(2);
+    expect(lines[0]?.orderedQty).toBe(6);
+    expect(requestedExceedsSupplierAvailability(cases, 6)).toBe(true);
 
     const untracked = { ...base, stockTracked: false, availableBaseQuantity: null };
     expect(resolveSupplierAvailability(untracked)).toEqual({ kind: "untracked" });
     lines = applyConnectedQuantityDelta([], untracked, 1);
     lines = applyConnectedQuantityDelta(lines, untracked, 99);
     expect(lines[0]?.orderedQty).toBe(100);
+    expect(requestedExceedsSupplierAvailability(untracked, 100)).toBe(false);
   });
 
   it("merges supplier-branch stock onto ready products", () => {

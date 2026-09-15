@@ -216,8 +216,8 @@ public static class PurchaseMapper
             CanWithdrawConnected: connected?.CanBuyerWithdraw == true,
             CanReceiveConnected: (connected is null || connected.CanBuyerReceive)
                 && !po.Lines.Any(l => l.NeedsBuyerProductSetup),
-            PaymentTerm: ConnectedPoPaymentTerms.ToApi(connected?.PaymentTerm ?? po.PaymentTerm),
-            PaymentTermLabel: ConnectedPoPaymentTerms.ToUiLabel(connected?.PaymentTerm ?? po.PaymentTerm),
+            PaymentTerm: ConnectedPoPaymentTerms.ToApi(connected?.EffectivePaymentTerm ?? po.PaymentTerm),
+            PaymentTermLabel: ConnectedPoPaymentTerms.ToUiLabel(connected?.EffectivePaymentTerm ?? po.PaymentTerm),
             ProposedTotalAmount: connected?.ProposedTotalAmount,
             ConfirmedTotalAmount: connected is null ? null : connected.ConfirmedTotalAmount,
             ConnectedLines: connected?.Lines.Select(ConnectedSupplierMapper.MapLine).ToList(),
@@ -1045,6 +1045,10 @@ public sealed class CreatePurchaseOrder
                         ? actingBranchId
                         : (Guid?)null;
 
+            var paymentTerm = connectedEligibility?.Value is not null
+                ? ConnectedPoPaymentTerms.ParseRequired(request.PaymentTerm)
+                : ConnectedPoPaymentTerms.Parse(request.PaymentTerm);
+
             var po = PurchaseOrder.CreateDraft(
                 org,
                 supplierId,
@@ -1057,7 +1061,7 @@ public sealed class CreatePurchaseOrder
                 id: request.PurchaseOrderId is Guid poId && poId != Guid.Empty
                     ? PurchaseOrderId.From(poId)
                     : null,
-                paymentTerm: ConnectedPoPaymentTerms.Parse(request.PaymentTerm),
+                paymentTerm: paymentTerm,
                 createdBy: actorId == Guid.Empty ? null : actorId,
                 supplierBranchId: connectedEligibility?.Value?.Relationship.SupplierBranchId,
                 supplierBranchName: connectedEligibility?.Value?.Relationship.SupplierBranchNameSnapshot,
@@ -1693,7 +1697,6 @@ public sealed class CancelPurchaseOrder
             }
 
             var utcNow = _clock.GetUtcNow();
-            var rejectedProposedChanges = false;
             if (connected is not null)
             {
                 if (!connected.CanBuyerWithdraw)
@@ -1703,16 +1706,8 @@ public sealed class CancelPurchaseOrder
                         "This connected purchase order can no longer be withdrawn after the supplier responded.");
                 }
 
-                rejectedProposedChanges = connected.Status == ConnectedPurchaseOrderStatus.ChangesProposed;
-                if (rejectedProposedChanges)
-                {
-                    connected.RejectProposedChanges(utcNow);
-                }
-                else
-                {
-                    connected.WithdrawByBuyer(utcNow);
-                }
-
+                // Explicit cancel/withdraw — never treat proposal decline as cancel.
+                connected.WithdrawByBuyer(utcNow);
                 await _connectedOrders.UpdateAsync(connected, cancellationToken).ConfigureAwait(false);
             }
 
@@ -1726,14 +1721,10 @@ public sealed class CancelPurchaseOrder
                 await _notifications.PublishAsync(
                     org.Value,
                     connected.SupplierOrganizationId.Value,
-                    rejectedProposedChanges
-                        ? ConnectedPurchaseOrderNotificationTypes.ChangesRejected
-                        : ConnectedPurchaseOrderNotificationTypes.Withdrawn,
+                    ConnectedPurchaseOrderNotificationTypes.Withdrawn,
                     connected.Id.Value.ToString("D"),
-                    rejectedProposedChanges ? "Purchase order changes rejected" : "Purchase order withdrawn",
-                    rejectedProposedChanges
-                        ? $"Buyer rejected proposed changes for PO {poLabel}."
-                        : $"Buyer withdrew PO {poLabel}.",
+                    "Purchase order withdrawn",
+                    $"Buyer withdrew PO {poLabel}.",
                     cancellationToken).ConfigureAwait(false);
             }
 
@@ -1844,7 +1835,113 @@ public sealed class AcceptConnectedPoChanges
                 ConnectedPurchaseOrderNotificationTypes.ChangesAccepted,
                 connected.Id.Value.ToString("D"),
                 "Purchase order changes accepted",
-                $"{buyerName ?? "Buyer"} accepted revised quantities for PO {poLabel}.",
+                $"{buyerName ?? "Buyer"} accepted changes for PO {poLabel}.",
+                cancellationToken).ConfigureAwait(false);
+
+            return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+/// <summary>
+/// Buyer declines supplier-proposed revisions only. Returns the connected PO to New for re-response.
+/// Does not cancel the buyer purchase order.
+/// </summary>
+public sealed class DeclineConnectedPoChanges
+{
+    private readonly IPurchaseOrderRepository _orders;
+    private readonly IConnectedPurchaseOrderRepository _connectedOrders;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+
+    public DeclineConnectedPoChanges(
+        IPurchaseOrderRepository orders,
+        IConnectedPurchaseOrderRepository connectedOrders,
+        IPosUnitOfWork unitOfWork,
+        IPosCommercialAccessAccessor access,
+        TimeProvider? clock = null,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IConnectedSupplierRelationshipRepository? relationships = null)
+    {
+        _orders = orders;
+        _connectedOrders = connectedOrders;
+        _unitOfWork = unitOfWork;
+        _access = access;
+        _clock = clock ?? TimeProvider.System;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _relationships = relationships!;
+    }
+
+    public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid purchaseOrderId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        try
+        {
+            var org = PosOrganizationId.From(organizationId);
+            var id = PurchaseOrderId.From(purchaseOrderId);
+            var existing = await _orders.GetByIdAsync(org, id, cancellationToken).ConfigureAwait(false);
+            if (existing is null)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Purchase order was not found in this organization.");
+            }
+
+            var connected = await _connectedOrders
+                .GetByBuyerPurchaseOrderAsync(id, cancellationToken)
+                .ConfigureAwait(false);
+            if (connected is null || connected.BuyerOrganizationId != org)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ConnectedSupplierErrorCodes.IncomingOrderNotFound,
+                    "Connected purchase order was not found.");
+            }
+
+            var utcNow = _clock.GetUtcNow();
+            if (connected.Status == ConnectedPurchaseOrderStatus.New)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));
+            }
+
+            connected.RejectProposedChanges(utcNow, actorId == Guid.Empty ? null : actorId);
+            await _connectedOrders.UpdateAsync(connected, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+            var poLabel = existing.PoNumber ?? existing.Id.Value.ToString("D");
+            string? buyerName = null;
+            if (_relationships is not null)
+            {
+                var rel = await _relationships.GetAsync(connected.RelationshipId, cancellationToken).ConfigureAwait(false);
+                buyerName = rel?.BuyerDisplayNameSnapshot;
+            }
+
+            await _notifications.PublishAsync(
+                org.Value,
+                connected.SupplierOrganizationId.Value,
+                ConnectedPurchaseOrderNotificationTypes.ChangesRejected,
+                connected.Id.Value.ToString("D"),
+                "Purchase order changes declined",
+                $"{buyerName ?? "Buyer"} declined proposed changes to PO {poLabel}.",
                 cancellationToken).ConfigureAwait(false);
 
             return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));

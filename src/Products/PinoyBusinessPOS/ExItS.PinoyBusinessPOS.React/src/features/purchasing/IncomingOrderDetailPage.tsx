@@ -1,4 +1,4 @@
-import { Ban, Check, ChevronLeft, ClipboardList, PackageCheck, Play } from "lucide-react";
+import { Ban, Check, ChevronLeft, ClipboardList, PackageCheck, Play, Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -358,6 +358,7 @@ export function IncomingOrderDetailPage() {
 
       <PoDocumentSummary
         counterpartyLabel={t("incomingOrders.buyer")}
+        counterpartyIcon={<Building2 className="size-5" strokeWidth={1.75} />}
         counterpartyName={order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
         status={{ label: resolvedStatusLabel, tone: statusTone }}
         fields={summaryFields}

@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   acceptConnectedPurchaseOrderChanges,
   cancelPurchaseOrder,
+  declineConnectedPurchaseOrderChanges,
   getPurchaseOrder,
   isPurchaseOrderReceivable,
   listGoodsReceiptsForPurchaseOrder,
@@ -585,6 +587,7 @@ export function PurchaseOrderDetailPage() {
 
       <PoDocumentSummary
         counterpartyLabel={t("purchasing.seller")}
+        counterpartyIcon={<Store className="size-5" strokeWidth={1.75} />}
         counterpartyName={sellerName}
         status={{ label: resolvedStatusLabel, tone: statusTone }}
         fields={[
@@ -736,19 +739,35 @@ export function PurchaseOrderDetailPage() {
         )}
         <div className="po-document-actions__primary">
           {canAcceptChanges ? (
-            <Button
-              type="button"
-              disabled={busy}
-              onClick={() =>
-                void runAction(
-                  () => acceptConnectedPurchaseOrderChanges(workspace, purchaseOrderId),
-                  "purchasing.changesAccepted",
-                )
-              }
-              data-testid="po-accept-changes"
-            >
-              {t("purchasing.acceptChanges")}
-            </Button>
+            <>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  void runAction(
+                    () => acceptConnectedPurchaseOrderChanges(workspace, purchaseOrderId),
+                    "purchasing.changesAccepted",
+                  )
+                }
+                data-testid="po-accept-changes"
+              >
+                {t("purchasing.acceptChanges")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy}
+                onClick={() =>
+                  void runAction(
+                    () => declineConnectedPurchaseOrderChanges(workspace, purchaseOrderId),
+                    "purchasing.changesDeclined",
+                  )
+                }
+                data-testid="po-decline-changes"
+              >
+                {t("purchasing.declineChanges")}
+              </Button>
+            </>
           ) : null}
           {canReceive ? (
             <Button asChild data-testid="po-receive">

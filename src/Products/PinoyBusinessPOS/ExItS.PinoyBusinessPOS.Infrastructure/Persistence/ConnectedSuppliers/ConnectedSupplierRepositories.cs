@@ -28,13 +28,14 @@ internal sealed class SupplierProductExposureRepository(PosDbContext db) : ISupp
     public async Task<SupplierProductExposure?> GetByProductAsync(PosOrganizationId supplier,CatalogProductId productId,CancellationToken ct=default)
     {var r=await db.SupplierProductExposures.AsNoTracking().SingleOrDefaultAsync(x=>x.SupplierOrganizationId==supplier.Value&&x.ProductId==productId.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<IReadOnlyList<SupplierProductExposure>> ListAsync(PosOrganizationId supplier,CancellationToken ct=default)=>
-        (await db.SupplierProductExposures.AsNoTracking().Where(x=>x.SupplierOrganizationId==supplier.Value).OrderBy(x=>x.NameSnapshot).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
+        (await db.SupplierProductExposures.AsNoTracking().Where(x=>x.SupplierOrganizationId==supplier.Value).OrderBy(x=>x.NameSnapshot).ToListAsync(ct))
+            .Select(x => ConnectedSupplierEntityMapper.ToDomain(x)).ToList();
     public async Task<(IReadOnlyList<SupplierProductExposure> Items,int Total)> SearchAsync(PosOrganizationId supplier,string? query,string? category,int skip,int take,CancellationToken ct=default)
     {var q=db.SupplierProductExposures.AsNoTracking().Where(x=>x.SupplierOrganizationId==supplier.Value&&x.IsExposed&&x.IsOrderable);
      if(!string.IsNullOrWhiteSpace(query)){var term=query.Trim().ToUpper();q=q.Where(x=>x.NameSnapshot.ToUpper().Contains(term)||(x.SkuSnapshot!=null&&x.SkuSnapshot.ToUpper().Contains(term)));}
      if(!string.IsNullOrWhiteSpace(category)){var term=category.Trim().ToUpper();q=q.Where(x=>x.CategoryNameSnapshot!=null&&x.CategoryNameSnapshot.ToUpper()==term);}
      var total=await q.CountAsync(ct);var rows=await q.OrderBy(x=>x.NameSnapshot).ThenBy(x=>x.Id).Skip(skip).Take(take).ToListAsync(ct);
-     return(rows.Select(ConnectedSupplierEntityMapper.ToDomain).ToList(),total);}
+     return(rows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x)).ToList(),total);}
     public Task AddAsync(SupplierProductExposure x,CancellationToken ct=default){db.SupplierProductExposures.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
     public async Task UpdateAsync(SupplierProductExposure x,CancellationToken ct=default){var r=await db.SupplierProductExposures.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
 }
@@ -70,6 +71,15 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         {
             var allEligible =
                 from exposure in db.SupplierProductExposures.AsNoTracking()
+                join account in db.InventoryAccounts.AsNoTracking()
+                    on new { Org = exposure.SupplierOrganizationId, Pid = exposure.ProductId }
+                    equals new { Org = account.OrganizationId, Pid = account.ProductId }
+                join product in db.CatalogProducts.AsNoTracking()
+                    on new { Org = exposure.SupplierOrganizationId, Pid = exposure.ProductId }
+                    equals new { Org = product.OrganizationId, Pid = product.Id }
+                join categoryRow in db.ProductCategories.AsNoTracking()
+                    on product.CategoryId equals categoryRow.Id into categoryGroup
+                from categoryRow in categoryGroup.DefaultIfEmpty()
                 join share in db.ConnectedBuyerProductShares.AsNoTracking()
                         .Where(s => s.RelationshipId == relationshipId.Value)
                     on exposure.ProductId equals share.SupplierProductId into shareGroup
@@ -77,8 +87,18 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
                 where exposure.SupplierOrganizationId == supplier.Value
                       && exposure.IsExposed
                       && exposure.IsOrderable
+                      && account.IsTracked
                       && (share == null || share.IsShared)
-                select new { exposure, share };
+                      && (categoryRow == null || categoryRow.OrganizationId == supplier.Value)
+                select new
+                {
+                    exposure,
+                    share,
+                    // Authoritative supplier catalog category; snapshot is fallback only.
+                    CategoryName = categoryRow != null
+                        ? categoryRow.Name
+                        : exposure.CategoryNameSnapshot,
+                };
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -91,7 +111,7 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             {
                 var term = category.Trim().ToUpper();
                 allEligible = allEligible.Where(x =>
-                    x.exposure.CategoryNameSnapshot != null && x.exposure.CategoryNameSnapshot.ToUpper() == term);
+                    x.CategoryName != null && x.CategoryName.ToUpper() == term);
             }
 
             var allTotal = await allEligible.CountAsync(ct).ConfigureAwait(false);
@@ -103,7 +123,9 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
 
             // Parallel lists: share may be null for inherited AllEligible rows (empty Guid placeholder not used —
             // callers match by product id via dictionary with null-safe GetValueOrDefault).
-            var exposures = allRows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x.exposure)).ToList();
+            var exposures = allRows
+                .Select(x => ConnectedSupplierEntityMapper.ToDomain(x.exposure, x.CategoryName))
+                .ToList();
             var shares = allRows
                 .Where(x => x.share is not null)
                 .Select(x => ConnectedSupplierEntityMapper.ToDomain(x.share!))
@@ -111,27 +133,51 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             return (exposures, shares, allTotal);
         }
 
-        var q=from exposure in db.SupplierProductExposures.AsNoTracking()
-              join share in db.ConnectedBuyerProductShares.AsNoTracking()
+        var q =
+            from exposure in db.SupplierProductExposures.AsNoTracking()
+            join account in db.InventoryAccounts.AsNoTracking()
+                on new { Org = exposure.SupplierOrganizationId, Pid = exposure.ProductId }
+                equals new { Org = account.OrganizationId, Pid = account.ProductId }
+            join product in db.CatalogProducts.AsNoTracking()
+                on new { Org = exposure.SupplierOrganizationId, Pid = exposure.ProductId }
+                equals new { Org = product.OrganizationId, Pid = product.Id }
+            join categoryRow in db.ProductCategories.AsNoTracking()
+                on product.CategoryId equals categoryRow.Id into categoryGroup
+            from categoryRow in categoryGroup.DefaultIfEmpty()
+            join share in db.ConnectedBuyerProductShares.AsNoTracking()
                 on exposure.ProductId equals share.SupplierProductId
-              where exposure.SupplierOrganizationId==supplier.Value&&exposure.IsExposed&&exposure.IsOrderable
-                    &&share.RelationshipId==relationshipId.Value&&share.IsShared
-              select new { exposure, share };
-        if(!string.IsNullOrWhiteSpace(query))
+            where exposure.SupplierOrganizationId == supplier.Value
+                  && exposure.IsExposed
+                  && exposure.IsOrderable
+                  && account.IsTracked
+                  && share.RelationshipId == relationshipId.Value
+                  && share.IsShared
+                  && (categoryRow == null || categoryRow.OrganizationId == supplier.Value)
+            select new
+            {
+                exposure,
+                share,
+                CategoryName = categoryRow != null
+                    ? categoryRow.Name
+                    : exposure.CategoryNameSnapshot,
+            };
+        if (!string.IsNullOrWhiteSpace(query))
         {
-            var term=query.Trim().ToUpper();
-            q=q.Where(x=>x.exposure.NameSnapshot.ToUpper().Contains(term)
-                ||(x.exposure.SkuSnapshot!=null&&x.exposure.SkuSnapshot.ToUpper().Contains(term)));
+            var term = query.Trim().ToUpper();
+            q = q.Where(x => x.exposure.NameSnapshot.ToUpper().Contains(term)
+                || (x.exposure.SkuSnapshot != null && x.exposure.SkuSnapshot.ToUpper().Contains(term)));
         }
-        if(!string.IsNullOrWhiteSpace(category))
+        if (!string.IsNullOrWhiteSpace(category))
         {
-            var term=category.Trim().ToUpper();
-            q=q.Where(x=>x.exposure.CategoryNameSnapshot!=null&&x.exposure.CategoryNameSnapshot.ToUpper()==term);
+            var term = category.Trim().ToUpper();
+            q = q.Where(x => x.CategoryName != null && x.CategoryName.ToUpper() == term);
         }
-        var total=await q.CountAsync(ct);
-        var rows=await q.OrderBy(x=>x.exposure.NameSnapshot).ThenBy(x=>x.exposure.Id).Skip(skip).Take(take).ToListAsync(ct);
-        return(rows.Select(x=>ConnectedSupplierEntityMapper.ToDomain(x.exposure)).ToList(),
-            rows.Select(x=>ConnectedSupplierEntityMapper.ToDomain(x.share)).ToList(),total);
+        var total = await q.CountAsync(ct);
+        var rows = await q.OrderBy(x => x.exposure.NameSnapshot).ThenBy(x => x.exposure.Id).Skip(skip).Take(take).ToListAsync(ct);
+        return (
+            rows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x.exposure, x.CategoryName)).ToList(),
+            rows.Select(x => ConnectedSupplierEntityMapper.ToDomain(x.share)).ToList(),
+            total);
     }
 
     public async Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
@@ -219,7 +265,16 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             };
         }
 
-        var eligibleCount = await products.CountAsync(x => !x.IsBlockedFromConnectedBuyers && x.CanBeSold, ct)
+        var eligibleCount = await (
+                from product in products
+                join account in db.InventoryAccounts.AsNoTracking()
+                    on new { Org = product.OrganizationId, Pid = product.Id }
+                    equals new { Org = account.OrganizationId, Pid = account.ProductId }
+                where !product.IsBlockedFromConnectedBuyers
+                      && product.CanBeSold
+                      && account.IsTracked
+                select product.Id)
+            .CountAsync(ct)
             .ConfigureAwait(false);
         var excludedCount = await shares.CountAsync(x => !x.IsShared, ct).ConfigureAwait(false);
         var explicitSharedCount = await (
@@ -329,13 +384,18 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
     public async Task<int> CountEligibleSupplierProductsAsync(PosOrganizationId supplier, CancellationToken ct = default)
     {
         var activeStatus = nameof(CatalogProductStatus.Active);
-        return await db.CatalogProducts.AsNoTracking()
-            .CountAsync(
-                x => x.OrganizationId == supplier.Value
-                     && x.Status == activeStatus
-                     && !x.IsBlockedFromConnectedBuyers
-                     && x.CanBeSold,
-                ct)
+        return await (
+                from product in db.CatalogProducts.AsNoTracking()
+                join account in db.InventoryAccounts.AsNoTracking()
+                    on new { Org = product.OrganizationId, Pid = product.Id }
+                    equals new { Org = account.OrganizationId, Pid = account.ProductId }
+                where product.OrganizationId == supplier.Value
+                      && product.Status == activeStatus
+                      && !product.IsBlockedFromConnectedBuyers
+                      && product.CanBeSold
+                      && account.IsTracked
+                select product.Id)
+            .CountAsync(ct)
             .ConfigureAwait(false);
     }
 }

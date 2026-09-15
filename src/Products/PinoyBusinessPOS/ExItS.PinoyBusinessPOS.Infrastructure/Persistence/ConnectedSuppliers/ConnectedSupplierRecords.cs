@@ -87,6 +87,8 @@ internal sealed class ConnectedPurchaseOrderRecord
     public int? DeclineReason { get; set; }
     public string? DeclineNote { get; set; }
     public int PaymentTerm { get; set; }
+    public int? ProposedPaymentTerm { get; set; }
+    public int? ConfirmedPaymentTerm { get; set; }
     public DateTimeOffset? ChangesProposedAtUtc { get; set; }
     public Guid? ChangesProposedByUserId { get; set; }
     public DateTimeOffset? BuyerRespondedAtUtc { get; set; }
@@ -101,6 +103,8 @@ internal sealed class ConnectedPurchaseOrderLineRecord
     public decimal? ConfirmedQty { get; set; }
     public int Availability { get; set; }
     public decimal UnitPriceSnapshot { get; set; } public decimal LineTotal { get; set; } public string UnitOfMeasureCode { get; set; }=string.Empty;
+    public decimal? ProposedUnitPrice { get; set; }
+    public decimal? ConfirmedUnitPrice { get; set; }
 }
 
 internal static class ConnectedSupplierEntityMapper
@@ -155,9 +159,9 @@ internal static class ConnectedSupplierEntityMapper
      r.BillingContactNotes=x.BillingContactNotes;r.InternalNotes=x.InternalNotes;
      r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
-    public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r)=>SupplierProductExposure.Rehydrate(
+    public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r, string? categoryNameOverride = null)=>SupplierProductExposure.Rehydrate(
         SupplierProductExposureId.From(r.Id),PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.ProductId),
-        r.SkuSnapshot,r.NameSnapshot,r.CategoryNameSnapshot,r.UnitOfMeasureCode,r.SupplierOrderPrice,r.IsOrderable,r.IsExposed,
+        r.SkuSnapshot,r.NameSnapshot,categoryNameOverride ?? r.CategoryNameSnapshot,r.UnitOfMeasureCode,r.SupplierOrderPrice,r.IsOrderable,r.IsExposed,
         r.SyncVersion,r.CreatedAtUtc,r.UpdatedAtUtc);
     public static SupplierProductExposureRecord ToRecord(SupplierProductExposure x)=>new(){Id=x.Id.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,
         ProductId=x.ProductId.Value,SkuSnapshot=x.SkuSnapshot,NameSnapshot=x.NameSnapshot,CategoryNameSnapshot=x.CategoryNameSnapshot,
@@ -237,7 +241,9 @@ internal static class ConnectedSupplierEntityMapper
                 x.UnitOfMeasureCode,
                 x.ProposedQty,
                 confirmed,
-                availability);
+                availability,
+                x.ProposedUnitPrice,
+                x.ConfirmedUnitPrice);
         }).ToList();
 
         return ConnectedPurchaseOrder.Rehydrate(
@@ -265,7 +271,9 @@ internal static class ConnectedSupplierEntityMapper
             r.ChangesProposedAtUtc,
             r.ChangesProposedByUserId,
             r.BuyerRespondedAtUtc,
-            r.BuyerRespondedByUserId);
+            r.BuyerRespondedByUserId,
+            r.ProposedPaymentTerm is int ppt ? (ConnectedPoPaymentTerm)ppt : null,
+            r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -274,18 +282,25 @@ internal static class ConnectedSupplierEntityMapper
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc,AcceptedAtUtc=x.AcceptedAtUtc,DeclinedAtUtc=x.DeclinedAtUtc,
         PreparingAtUtc=x.PreparingAtUtc,FulfilledAtUtc=x.FulfilledAtUtc,WithdrawnAtUtc=x.WithdrawnAtUtc,
         DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
-        PaymentTerm=(int)x.PaymentTerm,ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
+        PaymentTerm=(int)x.PaymentTerm,
+        ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value,
+        ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value,
+        ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
         BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
             NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,ProposedQty=l.ProposedQty,ConfirmedQty=l.ConfirmedQty,
             Availability=(int)l.Availability,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
-            UnitOfMeasureCode=l.UnitOfMeasureCode}).ToList()};
+            UnitOfMeasureCode=l.UnitOfMeasureCode,
+            ProposedUnitPrice=l.ProposedUnitPrice,ConfirmedUnitPrice=l.ConfirmedUnitPrice}).ToList()};
     public static void Apply(ConnectedPurchaseOrder x,ConnectedPurchaseOrderRecord r)
     {
         r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;
         r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
         r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;
-        r.PaymentTerm=(int)x.PaymentTerm;r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
+        r.PaymentTerm=(int)x.PaymentTerm;
+        r.ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value;
+        r.ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value;
+        r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
         r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;
         var domainLines=x.Lines.ToList();
         foreach(var lineRecord in r.Lines)
@@ -296,6 +311,8 @@ internal static class ConnectedSupplierEntityMapper
             lineRecord.ProposedQty=line.ProposedQty;
             lineRecord.ConfirmedQty=line.ConfirmedQty;
             lineRecord.Availability=(int)line.Availability;
+            lineRecord.ProposedUnitPrice=line.ProposedUnitPrice;
+            lineRecord.ConfirmedUnitPrice=line.ConfirmedUnitPrice;
         }
     }
 }

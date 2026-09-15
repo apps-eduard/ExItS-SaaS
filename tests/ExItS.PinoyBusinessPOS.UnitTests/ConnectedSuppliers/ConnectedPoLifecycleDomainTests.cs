@@ -214,16 +214,17 @@ public sealed class ConnectedPoLifecycleDomainTests
     }
 
     [Fact]
-    public void Buyer_rejection_closes_proposed_changes()
+    public void Buyer_rejection_returns_order_to_new_without_withdraw()
     {
         var order = NewOrder();
         order.ProposeLineChanges(
             [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 8m, false)],
             Now.AddMinutes(3));
         order.RejectProposedChanges(Now.AddMinutes(4));
-        Assert.Equal(ConnectedPurchaseOrderStatus.Withdrawn, order.Status);
+        Assert.Equal(ConnectedPurchaseOrderStatus.New, order.Status);
         Assert.Equal(10m, order.Lines[0].Qty);
-        Assert.False(order.CanBuyerWithdraw);
+        Assert.Null(order.Lines[0].ProposedQty);
+        Assert.True(order.CanBuyerWithdraw);
     }
 
     [Fact]
@@ -241,14 +242,33 @@ public sealed class ConnectedPoLifecycleDomainTests
     }
 
     [Fact]
-    public void Payment_terms_parse_gcash_as_manual()
+    public void Payment_terms_parse_aliases_and_labels()
     {
         Assert.Equal(ConnectedPoPaymentTerm.Cash, ConnectedPoPaymentTerms.Parse("Cash"));
+        Assert.Equal(ConnectedPoPaymentTerm.Cash, ConnectedPoPaymentTerms.Parse("COD"));
+        Assert.Equal(ConnectedPoPaymentTerm.BankTransfer, ConnectedPoPaymentTerms.Parse("BankTransfer"));
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("GCash"));
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("ManualGCash"));
         Assert.Equal(ConnectedPoPaymentTerm.Utang, ConnectedPoPaymentTerms.Parse("Utang"));
-        Assert.Equal("GCash", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Equal("COD / Pay on delivery", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.Cash));
+        Assert.Equal("GCash / Manual e-wallet", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Equal("Bank transfer", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.BankTransfer));
         Assert.Equal("ManualGCash", ConnectedPoPaymentTerms.ToApi(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Throws<DomainException>(() => ConnectedPoPaymentTerms.ParseRequired(null));
+    }
+
+    [Fact]
+    public void Payment_method_change_is_material_revision()
+    {
+        var order = NewOrder();
+        order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 10m, false)],
+            Now.AddMinutes(3),
+            proposedPaymentTerm: ConnectedPoPaymentTerm.BankTransfer);
+        Assert.Equal(ConnectedPurchaseOrderStatus.ChangesProposed, order.Status);
+        Assert.True(order.HasProposedPaymentChange);
+        Assert.Equal(ConnectedPoPaymentTerm.BankTransfer, order.EffectivePaymentTerm);
+        Assert.Equal(ConnectedPoPaymentTerm.Cash, order.PaymentTerm);
     }
 
     [Fact]

@@ -16,9 +16,9 @@ describe("return-quantity", () => {
 
   it("allows decimals for ByWeight", () => {
     expect(requiresWholeReturnQuantity("Kilogram", "ByWeight")).toBe(false);
-    expect(maxReturnQuantityDecimals("Kilogram", "ByWeight")).toBe(3);
-    expect(clampReturnQuantity(0.75, 1.25, 3)).toBe(0.75);
-    expect(formatReturnQuantityDisplay(0.75, "Kilogram", "ByWeight")).toContain("kg");
+    expect(maxReturnQuantityDecimals("Kilogram", "ByWeight")).toBe(2);
+    expect(clampReturnQuantity(0.75, 1.25, 2)).toBe(0.75);
+    expect(formatReturnQuantityDisplay(0.75, "Kilogram", "ByWeight")).toBe("0.75 kg");
   });
 
   it("does not silently raise quantity above refundable max", () => {

@@ -1,4 +1,3 @@
-using System.Globalization;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -10,8 +9,9 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 namespace ExItS.PinoyBusinessPOS.Application.Purchasing;
 
 /// <summary>
-/// Soft supplier-branch availability for connected PO create/update/submit.
-/// Does not reserve or mutate inventory. Untracked products are never blocked.
+/// Soft supplier-branch availability for connected PO create UX (display only).
+/// Does not reserve, mutate, or block purchase-order create/update/submit.
+/// Hard stock checks remain on supplier fulfillment (<see cref="ConnectedPurchaseOrderFulfillStock"/>).
 /// </summary>
 public static class ConnectedPurchaseOrderSupplierStock
 {
@@ -85,9 +85,11 @@ public static class ConnectedPurchaseOrderSupplierStock
     }
 
     /// <summary>
-    /// Returns null when all tracked demands fit available supplier-branch stock.
+    /// Connected PO create/update/submit no longer rejects over-order or zero stock.
+    /// Availability is informational; fulfillment enforces real inventory.
+    /// Always returns null.
     /// </summary>
-    public static async Task<ApplicationResult?> ValidateDemandsAsync(
+    public static Task<ApplicationResult?> ValidateDemandsAsync(
         ConnectedSupplierRelationship relationship,
         IReadOnlyList<DemandLine> lines,
         IInventoryRepository inventory,
@@ -97,81 +99,10 @@ public static class ConnectedPurchaseOrderSupplierStock
     {
         ArgumentNullException.ThrowIfNull(relationship);
         ArgumentNullException.ThrowIfNull(lines);
-
-        var positive = lines.Where(l => l.OrderedQty > 0m && l.SupplierProductId != Guid.Empty).ToList();
-        if (positive.Count == 0)
-        {
-            return null;
-        }
-
-        var snapshots = await LoadSnapshotsAsync(
-                relationship.SupplierOrganizationId,
-                relationship.SupplierBranchId,
-                positive.Select(l => l.SupplierProductId).ToList(),
-                inventory,
-                balances,
-                branches,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        foreach (var group in positive.GroupBy(l => l.SupplierProductId))
-        {
-            if (!snapshots.TryGetValue(group.Key, out var snapshot) || !snapshot.IsTracked)
-            {
-                continue;
-            }
-
-            var multiplier = group.First().MultiplierToBase > 0m ? group.First().MultiplierToBase : 1m;
-            var neededBase = group.Sum(l => ProductUnitConversion.ToBaseQuantity(l.OrderedQty, l.MultiplierToBase > 0m ? l.MultiplierToBase : 1m));
-            var name = group.First().ProductName.Trim();
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                name = "Product";
-            }
-
-            var availableBase = snapshot.AvailableBaseQuantity;
-            var availablePurchase = availableBase / multiplier;
-            var requestedPurchase = neededBase / multiplier;
-
-            if (availableBase <= 0m)
-            {
-                return ApplicationResult.Failure(
-                    ConnectedSupplierErrorCodes.OutOfStockSupplierProduct,
-                    $"{name} is out of stock.",
-                    BuildDetails(group.Key, name, requestedPurchase, availablePurchase, neededBase, availableBase));
-            }
-
-            if (neededBase > availableBase)
-            {
-                return ApplicationResult.Failure(
-                    ConnectedSupplierErrorCodes.InsufficientSupplierStock,
-                    $"{name} has only {FormatQty(availablePurchase)} available; {FormatQty(requestedPurchase)} was requested.",
-                    BuildDetails(group.Key, name, requestedPurchase, availablePurchase, neededBase, availableBase));
-            }
-        }
-
-        return null;
+        _ = inventory;
+        _ = balances;
+        _ = branches;
+        _ = cancellationToken;
+        return Task.FromResult<ApplicationResult?>(null);
     }
-
-    private static Dictionary<string, string> BuildDetails(
-        Guid supplierProductId,
-        string productName,
-        decimal requestedPurchase,
-        decimal availablePurchase,
-        decimal requestedBase,
-        decimal availableBase) =>
-        new()
-        {
-            ["supplierProductId"] = supplierProductId.ToString("D"),
-            ["productName"] = productName,
-            ["requestedQuantity"] = FormatQty(requestedPurchase),
-            ["availableQuantity"] = FormatQty(availablePurchase),
-            ["requestedBaseQuantity"] = FormatQty(requestedBase),
-            ["availableBaseQuantity"] = FormatQty(availableBase),
-        };
-
-    private static string FormatQty(decimal value) =>
-        value == decimal.Truncate(value)
-            ? decimal.Truncate(value).ToString(CultureInfo.InvariantCulture)
-            : value.ToString("0.####", CultureInfo.InvariantCulture);
 }

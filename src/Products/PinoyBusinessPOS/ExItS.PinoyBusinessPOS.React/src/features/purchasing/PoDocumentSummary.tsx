@@ -7,6 +7,8 @@ import type { PoDocumentMetaField, PoDocumentStatus } from "@/features/purchasin
 export type PoDocumentSummaryProps = {
   /** Buyer or Seller counterparty label (perspective-aware). */
   counterpartyLabel: string;
+  /** Optional leading icon beside the counterparty name (store/branch line). */
+  counterpartyIcon?: ReactNode;
   counterpartyName: string;
   status?: PoDocumentStatus;
   fields: PoDocumentMetaField[];
@@ -22,6 +24,7 @@ export type PoDocumentSummaryProps = {
  */
 export function PoDocumentSummary({
   counterpartyLabel,
+  counterpartyIcon,
   counterpartyName,
   status,
   fields,
@@ -33,9 +36,17 @@ export function PoDocumentSummary({
     <Card className={cn("po-document-summary grid gap-3 p-3", className)} data-testid={testId}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{counterpartyLabel}</p>
-          <p className="m-0 font-semibold" data-testid={`${testId}-counterparty`}>
-            {counterpartyName}
+          <h2 className="po-document-summary__title m-0">{counterpartyLabel}</h2>
+          <p
+            className="m-0 mt-1 flex items-center gap-2 font-semibold"
+            data-testid={`${testId}-counterparty`}
+          >
+            {counterpartyIcon ? (
+              <span className="inline-flex shrink-0 text-primary" aria-hidden>
+                {counterpartyIcon}
+              </span>
+            ) : null}
+            <span className="min-w-0">{counterpartyName}</span>
           </p>
         </div>
         {status ? (

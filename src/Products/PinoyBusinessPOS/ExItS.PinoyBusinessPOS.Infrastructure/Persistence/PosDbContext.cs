@@ -4409,7 +4409,7 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_purchase_orders_status",
                     "status IN ('Draft', 'Ordered', 'PartiallyReceived', 'Received', 'Cancelled')");
-                tb.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+                tb.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 3");
             });
 
             entity.HasKey(e => e.Id);
@@ -5393,7 +5393,7 @@ public sealed class PosDbContext : DbContext
             entity.ToTable("connected_purchase_orders", tb =>
             {
                 tb.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 6");
-                tb.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+                tb.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 3");
             });
             entity.HasKey(x=>x.Id);entity.Property(x=>x.Id).HasColumnName("id");entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
@@ -5407,6 +5407,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.DeclineReason).HasColumnName("decline_reason");
             entity.Property(x=>x.DeclineNote).HasColumnName("decline_note").HasMaxLength(280);
             entity.Property(x=>x.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
+            entity.Property(x=>x.ProposedPaymentTerm).HasColumnName("proposed_payment_term");
+            entity.Property(x=>x.ConfirmedPaymentTerm).HasColumnName("confirmed_payment_term");
             entity.Property(x=>x.ChangesProposedAtUtc).HasColumnName("changes_proposed_at_utc");
             entity.Property(x=>x.ChangesProposedByUserId).HasColumnName("changes_proposed_by_user_id");
             entity.Property(x=>x.BuyerRespondedAtUtc).HasColumnName("buyer_responded_at_utc");
@@ -5437,6 +5439,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.Availability).HasColumnName("availability").IsRequired().HasDefaultValue(0);
             entity.Property(x=>x.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18,2);entity.Property(x=>x.LineTotal).HasColumnName("line_total").HasPrecision(18,2);
             entity.Property(x=>x.UnitOfMeasureCode).HasColumnName("unit_of_measure_code").HasMaxLength(32);
+            entity.Property(x=>x.ProposedUnitPrice).HasColumnName("proposed_unit_price").HasPrecision(18,2);
+            entity.Property(x=>x.ConfirmedUnitPrice).HasColumnName("confirmed_unit_price").HasPrecision(18,2);
         });
     }
 }

@@ -121,15 +121,12 @@ export function formatQuantityValue(value: number, precision: number): string {
   if (precision <= 0) {
     return intPart;
   }
-  // Whole values render without a decimal point (1 not 1.00 / 1.).
+  // Measured: keep fractional digits only when needed (1 not 1.00; 1.25 stays 1.25; 1.50 → 1.5).
   if (Math.abs(clamped - Math.trunc(clamped)) < 1e-9) {
     return intPart;
   }
   const fixed = abs.toFixed(precision);
-  const frac = fixed
-    .split(".")[1]
-    ?.replace(/0+$/u, "")
-    ?? "";
+  const frac = fixed.split(".")[1]?.replace(/0+$/u, "") ?? "";
   if (frac === "") {
     return intPart;
   }

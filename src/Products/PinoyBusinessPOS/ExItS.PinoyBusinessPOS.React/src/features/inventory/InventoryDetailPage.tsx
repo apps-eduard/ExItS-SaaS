@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useToast } from "@/components/exits/ToastProvider";
 import { cn } from "@/lib/cn";
 import {
   canAddOpeningStock,
@@ -80,6 +81,7 @@ function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>[
 
 export function InventoryDetailPage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const { productId } = useParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
@@ -306,6 +308,15 @@ export function InventoryDetailPage() {
       await invalidateInventory();
     },
     onError: (err) => {
+      const problem = err instanceof PosApiError ? err.problem : null;
+      if (problem?.errorCode === "pos.catalog.connected_share_blocks_disable_tracking") {
+        toast.error(
+          t("catalog.connectedShare.sharedBlocksDisableTitle"),
+          problem.detail ?? t("catalog.connectedShare.sharedBlocksDisableMessage"),
+        );
+        setError(null);
+        return;
+      }
       setError(
         err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
       );

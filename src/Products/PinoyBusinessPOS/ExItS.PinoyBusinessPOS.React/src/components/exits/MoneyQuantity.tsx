@@ -4,7 +4,11 @@ import { cn } from "@/lib/cn";
 import {
   clampQuantityToPrecision,
   formatQuantityValue,
+  maxQuantityDecimals,
+  minPositiveQuantity,
   parseQuantityTyping,
+  quantityInputMinimum,
+  quantityStepperWholeStep,
   stepQuantity,
   stripQuantityGrouping,
 } from "@/lib/quantity-rules";
@@ -54,18 +58,27 @@ export type QuantityStepperProps = {
   value: number | string;
   increaseLabel: string;
   decreaseLabel: string;
-  /** Legacy: parent owns step math (Sell / PO / returns). */
+  /**
+   * Legacy display-only mode: parent owns step math (Sell cart, Stock Request, returns).
+   * Prefer `onChange` for editable purchasing / catalog quantity lines.
+   */
   onIncrement?: () => void;
   onDecrement?: () => void;
   /**
-   * Controlled editable mode: stepper emits quantity only.
-   * When set, center is a real numeric input and +/- use step/min/precision.
+   * Controlled editable mode: center is a real numeric input; +/- use step/min/precision.
+   * Owns typing, thousands formatting, and decimal rules — do not reimplement in features.
    */
   onChange?: (next: number) => void;
   min?: number;
   max?: number;
   step?: number;
   precision?: number;
+  /**
+   * Optional catalog profile — when set with sellingMode (and precision/min omitted),
+   * resolves whole vs divisible rules via shared quantity-rules metadata (not Kg-only).
+   */
+  unitOfMeasure?: string;
+  sellingMode?: string;
   disabled?: boolean;
   invalid?: boolean;
   unit?: string;
@@ -105,18 +118,21 @@ export function quantityStepperInputWidthCh(
 }
 
 /**
- * Canonical ExItS quantity control: [ − ][ quantity ][ + ]
- * Editable center when `onChange` is provided; display-only when using increment/decrement callbacks.
+ * Canonical ExItS quantity control: [ neutral − ][ editable qty ][ primary + ]
+ * Editable when `onChange` is set; display-only when using increment/decrement callbacks.
+ * Interaction (typing, ±1 with remainder, measured 2dp trailing zeros, thousands) lives here + quantity-rules.
  */
 export function QuantityStepper({
   value,
   onIncrement,
   onDecrement,
   onChange,
-  min = 0,
+  min: minProp,
   max,
-  step = 1,
-  precision = 0,
+  step: stepProp,
+  precision: precisionProp,
+  unitOfMeasure,
+  sellingMode,
   disabled = false,
   invalid = false,
   unit,
@@ -131,6 +147,18 @@ export function QuantityStepper({
 }: QuantityStepperProps) {
   const inputId = useId();
   const editable = typeof onChange === "function";
+  const hasCatalogProfile = unitOfMeasure != null && sellingMode != null;
+  const precision =
+    precisionProp ??
+    (hasCatalogProfile ? maxQuantityDecimals(unitOfMeasure, sellingMode) : 0);
+  const min =
+    minProp ??
+    (hasCatalogProfile
+      ? quantityInputMinimum(unitOfMeasure, sellingMode)
+      : precision > 0
+        ? minPositiveQuantity(precision)
+        : 1);
+  const step = stepProp ?? quantityStepperWholeStep();
   const numeric = numericValue(value);
   const displayValue = editable
     ? formatQuantityValue(numeric, precision)
@@ -145,11 +173,11 @@ export function QuantityStepper({
     }
   }, [value, focused]);
 
-  // Quantity never commits below 1 (empty/0/0.5 → 1). Parent min may be higher.
-  const floor = Math.max(1, min > 0 ? min : 1);
+  // Effective minimum: explicit/domain min. Whole → typically 1; measured → typically 0.01 (not forced to 1).
+  const floor = min > 0 ? min : precision > 0 ? minPositiveQuantity(precision) : 1;
   const atMin = numeric <= floor + 1e-12;
   const atMax = max != null && numeric >= max - 1e-12;
-  // Allow minus while draft is empty/0 so empty → floor (1) and 0 → floor, even if committed value is already at min.
+  // Allow minus while draft is empty/0 so empty → floor, even if committed value is already at min.
   const draftRequestsFloor =
     draft != null &&
     (() => {
@@ -208,7 +236,6 @@ export function QuantityStepper({
     const raw = (draft ?? displayValue).trim();
     const parsed = parseQuantityTyping(raw, precision);
     if (parsed.kind === "value") {
-      // empty/0 → floor (1 when min is 1); values below floor snap up.
       commit(parsed.value <= 0 || parsed.value < floor ? floor : parsed.value);
       return;
     }
@@ -234,7 +261,6 @@ export function QuantityStepper({
     }
     if (editable && onChange) {
       const base = resolveDraftNumber();
-      // empty → 1 (floor), 0 → 1 (floor), 1 → 1 (stay at floor)
       if (base <= floor + 1e-12) {
         commit(floor);
         return;

@@ -36,8 +36,15 @@ describe("quantity-rules", () => {
     expect(isValidQuantity(1.255, "Kilogram", "ByWeight")).toBe(false);
     expect(isValidQuantity(2.999, "Kilogram", "ByWeight")).toBe(false);
     expect(formatQuantityValue(1.25, 2)).toBe("1.25");
+    expect(formatQuantityValue(1.5, 2)).toBe("1.5");
+    expect(formatQuantityValue(1, 2)).toBe("1");
+    expect(formatQuantityValue(0.5, 2)).toBe("0.5");
+    expect(formatQuantityValue(0.25, 2)).toBe("0.25");
     expect(formatQuantityValue(2, 0)).toBe("2");
     expect(formatQuantityValue(1000, 0)).toBe("1,000");
+    expect(formatQuantityValue(1000, 2)).toBe("1,000");
+    expect(formatQuantityValue(1250.5, 2)).toBe("1,250.5");
+    expect(formatQuantityValue(1250.25, 2)).toBe("1,250.25");
     expect(formatQuantityValue(1234.5, 2)).toBe("1,234.5");
   });
 
@@ -63,6 +70,9 @@ describe("quantity-rules", () => {
     ).toBe(2.5);
     expect(
       stepQuantity({ value: 2.5, direction: -1, step: 1, precision: 2, min: 0.01 }),
+    ).toBe(1.5);
+    expect(
+      stepQuantity({ value: 0.5, direction: 1, step: 1, precision: 2, min: 0.01 }),
     ).toBe(1.5);
     expect(
       stepQuantity({ value: 0.5, direction: 1, step: 0.01, precision: 2, min: 0.01 }),

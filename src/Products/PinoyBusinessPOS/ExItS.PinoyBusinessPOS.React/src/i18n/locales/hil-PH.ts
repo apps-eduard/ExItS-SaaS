@@ -1080,6 +1080,16 @@ export const hilPH: Record<keyof typeof en, string> = {
   "catalog.trackStockQuantity": "I-track ang kadamuon sang stock",
   "catalog.trackStockQuantityRequiredForIngredient": "Track inventory (required for ingredients)",
   "catalog.ingredientRequiresTrackedInventory": "Ingredients must use tracked inventory.",
+  "catalog.connectedShare.cantShareTitle": "Product can't be shared",
+  "catalog.connectedShare.cantShareMessage":
+    "Only inventory-tracked products can be shared with connected businesses. Enable inventory tracking first.",
+  "catalog.connectedShare.sharedBlocksDisableTitle": "Product is currently shared",
+  "catalog.connectedShare.sharedBlocksDisableMessage":
+    "Stop sharing this product before disabling inventory tracking.",
+  "catalog.connectedShare.section": "Connected buyers",
+  "catalog.connectedShare.shareProduct": "Allow sharing with connected businesses",
+  "catalog.connectedShare.trackedHelp":
+    "Allowed products can be shared with connected buyers. Sharing is managed per buyer.",
 
   "catalog.sectionImage": "Hulagway",
 
@@ -4297,6 +4307,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "transfer.tracksExpiry": "Tracks expiry",
 
   "transfer.available": "Available: {qty} {uom}",
+  "transfer.colAvailable": "Available at source",
 
   "transfer.outOfStock": "Out of stock",
 
@@ -8799,7 +8810,14 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.supplierOutOfStock": "Out of stock",
 
+  "purchasing.supplierStockInStock": "Available",
+
   "purchasing.supplierStockAvailable": "{n} available",
+
+  "purchasing.supplierAvailableNow": "Available now: {qty} {unit}",
+
+  "purchasing.supplierOverOrderWarning":
+    "Requested quantity exceeds current available stock. Supplier confirmation may be required.",
 
   "purchasing.stockNotTracked": "Stock not tracked",
 
@@ -9017,10 +9035,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.enableInventoryTracking": "Enable inventory tracking",
 
   "purchasing.lines": "Lines",
-  "purchasing.orderItems": "Order items",
+  "purchasing.orderItems": "Purchase order items",
   "purchasing.addItems": "Add items",
-  "purchasing.orderItemsEmpty": "No items added yet",
-  "purchasing.orderItemsEmptyHelp": "Search or browse products to add items to this purchase order.",
+  "purchasing.orderItemsEmpty": "No products added yet",
+  "purchasing.orderItemsEmptyHelp": "Add products to build this purchase order.",
   "purchasing.seller": "Seller",
   "purchasing.export": "Export",
   "purchasing.colActions": "Actions",
@@ -9101,6 +9119,47 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.pageLabel": "Page {page} of {totalPages}",
 
   "purchasing.paymentTerm": "Payment",
+
+  "purchasing.paymentMethod": "Payment method",
+
+  "purchasing.paymentMethodIntendedHelp":
+    "Choose the intended payment method for this order. This does not mean payment has been received.",
+
+  "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
+
+  "purchasing.paymentMethod.cod": "COD / Pay on delivery",
+
+  "purchasing.paymentMethod.bankTransfer": "Bank transfer",
+
+  "purchasing.paymentMethod.gcash": "GCash / Manual e-wallet",
+
+  "purchasing.paymentMethod.utang": "Utang / Credit",
+
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
+
+  "purchasing.paymentHelp.bankTransfer":
+    "Payment can be completed after the supplier confirms the order.",
+
+  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
+
+  "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+
+  "purchasing.utang.unavailable": "unavailable",
+
+  "purchasing.utang.notConnected": "Utang is only available for connected suppliers.",
+
+  "purchasing.utang.permissionDenied": "You do not have permission to use Utang on purchase orders.",
+
+  "purchasing.utang.creditNotApproved": "Approved credit terms are required before Utang can be used.",
+
+  "purchasing.utang.noAvailableCredit": "No available credit on this relationship.",
+
+  "purchasing.utang.insufficientCredit":
+    "Order total exceeds available credit. Reduce the order or choose another payment method.",
+
+  "purchasing.declineChanges": "Decline changes",
+
+  "purchasing.changesDeclined": "Proposed changes declined. Waiting for supplier response.",
 
   "purchasing.prevPage": "Previous",
 
@@ -9203,6 +9262,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.receiveStockHelper":
     "Record goods you already purchased and received. Confirming this receipt adds them to inventory.",
   "purchasing.findProducts": "Find products",
+  "purchasing.supplierProducts": "Supplier product",
+  "purchasing.supplierPrice": "Supplier price",
   "purchasing.productAdded": "Added",
   "purchasing.categories": "Categories",
   "purchasing.category": "Category",
@@ -9454,6 +9515,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "supplierPayables.source.directPurchase": "Direct purchase",
 
   "purchasing.unitCost": "Unit cost",
+  "purchasing.catalogPrice": "Supplier/catalog price",
 
   "purchasing.unknownSupplier": "Unknown supplier",
 

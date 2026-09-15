@@ -399,8 +399,18 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     standard: "Form controls",
     category: "forms",
     status: "Locked",
-    summary: "Canonical form fields, search, validation, disabled, quantity stepper",
-    keywords: ["form", "input", "search", "switch", "validation", "quantity", "stepper"],
+    summary:
+      "Canonical form fields, search, validation, disabled; QuantityStepper editable [neutral −][qty][primary +]; measured shows whole by default, accepts typed decimals; fractions below 1 allowed",
+    keywords: [
+      "form",
+      "input",
+      "search",
+      "switch",
+      "validation",
+      "quantity",
+      "stepper",
+      "purchasing",
+    ],
   },
   {
     id: "exits-upload",

@@ -73,7 +73,7 @@ internal class CostResolverInventoryStub : IInventoryRepository
         CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
-    public Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
+    public virtual Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
     public virtual Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>

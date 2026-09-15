@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -28,6 +29,7 @@ const PAGE_SIZE = 25;
 
 export function ConnectedSharedProductsPage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const { relationshipId } = useParams<{ relationshipId: string }>();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -117,11 +119,22 @@ export function ConnectedSharedProductsPage() {
       setSelected(new Set());
       await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "shares"] });
     } catch (err) {
-      setMessage(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? err.message)
-          : t("connected.saveSharingFailed"),
-      );
+      if (
+        err instanceof PosApiError &&
+        err.problem.errorCode === "pos.catalog.connected_share_requires_tracked"
+      ) {
+        toast.error(
+          t("catalog.connectedShare.cantShareTitle"),
+          err.problem.detail ?? t("catalog.connectedShare.cantShareMessage"),
+        );
+        setMessage(null);
+      } else {
+        setMessage(
+          err instanceof PosApiError
+            ? (err.problem.detail ?? err.message)
+            : t("connected.saveSharingFailed"),
+        );
+      }
     } finally {
       setBusy(false);
     }

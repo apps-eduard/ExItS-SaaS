@@ -58,6 +58,15 @@ const createPurchaseOrder = vi.fn();
 const listCatalogProducts = vi.fn();
 const createBuyerProductAndLink = vi.fn();
 const linkProduct = vi.fn();
+const getBusinessCustomerCreditPolicy = vi.fn();
+
+vi.mock("@/api/pos/pos-business-credit-policy-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/api/pos/pos-business-credit-policy-client")>();
+  return {
+    ...actual,
+    getBusinessCustomerCreditPolicy: (...args: unknown[]) => getBusinessCustomerCreditPolicy(...args),
+  };
+});
 
 vi.mock("@/api/pos/pos-suppliers-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/pos/pos-suppliers-client")>();
@@ -284,6 +293,22 @@ function renderPage(initialEntry = "/purchasing/new") {
   );
 }
 
+async function selectSupplierAndOpenFinder(
+  user: ReturnType<typeof userEvent.setup>,
+  options?: { waitForProduct?: boolean },
+) {
+  await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+  await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+  await user.click(screen.getByTestId("po-add-products-trigger"));
+  if (options?.waitForProduct !== false) {
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
+    );
+  } else {
+    await waitFor(() => expect(screen.getByTestId("po-add-products")).toBeInTheDocument());
+  }
+}
+
 describe("PurchaseOrderCreatePage connected product picker", () => {
   beforeEach(() => {
     listSuppliers.mockReset();
@@ -295,10 +320,18 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     listCatalogProducts.mockReset();
     createBuyerProductAndLink.mockReset();
     linkProduct.mockReset();
+    getBusinessCustomerCreditPolicy.mockReset();
     listSuppliers.mockResolvedValue(linkedSupplier());
     listLinks.mockResolvedValue(readyLinkPayload());
     searchExposedCatalog.mockResolvedValue(readyCatalogPayload());
     classifyCatalogReadiness.mockResolvedValue(readinessPayload());
+    getBusinessCustomerCreditPolicy.mockResolvedValue({
+      status: "Approved",
+      creditLimit: 100000,
+      availableCredit: 50000,
+      outstandingAmount: 0,
+      defaultTermDays: 30,
+    });
     getConnectedOrderStock.mockResolvedValue({
       relationshipId,
       supplierBranchId: "77777777-7777-4777-8777-777777777777",
@@ -324,11 +357,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   it("loads linked shared orderable products without requiring search", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
-    await waitFor(() =>
-      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
-    );
+    await selectSupplierAndOpenFinder(user);
     expect(listLinks).toHaveBeenCalled();
     expect(searchExposedCatalog).toHaveBeenCalled();
     expect(classifyCatalogReadiness).toHaveBeenCalled();
@@ -342,11 +371,11 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   it("filters linked products with searchable category multi-select", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
-    await waitFor(() =>
-      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
-    );
+    await selectSupplierAndOpenFinder(user);
+
+    expect(screen.getByTestId(`po-category-${buyerProductId}`)).toHaveTextContent("Beverages");
+    expect(screen.getByTestId(`po-category-${buyerProductId2}`)).toHaveTextContent("—");
+
     expect(screen.queryByTestId("po-category-filters")).not.toBeInTheDocument();
     expect(screen.getByTestId("po-category-multiselect")).toBeInTheDocument();
     expect(screen.getByTestId("po-category-multiselect")).toHaveTextContent(/Categories/i);
@@ -375,8 +404,10 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   });
 
   it("preselects supplier from supplierId query when opening new purchase order", async () => {
+    const user = userEvent.setup();
     renderPage(`/purchasing/new?supplierId=${supplierId}`);
     await waitFor(() => expect(screen.getByTestId("po-supplier")).toHaveValue(supplierId));
+    await user.click(screen.getByTestId("po-add-products-trigger"));
     await waitFor(() =>
       expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
     );
@@ -385,8 +416,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   it("lets setup tabs connect a specific product or open shared catalog", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await selectSupplierAndOpenFinder(user, { waitForProduct: false });
     await waitFor(() => screen.getByTestId("po-ready-newProduct"));
     await user.click(screen.getByTestId("po-ready-newProduct"));
     await waitFor(() => screen.getByTestId(`po-setup-product-${exposureId2}`));
@@ -415,8 +445,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   it("bulk-adds selected setup products while keeping per-row connect", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await selectSupplierAndOpenFinder(user, { waitForProduct: false });
     await waitFor(() => screen.getByTestId("po-ready-newProduct"));
     await user.click(screen.getByTestId("po-ready-newProduct"));
     await waitFor(() => screen.getByTestId(`po-setup-select-${exposureId2}`));
@@ -437,9 +466,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
   it("filters products, supports add/stepper totals, and updates subtotal", async () => {
     const user = userEvent.setup();
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
-    await waitFor(() => screen.getByTestId(`po-connected-product-${buyerProductId}`));
+    await selectSupplierAndOpenFinder(user);
 
     const search = screen.getByTestId("po-product-search");
     await user.type(search, "soap");
@@ -450,28 +477,94 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await waitFor(() => screen.getByTestId(`po-connected-product-${buyerProductId}`));
 
     await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
-    expect(screen.getByTestId(`po-line-math-${buyerProductId}`)).toHaveTextContent("₱12");
+    // Added product leaves Find products and appears on Purchase order items.
+    expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`po-connected-selected-${buyerProductId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("1");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱12.00");
 
     await user.click(screen.getByRole("button", { name: "Increase quantity" }));
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
-    expect(screen.getByTestId(`po-line-math-${buyerProductId}`)).toHaveTextContent("₱24");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("2");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱24.00");
 
+    await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
+    await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "5");
+    await user.tab();
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("5");
+    expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱60.00");
+
+    // Minus floors at 1 — remove via trash (same as Receive Stock).
     await user.click(screen.getByRole("button", { name: "Decrease quantity" }));
-    await user.click(screen.getByRole("button", { name: "Decrease quantity" }));
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("4");
+    await user.click(screen.getByTestId(`po-connected-selected-remove-${buyerProductId}`));
+    // Removed from order items → returns to Find products.
     expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeInTheDocument();
-    expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱0.00");
+    expect(screen.getByTestId("po-connected-selected-items-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("po-subtotal")).not.toBeInTheDocument();
   });
 
-  it("shows supplier stock and disables add / + at max", async () => {
+  it("allows measured Kg decimals on purchase order items via QuantityStepper", async () => {
+    const user = userEvent.setup();
+    const kgBuyerProductId = buyerProductId2;
+    listLinks.mockResolvedValue([
+      {
+        ...readyLinkPayload()[0],
+      },
+      {
+        ...readyLinkPayload()[1],
+        buyerProductId: kgBuyerProductId,
+        supplierProductId: supplierProductId2,
+        supplierSkuSnapshot: "PH-RICE-KG",
+        supplierNameSnapshot: "Loose Rice",
+        unitOfMeasureCode: "Kilogram",
+        lastKnownOrderPrice: 40,
+        packageLabel: "Kilogram",
+      },
+    ]);
+    searchExposedCatalog.mockResolvedValue({
+      ...readyCatalogPayload(),
+      items: [
+        readyCatalogPayload().items[0],
+        {
+          ...readyCatalogPayload().items[1],
+          productId: supplierProductId2,
+          skuSnapshot: "PH-RICE-KG",
+          nameSnapshot: "Loose Rice",
+          unitOfMeasureCode: "Kilogram",
+          supplierOrderPrice: 40,
+          effectiveSupplierOrderPrice: 40,
+        },
+      ],
+    });
+    renderPage();
+    await selectSupplierAndOpenFinder(user, { waitForProduct: false });
+    await waitFor(() => screen.getByTestId(`po-connected-product-${kgBuyerProductId}`));
+
+    await user.click(screen.getByTestId(`po-add-${kgBuyerProductId}`));
+    const qty = screen.getByTestId(`po-qty-${kgBuyerProductId}`);
+    expect(qty).toHaveValue("1");
+
+    await user.clear(qty);
+    await user.type(qty, "0.25");
+    await user.tab();
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("0.25");
+    expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱10.00");
+
+    await user.clear(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
+    await user.type(screen.getByTestId(`po-qty-${kgBuyerProductId}`), "1.25");
+    await user.tab();
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("1.25");
+    expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱50.00");
+  });
+
+  it("shows Available now label and allows qty above stock with warning", async () => {
     const user = userEvent.setup();
     getConnectedOrderStock.mockResolvedValue({
       relationshipId,
       supplierBranchId: "77777777-7777-4777-8777-777777777777",
       supplierBranchName: "Main Branch",
       items: [
-        { supplierProductId, isTracked: true, availableBaseQuantity: 2 },
+        { supplierProductId, isTracked: true, availableBaseQuantity: 5 },
         {
           supplierProductId: "00000000-0000-4000-8000-000000000099",
           isTracked: true,
@@ -480,20 +573,41 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       ],
     });
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await selectSupplierAndOpenFinder(user);
     await waitFor(() =>
-      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent("2 available"),
+      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent(
+        "Available now: 5 pc",
+      ),
     );
     expect(getConnectedOrderStock).toHaveBeenCalled();
 
     await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
-    await user.click(screen.getByRole("button", { name: "Increase quantity" }));
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
-    expect(screen.getByRole("button", { name: "Increase quantity" })).toBeDisabled();
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-selected-availability-${buyerProductId}`)).toHaveTextContent(
+        "Available now: 5 pc",
+      ),
+    );
+    expect(
+      screen.queryByTestId(`po-connected-selected-over-order-${buyerProductId}`),
+    ).not.toBeInTheDocument();
+
+    // Increase past available (5) using stepper + buttons.
+    for (let i = 0; i < 7; i += 1) {
+      await user.click(screen.getByRole("button", { name: "Increase quantity" }));
+    }
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("8"),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-selected-over-order-${buyerProductId}`)).toHaveTextContent(
+        /exceeds current available stock/i,
+      ),
+    );
+    await user.click(screen.getByTestId("po-payment-Cash"));
+    expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
   });
 
-  it("disables Add when supplier stock is zero", async () => {
+  it("allows Add when supplier stock is zero and shows over-order warning", async () => {
     const user = userEvent.setup();
     getConnectedOrderStock.mockResolvedValue({
       relationshipId,
@@ -502,12 +616,17 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       items: [{ supplierProductId, isTracked: true, availableBaseQuantity: 0 }],
     });
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await selectSupplierAndOpenFinder(user);
     await waitFor(() =>
       expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent("Out of stock"),
     );
-    expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeDisabled();
+    expect(screen.getByTestId(`po-add-${buyerProductId}`)).not.toBeDisabled();
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-selected-over-order-${buyerProductId}`)).toHaveTextContent(
+        /exceeds current available stock/i,
+      ),
+    );
   });
 
   it("shows empty shared-catalog CTA when no ready products", async () => {
@@ -520,8 +639,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       items: readinessPayload().items.filter((item) => item.status !== "Ready"),
     });
     renderPage();
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
-    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await selectSupplierAndOpenFinder(user, { waitForProduct: false });
     await waitFor(() => expect(screen.getByTestId("po-open-shared-catalog")).toBeInTheDocument());
     expect(screen.getByTestId("po-open-shared-catalog")).toHaveAttribute(
       "href",

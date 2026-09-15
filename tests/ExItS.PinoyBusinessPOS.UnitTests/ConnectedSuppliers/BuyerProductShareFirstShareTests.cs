@@ -2,9 +2,12 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
 
@@ -256,8 +259,24 @@ public sealed class BuyerProductShareFirstShareTests
         var uow = new FakeUow();
         var access = new FakeAccess();
         var clock = new FixedTimeProvider(Now.AddMinutes(10));
-        var setShares = new SetBuyerProductShares(relationships, exposures, shares, products, uow, access, clock);
+        var inventory = new AlwaysTrackedInventoryStub();
+        var setShares = new SetBuyerProductShares(
+            relationships, exposures, shares, products, inventory, uow, access, clock);
         return new Harness(relationship, relationships, exposures, shares, products, uow, access, setShares);
+    }
+
+    /// <summary>Share tests assume inventory-tracked products (new sharing rule).</summary>
+    private sealed class AlwaysTrackedInventoryStub : CostResolverInventoryStub
+    {
+        public override Task<InventoryAccount?> GetByProductIdAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default)
+        {
+            var account = InventoryAccount.CreateUntracked(organizationId, productId, Now);
+            account.Enable(0m, UnitOfMeasure.Piece, Guid.Empty, Now, hasOpeningStockAlready: false);
+            return Task.FromResult<InventoryAccount?>(account);
+        }
     }
 
     private sealed record Harness(

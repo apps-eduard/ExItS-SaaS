@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, AlertTriangle, ClipboardList, PackagePlus, Plus, Trash2, X } from "lucide-react";
+import { ArrowRight, ClipboardList } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -21,7 +21,6 @@ import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import {
   ExitsTable,
-  ExitsTableActions,
   ExitsTableBody,
   ExitsTableCell,
   ExitsTableContainer,
@@ -29,29 +28,36 @@ import {
   ExitsTableHeader,
   ExitsTableMobile,
   ExitsTableMobileRow,
-  ExitsTablePagination,
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
 import { FilterChip } from "@/components/exits/FilterChip";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
+import {
+  ProductFinderPanel,
+  SelectedItemsPanel,
+} from "@/components/exits/ProductSelectionWorkspace";
 import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
+import { ReceiveStockFindProductsView } from "@/features/purchasing/ReceiveStockFindProductsView";
+import { ReceiveStockReceiptItemsView } from "@/features/purchasing/ReceiveStockReceiptItemsView";
+import {
+  RECEIVE_STOCK_FIND_PRODUCTS_TABLE_MIN_PX,
+  RECEIVE_STOCK_RECEIPT_TABLE_MIN_PX,
+} from "@/features/purchasing/receive-stock-responsive";
 import {
   hasReceiveCostMarginWarning,
-  receiveCostMarginKind,
   resolveReceiveEffectiveSellingPrice,
   type ReceiveMarginWarningFlash,
 } from "@/features/purchasing/receive-cost-margin";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
-import { normalizeMoneyAmountTyping } from "@/lib/money-input";
 import {
   directPurchaseCreditValidationKey,
   formatMoneyInput,
@@ -63,14 +69,12 @@ import {
   type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
 import {
   clampQuantityToPrecision,
   isValidQuantity,
   maxQuantityDecimals,
   quantityInputMinimum,
-  quantityStepperWholeStep,
 } from "@/lib/quantity-rules";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -137,6 +141,12 @@ export function ReceiveStockPage() {
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const { layout: receiptLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: RECEIVE_STOCK_RECEIPT_TABLE_MIN_PX,
+  });
+  const { layout: findProductsLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: RECEIVE_STOCK_FIND_PRODUCTS_TABLE_MIN_PX,
+  });
 
   const [purchaseDate, setPurchaseDate] = useState(todayIsoDate);
   const [supplierChoice, setSupplierChoice] = useState("");
@@ -807,317 +817,69 @@ export function ReceiveStockPage() {
             </label>
           </Card>
 
-          <div className="receive-stock-workspace">
-            <Card
-              as="section"
-              padding="compact"
-              className="receive-stock-section receive-stock-receipt"
-              data-testid="direct-receipt-items"
-              aria-labelledby="direct-receipt-items-heading"
-            >
-              <div className="receive-stock-section__header">
-                <h2
-                  id="direct-receipt-items-heading"
-                  className="receive-stock-section__title m-0 flex items-center gap-2"
-                >
-                  <span>{t("purchasing.receiptItems")}</span>
-                  <CountBadge count={lines.length} tone="primary" />
-                </h2>
-                <Button
-                  type="button"
-                  onClick={openFinder}
-                  aria-expanded={finderOpen}
-                  aria-controls={finderPanelId}
-                  data-testid="direct-add-products-trigger"
-                >
-                  <Plus className="size-4" aria-hidden />
-                  {t("purchasing.addProducts")}
-                </Button>
-              </div>
-
-              {lines.length === 0 ? (
-                <EmptyState
-                  align="center"
-                  size="compact"
-                  icon={<PackagePlus className="size-5" strokeWidth={1.75} />}
-                  title={t("purchasing.draftEmpty")}
-                  detail={t("purchasing.draftEmptyDetailLeft")}
-                  testId="direct-receipt-empty"
-                />
-              ) : (
-                <>
-                  <ExitsTableContainer
-                    data-testid="direct-receipt-table"
-                    className="receive-stock-receipt-table"
-                  >
-                    <ExitsTable>
-                      <ExitsTableHeader>
-                        <ExitsTableRow>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.receiveProduct")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">{t("purchasing.qtyShort")}</ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.costShort")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.sellingPriceShort")}
-                          </ExitsTableHead>
-                          <ExitsTableHead
-                            cellAlign="text"
-                            className="receive-stock-receipt-table__expiry-col"
-                          >
-                            {t("purchasing.expiryDate")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.lotNumber")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="numeric">
-                            {t("purchasing.lineTotal")}
-                          </ExitsTableHead>
-                          <ExitsTableHead
-                            cellAlign="center"
-                            colSize="actions"
-                            className="receive-stock-receipt-table__action-col"
-                          >
-                            {t("purchasing.action")}
-                          </ExitsTableHead>
-                        </ExitsTableRow>
-                      </ExitsTableHeader>
-                      <ExitsTableBody>
-                        {lines.map((line) => {
-                          const lineTotal = roundMoney(line.quantity * line.unitCost);
-                          const highlighted = highlightProductId === line.productId;
-                          const qtyInvalid = !(line.quantity > 0);
-                          const costInvalid = !(line.unitCost > 0);
-                          const expiryInvalid =
-                            line.tracksExpiration && !line.expiryDate.trim();
-                          const qtyPrecision = maxQuantityDecimals(line.uom, line.sellingMode);
-                          const qtyMin = quantityInputMinimum(line.uom, line.sellingMode);
-                          const marginKind = receiveCostMarginKind(
-                            line.unitCost,
-                            line.effectiveSellingPrice,
-                          );
-                          const marginLabel =
-                            marginKind === "zeroMargin"
-                              ? t("purchasing.costZeroMarginWarning")
-                              : marginKind === "negativeMargin"
-                                ? t("purchasing.costNegativeMarginWarning")
-                                : null;
-                          const sellingDisplay =
-                            line.effectiveSellingPrice > 0
-                              ? formatMoneyInput(line.effectiveSellingPrice)
-                              : "0.00";
-                          return (
-                            <ExitsTableRow
-                              key={line.productId}
-                              className={cn(
-                                highlighted && "receive-stock-receipt-row--highlight",
-                              )}
-                              data-testid={`direct-receipt-line-${line.productId}`}
-                            >
-                              <ExitsTableCell cellAlign="text">
-                                <div className="font-medium leading-snug">{line.name}</div>
-                                {line.sku ? (
-                                  <div className="text-[length:var(--exits-text-xs)] text-muted">
-                                    {line.sku}
-                                  </div>
-                                ) : null}
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
-                                <QuantityStepper
-                                  compact
-                                  value={line.quantity}
-                                  onChange={(next) =>
-                                    patchLine(line.productId, { quantity: next })
-                                  }
-                                  min={qtyMin}
-                                  step={quantityStepperWholeStep()}
-                                  precision={qtyPrecision}
-                                  unit={line.uom}
-                                  invalid={qtyInvalid}
-                                  decreaseLabel={t("purchasing.decreaseQty")}
-                                  increaseLabel={t("purchasing.increaseQty")}
-                                  ariaLabel={t("purchasing.qtyShort")}
-                                  valueTestId={`direct-line-qty-${line.productId}`}
-                                  className="receive-qty-stepper"
-                                />
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
-                                <input
-                                  className="exits-input receive-cost-input tabular-nums"
-                                  value={line.costInput}
-                                  onChange={(e) =>
-                                    patchLine(line.productId, {
-                                      costInput: normalizeMoneyAmountTyping(e.target.value),
-                                    })
-                                  }
-                                  onBlur={(e) => {
-                                    const parsed = parseMoneyInput(e.target.value);
-                                    if (parsed !== null) {
-                                      patchLine(line.productId, {
-                                        costInput: formatMoneyInput(parsed),
-                                      });
-                                    }
-                                  }}
-                                  inputMode="decimal"
-                                  placeholder="0.00"
-                                  autoComplete="off"
-                                  aria-invalid={costInvalid || undefined}
-                                  aria-required
-                                  aria-label={t("purchasing.costShort")}
-                                  data-testid={`direct-line-cost-${line.productId}`}
-                                />
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
-                                <div className="receive-stock-selling-cell">
-                                  <span
-                                    className="receive-stock-selling-readonly tabular-nums"
-                                    aria-label={t("purchasing.sellingPriceShort")}
-                                    data-testid={`direct-line-selling-${line.productId}`}
-                                  >
-                                    {sellingDisplay}
-                                  </span>
-                                  {marginLabel ? (
-                                    <span
-                                      className="receive-stock-margin-warning"
-                                      title={marginLabel}
-                                      role="img"
-                                      aria-label={marginLabel}
-                                      data-testid={`direct-line-margin-warning-${line.productId}`}
-                                      data-margin={marginKind}
-                                    >
-                                      <AlertTriangle aria-hidden strokeWidth={2} />
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </ExitsTableCell>
-                              <ExitsTableCell
-                                cellAlign="text"
-                                className="receive-stock-receipt-table__expiry-col"
-                              >
-                                {line.tracksExpiration ? (
-                                  <input
-                                    type="date"
-                                    className="exits-input receive-stock-expiry-input"
-                                    value={line.expiryDate}
-                                    onChange={(e) =>
-                                      patchLine(line.productId, {
-                                        expiryDate: e.target.value,
-                                      })
-                                    }
-                                    aria-invalid={expiryInvalid || undefined}
-                                    aria-required
-                                    aria-label={t("purchasing.expiryDate")}
-                                    data-testid={`direct-line-expiry-${line.productId}`}
-                                  />
-                                ) : (
-                                  <span className="text-muted">—</span>
-                                )}
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
-                                {line.tracksExpiration ? (
-                                  <input
-                                    className="exits-input receive-stock-lot-input"
-                                    value={line.lotNumber}
-                                    onChange={(e) =>
-                                      patchLine(line.productId, {
-                                        lotNumber: e.target.value,
-                                      })
-                                    }
-                                    aria-label={t("purchasing.lotNumber")}
-                                    data-testid={`direct-line-lot-${line.productId}`}
-                                  />
-                                ) : (
-                                  <span className="text-muted">—</span>
-                                )}
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="numeric">
-                                <span className="font-semibold tabular-nums">
-                                  {formatPeso(lineTotal)}
-                                </span>
-                              </ExitsTableCell>
-                              <ExitsTableCell
-                                cellAlign="center"
-                                colSize="actions"
-                                className="receive-stock-receipt-table__action-col"
-                              >
-                                <ExitsTableActions className="justify-center">
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="icon"
-                                    aria-label={t("purchasing.removeNamed").replace(
-                                      "{name}",
-                                      line.name,
-                                    )}
-                                    onClick={() => removeLine(line.productId)}
-                                    data-testid={`direct-remove-${line.productId}`}
-                                  >
-                                    <Trash2 className="size-4" aria-hidden />
-                                  </Button>
-                                </ExitsTableActions>
-                              </ExitsTableCell>
-                            </ExitsTableRow>
-                          );
-                        })}
-                      </ExitsTableBody>
-                    </ExitsTable>
-                  </ExitsTableContainer>
-                  <div className="receive-stock-receipt__summary">
-                    <div className="receive-stock-receipt__summary-row">
-                      <span className="text-[length:var(--exits-text-sm)] text-muted">
-                        {t("purchasing.receiptItems")}
-                      </span>
-                      <span className="text-[length:var(--exits-text-sm)] tabular-nums">
-                        {lines.length}
-                      </span>
-                    </div>
-                    <div className="receive-stock-receipt__summary-row">
-                      <span className="text-[length:var(--exits-text-sm)] text-muted">
-                        {t("purchasing.receiptTotal")}
-                      </span>
-                      <span
-                        className="text-[length:var(--exits-text-md)] font-semibold tabular-nums"
-                        data-testid="direct-receipt-total"
-                      >
-                        {formatPeso(estimatedTotal)}
-                      </span>
-                    </div>
+          <div className="receive-stock-workspace product-selection-workspace">
+            <SelectedItemsPanel
+              title={t("purchasing.receiptItems")}
+              count={lines.length}
+              headingId="direct-receipt-items-heading"
+              addLabel={t("purchasing.addProducts")}
+              onAddClick={openFinder}
+              finderOpen={finderOpen}
+              finderPanelId={finderPanelId}
+              emptyTitle={t("purchasing.draftEmpty")}
+              emptyDetail={t("purchasing.draftEmptyDetailLeft")}
+              emptyTestId="direct-receipt-empty"
+              addTestId="direct-add-products-trigger"
+              testId="direct-receipt-items"
+              className="receive-stock-receipt"
+              summary={
+                <div className="receive-stock-receipt__summary">
+                  <div className="receive-stock-receipt__summary-row">
+                    <span className="text-[length:var(--exits-text-sm)] text-muted">
+                      {t("purchasing.receiptItems")}
+                    </span>
+                    <span className="text-[length:var(--exits-text-sm)] tabular-nums">
+                      {lines.length}
+                    </span>
                   </div>
-                </>
-              )}
-            </Card>
+                  <div className="receive-stock-receipt__summary-row">
+                    <span className="text-[length:var(--exits-text-sm)] text-muted">
+                      {t("purchasing.receiptTotal")}
+                    </span>
+                    <span
+                      className="text-[length:var(--exits-text-md)] font-semibold tabular-nums"
+                      data-testid="direct-receipt-total"
+                    >
+                      {formatPeso(estimatedTotal)}
+                    </span>
+                  </div>
+                </div>
+              }
+            >
+              <ReceiveStockReceiptItemsView
+                layout={receiptLayout}
+                lines={lines}
+                highlightProductId={highlightProductId}
+                onPatchLine={patchLine}
+                onRemoveLine={removeLine}
+                t={t}
+              />
+            </SelectedItemsPanel>
 
             {finderOpen ? (
-              <Card
-                as="section"
-                padding="compact"
-                id={finderPanelId}
-                className="receive-stock-section receive-stock-add receive-stock-finder"
-                data-testid="direct-add-products"
-                aria-labelledby="direct-add-products-heading"
+              <ProductFinderPanel
+                title={t("purchasing.findProducts")}
+                headingId="direct-add-products-heading"
+                panelId={finderPanelId}
+                closeLabel={t("purchasing.closeFindProducts")}
+                onClose={closeFinder}
+                closeTestId="direct-close-finder"
+                testId="direct-add-products"
               >
-                <div className="receive-stock-section__header">
-                  <h2
-                    id="direct-add-products-heading"
-                    className="receive-stock-section__title m-0"
-                  >
-                    {t("purchasing.findProducts")}
-                  </h2>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={closeFinder}
-                    data-testid="direct-close-finder"
-                    aria-label={t("purchasing.closeFindProducts")}
-                  >
-                    <X className="size-4" aria-hidden />
-                    {t("purchasing.closeFindProducts")}
-                  </Button>
-                </div>
-
-                <div className="receive-stock-finder__filters">
+                <ProductSelectionToolbar
+                  className="receive-stock-finder__filters"
+                  testId="direct-finder-toolbar"
+                >
                   {categories.length > 0 ? (
                     <ReceiveCategoryMultiSelect
                       categories={categoriesWithCounts}
@@ -1153,7 +915,7 @@ export function ReceiveStockPage() {
                       {t("purchasing.trackedOnly")}
                     </FilterChip>
                   </div>
-                </div>
+                </ProductSelectionToolbar>
 
                 {productsQuery.isFetching ? <LoadingState label={t("loading.label")} /> : null}
 
@@ -1185,110 +947,24 @@ export function ReceiveStockPage() {
                 ) : null}
 
                 {!productsQuery.isFetching && productItems.length > 0 ? (
-                  <ExitsTableContainer
-                    data-testid="direct-product-results"
-                    className="receive-stock-product-table"
-                  >
-                    <ExitsTable>
-                      <ExitsTableHeader>
-                        <ExitsTableRow>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.receiveProduct")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.category")}
-                          </ExitsTableHead>
-                          <ExitsTableHead cellAlign="text">
-                            {t("purchasing.inventoryTracking")}
-                          </ExitsTableHead>
-                          <ExitsTableHead
-                            cellAlign="center"
-                            colSize="actions"
-                            className="receive-stock-product-table__action-col"
-                          >
-                            {t("purchasing.action")}
-                          </ExitsTableHead>
-                        </ExitsTableRow>
-                      </ExitsTableHeader>
-                      <ExitsTableBody>
-                        {pagedProductItems.map((product) => {
-                          const notTracked = product.isTracked === false;
-                          const categoryName =
-                            product.categoryId != null
-                              ? (categoryNameById.get(product.categoryId) ?? "—")
-                              : "—";
-                          return (
-                            <ExitsTableRow
-                              key={product.productId}
-                              data-testid={`direct-product-${product.productId}`}
-                            >
-                              <ExitsTableCell cellAlign="text">
-                                <div className="font-medium leading-snug">{product.name}</div>
-                                {product.sku ? (
-                                  <div className="text-[length:var(--exits-text-xs)] text-muted">
-                                    {product.sku}
-                                  </div>
-                                ) : null}
-                              </ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">{categoryName}</ExitsTableCell>
-                              <ExitsTableCell cellAlign="text">
-                                <StatusChip tone={notTracked ? "neutral" : "primary"}>
-                                  {notTracked
-                                    ? t("inventory.notTracked")
-                                    : t("inventory.tracked")}
-                                </StatusChip>
-                              </ExitsTableCell>
-                              <ExitsTableCell
-                                cellAlign="center"
-                                colSize="actions"
-                                className="receive-stock-product-table__action-col"
-                              >
-                                <ExitsTableActions className="justify-center">
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    shape="round"
-                                    variant={notTracked ? "secondary" : "default"}
-                                    onClick={() => addProductRow(product)}
-                                    data-testid={`direct-add-${product.productId}`}
-                                    aria-label={
-                                      notTracked
-                                        ? t("purchasing.inventoryTrackingRequired")
-                                        : t("purchasing.addProduct")
-                                    }
-                                    title={
-                                      notTracked
-                                        ? t("purchasing.inventoryTrackingRequired")
-                                        : t("purchasing.addProduct")
-                                    }
-                                  >
-                                    <Plus className="size-4" aria-hidden />
-                                  </Button>
-                                </ExitsTableActions>
-                              </ExitsTableCell>
-                            </ExitsTableRow>
-                          );
-                        })}
-                      </ExitsTableBody>
-                    </ExitsTable>
-                    <ExitsTablePagination
-                      page={safeProductPage}
-                      pageSize={productPageSize}
-                      total={productTotal}
-                      pageSizeOptions={PRODUCT_PAGE_SIZE_OPTIONS}
-                      onPageChange={setProductPage}
-                      onPageSizeChange={(size) => {
-                        setProductPageSize(size);
-                        setProductPage(1);
-                      }}
-                      rowsPerPageLabel={t("exitsTable.rowsPerPage")}
-                      previousLabel={t("exitsTable.previous")}
-                      nextLabel={t("exitsTable.next")}
-                      rangeLabel={t("exitsTable.range")}
-                    />
-                  </ExitsTableContainer>
+                  <ReceiveStockFindProductsView
+                    layout={findProductsLayout}
+                    products={pagedProductItems}
+                    categoryNameById={categoryNameById}
+                    page={safeProductPage}
+                    pageSize={productPageSize}
+                    total={productTotal}
+                    pageSizeOptions={PRODUCT_PAGE_SIZE_OPTIONS}
+                    onPageChange={setProductPage}
+                    onPageSizeChange={(size) => {
+                      setProductPageSize(size);
+                      setProductPage(1);
+                    }}
+                    onAddProduct={addProductRow}
+                    t={t}
+                  />
                 ) : null}
-              </Card>
+              </ProductFinderPanel>
             ) : null}
           </div>
 

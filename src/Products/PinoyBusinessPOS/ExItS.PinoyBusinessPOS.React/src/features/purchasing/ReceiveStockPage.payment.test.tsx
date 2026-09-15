@@ -446,33 +446,33 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     renderPage();
     await openFinder(user);
     await waitFor(() => {
-      expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
+      expect(screen.getByTestId("direct-category-multiselect")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
+    await user.click(screen.getByTestId("direct-category-multiselect"));
     expect(screen.getByTestId("direct-category-multiselect-search")).toBeInTheDocument();
     // Counts render for every category, including 0.
     expect(
-      within(screen.getByTestId(`direct-category-option-${categoryCanned}`)).getByText("1"),
+      within(screen.getByTestId(`direct-category-multiselect-option-${categoryCanned}`)).getByText("1"),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByTestId(`direct-category-option-${categoryEmpty}`)).getByText("0"),
+      within(screen.getByTestId(`direct-category-multiselect-option-${categoryEmpty}`)).getByText("0"),
     ).toBeInTheDocument();
     await user.type(screen.getByTestId("direct-category-multiselect-search"), "fruit");
-    expect(screen.getByTestId(`direct-category-option-${categoryFruits}`)).toBeInTheDocument();
-    expect(screen.queryByTestId(`direct-category-option-${categoryCanned}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`direct-category-multiselect-option-${categoryFruits}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`direct-category-multiselect-option-${categoryCanned}`)).not.toBeInTheDocument();
     await user.clear(screen.getByTestId("direct-category-multiselect-search"));
-    await user.click(screen.getByTestId(`direct-category-option-${categoryCanned}`));
+    await user.click(screen.getByTestId(`direct-category-multiselect-option-${categoryCanned}`));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.queryByTestId(`direct-product-${productId2}`)).not.toBeInTheDocument();
     });
     expect(screen.queryByTestId("direct-category-filters")).not.toBeInTheDocument();
 
-    if (!screen.queryByTestId(`direct-category-option-${categoryFruits}`)) {
-      await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
+    if (!screen.queryByTestId(`direct-category-multiselect-option-${categoryFruits}`)) {
+      await user.click(screen.getByTestId("direct-category-multiselect"));
     }
-    await user.click(screen.getByTestId(`direct-category-option-${categoryFruits}`));
+    await user.click(screen.getByTestId(`direct-category-multiselect-option-${categoryFruits}`));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
@@ -486,17 +486,17 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       // "Other" is outside listed categories, so Select all does not include it.
       expect(screen.queryByTestId(`direct-product-${productId3}`)).not.toBeInTheDocument();
     });
-    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+    expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
       "3 selected",
     );
 
-    await user.click(screen.getByTestId("direct-category-multiselect-deselect-all"));
+    await user.click(screen.getByTestId("direct-category-multiselect-clear"));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId2}`)).toBeInTheDocument();
       expect(screen.getByTestId(`direct-product-${productId3}`)).toBeInTheDocument();
     });
-    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+    expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
       "Select categories",
     );
   });
@@ -506,18 +506,18 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     renderPage();
     await openFinder(user);
     await waitFor(() => {
-      expect(screen.getByTestId("direct-category-multiselect-trigger")).toBeInTheDocument();
+      expect(screen.getByTestId("direct-category-multiselect")).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
-    await user.click(screen.getByTestId(`direct-category-option-${categoryFruits}`));
+    await user.click(screen.getByTestId("direct-category-multiselect"));
+    await user.click(screen.getByTestId(`direct-category-multiselect-option-${categoryFruits}`));
     await waitFor(() => {
-      expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+      expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
         "1 selected",
       );
     });
     await user.click(screen.getByTestId("direct-close-finder"));
     await openFinder(user);
-    expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
+    expect(screen.getByTestId("direct-category-multiselect")).toHaveTextContent(
       "1 selected",
     );
   });
@@ -579,6 +579,44 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     });
   });
 
+  it("keeps table layout for find products when viewport is wide enough", async () => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      configurable: true,
+      value: (query: string) => ({
+        matches: query.includes("min-width: 768px") || query.includes("min-width: 1024px"),
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    });
+    try {
+      const user = userEvent.setup();
+      renderPage();
+      await openFinder(user);
+      await waitFor(() => {
+        expect(screen.getByTestId("direct-product-results")).toHaveAttribute(
+          "data-layout",
+          "table",
+        );
+      });
+      expect(
+        within(screen.getByTestId("direct-product-results")).getByText("Action"),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("direct-product-results")).getByText("Inventory tracking"),
+      ).toBeInTheDocument();
+    } finally {
+      // Restore jsdom default (no matchMedia) so later tests resolve LIST.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (window as any).matchMedia;
+    }
+  });
+
   it("shows tracking status chips and toasts when adding an untracked product", async () => {
     const untrackedId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4";
     listCatalogProducts.mockResolvedValue({
@@ -602,11 +640,10 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     await waitFor(() => {
       expect(screen.getByTestId(`direct-add-${untrackedId}`)).toBeInTheDocument();
     });
-    expect(within(screen.getByTestId("direct-product-results")).getByText("Action")).toBeInTheDocument();
-    expect(within(screen.getByTestId("direct-product-results")).getByText("Category")).toBeInTheDocument();
     expect(
-      within(screen.getByTestId("direct-product-results")).getByText("Inventory tracking"),
-    ).toBeInTheDocument();
+      within(screen.getByTestId("direct-product-results")).getAllByText("Category").length,
+    ).toBeGreaterThan(0);
+    expect(within(screen.getByTestId(`direct-product-${untrackedId}`)).getByText("Not tracked")).toBeInTheDocument();
     expect(screen.getByTestId("direct-tracking-filter-chip")).toHaveTextContent("Tracked only");
     expect(
       within(screen.getByTestId(`direct-product-${untrackedId}`)).getByText("Not tracked"),

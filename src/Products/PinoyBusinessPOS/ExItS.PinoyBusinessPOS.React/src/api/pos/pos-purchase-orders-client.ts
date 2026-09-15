@@ -551,6 +551,21 @@ export async function acceptConnectedPurchaseOrderChanges(
   return posPurchaseOrderDtoSchema.parse(raw);
 }
 
+/** Decline supplier-proposed revisions only — does not cancel the purchase order. */
+export async function declineConnectedPurchaseOrderChanges(
+  workspace: PosWorkspaceScope,
+  purchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<PosPurchaseOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/decline-changes`,
+  });
+  return posPurchaseOrderDtoSchema.parse(raw);
+}
+
 /**
  * Goods receipt — the only PO client method that increases inventory.
  * Always send a client-generated goodsReceiptId for idempotency (MAUI pattern).
@@ -646,6 +661,7 @@ export const NON_STOCK_PURCHASE_ORDER_METHODS = [
   "submitPurchaseOrder",
   "cancelPurchaseOrder",
   "acceptConnectedPurchaseOrderChanges",
+  "declineConnectedPurchaseOrderChanges",
   "getGoodsReceipt",
   "listGoodsReceiptsForPurchaseOrder",
   "voidGoodsReceipt",

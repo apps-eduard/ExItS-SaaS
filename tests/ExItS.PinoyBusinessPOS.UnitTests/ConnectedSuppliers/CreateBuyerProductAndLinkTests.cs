@@ -3,10 +3,15 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
 
@@ -303,7 +308,7 @@ public sealed class CreateBuyerProductAndLinkTests
     }
 
     [Fact]
-    public void Create_and_link_source_does_not_reference_inventory_or_receiving_types()
+    public void Create_and_link_enables_tracked_inventory_at_zero_without_receiving_paths()
     {
         var path = Path.Combine(
             FindRepoRoot(),
@@ -318,14 +323,15 @@ public sealed class CreateBuyerProductAndLinkTests
         Assert.True(start >= 0);
         var body = source[start..];
 
-        Assert.DoesNotContain("Inventory", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("StockMovement", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IngredientInventoryTracking.EnsureTrackedAsync", body, StringComparison.Ordinal);
+        Assert.Contains("LinkedCatalogBuyerCategoryResolver", body, StringComparison.Ordinal);
         Assert.DoesNotContain("PurchaseStock", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("GoodsReceipt", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("openingQuantity: 1", body, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public async Task Create_and_link_does_not_inject_inventory_dependencies_and_creates_catalog_product_only()
+    public async Task Create_and_link_tracks_inventory_at_zero_and_does_not_copy_supplier_qty()
     {
         var harness = CreateHarness();
 
@@ -340,14 +346,177 @@ public sealed class CreateBuyerProductAndLinkTests
         Assert.Single(harness.Products.Items);
         Assert.Single(harness.Links.Items);
 
+        var account = Assert.Single(harness.Inventory.Accounts);
+        Assert.True(account.IsTracked);
+        Assert.Equal(0m, account.OnHandQuantity);
+        Assert.Equal(0m, account.AvailableQuantity);
+        Assert.Equal(0, harness.Inventory.MovementCount);
+
         var ctorParams = typeof(CreateBuyerProductAndLink)
             .GetConstructors()
             .SelectMany(c => c.GetParameters())
             .Select(p => p.ParameterType.FullName ?? p.ParameterType.Name)
             .ToList();
-        Assert.DoesNotContain(ctorParams, name => name.Contains("Inventory", StringComparison.OrdinalIgnoreCase));
-        Assert.DoesNotContain(ctorParams, name => name.Contains("StockMovement", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(ctorParams, name => name.Contains("IInventoryRepository", StringComparison.Ordinal));
         Assert.DoesNotContain(ctorParams, name => name.Contains("GoodsReceipt", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(ctorParams, name => name.Contains("PurchaseStock", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Create_and_link_reuses_existing_buyer_category_by_normalized_name()
+    {
+        var harness = CreateHarness(exposureCategory: "  Coffee ");
+        var existing = ProductCategory.Create(Buyer, "coffee", Now);
+        harness.Categories.Seed(existing);
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        var product = Assert.Single(harness.Products.Items);
+        Assert.Equal(existing.Id, product.CategoryId);
+        Assert.Single(harness.Categories.Items);
+    }
+
+    [Fact]
+    public async Task Create_and_link_creates_buyer_category_once_and_reuses_for_second_product()
+    {
+        var firstHarness = CreateHarness(exposureCategory: "Snacks");
+        var first = await firstHarness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            firstHarness.Relationship.Id.Value,
+            Request(firstHarness.Exposure, name: "Chip A", sellingPrice: 10m));
+        Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
+        Assert.Single(firstHarness.Categories.Items);
+        var categoryId = Assert.Single(firstHarness.Categories.Items).Id;
+
+        var secondExposure = SupplierProductExposure.Expose(
+            Supplier,
+            CatalogProductId.New(),
+            "Chip B",
+            "Piece",
+            12m,
+            Now.AddMinutes(10),
+            sku: "SUP-CHIP-B",
+            category: "snacks");
+        firstHarness.Exposures.Seed(secondExposure);
+        firstHarness.Shares.Seed(ConnectedBuyerProductShare.Share(
+            firstHarness.Relationship.Id,
+            Buyer,
+            Supplier,
+            secondExposure.ProductId,
+            Now.AddMinutes(11)));
+
+        var second = await firstHarness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            firstHarness.Relationship.Id.Value,
+            Request(secondExposure, name: "Chip B", sellingPrice: 12m));
+        Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
+        Assert.Single(firstHarness.Categories.Items);
+        Assert.All(
+            firstHarness.Products.Items.Where(p => p.OrganizationId == Buyer),
+            p => Assert.Equal(categoryId, p.CategoryId));
+    }
+
+    [Fact]
+    public async Task Create_and_link_leaves_uncategorized_when_supplier_has_no_category()
+    {
+        var harness = CreateHarness(exposureCategory: null);
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        var product = Assert.Single(harness.Products.Items);
+        Assert.Null(product.CategoryId);
+        Assert.Empty(harness.Categories.Items);
+        Assert.DoesNotContain(
+            harness.Categories.Items,
+            c => c.Name.Equals("Other", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Create_and_link_ignores_request_category_id_and_uses_supplier_category_name()
+    {
+        var harness = CreateHarness(exposureCategory: "Beverages");
+        var foreignCategoryId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+
+        var result = await harness.CreateQuickCreate().ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure) with { CategoryId = foreignCategoryId });
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        var product = Assert.Single(harness.Products.Items);
+        Assert.NotNull(product.CategoryId);
+        Assert.NotEqual(foreignCategoryId, product.CategoryId.Value);
+        var category = Assert.Single(harness.Categories.Items);
+        Assert.Equal("BEVERAGES", category.NormalizedName);
+        Assert.Equal(category.Id, product.CategoryId);
+    }
+
+    [Fact]
+    public void Create_and_link_category_concurrency_uses_serializable_uow_and_unique_active_name()
+    {
+        var useCasePath = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Application",
+            "ConnectedSuppliers",
+            "CreateBuyerProductAndLinkUseCases.cs");
+        var useCaseSource = File.ReadAllText(useCasePath);
+        Assert.Contains("ExecuteInSerializableTransactionAsync", useCaseSource, StringComparison.Ordinal);
+        Assert.Contains("PersistenceConflictException", useCaseSource, StringComparison.Ordinal);
+
+        var dbContextPath = Path.Combine(
+            FindRepoRoot(),
+            "src",
+            "Products",
+            "PinoyBusinessPOS",
+            "ExItS.PinoyBusinessPOS.Infrastructure",
+            "Persistence",
+            "PosDbContext.cs");
+        var dbSource = File.ReadAllText(dbContextPath);
+        Assert.Contains("ux_product_categories_org_active_name", dbSource, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Create_and_link_category_persistence_conflict_reuses_winner()
+    {
+        var harness = CreateHarness(exposureCategory: "Dairy");
+        var winner = ProductCategory.Create(Buyer, "Dairy", Now);
+        var racingCategories = new RacingCategories(winner);
+        var useCase = new CreateBuyerProductAndLink(
+            harness.Relationships,
+            harness.Exposures,
+            harness.Shares,
+            harness.Links,
+            harness.Products,
+            harness.Units,
+            racingCategories,
+            harness.Brands,
+            harness.Inventory,
+            harness.Uow,
+            harness.Access,
+            harness.Clock,
+            harness.Time);
+
+        var result = await useCase.ExecuteAsync(
+            Buyer.Value,
+            harness.Relationship.Id.Value,
+            Request(harness.Exposure));
+
+        Assert.True(result.IsSuccess, $"{result.ErrorCode}: {result.ErrorMessage}");
+        Assert.Equal(1, racingCategories.AddAttempts);
+        Assert.True(racingCategories.RecoveredAfterConflict);
+        var product = Assert.Single(harness.Products.Items);
+        Assert.Equal(winner.Id, product.CategoryId);
     }
 
     [Fact]
@@ -391,6 +560,7 @@ public sealed class CreateBuyerProductAndLinkTests
         decimal? buyerSpecificPoPrice = null,
         PosOrganizationId? exposureSupplier = null,
         string exposureUom = "Kilogram",
+        string? exposureCategory = null,
         CatalogProductId? supplierProductId = null,
         InMemoryProducts? products = null)
     {
@@ -411,7 +581,8 @@ public sealed class CreateBuyerProductAndLinkTests
             exposureUom,
             supplierOrderPrice,
             Now.AddMinutes(2),
-            sku: "SUP-RICE");
+            sku: "SUP-RICE",
+            category: exposureCategory);
         if (!orderable)
         {
             exposure.MarkNotOrderable(Now.AddMinutes(3));
@@ -442,6 +613,7 @@ public sealed class CreateBuyerProductAndLinkTests
             new InMemoryUnits(),
             new InMemoryCategories(),
             new InMemoryBrands(),
+            new InMemoryInventory(),
             new FakeUow(),
             new FakeAccess(),
             new FixedClock(Now.AddMinutes(5)),
@@ -483,13 +655,14 @@ public sealed class CreateBuyerProductAndLinkTests
         InMemoryUnits Units,
         InMemoryCategories Categories,
         InMemoryBrands Brands,
+        InMemoryInventory Inventory,
         FakeUow Uow,
         FakeAccess Access,
         FixedClock Clock,
         FixedTimeProvider Time)
     {
         public CreateBuyerProductAndLink CreateQuickCreate() =>
-            new(Relationships, Exposures, Shares, Links, Products, Units, Categories, Brands, Uow, Access, Clock, Time);
+            new(Relationships, Exposures, Shares, Links, Products, Units, Categories, Brands, Inventory, Uow, Access, Clock, Time);
 
         public LinkProduct CreateLinkProduct() =>
             new(Relationships, Exposures, Links, Products, Units, Uow, Access, Shares, Time);
@@ -924,22 +1097,92 @@ public sealed class CreateBuyerProductAndLinkTests
         }
     }
 
-    private sealed class InMemoryCategories : IProductCategoryRepository
+    private sealed class RacingCategories(ProductCategory winner) : IProductCategoryRepository
     {
-        private readonly List<ProductCategory> _items = [];
+        public int AddAttempts { get; private set; }
+        public bool RecoveredAfterConflict { get; private set; }
+        private int _findCount;
 
         public Task<ProductCategory?> GetByIdAsync(
             PosOrganizationId organizationId,
             ProductCategoryId categoryId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
+            Task.FromResult<ProductCategory?>(
+                winner.OrganizationId == organizationId && winner.Id == categoryId ? winner : null);
+
+        public Task<ProductCategory?> FindActiveByNormalizedNameAsync(
+            PosOrganizationId organizationId,
+            string normalizedName,
+            CancellationToken cancellationToken = default)
+        {
+            _findCount++;
+            // First lookup misses (race window); later lookups return the concurrent winner.
+            if (_findCount == 1)
+            {
+                return Task.FromResult<ProductCategory?>(null);
+            }
+
+            RecoveredAfterConflict = true;
+            return Task.FromResult<ProductCategory?>(
+                organizationId == winner.OrganizationId
+                && winner.NormalizedName == normalizedName
+                && winner.Status == ProductCategoryStatus.Active
+                    ? winner
+                    : null);
+        }
+
+        public Task<ProductCategory?> FindActiveBySourceGlobalCategoryIdAsync(
+            PosOrganizationId organizationId,
+            Guid sourceGlobalCategoryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<ProductCategory?>(null);
+
+        public Task<(IReadOnlyList<ProductCategory> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            ProductCategoryStatus? status,
+            string? search,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<ProductCategory>, int)>(([winner], 1));
+
+        public Task<IReadOnlyList<ProductCategory>> ListByIdsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<ProductCategoryId> categoryIds,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ProductCategory>>(
+                categoryIds.Contains(winner.Id) ? [winner] : []);
+
+        public Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default)
+        {
+            AddAttempts++;
+            throw new PersistenceConflictException(
+                ApplicationErrorCodes.ConcurrencyConflict,
+                "An active category with this name already exists.");
+        }
+
+        public Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class InMemoryCategories : IProductCategoryRepository
+    {
+        public List<ProductCategory> Items { get; } = [];
+
+        public void Seed(ProductCategory category) => Items.Add(category);
+
+        public Task<ProductCategory?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            ProductCategoryId categoryId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(x =>
                 x.OrganizationId == organizationId && x.Id == categoryId));
 
         public Task<ProductCategory?> FindActiveByNormalizedNameAsync(
             PosOrganizationId organizationId,
             string normalizedName,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
+            Task.FromResult(Items.FirstOrDefault(x =>
                 x.OrganizationId == organizationId
                 && x.NormalizedName == normalizedName
                 && x.Status == ProductCategoryStatus.Active));
@@ -948,7 +1191,7 @@ public sealed class CreateBuyerProductAndLinkTests
             PosOrganizationId organizationId,
             Guid sourceGlobalCategoryId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(_items.FirstOrDefault(x =>
+            Task.FromResult(Items.FirstOrDefault(x =>
                 x.OrganizationId == organizationId
                 && x.SourceGlobalCategoryId == sourceGlobalCategoryId
                 && x.Status == ProductCategoryStatus.Active));
@@ -961,7 +1204,7 @@ public sealed class CreateBuyerProductAndLinkTests
             int take,
             CancellationToken cancellationToken = default)
         {
-            var items = _items.Where(x => x.OrganizationId == organizationId).ToList();
+            var items = Items.Where(x => x.OrganizationId == organizationId).ToList();
             return Task.FromResult<(IReadOnlyList<ProductCategory>, int)>(
                 (items.Skip(skip).Take(take).ToList(), items.Count));
         }
@@ -971,17 +1214,59 @@ public sealed class CreateBuyerProductAndLinkTests
             IReadOnlyCollection<ProductCategoryId> categoryIds,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<ProductCategory>>(
-                _items.Where(x =>
+                Items.Where(x =>
                     x.OrganizationId == organizationId && categoryIds.Contains(x.Id)).ToList());
 
         public Task AddAsync(ProductCategory category, CancellationToken cancellationToken = default)
         {
-            _items.Add(category);
+            // Mirror ux_product_categories_org_active_name (Active names unique per org).
+            if (Items.Any(x =>
+                    x.OrganizationId == category.OrganizationId
+                    && x.NormalizedName == category.NormalizedName
+                    && x.Status == ProductCategoryStatus.Active))
+            {
+                throw new PersistenceConflictException(
+                    ApplicationErrorCodes.ConcurrencyConflict,
+                    "An active category with this name already exists.");
+            }
+
+            Items.Add(category);
             return Task.CompletedTask;
         }
 
         public Task UpdateAsync(ProductCategory category, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Inventory fake used by EnsureTrackedAsync (Get/Add/Update only). Does not invent stock.
+    /// </summary>
+    private sealed class InMemoryInventory : CostResolverInventoryStub
+    {
+        public List<InventoryAccount> Accounts { get; } = [];
+        public int MovementCount { get; private set; }
+
+        public override Task<InventoryAccount?> GetByProductIdAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Accounts.FirstOrDefault(x =>
+                x.OrganizationId == organizationId && x.ProductId == productId));
+
+        public override Task AddAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default)
+        {
+            Accounts.Add(account);
+            return Task.CompletedTask;
+        }
+
+        public override Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public override Task AddMovementAsync(StockMovement movement, CancellationToken cancellationToken = default)
+        {
+            MovementCount++;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryBrands : IProductBrandRepository

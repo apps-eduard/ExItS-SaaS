@@ -38,7 +38,7 @@ public sealed class ConnectedPurchaseOrderSupplierStockTests
     }
 
     [Fact]
-    public async Task Out_of_stock_tracked_product_is_rejected()
+    public async Task Out_of_stock_tracked_product_is_allowed_on_po_validate()
     {
         var productId = CatalogProductId.New();
         var relationship = ActiveRelationship();
@@ -69,14 +69,11 @@ public sealed class ConnectedPurchaseOrderSupplierStockTests
             branches: null,
             CancellationToken.None);
 
-        Assert.NotNull(result);
-        Assert.False(result!.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.OutOfStockSupplierProduct, result.ErrorCode);
-        Assert.Equal("Bath Soap Bar is out of stock.", result.ErrorMessage);
+        Assert.Null(result);
     }
 
     [Fact]
-    public async Task Qty_exceeding_available_is_rejected_with_details()
+    public async Task Qty_exceeding_available_is_allowed_on_po_validate()
     {
         var productId = CatalogProductId.New();
         var relationship = ActiveRelationship();
@@ -107,19 +104,13 @@ public sealed class ConnectedPurchaseOrderSupplierStockTests
             branches: null,
             CancellationToken.None);
 
-        Assert.NotNull(result);
-        Assert.False(result!.IsSuccess);
-        Assert.Equal(ConnectedSupplierErrorCodes.InsufficientSupplierStock, result.ErrorCode);
-        Assert.Equal("Biscuit Pack has only 10 available; 15 was requested.", result.ErrorMessage);
-        Assert.Equal("10", result.ErrorDetails!["availableQuantity"]);
-        Assert.Equal("15", result.ErrorDetails["requestedQuantity"]);
+        Assert.Null(result);
     }
 
     [Fact]
-    public async Task Uses_supplier_branch_stock_not_other_branch()
+    public async Task LoadSnapshots_uses_supplier_branch_stock_not_other_branch()
     {
         var productId = CatalogProductId.New();
-        var relationship = ActiveRelationship();
         var inventory = new StockInventoryStub();
         inventory.Seed(InventoryAccount.Rehydrate(
             InventoryAccountId.From(productId.Value),
@@ -145,69 +136,17 @@ public sealed class ConnectedPurchaseOrderSupplierStockTests
             onHandQuantity: 2m,
             Now));
 
-        var ok = await ConnectedPurchaseOrderSupplierStock.ValidateDemandsAsync(
-            relationship,
-            [new(productId.Value, 2m, 1m, "Item")],
-            inventory,
-            balances,
-            branches: null,
-            CancellationToken.None);
-        Assert.Null(ok);
-
-        var over = await ConnectedPurchaseOrderSupplierStock.ValidateDemandsAsync(
-            relationship,
-            [new(productId.Value, 3m, 1m, "Item")],
-            inventory,
-            balances,
-            branches: null,
-            CancellationToken.None);
-        Assert.NotNull(over);
-        Assert.Equal(ConnectedSupplierErrorCodes.InsufficientSupplierStock, over!.ErrorCode);
-    }
-
-    [Fact]
-    public async Task Package_multiplier_compares_in_base_units()
-    {
-        var productId = CatalogProductId.New();
-        var relationship = ActiveRelationship();
-        var inventory = new StockInventoryStub();
-        inventory.Seed(InventoryAccount.Rehydrate(
-            InventoryAccountId.From(productId.Value),
+        var snapshots = await ConnectedPurchaseOrderSupplierStock.LoadSnapshotsAsync(
             SupplierOrg,
-            productId,
-            isTracked: true,
-            reorderLevel: null,
-            reorderQuantity: null,
-            onHandQuantity: 24m,
-            createdAtUtc: Now,
-            updatedAtUtc: Now));
-        var balances = new InMemoryBalances();
-        balances.Seed(InventoryBranchBalance.Create(
-            SupplierOrg,
-            PosBranchId.From(SupplierBranchId),
-            productId,
-            onHandQuantity: 24m,
-            Now));
-
-        var ok = await ConnectedPurchaseOrderSupplierStock.ValidateDemandsAsync(
-            relationship,
-            [new(productId.Value, 2m, 12m, "Case Pack")],
+            SupplierBranchId,
+            [productId.Value],
             inventory,
             balances,
             branches: null,
             CancellationToken.None);
-        Assert.Null(ok);
 
-        var over = await ConnectedPurchaseOrderSupplierStock.ValidateDemandsAsync(
-            relationship,
-            [new(productId.Value, 3m, 12m, "Case Pack")],
-            inventory,
-            balances,
-            branches: null,
-            CancellationToken.None);
-        Assert.NotNull(over);
-        Assert.Equal(ConnectedSupplierErrorCodes.InsufficientSupplierStock, over!.ErrorCode);
-        Assert.Equal("Case Pack has only 2 available; 3 was requested.", over.ErrorMessage);
+        Assert.True(snapshots[productId.Value].IsTracked);
+        Assert.Equal(2m, snapshots[productId.Value].AvailableBaseQuantity);
     }
 
     [Fact]
@@ -274,7 +213,7 @@ public sealed class ConnectedPurchaseOrderSupplierStockTests
 
         _ = await ConnectedPurchaseOrderSupplierStock.ValidateDemandsAsync(
             relationship,
-            [new(productId.Value, 2m, 1m, "Item")],
+            [new(productId.Value, 20m, 1m, "Item")],
             inventory,
             balances,
             branches: null,

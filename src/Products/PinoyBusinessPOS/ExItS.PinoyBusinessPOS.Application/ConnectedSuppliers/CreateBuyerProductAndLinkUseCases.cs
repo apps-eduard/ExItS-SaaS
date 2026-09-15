@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -261,6 +262,10 @@ public sealed class SuggestBuyerProductMatches
 /// local Manual products only (<c>PlatformGlobalProductId</c> /
 /// <c>PlatformTemplateId</c> must stay null). Do not copy the supplier
 /// product's platform ids; supplier and buyer products remain separate.
+/// Inventory: physical add-as-new enables tracking at OnHand 0 — never copies
+/// supplier stock and never creates receive/opening movements from this path.
+/// Category: resolve buyer category by supplier category name (reuse / create);
+/// never assign a supplier org CategoryId.
 /// </summary>
 public sealed class CreateBuyerProductAndLink
 {
@@ -272,6 +277,7 @@ public sealed class CreateBuyerProductAndLink
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IProductBrandRepository _brands;
+    private readonly IInventoryRepository _inventory;
     private readonly IPurchaseOrderRepository? _purchaseOrders;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
@@ -287,6 +293,7 @@ public sealed class CreateBuyerProductAndLink
         ICatalogProductUnitRepository units,
         IProductCategoryRepository categories,
         IProductBrandRepository brands,
+        IInventoryRepository inventory,
         IPosUnitOfWork uow,
         IPosCommercialAccessAccessor access,
         IClock clock,
@@ -301,6 +308,7 @@ public sealed class CreateBuyerProductAndLink
         _units = units;
         _categories = categories;
         _brands = brands;
+        _inventory = inventory;
         _purchaseOrders = purchaseOrders;
         _uow = uow;
         _access = access;
@@ -428,6 +436,16 @@ public sealed class CreateBuyerProductAndLink
 
         // Buyer SellingPrice is independent of supplier PO price. Never equate them here.
         // Local POS create only — never Platform Global Catalog import or write.
+        // Never assign supplier CategoryId; resolve buyer category from supplier category name.
+        var buyerCategoryId = await LinkedCatalogBuyerCategoryResolver
+            .ResolveOrCreateAsync(
+                _categories,
+                buyer,
+                exposure.CategoryNameSnapshot,
+                _clock.UtcNow,
+                ct)
+            .ConfigureAwait(false);
+
         var staged = await CatalogProductCreateCore.StageAsync(
             _products,
             _units,
@@ -442,7 +460,7 @@ public sealed class CreateBuyerProductAndLink
             request.Description,
             request.Sku,
             request.Barcode,
-            request.CategoryId,
+            buyerCategoryId,
             request.BrandId,
             request.ClientProductId,
             sellingMode: null,
@@ -480,6 +498,22 @@ public sealed class CreateBuyerProductAndLink
             return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
                 ApplicationErrorCodes.CatalogBulkValidation,
                 "Connected supplier imports must not auto-enable connected buyer sharing.");
+        }
+
+        // Physical inventory products: tracked at OnHand 0. Never copy supplier quantity;
+        // Enable with opening 0 creates no stock movement.
+        var tracking = await IngredientInventoryTracking.EnsureTrackedAsync(
+            _inventory,
+            buyer,
+            product.Id,
+            product.UnitOfMeasure,
+            product.SellingMode,
+            _clock.UtcNow,
+            ct).ConfigureAwait(false);
+        if (!tracking.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<CreateBuyerProductAndLinkResultDto>(
+                tracking.ErrorCode!, tracking.ErrorMessage!);
         }
 
         var existingByBuyer = await _links.FindAsync(relationship.Id, product.Id, ct).ConfigureAwait(false);
@@ -566,4 +600,67 @@ public sealed class CreateBuyerProductAndLink
             product?.SellingPrice ?? 0m,
             createdNewProduct,
             alreadyLinked);
+}
+
+/// <summary>
+/// Resolves a buyer-owned category from a supplier category name snapshot.
+/// Never uses supplier CategoryId. Empty/missing supplier category → uncategorized (no "Other").
+/// Concurrency: find-then-create under the caller's serializable UoW; unique active-name index
+/// (<c>ux_product_categories_org_active_name</c>) plus PersistenceConflict recovery prevents duplicates.
+/// </summary>
+internal static class LinkedCatalogBuyerCategoryResolver
+{
+    public static async Task<Guid?> ResolveOrCreateAsync(
+        IProductCategoryRepository categories,
+        PosOrganizationId buyerOrganizationId,
+        string? supplierCategoryName,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(supplierCategoryName))
+        {
+            return null;
+        }
+
+        string normalized;
+        string displayName;
+        try
+        {
+            displayName = ProductCategory.NormalizeName(supplierCategoryName);
+            normalized = ProductCategory.Normalize(displayName);
+        }
+        catch (DomainException)
+        {
+            // Invalid supplier category text → leave product uncategorized (never invent "Other").
+            return null;
+        }
+
+        var existing = await categories
+            .FindActiveByNormalizedNameAsync(buyerOrganizationId, normalized, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            return existing.Id.Value;
+        }
+
+        try
+        {
+            var created = ProductCategory.Create(buyerOrganizationId, displayName, utcNow);
+            await categories.AddAsync(created, cancellationToken).ConfigureAwait(false);
+            return created.Id.Value;
+        }
+        catch (PersistenceConflictException)
+        {
+            // Concurrent Add-as-new created the same active name; reuse the winner.
+            var raced = await categories
+                .FindActiveByNormalizedNameAsync(buyerOrganizationId, normalized, cancellationToken)
+                .ConfigureAwait(false);
+            if (raced is not null)
+            {
+                return raced.Id.Value;
+            }
+
+            throw;
+        }
+    }
 }

@@ -144,6 +144,8 @@ internal static class PosApiResults
             or DomainErrorCodes.InventoryAlreadyTracked
             or DomainErrorCodes.InventoryNotTracked
             or DomainErrorCodes.IngredientRequiresTrackedInventory
+            or DomainErrorCodes.ConnectedShareRequiresTrackedInventory
+            or DomainErrorCodes.ConnectedShareBlocksDisableTracking
             or ApplicationErrorCodes.ExpenseCategoryNameConflict
             or ApplicationErrorCodes.ExpenseNumberConflict
             or ApplicationErrorCodes.ExpenseConcurrencyConflict

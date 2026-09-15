@@ -179,8 +179,10 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [paymentTerms, setPaymentTerms] = useState("30");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
-  const [stepperWhole, setStepperWhole] = useState(2);
+  const [stepperWhole, setStepperWhole] = useState(1);
   const [stepperWeighted, setStepperWeighted] = useState(1.5);
+  const [stepperFractional, setStepperFractional] = useState(0.5);
+  const [stepperLarge, setStepperLarge] = useState(1250.5);
   const [selectedRow, setSelectedRow] = useState("1");
   const [tableSearch, setTableSearch] = useState("");
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
@@ -776,11 +778,16 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             <div className="flex flex-col gap-2" data-testid="ui-standard-quantity-stepper">
               <SectionLabel>QuantityStepper</SectionLabel>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Canonical <code className="text-foreground">QuantityStepper</code> —{" "}
-                <strong className="font-medium text-foreground">[ soft-danger − ][ qty ][ primary + ]</strong>
-                . Minus uses soft danger fill; plus follows the global Primary Palette. Input stays
-                neutral and auto-widens with the typed value (12–20ch). Divisible units (e.g. Kg): ±1
-                preserves decimals (1.5→2.5); whole units reject decimal typing. Values &lt; 1 snap to 1.
+                Canonical <code className="text-foreground">QuantityStepper</code> (
+                <code className="text-foreground">MoneyQuantity.tsx</code>) —{" "}
+                <strong className="font-medium text-foreground">
+                  [ neutral − ][ editable qty ][ primary + ]
+                </strong>
+                . Minus is neutral; plus uses Primary. Measured units default to whole display
+                (1 not 1.00) but accept typed decimals up to 2 places (1.25). Fractions below 1
+                are allowed (min typically 0.01). Whole units stay integers (min 1). ±1 preserves
+                remainder. Thousands only on committed display; draft typing stays raw. Receive
+                Stock / Create PO reuse this component.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <QuantityStepper
@@ -800,7 +807,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   compact
                   value={stepperWeighted}
                   onChange={setStepperWeighted}
-                  min={1}
+                  min={0.01}
                   step={1}
                   precision={2}
                   unit="Kg"
@@ -808,6 +815,45 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   increaseLabel="Increase weight quantity"
                   ariaLabel="Weighted quantity"
                   valueTestId="ui-standard-qty-weighted"
+                />
+                <QuantityStepper
+                  compact
+                  value={stepperFractional}
+                  onChange={setStepperFractional}
+                  min={0.01}
+                  step={1}
+                  precision={2}
+                  unit="Kg"
+                  decreaseLabel="Decrease fractional quantity"
+                  increaseLabel="Increase fractional quantity"
+                  ariaLabel="Fractional kilogram quantity"
+                  valueTestId="ui-standard-qty-fractional"
+                />
+                <QuantityStepper
+                  compact
+                  value={stepperLarge}
+                  onChange={setStepperLarge}
+                  min={0.01}
+                  step={1}
+                  precision={2}
+                  unit="Kg"
+                  decreaseLabel="Decrease large quantity"
+                  increaseLabel="Increase large quantity"
+                  ariaLabel="Large quantity with thousands"
+                  valueTestId="ui-standard-qty-large"
+                />
+                <QuantityStepper
+                  compact
+                  value={0.01}
+                  onChange={() => undefined}
+                  min={0.01}
+                  step={1}
+                  precision={2}
+                  unit="Kg"
+                  decreaseLabel="Decrease at measured minimum"
+                  increaseLabel="Increase at measured minimum"
+                  ariaLabel="Measured minimum (minus disabled)"
+                  valueTestId="ui-standard-qty-at-min"
                 />
                 <QuantityStepper
                   compact
@@ -824,8 +870,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 />
               </div>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="ui-standard-qty-playground">
-                Playground — Pack whole-only: {stepperWhole} · Kg step±1 keeps decimals:{" "}
-                {stepperWeighted} (e.g. 1.5 + → 2.5)
+                Playground — Pack: {stepperWhole} · Kg: {stepperWeighted} (shows 1.5) · Fractional:{" "}
+                {stepperFractional} (shows 0.5) · Large: {stepperLarge} (shows 1,250.5)
               </p>
             </div>
           </Card>

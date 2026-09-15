@@ -274,17 +274,9 @@ export function applyConnectedQuantityDelta(
   if (delta === 0) {
     return [...lines];
   }
-  const maxQty = maxOrderablePurchaseQty(product);
   const index = lines.findIndex((line) => line.productId === product.buyerProductId);
   if (index < 0) {
     if (delta <= 0) {
-      return [...lines];
-    }
-    if (maxQty != null && maxQty <= 0) {
-      return [...lines];
-    }
-    const initialQty = maxQty == null ? 1 : Math.min(1, maxQty);
-    if (initialQty <= 0) {
       return [...lines];
     }
     return [
@@ -293,32 +285,36 @@ export function applyConnectedQuantityDelta(
         productId: product.buyerProductId,
         name: product.productName,
         uom: product.unitOfMeasure,
-        orderedQty: initialQty,
+        orderedQty: delta,
         unitPurchaseCost: product.unitPurchaseCost,
         purchaseUnitId: product.purchaseUnitId,
       },
     ];
   }
 
-  let nextQty = lines[index]!.orderedQty + delta;
-  if (maxQty != null && nextQty > maxQty) {
-    nextQty = maxQty;
-  }
+  const nextQty = lines[index]!.orderedQty + delta;
   if (nextQty <= 0) {
     return lines.filter((line) => line.productId !== product.buyerProductId);
   }
   return lines.map((line, i) => (i === index ? { ...line, orderedQty: nextQty } : line));
 }
 
-/** Max orderable qty in purchase units for tracked stock; null when untracked/unknown. */
-export function maxOrderablePurchaseQty(product: ConnectedPoReadyProduct): number | null {
+/**
+ * Current supplier available qty in purchase units (informational).
+ * Not a hard MaxOrderQuantity — buyers may request more.
+ */
+export function availablePurchaseQty(product: ConnectedPoReadyProduct): number | null {
   if (product.stockTracked !== true || product.availableBaseQuantity == null) {
     return null;
   }
   const multiplier = product.multiplierToBase > 0 ? product.multiplierToBase : 1;
   const raw = product.availableBaseQuantity / multiplier;
-  // Floor to avoid ordering a fractional package that exceeds base stock.
   return Math.floor(raw * 1_000_000) / 1_000_000;
+}
+
+/** @deprecated Prefer availablePurchaseQty — stock is informational, not a max. */
+export function maxOrderablePurchaseQty(product: ConnectedPoReadyProduct): number | null {
+  return availablePurchaseQty(product);
 }
 
 export type SupplierAvailabilityState =
@@ -334,11 +330,57 @@ export function resolveSupplierAvailability(product: ConnectedPoReadyProduct): S
   if (product.stockTracked === false) {
     return { kind: "untracked" };
   }
-  const max = maxOrderablePurchaseQty(product) ?? 0;
-  if (max <= 0) {
+  const qty = availablePurchaseQty(product) ?? 0;
+  if (qty <= 0) {
     return { kind: "out_of_stock" };
   }
-  return { kind: "available", quantity: max };
+  return { kind: "available", quantity: qty };
+}
+
+function formatAvailabilityQty(quantity: number): string {
+  if (!Number.isFinite(quantity)) {
+    return "0";
+  }
+  if (Math.abs(quantity - Math.trunc(quantity)) < 1e-9) {
+    return String(Math.trunc(quantity));
+  }
+  return String(Math.round(quantity * 1_000_000) / 1_000_000);
+}
+
+/** Finder/stock column label: "Available now: {qty} {unit}" or "Out of stock". */
+export function formatSupplierAvailabilityLabel(
+  product: ConnectedPoReadyProduct,
+  t: (key: string) => string,
+): string {
+  const availability = resolveSupplierAvailability(product);
+  if (availability.kind === "out_of_stock") {
+    return t("purchasing.supplierOutOfStock");
+  }
+  if (availability.kind === "available") {
+    const unit = formatUnitOfMeasureLabel(product.packageLabel || product.unitOfMeasure || "");
+    return t("purchasing.supplierAvailableNow")
+      .replace("{qty}", formatAvailabilityQty(availability.quantity))
+      .replace("{unit}", unit);
+  }
+  return t("purchasing.stockNotTracked");
+}
+
+/** True when requested qty exceeds current tracked supplier availability (warning only). */
+export function requestedExceedsSupplierAvailability(
+  product: ConnectedPoReadyProduct,
+  orderedQty: number,
+): boolean {
+  if (!(orderedQty > 0)) {
+    return false;
+  }
+  const availability = resolveSupplierAvailability(product);
+  if (availability.kind === "out_of_stock") {
+    return true;
+  }
+  if (availability.kind === "available") {
+    return orderedQty > availability.quantity;
+  }
+  return false;
 }
 
 export function mergeConnectedStock(
@@ -362,6 +404,7 @@ export function mergeConnectedStock(
   });
 }
 
+/** @deprecated Over-order is allowed; use requestedExceedsSupplierAvailability for warnings. */
 export function connectedLinesViolateStock(
   lines: ReadonlyArray<ConnectedPoDraftLine>,
   products: ReadonlyArray<ConnectedPoReadyProduct>,
@@ -372,8 +415,7 @@ export function connectedLinesViolateStock(
     if (!product) {
       continue;
     }
-    const max = maxOrderablePurchaseQty(product);
-    if (max != null && line.orderedQty > max) {
+    if (requestedExceedsSupplierAvailability(product, line.orderedQty)) {
       return true;
     }
   }

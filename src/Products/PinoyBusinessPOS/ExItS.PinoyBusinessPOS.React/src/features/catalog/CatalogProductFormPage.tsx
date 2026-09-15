@@ -58,6 +58,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TagChip } from "@/components/exits/TagChip";
+import { useToast } from "@/components/exits/ToastProvider";
 
 import { useBrowserOnline } from "@/connectivity/browser-online";
 
@@ -326,6 +327,7 @@ function CatalogProductNameConflictPanel({
 
 export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const navigate = useNavigate();
 
@@ -366,6 +368,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [tracksExpiration, setTracksExpiration] = useState(false);
 
   const [trackStockQuantity, setTrackStockQuantity] = useState(mode === "create");
+
+  /** Default share-when-tracked policy; always false while untracked. */
+  const [canExposeToConnectedBuyers, setCanExposeToConnectedBuyers] = useState(mode === "create");
 
   const [addOpeningStock, setAddOpeningStock] = useState(false);
 
@@ -530,6 +535,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     setTracksExpiration(product.tracksExpiration === true);
 
     setTrackStockQuantity(product.isTracked !== false);
+
+    setCanExposeToConnectedBuyers(product.canExposeToConnectedBuyers === true);
 
     setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
 
@@ -807,6 +814,28 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               trackStockQuantity: true,
             }),
           );
+          // Preserve default share-when-tracked policy after inventory is enabled.
+          if (canExposeToConnectedBuyers) {
+            await updateCatalogProduct(workspace, product.productId, {
+              name: product.name,
+              unitOfMeasure: product.unitOfMeasure,
+              sellingPrice: product.sellingPrice,
+              description: product.description ?? null,
+              sku: product.sku ?? null,
+              barcode: product.barcode ?? null,
+              categoryId: product.categoryId ?? null,
+              brandId: product.brandId ?? null,
+              expectedUpdatedAtUtc: product.updatedAtUtc,
+              sellingMode: product.sellingMode,
+              canBeSold: product.canBeSold ?? capabilities.canBeSold,
+              canBeUsedAsIngredient:
+                product.canBeUsedAsIngredient ?? capabilities.canBeUsedAsIngredient,
+              isProduced: product.isProduced ?? capabilities.isProduced,
+              tracksExpiration: product.tracksExpiration ?? false,
+              expirationWarningDays: product.expirationWarningDays ?? null,
+              canExposeToConnectedBuyers: true,
+            });
+          }
         }
 
         return { kind: "saved", product };
@@ -830,6 +859,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         units: configurePackages ? unitsPayload : undefined,
         tracksExpiration: existing?.tracksExpiration === true,
         expirationWarningDays: existing?.expirationWarningDays ?? null,
+        canExposeToConnectedBuyers: trackStockQuantity ? canExposeToConnectedBuyers : false,
       });
 
       if (capabilities.canBeUsedAsIngredient && product.isTracked !== true) {
@@ -870,6 +900,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       }
 
       if (err instanceof PosApiError) {
+        if (err.problem.errorCode === "pos.catalog.connected_share_requires_tracked") {
+          toast.error(
+            t("catalog.connectedShare.cantShareTitle"),
+            err.problem.detail ?? t("catalog.connectedShare.cantShareMessage"),
+          );
+          setError(null);
+          return;
+        }
+
         if (err.status === 409) {
           setError(err.problem.detail ?? t("catalog.conflict"));
 
@@ -1495,6 +1534,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 setError(null);
                 if (!next) {
                   setAddOpeningStock(false);
+                  setCanExposeToConnectedBuyers(false);
+                } else if (mode === "create") {
+                  // Preserve default share-when-tracked policy on create.
+                  setCanExposeToConnectedBuyers(true);
                 }
               }}
               disabled={mode === "edit" || capabilities.canBeUsedAsIngredient || readOnly}
@@ -1589,6 +1632,33 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 {t("openingStock.editHint")}
               </p>
             ) : null}
+          </div>
+        </section>
+
+        <section className="catalog-form-section exits-animate-panel" data-testid="catalog-connected-share-section">
+          <h2 className="catalog-form-section__title">{t("catalog.connectedShare.section")}</h2>
+          <div className="catalog-form-section__grid">
+            <FormCheck
+              label={t("catalog.connectedShare.shareProduct")}
+              checked={canExposeToConnectedBuyers && trackStockQuantity}
+              testId="catalog-can-expose-connected-buyers"
+              disabled={!trackStockQuantity || readOnly}
+              onChange={(next) => {
+                if (next && !trackStockQuantity) {
+                  toast.error(
+                    t("catalog.connectedShare.cantShareTitle"),
+                    t("catalog.connectedShare.cantShareMessage"),
+                  );
+                  return;
+                }
+                setCanExposeToConnectedBuyers(next);
+              }}
+            />
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {trackStockQuantity
+                ? t("catalog.connectedShare.trackedHelp")
+                : t("catalog.connectedShare.cantShareMessage")}
+            </p>
           </div>
         </section>
 

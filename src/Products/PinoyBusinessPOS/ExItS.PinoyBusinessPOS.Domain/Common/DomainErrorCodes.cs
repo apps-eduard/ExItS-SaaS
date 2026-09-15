@@ -217,6 +217,12 @@ public static class DomainErrorCodes
     public const string InvalidInventoryQuantity = "pos.inventory.quantity.invalid";
     public const string InventoryNotTracked = "pos.inventory.not_tracked";
     public const string IngredientRequiresTrackedInventory = "pos.inventory.ingredient_requires_tracked";
+    /// <summary>Enable Connected Buyer sharing requires InventoryAccount.IsTracked.</summary>
+    public const string ConnectedShareRequiresTrackedInventory =
+        "pos.catalog.connected_share_requires_tracked";
+    /// <summary>Disable inventory tracking is blocked while product is shared with connected buyers.</summary>
+    public const string ConnectedShareBlocksDisableTracking =
+        "pos.catalog.connected_share_blocks_disable_tracking";
     public const string InventoryAlreadyTracked = "pos.inventory.already_tracked";
     public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
