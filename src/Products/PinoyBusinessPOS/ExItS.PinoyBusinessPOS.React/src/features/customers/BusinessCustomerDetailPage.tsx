@@ -28,7 +28,6 @@ import { formatRelativeOrDate } from "@/features/devices/device-presentation";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
 import { BusinessRelationshipContactEditDrawer } from "@/features/customers/BusinessRelationshipContactEditDrawer";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
-import { PaymentHistorySection } from "@/features/customers/PaymentHistorySection";
 import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
 import {
   relationshipStatusLabelKey,
@@ -585,15 +584,6 @@ export function BusinessCustomerDetailPage() {
             .filter((part): part is string => Boolean(part))
             .join(" · ")}
           onRecordPayment={isConnected ? () => setRecordPaymentOpen(true) : undefined}
-        />
-      ) : null}
-
-      {workspace && connectionId && isConnected ? (
-        <PaymentHistorySection
-          customerKind="business"
-          connectionId={connectionId}
-          online={online}
-          canManageChecks={allowRepay}
         />
       ) : null}
 

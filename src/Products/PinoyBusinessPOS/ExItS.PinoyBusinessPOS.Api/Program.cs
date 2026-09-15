@@ -455,6 +455,7 @@ builder.Services.AddScoped<RequestConnection>();
 builder.Services.AddScoped<InviteBusinessCustomerConnection>();
 builder.Services.AddScoped<ListIncomingConnectionRequests>();
 builder.Services.AddScoped<RespondConnection>();
+builder.Services.AddScoped<ReconcileBuyerConnectedSupplierProjections>();
 builder.Services.AddScoped<GetConnectionCatalogSettings>();
 builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
 builder.Services.AddScoped<ListBusinessCustomers>();

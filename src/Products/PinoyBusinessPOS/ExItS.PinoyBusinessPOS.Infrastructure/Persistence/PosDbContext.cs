@@ -4334,6 +4334,12 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(e => new { e.OrganizationId, e.NormalizedTaxOrRegistrationNumber })
                 .HasDatabaseName("ix_suppliers_org_normalized_tax")
                 .HasFilter("normalized_tax_or_registration_number IS NOT NULL");
+
+            // One buyer-side connected Supplier projection per commercial relationship direction.
+            entity.HasIndex(e => new { e.OrganizationId, e.ConnectedRelationshipId })
+                .IsUnique()
+                .HasDatabaseName("ux_suppliers_org_connected_relationship")
+                .HasFilter("connected_relationship_id IS NOT NULL");
         });
 
         modelBuilder.Entity<SupplierBranchAccessRecord>(entity =>

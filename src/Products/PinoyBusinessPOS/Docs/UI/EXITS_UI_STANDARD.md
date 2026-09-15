@@ -7,6 +7,8 @@
 
 This document locks **interaction semantics** so features reuse one set of primitives instead of inventing local Save/Edit/Delete/toast/confirm/drawer/modal patterns.
 
+The corresponding Cursor Project Rules under `.cursor/rules` (`exits-ui-architecture.mdc`, `exits-responsive-data.mdc`, `exits-ui-reuse-interactions.mdc`) enforce these standards for Agent-assisted development.
+
 Related locked standards:
 
 - [exits-button-standard.md](./exits-button-standard.md)

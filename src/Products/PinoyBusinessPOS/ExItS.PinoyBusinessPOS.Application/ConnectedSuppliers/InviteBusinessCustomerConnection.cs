@@ -337,35 +337,88 @@ public sealed class ListIncomingConnectionRequests
     }
 }
 
-/// <summary>Creates exactly one buyer-side connected Supplier master when a seller invitation is accepted.</summary>
+/// <summary>
+/// Outcome of ensuring the buyer-side connected Supplier projection for one directional relationship.
+/// Does not create Organizations or reverse-sale relationships.
+/// </summary>
+public enum BuyerConnectedSupplierEnsureResult
+{
+    /// <summary>Buyer already has a Supplier master bound to this relationship.</summary>
+    AlreadyPresent = 0,
+    /// <summary>Created a new connected Supplier master for the buyer.</summary>
+    Created = 1,
+    /// <summary>
+    /// Linked an existing External supplier whose notes already matched the supplier public org id.
+    /// Local profile/settings are preserved; only ConnectionType / ConnectedRelationshipId change.
+    /// </summary>
+    LinkedExistingExternal = 2,
+    /// <summary>
+    /// Name collided with an unrelated Active supplier — created a distinct projection
+    /// (no destructive merge).
+    /// </summary>
+    CreatedDistinctDueToNameConflict = 3
+}
+
+/// <summary>
+/// Idempotent buyer-side connected Supplier projection for SellerOrganization → BuyerOrganization.
+/// Keyed by ConnectedSupplierRelationshipId (commercial direction). Never invents a reverse B→A sale.
+/// </summary>
 public static class BuyerConnectedSupplierMaster
 {
-    public static async Task EnsureAsync(
+    public static async Task<BuyerConnectedSupplierEnsureResult> EnsureAsync(
         ISupplierRepository suppliers,
         ConnectedSupplierRelationship relationship,
         DateTimeOffset utcNow,
         CancellationToken ct)
     {
+        if (relationship.Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            // Pending / Declined / Disconnected must not create an active purchasing projection.
+            return BuyerConnectedSupplierEnsureResult.AlreadyPresent;
+        }
+
         var buyer = relationship.BuyerOrganizationId;
         var existing = await suppliers
             .FindByConnectedRelationshipIdAsync(buyer, relationship.Id, ct)
             .ConfigureAwait(false);
         if (existing is not null)
         {
-            return;
+            return BuyerConnectedSupplierEnsureResult.AlreadyPresent;
         }
 
+        var publicOrgId = relationship.SupplierPublicOrganizationIdSnapshot?.Trim();
         var supplierName = string.IsNullOrWhiteSpace(relationship.SupplierDisplayNameSnapshot)
-            ? (relationship.SupplierPublicOrganizationIdSnapshot ?? "Connected supplier")
+            ? (string.IsNullOrWhiteSpace(publicOrgId) ? "Connected supplier" : publicOrgId!)
             : relationship.SupplierDisplayNameSnapshot!;
         var normalizedName = Supplier.Normalize(Supplier.NormalizeName(supplierName));
         var nameConflict = await suppliers
             .FindActiveByNormalizedNameAsync(buyer, normalizedName, ct)
             .ConfigureAwait(false);
+
+        // Safe link only: External supplier whose Notes already store this public org id.
+        if (nameConflict is not null
+            && nameConflict.ConnectionType == SupplierConnectionType.External
+            && nameConflict.ConnectedRelationshipId is null
+            && !string.IsNullOrWhiteSpace(publicOrgId)
+            && string.Equals(
+                nameConflict.Notes?.Trim(),
+                publicOrgId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            nameConflict.AttachConnectedRelationship(relationship.Id, utcNow);
+            await suppliers.UpdateAsync(nameConflict, ct).ConfigureAwait(false);
+            return BuyerConnectedSupplierEnsureResult.LinkedExistingExternal;
+        }
+
+        var createdDistinct = false;
         if (nameConflict is not null)
         {
-            supplierName =
-                $"{supplierName} ({relationship.SupplierPublicOrganizationIdSnapshot ?? relationship.SupplierOrganizationId.Value.ToString("N")[..8]})";
+            // Ambiguous / already-connected / mismatched External — preserve both; do not merge.
+            createdDistinct = true;
+            var suffix = publicOrgId
+                ?? relationship.SupplierOrganizationId.Value.ToString("N")[..8];
+            // Supplier name charset forbids parentheses — use hyphen separator.
+            supplierName = $"{supplierName} - {suffix}";
         }
 
         var code = await suppliers.AllocateNextSupplierCodeAsync(buyer, ct).ConfigureAwait(false);
@@ -374,8 +427,11 @@ public static class BuyerConnectedSupplierMaster
             code,
             supplierName,
             utcNow,
-            notes: relationship.SupplierPublicOrganizationIdSnapshot);
+            notes: publicOrgId);
         master.AttachConnectedRelationship(relationship.Id, utcNow);
         await suppliers.AddAsync(master, ct).ConfigureAwait(false);
+        return createdDistinct
+            ? BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict
+            : BuyerConnectedSupplierEnsureResult.Created;
     }
 }

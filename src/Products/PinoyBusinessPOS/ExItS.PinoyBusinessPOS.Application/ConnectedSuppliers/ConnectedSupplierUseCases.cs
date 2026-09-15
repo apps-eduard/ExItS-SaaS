@@ -523,7 +523,7 @@ public sealed class RequestConnection
                 .ConfigureAwait(false);
             if (nameConflict is not null)
             {
-                supplierName = $"{supplierName} ({resolvedSupplier.Value.PublicOrganizationId})";
+                supplierName = $"{supplierName} - {resolvedSupplier.Value.PublicOrganizationId}";
             }
 
             var code = await _suppliers.AllocateNextSupplierCodeAsync(buyer, ct).ConfigureAwait(false);
@@ -856,13 +856,16 @@ public sealed class RespondConnection
                                 ct)
                             .ConfigureAwait(false);
                     }
+                }
 
-                    if (_suppliers is not null)
-                    {
-                        await BuyerConnectedSupplierMaster
-                            .EnsureAsync(_suppliers, r, utcNow, ct)
-                            .ConfigureAwait(false);
-                    }
+                // Same unit of work: Active A→B implies buyer B has exactly one connected Supplier projection of A.
+                // Does not create reverse B→A sale / customer relationship.
+                // Production DI always injects ISupplierRepository; unit tests may omit it.
+                if (_suppliers is not null)
+                {
+                    await BuyerConnectedSupplierMaster
+                        .EnsureAsync(_suppliers, r, utcNow, ct)
+                        .ConfigureAwait(false);
                 }
             }
             else
@@ -1199,8 +1202,19 @@ public sealed class UpdateSupplierLocation
 
 public sealed class ListRelationships
 {
-    private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly IPosCommercialAccessAccessor _access;
-    public ListRelationships(IConnectedSupplierRelationshipRepository r,IPosCommercialAccessAccessor a){_relationships=r;_access=a;}
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly ReconcileBuyerConnectedSupplierProjections? _reconcile;
+
+    public ListRelationships(
+        IConnectedSupplierRelationshipRepository relationships,
+        IPosCommercialAccessAccessor access,
+        ReconcileBuyerConnectedSupplierProjections? reconcile = null)
+    {
+        _relationships = relationships;
+        _access = access;
+        _reconcile = reconcile;
+    }
 
     /// <param name="workspaceBranchId">
     /// Supplier branch workspace. When set, supplier-view pending/active lists are exact-branch scoped.
@@ -1222,6 +1236,12 @@ public sealed class ListRelationships
             return ConnectedSupplierUseCaseGuard.Failure<IReadOnlyList<ConnectedSupplierRelationshipDto>>(
                 gate.ErrorCode!,
                 gate.ErrorMessage!);
+        }
+
+        // Buyer list heals missing Active→ConnectedSupplier projections (idempotent backfill).
+        if (!supplierView && _reconcile is not null)
+        {
+            await _reconcile.ExecuteAsync(orgId, ct).ConfigureAwait(false);
         }
 
         var items = await _relationships.ListAsync(PosOrganizationId.From(orgId), supplierView, ct);
@@ -1248,6 +1268,65 @@ public sealed class ListRelationships
 
         return ApplicationResult<IReadOnlyList<ConnectedSupplierRelationshipDto>>.Success(
             items.Select(x => ConnectedSupplierMapper.Map(x, supplierView)).ToList());
+    }
+}
+
+/// <summary>
+/// Idempotent backfill: for every Active directional relationship where this org is the buyer,
+/// ensure exactly one connected Supplier projection of the seller exists.
+/// Does not create reverse-sale relationships or Organizations.
+/// </summary>
+public sealed class ReconcileBuyerConnectedSupplierProjections
+{
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ISupplierRepository _suppliers;
+    private readonly IPosUnitOfWork _uow;
+    private readonly TimeProvider _clock;
+
+    public ReconcileBuyerConnectedSupplierProjections(
+        IConnectedSupplierRelationshipRepository relationships,
+        ISupplierRepository suppliers,
+        IPosUnitOfWork uow,
+        TimeProvider? clock = null)
+    {
+        _relationships = relationships;
+        _suppliers = suppliers;
+        _uow = uow;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<int>> ExecuteAsync(
+        Guid buyerOrganizationId,
+        CancellationToken ct = default)
+    {
+        var buyer = PosOrganizationId.From(buyerOrganizationId);
+        var rows = await _relationships.ListAsync(buyer, supplierView: false, ct).ConfigureAwait(false);
+        var utcNow = _clock.GetUtcNow();
+        var healed = 0;
+        foreach (var relationship in rows)
+        {
+            if (relationship.Status != ConnectedSupplierRelationshipStatus.Active)
+            {
+                continue;
+            }
+
+            var result = await BuyerConnectedSupplierMaster
+                .EnsureAsync(_suppliers, relationship, utcNow, ct)
+                .ConfigureAwait(false);
+            if (result is BuyerConnectedSupplierEnsureResult.Created
+                or BuyerConnectedSupplierEnsureResult.LinkedExistingExternal
+                or BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict)
+            {
+                healed++;
+            }
+        }
+
+        if (healed > 0)
+        {
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+
+        return ApplicationResult<int>.Success(healed);
     }
 }
 

@@ -1,0 +1,66 @@
+---
+description: ExItS POS React responsive collections - ExitsResponsiveDataView default; table vs list; column priority; shared dataset logic
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# ExItS POS Responsive Data
+
+Authoritative docs:
+
+- `src/Products/PinoyBusinessPOS/Docs/UI/exits-responsive-data-view-standard.md`
+- `src/Products/PinoyBusinessPOS/Docs/UI/exits-table-standard.md`
+
+Also: `EXITS_UI_STANDARD.md`, visual reference `/ui-standards`
+
+## Default for collections
+
+When presenting a collection/list of structured records, use **`ExitsResponsiveDataView`** — do not invent a page-specific responsive table.
+
+| Viewport | Presentation |
+|----------|----------------|
+| Desktop | **TABLE** via `ExitsTable` |
+| Tablet | Keep TABLE only if content fits comfortably; otherwise LIST / record-card |
+| Mobile | **LIST** / `ExitsDataRecordCard` by default |
+
+Do **not** force horizontal table scrolling as the default mobile solution.  
+Horizontal scroll is allowed only for an explicit dense-grid exception.
+
+## Column priority
+
+Use column priority metadata:
+
+- Primary
+- Secondary
+- Detail
+- HiddenOnCompact
+
+Mobile/list records prioritize: main identity → important secondary identity → key values → status → **one** primary quick action → remaining under **More**.  
+Do not show every desktop column equally on mobile.
+
+## Actions by mode
+
+**TABLE mode**
+
+- Existing row-action pattern
+- Multi-select allowed when needed
+- Sorting / filtering / pagination available
+
+**LIST mode**
+
+- At most one primary quick action where practical
+- Additional actions under More
+- Multi-select **OFF** by default; opt-in only when mobile bulk ops genuinely matter
+
+## Shared dataset logic
+
+Search, filter, and pagination must operate on the **same dataset** regardless of TABLE vs LIST presentation.  
+Do **not** create separate desktop/mobile business logic.
+
+## Auto-infer
+
+User asks for a “list” / “table” / collection without specifying presentation → choose `ExitsResponsiveDataView` (desktop table, responsive cards on smaller screens).
+
+## Exceptions
+
+Preserve domain correctness when an existing workflow genuinely needs another pattern; document why. Prefer reuse + this standard when uncertain.

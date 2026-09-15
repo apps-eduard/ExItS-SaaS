@@ -105,17 +105,20 @@ public sealed class SupplierQueryService
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
+    private readonly ReconcileBuyerConnectedSupplierProjections? _reconcile;
 
     public SupplierQueryService(
         ISupplierRepository suppliers,
         IConnectedSupplierRelationshipRepository relationships,
         PartyBranchAccessService branchAccess,
-        IPartyBranchAccessActorAccessor actorAccessor)
+        IPartyBranchAccessActorAccessor actorAccessor,
+        ReconcileBuyerConnectedSupplierProjections? reconcile = null)
     {
         _suppliers = suppliers;
         _relationships = relationships;
         _branchAccess = branchAccess;
         _actorAccessor = actorAccessor;
+        _reconcile = reconcile;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -125,6 +128,11 @@ public sealed class SupplierQueryService
         Guid supplierId,
         CancellationToken cancellationToken = default)
     {
+        if (_reconcile is not null)
+        {
+            await _reconcile.ExecuteAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        }
+
         var supplier = await _suppliers
             .GetByIdAsync(PosOrganizationId.From(organizationId), SupplierId.From(supplierId), cancellationToken)
             .ConfigureAwait(false);
@@ -153,6 +161,12 @@ public sealed class SupplierQueryService
         int? pageSize,
         CancellationToken cancellationToken = default)
     {
+        // Idempotent heal: Active A→B relationships must surface Seller A as ConnectedSupplier for buyer B.
+        if (_reconcile is not null)
+        {
+            await _reconcile.ExecuteAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        }
+
         var (skip, take) = PosPagination.Normalize(page, pageSize);
         var restrict = await _branchAccess
             .FilterSupplierIdsAccessibleAsync(organizationId, Actor, cancellationToken)
