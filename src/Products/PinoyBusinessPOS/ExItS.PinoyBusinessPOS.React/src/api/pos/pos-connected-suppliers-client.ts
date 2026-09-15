@@ -1012,6 +1012,84 @@ export const businessCustomerSchema = z.object({
 
 export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;
 
+export const businessUtangSummarySchema = z.object({
+  connectionId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  outstandingAmount: z.number(),
+  activeCreditTotal: z.number(),
+  activeRepaymentTotal: z.number(),
+  pendingCheckAmount: z.number().optional().default(0),
+});
+
+export const businessRepaymentSchema = z.object({
+  repaymentId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  connectionId: guidSchema,
+  amount: z.number(),
+  remarks: z.string().nullable().optional(),
+  paymentMethod: z.string().optional().default("Cash"),
+  checkNumber: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  checkDate: z.string().nullable().optional(),
+  accountName: z.string().nullable().optional(),
+  reference: z.string().nullable().optional(),
+  checkClearingStatus: z.string().optional().default("None"),
+  status: z.string(),
+  recordedAtUtc: isoDateSchema,
+  recordedBy: guidSchema,
+  clearedAtUtc: isoDateSchema.nullable().optional(),
+  clearedBy: guidSchema.nullable().optional(),
+  bouncedAtUtc: isoDateSchema.nullable().optional(),
+  bouncedBy: guidSchema.nullable().optional(),
+  bounceReason: z.string().nullable().optional(),
+  cancelledAtUtc: isoDateSchema.nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
+  cancelReason: z.string().nullable().optional(),
+  reversedAtUtc: isoDateSchema.nullable().optional(),
+  reversalReason: z.string().nullable().optional(),
+  reversedBy: guidSchema.nullable().optional(),
+});
+
+export const businessRepaymentPagedResultSchema = z.object({
+  items: z.array(businessRepaymentSchema),
+  totalCount: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+});
+
+export type BusinessUtangSummary = z.infer<typeof businessUtangSummarySchema>;
+export type BusinessRepayment = z.infer<typeof businessRepaymentSchema>;
+export type BusinessRepaymentPagedResult = z.infer<typeof businessRepaymentPagedResultSchema>;
+
+export type CreateBusinessRepaymentInput = {
+  amount: number;
+  remarks?: string | null;
+  repaymentId?: string;
+  paymentMethod?: "Cash" | "ManualGCash" | "Check";
+  checkNumber?: string | null;
+  bankName?: string | null;
+  checkDate?: string | null;
+  accountName?: string | null;
+  reference?: string | null;
+};
+
+export function buildCreateBusinessRepaymentPayload(input: CreateBusinessRepaymentInput) {
+  const method = input.paymentMethod ?? "Cash";
+  return {
+    amount: input.amount,
+    remarks: input.remarks?.trim() || null,
+    paymentMethod: method,
+    checkNumber: method === "Check" ? (input.checkNumber?.trim() || null) : null,
+    bankName: method === "Check" ? (input.bankName?.trim() || null) : null,
+    checkDate: method === "Check" ? (input.checkDate?.trim() || null) : null,
+    accountName: method === "Check" ? (input.accountName?.trim() || null) : null,
+    reference: input.reference?.trim() || null,
+    ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
+  };
+}
+
 const buyerOrganizationBusinessContactSchema = z.object({
   organizationMemberId: guidSchema,
   userId: guidSchema,
@@ -1072,6 +1150,100 @@ export async function getBusinessCustomer(
     path: `${PATH}/business-customers/${connectionId}`,
   });
   return businessCustomerSchema.parse(raw);
+}
+
+export async function getBusinessCustomerUtangSummary(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<BusinessUtangSummary> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/utang-summary`,
+  });
+  return businessUtangSummarySchema.parse(raw);
+}
+
+export async function listBusinessCustomerRepayments(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options: { page?: number; pageSize?: number } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepaymentPagedResult> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/repayments`, {
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 20,
+    }),
+  });
+  return businessRepaymentPagedResultSchema.parse(raw);
+}
+
+export async function createBusinessCustomerRepayment(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: CreateBusinessRepaymentInput,
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/repayments`,
+    body: buildCreateBusinessRepaymentPayload(input),
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function clearBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/clear-check`,
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function bounceBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/bounce-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function cancelBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/cancel-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return businessRepaymentSchema.parse(raw);
 }
 
 const businessCustomerStatementLineSchema = z.object({

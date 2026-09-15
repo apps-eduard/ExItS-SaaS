@@ -3,6 +3,7 @@ import {
   UI_STANDARDS_DEFAULT_VIEW,
   UI_STANDARDS_VIEW_STORAGE_KEY,
   isUiStandardsViewMode,
+  normalizeUiStandardsView,
   parseUiStandardsViewParam,
   readUiStandardsView,
   writeUiStandardsView,
@@ -19,11 +20,12 @@ describe("ui-standards view storage", () => {
     expect(readUiStandardsView()).toBe("classic");
   });
 
-  it("persists classic and simple only", () => {
+  it("persists classic and simple; legacy simple-v2 normalizes to simple", () => {
     writeUiStandardsView("simple");
     expect(readUiStandardsView()).toBe("simple");
-    writeUiStandardsView("simple-v2");
-    expect(readUiStandardsView()).toBe("simple-v2");
+    window.localStorage.setItem(UI_STANDARDS_VIEW_STORAGE_KEY, "simple-v2");
+    expect(readUiStandardsView()).toBe("simple");
+    expect(normalizeUiStandardsView("simple-v2")).toBe("simple");
     writeUiStandardsView("classic");
     expect(readUiStandardsView()).toBe("classic");
     expect(isUiStandardsViewMode("old")).toBe(false);
@@ -33,7 +35,7 @@ describe("ui-standards view storage", () => {
 
   it("parses view query params", () => {
     expect(parseUiStandardsViewParam("?view=simple")).toBe("simple");
-    expect(parseUiStandardsViewParam("?view=simple-v2")).toBe("simple-v2");
+    expect(parseUiStandardsViewParam("?view=simple-v2")).toBe("simple");
     expect(parseUiStandardsViewParam("view=classic")).toBe("classic");
     expect(parseUiStandardsViewParam("?view=new")).toBeNull();
   });

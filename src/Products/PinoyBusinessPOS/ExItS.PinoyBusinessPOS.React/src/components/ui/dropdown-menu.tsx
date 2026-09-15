@@ -47,6 +47,10 @@ type DropdownMenuProps = {
   portal?: boolean;
   /** Viewport collision padding in px (default 10). */
   collisionPadding?: number;
+  /** Stretch portaled menu to the trigger’s width (form selects). */
+  matchTriggerWidth?: boolean;
+  /** Override default menu z-index (70). Use above modals when needed. */
+  menuZIndex?: number;
 };
 
 type MenuCoords = {
@@ -54,6 +58,7 @@ type MenuCoords = {
   left: number;
   maxHeight: number;
   placement: "below" | "above";
+  width?: number;
 };
 
 function resolveTriggerElement(root: HTMLElement | null, triggerId: string): HTMLElement | null {
@@ -69,10 +74,12 @@ function computeMenuPosition(options: {
   menu: HTMLElement;
   align: MenuAlign;
   collisionPadding: number;
+  matchTriggerWidth: boolean;
 }): MenuCoords {
-  const { trigger, menu, align, collisionPadding: pad } = options;
+  const { trigger, menu, align, collisionPadding: pad, matchTriggerWidth } = options;
   const rect = trigger.getBoundingClientRect();
-  const menuWidth = menu.offsetWidth;
+  const width = matchTriggerWidth ? Math.max(rect.width, 1) : undefined;
+  const menuWidth = width ?? menu.offsetWidth;
   const menuHeight = menu.offsetHeight;
   const viewportW = window.innerWidth;
   const viewportH = window.innerHeight;
@@ -101,7 +108,7 @@ function computeMenuPosition(options: {
   }
   left = Math.max(pad, Math.min(left, viewportW - menuWidth - pad));
 
-  return { top, left, maxHeight, placement };
+  return { top, left, maxHeight, placement, width };
 }
 
 function isTriggerInViewport(trigger: HTMLElement, pad: number): boolean {
@@ -130,6 +137,8 @@ export function DropdownMenu({
   menuLabel,
   portal = true,
   collisionPadding = DEFAULT_COLLISION_PADDING,
+  matchTriggerWidth = false,
+  menuZIndex = DROPDOWN_Z_INDEX,
 }: DropdownMenuProps) {
   const triggerId = useId();
   const menuId = useId();
@@ -156,7 +165,15 @@ export function DropdownMenu({
       return;
     }
 
-    setCoords(computeMenuPosition({ trigger: triggerEl, menu: menuEl, align, collisionPadding }));
+    setCoords(
+      computeMenuPosition({
+        trigger: triggerEl,
+        menu: menuEl,
+        align,
+        collisionPadding,
+        matchTriggerWidth,
+      }),
+    );
   }
 
   useLayoutEffect(() => {
@@ -168,7 +185,7 @@ export function DropdownMenu({
     reposition();
     // Position after open/align change; content height changes are handled on scroll/resize.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- avoid re-running on new children identity each render
-  }, [open, align, collisionPadding]);
+  }, [open, align, collisionPadding, matchTriggerWidth]);
 
   useEffect(() => {
     if (!open) {
@@ -203,7 +220,9 @@ export function DropdownMenu({
       const menuEl = menuRef.current;
       if (!menuEl) return;
       const items = Array.from(
-        menuEl.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'),
+        menuEl.querySelectorAll<HTMLElement>(
+          '[role="menuitem"]:not([disabled]), [role="option"]:not([disabled])',
+        ),
       );
       if (items.length === 0) return;
 
@@ -237,16 +256,19 @@ export function DropdownMenu({
       window.removeEventListener("resize", onRepositionEvent);
       window.removeEventListener("scroll", onRepositionEvent, true);
     };
-  }, [onOpenChange, open, align, collisionPadding]);
+  }, [onOpenChange, open, align, collisionPadding, matchTriggerWidth]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
+    const selectedItem = menuRef.current?.querySelector<HTMLElement>(
+      '[role="menuitem"][aria-checked="true"]:not([disabled]), [role="option"][aria-selected="true"]:not([aria-disabled="true"])',
+    );
     const firstItem = menuRef.current?.querySelector<HTMLElement>(
       '[role="menuitem"]:not([disabled]), [role="option"]:not([aria-disabled="true"])',
     );
-    firstItem?.focus();
+    (selectedItem ?? firstItem)?.focus();
   }, [open]);
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -261,8 +283,10 @@ export function DropdownMenu({
         position: "fixed",
         top: coords?.top ?? 0,
         left: coords?.left ?? 0,
-        zIndex: DROPDOWN_Z_INDEX,
+        zIndex: menuZIndex,
         maxHeight: coords?.maxHeight,
+        width: coords?.width,
+        minWidth: coords?.width,
         visibility: coords ? "visible" : "hidden",
       }
     : undefined;

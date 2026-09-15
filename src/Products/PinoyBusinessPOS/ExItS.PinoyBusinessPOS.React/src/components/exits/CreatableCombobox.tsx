@@ -7,7 +7,6 @@ import {
   type KeyboardEvent,
 } from "react";
 import { ChevronDown, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 
 /**
@@ -147,14 +146,17 @@ export function CreatableCombobox({
         </button>
       ) : (
         <>
-          <label className="relative block" htmlFor={`${testId}-search`}>
+          <div className="relative block min-w-0">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted"
+              className="pointer-events-none absolute top-1/2 left-3 z-[1] size-4 -translate-y-1/2 text-muted"
               aria-hidden
             />
-            <Input
+            <input
               id={`${testId}-search`}
+              type="search"
               data-testid={`${testId}-search`}
+              className="exits-input w-full"
+              style={{ paddingInlineStart: "2.5rem" }}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -163,12 +165,12 @@ export function CreatableCombobox({
               onKeyDown={onSearchKeyDown}
               placeholder={searchPlaceholder}
               autoComplete="off"
-              className="pl-9"
               autoFocus
               aria-controls={listId}
               aria-autocomplete="list"
+              aria-label={searchPlaceholder}
             />
-          </label>
+          </div>
           <div className="exits-creatable-combobox__panel" data-testid={`${testId}-panel`}>
             {items.length === 0 ? (
               <p className="exits-creatable-combobox__hint m-0">{emptyLabel}</p>

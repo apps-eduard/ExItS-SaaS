@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { catalogs } from "@/i18n/messages";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
+import { ToastProvider } from "@/components/exits/ToastProvider";
 import {
   UI_STANDARDS_DEFAULT_OPEN,
   UI_STANDARDS_SECTIONS_STORAGE_KEY,
@@ -25,11 +26,13 @@ vi.mock("@/api/platform/local-validation-gate", () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={["/ui-standards"]}>
-      <Routes>
-        <Route path="/ui-standards" element={<UiStandardsPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <ToastProvider>
+      <MemoryRouter initialEntries={["/ui-standards"]}>
+        <Routes>
+          <Route path="/ui-standards" element={<UiStandardsPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ToastProvider>,
   );
 }
 
@@ -62,7 +65,9 @@ describe("UiStandardsPage", () => {
     renderPage();
 
     expect(screen.getByTestId("ui-standards-page")).toBeInTheDocument();
-    expect(screen.getByText("ExItS UI Standards")).toBeInTheDocument();
+    expect(screen.getByText("ExItS UI Standard")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-filter-bar")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-cards")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standards-copy-hint")).toHaveTextContent(
       "Visual standards are paired with copyable Cursor commands",
     );
@@ -358,29 +363,58 @@ describe("UiStandardsPage Classic / Simple views", () => {
 
   it("honors ?view=simple query param", () => {
     render(
-      <MemoryRouter initialEntries={["/ui-standards?view=simple"]}>
-        <Routes>
-          <Route path="/ui-standards" element={<UiStandardsPage />} />
-        </Routes>
-      </MemoryRouter>,
+      <ToastProvider>
+        <MemoryRouter initialEntries={["/ui-standards?view=simple"]}>
+          <Routes>
+            <Route path="/ui-standards" element={<UiStandardsPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>,
     );
     expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple");
     expect(screen.getByTestId("ui-standards-simple-catalog")).toBeInTheDocument();
   });
 
-  it("switches to Simple V2 with Tag showcase and command above visuals", async () => {
+  it("filters live cards and catalog rows by category + search", async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByTestId("ui-standards-view-simple-v2"));
-    expect(screen.getByTestId("ui-standards-page")).toHaveAttribute("data-view", "simple-v2");
-    expect(screen.getByTestId("ui-standards-simple-v2-catalog")).toBeInTheDocument();
-    expect(screen.getByTestId("ui-standards-simple-v2-tag")).toBeInTheDocument();
-    expect(screen.getByTestId("simple-v2-tag-default")).toHaveAttribute("data-command-placement", "above");
-    expect(screen.getByTestId("simple-v2-tag-pills")).toBeInTheDocument();
-    expect(screen.getByTestId("simple-v2-tag-icons")).toBeInTheDocument();
-    expect(within(screen.getByTestId("simple-v2-tag-default")).getByText("Primary")).toBeInTheDocument();
-    expect(window.localStorage.getItem("exits.uiStandards.view.v1")).toBe("simple-v2");
+    await user.click(screen.getByTestId("ui-standards-filter-overlays"));
+    expect(screen.getByTestId("ui-standard-card-drawer")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-confirm")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-buttons")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-catalog-row-form-drawer")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-selects"));
+    expect(screen.getByTestId("ui-standard-card-selects")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-select-standard")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-select-multi")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-select-switch")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-forms")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-catalog-row-exits-select")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("ui-standards-filter-all"));
+    const search = screen.getByTestId("ui-standards-search").querySelector("input");
+    expect(search).toBeTruthy();
+    await user.clear(search!);
+    await user.type(search!, "toast");
+    expect(screen.getByTestId("ui-standard-card-toasts")).toBeInTheDocument();
+    expect(screen.queryByTestId("ui-standard-card-table")).not.toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-catalog-row-toast")).toBeInTheDocument();
+  });
+
+  it("Data filter surfaces the locked ExitsTable reference demo", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("ui-standards-filter-data"));
+    expect(screen.getByTestId("ui-standards-data-exits-table")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-tables-section")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standards-table")).toHaveClass("exits-table-container");
+    expect(screen.getByTestId("ui-standards-table-demo")).toBeInTheDocument();
+    expect(screen.getByTestId("ui-standard-card-table")).toBeInTheDocument();
+    expect(screen.getAllByText("Apple").length).toBeGreaterThanOrEqual(1);
   });
 });
 

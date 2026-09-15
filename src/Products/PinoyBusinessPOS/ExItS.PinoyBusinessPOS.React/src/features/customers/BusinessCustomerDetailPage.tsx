@@ -9,6 +9,7 @@ import {
 import {
   cancelConnectionRequest,
   getBusinessCustomer,
+  getBusinessCustomerUtangSummary,
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
   formatPublicBusinessAddress,
@@ -27,6 +28,8 @@ import { formatRelativeOrDate } from "@/features/devices/device-presentation";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
 import { BusinessRelationshipContactEditDrawer } from "@/features/customers/BusinessRelationshipContactEditDrawer";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
+import { PaymentHistorySection } from "@/features/customers/PaymentHistorySection";
+import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
 import {
   relationshipStatusLabelKey,
   relationshipStatusTone,
@@ -39,9 +42,9 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { Clock, PackageOpen, Pencil, Users } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function mapRelationshipStatus(raw: string): CustomerListRelationshipStatus {
   switch (raw.trim().toLowerCase()) {
@@ -75,6 +78,7 @@ export function BusinessCustomerDetailPage() {
   const { t } = useI18n();
   const { preferences } = usePreferences();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { connectionId } = useParams<{ connectionId: string }>();
@@ -88,11 +92,28 @@ export function BusinessCustomerDetailPage() {
   const allowRepay = canRecordRepayment(sessionGrant);
   const allowStatement = canViewStatement(sessionGrant);
   const [relationshipEditOpen, setRelationshipEditOpen] = useState(false);
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("recordPayment") !== "1") {
+      return;
+    }
+    setRecordPaymentOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("recordPayment");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const detailQuery = useQuery({
     queryKey: ["business-customers", "detail", workspace?.organizationId, connectionId],
     enabled: Boolean(workspace) && Boolean(connectionId),
     queryFn: ({ signal }) => getBusinessCustomer(workspace!, connectionId!, signal),
+  });
+
+  const utangSummaryQuery = useQuery({
+    queryKey: ["business-customers", "utang-summary", workspace?.organizationId, connectionId],
+    enabled: Boolean(workspace) && Boolean(connectionId) && online,
+    queryFn: ({ signal }) => getBusinessCustomerUtangSummary(workspace!, connectionId!, signal),
   });
 
   const buyerOrgId = detailQuery.data?.buyerOrganizationId;
@@ -563,6 +584,16 @@ export function BusinessCustomerDetailPage() {
           subjectIdentity={[name, customer.organizationPublicId?.trim()]
             .filter((part): part is string => Boolean(part))
             .join(" · ")}
+          onRecordPayment={isConnected ? () => setRecordPaymentOpen(true) : undefined}
+        />
+      ) : null}
+
+      {workspace && connectionId && isConnected ? (
+        <PaymentHistorySection
+          customerKind="business"
+          connectionId={connectionId}
+          online={online}
+          canManageChecks={allowRepay}
         />
       ) : null}
 
@@ -586,6 +617,22 @@ export function BusinessCustomerDetailPage() {
           onClose={() => setRelationshipEditOpen(false)}
           workspace={workspace}
           customer={customer}
+        />
+      ) : null}
+
+      {workspace && connectionId && isConnected ? (
+        <RecordPaymentModal
+          open={recordPaymentOpen}
+          onOpenChange={setRecordPaymentOpen}
+          customerKind="business"
+          connectionId={connectionId}
+          displayName={name}
+          outstandingBalance={utangSummaryQuery.data?.outstandingAmount ?? 0}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ["business-customers", "utang-summary", workspace.organizationId, connectionId],
+            });
+          }}
         />
       ) : null}
     </div>

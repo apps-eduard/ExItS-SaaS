@@ -30,6 +30,7 @@ public static class DomainErrorCodes
 
 
     public const string InvalidRepaymentId = "pos.repayment.id.invalid";
+    public const string InvalidBusinessRepaymentId = "pos.business_repayment.id.invalid";
     public const string InvalidRepaymentAmount = "pos.repayment.amount.invalid";
     public const string InvalidRepaymentRemarks = "pos.repayment.remarks.invalid";
     public const string InvalidRepaymentReversalReason = "pos.repayment.reversal_reason.invalid";
@@ -37,6 +38,16 @@ public static class DomainErrorCodes
     public const string InvalidRepaymentActor = "pos.repayment.actor.invalid";
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
+    public const string InvalidUtangPaymentMethod = "pos.utang.payment_method.invalid";
+    public const string InvalidUtangCheckNumber = "pos.utang.check.number.invalid";
+    public const string InvalidUtangBankName = "pos.utang.check.bank_name.invalid";
+    public const string InvalidUtangCheckDate = "pos.utang.check.date.invalid";
+    public const string InvalidUtangCheckAccountName = "pos.utang.check.account_name.invalid";
+    public const string InvalidUtangCheckReference = "pos.utang.check.reference.invalid";
+    public const string InvalidUtangCheckDispositionReason = "pos.utang.check.disposition_reason.invalid";
+    public const string InvalidUtangCheckFieldsForMethod = "pos.utang.check.fields.invalid_for_method";
+    public const string InvalidUtangCheckClearingTransition = "pos.utang.check.clearing.invalid_transition";
+    public const string CheckClearExceedsOutstanding = "pos.utang.check.clear.exceeds_outstanding";
 
     public const string InvalidWriteOffId = "pos.write_off.id.invalid";
     public const string InvalidWriteOffAmount = "pos.write_off.amount.invalid";

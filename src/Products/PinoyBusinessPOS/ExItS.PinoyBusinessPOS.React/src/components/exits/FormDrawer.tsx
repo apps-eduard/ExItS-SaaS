@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -159,6 +160,7 @@ export function FormDrawer({
         type="button"
         variant="outline"
         disabled={saving}
+        className={EXITS_CANCEL_BUTTON_CLASS}
         data-testid={cancelTestId ?? `${testId}-cancel`}
         onClick={requestClose}
       >

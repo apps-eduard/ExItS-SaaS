@@ -29,6 +29,7 @@ public static class ApplicationErrorCodes
     public const string BusinessCustomerCreditLimitExceeded =
         "pos.business_customer_credit.limit_exceeded";
     public const string BusinessCreditEntryNotFound = "pos.business_credit_entry.not_found";
+    public const string BusinessRepaymentNotFound = "pos.business_repayment.not_found";
     public const string CustomerCreditDueDateOverrideDenied =
         "pos.customer_credit.due_date_override_denied";
     public const string RepaymentNotFound = "pos.repayment.not_found";

@@ -3,11 +3,13 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Statements;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Statements;
 
@@ -40,6 +42,7 @@ public sealed class BusinessCustomerStatementUseCaseTests
         var useCase = new GetBusinessCustomerStatement(
             relationships,
             credits,
+            new EmptyBusinessRepayments(),
             access,
             new FixedClock(Now));
 
@@ -73,6 +76,7 @@ public sealed class BusinessCustomerStatementUseCaseTests
         var useCase = new GetBusinessCustomerStatement(
             relationships,
             credits,
+            new EmptyBusinessRepayments(),
             access,
             new FixedClock(Now));
 
@@ -114,6 +118,41 @@ public sealed class BusinessCustomerStatementUseCaseTests
             Current = PosCommercialAccess.DevelopmentDefault
         };
         return (relationships, new InMemoryBusinessCredits(), relationship.Id.Value, access);
+    }
+
+    private sealed class EmptyBusinessRepayments : IBusinessRepaymentRepository
+    {
+        public Task<BusinessRepayment?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessRepayment?>(null);
+
+        public Task AddAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<decimal> SumSettledAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyList<BusinessRepayment>> ListByConnectionAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid connectionId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepayment>>([]);
     }
 
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock

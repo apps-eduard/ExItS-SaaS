@@ -65,6 +65,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<BusinessCustomerCreditPolicyChangeRecord> BusinessCustomerCreditPolicyChanges =>
         Set<BusinessCustomerCreditPolicyChangeRecord>();
     internal DbSet<BusinessCreditEntryRecord> BusinessCreditEntries => Set<BusinessCreditEntryRecord>();
+    internal DbSet<BusinessRepaymentRecord> BusinessRepayments => Set<BusinessRepaymentRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
@@ -622,6 +623,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_repayments_reversal_consistency",
                     "(status = 'Active' AND reversed_at_utc IS NULL AND reversal_reason IS NULL AND reversed_by IS NULL) OR (status = 'Reversed' AND reversed_at_utc IS NOT NULL AND reversal_reason IS NOT NULL AND reversed_by IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_repayments_payment_method",
+                    "payment_method IN ('Cash', 'ManualGCash', 'Check')");
+                tb.HasCheckConstraint(
+                    "ck_repayments_check_clearing_status",
+                    "check_clearing_status IN ('None', 'PendingClearing', 'Cleared', 'Bounced', 'Cancelled')");
             });
 
             entity.HasKey(e => e.Id);
@@ -632,9 +639,39 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Remarks)
                 .HasColumnName("remarks")
                 .HasMaxLength(Repayment.RemarksMaxLength);
+            entity.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CheckNumber)
+                .HasColumnName("check_number")
+                .HasMaxLength(UtangCheckPayment.CheckNumberMaxLength);
+            entity.Property(e => e.BankName)
+                .HasColumnName("bank_name")
+                .HasMaxLength(UtangCheckPayment.BankNameMaxLength);
+            entity.Property(e => e.CheckDate).HasColumnName("check_date").HasColumnType("date");
+            entity.Property(e => e.AccountName)
+                .HasColumnName("account_name")
+                .HasMaxLength(UtangCheckPayment.AccountNameMaxLength);
+            entity.Property(e => e.Reference)
+                .HasColumnName("reference")
+                .HasMaxLength(UtangCheckPayment.ReferenceMaxLength);
+            entity.Property(e => e.CheckClearingStatus)
+                .HasColumnName("check_clearing_status")
+                .HasMaxLength(32)
+                .IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
             entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.ClearedAtUtc).HasColumnName("cleared_at_utc");
+            entity.Property(e => e.ClearedBy).HasColumnName("cleared_by");
+            entity.Property(e => e.BouncedAtUtc).HasColumnName("bounced_at_utc");
+            entity.Property(e => e.BouncedBy).HasColumnName("bounced_by");
+            entity.Property(e => e.BounceReason)
+                .HasColumnName("bounce_reason")
+                .HasMaxLength(UtangCheckPayment.DispositionReasonMaxLength);
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CancelReason)
+                .HasColumnName("cancel_reason")
+                .HasMaxLength(UtangCheckPayment.DispositionReasonMaxLength);
             entity.Property(e => e.ReversedAtUtc).HasColumnName("reversed_at_utc");
             entity.Property(e => e.ReversalReason)
                 .HasColumnName("reversal_reason")
@@ -660,6 +697,85 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.CustomerId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_repayments_customers");
+        });
+
+        modelBuilder.Entity<BusinessRepaymentRecord>(entity =>
+        {
+            entity.ToTable("business_repayments", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_business_repayments_status",
+                    "status IN ('Active', 'Reversed')");
+                tb.HasCheckConstraint(
+                    "ck_business_repayments_amount_positive",
+                    "amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_business_repayments_payment_method",
+                    "payment_method IN ('Cash', 'ManualGCash', 'Check')");
+                tb.HasCheckConstraint(
+                    "ck_business_repayments_check_clearing_status",
+                    "check_clearing_status IN ('None', 'PendingClearing', 'Cleared', 'Bounced', 'Cancelled')");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(e => e.ConnectionId).HasColumnName("connection_id").IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Remarks)
+                .HasColumnName("remarks")
+                .HasMaxLength(BusinessRepayment.RemarksMaxLength);
+            entity.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.CheckNumber)
+                .HasColumnName("check_number")
+                .HasMaxLength(UtangCheckPayment.CheckNumberMaxLength);
+            entity.Property(e => e.BankName)
+                .HasColumnName("bank_name")
+                .HasMaxLength(UtangCheckPayment.BankNameMaxLength);
+            entity.Property(e => e.CheckDate).HasColumnName("check_date").HasColumnType("date");
+            entity.Property(e => e.AccountName)
+                .HasColumnName("account_name")
+                .HasMaxLength(UtangCheckPayment.AccountNameMaxLength);
+            entity.Property(e => e.Reference)
+                .HasColumnName("reference")
+                .HasMaxLength(UtangCheckPayment.ReferenceMaxLength);
+            entity.Property(e => e.CheckClearingStatus)
+                .HasColumnName("check_clearing_status")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.RecordedAtUtc).HasColumnName("recorded_at_utc");
+            entity.Property(e => e.RecordedBy).HasColumnName("recorded_by").IsRequired();
+            entity.Property(e => e.ClearedAtUtc).HasColumnName("cleared_at_utc");
+            entity.Property(e => e.ClearedBy).HasColumnName("cleared_by");
+            entity.Property(e => e.BouncedAtUtc).HasColumnName("bounced_at_utc");
+            entity.Property(e => e.BouncedBy).HasColumnName("bounced_by");
+            entity.Property(e => e.BounceReason)
+                .HasColumnName("bounce_reason")
+                .HasMaxLength(UtangCheckPayment.DispositionReasonMaxLength);
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.CancelReason)
+                .HasColumnName("cancel_reason")
+                .HasMaxLength(UtangCheckPayment.DispositionReasonMaxLength);
+            entity.Property(e => e.ReversedAtUtc).HasColumnName("reversed_at_utc");
+            entity.Property(e => e.ReversalReason)
+                .HasColumnName("reversal_reason")
+                .HasMaxLength(BusinessRepayment.ReversalReasonMaxLength);
+            entity.Property(e => e.ReversedBy).HasColumnName("reversed_by");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId, e.RecordedAtUtc })
+                .HasDatabaseName("ix_business_repayments_seller_buyer_recorded");
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.BuyerOrganizationId, e.Status, e.CheckClearingStatus })
+                .HasDatabaseName("ix_business_repayments_seller_buyer_status");
+            entity.HasIndex(e => e.ConnectionId)
+                .HasDatabaseName("ix_business_repayments_connection_id");
         });
 
         modelBuilder.Entity<WriteOffRecord>(entity =>

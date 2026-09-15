@@ -35,6 +35,7 @@ import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   deactivateCustomer,
   getCustomer,
+  getCustomerCreditSummary,
   reactivateCustomer,
   type PosCustomerListItem,
 } from "@/api/pos/pos-customers-client";
@@ -61,6 +62,8 @@ import { mapOrgLinkStatusToRelationship } from "@/features/customer-connection/c
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
 import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
+import { PaymentHistorySection } from "@/features/customers/PaymentHistorySection";
+import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
@@ -84,6 +87,7 @@ export function CustomerDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [afterCreateHintDismissed, setAfterCreateHintDismissed] = useState(false);
   const [cachedCustomer, setCachedCustomer] = useState<PosCustomerListItem | null>(null);
 
@@ -106,10 +110,26 @@ export function CustomerDetailPage() {
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  useEffect(() => {
+    if (searchParams.get("recordPayment") !== "1") {
+      return;
+    }
+    setRecordPaymentOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("recordPayment");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
     enabled: enabledOnline,
     queryFn: ({ signal }) => getCustomer(workspace!, customerId!, signal),
+  });
+
+  const creditSummaryQuery = useQuery({
+    queryKey: ["customers", "credit-summary", workspace?.organizationId, customerId],
+    enabled: enabledOnline,
+    queryFn: ({ signal }) => getCustomerCreditSummary(workspace!, customerId!, signal),
   });
 
   const platformCustomerId = customerQuery.data?.platformBusinessCustomerId ?? null;
@@ -771,6 +791,16 @@ export function CustomerDetailPage() {
           subjectIdentity={[headerTitle, personalExItsId]
             .filter((part): part is string => Boolean(part))
             .join(" · ")}
+          onRecordPayment={() => setRecordPaymentOpen(true)}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <PaymentHistorySection
+          customerKind="personal"
+          customerId={customerId}
+          online={online}
+          canManageChecks={allowRepay}
         />
       ) : null}
 
@@ -792,6 +822,22 @@ export function CustomerDetailPage() {
           customer={customerQuery.data}
           isLinked={isLinked}
           contextLabel={headerTitle}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <RecordPaymentModal
+          open={recordPaymentOpen}
+          onOpenChange={setRecordPaymentOpen}
+          customerKind="personal"
+          customerId={customerId}
+          displayName={headerTitle}
+          outstandingBalance={creditSummaryQuery.data?.outstandingAmount ?? 0}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ["customers", "credit-summary", workspace.organizationId, customerId],
+            });
+          }}
         />
       ) : null}
     </div>

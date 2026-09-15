@@ -346,6 +346,8 @@ public sealed class CheckoutBusinessCustomerSearchTests
             Task.CompletedTask;
     }
 
+
+
     private sealed class FixedClock(DateTimeOffset utcNow) : IClock
     {
         public DateTimeOffset UtcNow { get; } = utcNow;
@@ -672,6 +674,12 @@ public sealed class CheckoutBusinessCustomerSearchTests
             Task.FromResult<IReadOnlyList<Repayment>>([]);
 
         public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>

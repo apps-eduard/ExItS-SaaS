@@ -419,6 +419,8 @@ public sealed class BusinessUtangConnectionIndependenceTests
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+
+
     private sealed class InMemoryRepaymentRepository : IRepaymentRepository
     {
         private readonly List<Repayment> _items = [];
@@ -466,6 +468,12 @@ public sealed class BusinessUtangConnectionIndependenceTests
                             && r.CustomerId == customerId
                             && r.Status == RepaymentStatus.Active)
                 .Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,

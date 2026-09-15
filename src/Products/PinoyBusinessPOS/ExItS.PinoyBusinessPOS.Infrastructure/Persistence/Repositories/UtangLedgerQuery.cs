@@ -230,6 +230,10 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
 
                     r.Status,
 
+                    r.PaymentMethod,
+
+                    r.CheckClearingStatus,
+
                     r.RecordedAtUtc,
 
                     r.RecordedBy,
@@ -252,7 +256,13 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
 
             {
 
-                var signed = r.Status == RepaymentStatus.Active.ToString() ? -r.Amount : 0m;
+                var settled = r.Status == RepaymentStatus.Active.ToString()
+                    && (r.PaymentMethod != UtangPaymentMethod.Check.ToString()
+                        || r.CheckClearingStatus == UtangCheckClearingStatus.Cleared.ToString());
+                var signed = settled ? -r.Amount : 0m;
+                var displayStatus = r.PaymentMethod == UtangPaymentMethod.Check.ToString()
+                    ? r.CheckClearingStatus
+                    : r.Status;
 
                 entries.Add(new LedgerEntryDto(
 
@@ -270,7 +280,7 @@ internal sealed class UtangLedgerQuery : IUtangLedgerQuery
 
                     r.Remarks,
 
-                    r.Status,
+                    displayStatus,
 
                     r.RecordedAtUtc,
 

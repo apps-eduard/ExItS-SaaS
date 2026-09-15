@@ -60,6 +60,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.CustomerCreditPolicyNotFound
             or ApplicationErrorCodes.BusinessCustomerCreditPolicyNotFound
             or ApplicationErrorCodes.RepaymentNotFound
+            or ApplicationErrorCodes.BusinessRepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound
             or ApplicationErrorCodes.ProductNotFound
             or ApplicationErrorCodes.SaleNotFound

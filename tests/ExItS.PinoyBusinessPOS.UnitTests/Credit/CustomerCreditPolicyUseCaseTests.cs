@@ -295,6 +295,8 @@ public sealed class CustomerCreditPolicyUseCaseTests
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+
+
     private sealed class EmptyRepaymentRepository : IRepaymentRepository
     {
         public Task<Repayment?> GetByIdAsync(PosOrganizationId organizationId, RepaymentId repaymentId, CancellationToken cancellationToken = default) =>
@@ -324,6 +326,12 @@ public sealed class CustomerCreditPolicyUseCaseTests
             Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
         public Task<decimal> SumActiveAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) =>

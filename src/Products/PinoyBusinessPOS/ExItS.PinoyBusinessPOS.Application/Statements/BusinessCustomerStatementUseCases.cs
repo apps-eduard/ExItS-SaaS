@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -12,7 +13,7 @@ namespace ExItS.PinoyBusinessPOS.Application.Statements;
 
 /// <summary>
 /// Seller-facing statement over the B2B business credit ledger (Organization buyer).
-/// Payments are not projected yet — repayment recording for business customers is not shipped.
+/// Outstanding = active credits − settled repayments (pending checks do not settle).
 /// </summary>
 public sealed record BusinessCustomerStatementLineDto(
     Guid EntryId,
@@ -55,17 +56,20 @@ public sealed class GetBusinessCustomerStatement
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IBusinessCreditEntryRepository _businessCredits;
+    private readonly IBusinessRepaymentRepository _businessRepayments;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
 
     public GetBusinessCustomerStatement(
         IConnectedSupplierRelationshipRepository relationships,
         IBusinessCreditEntryRepository businessCredits,
+        IBusinessRepaymentRepository businessRepayments,
         IPosCommercialAccessAccessor access,
         IClock clock)
     {
         _relationships = relationships;
         _businessCredits = businessCredits;
+        _businessRepayments = businessRepayments;
         _access = access;
         _clock = clock;
     }
@@ -164,9 +168,13 @@ public sealed class GetBusinessCustomerStatement
                 entry.SourceSaleId?.Value));
         }
 
-        var outstanding = await _businessCredits
+        var creditTotal = await _businessCredits
             .SumActiveAmountAsync(seller, buyer, cancellationToken)
             .ConfigureAwait(false);
+        var settledRepayments = await _businessRepayments
+            .SumSettledAmountAsync(seller, buyer, cancellationToken)
+            .ConfigureAwait(false);
+        var outstanding = creditTotal - settledRepayments;
 
         var closing = opening + periodEntries.Sum(SignedEffect);
 

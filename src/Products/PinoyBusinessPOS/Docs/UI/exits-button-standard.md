@@ -6,6 +6,8 @@
 **Visual authority:** `/ui-standards` → **Buttons**  
 (`ExItS.PinoyBusinessPOS.React/src/features/ui-standards/`)
 
+**Interaction semantics (Save / Edit / Delete / Primary hierarchy):** see [EXITS_UI_STANDARD.md](./EXITS_UI_STANDARD.md) and `/ui-standard`.
+
 The shared ExItS `Button` component is the **canonical button implementation** for Pinoy Business POS React.
 
 Pages **MUST** reuse it.

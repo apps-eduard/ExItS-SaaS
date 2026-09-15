@@ -45,6 +45,7 @@ export const posCustomerCreditSummarySchema = z.object({
   customerId: guidSchema,
   organizationId: guidSchema,
   outstandingAmount: z.number(),
+  pendingCheckAmount: z.number().optional().default(0),
   activeEntryCount: z.number(),
   totalEntryCount: z.number(),
 });
@@ -76,9 +77,24 @@ export const posRepaymentSchema = z.object({
   customerId: guidSchema,
   amount: z.number(),
   remarks: z.string().nullable().optional(),
+  paymentMethod: z.string().optional().default("Cash"),
+  checkNumber: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  checkDate: z.string().nullable().optional(),
+  accountName: z.string().nullable().optional(),
+  reference: z.string().nullable().optional(),
+  checkClearingStatus: z.string().optional().default("None"),
   status: z.string(),
   recordedAtUtc: z.string(),
   recordedBy: guidSchema,
+  clearedAtUtc: z.string().nullable().optional(),
+  clearedBy: guidSchema.nullable().optional(),
+  bouncedAtUtc: z.string().nullable().optional(),
+  bouncedBy: guidSchema.nullable().optional(),
+  bounceReason: z.string().nullable().optional(),
+  cancelledAtUtc: z.string().nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
+  cancelReason: z.string().nullable().optional(),
   reversedAtUtc: z.string().nullable().optional(),
   reversalReason: z.string().nullable().optional(),
   reversedBy: guidSchema.nullable().optional(),
@@ -194,7 +210,20 @@ export type CreatePosRepaymentInput = {
   amount: number;
   remarks?: string | null;
   repaymentId?: string;
+  paymentMethod?: "Cash" | "ManualGCash" | "Check";
+  checkNumber?: string | null;
+  bankName?: string | null;
+  checkDate?: string | null;
+  accountName?: string | null;
+  reference?: string | null;
 };
+
+export type UtangRepaymentPaymentMethod = NonNullable<CreatePosRepaymentInput["paymentMethod"]>;
+export const UTANG_REPAYMENT_PAYMENT_METHODS: readonly UtangRepaymentPaymentMethod[] = [
+  "Cash",
+  "ManualGCash",
+  "Check",
+] as const;
 
 /**
  * Idempotency headers for a customer/credit mutation, mirroring MAUI
@@ -255,9 +284,16 @@ export function buildUpdateCustomerPayload(input: UpdatePosCustomerInput) {
 
 /** Payload the server expects for a repayment — shared by the online and offline paths. */
 export function buildCreateRepaymentPayload(input: CreatePosRepaymentInput) {
+  const method = input.paymentMethod ?? "Cash";
   return {
     amount: input.amount,
     remarks: input.remarks?.trim() || null,
+    paymentMethod: method,
+    checkNumber: method === "Check" ? (input.checkNumber?.trim() || null) : null,
+    bankName: method === "Check" ? (input.bankName?.trim() || null) : null,
+    checkDate: method === "Check" ? (input.checkDate?.trim() || null) : null,
+    accountName: method === "Check" ? (input.accountName?.trim() || null) : null,
+    reference: input.reference?.trim() || null,
     ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
   };
 }
@@ -582,6 +618,52 @@ export async function getRepayment(
     workspace,
     signal,
     path: `${REPAYMENTS_PATH}/${repaymentId}`,
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function clearCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/clear-check`,
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function bounceCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/bounce-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function cancelCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/cancel-check`,
+    body: { reason: input.reason?.trim() || null },
   });
   return posRepaymentSchema.parse(raw);
 }

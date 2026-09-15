@@ -7,11 +7,11 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { X } from "lucide-react";
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react";
 import { getToastNavigate } from "@/components/exits/toast-navigation";
 import { cn } from "@/lib/cn";
 
-export type ToastTone = "success" | "error" | "warning";
+export type ToastTone = "success" | "info" | "warning" | "error";
 
 export type ToastAction = {
   label: string;
@@ -33,17 +33,37 @@ type ToastItem = {
   action?: ToastAction;
 };
 
+export type ExitsToastApi = {
+  success: (title: string, description?: string) => void;
+  info: (title: string, description?: string) => void;
+  warning: (title: string, description?: string) => void;
+  error: (title: string, description?: string) => void;
+  show: {
+    (message: string, tone?: ToastTone): void;
+    (payload: ToastPayload): void;
+  };
+};
+
 type ToastContextValue = {
+  /** @deprecated Prefer `toast.success|info|warning|error` — kept for existing callers. */
   showToast: {
     (message: string, tone?: ToastTone): void;
     (payload: ToastPayload): void;
   };
+  toast: ExitsToastApi;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const AUTO_DISMISS_MS = 4200;
 const WARNING_ACTION_DISMISS_MS = 10000;
+
+const TOAST_ICONS = {
+  success: CircleCheck,
+  info: Info,
+  warning: TriangleAlert,
+  error: CircleAlert,
+} as const;
 
 function isToastPayload(value: string | ToastPayload): value is ToastPayload {
   return typeof value === "object" && value !== null && "title" in value;
@@ -121,45 +141,63 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }, dismissMs);
   }, []);
 
-  const value = useMemo(() => ({ showToast }), [showToast]);
+  const toastApi = useMemo<ExitsToastApi>(
+    () => ({
+      success: (title, description) => showToast({ title, description, tone: "success" }),
+      info: (title, description) => showToast({ title, description, tone: "info" }),
+      warning: (title, description) => showToast({ title, description, tone: "warning" }),
+      error: (title, description) => showToast({ title, description, tone: "error" }),
+      show: showToast,
+    }),
+    [showToast],
+  );
+
+  const value = useMemo(() => ({ showToast, toast: toastApi }), [showToast, toastApi]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div className="exits-toast-region" aria-live="polite" aria-relevant="additions" data-testid="exits-toast-region">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={cn(
-              "exits-toast",
-              toast.tone === "success" && "exits-toast--success",
-              toast.tone === "error" && "exits-toast--error",
-              toast.tone === "warning" && "exits-toast--warning",
-            )}
-            role="status"
-            data-testid="exits-toast"
-            data-tone={toast.tone}
-          >
-            <div className="exits-toast__body">
-              <div className="exits-toast__title">{toast.title}</div>
-              {toast.description ? (
-                <div className="exits-toast__description">{toast.description}</div>
-              ) : null}
-              {toast.action ? (
-                <ToastActionLink href={toast.action.href} label={toast.action.label} />
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="exits-toast__close"
-              data-testid="exits-toast-close"
-              aria-label="Close"
-              onClick={() => dismissToast(toast.id)}
+        {toasts.map((toast) => {
+          const Icon = TOAST_ICONS[toast.tone];
+          return (
+            <div
+              key={toast.id}
+              className={cn(
+                "exits-toast",
+                toast.tone === "success" && "exits-toast--success",
+                toast.tone === "info" && "exits-toast--info",
+                toast.tone === "error" && "exits-toast--error",
+                toast.tone === "warning" && "exits-toast--warning",
+              )}
+              role="status"
+              data-testid="exits-toast"
+              data-tone={toast.tone}
             >
-              <X className="size-4" aria-hidden />
-            </button>
-          </div>
-        ))}
+              <span className="exits-toast__icon" aria-hidden>
+                <Icon className="size-4" />
+              </span>
+              <div className="exits-toast__body">
+                <div className="exits-toast__title">{toast.title}</div>
+                {toast.description ? (
+                  <div className="exits-toast__description">{toast.description}</div>
+                ) : null}
+                {toast.action ? (
+                  <ToastActionLink href={toast.action.href} label={toast.action.label} />
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="exits-toast__close"
+                data-testid="exits-toast-close"
+                aria-label="Close"
+                onClick={() => dismissToast(toast.id)}
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );
@@ -171,4 +209,9 @@ export function useToast(): ToastContextValue {
     throw new Error("useToast must be used within ToastProvider");
   }
   return ctx;
+}
+
+/** Canonical toast helpers — same as `useToast().toast`. */
+export function useExitsToast(): ExitsToastApi {
+  return useToast().toast;
 }

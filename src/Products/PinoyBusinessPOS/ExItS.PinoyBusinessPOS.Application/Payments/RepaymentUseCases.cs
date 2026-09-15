@@ -23,9 +23,24 @@ public sealed record RepaymentDto(
     Guid CustomerId,
     decimal Amount,
     string? Remarks,
+    string PaymentMethod,
+    string? CheckNumber,
+    string? BankName,
+    DateOnly? CheckDate,
+    string? AccountName,
+    string? Reference,
+    string CheckClearingStatus,
     string Status,
     DateTimeOffset RecordedAtUtc,
     Guid RecordedBy,
+    DateTimeOffset? ClearedAtUtc,
+    Guid? ClearedBy,
+    DateTimeOffset? BouncedAtUtc,
+    Guid? BouncedBy,
+    string? BounceReason,
+    DateTimeOffset? CancelledAtUtc,
+    Guid? CancelledBy,
+    string? CancelReason,
     DateTimeOffset? ReversedAtUtc,
     string? ReversalReason,
     Guid? ReversedBy);
@@ -115,6 +130,7 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
         var custId = POSCustomerId.From(customerId);
         var activeCredits = await _credits.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepayments = await _repayments.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
+        var pendingCheckAmount = await _repayments.SumPendingCheckAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeWriteOffs = await _writeOffs.SumActiveAmountAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeCreditCount = await _credits.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
         var activeRepaymentCount = await _repayments.CountActiveAsync(orgId, custId, cancellationToken).ConfigureAwait(false);
@@ -145,6 +161,7 @@ public sealed class OutstandingBalanceService : IOutstandingBalanceService
             overdueSummary.OutstandingAmount,
             overdueSummary.ActiveCreditTotal,
             overdueSummary.ActiveRepaymentTotal,
+            pendingCheckAmount,
             overdueSummary.ActiveCreditCount,
             overdueSummary.ActiveRepaymentCount,
             overdueSummary.TotalLedgerEntryCount,
@@ -232,9 +249,24 @@ public sealed class RepaymentQueryService
             repayment.CustomerId.Value,
             repayment.Amount,
             repayment.Remarks,
+            repayment.PaymentMethod.ToString(),
+            repayment.CheckNumber,
+            repayment.BankName,
+            repayment.CheckDate,
+            repayment.AccountName,
+            repayment.Reference,
+            repayment.CheckClearingStatus.ToString(),
             repayment.Status.ToString(),
             repayment.RecordedAtUtc,
             repayment.RecordedBy,
+            repayment.ClearedAtUtc,
+            repayment.ClearedBy,
+            repayment.BouncedAtUtc,
+            repayment.BouncedBy,
+            repayment.BounceReason,
+            repayment.CancelledAtUtc,
+            repayment.CancelledBy,
+            repayment.CancelReason,
             repayment.ReversedAtUtc,
             repayment.ReversalReason,
             repayment.ReversedBy);
@@ -280,6 +312,17 @@ public sealed class UtangLedgerQueryService
     }
 }
 
+public sealed record CreateUtangRepaymentCommand(
+    decimal Amount,
+    string? Remarks,
+    string? PaymentMethod,
+    string? CheckNumber,
+    string? BankName,
+    DateOnly? CheckDate,
+    string? AccountName,
+    string? Reference,
+    Guid? RepaymentId = null);
+
 public sealed class CreateRepayment
 {
     private readonly IPOSCustomerRepository _customers;
@@ -302,13 +345,26 @@ public sealed class CreateRepayment
         _clock = clock;
     }
 
-    public async Task<ApplicationResult<Repayment>> ExecuteAsync(
+    public Task<ApplicationResult<Repayment>> ExecuteAsync(
         Guid organizationId,
         Guid customerId,
         decimal amount,
         string? remarks,
         Guid recordedBy,
         Guid? clientRepaymentId = null,
+        CancellationToken cancellationToken = default) =>
+        ExecuteAsync(
+            organizationId,
+            customerId,
+            new CreateUtangRepaymentCommand(amount, remarks, nameof(UtangPaymentMethod.Cash), null, null, null, null, null, clientRepaymentId),
+            recordedBy,
+            cancellationToken);
+
+    public async Task<ApplicationResult<Repayment>> ExecuteAsync(
+        Guid organizationId,
+        Guid customerId,
+        CreateUtangRepaymentCommand command,
+        Guid recordedBy,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
@@ -321,10 +377,22 @@ public sealed class CreateRepayment
                 "Customer was not found.");
         }
 
-        if (clientRepaymentId is not null)
+        UtangPaymentMethod paymentMethod;
+        try
+        {
+            paymentMethod = string.IsNullOrWhiteSpace(command.PaymentMethod)
+                ? UtangPaymentMethod.Cash
+                : UtangPaymentMethods.ParseRequired(command.PaymentMethod);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+
+        if (command.RepaymentId is not null)
         {
             var existing = await _repayments
-                .GetByIdAsync(orgId, RepaymentId.From(clientRepaymentId.Value), cancellationToken)
+                .GetByIdAsync(orgId, RepaymentId.From(command.RepaymentId.Value), cancellationToken)
                 .ConfigureAwait(false);
             if (existing is not null)
             {
@@ -353,7 +421,7 @@ public sealed class CreateRepayment
                             "Outstanding balance is zero; repayment is not allowed.");
                     }
 
-                    var normalized = Repayment.NormalizeAmount(amount);
+                    var normalized = Repayment.NormalizeAmount(command.Amount);
                     if (normalized > outstanding)
                     {
                         return ApplicationResult<Repayment>.Failure(
@@ -361,21 +429,197 @@ public sealed class CreateRepayment
                             "Repayment amount exceeds the current outstanding balance.");
                     }
 
-                    var repayment = clientRepaymentId is null
-                        ? Repayment.Create(orgId, custId, normalized, remarks, recordedBy, _clock.UtcNow)
-                        : Repayment.Create(
-                            orgId,
-                            custId,
-                            normalized,
-                            remarks,
-                            recordedBy,
-                            _clock.UtcNow,
-                            id: RepaymentId.From(clientRepaymentId.Value));
+                    var repayment = Repayment.Create(
+                        orgId,
+                        custId,
+                        normalized,
+                        command.Remarks,
+                        recordedBy,
+                        _clock.UtcNow,
+                        id: command.RepaymentId is null ? null : RepaymentId.From(command.RepaymentId.Value),
+                        paymentMethod: paymentMethod,
+                        checkNumber: command.CheckNumber,
+                        bankName: command.BankName,
+                        checkDate: command.CheckDate,
+                        accountName: command.AccountName,
+                        reference: command.Reference);
                     await _repayments.AddAsync(repayment, ct).ConfigureAwait(false);
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     return ApplicationResult<Repayment>.Success(repayment);
                 }, cancellationToken)
                 .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class ClearCheckRepayment
+{
+    private readonly IRepaymentRepository _repayments;
+    private readonly IOutstandingBalanceService _outstanding;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public ClearCheckRepayment(
+        IRepaymentRepository repayments,
+        IOutstandingBalanceService outstanding,
+        IPosUnitOfWork unitOfWork,
+        IClock clock)
+    {
+        _repayments = repayments;
+        _outstanding = outstanding;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Repayment>> ExecuteAsync(
+        Guid organizationId,
+        Guid repaymentId,
+        Guid clearedBy,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        try
+        {
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var repayment = await _repayments
+                        .GetByIdAsync(orgId, RepaymentId.From(repaymentId), ct)
+                        .ConfigureAwait(false);
+                    if (repayment is null)
+                    {
+                        return ApplicationResult<Repayment>.Failure(
+                            ApplicationErrorCodes.RepaymentNotFound,
+                            "Repayment was not found.");
+                    }
+
+                    if (repayment.CheckClearingStatus == UtangCheckClearingStatus.Cleared)
+                    {
+                        return ApplicationResult<Repayment>.Success(repayment);
+                    }
+
+                    var outstanding = await _outstanding
+                        .GetOutstandingAsync(orgId, repayment.CustomerId, ct)
+                        .ConfigureAwait(false);
+                    if (repayment.Amount > outstanding)
+                    {
+                        return ApplicationResult<Repayment>.Failure(
+                            DomainErrorCodes.CheckClearExceedsOutstanding,
+                            "Check amount exceeds the customer's current outstanding balance. Resolve the account before clearing this check.");
+                    }
+
+                    repayment.MarkCleared(clearedBy, _clock.UtcNow);
+                    await _repayments.UpdateAsync(repayment, ct).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    return ApplicationResult<Repayment>.Success(repayment);
+                }, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class BounceCheckRepayment
+{
+    private readonly IRepaymentRepository _repayments;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public BounceCheckRepayment(IRepaymentRepository repayments, IPosUnitOfWork unitOfWork, IClock clock)
+    {
+        _repayments = repayments;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Repayment>> ExecuteAsync(
+        Guid organizationId,
+        Guid repaymentId,
+        Guid bouncedBy,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var repayment = await _repayments
+            .GetByIdAsync(orgId, RepaymentId.From(repaymentId), cancellationToken)
+            .ConfigureAwait(false);
+        if (repayment is null)
+        {
+            return ApplicationResult<Repayment>.Failure(
+                ApplicationErrorCodes.RepaymentNotFound,
+                "Repayment was not found.");
+        }
+
+        try
+        {
+            repayment.MarkBounced(bouncedBy, _clock.UtcNow, reason);
+            await _repayments.UpdateAsync(repayment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Repayment>.Success(repayment);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<Repayment>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class CancelCheckRepayment
+{
+    private readonly IRepaymentRepository _repayments;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IClock _clock;
+
+    public CancelCheckRepayment(IRepaymentRepository repayments, IPosUnitOfWork unitOfWork, IClock clock)
+    {
+        _repayments = repayments;
+        _unitOfWork = unitOfWork;
+        _clock = clock;
+    }
+
+    public async Task<ApplicationResult<Repayment>> ExecuteAsync(
+        Guid organizationId,
+        Guid repaymentId,
+        Guid cancelledBy,
+        string? reason,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var repayment = await _repayments
+            .GetByIdAsync(orgId, RepaymentId.From(repaymentId), cancellationToken)
+            .ConfigureAwait(false);
+        if (repayment is null)
+        {
+            return ApplicationResult<Repayment>.Failure(
+                ApplicationErrorCodes.RepaymentNotFound,
+                "Repayment was not found.");
+        }
+
+        try
+        {
+            repayment.CancelCheck(cancelledBy, _clock.UtcNow, reason);
+            await _repayments.UpdateAsync(repayment, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<Repayment>.Success(repayment);
         }
         catch (DomainException ex)
         {

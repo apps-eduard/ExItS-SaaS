@@ -358,6 +358,8 @@ public sealed class CreditEntryUseCaseTests
         public Task UpdateAsync(CreditEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+
+
     private sealed class InMemoryRepaymentRepository : IRepaymentRepository
     {
         public Task<Repayment?> GetByIdAsync(PosOrganizationId organizationId, RepaymentId repaymentId, CancellationToken cancellationToken = default) =>
@@ -390,6 +392,12 @@ public sealed class CreditEntryUseCaseTests
             PosOrganizationId organizationId,
             POSCustomerId customerId,
             CancellationToken cancellationToken = default) => Task.FromResult(0m);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,

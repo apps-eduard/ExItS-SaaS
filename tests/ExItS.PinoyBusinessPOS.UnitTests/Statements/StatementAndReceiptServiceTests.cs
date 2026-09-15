@@ -291,6 +291,8 @@ public sealed class StatementAndReceiptServiceTests
         }
     }
 
+
+
     private sealed class InMemoryRepayments : IRepaymentRepository
     {
         private readonly List<Repayment> _items = [];
@@ -344,7 +346,13 @@ public sealed class StatementAndReceiptServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.ReducesOutstanding).Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,

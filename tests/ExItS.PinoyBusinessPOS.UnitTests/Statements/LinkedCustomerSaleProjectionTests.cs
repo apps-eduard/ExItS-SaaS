@@ -771,6 +771,8 @@ public sealed class LinkedCustomerSaleProjectionTests
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
     }
 
+
+
     private sealed class InMemoryRepayments : IRepaymentRepository
     {
         public List<Repayment> All { get; } = [];
@@ -816,6 +818,12 @@ public sealed class LinkedCustomerSaleProjectionTests
             Task.FromResult(All.Where(r =>
                 r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active)
                 .Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>

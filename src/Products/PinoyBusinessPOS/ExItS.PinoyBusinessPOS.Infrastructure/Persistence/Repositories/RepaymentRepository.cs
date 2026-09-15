@@ -106,10 +106,31 @@ internal sealed class RepaymentRepository : IRepaymentRepository
         CancellationToken cancellationToken = default)
     {
         var active = RepaymentStatus.Active.ToString();
+        var checkMethod = UtangPaymentMethod.Check.ToString();
+        var cleared = UtangCheckClearingStatus.Cleared.ToString();
         return await _db.Repayments.AsNoTracking()
             .Where(e => e.OrganizationId == organizationId.Value
                         && e.CustomerId == customerId.Value
-                        && e.Status == active)
+                        && e.Status == active
+                        && (e.PaymentMethod != checkMethod || e.CheckClearingStatus == cleared))
+            .SumAsync(e => e.Amount, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<decimal> SumPendingCheckAmountAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var active = RepaymentStatus.Active.ToString();
+        var checkMethod = UtangPaymentMethod.Check.ToString();
+        var pending = UtangCheckClearingStatus.PendingClearing.ToString();
+        return await _db.Repayments.AsNoTracking()
+            .Where(e => e.OrganizationId == organizationId.Value
+                        && e.CustomerId == customerId.Value
+                        && e.Status == active
+                        && e.PaymentMethod == checkMethod
+                        && e.CheckClearingStatus == pending)
             .SumAsync(e => e.Amount, cancellationToken)
             .ConfigureAwait(false);
     }
@@ -119,8 +140,12 @@ internal sealed class RepaymentRepository : IRepaymentRepository
         CancellationToken cancellationToken = default)
     {
         var active = RepaymentStatus.Active.ToString();
+        var checkMethod = UtangPaymentMethod.Check.ToString();
+        var cleared = UtangCheckClearingStatus.Cleared.ToString();
         var rows = await _db.Repayments.AsNoTracking()
-            .Where(e => e.OrganizationId == organizationId.Value && e.Status == active)
+            .Where(e => e.OrganizationId == organizationId.Value
+                        && e.Status == active
+                        && (e.PaymentMethod != checkMethod || e.CheckClearingStatus == cleared))
             .GroupBy(e => e.CustomerId)
             .Select(g => new { CustomerId = g.Key, Total = g.Sum(e => e.Amount) })
             .ToListAsync(cancellationToken)
@@ -135,11 +160,14 @@ internal sealed class RepaymentRepository : IRepaymentRepository
         CancellationToken cancellationToken = default)
     {
         var active = RepaymentStatus.Active.ToString();
+        var checkMethod = UtangPaymentMethod.Check.ToString();
+        var cleared = UtangCheckClearingStatus.Cleared.ToString();
         return await _db.Repayments.AsNoTracking()
             .CountAsync(
                 e => e.OrganizationId == organizationId.Value
                      && e.CustomerId == customerId.Value
-                     && e.Status == active,
+                     && e.Status == active
+                     && (e.PaymentMethod != checkMethod || e.CheckClearingStatus == cleared),
                 cancellationToken)
             .ConfigureAwait(false);
     }
