@@ -48,6 +48,8 @@ A compact Do / Don’t card covers Primary hierarchy, Intent vs Appearance, Soft
 | Responsive collections | `ExitsResponsiveDataView` | `components/exits/ExitsResponsiveDataView.tsx` |
 | Upload | `ExitsUpload` | `components/exits/ExitsUpload.tsx` |
 | Quantity | `QuantityStepper` | `components/exits/MoneyQuantity.tsx` |
+
+`QuantityStepper` chrome: **[ soft-danger − ][ qty ][ primary + ]**. Minus uses `--exits-danger-soft` / danger text (soft, not solid Delete). Plus uses `--exits-primary` / Primary Palette. Center input stays neutral and auto-widens with typed value (`ch`, min 12 / max 20). Solid Danger remains reserved for Remove/Delete.
 | States | `EmptyState` / `LoadingState` / `ErrorState` | `components/exits/` |
 
 Changing a canonical component must update all consumers. Do **not** restyle via page-specific CSS selectors.

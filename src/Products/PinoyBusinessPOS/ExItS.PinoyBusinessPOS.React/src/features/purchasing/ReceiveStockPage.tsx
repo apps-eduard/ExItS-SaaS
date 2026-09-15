@@ -65,6 +65,13 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
+import {
+  clampQuantityToPrecision,
+  isValidQuantity,
+  maxQuantityDecimals,
+  quantityInputMinimum,
+  quantityStepperWholeStep,
+} from "@/lib/quantity-rules";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -351,14 +358,13 @@ export function ReceiveStockPage() {
       listCatalogCategories(workspace!, { status: "Active", pageSize: 50 }, signal),
   });
 
-  // All / multi-category: omit categoryId (API supports one). Filter OR client-side.
+  // Category filter is applied client-side so every category can show a stable count (incl. 0).
   const productsQuery = useQuery({
     queryKey: [
       "catalog-products",
       "direct-buy",
       workspace?.organizationId,
       debounced,
-      categoryIds.length === 1 ? categoryIds[0] : "all-or-multi",
     ],
     enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
@@ -366,7 +372,6 @@ export function ReceiveStockPage() {
         workspace!,
         {
           search: debounced || undefined,
-          categoryId: categoryIds.length === 1 ? categoryIds[0] : undefined,
           status: "Active",
           pageSize: 100,
         },
@@ -398,13 +403,30 @@ export function ReceiveStockPage() {
     return map;
   }, [categories]);
   const rawProductItems = productsQuery.data?.items ?? [];
+  const categoriesWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const category of categories) {
+      counts.set(category.categoryId, 0);
+    }
+    for (const product of rawProductItems) {
+      if (product.categoryId == null || !counts.has(product.categoryId)) {
+        continue;
+      }
+      counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1);
+    }
+    return categories.map((category) => ({
+      categoryId: category.categoryId,
+      name: category.name,
+      count: counts.get(category.categoryId) ?? 0,
+    }));
+  }, [categories, rawProductItems]);
   const addedProductIds = useMemo(
     () => new Set(lines.map((line) => line.productId)),
     [lines],
   );
   const productItems = useMemo(() => {
     const categoryFiltered =
-      categoryIds.length <= 1
+      categoryIds.length === 0
         ? rawProductItems
         : rawProductItems.filter(
             (product) => product.categoryId != null && categoryIds.includes(product.categoryId),
@@ -508,10 +530,15 @@ export function ReceiveStockPage() {
         if (line.productId !== productId) return line;
         const next = { ...line, ...patch };
         if (patch.quantity !== undefined) {
-          next.quantity =
-            Number.isFinite(patch.quantity) && patch.quantity >= 1
-              ? Math.trunc(patch.quantity)
-              : line.quantity;
+          const precision = maxQuantityDecimals(line.uom, line.sellingMode);
+          const minQty = quantityInputMinimum(line.uom, line.sellingMode);
+          if (
+            Number.isFinite(patch.quantity) &&
+            patch.quantity >= minQty &&
+            isValidQuantity(patch.quantity, line.uom, line.sellingMode)
+          ) {
+            next.quantity = clampQuantityToPrecision(patch.quantity, precision);
+          }
         }
         if (patch.costInput !== undefined) {
           const cost = parseMoneyInput(patch.costInput);
@@ -865,6 +892,8 @@ export function ReceiveStockPage() {
                           const costInvalid = !(line.unitCost > 0);
                           const expiryInvalid =
                             line.tracksExpiration && !line.expiryDate.trim();
+                          const qtyPrecision = maxQuantityDecimals(line.uom, line.sellingMode);
+                          const qtyMin = quantityInputMinimum(line.uom, line.sellingMode);
                           const marginKind = receiveCostMarginKind(
                             line.unitCost,
                             line.effectiveSellingPrice,
@@ -902,9 +931,9 @@ export function ReceiveStockPage() {
                                   onChange={(next) =>
                                     patchLine(line.productId, { quantity: next })
                                   }
-                                  min={1}
-                                  step={1}
-                                  precision={0}
+                                  min={qtyMin}
+                                  step={quantityStepperWholeStep()}
+                                  precision={qtyPrecision}
                                   unit={line.uom}
                                   invalid={qtyInvalid}
                                   decreaseLabel={t("purchasing.decreaseQty")}
@@ -1091,7 +1120,7 @@ export function ReceiveStockPage() {
                 <div className="receive-stock-finder__filters">
                   {categories.length > 0 ? (
                     <ReceiveCategoryMultiSelect
-                      categories={categories}
+                      categories={categoriesWithCounts}
                       selectedIds={categoryIds}
                       onChange={setCategoryIds}
                       label={t("purchasing.categories")}
@@ -1101,6 +1130,7 @@ export function ReceiveStockPage() {
                       }
                       selectAllLabel={t("purchasing.selectAllCategories")}
                       deselectAllLabel={t("purchasing.deselectAllCategories")}
+                      searchPlaceholder={t("catalog.searchCategories")}
                     />
                   ) : null}
                   <div className="receive-stock-finder__search-row">

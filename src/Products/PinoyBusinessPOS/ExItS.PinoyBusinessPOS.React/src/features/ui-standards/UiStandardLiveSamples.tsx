@@ -180,7 +180,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
   const [stepperWhole, setStepperWhole] = useState(2);
-  const [stepperWeighted, setStepperWeighted] = useState(1);
+  const [stepperWeighted, setStepperWeighted] = useState(1.5);
   const [selectedRow, setSelectedRow] = useState("1");
   const [tableSearch, setTableSearch] = useState("");
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
@@ -776,8 +776,11 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             <div className="flex flex-col gap-2" data-testid="ui-standard-quantity-stepper">
               <SectionLabel>QuantityStepper</SectionLabel>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Canonical <code className="text-foreground">QuantityStepper</code> — editable center,
-                domain step/precision from the feature.
+                Canonical <code className="text-foreground">QuantityStepper</code> —{" "}
+                <strong className="font-medium text-foreground">[ soft-danger − ][ qty ][ primary + ]</strong>
+                . Minus uses soft danger fill; plus follows the global Primary Palette. Input stays
+                neutral and auto-widens with the typed value (12–20ch). Divisible units (e.g. Kg): ±1
+                preserves decimals (1.5→2.5); whole units reject decimal typing. Values &lt; 1 snap to 1.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <QuantityStepper
@@ -799,7 +802,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   onChange={setStepperWeighted}
                   min={1}
                   step={1}
-                  precision={0}
+                  precision={2}
                   unit="Kg"
                   decreaseLabel="Decrease weight quantity"
                   increaseLabel="Increase weight quantity"
@@ -821,8 +824,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 />
               </div>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="ui-standard-qty-playground">
-                Playground — whole: {stepperWhole} · kg: {stepperWeighted} · step=1 (decimals like
-                0.001 not allowed)
+                Playground — Pack whole-only: {stepperWhole} · Kg step±1 keeps decimals:{" "}
+                {stepperWeighted} (e.g. 1.5 + → 2.5)
               </p>
             </div>
           </Card>

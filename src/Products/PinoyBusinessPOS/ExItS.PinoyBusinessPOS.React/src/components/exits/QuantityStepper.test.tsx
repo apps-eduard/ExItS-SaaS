@@ -1,7 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QuantityStepper } from "@/components/exits/MoneyQuantity";
+import {
+  QuantityStepper,
+  QUANTITY_STEPPER_INPUT_MAX_CH,
+  QUANTITY_STEPPER_INPUT_MIN_CH,
+  quantityStepperInputWidthCh,
+} from "@/components/exits/MoneyQuantity";
 
 describe("QuantityStepper editable mode", () => {
   it("increments and decrements with plus/minus", async () => {
@@ -61,6 +66,51 @@ describe("QuantityStepper editable mode", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("normalizes zero/negative manual input to minimum on blur", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={onChange}
+        min={1}
+        step={1}
+        precision={0}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "0");
+    expect(onChange).not.toHaveBeenCalledWith(0);
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it("keeps 1.5 Kg minus at 1 when result would be less than 1", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1.5}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
   it("allows direct typing for whole units", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -80,19 +130,21 @@ describe("QuantityStepper editable mode", () => {
     const input = screen.getByTestId("qty");
     await user.clear(input);
     await user.type(input, "4");
-    expect(onChange).toHaveBeenCalledWith(4);
+    expect(onChange).not.toHaveBeenCalled();
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(4);
   });
 
-  it("supports weighted decimal quantities and rejects excess precision", async () => {
+  it("allows typing 1.5 for Kg and commits on blur", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(
       <QuantityStepper
-        value={0.5}
+        value={1}
         onChange={onChange}
-        min={0.001}
-        step={0.001}
-        precision={3}
+        min={0.01}
+        step={1}
+        precision={2}
         unit="Kg"
         decreaseLabel="Decrease"
         increaseLabel="Increase"
@@ -100,16 +152,248 @@ describe("QuantityStepper editable mode", () => {
         valueTestId="qty"
       />,
     );
-    expect(screen.getByText("Kg")).toBeInTheDocument();
     const input = screen.getByTestId("qty");
     await user.clear(input);
-    await user.type(input, "1.25");
-    expect(onChange).toHaveBeenCalledWith(1.25);
+    await user.type(input, "1.5");
+    expect(input).toHaveValue("1.5");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1.5);
+  });
 
-    onChange.mockClear();
+  it("keeps transient decimal draft while typing", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
     await user.clear(input);
-    await user.type(input, "1.2345");
-    expect(onChange).not.toHaveBeenCalledWith(1.2345);
+    await user.type(input, "1.");
+    expect(input).toHaveValue("1.");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.type(input, "2");
+    expect(input).toHaveValue("1.2");
+  });
+
+  it("blocks a third decimal digit while typing and on paste", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "1.255");
+    expect(input).toHaveValue("1.25");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1.25);
+
+    await user.clear(input);
+    await user.click(input);
+    await user.paste("2.999");
+    expect(input).not.toHaveValue("2.999");
+    expect(onChange).not.toHaveBeenCalledWith(2.999);
+  });
+
+  it("preserves decimal remainder when stepping by whole units", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={1.5}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(2.5);
+    rerender(
+      <QuantityStepper
+        value={2.5}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(1.5);
+  });
+
+  it("rejects decimal typing for whole Pack units", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={1}
+        step={1}
+        precision={0}
+        unit="Pack"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "1.");
+    expect(input).toHaveValue("1");
+    expect(onChange).not.toHaveBeenCalled();
+
+    await user.clear(input);
+    await user.click(input);
+    await user.paste("1.5");
+    // Invalid paste is ignored; draft stays whatever was focused/cleared (never 1.5).
+    expect(input).not.toHaveValue("1.5");
+    expect(onChange).not.toHaveBeenCalledWith(1.5);
+    await user.tab();
+    expect(onChange.mock.calls.every((call) => call[0] !== 1.5)).toBe(true);
+  });
+
+  it("steps +1/-1 from typed decimal without losing fraction", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "1.5");
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1.5);
+
+    rerender(
+      <QuantityStepper
+        value={1.5}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(2.5);
+
+    rerender(
+      <QuantityStepper
+        value={2.5}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(1.5);
+  });
+
+  it("rejects zero on blur and restores minimum", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "0");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it("snaps values less than 1 up to 1 on blur", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={2}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "0.5");
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1);
   });
 
   it("supports ArrowUp/ArrowDown and disabled state", async () => {
@@ -173,4 +457,96 @@ describe("QuantityStepper editable mode", () => {
     expect(onIncrement).toHaveBeenCalledOnce();
     expect(onDecrement).toHaveBeenCalledOnce();
   });
+
+  it("auto-widens input from typed text and clamps long values", async () => {
+    expect(quantityStepperInputWidthCh("1")).toBe(QUANTITY_STEPPER_INPUT_MIN_CH);
+    expect(quantityStepperInputWidthCh("1.5")).toBe(QUANTITY_STEPPER_INPUT_MIN_CH);
+    expect(quantityStepperInputWidthCh("11.50")).toBe(QUANTITY_STEPPER_INPUT_MIN_CH);
+    expect(quantityStepperInputWidthCh("123456789012345")).toBeGreaterThan(
+      QUANTITY_STEPPER_INPUT_MIN_CH,
+    );
+    expect(quantityStepperInputWidthCh("123456789012345678901234567890")).toBe(
+      QUANTITY_STEPPER_INPUT_MAX_CH,
+    );
+
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0.01}
+        step={1}
+        precision={2}
+        unit="Kg"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    expect(input).toHaveStyle({ width: `${QUANTITY_STEPPER_INPUT_MIN_CH}ch` });
+
+    await user.clear(input);
+    await user.type(input, "1.");
+    expect(input).toHaveValue("1.");
+    expect(input).toHaveStyle({
+      width: `${quantityStepperInputWidthCh("1.")}ch`,
+    });
+
+    await user.type(input, "5");
+    expect(input).toHaveValue("1.5");
+    expect(input).toHaveStyle({
+      width: `${quantityStepperInputWidthCh("1.5")}ch`,
+    });
+  });
+
+  it("formats thousands with commas and normalizes empty/0/1 via minus", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={1000}
+        onChange={onChange}
+        min={1}
+        step={1}
+        precision={0}
+        unit="Pack"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    expect(screen.getByTestId("qty")).toHaveValue("1,000");
+
+    await user.clear(screen.getByTestId("qty"));
+    expect(screen.getByTestId("qty")).toHaveValue("");
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(1);
+
+    rerender(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={1}
+        step={1}
+        precision={0}
+        unit="Pack"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+      />,
+    );
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "0");
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(1);
+
+    expect(screen.getByLabelText("Decrease")).toBeDisabled();
+  });
 });
+

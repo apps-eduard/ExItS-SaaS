@@ -14009,6 +14009,10 @@ a.dashboard-metric-card:focus-visible {
   appearance: none;
   box-shadow: none;
   transform: none;
+  transition:
+    background-color var(--exits-motion-fast) var(--exits-ease-standard),
+    color var(--exits-motion-fast) var(--exits-ease-standard),
+    opacity var(--exits-motion-fast) var(--exits-ease-standard);
 }
 
 .quantity-stepper__btn:focus,
@@ -14019,43 +14023,57 @@ a.dashboard-metric-card:focus-visible {
   box-shadow: none !important;
 }
 
-.quantity-stepper__btn:hover:not(:disabled) {
-  filter: brightness(0.94);
-}
-
+/* Soft danger minus — decrease chrome (not solid Delete) */
 .quantity-stepper__btn--minus {
-  background: var(--exits-danger);
-  color: var(--exits-danger-foreground, #fff);
+  background: var(--exits-danger-soft);
+  color: var(--exits-danger);
 }
 
+.quantity-stepper__btn--minus:hover:not(:disabled),
+.quantity-stepper__btn--minus:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--exits-danger) 14%, var(--exits-danger-soft));
+  color: var(--exits-danger);
+}
+
+/* Primary plus — follows global Primary Palette */
 .quantity-stepper__btn--plus {
   background: var(--exits-primary);
-  color: var(--exits-primary-foreground, #fff);
+  color: var(--exits-primary-foreground);
 }
 
-/* Disable is behavior-only; keep solid danger/primary faces */
+.quantity-stepper__btn--plus:hover:not(:disabled),
+.quantity-stepper__btn--plus:focus-visible:not(:disabled) {
+  background: var(--exits-primary-hover);
+  color: var(--exits-primary-foreground);
+}
+
+/* Normal disabled styling (not danger-tinted) */
 .quantity-stepper__btn:disabled {
-  opacity: 1;
   cursor: not-allowed;
-  filter: none;
   pointer-events: none;
+  opacity: 0.5;
+  filter: none;
 }
 
 .quantity-stepper__btn--minus:disabled {
-  background: var(--exits-danger);
-  color: var(--exits-danger-foreground, #fff);
+  background: var(--exits-danger-soft);
+  color: var(--exits-danger);
 }
 
 .quantity-stepper__btn--plus:disabled {
   background: var(--exits-primary);
-  color: var(--exits-primary-foreground, #fff);
+  color: var(--exits-primary-foreground);
 }
 
 .quantity-stepper__input,
 .quantity-stepper__value {
+  --quantity-stepper-input-min-ch: 12ch;
+  --quantity-stepper-input-max-ch: 20ch;
   box-sizing: border-box;
-  min-width: 2.5rem;
-  width: 3rem;
+  flex: 0 1 auto;
+  min-width: var(--quantity-stepper-input-min-ch);
+  max-width: var(--quantity-stepper-input-max-ch);
+  width: var(--quantity-stepper-input-width, var(--quantity-stepper-input-min-ch));
   height: 100%;
   margin: 0;
   border: 0;
@@ -14063,6 +14081,8 @@ a.dashboard-metric-card:focus-visible {
   border-radius: 0;
   background: transparent;
   padding: 0 0.2rem;
+  overflow: hidden;
+  text-overflow: clip;
   text-align: center;
   font: inherit;
   font-size: var(--exits-text-sm);
@@ -14085,9 +14105,10 @@ a.dashboard-metric-card:focus-visible {
   box-shadow: none;
 }
 
-.quantity-stepper__input--compact {
-  width: 2.75rem;
-  min-width: 2.25rem;
+.quantity-stepper__input--compact,
+.quantity-stepper--compact .quantity-stepper__value {
+  --quantity-stepper-input-min-ch: 12ch;
+  --quantity-stepper-input-max-ch: 20ch;
   font-size: var(--exits-text-xs);
 }
 
@@ -14095,6 +14116,15 @@ a.dashboard-metric-card:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+@media (max-width: 40rem) {
+  .quantity-stepper__input,
+  .quantity-stepper__value,
+  .quantity-stepper__input--compact,
+  .quantity-stepper--compact .quantity-stepper__value {
+    --quantity-stepper-input-max-ch: 20ch;
+  }
 }
 
 .quantity-stepper__unit {
@@ -16685,6 +16715,9 @@ a.exits-chip--primary:hover {
   min-width: 7rem;
   max-width: 7rem;
   padding-inline: 0.45rem;
+  /* Match compact QuantityStepper input size in the same row. */
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
 }
 
 .receive-stock-receipt-table__expiry-col {

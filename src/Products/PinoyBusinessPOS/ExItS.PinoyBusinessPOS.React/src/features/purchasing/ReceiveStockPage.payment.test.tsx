@@ -20,6 +20,7 @@ const productId2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2";
 const productId3 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3";
 const categoryCanned = "cccccccc-cccc-cccc-cccc-cccccccanned";
 const categoryFruits = "cccccccc-cccc-cccc-cccc-cccccccfruit";
+const categoryEmpty = "cccccccc-cccc-cccc-cccc-cccccccempty";
 const supplierId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 const receiptId = "dddddddd-dddd-dddd-dddd-dddddddddddd";
 
@@ -213,10 +214,15 @@ async function addLine(
   expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
   const qty = screen.getByTestId(`direct-line-qty-${productId}`);
   const cost = screen.getByTestId(`direct-line-cost-${productId}`);
-  await user.clear(qty);
-  await user.type(qty, opts?.qty ?? "10");
+  // Add focuses cost — fill it first, then set qty without fighting autofocus.
+  await waitFor(() => {
+    expect(cost).toHaveFocus();
+  });
   await user.clear(cost);
   await user.type(cost, opts?.cost ?? "100");
+  await user.click(qty);
+  await user.clear(qty);
+  await user.type(qty, opts?.qty ?? "10");
 }
 
 describe("ReceiveStockPage payment at receipt", () => {
@@ -355,8 +361,16 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
           createdAtUtc: "2026-08-01T00:00:00Z",
           updatedAtUtc: "2026-08-01T00:00:00Z",
         },
+        {
+          categoryId: categoryEmpty,
+          organizationId: orgId,
+          name: "Empty Shelf",
+          status: "Active",
+          createdAtUtc: "2026-08-01T00:00:00Z",
+          updatedAtUtc: "2026-08-01T00:00:00Z",
+        },
       ],
-      totalCount: 2,
+      totalCount: 3,
       page: 1,
       pageSize: 50,
     });
@@ -436,6 +450,18 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
     });
 
     await user.click(screen.getByTestId("direct-category-multiselect-trigger"));
+    expect(screen.getByTestId("direct-category-multiselect-search")).toBeInTheDocument();
+    // Counts render for every category, including 0.
+    expect(
+      within(screen.getByTestId(`direct-category-option-${categoryCanned}`)).getByText("1"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId(`direct-category-option-${categoryEmpty}`)).getByText("0"),
+    ).toBeInTheDocument();
+    await user.type(screen.getByTestId("direct-category-multiselect-search"), "fruit");
+    expect(screen.getByTestId(`direct-category-option-${categoryFruits}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`direct-category-option-${categoryCanned}`)).not.toBeInTheDocument();
+    await user.clear(screen.getByTestId("direct-category-multiselect-search"));
     await user.click(screen.getByTestId(`direct-category-option-${categoryCanned}`));
     await waitFor(() => {
       expect(screen.getByTestId(`direct-product-${productId}`)).toBeInTheDocument();
@@ -461,7 +487,7 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       expect(screen.queryByTestId(`direct-product-${productId3}`)).not.toBeInTheDocument();
     });
     expect(screen.getByTestId("direct-category-multiselect-trigger")).toHaveTextContent(
-      "2 selected",
+      "3 selected",
     );
 
     await user.click(screen.getByTestId("direct-category-multiselect-deselect-all"));
