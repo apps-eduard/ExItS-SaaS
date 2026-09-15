@@ -39,6 +39,8 @@ import {
 } from "@/components/exits/ExitsTable";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { MoneyInput, QuantityInput } from "@/components/exits/MoneyQuantityInputs";
+import { ExitsModal } from "@/components/exits/ExitsModal";
+import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Input } from "@/components/ui/input";
@@ -52,6 +54,13 @@ import {
   type UiStandardsStandardName,
 } from "@/features/ui-standards/UiStandardsCopyCommand";
 import { UiStandardsSampleCard } from "@/features/ui-standards/UiStandardsSampleCard";
+import {
+  UI_STANDARDS_DATA_PREVIEW_DEFAULT,
+  UI_STANDARDS_DATA_PREVIEW_WIDTHS,
+  UiStandardsResponsiveDataDeviceFrame,
+  type UiStandardsDataPreviewDevice,
+} from "@/features/ui-standards/UiStandardsResponsiveDataDeviceFrame";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 
 type DemoSkuFilter = "all" | "hasSku" | "noSku";
 type DemoSortKey = "product" | "sku" | "quantity" | "unitCost" | "lineTotal";
@@ -185,6 +194,7 @@ function IconAction({
   onClick,
   className,
   title,
+  "data-testid": testId,
 }: {
   label: string;
   variant?: "ghost" | "destructive" | "success" | "info";
@@ -193,6 +203,7 @@ function IconAction({
   className?: string;
   /** Tooltip; defaults to aria-label. Prefer short title for Cancel editing. */
   title?: string;
+  "data-testid"?: string;
 }) {
   return (
     <Button
@@ -203,6 +214,7 @@ function IconAction({
       title={title ?? label}
       aria-label={label}
       className={className}
+      data-testid={testId}
       onClick={onClick}
     >
       {children}
@@ -210,7 +222,13 @@ function IconAction({
   );
 }
 
-function MoreActionsMenu({ productName }: { productName: string }) {
+function MoreActionsMenu({
+  productName,
+  onView,
+}: {
+  productName: string;
+  onView?: () => void;
+}) {
   const menu = useDismissibleOpen(false);
   return (
     <DropdownMenu
@@ -238,7 +256,14 @@ function MoreActionsMenu({ productName }: { productName: string }) {
         </Button>
       )}
     >
-      <MenuItem onSelect={() => menu.close()}>View details</MenuItem>
+      <MenuItem
+        onSelect={() => {
+          onView?.();
+          menu.close();
+        }}
+      >
+        View details
+      </MenuItem>
       <MenuItem onSelect={() => menu.close()}>Edit</MenuItem>
       <MenuItem onSelect={() => menu.close()}>Duplicate</MenuItem>
       <MenuItem onSelect={() => menu.close()}>History</MenuItem>
@@ -280,10 +305,33 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
   const [mobileEditingFields, setMobileEditingFields] = useState<ReadonlySet<DemoEditFieldKey>>(
     () => new Set(),
   );
+  const [tablePreviewDevice, setTablePreviewDevice] = useState<UiStandardsDataPreviewDevice>(
+    UI_STANDARDS_DATA_PREVIEW_DEFAULT,
+  );
+  const [viewingLineId, setViewingLineId] = useState<string | null>(null);
   const qtyErrorId = useId();
   const skuErrorId = useId();
   const unitCostErrorId = useId();
   const rowValidationId = useId();
+
+  /** Match locked ExitsTable md (768) TABLE ↔ mobile-list switch. */
+  const { layout: tablePreviewLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: 768,
+    layoutWidthPx: UI_STANDARDS_DATA_PREVIEW_WIDTHS[tablePreviewDevice],
+  });
+
+  const viewingLine = useMemo(
+    () => (viewingLineId ? lines.find((line) => line.id === viewingLineId) ?? null : null),
+    [lines, viewingLineId],
+  );
+
+  function openViewLine(line: DemoLine) {
+    setViewingLineId(line.id);
+  }
+
+  function closeViewLine() {
+    setViewingLineId(null);
+  }
 
   const filteredSortedLines = useMemo(() => {
     const queryText = searchInput.trim().toLowerCase();
@@ -617,7 +665,23 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
       >
         <UiStandardsCopyCommand standard="Table" command="FULL TABLE + ACTIONS ON + INLINE EDIT ON" />
         <UiStandardsCopyCommand standard="Table" command="FULL TABLE + MULTI SELECT OFF" />
-        <ExitsTableContainer data-testid="ui-standards-table">
+        <UiStandardsResponsiveDataDeviceFrame
+          device={tablePreviewDevice}
+          onDeviceChange={setTablePreviewDevice}
+          layout={tablePreviewLayout}
+          testIdPrefix="ui-standards-table"
+        >
+          <div
+            className={cn(
+              "exits-responsive-data",
+              tablePreviewLayout === "table"
+                ? "exits-responsive-data--table"
+                : "exits-responsive-data--list",
+            )}
+            data-layout={tablePreviewLayout}
+            data-testid="ui-standards-table-preview-layout"
+          >
+            <ExitsTableContainer data-testid="ui-standards-table">
           <ExitsTableToolbar
             search={
               <SearchField
@@ -916,10 +980,16 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                                 onSelectField={(key) => startFieldEdit(line, key)}
                                 onEditAll={() => startEditAll(line)}
                               />
-                              <MoreActionsMenu productName={line.name} />
+                              <MoreActionsMenu
+                                productName={line.name}
+                                onView={() => openViewLine(line)}
+                              />
                             </>
                           ) : (
-                            <MoreActionsMenu productName={line.name} />
+                            <MoreActionsMenu
+                              productName={line.name}
+                              onView={() => openViewLine(line)}
+                            />
                           )}
                         </ExitsTableActions>
                       </ExitsTableCell>
@@ -961,6 +1031,25 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
           </ExitsTable>
 
           <ExitsTableMobile>
+            <li className="exits-table-mobile__select-all" data-testid="ui-standards-mobile-select-all">
+              <ExitsTableCheckbox
+                checked={allVisibleSelected}
+                indeterminate={someVisibleSelected && !allVisibleSelected}
+                onChange={() => toggleSelectAllVisible()}
+                aria-label={t("exitsTable.selectAll")}
+                data-testid="ui-standards-mobile-select-all-checkbox"
+              />
+              <button
+                type="button"
+                className="exits-table-mobile__select-all-label"
+                onClick={() => toggleSelectAllVisible()}
+                data-testid="ui-standards-mobile-select-all-label"
+              >
+                {allVisibleSelected
+                  ? t("connected.deselectAllPage")
+                  : t("connected.selectAllPage").replace("{count}", String(visibleIds.length))}
+              </button>
+            </li>
             {pagedLines.map((line) => {
               const selected = selectedIds.has(line.id);
               const mobileEditing = mobileEditingId === line.id;
@@ -999,24 +1088,29 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                           <p className="exits-table-mobile__math">
                             Unit cost: {formatPeso(line.unitCost)}
                           </p>
-                          <p className="exits-table-mobile__total">
-                            Line total: {formatPeso(line.lineTotal)}
-                          </p>
                           <div className="exits-table-mobile__actions">
-                            <Button type="button" variant="outline" shape="soft">
-                              View
-                            </Button>
+                            <IconAction
+                              label={`View ${line.name}`}
+                              variant="info"
+                              data-testid={`ui-standards-view-${line.id}`}
+                              onClick={() => openViewLine(line)}
+                            >
+                              <Eye className={`size-4 ${buttonIconMotion.view}`} aria-hidden />
+                            </IconAction>
                             {DEMO_EDITABLE_FIELDS.length > 0 ? (
                               <ExitsTableEditMenu
                                 fields={DEMO_EDITABLE_FIELDS}
                                 ariaLabel={`Edit ${line.name}`}
-                                trigger="button"
+                                trigger="icon"
                                 data-testid={`ui-standards-mobile-edit-menu-${line.id}`}
                                 onSelectField={(key) => startMobileFieldEdit(line, key)}
                                 onEditAll={() => startMobileEditAll(line)}
                               />
                             ) : null}
-                            <MoreActionsMenu productName={line.name} />
+                            <MoreActionsMenu
+                              productName={line.name}
+                              onView={() => openViewLine(line)}
+                            />
                           </div>
                         </>
                       ) : (
@@ -1145,13 +1239,16 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
             nextLabel={t("exitsTable.next")}
             rangeLabel={t("exitsTable.range")}
           />
-        </ExitsTableContainer>
+            </ExitsTableContainer>
+          </div>
+        </UiStandardsResponsiveDataDeviceFrame>
         <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
           Pencil opens the Edit field menu from page-configured editable columns. Choose one field or
           Edit all — the chosen editor focuses automatically. Reset restores the original values; if
           already original, Reset exits edit mode. Escape also exits without saving. Product and Line
           Total stay read-only. Quantity here is sample data — real inventory stock changes use
-          audited movements, not free overwrite.
+          audited movements, not free overwrite. Preview size uses the locked ExitsTable md (768)
+          switch: Desktop/Tablet → TABLE, Mobile → LIST.
         </p>
       </UiStandardsSection>
 
@@ -1995,21 +2092,26 @@ export function UiStandardsTablesPanel({ isOpen, setOpen }: DisclosureProps) {
                       <p className="exits-table-mobile__math">
                         Unit cost: {formatPeso(apple.unitCost)}
                       </p>
-                      <p className="exits-table-mobile__total">
-                        Line total: {formatPeso(apple.lineTotal)}
-                      </p>
                       <div className="exits-table-mobile__actions">
-                        <Button type="button" variant="outline" shape="soft">
-                          View
-                        </Button>
+                        <IconAction
+                          label={`View ${apple.name}`}
+                          variant="info"
+                          data-testid="ui-standards-mobile-sample-view"
+                          onClick={() => openViewLine(apple)}
+                        >
+                          <Eye className={`size-4 ${buttonIconMotion.view}`} aria-hidden />
+                        </IconAction>
                         <ExitsTableEditMenu
                           fields={DEMO_EDITABLE_FIELDS}
                           ariaLabel={`Edit ${apple.name}`}
-                          trigger="button"
+                          trigger="icon"
                           onSelectField={(key) => startMobileFieldEdit(apple, key)}
                           onEditAll={() => startMobileEditAll(apple)}
                         />
-                        <MoreActionsMenu productName={apple.name} />
+                        <MoreActionsMenu
+                          productName={apple.name}
+                          onView={() => openViewLine(apple)}
+                        />
                       </div>
                     </>
                   ) : (
@@ -2166,6 +2268,56 @@ Docs/UI/exits-table-standard.md`}
         </pre>
         </SampleFrame>
       </UiStandardsSection>
+
+      <ExitsModal
+        open={viewingLine !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeViewLine();
+          }
+        }}
+        title={viewingLine?.name ?? "Product"}
+        description="Demo product details — local UI only."
+        testId="ui-standards-table-view-modal"
+        size="md"
+        footer={
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="outline"
+            className={EXITS_CANCEL_BUTTON_CLASS}
+            data-testid="ui-standards-table-view-modal-dismiss"
+            onClick={closeViewLine}
+          >
+            Close
+          </Button>
+        }
+      >
+        {viewingLine ? (
+          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
+            <div className="flex min-w-0 justify-between gap-3">
+              <dt className="text-muted">SKU</dt>
+              <dd className="m-0 font-medium tabular-nums text-foreground">{viewingLine.sku}</dd>
+            </div>
+            <div className="flex min-w-0 justify-between gap-3">
+              <dt className="text-muted">Quantity</dt>
+              <dd className="m-0 font-medium text-foreground">{qtyLabel(viewingLine)}</dd>
+            </div>
+            <div className="flex min-w-0 justify-between gap-3">
+              <dt className="text-muted">Unit cost</dt>
+              <dd className="m-0 font-medium tabular-nums text-foreground">
+                <MoneyDisplay amount={viewingLine.unitCost} />
+              </dd>
+            </div>
+            <div className="flex min-w-0 justify-between gap-3 border-t border-border pt-2">
+              <dt className="font-medium text-foreground">Line total</dt>
+              <dd className="m-0 font-semibold tabular-nums text-foreground">
+                <MoneyDisplay amount={viewingLine.lineTotal} />
+              </dd>
+            </div>
+          </dl>
+        ) : null}
+      </ExitsModal>
     </div>
   );
 }

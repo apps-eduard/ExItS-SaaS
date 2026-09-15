@@ -54,6 +54,41 @@ describe("ExItS chip visual pilot primitives", () => {
     expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-soft");
   });
 
+  it("supports auto and explicit Control Shape geometry on StatusChip", () => {
+    const { rerender } = render(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "auto",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("auto");
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-auto");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "standard",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-standard");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--shape-auto");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "pill",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("pill");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--shape-");
+  });
+
   it("renders pill soft and square shapes without forcing family", () => {
     const { rerender } = render(
       createElement(StatusChip, { tone: "success", shape: "pill", children: "Published" }),

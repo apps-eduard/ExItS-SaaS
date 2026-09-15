@@ -34,7 +34,12 @@ import {
   ExitsTableHead,
   ExitsTableHeader,
   ExitsTableRow,
+  ExitsTableToolbar,
 } from "@/components/exits/ExitsTable";
+import { ExitsDataRecordCard } from "@/components/exits/ExitsDataRecordCard";
+import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
+import { ExitsUpload, type ExitsUploadItem } from "@/components/exits/ExitsUpload";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { FormDrawer } from "@/components/exits/FormDrawer";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -62,6 +67,18 @@ import { FilterChip } from "@/components/exits/FilterChip";
 import type { PosSaleDto } from "@/api/pos/pos-sales-client";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
+import { UiStandardsDoDont } from "@/features/ui-standards/UiStandardsDoDont";
+import {
+  UiStandardsButtonPlayground,
+  UiStandardsSelectPlayground,
+  UiStandardsStatusPlayground,
+} from "@/features/ui-standards/UiStandardsPlaygrounds";
+import {
+  UI_STANDARDS_DATA_PREVIEW_DEFAULT,
+  UI_STANDARDS_DATA_PREVIEW_WIDTHS,
+  UiStandardsResponsiveDataDeviceFrame,
+  type UiStandardsDataPreviewDevice,
+} from "@/features/ui-standards/UiStandardsResponsiveDataDeviceFrame";
 import type { UiStandardLiveCardId } from "@/features/ui-standards/ui-standard-catalog";
 
 const DEMO_INVOICE_IDENTITY = {
@@ -162,6 +179,10 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
   const [selectedRow, setSelectedRow] = useState("1");
+  const [tableSearch, setTableSearch] = useState("");
+  const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
+    UI_STANDARDS_DATA_PREVIEW_DEFAULT,
+  );
   const [standardSelect, setStandardSelect] = useState("Cash");
   const [searchSelect, setSearchSelect] = useState("iloilo");
   const [multiSelect, setMultiSelect] = useState<string[]>(["Cash", "ManualGCash"]);
@@ -174,8 +195,29 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [selectSwitch, setSelectSwitch] = useState(true);
   const [sizeSingle, setSizeSingle] = useState("M");
   const [sizeMulti, setSizeMulti] = useState<string[]>(["S", "L", "XL"]);
+  const [coverImage, setCoverImage] = useState<ExitsUploadItem | null>(null);
+  const [galleryImages, setGalleryImages] = useState<Array<ExitsUploadItem | null>>([
+    null,
+    null,
+    null,
+  ]);
+  const [buttonUploadFiles, setButtonUploadFiles] = useState<ExitsUploadItem[]>([]);
 
   const show = (id: UiStandardLiveCardId) => !visibleCardIds || visibleCardIds.has(id);
+
+  function revokePreview(item: ExitsUploadItem | null | undefined) {
+    if (item?.previewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(item.previewUrl);
+    }
+  }
+
+  function toUploadItem(file: File): ExitsUploadItem {
+    return {
+      id: `${file.name}-${file.size}-${file.lastModified}`,
+      name: file.name,
+      previewUrl: URL.createObjectURL(file),
+    };
+  }
 
   const SaveIcon = getActionIcon("save");
   const CreateIcon = getActionIcon("create");
@@ -216,6 +258,24 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
     [],
   );
 
+  const filteredTableRows = useMemo(() => {
+    const q = tableSearch.trim().toLowerCase();
+    if (!q) {
+      return tableRows;
+    }
+    return tableRows.filter(
+      (row) =>
+        row.customer.toLowerCase().includes(q) ||
+        row.type.toLowerCase().includes(q) ||
+        row.status.toLowerCase().includes(q),
+    );
+  }, [tableRows, tableSearch]);
+
+  const { layout: dataLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: 1024,
+    layoutWidthPx: UI_STANDARDS_DATA_PREVIEW_WIDTHS[dataPreviewDevice],
+  });
+
   if (visibleCardIds && visibleCardIds.size === 0) {
     return null;
   }
@@ -226,6 +286,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("buttons") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-buttons">
             <CardTitle>Buttons</CardTitle>
+            <UiStandardsButtonPlayground />
             <div className="flex flex-col gap-2">
               <SectionLabel>Common actions</SectionLabel>
               <div className="flex flex-wrap gap-2">
@@ -529,6 +590,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         {show("status") ? (
           <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-status">
             <CardTitle>Status & Chips</CardTitle>
+            <UiStandardsStatusPlayground />
             <div className="flex flex-col gap-2">
               <SectionLabel>Tone</SectionLabel>
               <div className="flex flex-wrap gap-2">
@@ -580,7 +642,54 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               </div>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                 Appearance = how it is drawn. Soft is default; Outline / Solid are optional.
-                Independent from shape (pill / soft / square).
+                Independent from shape (geometry).
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Shape</SectionLabel>
+              <div
+                className="grid min-w-0 grid-cols-[auto_repeat(3,minmax(0,auto))] items-center justify-items-start gap-x-3 gap-y-2"
+                data-testid="ui-standard-status-shape-grid"
+              >
+                <span aria-hidden className="min-w-[4.5rem]" />
+                <span className="text-[length:var(--exits-text-xs)] text-muted">Soft</span>
+                <span className="text-[length:var(--exits-text-xs)] text-muted">Outline</span>
+                <span className="text-[length:var(--exits-text-xs)] text-muted">Solid</span>
+                {(
+                  [
+                    ["Auto", "auto"],
+                    ["Standard", "standard"],
+                    ["Soft", "soft"],
+                    ["Pill", "pill"],
+                  ] as const
+                ).map(([label, shape]) => (
+                  <div key={shape} className="contents">
+                    <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
+                    {(
+                      [
+                        ["soft", "soft"],
+                        ["outline", "outline"],
+                        ["solid", "solid"],
+                      ] as const
+                    ).map(([appearanceLabel, appearance]) => (
+                      <StatusChip
+                        key={`${shape}-${appearance}`}
+                        className="w-fit justify-self-start"
+                        tone="success"
+                        appearance={appearance}
+                        shape={shape}
+                        data-testid={`ui-standard-status-shape-${shape}-${appearance}`}
+                        aria-label={`${label} ${appearanceLabel}`}
+                      >
+                        Active
+                      </StatusChip>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Auto follows the global Control Shape preference. Explicit shapes remain fixed.
+                Columns show Soft / Outline / Solid appearance on the same geometry.
               </p>
             </div>
           </Card>
@@ -664,12 +773,98 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           </Card>
         ) : null}
 
+        {show("upload") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-upload"
+          >
+            <CardTitle>Upload</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              Canonical <code className="text-foreground">ExitsUpload</code> — dropzone for cover,
+              tiles for gallery slots, button for compact toolbars. Local preview only (no upload
+              API).
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <SectionLabel>Dropzone — cover</SectionLabel>
+              <ExitsUpload
+                variant="dropzone"
+                value={coverImage}
+                testId="ui-standard-upload-cover"
+                onSelectFiles={(files) => {
+                  const next = toUploadItem(files[0]!);
+                  revokePreview(coverImage);
+                  setCoverImage(next);
+                }}
+                onClear={() => {
+                  revokePreview(coverImage);
+                  setCoverImage(null);
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <SectionLabel>Tiles — gallery slots</SectionLabel>
+              <div className="exits-upload-gallery" data-testid="ui-standard-upload-gallery">
+                {galleryImages.map((item, index) => (
+                  <ExitsUpload
+                    key={`gallery-${index}`}
+                    variant="tile"
+                    value={item}
+                    testId={`ui-standard-upload-tile-${index}`}
+                    onSelectFiles={(files) => {
+                      const next = toUploadItem(files[0]!);
+                      setGalleryImages((current) => {
+                        revokePreview(current[index]);
+                        const copy = [...current];
+                        copy[index] = next;
+                        return copy;
+                      });
+                    }}
+                    onClear={() => {
+                      setGalleryImages((current) => {
+                        revokePreview(current[index]);
+                        const copy = [...current];
+                        copy[index] = null;
+                        return copy;
+                      });
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <SectionLabel>Button — compact (multi + delete)</SectionLabel>
+              <ExitsUpload
+                variant="button"
+                multiple
+                uploadLabel="Upload files"
+                values={buttonUploadFiles}
+                testId="ui-standard-upload-button"
+                onSelectFiles={(files) => {
+                  const next = files.map(toUploadItem);
+                  setButtonUploadFiles((current) => [...current, ...next]);
+                }}
+                onRemove={(id) => {
+                  setButtonUploadFiles((current) => {
+                    const removed = current.find((item) => item.id === id);
+                    revokePreview(removed);
+                    return current.filter((item) => item.id !== id);
+                  });
+                }}
+              />
+            </div>
+          </Card>
+        ) : null}
+
         {show("selects") ? (
           <Card
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-selects"
           >
             <CardTitle>Selects</CardTitle>
+            <UiStandardsSelectPlayground />
             <div className="grid min-w-0 gap-4 md:grid-cols-2">
               <div className="flex min-w-0 flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
@@ -1123,59 +1318,146 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
             data-testid="ui-standard-card-table"
           >
-            <CardTitle>Table</CardTitle>
-            <ExitsTableContainer>
-              <ExitsTable>
-                <ExitsTableHeader>
-                  <ExitsTableRow>
-                    <ExitsTableHead>Customer</ExitsTableHead>
-                    <ExitsTableHead>Type</ExitsTableHead>
-                    <ExitsTableHead cellAlign="money">Balance</ExitsTableHead>
-                    <ExitsTableHead>Status</ExitsTableHead>
-                    <ExitsTableHead cellAlign="actions" className="w-28">
-                      Actions
-                    </ExitsTableHead>
-                  </ExitsTableRow>
-                </ExitsTableHeader>
-                <ExitsTableBody>
-                  {tableRows.map((row) => (
-                    <ExitsTableRow
-                      key={row.id}
-                      data-selected={selectedRow === row.id || undefined}
-                      className={
-                        selectedRow === row.id ? "bg-[var(--exits-surface-muted)]" : undefined
-                      }
-                      onClick={() => setSelectedRow(row.id)}
-                    >
-                      <ExitsTableCell>{row.customer}</ExitsTableCell>
-                      <ExitsTableCell>{row.type}</ExitsTableCell>
-                      <ExitsTableCell cellAlign="money" className="tabular-nums">
-                        {row.balance}
-                      </ExitsTableCell>
-                      <ExitsTableCell>
-                        <StatusChip tone={row.statusTone}>{row.status}</StatusChip>
-                      </ExitsTableCell>
-                      <ExitsTableCell cellAlign="actions">
-                        <div className="inline-flex gap-1" onClick={(e) => e.stopPropagation()}>
+            <CardTitle>Responsive Data View</CardTitle>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              Desktop = TABLE. Narrow = LIST / record cards. Horizontal scroll is an opt-in
+              exception only. Multi-select stays TABLE-only by default. Preview sizes simulate
+              layout width without resizing the browser.
+            </p>
+            <UiStandardsResponsiveDataDeviceFrame
+              device={dataPreviewDevice}
+              onDeviceChange={setDataPreviewDevice}
+              layout={dataLayout}
+            >
+              <ExitsResponsiveDataView
+                layout={dataLayout}
+                testId="ui-standard-responsive-data"
+                toolbar={
+                  <ExitsTableToolbar
+                    search={
+                      <SearchField
+                        label="Search customers"
+                        value={tableSearch}
+                        onChange={(e) => setTableSearch(e.target.value)}
+                        onClear={() => setTableSearch("")}
+                        placeholder="Search customers..."
+                        testId="ui-standard-table-search"
+                      />
+                    }
+                  />
+                }
+                table={
+                  <ExitsTableContainer>
+                    <ExitsTable>
+                      <ExitsTableHeader>
+                        <ExitsTableRow>
+                          <ExitsTableHead>Customer</ExitsTableHead>
+                          <ExitsTableHead>Type</ExitsTableHead>
+                          <ExitsTableHead cellAlign="money">Balance</ExitsTableHead>
+                          <ExitsTableHead>Status</ExitsTableHead>
+                          <ExitsTableHead cellAlign="actions" className="w-28">
+                            Actions
+                          </ExitsTableHead>
+                        </ExitsTableRow>
+                      </ExitsTableHeader>
+                      <ExitsTableBody>
+                        {filteredTableRows.map((row) => (
+                          <ExitsTableRow
+                            key={row.id}
+                            data-selected={selectedRow === row.id || undefined}
+                            className={
+                              selectedRow === row.id
+                                ? "bg-[var(--exits-surface-muted)]"
+                                : undefined
+                            }
+                            onClick={() => setSelectedRow(row.id)}
+                          >
+                            <ExitsTableCell>{row.customer}</ExitsTableCell>
+                            <ExitsTableCell>{row.type}</ExitsTableCell>
+                            <ExitsTableCell cellAlign="money" className="tabular-nums">
+                              {row.balance}
+                            </ExitsTableCell>
+                            <ExitsTableCell>
+                              <StatusChip tone={row.statusTone}>{row.status}</StatusChip>
+                            </ExitsTableCell>
+                            <ExitsTableCell cellAlign="actions">
+                              <div
+                                className="inline-flex gap-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <TableActionButton
+                                  action="edit"
+                                  label={`Edit ${row.customer}`}
+                                  testId={`ui-standard-row-edit-${row.id}`}
+                                />
+                                <TableActionButton
+                                  action="close"
+                                  label={`More for ${row.customer}`}
+                                  variant="ghost"
+                                  icon={<MoreHorizontal className="size-4" aria-hidden />}
+                                  testId={`ui-standard-row-more-${row.id}`}
+                                />
+                              </div>
+                            </ExitsTableCell>
+                          </ExitsTableRow>
+                        ))}
+                      </ExitsTableBody>
+                    </ExitsTable>
+                  </ExitsTableContainer>
+                }
+                list={
+                  <ul
+                    className="exits-data-record-list"
+                    data-testid="ui-standard-responsive-data-records"
+                  >
+                    {filteredTableRows.map((row) => (
+                      <ExitsDataRecordCard
+                        as="li"
+                        key={row.id}
+                        selected={selectedRow === row.id}
+                        onClick={() => setSelectedRow(row.id)}
+                        title={row.customer}
+                        subtitle={row.type}
+                        status={<StatusChip tone={row.statusTone}>{row.status}</StatusChip>}
+                        fields={[
+                          {
+                            label: "Balance",
+                            value: row.balance,
+                            emphasize: true,
+                          },
+                        ]}
+                        primaryAction={
                           <TableActionButton
                             action="edit"
                             label={`Edit ${row.customer}`}
-                            testId={`ui-standard-row-edit-${row.id}`}
+                            testId={`ui-standard-list-edit-${row.id}`}
                           />
+                        }
+                        moreActions={
                           <TableActionButton
                             action="close"
                             label={`More for ${row.customer}`}
                             variant="ghost"
                             icon={<MoreHorizontal className="size-4" aria-hidden />}
-                            testId={`ui-standard-row-more-${row.id}`}
+                            testId={`ui-standard-list-more-${row.id}`}
                           />
-                        </div>
-                      </ExitsTableCell>
-                    </ExitsTableRow>
-                  ))}
-                </ExitsTableBody>
-              </ExitsTable>
-            </ExitsTableContainer>
+                        }
+                        data-testid={`ui-standard-data-record-${row.id}`}
+                      />
+                    ))}
+                  </ul>
+                }
+              />
+            </UiStandardsResponsiveDataDeviceFrame>
+            <div className="flex flex-col gap-1 text-[length:var(--exits-text-xs)] text-muted">
+              <SectionLabel>Rules</SectionLabel>
+              <ul className="m-0 list-disc space-y-0.5 ps-4">
+                <li>Search is shared across TABLE and LIST.</li>
+                <li>LIST shows primary + secondary + metrics + one quick action + More.</li>
+                <li>Multi-select: TABLE only by default (not shown in this sample).</li>
+                <li>Horizontal scroll: exception mode only — not the global default.</li>
+              </ul>
+            </div>
           </Card>
         ) : null}
 
@@ -1353,7 +1635,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 Same production BusinessDocument used for sale receipts (not a BIR invoice).
               </p>
               <div
-                className="max-h-[32rem] overflow-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/20 p-2"
+                className="min-h-0 w-full rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/20 p-2"
                 data-testid="ui-standard-card-invoice-sample"
               >
                 <CustomerPurchaseSummaryDocument
@@ -1416,6 +1698,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             </div>
           </Card>
         ) : null}
+
+        {show("dodont") ? <UiStandardsDoDont /> : null}
       </div>
 
       <ConfirmActionDialog

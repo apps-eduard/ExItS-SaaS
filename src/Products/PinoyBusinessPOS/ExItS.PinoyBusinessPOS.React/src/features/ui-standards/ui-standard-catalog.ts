@@ -4,6 +4,7 @@ export type UiStandardFilterCategory =
   | "feedback"
   | "overlays"
   | "forms"
+  | "upload"
   | "cards"
   | "selects"
   | "navigation"
@@ -18,11 +19,13 @@ export type UiStandardLiveCardId =
   | "modal"
   | "status"
   | "forms"
+  | "upload"
   | "selects"
   | "nav"
   | "table"
   | "cards"
-  | "states";
+  | "states"
+  | "dodont";
 
 export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   id: UiStandardFilterCategory;
@@ -33,6 +36,7 @@ export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
   { id: "forms", label: "Forms" },
+  { id: "upload", label: "Upload" },
   { id: "cards", label: "Cards" },
   { id: "selects", label: "Selects" },
   { id: "navigation", label: "Navigation" },
@@ -80,6 +84,11 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "hierarchy",
       "intent",
       "appearance",
+      "playground",
+      "auto",
+      "shape",
+      "snippet",
+      "copy",
     ],
   },
   {
@@ -132,6 +141,16 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "cleared",
       "declined",
       "cancelled",
+      "playground",
+      "auto",
+      "shape",
+      "appearance",
+      "soft",
+      "outline",
+      "solid",
+      "preferred",
+      "snippet",
+      "copy",
     ],
   },
   {
@@ -146,6 +165,24 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "validation",
       "disabled",
       "email",
+    ],
+  },
+  {
+    id: "upload",
+    title: "Upload",
+    category: "upload",
+    keywords: [
+      "upload",
+      "file",
+      "image",
+      "dropzone",
+      "cover",
+      "gallery",
+      "tile",
+      "button",
+      "drag",
+      "drop",
+      "exitsupload",
     ],
   },
   {
@@ -170,6 +207,10 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "dropdown",
       "filter",
       "payment method",
+      "playground",
+      "snippet",
+      "copy",
+      "disabled",
     ],
   },
   {
@@ -180,9 +221,26 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
   },
   {
     id: "table",
-    title: "Table",
+    title: "Responsive Data View",
     category: "data",
-    keywords: ["table", "exitstable", "customer", "balance", "actions", "edit", "more"],
+    keywords: [
+      "table",
+      "exitstable",
+      "responsive",
+      "list",
+      "card",
+      "customer",
+      "balance",
+      "actions",
+      "edit",
+      "more",
+      "search",
+      "desktop",
+      "tablet",
+      "mobile",
+      "preview",
+      "data",
+    ],
   },
   {
     id: "cards",
@@ -212,6 +270,28 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     title: "States",
     category: "states",
     keywords: ["empty", "loading", "error", "retry", "emptystate", "loadingstate", "errorstate"],
+  },
+  {
+    id: "dodont",
+    title: "Do / Don’t",
+    category: "actions",
+    keywords: [
+      "do",
+      "dont",
+      "don't",
+      "primary",
+      "hierarchy",
+      "intent",
+      "appearance",
+      "soft",
+      "shape",
+      "outline",
+      "responsive",
+      "table",
+      "list",
+      "guidance",
+      "playground",
+    ],
   },
 ];
 
@@ -269,8 +349,22 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     standard: "Chip",
     category: "feedback",
     status: "Locked",
-    summary: "Tone + appearance (soft/outline/solid); shapes independent",
-    keywords: ["status", "chip", "pending", "active", "danger", "soft", "outline", "solid", "appearance"],
+    summary: "Tone + appearance + shape (auto follows Control Shape)",
+    keywords: [
+      "status",
+      "chip",
+      "pending",
+      "active",
+      "danger",
+      "soft",
+      "outline",
+      "solid",
+      "appearance",
+      "auto",
+      "standard",
+      "pill",
+      "shape",
+    ],
   },
   {
     id: "confirm",
@@ -307,6 +401,15 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     status: "Locked",
     summary: "Canonical form fields, search, validation, disabled",
     keywords: ["form", "input", "search", "switch", "validation"],
+  },
+  {
+    id: "exits-upload",
+    component: "ExitsUpload",
+    standard: "Upload",
+    category: "upload",
+    status: "Pilot",
+    summary: "Dropzone cover, gallery tiles, compact Upload button — no network in the control",
+    keywords: ["upload", "dropzone", "tile", "image", "file", "gallery", "button"],
   },
   {
     id: "exits-select",
@@ -379,6 +482,27 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     status: "Locked",
     summary: "Full table demo: actions, inline edit, alignment, output",
     keywords: ["table", "exitstable", "inline", "actions", "sku"],
+  },
+  {
+    id: "responsive-data-view",
+    component: "ExitsResponsiveDataView / ExitsDataRecordCard",
+    standard: "Responsive Data View",
+    category: "data",
+    status: "Pilot",
+    summary: "TABLE on wide viewports; LIST/cards on narrow; h-scroll exception only",
+    keywords: [
+      "responsive",
+      "table",
+      "list",
+      "card",
+      "mobile",
+      "tablet",
+      "desktop",
+      "preview",
+      "data",
+      "priority",
+      "multiselect",
+    ],
   },
   {
     id: "card",

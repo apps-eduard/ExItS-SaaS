@@ -212,14 +212,16 @@ Future Preferences → Primary Color must recolor selected / focus / Primary edi
 
 ## Responsive rule (locked)
 
+See **[exits-responsive-data-view-standard.md](./exits-responsive-data-view-standard.md)** for the global TABLE ↔ LIST decision.
+
 | Viewport | Presentation |
 |----------|--------------|
-| Desktop / tablet | Normal aligned `ExitsTable` |
-| Mobile | Existing `ExitsTableMobile` presentation |
+| Desktop / comfortable width | `ExitsTable` via `ExitsResponsiveDataView` TABLE mode |
+| Narrow tablet / mobile | LIST / `ExitsDataRecordCard` (or existing `ExitsTableMobile`) by default |
+| Exception | Horizontal scroll TABLE only when `allowHorizontalScroll` is explicitly opted in |
 
-Do **not** force unreadable desktop columns onto phone width.
-Do **not** invent a second mobile table design.
-Mobile Actions must remain clear and touch-friendly — do not blindly squeeze the desktop Actions column.
+Do **not** force unreadable desktop columns onto phone width as the default.
+Do **not** invent a second table visual system — extend ExitsTable + Responsive Data View.
 
 Toolbar controls may stack.
 Output Actions collapse to a single **Export & Print** menu that calls the **same** handlers as the desktop icons.

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ToastProvider } from "@/components/exits/ToastProvider";
+import { PreferencesProvider } from "@/hooks/usePreferences";
 import { filterLiveCards, filterCatalogRows } from "@/features/ui-standards/ui-standard-catalog";
 import { UiInteractionStandardPage } from "@/features/ui-standards/UiInteractionStandardPage";
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
@@ -19,14 +20,16 @@ vi.mock("@/i18n/I18nProvider", () => ({
 describe("UiInteractionStandardPage alias", () => {
   it("redirects /ui-standard to /ui-standards", () => {
     render(
-      <ToastProvider>
-        <MemoryRouter initialEntries={["/ui-standard"]}>
-          <Routes>
-            <Route path="/ui-standard" element={<UiInteractionStandardPage />} />
-            <Route path="/ui-standards" element={<UiStandardsPage />} />
-          </Routes>
-        </MemoryRouter>
-      </ToastProvider>,
+      <PreferencesProvider>
+        <ToastProvider>
+          <MemoryRouter initialEntries={["/ui-standard"]}>
+            <Routes>
+              <Route path="/ui-standard" element={<UiInteractionStandardPage />} />
+              <Route path="/ui-standards" element={<UiStandardsPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ToastProvider>
+      </PreferencesProvider>,
     );
     expect(screen.getByTestId("ui-standards-page")).toBeInTheDocument();
     expect(screen.getByTestId("ui-standard-cards")).toBeInTheDocument();
@@ -53,5 +56,26 @@ describe("ui-standard-catalog filters", () => {
       "creatable-combobox",
       "settings-select",
     ]);
+  });
+
+  it("Upload category isolates upload standards", () => {
+    expect(filterLiveCards("upload", "").map((c) => c.id)).toEqual(["upload"]);
+    expect(filterLiveCards("all", "upload").map((c) => c.id)).toContain("upload");
+    expect(filterCatalogRows("upload", "").map((r) => r.id)).toEqual(["exits-upload"]);
+  });
+
+  it("maps playground / auto / primary search to builder cards", () => {
+    expect(filterLiveCards("all", "playground").map((c) => c.id)).toEqual(
+      expect.arrayContaining(["buttons", "status", "selects", "dodont"]),
+    );
+    expect(filterLiveCards("all", "auto").map((c) => c.id)).toEqual(
+      expect.arrayContaining(["buttons", "status"]),
+    );
+    expect(filterLiveCards("all", "primary").map((c) => c.id)).toEqual(
+      expect.arrayContaining(["buttons", "dodont"]),
+    );
+    expect(filterLiveCards("actions", "").map((c) => c.id)).toEqual(
+      expect.arrayContaining(["buttons", "dodont"]),
+    );
   });
 });

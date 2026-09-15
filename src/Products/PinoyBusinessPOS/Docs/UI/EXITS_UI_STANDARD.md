@@ -11,9 +11,23 @@ Related locked standards:
 
 - [exits-button-standard.md](./exits-button-standard.md)
 - [exits-table-standard.md](./exits-table-standard.md)
+- [exits-responsive-data-view-standard.md](./exits-responsive-data-view-standard.md)
 - [exits-tabs-standard.md](./exits-tabs-standard.md)
 - [exits-chip-standard.md](./exits-chip-standard.md)
 - [exits-motion-standard.md](./exits-motion-standard.md)
+- [exits-upload-standard.md](./exits-upload-standard.md)
+
+### Component Playgrounds
+
+Heavy cards (Buttons, Status & Chips, Selects) include a compact **Playground**: live production preview + generated JSX + **Copy snippet** (toast: “Snippet copied”). Props are local demo state only.
+
+### Global Preference Preview
+
+`/ui-standards` shows Auto samples (Button / StatusChip / SearchField) wired to the **real** Preferences store, with optional inline Control Shape / Density / Theme / Motion controls.
+
+### Do / Don’t guidance
+
+A compact Do / Don’t card covers Primary hierarchy, Intent vs Appearance, Soft appearance ≠ Soft shape, and Responsive Data TABLE ↔ LIST.
 
 ---
 
@@ -29,6 +43,8 @@ Related locked standards:
 | Entity edit shell | `FormDrawer` | `components/exits/FormDrawer.tsx` |
 | Short modal | `ExitsModal` | `components/exits/ExitsModal.tsx` |
 | Status | `StatusChip` | `components/exits/StatusChip.tsx` |
+| Responsive collections | `ExitsResponsiveDataView` | `components/exits/ExitsResponsiveDataView.tsx` |
+| Upload | `ExitsUpload` | `components/exits/ExitsUpload.tsx` |
 | States | `EmptyState` / `LoadingState` / `ErrorState` | `components/exits/` |
 
 Changing a canonical component must update all consumers. Do **not** restyle via page-specific CSS selectors.
@@ -194,11 +210,13 @@ Exactly **one live card per category**:
 5. Modal
 6. Status & Chips
 7. Form Controls
-8. Selects
-9. Navigation & Selection
-10. Table
-11. Cards (types + Customer Purchase Summary invoice sample)
-12. States
+8. Upload (dropzone / tile / button)
+9. Selects
+10. Navigation & Selection
+11. Responsive Data View (TABLE ↔ LIST)
+12. Cards (types + Customer Purchase Summary invoice sample)
+13. States
+14. Do / Don’t
 
 Plus the filterable standards catalog table. Data filter also surfaces the locked ExitsTable reference panel.
 

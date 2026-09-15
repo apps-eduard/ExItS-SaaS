@@ -137,11 +137,26 @@ describe("POS global Control Shape rollout", () => {
     );
   });
 
-  it("StatusChip, TagChip, CountBadge, and round icon buttons keep explicit shapes", () => {
-    render(createElement(StatusChip, { tone: "success", children: "Active" }));
+  it("StatusChip defaults to pill; auto follows control-radius; TagChip/CountBadge stay explicit", () => {
+    const { unmount } = render(createElement(StatusChip, { tone: "success", children: "Active" }));
     expect(screen.getByText("Active")).toHaveAttribute("data-shape", "pill");
-    expect(screen.getByText("Active").className).not.toContain(
-      "rounded-[var(--exits-control-radius)]",
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--shape-auto");
+    unmount();
+
+    render(
+      createElement(StatusChip, {
+        tone: "success",
+        shape: "auto",
+        children: "AutoActive",
+      }),
+    );
+    expect(screen.getByText("AutoActive")).toHaveAttribute("data-shape", "auto");
+    expect(screen.getByText("AutoActive").className).toContain("exits-status-chip--shape-auto");
+    expect(globalsCss).toMatch(
+      /\.exits-status-chip--shape-auto\s*\{[^}]*border-radius:\s*var\(--exits-control-radius\)/,
+    );
+    expect(globalsCss).toMatch(
+      /\.exits-status-chip--shape-standard\s*\{[^}]*border-radius:\s*var\(--exits-radius-md\)/,
     );
 
     render(createElement(TagChip, { tone: "info", children: "Beta" }));

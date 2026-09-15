@@ -123,18 +123,36 @@ Examples: `[3]`, `[12]`, `[99+]`
 
 | Shape | Radius | Role |
 |-------|--------|------|
-| **PILL** | Fully rounded (`9999px` / `rounded-full`) | Status, filters, removable selections |
-| **SOFT** | `--exits-radius-sm` (~6px / `0.375rem`) | Count chips; structured metadata; optional status |
-| **SQUARE** | `--exits-radius-xs` (`0.25rem` / 4px) | Compact metadata tags (Beta, B2B, SKU, PO, …) |
+| **AUTO** | `--exits-control-radius` | Inherit Preferences → Control Shape (Standard / Soft / Pill) |
+| **STANDARD** | `--exits-radius-md` (~8px) | Explicit Control Shape Standard |
+| **SOFT** | `--exits-radius-soft` (~11px) | Explicit Control Shape Soft / count chips |
+| **PILL** | Fully rounded (`9999px` / `rounded-full`) | Explicit capsule; StatusChip default (compat) |
+| **SQUARE** | `--exits-radius-xs` (`0.25rem` / 4px) | Compact metadata tags (Beta, B2B, SKU, PO, …) — not a global Control Shape option |
 
 **SQUARE is not sharp 0-radius.**
+
+### StatusChip Control Shape
+
+`StatusChip` supports the same Control Shape vocabulary as Button:
+
+```tsx
+<StatusChip tone="success" appearance="soft" shape="auto">
+  Active
+</StatusChip>
+```
+
+- `shape="auto"` → follows `data-control-shape` / `--exits-control-radius` (no local preference state)
+- `shape="standard" | "soft" | "pill"` → fixed geometry regardless of preference
+- Runtime default remains **`pill`** for existing call sites; prefer **`auto`** for new StatusChip usage
+
+Do **not** confuse appearance **SOFT** (fill treatment) with shape **SOFT** (radius).
 
 ### Family defaults (locked)
 
 | Family | Default shape |
 |--------|----------------|
-| STATUS CHIP | **PILL** |
-| FILTER CHIP | **PILL** |
+| STATUS CHIP | **PILL** (compat; prefer AUTO for new code) |
+| FILTER CHIP | **AUTO** (Preferences Control Shape) |
 | TAG CHIP | **SQUARE** |
 | REMOVABLE CHIP | **PILL** |
 | COUNT CHIP | **SOFT** |
