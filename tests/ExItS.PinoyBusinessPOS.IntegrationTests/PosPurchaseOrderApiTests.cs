@@ -151,6 +151,15 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         cancelResponse.EnsureSuccessStatusCode();
         var cancelled = await cancelResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
         Assert.Equal("Cancelled", cancelled!.Status);
+        Assert.NotNull(cancelled.CancelledAtUtc);
+        Assert.Equal(Actor, cancelled.CancelledByUserId);
+
+        using var getAfterCancel = Scoped(HttpMethod.Get, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}", org);
+        using var getAfterCancelResponse = await client.SendAsync(getAfterCancel);
+        getAfterCancelResponse.EnsureSuccessStatusCode();
+        var reloaded = await getAfterCancelResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+        Assert.Equal(cancelled.CancelledAtUtc, reloaded!.CancelledAtUtc);
+        Assert.Equal(Actor, reloaded.CancelledByUserId);
     }
 
     [Fact]

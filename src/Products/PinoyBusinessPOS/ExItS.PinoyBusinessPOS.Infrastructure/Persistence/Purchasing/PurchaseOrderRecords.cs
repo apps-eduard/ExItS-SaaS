@@ -29,6 +29,8 @@ internal sealed class PurchaseOrderRecord
     public string? Notes { get; set; }
     public DateTimeOffset? OrderedAtUtc { get; set; }
     public Guid? OrderedBy { get; set; }
+    public DateTimeOffset? CancelledAtUtc { get; set; }
+    public Guid? CancelledByUserId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int PaymentTerm { get; set; }

@@ -710,9 +710,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail(null);
       setFailureDiagnostic(null);
 
+      let settled = false;
+      const finish = (ok: boolean) => {
+        settled = true;
+        return ok;
+      };
+      try {
       const activeSession = await ensureOrganizationSession();
       if (!activeSession) {
-        return false;
+        // ensureOrganizationSession already moved status off "binding".
+        return finish(false);
       }
 
       const previousBranchId = boundWorkspace?.branchId ?? null;
@@ -744,7 +751,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           );
           setBoundWorkspace(null);
           setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-          return false;
+          return finish(false);
         }
         setBoundWorkspace(boundFromDestination(destination, workspaces));
         setSessionGrantState(result.grant);
@@ -756,13 +763,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setBindFailureKind(null);
         setAccessDeniedDetail(null);
         setStatus("bound");
-        return true;
+        return finish(true);
       }
 
       if (!destination.branchId) {
         denyBind("branch_not_accessible", null, "accessDenied.branchNotAccessible");
         setStatus("access_denied");
-        return false;
+        return finish(false);
       }
 
       const result = await bindWorkspaceWithSessionGrant(
@@ -796,7 +803,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         );
         setBoundWorkspace(null);
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-        return false;
+        return finish(false);
       }
 
       const operational = await selectOperationalBranch({
@@ -858,7 +865,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           }),
         );
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-        return false;
+        return finish(false);
       }
 
       // Keep React sessionGrant in lockstep with persisted POS grant/token before
@@ -880,6 +887,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail(null);
       setFailureDiagnostic(null);
       setStatus("bound");
+      // Clear binding overlay before optional device hydrate (must not leave clicks blocked).
+      settled = true;
 
       if (previousBranchId && previousBranchId !== destination.branchId) {
         void queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -928,6 +937,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       return true;
+      } catch (error: unknown) {
+        console.error("[workspace-bind] unexpected failure while binding", error);
+        denyBind(
+          "generic",
+          error instanceof Error ? error.message : String(error),
+          "accessDenied.generic",
+        );
+        // Never leave status at "binding" — that paints a full-screen click blocker.
+        setStatus(boundWorkspaceRef.current ? "bound" : "ready");
+        settled = true;
+        return false;
+      } finally {
+        if (!settled) {
+          setStatus(boundWorkspaceRef.current ? "bound" : "ready");
+        }
+      }
     },
     [boundWorkspace?.branchId, denyBind, ensureOrganizationSession, session, workspaces],
   );

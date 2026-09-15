@@ -167,7 +167,12 @@ internal static class PurchaseOrderEndpoints
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, ct).ConfigureAwait(false);
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, actorId, ct).ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
 

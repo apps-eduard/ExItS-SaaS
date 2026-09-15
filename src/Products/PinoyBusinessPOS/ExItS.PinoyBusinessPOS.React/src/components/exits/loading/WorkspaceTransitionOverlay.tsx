@@ -30,9 +30,11 @@ export function WorkspaceTransitionOverlay({
     <div
       className="exits-workspace-transition"
       data-testid={testId}
+      data-active={active ? "true" : "false"}
       role="status"
       aria-live="polite"
-      aria-busy="true"
+      aria-busy={active ? "true" : "false"}
+      {...(!active ? { inert: true } : {})}
     >
       <div className="exits-workspace-transition__backdrop" aria-hidden="true" />
       <div className="exits-workspace-transition__panel">

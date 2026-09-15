@@ -168,7 +168,14 @@ describe("PurchaseOrderDetailPage cost and receipt history", () => {
       formatPeso(480),
     );
     expect(screen.getAllByText(formatPeso(240)).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByTestId("po-activity-timeline")).toBeInTheDocument();
+    expect(screen.queryByTestId("po-activity-section")).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-timeline-open")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("po-timeline-open"));
+    await waitFor(() => {
+      expect(screen.getByTestId("po-timeline-drawer")).toBeInTheDocument();
+      expect(screen.getByTestId("po-activity-timeline")).toBeInTheDocument();
+    });
 
     await user.click(
       screen.getByTestId("po-activity-expand-12121212-1212-4121-8121-121212121212"),

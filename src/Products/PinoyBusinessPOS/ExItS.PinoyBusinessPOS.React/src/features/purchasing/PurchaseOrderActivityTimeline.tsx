@@ -42,6 +42,8 @@ function eventTitle(
       return t("purchasing.activity.changesProposed");
     case "withdrawn":
       return t("purchasing.activity.withdrawn");
+    case "cancelled":
+      return t("purchasing.activity.cancelled");
     case "receipt":
       return t("purchasing.activity.receipt").replace("{grn}", event.grnNumber ?? "");
     case "receipt_reversed":

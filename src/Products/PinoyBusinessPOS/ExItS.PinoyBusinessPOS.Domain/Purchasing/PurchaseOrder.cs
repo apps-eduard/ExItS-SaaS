@@ -30,6 +30,10 @@ public sealed class PurchaseOrder
     public string? Notes { get; private set; }
     public DateTimeOffset? OrderedAtUtc { get; private set; }
     public Guid? OrderedBy { get; private set; }
+    /// <summary>Authoritative cancel time. Never inferred from <see cref="UpdatedAtUtc"/>.</summary>
+    public DateTimeOffset? CancelledAtUtc { get; private set; }
+    /// <summary>Actor who cancelled the local PO (distinct from connected withdraw metadata).</summary>
+    public Guid? CancelledByUserId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     /// <summary>Connected-PO settlement term. Cash default. Not proof of payment.</summary>
@@ -67,7 +71,9 @@ public sealed class PurchaseOrder
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
-        Guid? intendedReceivingBranchId = null)
+        Guid? intendedReceivingBranchId = null,
+        DateTimeOffset? cancelledAtUtc = null,
+        Guid? cancelledByUserId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -80,6 +86,8 @@ public sealed class PurchaseOrder
         Notes = notes;
         OrderedAtUtc = orderedAtUtc;
         OrderedBy = orderedBy;
+        CancelledAtUtc = cancelledAtUtc;
+        CancelledByUserId = cancelledByUserId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         PaymentTerm = paymentTerm;
@@ -222,9 +230,10 @@ public sealed class PurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
-    public void Cancel(DateTimeOffset utcNow)
+    public void Cancel(Guid cancelledBy, DateTimeOffset utcNow)
     {
         SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(cancelledBy);
         if (Status is PurchaseOrderStatus.Cancelled)
         {
             throw new DomainException(
@@ -247,6 +256,8 @@ public sealed class PurchaseOrder
         }
 
         Status = PurchaseOrderStatus.Cancelled;
+        CancelledAtUtc = utcNow;
+        CancelledByUserId = cancelledBy;
         UpdatedAtUtc = utcNow;
     }
 
@@ -451,7 +462,9 @@ public sealed class PurchaseOrder
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
-        Guid? intendedReceivingBranchId = null) =>
+        Guid? intendedReceivingBranchId = null,
+        DateTimeOffset? cancelledAtUtc = null,
+        Guid? cancelledByUserId = null) =>
         new(
             id,
             organizationId,
@@ -470,7 +483,9 @@ public sealed class PurchaseOrder
             paymentTerm,
             supplierBranchId,
             supplierBranchNameSnapshot,
-            intendedReceivingBranchId);
+            intendedReceivingBranchId,
+            cancelledAtUtc,
+            cancelledByUserId);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

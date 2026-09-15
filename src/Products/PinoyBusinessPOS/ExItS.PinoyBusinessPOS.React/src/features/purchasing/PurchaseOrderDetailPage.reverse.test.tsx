@@ -132,6 +132,10 @@ function renderPage() {
 
 async function expandReceiptDetail(user: ReturnType<typeof userEvent.setup>, id = goodsReceiptId) {
   await waitFor(() => {
+    expect(screen.getByTestId("po-timeline-open")).toBeInTheDocument();
+  });
+  await user.click(screen.getByTestId("po-timeline-open"));
+  await waitFor(() => {
     expect(screen.getByTestId(`po-activity-expand-${id}`)).toBeInTheDocument();
   });
   await user.click(screen.getByTestId(`po-activity-expand-${id}`));

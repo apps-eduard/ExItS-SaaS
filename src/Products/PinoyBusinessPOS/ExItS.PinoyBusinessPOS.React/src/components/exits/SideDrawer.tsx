@@ -4,25 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { prefersReducedMotion } from "@/lib/motion";
-
-function useBodyScrollLock(locked: boolean) {
-  useEffect(() => {
-    if (!locked || typeof document === "undefined") {
-      return;
-    }
-
-    const { body, documentElement: root } = document;
-    const prevBodyOverflow = body.style.overflow;
-    const prevRootOverflow = root.style.overflow;
-    body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
-
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      root.style.overflow = prevRootOverflow;
-    };
-  }, [locked]);
-}
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 export function SideDrawer({
   open,
@@ -61,24 +43,49 @@ export function SideDrawer({
   const [mounted, setMounted] = useState(open);
   const [entered, setEntered] = useState(false);
   const exitingRef = useRef(false);
+  const exitCompletedRef = useRef(false);
   const onExitedRef = useRef(onExited);
   onExitedRef.current = onExited;
 
-  useBodyScrollLock(mounted);
+  // Open after a closed start: mount in the same turn so portals appear without waiting an effect.
+  if (open && !mounted) {
+    setMounted(true);
+  }
+
+  // Lock while logically open — never while only exiting (avoids stuck overflow if unmount stalls).
+  useBodyScrollLock(open);
 
   useEffect(() => {
-    if (open) {
-      exitingRef.current = false;
-      setMounted(true);
-      const frame = window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => setEntered(true));
-      });
-      return () => window.cancelAnimationFrame(frame);
+    if (!open) {
+      setEntered(false);
+      exitingRef.current = true;
+      return;
     }
 
-    setEntered(false);
-    exitingRef.current = true;
+    exitingRef.current = false;
+    exitCompletedRef.current = false;
+    setMounted(true);
+    // Double-rAF for enter transition. Cancel BOTH frames so a fast close cannot
+    // leave entered=true after open=false (invisible full-screen click block).
+    let cancelled = false;
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => {
+        if (!cancelled) {
+          setEntered(true);
+        }
+      });
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(outer);
+      if (inner) {
+        window.cancelAnimationFrame(inner);
+      }
+    };
   }, [open]);
+
+  const interactive = open && entered;
 
   useEffect(() => {
     if (!mounted || !open) {
@@ -101,7 +108,6 @@ export function SideDrawer({
 
     // Fallback when transitionend does not fire (jsdom, reduced motion, interrupted).
     const reduced = prefersReducedMotion();
-    // jsdom has no CSS transitions; skip the wait when motion is reduced.
     const timeoutMs = reduced ? 0 : 450;
     const timeout = window.setTimeout(() => {
       finishExit();
@@ -111,9 +117,10 @@ export function SideDrawer({
   }, [mounted, open]);
 
   function finishExit() {
-    if (!exitingRef.current) {
+    if (open || exitCompletedRef.current) {
       return;
     }
+    exitCompletedRef.current = true;
     exitingRef.current = false;
     setMounted(false);
     onExitedRef.current?.();
@@ -137,19 +144,29 @@ export function SideDrawer({
   }
 
   return createPortal(
-    <div className="exits-side-drawer" data-testid={testId} data-side={side} data-open={entered}>
+    <div
+      className="exits-side-drawer"
+      data-testid={testId}
+      data-side={side}
+      data-open={entered}
+      data-interactive={interactive ? "true" : "false"}
+      // inert removes the whole exiting portal from hit-testing (stronger than CSS alone).
+      {...(!interactive ? { inert: true } : {})}
+    >
       <div
         className="exits-side-drawer__backdrop"
         role="presentation"
         data-open={entered}
+        data-interactive={interactive ? "true" : "false"}
         data-testid={`${testId}-backdrop`}
-        onClick={onClose}
+        onClick={interactive ? onClose : undefined}
       />
       <div
         ref={panelRef}
         id={resolvedPanelId}
         className={cn("exits-side-drawer__panel", panelClassName)}
         data-open={entered}
+        data-interactive={interactive ? "true" : "false"}
         data-side={side}
         role="dialog"
         aria-modal="true"

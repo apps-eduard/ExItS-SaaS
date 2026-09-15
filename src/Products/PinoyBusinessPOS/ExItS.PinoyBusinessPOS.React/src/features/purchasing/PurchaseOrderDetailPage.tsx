@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Store } from "lucide-react";
+import { History, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -30,11 +30,13 @@ import {
   sumGoodsReceiptValue,
   sumPurchaseOrderLineTotals,
 } from "@/features/purchasing/purchase-cost-display";
-import { PurchaseOrderActivityTimeline } from "@/features/purchasing/PurchaseOrderActivityTimeline";
+import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
 import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { DocumentActions } from "@/features/documents/DocumentActions";
 import { PurchaseOrderBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
@@ -387,6 +389,8 @@ export function PurchaseOrderDetailPage() {
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -413,6 +417,7 @@ export function PurchaseOrderDetailPage() {
   const receipts = receiptsQuery.data ?? [];
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
+    po?.cancelledByUserId,
     ...receipts.map((receipt) => receipt.receivedBy),
     ...receipts.map((receipt) => receipt.voidedByUserId),
   ]);
@@ -433,6 +438,10 @@ export function PurchaseOrderDetailPage() {
     (po.status === "Ordered" || po.status === "PartiallyReceived");
   const canAcceptChanges = allowManage && online && needsApproval;
   const orderTotal = po ? resolveOrderTotal(po) : null;
+  const hasTimeline = useMemo(
+    () => (po ? buildPurchaseOrderActivityEvents({ po, receipts }).length > 0 : false),
+    [po, receipts],
+  );
 
   async function runAction(
     action: () => Promise<unknown>,
@@ -516,6 +525,18 @@ export function PurchaseOrderDetailPage() {
     po.status === "Received" ||
     displayStatus === "Ready";
 
+  const purchaseOrderDocument = (
+    <PurchaseOrderBusinessDocument
+      po={po}
+      supplierName={sellerName}
+      settings={documentSettings}
+      identity={identity}
+      headerVisibility={headerVisibility(documentSettings.header)}
+      deliveryAddress={boundWorkspace?.branchName ?? null}
+      preview={documentPreviewOpen}
+    />
+  );
+
   return (
     <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-detail-page">
       <PageHeader
@@ -526,9 +547,23 @@ export function PurchaseOrderDetailPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
+            {hasTimeline ? (
+              <Button
+                type="button"
+                intent="neutral"
+                appearance="outline"
+                onClick={() => setTimelineOpen(true)}
+                data-testid="po-timeline-open"
+              >
+                <History className="size-4 shrink-0" aria-hidden />
+                {t("purchasing.timeline")}
+              </Button>
+            ) : null}
             <DocumentActions
+              previewLabel={t("summary.preview")}
               printLabel={t("exitsTable.print")}
               pdfLabel={t("exitsTable.exportPdf")}
+              onPreview={() => setDocumentPreviewOpen(true)}
               testId="po-business-document-actions"
             />
           </div>
@@ -664,79 +699,53 @@ export function PurchaseOrderDetailPage() {
         />
       ) : null}
 
-      <section aria-labelledby="po-activity" data-testid="po-activity-section">
-        <h2
-          id="po-activity"
-          className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium"
-        >
-          {t("orders.activity")}
-        </h2>
-        {receiptsQuery.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
-        {!receiptsQuery.isLoading ? (
-          <PurchaseOrderActivityTimeline
-            po={po}
-            receipts={receipts}
-            resolveActor={actors.resolve}
-            isResolving={actors.isResolving}
-            renderReceiptDetail={(receiptId) => {
-              const receipt = receipts.find((r) => r.goodsReceiptId === receiptId);
-              if (!receipt) {
-                return null;
-              }
-              return (
-                <GoodsReceiptCard
-                  receipt={receipt}
-                  workspace={workspace!}
-                  resolveActor={actors.resolve}
-                  isResolving={actors.isResolving}
-                  allowManage={allowManage}
-                  online={online}
-                  onReversed={async (updated) => {
-                    queryClient.setQueryData(
-                      ["purchase-order-receipts", workspace!.organizationId, purchaseOrderId],
-                      (prev: PosGoodsReceiptDto[] | undefined) =>
-                        (prev ?? []).map((r) =>
-                          r.goodsReceiptId === updated.goodsReceiptId ? updated : r,
-                        ),
-                    );
-                    await queryClient.invalidateQueries({
-                      queryKey: ["purchase-order", workspace!.organizationId, purchaseOrderId],
-                    });
-                    await queryClient.invalidateQueries({
-                      queryKey: [
-                        "purchase-order-receipts",
-                        workspace!.organizationId,
-                        purchaseOrderId,
-                      ],
-                    });
-                    await queryClient.invalidateQueries({ queryKey: ["inventory"] });
-                  }}
-                />
-              );
-            }}
-          />
-        ) : null}
-      </section>
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        po={po}
+        receipts={receipts}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+        receiptsLoading={receiptsQuery.isLoading}
+        renderReceiptDetail={(receiptId) => {
+          const receipt = receipts.find((r) => r.goodsReceiptId === receiptId);
+          if (!receipt || !workspace) {
+            return null;
+          }
+          return (
+            <GoodsReceiptCard
+              receipt={receipt}
+              workspace={workspace}
+              resolveActor={actors.resolve}
+              isResolving={actors.isResolving}
+              allowManage={allowManage}
+              online={online}
+              onReversed={async (updated) => {
+                queryClient.setQueryData(
+                  ["purchase-order-receipts", workspace.organizationId, purchaseOrderId],
+                  (prev: PosGoodsReceiptDto[] | undefined) =>
+                    (prev ?? []).map((r) =>
+                      r.goodsReceiptId === updated.goodsReceiptId ? updated : r,
+                    ),
+                );
+                await queryClient.invalidateQueries({
+                  queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
+                });
+                await queryClient.invalidateQueries({
+                  queryKey: [
+                    "purchase-order-receipts",
+                    workspace.organizationId,
+                    purchaseOrderId,
+                  ],
+                });
+                await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+              }}
+            />
+          );
+        }}
+      />
 
       <div className="po-document-actions" data-testid="po-detail-actions">
-        {canCancel ? (
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy}
-            onClick={() =>
-              void runAction(
-                () => cancelPurchaseOrder(workspace, purchaseOrderId),
-                "purchasing.cancelled",
-              )
-            }
-            data-testid="po-cancel"
-          >
-            {t("purchasing.cancel")}
-          </Button>
-        ) : (
-          <span />
-        )}
         <div className="po-document-actions__primary">
           {canAcceptChanges ? (
             <>
@@ -774,6 +783,23 @@ export function PurchaseOrderDetailPage() {
               <Link to={`/purchasing/${purchaseOrderId}/receive`}>{t("purchasing.receive")}</Link>
             </Button>
           ) : null}
+          {canCancel ? (
+            <Button
+              type="button"
+              intent="danger"
+              appearance="solid"
+              disabled={busy}
+              onClick={() =>
+                void runAction(
+                  () => cancelPurchaseOrder(workspace, purchaseOrderId),
+                  "purchasing.cancelled",
+                )
+              }
+              data-testid="po-cancel"
+            >
+              {t("purchasing.cancel")}
+            </Button>
+          ) : null}
           {canSubmit ? (
             <Button
               type="button"
@@ -798,17 +824,23 @@ export function PurchaseOrderDetailPage() {
         </div>
       </div>
 
-      <section className="mt-2" data-testid="po-printable-document">
-        <PurchaseOrderBusinessDocument
-          po={po}
-          supplierName={sellerName}
-          settings={documentSettings}
-          identity={identity}
-          headerVisibility={headerVisibility(documentSettings.header)}
-          deliveryAddress={boundWorkspace?.branchName ?? null}
-          preview
-        />
-      </section>
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={documentSettings.purchaseOrder.title || t("purchasing.detailTitle")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          testId="po-document-preview"
+        >
+          {purchaseOrderDocument}
+        </BusinessDocumentPreview>
+      ) : (
+        <div className="exits-bizdoc-print-host" aria-hidden data-testid="po-print-host">
+          {purchaseOrderDocument}
+        </div>
+      )}
     </div>
   );
 }

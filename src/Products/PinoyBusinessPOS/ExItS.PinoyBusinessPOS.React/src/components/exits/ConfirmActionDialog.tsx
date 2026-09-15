@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { cn } from "@/lib/cn";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 export type ConfirmActionVariant = "default" | "info" | "warning" | "danger";
 
@@ -32,23 +33,6 @@ const VARIANT_CONFIRM_INTENT = {
   warning: "warning",
   danger: "dangerStrong",
 } as const;
-
-function useBodyScrollLock(locked: boolean) {
-  useEffect(() => {
-    if (!locked || typeof document === "undefined") {
-      return;
-    }
-    const { body, documentElement: root } = document;
-    const prevBodyOverflow = body.style.overflow;
-    const prevRootOverflow = root.style.overflow;
-    body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      root.style.overflow = prevRootOverflow;
-    };
-  }, [locked]);
-}
 
 function getFocusable(container: HTMLElement): HTMLElement[] {
   const nodes = container.querySelectorAll<HTMLElement>(

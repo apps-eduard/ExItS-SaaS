@@ -185,7 +185,14 @@ export function ExitsTooltip({
 
   const style: CSSProperties | undefined = coords
     ? { top: coords.top, left: coords.left, zIndex: TOOLTIP_Z_INDEX }
-    : { top: 0, left: 0, zIndex: TOOLTIP_Z_INDEX, visibility: "hidden" };
+    : {
+        top: 0,
+        left: 0,
+        zIndex: TOOLTIP_Z_INDEX,
+        visibility: "hidden",
+        // visibility:hidden can still hit-test in some engines — never block clicks pre-position.
+        pointerEvents: "none",
+      };
 
   return (
     <>

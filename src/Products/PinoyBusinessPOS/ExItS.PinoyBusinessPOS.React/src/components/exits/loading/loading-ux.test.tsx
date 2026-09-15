@@ -40,7 +40,20 @@ describe("loading UX system", () => {
       vi.advanceTimersByTime(160);
     });
     expect(screen.getByTestId("workspace-transition-overlay")).toBeInTheDocument();
+    expect(screen.getByTestId("workspace-transition-overlay")).toHaveAttribute(
+      "data-active",
+      "true",
+    );
     expect(screen.getByText("Kizy Store")).toBeInTheDocument();
+
+    rerender(
+      <WorkspaceTransitionOverlay active={false} label="Switching workspace…" detail="Kizy Store" />,
+    );
+    expect(screen.getByTestId("workspace-transition-overlay")).toHaveAttribute(
+      "data-active",
+      "false",
+    );
+    expect(screen.getByTestId("workspace-transition-overlay")).toHaveAttribute("inert");
   });
 
   it("renders page skeleton without bare Loading text node", () => {

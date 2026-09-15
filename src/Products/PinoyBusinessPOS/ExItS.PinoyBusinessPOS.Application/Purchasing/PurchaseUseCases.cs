@@ -77,7 +77,9 @@ public sealed record PosPurchaseOrderDto(
     int ProductSetupRequiredCount = 0,
     Guid? SupplierBranchId = null,
     string? SupplierBranchName = null,
-    Guid? IntendedReceivingBranchId = null);
+    Guid? IntendedReceivingBranchId = null,
+    DateTimeOffset? CancelledAtUtc = null,
+    Guid? CancelledByUserId = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -227,7 +229,9 @@ public static class PurchaseMapper
             ProductSetupRequiredCount: po.Lines.Count(l => l.NeedsBuyerProductSetup),
             SupplierBranchId: po.SupplierBranchId,
             SupplierBranchName: po.SupplierBranchNameSnapshot,
-            IntendedReceivingBranchId: po.IntendedReceivingBranchId);
+            IntendedReceivingBranchId: po.IntendedReceivingBranchId,
+            CancelledAtUtc: po.CancelledAtUtc,
+            CancelledByUserId: po.CancelledByUserId);
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -1666,6 +1670,7 @@ public sealed class CancelPurchaseOrder
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
         Guid organizationId,
         Guid purchaseOrderId,
+        Guid cancelledByUserId,
         CancellationToken cancellationToken = default)
     {
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
@@ -1711,7 +1716,7 @@ public sealed class CancelPurchaseOrder
                 await _connectedOrders.UpdateAsync(connected, cancellationToken).ConfigureAwait(false);
             }
 
-            existing.Cancel(utcNow);
+            existing.Cancel(cancelledByUserId, utcNow);
             await _orders.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

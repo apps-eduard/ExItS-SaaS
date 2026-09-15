@@ -402,4 +402,19 @@ describe("Preferences icon top navigation", () => {
     expect(block ?? globalsCss).toMatch(/width:\s*100%/);
     expect(settingsSelectSource).toContain("@min-[20rem]:grid-cols-2");
   });
+
+  it("keeps closed side-drawer backdrop from capturing clicks", () => {
+    expect(globalsCss).toMatch(
+      /\.exits-side-drawer__backdrop\s*\{[^}]*pointer-events:\s*none/s,
+    );
+    expect(globalsCss).toMatch(
+      /\.exits-side-drawer__backdrop\[data-interactive="true"\]\s*\{[^}]*pointer-events:\s*auto/s,
+    );
+    expect(globalsCss).toMatch(
+      /\.exits-side-drawer__panel\[data-interactive="true"\]\s*\{[^}]*pointer-events:\s*auto/s,
+    );
+    expect(globalsCss).toMatch(
+      /\.exits-side-drawer\[data-interactive="false"\][\s\S]*?pointer-events:\s*none\s*!important/s,
+    );
+  });
 });

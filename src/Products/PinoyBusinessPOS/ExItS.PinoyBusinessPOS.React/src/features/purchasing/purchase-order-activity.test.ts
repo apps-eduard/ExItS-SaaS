@@ -114,6 +114,43 @@ describe("buildPurchaseOrderActivityEvents", () => {
     expect(reversed?.atUtc).toBe("2026-08-30T12:00:00Z");
   });
 
+  it("emits cancelled for local cancel with actor and timestamp", () => {
+    const events = buildPurchaseOrderActivityEvents({
+      po: basePo({
+        status: "Cancelled",
+        orderedAtUtc: null,
+        orderedBy: null,
+        cancelledAtUtc: "2026-08-27T10:08:00Z",
+        cancelledByUserId: "11111111-1111-4111-8111-111111111111",
+      }),
+      receipts: [],
+    });
+
+    expect(events.map((e) => e.kind)).toEqual(["created", "cancelled"]);
+    const cancelled = events.find((e) => e.kind === "cancelled");
+    expect(cancelled?.atUtc).toBe("2026-08-27T10:08:00Z");
+    expect(cancelled?.actorId).toBe("11111111-1111-4111-8111-111111111111");
+  });
+
+  it("shows withdrawn not cancelled when connected withdrawal is present", () => {
+    const events = buildPurchaseOrderActivityEvents({
+      po: basePo({
+        status: "Cancelled",
+        displayStatus: "Withdrawn",
+        withdrawnAtUtc: "2026-08-27T11:00:00Z",
+        cancelledAtUtc: "2026-08-27T11:00:00Z",
+        cancelledByUserId: "11111111-1111-4111-8111-111111111111",
+      }),
+      receipts: [],
+    });
+
+    expect(events.some((e) => e.kind === "withdrawn")).toBe(true);
+    expect(events.some((e) => e.kind === "cancelled")).toBe(false);
+    expect(events.find((e) => e.kind === "withdrawn")?.actorId).toBe(
+      "11111111-1111-4111-8111-111111111111",
+    );
+  });
+
   it("emits completed when PO status is Received", () => {
     const events = buildPurchaseOrderActivityEvents({
       po: basePo({

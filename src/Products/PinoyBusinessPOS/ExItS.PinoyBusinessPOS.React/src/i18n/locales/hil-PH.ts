@@ -8996,6 +8996,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.withdrawn": "Withdrawn",
 
+  "purchasing.activity.cancelled": "Cancelled",
+
   "purchasing.activity.receipt": "Goods receipt {grn}",
 
   "purchasing.activity.receiptReversed": "Receipt {grn} reversed",
@@ -9013,7 +9015,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.activity.showReceiptDetail": "Show receipt detail",
 
   "purchasing.activity.hideReceiptDetail": "Hide receipt detail",
-
+  "purchasing.timeline": "Timeline",
+  "purchasing.timelineTitle": "Purchase order timeline",
+  "purchasing.timelineClose": "Close timeline",
   "purchasing.hubLede": "Manage business buying and selling activity.",
   "purchasing.buyingTitle": "Buying",
   "purchasing.buyingLede": "Buy stock from suppliers and manage purchasing activity.",

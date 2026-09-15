@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { getActionIcon } from "@/components/exits/action-semantics";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 export type ExitsModalSize = "sm" | "md" | "lg";
 
@@ -25,23 +26,6 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
   return Array.from(nodes).filter(
     (el) => !el.hasAttribute("disabled") && el.getAttribute("aria-hidden") !== "true",
   );
-}
-
-function useBodyScrollLock(locked: boolean) {
-  useEffect(() => {
-    if (!locked || typeof document === "undefined") {
-      return;
-    }
-    const { body, documentElement: root } = document;
-    const prevBodyOverflow = body.style.overflow;
-    const prevRootOverflow = root.style.overflow;
-    body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      root.style.overflow = prevRootOverflow;
-    };
-  }, [locked]);
 }
 
 export type ExitsModalProps = {

@@ -7,23 +7,7 @@ import {
   printBusinessDocument,
 } from "@/features/documents/print-business-document";
 import { cn } from "@/lib/cn";
-
-function useBodyScrollLock(locked: boolean) {
-  useEffect(() => {
-    if (!locked || typeof document === "undefined") {
-      return;
-    }
-    const { body, documentElement: root } = document;
-    const prevBodyOverflow = body.style.overflow;
-    const prevRootOverflow = root.style.overflow;
-    body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      root.style.overflow = prevRootOverflow;
-    };
-  }, [locked]);
-}
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 
 /**
  * Large centered (desktop) / full-screen (mobile) preview for the canonical

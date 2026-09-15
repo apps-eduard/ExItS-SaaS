@@ -10,6 +10,7 @@ export type PurchaseOrderActivityKind =
   | "supplier_declined"
   | "changes_proposed"
   | "withdrawn"
+  | "cancelled"
   | "receipt"
   | "receipt_reversed"
   | "completed";
@@ -103,6 +104,15 @@ export function buildPurchaseOrderActivityEvents(input: {
       id: `withdrawn:${po.purchaseOrderId}`,
       kind: "withdrawn",
       atUtc: po.withdrawnAtUtc,
+      actorId: po.cancelledByUserId ?? null,
+    });
+  } else if (po.cancelledAtUtc?.trim()) {
+    // Local/draft cancel — distinct from connected buyer withdrawal.
+    events.push({
+      id: `cancelled:${po.purchaseOrderId}`,
+      kind: "cancelled",
+      atUtc: po.cancelledAtUtc,
+      actorId: po.cancelledByUserId ?? null,
     });
   }
 
@@ -194,6 +204,7 @@ export function buildPurchaseOrderActivityEvents(input: {
       supplier_declined: 2,
       changes_proposed: 2,
       withdrawn: 2,
+      cancelled: 2,
       receipt: 3,
       receipt_reversed: 4,
       completed: 5,

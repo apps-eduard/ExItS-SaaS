@@ -8995,6 +8995,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.withdrawn": "Binawi",
 
+  "purchasing.activity.cancelled": "Kinansela",
+
   "purchasing.activity.receipt": "Goods receipt {grn}",
 
   "purchasing.activity.receiptReversed": "Binawi ang receipt {grn}",
@@ -9012,7 +9014,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.activity.showReceiptDetail": "Ipakita ang detalye ng receipt",
 
   "purchasing.activity.hideReceiptDetail": "Itago ang detalye ng receipt",
-
+  "purchasing.timeline": "Timeline",
+  "purchasing.timelineTitle": "Timeline ng purchase order",
+  "purchasing.timelineClose": "Isara ang timeline",
   "purchasing.hubLede": "Pamahalaan ang pagbili at pagbebenta ng negosyo.",
   "purchasing.buyingTitle": "Pagbili",
   "purchasing.buyingLede": "Bumili ng stock mula sa mga supplier at pamahalaan ang pagbili.",

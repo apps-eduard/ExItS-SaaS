@@ -78,6 +78,8 @@ export const posPurchaseOrderDtoSchema = z.object({
   supplierPreparingAtUtc: z.string().nullable().optional(),
   supplierFulfilledAtUtc: z.string().nullable().optional(),
   withdrawnAtUtc: z.string().nullable().optional(),
+  cancelledAtUtc: z.string().nullable().optional(),
+  cancelledByUserId: guidSchema.nullable().optional(),
   declineReason: z.string().nullable().optional(),
   declineNote: z.string().nullable().optional(),
   hasReceivingIssues: z.boolean().optional(),

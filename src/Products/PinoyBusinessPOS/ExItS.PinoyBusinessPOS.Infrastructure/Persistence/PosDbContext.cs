@@ -4426,6 +4426,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(PurchaseOrder.NotesMaxLength);
             entity.Property(e => e.OrderedAtUtc).HasColumnName("ordered_at_utc");
             entity.Property(e => e.OrderedBy).HasColumnName("ordered_by");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.CancelledByUserId).HasColumnName("cancelled_by_user_id");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);

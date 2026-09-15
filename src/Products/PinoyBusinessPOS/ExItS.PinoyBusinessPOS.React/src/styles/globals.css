@@ -18013,17 +18013,28 @@ a.exits-chip--primary:hover {
   pointer-events: none;
 }
 
+/* Exiting / not-yet-entered: never steal clicks (opacity alone still hit-tests). */
+.exits-side-drawer[data-interactive="false"],
+.exits-side-drawer[data-interactive="false"] * {
+  pointer-events: none !important;
+}
+
 .exits-side-drawer__backdrop {
   position: absolute;
   inset: 0;
   background: color-mix(in srgb, #0f172a 45%, transparent);
   opacity: 0;
-  pointer-events: auto;
+  /* Hit-testing is gated by data-interactive (open && entered), not opacity alone. */
+  pointer-events: none;
   transition: opacity var(--exits-motion-normal) var(--exits-ease-standard);
 }
 
 .exits-side-drawer__backdrop[data-open="true"] {
   opacity: 1;
+}
+
+.exits-side-drawer__backdrop[data-interactive="true"] {
+  pointer-events: auto;
 }
 
 .exits-side-drawer__panel {
@@ -18034,7 +18045,7 @@ a.exits-chip--primary:hover {
   flex-direction: column;
   width: min(100%, 26rem);
   max-width: 100%;
-  pointer-events: auto;
+  pointer-events: none;
   border: 0;
   background: var(--exits-surface);
   box-shadow: var(--exits-shadow-lg);
@@ -18059,6 +18070,10 @@ a.exits-chip--primary:hover {
 
 .exits-side-drawer__panel[data-open="true"] {
   transform: translateX(0);
+}
+
+.exits-side-drawer__panel[data-interactive="true"] {
+  pointer-events: auto;
 }
 
 .exits-side-drawer__header {
@@ -20903,6 +20918,11 @@ a.exits-chip--primary:hover {
   display: grid;
   place-items: center;
   pointer-events: all;
+}
+
+/* Min-visible fade after bind settles — paint only, do not block the shell. */
+.exits-workspace-transition[data-active="false"] {
+  pointer-events: none;
 }
 
 .exits-workspace-transition__backdrop {
