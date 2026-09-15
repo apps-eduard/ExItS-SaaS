@@ -1,15 +1,28 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Loader2, MoreHorizontal } from "lucide-react";
 import {
-  EXITS_ACTIONS,
+  Building2,
+  ClipboardList,
+  Inbox,
+  LayoutDashboard,
+  Loader2,
+  MoreHorizontal,
+  PackageCheck,
+  Receipt,
+  Truck,
+  UserRound,
+  Users,
+  Wallet,
+} from "lucide-react";
+import {
+  getActionButtonStyle,
   getActionIcon,
-  getActionIntent,
 } from "@/components/exits/action-semantics";
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsMultiSelect } from "@/components/exits/ExitsMultiSelect";
+import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import {
   ExitsTable,
@@ -23,6 +36,7 @@ import {
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import { FormDrawer } from "@/components/exits/FormDrawer";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { ModuleSubnav } from "@/components/exits/ModuleSubnav";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TableActionButton } from "@/components/exits/TableActionButton";
@@ -65,6 +79,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [contentTab, setContentTab] = useState("overview");
   const [kindTab, setKindTab] = useState("personal");
   const [filterSegment, setFilterSegment] = useState("all");
+  const [purchasingDest, setPurchasingDest] = useState("incoming");
   const [search, setSearch] = useState("");
   const [notify, setNotify] = useState(true);
   const [allowAccess, setAllowAccess] = useState(true);
@@ -82,6 +97,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [themeSelect, setThemeSelect] = useState<"system" | "light" | "dark">("system");
   const [selectSearch, setSelectSearch] = useState("");
   const [selectSwitch, setSelectSwitch] = useState(true);
+  const [sizeSingle, setSizeSingle] = useState("M");
+  const [sizeMulti, setSizeMulti] = useState<string[]>(["S", "L", "XL"]);
 
   const show = (id: UiStandardLiveCardId) => !visibleCardIds || visibleCardIds.has(id);
 
@@ -137,38 +154,38 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             <div className="flex flex-col gap-2">
               <SectionLabel>Common actions</SectionLabel>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant={EXITS_ACTIONS.save.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("save")}>
                   {SaveIcon ? <SaveIcon className="size-4" aria-hidden /> : null}
                   Save
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.create.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("create")}>
                   {CreateIcon ? (
                     <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
                   ) : null}
                   Create
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.add.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("add")}>
                   {AddIcon ? (
                     <AddIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
                   ) : null}
                   Add
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.edit.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("edit")}>
                   {EditIcon ? <EditIcon className="size-4" aria-hidden /> : null}
                   Edit
                 </Button>
-                <Button type="button" variant="ghost">
+                <Button type="button" {...getActionButtonStyle("cancel")}>
                   Cancel
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.activate.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("activate")}>
                   {ActivateIcon ? <ActivateIcon className="size-4" aria-hidden /> : null}
                   Activate
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.deactivate.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("deactivate")}>
                   {DeactivateIcon ? <DeactivateIcon className="size-4" aria-hidden /> : null}
                   Deactivate
                 </Button>
-                <Button type="button" variant={EXITS_ACTIONS.delete.defaultIntent}>
+                <Button type="button" {...getActionButtonStyle("delete")}>
                   {DeleteIcon ? (
                     <DeleteIcon className={`size-4 ${buttonIconMotion.delete}`} aria-hidden />
                   ) : null}
@@ -182,47 +199,132 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
             >
               <SectionLabel>One Primary per group</SectionLabel>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant={getActionIntent("create")}>
+                <Button type="button" {...getActionButtonStyle("create")}>
                   {CreateIcon ? (
                     <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
                   ) : null}
                   Create customer
                 </Button>
-                <Button type="button" variant={getActionIntent("add", { isPrimaryInGroup: false })}>
+                <Button type="button" {...getActionButtonStyle("add", { isPrimaryInGroup: false })}>
                   {AddIcon ? <AddIcon className="size-4" aria-hidden /> : null}
                   Add existing
                 </Button>
               </div>
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Intents</SectionLabel>
+              <SectionLabel>Intent / Tone</SectionLabel>
               <div className="flex flex-wrap gap-2">
                 {(
                   [
-                    ["Primary", "default"],
+                    ["Primary", "primary"],
+                    ["Neutral", "neutral"],
                     ["Success", "success"],
                     ["Info", "info"],
                     ["Warning", "warning"],
-                    ["Danger", "destructive"],
-                    ["Outline", "outline"],
-                    ["Ghost", "ghost"],
-                    ["Muted", "secondary"],
+                    ["Danger", "danger"],
                   ] as const
-                ).map(([label, variant]) => (
-                  <Button key={variant} type="button" variant={variant}>
+                ).map(([label, intent]) => (
+                  <Button
+                    key={intent}
+                    type="button"
+                    intent={intent}
+                    appearance="solid"
+                    data-testid={`ui-standard-intent-${intent}`}
+                  >
                     {label}
                   </Button>
                 ))}
               </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Intent = semantic meaning. All samples use Solid appearance.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Appearance / Treatment</SectionLabel>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["Solid", "solid"],
+                    ["Outline", "outline"],
+                    ["Ghost", "ghost"],
+                    ["Elevated", "elevated"],
+                    ["Gradient", "gradient"],
+                  ] as const
+                ).map(([label, appearance]) => (
+                  <Button
+                    key={appearance}
+                    type="button"
+                    intent="primary"
+                    appearance={appearance}
+                    data-testid={`ui-standard-appearance-${appearance}`}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Appearance = how it is drawn. All samples use Primary intent. Gradient is
+                brand-primary preferred.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Shape</SectionLabel>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["Standard", "standard"],
+                    ["Soft", "soft"],
+                    ["Pill", "pill"],
+                  ] as const
+                ).map(([label, shape]) => (
+                  <Button
+                    key={shape}
+                    type="button"
+                    intent="primary"
+                    appearance="solid"
+                    shape={shape}
+                    data-testid={`ui-standard-shape-${shape}`}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(
+                  [
+                    ["standard", "Save"],
+                    ["soft", "Create"],
+                    ["pill", "Add"],
+                  ] as const
+                ).map(([shape, label]) => (
+                  <Button
+                    key={`shape-icon-${shape}`}
+                    type="button"
+                    intent="primary"
+                    appearance="solid"
+                    shape={shape}
+                    data-testid={`ui-standard-shape-icon-${shape}`}
+                  >
+                    {CreateIcon ? (
+                      <CreateIcon className={`size-4 ${buttonIconMotion.add}`} aria-hidden />
+                    ) : null}
+                    {label}
+                  </Button>
+                ))}
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Shape = geometry. All samples use Primary + Solid. Default product controls use
+                Auto (follows Control Shape preference). Second row shows with-icon variety.
+              </p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
               <SectionLabel>States</SectionLabel>
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="default" disabled>
+                <Button type="button" intent="primary" appearance="solid" disabled>
                   {SaveIcon ? <SaveIcon className="size-4" aria-hidden /> : null}
                   Save
                 </Button>
-                <Button type="button" variant="default" disabled aria-busy="true">
+                <Button type="button" intent="primary" appearance="solid" disabled aria-busy="true">
                   <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
                   Saving…
                 </Button>
@@ -230,7 +332,6 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 <TableActionButton
                   action="delete"
                   label="Delete"
-                  variant="ghost"
                   testId="ui-standard-table-action-delete"
                 />
               </div>
@@ -530,6 +631,41 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
+                  <SectionLabel>Pill select — attribute (single)</SectionLabel>
+                  <ExitsPillSelect
+                    aria-label="Size"
+                    value={sizeSingle}
+                    onChange={setSizeSingle}
+                    options={[
+                      { value: "XS", label: "XS" },
+                      { value: "S", label: "S" },
+                      { value: "M", label: "M" },
+                      { value: "L", label: "L" },
+                      { value: "XL", label: "XL" },
+                      { value: "XXL", label: "XXL" },
+                    ]}
+                    testId="ui-standard-select-pill-single"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <SectionLabel>Pill select — multi</SectionLabel>
+                  <ExitsPillSelect
+                    mode="multi"
+                    aria-label="Available sizes"
+                    value={sizeMulti}
+                    onChange={setSizeMulti}
+                    options={[
+                      { value: "XS", label: "XS" },
+                      { value: "S", label: "S" },
+                      { value: "M", label: "M" },
+                      { value: "L", label: "L" },
+                      { value: "XL", label: "XL" },
+                      { value: "XXL", label: "XXL" },
+                    ]}
+                    testId="ui-standard-select-pill-multi"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <SectionLabel>Creatable combobox</SectionLabel>
                   <CreatableCombobox
                     value={comboboxValue}
@@ -649,7 +785,10 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         ) : null}
 
         {show("nav") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-nav">
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-nav"
+          >
             <CardTitle>Navigation & Selection</CardTitle>
             <div className="flex flex-col gap-2">
               <SectionLabel>Tabs — same-view sections</SectionLabel>
@@ -658,9 +797,9 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 activeKey={contentTab}
                 onChange={setContentTab}
                 items={[
-                  { key: "overview", label: "Overview" },
-                  { key: "transactions", label: "Transactions" },
-                  { key: "payments", label: "Payments" },
+                  { key: "overview", label: "Overview", icon: LayoutDashboard },
+                  { key: "transactions", label: "Transactions", icon: Receipt, count: 12 },
+                  { key: "payments", label: "Payments", icon: Wallet, count: 3 },
                 ]}
               />
             </div>
@@ -686,6 +825,76 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   { key: "business", label: "Business" },
                 ]}
               />
+              <SectionLabel>With icon</SectionLabel>
+              <ExitsTabs
+                variant="soft"
+                ariaLabel="Demo soft tabs with icons"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-soft-icons"
+                items={[
+                  { key: "personal", label: "Personal", icon: UserRound },
+                  { key: "business", label: "Business", icon: Building2 },
+                ]}
+              />
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Demo pill tabs with icons"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-pill-icons"
+                items={[
+                  { key: "personal", label: "Personal", icon: UserRound },
+                  { key: "business", label: "Business", icon: Building2 },
+                ]}
+              />
+              <SectionLabel>With count</SectionLabel>
+              <ExitsTabs
+                variant="soft"
+                ariaLabel="Demo soft tabs with counts"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-soft-counts"
+                items={[
+                  {
+                    key: "personal",
+                    label: "Personal",
+                    icon: UserRound,
+                    count: 8,
+                    countTone: kindTab === "personal" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "business",
+                    label: "Business",
+                    icon: Building2,
+                    count: 24,
+                    countTone: kindTab === "business" ? "primary" : "neutral",
+                  },
+                ]}
+              />
+              <ExitsTabs
+                variant="pill"
+                ariaLabel="Demo pill tabs with counts"
+                value={kindTab}
+                onValueChange={setKindTab}
+                testId="ui-standard-tabs-pill-counts"
+                items={[
+                  {
+                    key: "personal",
+                    label: "Personal",
+                    icon: UserRound,
+                    count: 8,
+                    countTone: kindTab === "personal" ? "primary" : "neutral",
+                  },
+                  {
+                    key: "business",
+                    label: "Business",
+                    icon: Building2,
+                    count: 24,
+                    countTone: kindTab === "business" ? "primary" : "neutral",
+                  },
+                ]}
+              />
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
               <SectionLabel>Segmented — filter / exclusive selection</SectionLabel>
@@ -695,9 +904,121 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 value={filterSegment}
                 onValueChange={setFilterSegment}
                 items={[
-                  { key: "all", label: "All" },
-                  { key: "active", label: "Active" },
-                  { key: "inactive", label: "Inactive" },
+                  { key: "all", label: "All", count: 42 },
+                  { key: "active", label: "Active", count: 31 },
+                  { key: "inactive", label: "Inactive", count: 11 },
+                ]}
+              />
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Pill bar — module destinations</SectionLabel>
+              <ModuleSubnav
+                variant="pillBar"
+                activeTreatment="solid"
+                ariaLabel="Purchasing destinations pill bar"
+                testId="ui-standard-subnav-pillbar-text"
+                value={purchasingDest}
+                onValueChange={setPurchasingDest}
+                items={[
+                  { key: "po", label: "Purchase orders", to: "/demo/po" },
+                  { key: "incoming", label: "Incoming orders", to: "/demo/incoming" },
+                  { key: "receive", label: "Ready to receive", to: "/demo/receive" },
+                  { key: "direct", label: "Direct purchases", to: "/demo/direct" },
+                  { key: "suppliers", label: "Suppliers", to: "/demo/suppliers" },
+                ]}
+              />
+              <SectionLabel>Pill bar — with icon + count</SectionLabel>
+              <ModuleSubnav
+                variant="pillBar"
+                activeTreatment="solid"
+                scrollable
+                ariaLabel="Purchasing destinations pill bar with icons"
+                testId="ui-standard-subnav-pillbar-icons"
+                value={purchasingDest}
+                onValueChange={setPurchasingDest}
+                items={[
+                  {
+                    key: "po",
+                    label: "Purchase orders",
+                    to: "/demo/po",
+                    icon: ClipboardList,
+                    count: 0,
+                  },
+                  {
+                    key: "incoming",
+                    label: "Incoming orders",
+                    to: "/demo/incoming",
+                    icon: Inbox,
+                    count: 2,
+                  },
+                  {
+                    key: "receive",
+                    label: "Ready to receive",
+                    to: "/demo/receive",
+                    icon: Truck,
+                    count: 0,
+                  },
+                  {
+                    key: "direct",
+                    label: "Direct purchases",
+                    to: "/demo/direct",
+                    icon: PackageCheck,
+                    count: 0,
+                  },
+                  {
+                    key: "suppliers",
+                    label: "Suppliers",
+                    to: "/demo/suppliers",
+                    icon: Users,
+                    count: 0,
+                  },
+                ]}
+              />
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Vertical — with icon + count</SectionLabel>
+              <ModuleSubnav
+                variant="vertical"
+                ariaLabel="Purchasing destinations vertical"
+                testId="ui-standard-subnav-vertical"
+                value={purchasingDest}
+                onValueChange={setPurchasingDest}
+                items={[
+                  {
+                    key: "po",
+                    label: "Purchase orders",
+                    to: "/demo/po",
+                    icon: ClipboardList,
+                    count: 0,
+                  },
+                  {
+                    key: "incoming",
+                    label: "Incoming orders",
+                    to: "/demo/incoming",
+                    icon: Inbox,
+                    count: 2,
+                  },
+                  {
+                    key: "receive",
+                    label: "Ready to receive",
+                    to: "/demo/receive",
+                    icon: Truck,
+                    count: 0,
+                  },
+                  {
+                    key: "direct",
+                    label: "Direct purchases",
+                    to: "/demo/direct",
+                    icon: PackageCheck,
+                    count: 0,
+                  },
+                  {
+                    key: "suppliers",
+                    label: "Suppliers",
+                    to: "/demo/suppliers",
+                    icon: Users,
+                    count: 0,
+                  },
                 ]}
               />
             </div>

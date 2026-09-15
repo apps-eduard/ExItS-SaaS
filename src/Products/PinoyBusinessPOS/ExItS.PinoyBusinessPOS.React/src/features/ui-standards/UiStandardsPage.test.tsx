@@ -336,7 +336,8 @@ describe("UiStandardsPage Classic / Simple views", () => {
       expect(screen.getByTestId(`ui-standards-simple-section-${id}`)).toBeInTheDocument();
     }
 
-    expect(screen.getByTestId("simple-btn-intent-default")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-btn-intent-primary")).toBeInTheDocument();
+    expect(screen.getByTestId("simple-btn-appearance-solid")).toBeInTheDocument();
     expect(screen.getByTestId("simple-status-success")).toBeInTheDocument();
     expect(screen.getByTestId("simple-badge-primary")).toBeInTheDocument();
     expect(screen.getByTestId("simple-action-default")).toBeInTheDocument();

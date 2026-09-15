@@ -10,7 +10,9 @@ export {
   EXITS_ACTION_ICON_ALIASES,
   getActionIcon,
   getActionIntent,
+  getActionButtonStyle,
   type ExitsActionId,
   type ExitsActionDefinition,
+  type ActionButtonStyle,
   type ButtonIntent,
 } from "@/components/exits/action-semantics";

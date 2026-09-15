@@ -152,23 +152,42 @@ export function UiStandardsSimpleCatalog() {
 
       {/* BUTTONS */}
       <SimpleCatalogSection id="buttons" title={t("uiStandards.tabButtons")} status="LOCKED" open={isOpen("buttons")} onOpenChange={(o) => setOpen("buttons", o)}>
-        <SimpleGroup title="Intent">
+        <SimpleGroup title="Intent / Tone">
           {(
             [
-              ["PRIMARY", "default", "PRIMARY"],
-              ["SUCCESS", "success", "SUCCESS"],
-              ["MUTED", "secondary", "MUTED"],
-              ["OUTLINE", "outline", "OUTLINE"],
-              ["GHOST", "ghost", "GHOST"],
-              ["INFO", "info", "INFO"],
-              ["WARNING", "warning", "WARNING"],
-              ["DANGER", "destructive", "DANGER"],
-              ["DANGER STRONG", "dangerStrong", "DANGER STRONG"],
+              ["PRIMARY", "primary", "PRIMARY + SOLID"],
+              ["NEUTRAL", "neutral", "NEUTRAL + SOLID"],
+              ["SUCCESS", "success", "SUCCESS + SOLID"],
+              ["INFO", "info", "INFO + SOLID"],
+              ["WARNING", "warning", "WARNING + SOLID"],
+              ["DANGER", "danger", "DANGER + SOLID"],
             ] as const
-          ).map(([label, variant, command]) => (
-            <SimpleSample key={variant} label={label} standard="Button" command={command} testId={`simple-btn-intent-${variant}`}>
-              <Button type="button" variant={variant} shape="soft">
-                {label === "DANGER STRONG" ? "Delete forever" : label === "PRIMARY" ? "Save" : label === "SUCCESS" ? "Approve" : label === "DANGER" ? "Delete" : label === "MUTED" ? "Reset" : label}
+          ).map(([label, intent, command]) => (
+            <SimpleSample key={intent} label={label} standard="Button" command={command} testId={`simple-btn-intent-${intent}`}>
+              <Button type="button" intent={intent} appearance="solid" shape="soft">
+                {label === "PRIMARY" ? "Save" : label === "SUCCESS" ? "Approve" : label === "DANGER" ? "Delete" : label === "NEUTRAL" ? "Reset" : label}
+              </Button>
+            </SimpleSample>
+          ))}
+          <SimpleSample label="DANGER STRONG" standard="Button" command="DANGER STRONG" testId="simple-btn-intent-dangerStrong">
+            <Button type="button" variant="dangerStrong" shape="soft">
+              Delete forever
+            </Button>
+          </SimpleSample>
+        </SimpleGroup>
+        <SimpleGroup title="Appearance / Treatment">
+          {(
+            [
+              ["SOLID", "solid", "PRIMARY + SOLID"],
+              ["OUTLINE", "outline", "PRIMARY + OUTLINE"],
+              ["GHOST", "ghost", "PRIMARY + GHOST"],
+              ["ELEVATED", "elevated", "PRIMARY + ELEVATED"],
+              ["GRADIENT", "gradient", "PRIMARY + GRADIENT"],
+            ] as const
+          ).map(([label, appearance, command]) => (
+            <SimpleSample key={appearance} label={label} standard="Button" command={command} testId={`simple-btn-appearance-${appearance}`}>
+              <Button type="button" intent="primary" appearance={appearance} shape="soft">
+                {label}
               </Button>
             </SimpleSample>
           ))}
@@ -190,19 +209,6 @@ export function UiStandardsSimpleCatalog() {
               <Pencil className="size-4" aria-hidden />
             </Button>
           </SimpleSample>
-        </SimpleGroup>
-        <SimpleGroup title="Treatment">
-          {(
-            [
-              ["FLAT", "flat", "PRIMARY + SOFT + FLAT"],
-              ["ELEVATED", "elevated", "PRIMARY + SOFT + ELEVATED"],
-              ["GRADIENT", "gradient", "PRIMARY + SOFT + GRADIENT"],
-            ] as const
-          ).map(([label, treatment, command]) => (
-            <SimpleSample key={treatment} label={label} standard="Button" command={command} testId={`simple-btn-treatment-${treatment}`}>
-              <Button type="button" shape="soft" treatment={treatment}>Save</Button>
-            </SimpleSample>
-          ))}
         </SimpleGroup>
         <SimpleGroup title="Content & states">
           <SimpleSample label="WITH ICON" standard="Button" command="PRIMARY + SOFT + WITH ICON" testId="simple-btn-with-icon">

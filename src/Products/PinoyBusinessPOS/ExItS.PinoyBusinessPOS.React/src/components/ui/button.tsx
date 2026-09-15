@@ -5,11 +5,52 @@ import { cn } from "@/lib/cn";
 
 /**
  * Shared ExItS Button — canonical control (APPROVED / LOCKED).
- * See `Docs/UI/exits-button-standard.md` and `/ui-standards` → Buttons.
- * Defaults (standard + flat) preserve historical appearance.
- * Contextual icon motion: `group/button` (on Button) + `buttonIconMotion.*` on Lucide children.
+ * Intent/Tone = semantic meaning. Appearance = how it is drawn.
+ * Legacy `variant` / `treatment` remain supported aliases.
+ *
+ * @see Docs/UI/exits-button-standard.md
+ * @see /ui-standards → Buttons
  */
-export const buttonVariants = cva(
+
+/** Semantic meaning (why). */
+export type ButtonIntentTone =
+  | "primary"
+  | "neutral"
+  | "success"
+  | "info"
+  | "warning"
+  | "danger";
+
+/** Visual rendering (how). Elevated/Gradient are not intents. */
+export type ButtonAppearance =
+  | "solid"
+  | "outline"
+  | "ghost"
+  | "elevated"
+  | "gradient";
+
+/** @deprecated Prefer `ButtonIntentTone`. Legacy CVA `variant` values. */
+export type ButtonLegacyVariant =
+  | "default"
+  | "secondary"
+  | "ghost"
+  | "outline"
+  | "destructive"
+  | "success"
+  | "info"
+  | "warning"
+  | "dangerStrong";
+
+/** @deprecated Prefer `ButtonAppearance`. Legacy `treatment` values. */
+export type ButtonLegacyTreatment = "flat" | "elevated" | "gradient";
+
+const ELEVATION =
+  "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px hover:shadow-[var(--exits-shadow-md)] active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[var(--exits-shadow-sm)] motion-reduce:active:scale-100";
+
+const GRADIENT_MOTION =
+  "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100";
+
+export const buttonVariantsCva = cva(
   [
     "group/button exits-motion-press exits-motion-interaction inline-flex items-center justify-center gap-2 text-[length:var(--exits-text-sm)] font-medium",
     "transition-[background-color,color,box-shadow,border-color,transform,filter] duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)]",
@@ -19,88 +60,366 @@ export const buttonVariants = cva(
   ].join(" "),
   {
     variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
-        secondary:
-          "border border-border bg-[var(--exits-surface-muted)] text-foreground hover:border-[var(--exits-border-strong)]",
-        ghost: "bg-transparent text-foreground hover:bg-[var(--exits-surface-muted)]",
-        outline:
-          "border border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)] hover:border-[var(--exits-border-strong)]",
-        destructive:
-          "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
-        success:
-          "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
-        info:
-          "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
-        warning:
-          "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
-        /** High-risk destructive confirmation only. */
-        dangerStrong:
-          "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
+      intent: {
+        primary: "",
+        neutral: "",
+        success: "",
+        info: "",
+        warning: "",
+        danger: "",
+      },
+      appearance: {
+        solid: "",
+        outline: "",
+        ghost: "",
+        elevated: ELEVATION,
+        gradient: GRADIENT_MOTION,
       },
       size: {
-        /** Follows Preferences density (compact 32 / balance 36 / comfort 44). */
         default:
           "h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] px-[var(--exits-control-padding-x)]",
-        /** Square control matching density height. */
         icon: "size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)] p-0",
-        /** Exceptional CTA only — not for routine CRUD / toolbar actions. */
         large:
           "h-[var(--exits-control-height-lg)] min-h-[var(--exits-control-height-lg)] px-5 text-[length:var(--exits-text-md)]",
       },
-      /** Default matches historical ExItS button radius when preference is standard. */
       shape: {
-        /** Fixed md radius — wins over global control-shape preference. */
         standard: "rounded-[var(--exits-radius-md)]",
         soft: "rounded-[var(--exits-radius-soft)]",
         pill: "rounded-full",
-        /** Circular icon-only control (pair with size="icon"). */
         round: "rounded-full",
-        /** Follows Preferences control shape (--exits-control-radius). */
         auto: "rounded-[var(--exits-control-radius)]",
       },
-      /** Default flat preserves historical treatment. */
-      treatment: {
-        flat: "",
-        elevated:
-          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px hover:shadow-[var(--exits-shadow-md)] active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-[var(--exits-shadow-sm)] motion-reduce:active:scale-100",
-        gradient:
-          "shadow-[var(--exits-shadow-sm)] hover:-translate-y-px active:translate-y-0 active:scale-[0.99] motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100",
+      /**
+       * Danger solid strength: soft tint (ordinary) vs strong fill (confirmation).
+       * Only applies when intent=danger and appearance=solid|elevated|gradient.
+       */
+      dangerFill: {
+        soft: "",
+        strong: "",
       },
     },
     compoundVariants: [
       {
-        variant: "default",
-        treatment: "gradient",
-        class:
-          "bg-gradient-to-b from-[var(--exits-primary)] to-[var(--exits-primary-hover)] hover:from-[var(--exits-primary)] hover:to-[var(--exits-primary-hover)] hover:brightness-[1.02]",
+        intent: "primary",
+        appearance: "solid",
+        class: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
       },
       {
-        variant: "dangerStrong",
-        treatment: "gradient",
-        class:
-          "bg-gradient-to-b from-[var(--exits-danger)] to-[color-mix(in_srgb,var(--exits-danger)_78%,#000)] hover:brightness-100",
+        intent: "primary",
+        appearance: "elevated",
+        class: "bg-primary text-primary-foreground hover:bg-[var(--exits-primary-hover)]",
       },
       {
-        variant: "success",
-        treatment: "gradient",
+        intent: "primary",
+        appearance: "outline",
         class:
-          "bg-gradient-to-b from-[var(--exits-success-soft)] to-[color-mix(in_srgb,var(--exits-success)_18%,var(--exits-success-soft))] hover:brightness-100",
+          "border border-[var(--exits-primary)] bg-surface text-[var(--exits-primary)] hover:bg-[color-mix(in_srgb,var(--exits-primary)_10%,var(--exits-surface))]",
+      },
+      {
+        intent: "primary",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-primary)] hover:bg-[color-mix(in_srgb,var(--exits-primary)_10%,transparent)]",
+      },
+      {
+        intent: "primary",
+        appearance: "gradient",
+        class:
+          "bg-gradient-to-b from-[var(--exits-primary)] to-[var(--exits-primary-hover)] text-primary-foreground hover:from-[var(--exits-primary)] hover:to-[var(--exits-primary-hover)] hover:brightness-[1.02]",
+      },
+      {
+        intent: "neutral",
+        appearance: "solid",
+        class:
+          "border border-border bg-[var(--exits-surface-muted)] text-foreground hover:border-[var(--exits-border-strong)]",
+      },
+      {
+        intent: "neutral",
+        appearance: "elevated",
+        class:
+          "border border-border bg-[var(--exits-surface-muted)] text-foreground hover:border-[var(--exits-border-strong)]",
+      },
+      {
+        intent: "neutral",
+        appearance: "outline",
+        class:
+          "border border-border bg-surface text-foreground hover:bg-[var(--exits-surface-muted)] hover:border-[var(--exits-border-strong)]",
+      },
+      {
+        intent: "neutral",
+        appearance: "ghost",
+        class: "bg-transparent text-foreground hover:bg-[var(--exits-surface-muted)]",
+      },
+      {
+        intent: "neutral",
+        appearance: "gradient",
+        class:
+          "border border-border bg-[var(--exits-surface-muted)] text-foreground hover:border-[var(--exits-border-strong)]",
+      },
+      {
+        intent: "success",
+        appearance: "solid",
+        class:
+          "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
+      },
+      {
+        intent: "success",
+        appearance: "elevated",
+        class:
+          "border border-border bg-[var(--exits-success-soft)] text-[var(--exits-success)] hover:border-[var(--exits-success)]",
+      },
+      {
+        intent: "success",
+        appearance: "outline",
+        class:
+          "border border-[var(--exits-success)] bg-surface text-[var(--exits-success)] hover:bg-[var(--exits-success-soft)]",
+      },
+      {
+        intent: "success",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-success)] hover:bg-[var(--exits-success-soft)]",
+      },
+      {
+        intent: "success",
+        appearance: "gradient",
+        class:
+          "border border-border bg-gradient-to-b from-[var(--exits-success-soft)] to-[color-mix(in_srgb,var(--exits-success)_18%,var(--exits-success-soft))] text-[var(--exits-success)] hover:brightness-100",
+      },
+      {
+        intent: "info",
+        appearance: "solid",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
+      },
+      {
+        intent: "info",
+        appearance: "elevated",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
+      },
+      {
+        intent: "info",
+        appearance: "outline",
+        class:
+          "border border-[var(--exits-info)] bg-surface text-[var(--exits-info)] hover:bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))]",
+      },
+      {
+        intent: "info",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-info)] hover:bg-[color-mix(in_srgb,var(--exits-info)_10%,transparent)]",
+      },
+      {
+        intent: "info",
+        appearance: "gradient",
+        class:
+          "border border-border bg-[color-mix(in_srgb,var(--exits-info)_10%,var(--exits-surface))] text-[var(--exits-info)] hover:border-[var(--exits-info)]",
+      },
+      {
+        intent: "warning",
+        appearance: "solid",
+        class:
+          "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
+      },
+      {
+        intent: "warning",
+        appearance: "elevated",
+        class:
+          "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
+      },
+      {
+        intent: "warning",
+        appearance: "outline",
+        class:
+          "border border-[var(--exits-warning)] bg-surface text-[var(--exits-warning)] hover:bg-[var(--exits-warning-soft)]",
+      },
+      {
+        intent: "warning",
+        appearance: "ghost",
+        class:
+          "bg-transparent text-[var(--exits-warning)] hover:bg-[var(--exits-warning-soft)]",
+      },
+      {
+        intent: "warning",
+        appearance: "gradient",
+        class:
+          "border border-border bg-[var(--exits-warning-soft)] text-[var(--exits-warning)] hover:border-[var(--exits-warning)]",
+      },
+      {
+        intent: "danger",
+        appearance: "solid",
+        dangerFill: "soft",
+        class:
+          "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
+      },
+      {
+        intent: "danger",
+        appearance: "elevated",
+        dangerFill: "soft",
+        class:
+          "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
+      },
+      {
+        intent: "danger",
+        appearance: "outline",
+        class:
+          "border border-destructive/50 bg-surface text-destructive hover:bg-[var(--exits-danger-soft)]",
+      },
+      {
+        intent: "danger",
+        appearance: "ghost",
+        class: "bg-transparent text-destructive hover:bg-[var(--exits-danger-soft)]",
+      },
+      {
+        intent: "danger",
+        appearance: "gradient",
+        dangerFill: "soft",
+        class:
+          "border border-destructive/35 bg-[var(--exits-danger-soft)] text-destructive hover:border-destructive/50",
+      },
+      {
+        intent: "danger",
+        appearance: "solid",
+        dangerFill: "strong",
+        class: "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
+      },
+      {
+        intent: "danger",
+        appearance: "elevated",
+        dangerFill: "strong",
+        class: "bg-[var(--exits-danger)] text-white hover:brightness-95 focus-visible:ring-[var(--exits-danger)]",
+      },
+      {
+        intent: "danger",
+        appearance: "gradient",
+        dangerFill: "strong",
+        class:
+          "bg-gradient-to-b from-[var(--exits-danger)] to-[color-mix(in_srgb,var(--exits-danger)_78%,#000)] text-white hover:brightness-100 focus-visible:ring-[var(--exits-danger)]",
       },
     ],
     defaultVariants: {
-      variant: "default",
+      intent: "primary",
+      appearance: "solid",
       size: "default",
       shape: "auto",
-      treatment: "flat",
+      dangerFill: "soft",
     },
   },
 );
 
+export type ResolvedButtonVisual = {
+  intent: ButtonIntentTone;
+  appearance: ButtonAppearance;
+  dangerFill: "soft" | "strong";
+};
+
 /**
- * Contextual icon micro-motion for Lucide children inside Button.
- * Use only when movement communicates intent — not on every icon.
+ * Map legacy variant/treatment → canonical intent + appearance.
+ * New `intent` / `appearance` win when provided.
  */
+export function resolveButtonVisual(options: {
+  intent?: ButtonIntentTone | null;
+  appearance?: ButtonAppearance | null;
+  /** @deprecated */
+  variant?: ButtonLegacyVariant | null;
+  /** @deprecated Prefer appearance elevated|gradient|solid */
+  treatment?: ButtonLegacyTreatment | null;
+}): ResolvedButtonVisual {
+  const hasNew = options.intent != null || options.appearance != null;
+
+  if (hasNew) {
+    const intent = options.intent ?? "primary";
+    let appearance = options.appearance ?? "solid";
+    if (options.appearance == null && options.treatment === "elevated") {
+      appearance = "elevated";
+    } else if (options.appearance == null && options.treatment === "gradient") {
+      appearance = "gradient";
+    }
+    return { intent, appearance, dangerFill: "soft" };
+  }
+
+  const variant = options.variant ?? "default";
+  const treatment = options.treatment ?? "flat";
+
+  let intent: ButtonIntentTone = "primary";
+  let appearance: ButtonAppearance = "solid";
+  let dangerFill: "soft" | "strong" = "soft";
+
+  switch (variant) {
+    case "default":
+      intent = "primary";
+      appearance = "solid";
+      break;
+    case "secondary":
+      intent = "neutral";
+      appearance = "solid";
+      break;
+    case "outline":
+      intent = "neutral";
+      appearance = "outline";
+      break;
+    case "ghost":
+      intent = "neutral";
+      appearance = "ghost";
+      break;
+    case "success":
+      intent = "success";
+      appearance = "solid";
+      break;
+    case "info":
+      intent = "info";
+      appearance = "solid";
+      break;
+    case "warning":
+      intent = "warning";
+      appearance = "solid";
+      break;
+    case "destructive":
+      intent = "danger";
+      appearance = "solid";
+      dangerFill = "soft";
+      break;
+    case "dangerStrong":
+      intent = "danger";
+      appearance = "solid";
+      dangerFill = "strong";
+      break;
+    default:
+      intent = "primary";
+      appearance = "solid";
+  }
+
+  if (treatment === "elevated") {
+    appearance = "elevated";
+  } else if (treatment === "gradient") {
+    if (variant === "default" || variant === "dangerStrong" || variant === "success") {
+      appearance = "gradient";
+    }
+  }
+
+  return { intent, appearance, dangerFill };
+}
+
+export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
+  Omit<VariantProps<typeof buttonVariantsCva>, "intent" | "appearance" | "dangerFill"> & {
+    asChild?: boolean;
+    /** Semantic tone (preferred). */
+    intent?: ButtonIntentTone;
+    /** Visual treatment (preferred): solid | outline | ghost | elevated | gradient */
+    appearance?: ButtonAppearance;
+    /**
+     * @deprecated Prefer `intent` + `appearance`.
+     * Legacy: default→primary+solid, secondary→neutral+solid (muted),
+     * outline/ghost→neutral+…, destructive→danger+solid(soft), dangerStrong→danger+solid(strong).
+     */
+    variant?: ButtonLegacyVariant;
+    /**
+     * @deprecated Prefer `appearance` elevated | gradient | solid.
+     */
+    treatment?: ButtonLegacyTreatment;
+  };
+
 export const buttonIconMotion = {
   continue:
     "transition-transform duration-[var(--exits-motion-fast)] ease-[var(--exits-ease-standard)] group-hover/button:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover/button:translate-x-0",
@@ -119,24 +438,78 @@ export const buttonIconMotion = {
 
 export type ButtonIconMotionKind = keyof typeof buttonIconMotion;
 
-export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-  };
+/** Build className from canonical or legacy props (used by tests and Button). */
+export function resolveButtonClassName(
+  options: {
+    intent?: ButtonIntentTone | null;
+    appearance?: ButtonAppearance | null;
+    variant?: ButtonLegacyVariant | null;
+    treatment?: ButtonLegacyTreatment | null;
+    size?: VariantProps<typeof buttonVariantsCva>["size"];
+    shape?: VariantProps<typeof buttonVariantsCva>["shape"];
+    className?: string;
+  } = {},
+): string {
+  const visual = resolveButtonVisual(options);
+  return cn(
+    buttonVariantsCva({
+      intent: visual.intent,
+      appearance: visual.appearance,
+      dangerFill: visual.dangerFill,
+      size: options.size,
+      shape: options.shape,
+    }),
+    options.className,
+  );
+}
+
+/**
+ * Class builder accepting canonical intent/appearance **or** legacy variant/treatment.
+ * Keeps existing `buttonVariants({ variant, treatment, shape })` call sites working.
+ */
+export function buttonVariants(
+  options: {
+    intent?: ButtonIntentTone | null;
+    appearance?: ButtonAppearance | null;
+    variant?: ButtonLegacyVariant | null;
+    treatment?: ButtonLegacyTreatment | null;
+    size?: VariantProps<typeof buttonVariantsCva>["size"];
+    shape?: VariantProps<typeof buttonVariantsCva>["shape"];
+    className?: string;
+  } = {},
+): string {
+  return resolveButtonClassName(options);
+}
+
+/** @deprecated Use buttonVariants / resolveButtonClassName. */
+export const buttonVariantsCompat = buttonVariants;
 
 export function Button({
   className,
+  intent,
+  appearance,
   variant,
+  treatment,
   size,
   shape,
-  treatment,
   asChild = false,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
+  const visual = resolveButtonVisual({ intent, appearance, variant, treatment });
   return (
     <Comp
-      className={cn(buttonVariants({ variant, size, shape, treatment }), className)}
+      className={resolveButtonClassName({
+        intent,
+        appearance,
+        variant,
+        treatment,
+        size,
+        shape,
+        className,
+      })}
+      data-intent={visual.intent}
+      data-appearance={visual.appearance}
       {...props}
     />
   );

@@ -35,27 +35,37 @@ Changing a canonical component must update all consumers. Do **not** restyle via
 
 ---
 
+## Button model (intent ≠ appearance)
+
+Intent/Tone = semantic meaning. Appearance/Treatment = how it is drawn. They compose.
+
+| Intent | Appearance |
+|--------|------------|
+| Primary · Neutral · Success · Info · Warning · Danger | Solid · Outline · Ghost · Elevated · Gradient |
+
+Elevated / Outline / Ghost / Gradient are **not** intents. Historical “Muted” maps to **Neutral + Solid** (`variant="secondary"` alias). Prefer `intent` + `appearance` (or `getActionButtonStyle`). See [exits-button-standard.md](./exits-button-standard.md).
+
 ## Action semantics
 
-Source: `action-semantics.ts` / `action-icons.ts`.
+Source: `action-semantics.ts` / `action-icons.ts`. Use `getActionButtonStyle(action)`.
 
-| Action | Icon | Default intent | Notes |
-|--------|------|----------------|-------|
-| Save | `Save` | Primary | |
-| Create / New | `Plus` | Primary when sole main action | Secondary → Outline |
-| Add | `Plus` | Primary if main; Outline if secondary | |
-| Edit | `Pencil` | Outline | |
-| Cancel | none | Ghost (Outline on some surfaces) | |
-| Delete | `Trash2` | Danger | |
-| Deactivate | `CircleOff` | Warning | Danger only if truly destructive |
-| Activate | `CircleCheck` | Success | |
-| View / Preview | `Eye` | Outline | |
-| Print | `Printer` | Outline | |
-| Download / Export | `Download` | Outline | |
-| Retry | `RotateCw` | Outline | |
-| Search | `Search` | Outline | |
-| Filter | `SlidersHorizontal` | Outline | |
-| Close | `X` | Ghost | Icon-only utility |
+| Action | Icon | Intent | Appearance | Notes |
+|--------|------|--------|------------|-------|
+| Save | `Save` | Primary | Solid | |
+| Create / New | `Plus` | Primary when main | Solid | Secondary → Neutral + Outline |
+| Add | `Plus` | Primary if main | Solid | Secondary → Neutral + Outline |
+| Edit | `Pencil` | Neutral | Outline | |
+| Cancel | none | Neutral | Ghost | Outline on some surfaces |
+| Delete | `Trash2` | Danger | Outline | Solid / strong inside destructive confirm |
+| Deactivate | `CircleOff` | Warning | Outline | Danger only if truly destructive |
+| Activate | `CircleCheck` | Success | Outline | Solid when main confirmation |
+| View / Preview | `Eye` | Neutral | Outline | |
+| Print | `Printer` | Neutral | Outline | |
+| Download / Export | `Download` | Neutral | Outline | |
+| Retry | `RotateCw` | Neutral | Outline | |
+| Search | `Search` | Neutral | Outline | |
+| Filter | `SlidersHorizontal` | Neutral | Outline | |
+| Close | `X` | Neutral | Ghost | Icon-only utility |
 
 ### Primary hierarchy rule
 
@@ -65,8 +75,8 @@ Primary is determined by **hierarchy in the current action group**, not by the E
 
 Good:
 
-- `[ Save ]` Primary + `[ Cancel ]` Ghost
-- `[ Create customer ]` Primary + `[ Add existing ]` Outline
+- `[ Save ]` Primary+Solid + `[ Cancel ]` Neutral+Ghost
+- `[ Create customer ]` Primary+Solid + `[ Add existing ]` Neutral+Outline
 
 Bad:
 
@@ -86,9 +96,11 @@ Respect document `dir` (RTL) — flex `justify-end` / logical gaps handle mirror
 
 Icon-only controls are allowed in dense rows. They **must**:
 
-- use canonical action icons/intents (`TableActionButton`)
+- use canonical action icons + intent (`TableActionButton`)
+- default row chrome appearance: Ghost (intent still from action semantics, e.g. Edit=Neutral, Delete=Danger)
 - provide `aria-label` + tooltip
 - keep consistent size / hover / focus (shared `Button` `size="icon"`)
+- do not invent separate icon-only color semantics
 
 ---
 
@@ -142,7 +154,7 @@ Branch access remains an on-page section today (FormDrawer migration deferred �
 
 ## Semantic colors
 
-Use tokens only: `--exits-primary`, `--exits-success`, `--exits-info`, `--exits-warning`, `--exits-danger`, muted/outline/ghost neutrals.
+Use tokens only: `--exits-primary`, `--exits-success`, `--exits-info`, `--exits-warning`, `--exits-danger`, and Neutral appearance surfaces (solid / outline / ghost).
 
 Do not hardcode `green-500` / `red-600` / `amber-500` in feature pages when semantic tokens exist.
 

@@ -168,29 +168,35 @@ export function UiStandardsSimpleCatalogV2() {
         status="LOCKED"
         testId="ui-standards-simple-v2-buttons"
       >
-        <SimpleV2Group title="Default / intents">
-          <SimpleV2Sample label="Primary" standard="Button" command="PRIMARY + SOFT" testId="simple-v2-btn-primary">
-            <Button type="button" shape="soft">Save</Button>
+        <SimpleV2Group title="Intent / Tone">
+          <SimpleV2Sample label="Primary" standard="Button" command="PRIMARY + SOLID" testId="simple-v2-btn-primary">
+            <Button type="button" intent="primary" appearance="solid" shape="soft">Save</Button>
           </SimpleV2Sample>
-          <SimpleV2Sample label="Success" standard="Button" command="SUCCESS + SOFT" testId="simple-v2-btn-success">
-            <Button type="button" variant="success" shape="soft">Approve</Button>
+          <SimpleV2Sample label="Neutral" standard="Button" command="NEUTRAL + SOLID" testId="simple-v2-btn-neutral">
+            <Button type="button" intent="neutral" appearance="solid" shape="soft">Reset</Button>
           </SimpleV2Sample>
-          <SimpleV2Sample label="Outline" standard="Button" command="OUTLINE + SOFT" testId="simple-v2-btn-outline">
-            <Button type="button" variant="outline" shape="soft">Outline</Button>
+          <SimpleV2Sample label="Success" standard="Button" command="SUCCESS + SOLID" testId="simple-v2-btn-success">
+            <Button type="button" intent="success" appearance="solid" shape="soft">Approve</Button>
           </SimpleV2Sample>
-          <SimpleV2Sample label="Ghost" standard="Button" command="GHOST + SOFT" testId="simple-v2-btn-ghost">
-            <Button type="button" variant="ghost" shape="soft">Ghost</Button>
-          </SimpleV2Sample>
-          <SimpleV2Sample label="Danger" standard="Button" command="DANGER + SOFT" testId="simple-v2-btn-danger">
-            <Button type="button" variant="destructive" shape="soft">Delete</Button>
+          <SimpleV2Sample label="Danger" standard="Button" command="DANGER + SOLID" testId="simple-v2-btn-danger">
+            <Button type="button" intent="danger" appearance="solid" shape="soft">Delete</Button>
           </SimpleV2Sample>
         </SimpleV2Group>
-        <SimpleV2Group title="Treatments">
-          <SimpleV2Sample label="Elevated" standard="Button" command="PRIMARY + SOFT + ELEVATED" testId="simple-v2-btn-elevated">
-            <Button type="button" shape="soft" treatment="elevated">Elevated</Button>
+        <SimpleV2Group title="Appearance / Treatment">
+          <SimpleV2Sample label="Solid" standard="Button" command="PRIMARY + SOLID" testId="simple-v2-btn-solid">
+            <Button type="button" intent="primary" appearance="solid" shape="soft">Solid</Button>
           </SimpleV2Sample>
-          <SimpleV2Sample label="Gradient" standard="Button" command="PRIMARY + SOFT + GRADIENT" testId="simple-v2-btn-gradient">
-            <Button type="button" shape="soft" treatment="gradient">Gradient</Button>
+          <SimpleV2Sample label="Outline" standard="Button" command="PRIMARY + OUTLINE" testId="simple-v2-btn-outline">
+            <Button type="button" intent="primary" appearance="outline" shape="soft">Outline</Button>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Ghost" standard="Button" command="PRIMARY + GHOST" testId="simple-v2-btn-ghost">
+            <Button type="button" intent="primary" appearance="ghost" shape="soft">Ghost</Button>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Elevated" standard="Button" command="PRIMARY + ELEVATED" testId="simple-v2-btn-elevated">
+            <Button type="button" intent="primary" appearance="elevated" shape="soft">Elevated</Button>
+          </SimpleV2Sample>
+          <SimpleV2Sample label="Gradient" standard="Button" command="PRIMARY + GRADIENT" testId="simple-v2-btn-gradient">
+            <Button type="button" intent="primary" appearance="gradient" shape="soft">Gradient</Button>
           </SimpleV2Sample>
         </SimpleV2Group>
         <SimpleV2Group title="Shapes">

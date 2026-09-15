@@ -49,6 +49,7 @@ describe("ui-standard-catalog filters", () => {
     expect(rows.map((r) => r.id)).toEqual([
       "exits-select",
       "exits-multi-select",
+      "exits-pill-select",
       "creatable-combobox",
       "settings-select",
     ]);

@@ -207,7 +207,7 @@ describe("UI Standards every-sample copy coverage", () => {
       </MemoryRouter>,
     );
     const counts = assertEveryImplementableSampleHasCopy("ui-standards-simple-catalog");
-    expect(screen.getByTestId("simple-btn-treatment-gradient")).toHaveAttribute("data-has-copy", "true");
+    expect(screen.getByTestId("simple-btn-appearance-gradient")).toHaveAttribute("data-has-copy", "true");
     expect(screen.getByTestId("simple-action-icons")).toHaveAttribute("data-has-copy", "true");
     expect(
       within(screen.getByTestId("simple-action-icons")).getByTestId("ui-standards-copy-command"),
