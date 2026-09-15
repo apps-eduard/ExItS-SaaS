@@ -153,7 +153,7 @@ Do **not** create component explosion (`SquareTagChip`, `PillStatusChip`, …).
 Use:
 
 ```
-family/component + tone + shape
+family/component + tone + appearance + shape
 ```
 
 Example:
@@ -162,9 +162,13 @@ Example:
 <TagChip tone="info" shape="square">
   B2B
 </TagChip>
+
+<StatusChip tone="success" appearance="solid">
+  Active
+</StatusChip>
 ```
 
-Existing `StatusChip` without `shape` remains **pill** (API-compatible; do not mass-add `shape="pill"`).
+Existing `StatusChip` without `shape` / `appearance` remains **pill** + **soft** (API-compatible; do not mass-add defaults).
 
 ---
 
@@ -178,6 +182,28 @@ Existing `StatusChip` without `shape` remains **pill** (API-compatible; do not m
 | **SUCCESS** | Positive / completed / active | `--exits-success` |
 | **WARNING** | Pending / caution / attention | `--exits-warning` |
 | **DANGER** | Failure / overdue / critical | `--exits-danger` |
+
+---
+
+## StatusChip appearance (independent from tone + shape)
+
+| Appearance | Role |
+|------------|------|
+| **SOFT** (default) | Tinted fill + quiet border — default status treatment |
+| **OUTLINE** | Transparent fill + stronger border — quieter density |
+| **SOLID** | Filled tone surface + contrast label — high emphasis |
+
+Do **not** confuse appearance **SOFT** with shape **SOFT** (radius). Appearance is fill treatment; shape is corner radius.
+
+```tsx
+{/* Soft fill, pill radius (defaults) */}
+<StatusChip tone="warning">Pending</StatusChip>
+
+{/* Outline fill, soft radius */}
+<StatusChip tone="warning" appearance="outline" shape="soft">
+  Pending
+</StatusChip>
+```
 
 ### PRIMARY color rule
 

@@ -7,7 +7,6 @@ import { FilterChip } from "@/components/exits/FilterChip";
 import { RemovableChip } from "@/components/exits/RemovableChip";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { TagChip } from "@/components/exits/TagChip";
-import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
 
 describe("ExItS chip visual pilot primitives", () => {
   it("keeps StatusChip API compatible including primary tone", () => {
@@ -17,9 +16,42 @@ describe("ExItS chip visual pilot primitives", () => {
       expect(el.className).toContain("exits-status-chip");
       expect(el.className).toContain(`exits-status-chip--${tone}`);
       expect(el.getAttribute("data-shape")).toBe("pill");
+      expect(el.getAttribute("data-appearance")).toBe("soft");
       expect(el.tagName).toBe("SPAN");
       unmount();
     }
+  });
+
+  it("supports soft outline and solid appearance independent from shape", () => {
+    const { rerender } = render(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-appearance")).toBe("soft");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--appearance-");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "outline",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--appearance-outline");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "solid",
+        shape: "soft",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--appearance-solid");
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-soft");
   });
 
   it("renders pill soft and square shapes without forcing family", () => {
@@ -117,15 +149,5 @@ describe("ExItS chip visual pilot primitives", () => {
 
     render(createElement(StatusChip, { tone: "success", children: "Active" }));
     expect(screen.getByText("Active").getAttribute("data-shape")).toBe("pill");
-  });
-
-  it("UI Standards chip disclosure defaults match pilot open/closed map", () => {
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.status"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.filter"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.tags"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.shapes"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.compact-tags"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.status-icons"]).toBe(false);
-    expect(UI_STANDARDS_DEFAULT_OPEN["chips.cheatsheet"]).toBe(false);
   });
 });

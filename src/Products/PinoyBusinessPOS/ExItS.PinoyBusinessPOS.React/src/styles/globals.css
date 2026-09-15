@@ -2852,43 +2852,117 @@ html:has(.admin-shell) #root {
   height: 100%;
 }
 
+/* Soft appearance (default) — tinted fill + quiet border. */
 .exits-status-chip--success {
   color: var(--exits-success);
   border-color: color-mix(in srgb, var(--exits-success) 28%, transparent);
-  background: color-mix(in srgb, var(--exits-success) 5%, transparent);
+  background: var(--exits-success-soft);
 }
 
 .exits-status-chip--info {
   color: var(--exits-info);
   border-color: color-mix(in srgb, var(--exits-info) 28%, transparent);
-  background: color-mix(in srgb, var(--exits-info) 5%, transparent);
+  background: color-mix(in srgb, var(--exits-info) 12%, var(--exits-surface));
 }
 
 .exits-status-chip--warning {
   color: var(--exits-warning);
   border-color: color-mix(in srgb, var(--exits-warning) 28%, transparent);
-  background: color-mix(in srgb, var(--exits-warning) 5%, transparent);
+  background: var(--exits-warning-soft);
 }
 
 .exits-status-chip--danger {
   color: var(--exits-danger);
   border-color: color-mix(in srgb, var(--exits-danger) 28%, transparent);
-  background: color-mix(in srgb, var(--exits-danger) 5%, transparent);
+  background: var(--exits-danger-soft);
 }
 
 .exits-status-chip--neutral {
   color: var(--exits-text-muted);
   border-color: color-mix(in srgb, var(--exits-border-strong) 55%, transparent);
-  background: color-mix(in srgb, var(--exits-surface-muted) 35%, transparent);
+  background: color-mix(in srgb, var(--exits-surface-muted) 70%, var(--exits-surface));
 }
 
 .exits-status-chip--primary {
   color: var(--exits-primary);
   border-color: color-mix(in srgb, var(--exits-primary) 28%, transparent);
-  background: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+  background: var(--exits-primary-soft);
 }
 
-/* Shape candidates — independent from tone (default remains pill via base rule). */
+/* Outline — border + label only; transparent fill. */
+.exits-status-chip--appearance-outline {
+  background: transparent;
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--success {
+  border-color: color-mix(in srgb, var(--exits-success) 55%, transparent);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--info {
+  border-color: color-mix(in srgb, var(--exits-info) 55%, transparent);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--warning {
+  border-color: color-mix(in srgb, var(--exits-warning) 55%, transparent);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--danger {
+  border-color: color-mix(in srgb, var(--exits-danger) 55%, transparent);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--neutral {
+  border-color: color-mix(in srgb, var(--exits-border-strong) 75%, transparent);
+}
+
+.exits-status-chip--appearance-outline.exits-status-chip--primary {
+  border-color: color-mix(in srgb, var(--exits-primary) 55%, transparent);
+}
+
+/* Solid — filled tone surface; contrast ink (light themes use white, dark themes use dark ink). */
+.exits-status-chip--appearance-solid.exits-status-chip--success {
+  color: #ffffff;
+  border-color: var(--exits-success);
+  background: var(--exits-success);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--info {
+  color: #ffffff;
+  border-color: var(--exits-info);
+  background: var(--exits-info);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--warning {
+  color: #ffffff;
+  border-color: var(--exits-warning);
+  background: var(--exits-warning);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--danger {
+  color: #ffffff;
+  border-color: var(--exits-danger);
+  background: var(--exits-danger);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--neutral {
+  color: var(--exits-text);
+  border-color: var(--exits-border-strong);
+  background: var(--exits-surface-muted);
+}
+
+.exits-status-chip--appearance-solid.exits-status-chip--primary {
+  color: var(--exits-primary-foreground);
+  border-color: var(--exits-primary);
+  background: var(--exits-primary);
+}
+
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--success,
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--info,
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--warning,
+[data-theme="dark"] .exits-status-chip--appearance-solid.exits-status-chip--danger {
+  color: var(--exits-bg);
+}
+
+/* Shape candidates — independent from tone / appearance (default remains pill via base rule). */
 .exits-status-chip--shape-soft {
   border-radius: var(--exits-radius-sm);
 }
@@ -20082,21 +20156,22 @@ a.exits-chip--primary:hover {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  /* Block padding only here — inline start gutter is desktop-only (sidebar breathing room). */
+  /* Block padding only here — equal inline gutters are desktop-only (sidebar breathing room). */
   padding-block: var(--exits-page-gutter-block);
 }
 
 /*
- * Desktop content gutter: internal padding after the sidenav divider.
+ * Desktop content gutter: equal internal padding after the sidenav divider.
  * Not a shell column gap — sidebar and content region still touch.
+ * Start + end must match so page surfaces are not flush to the scrollbar.
  */
 @media (min-width: 1024px) {
   .operations-shell--viewport-lock:not(.operations-shell--sell-floor) .operations-shell__content {
-    padding-inline-start: var(--exits-page-gutter-inline);
+    padding-inline: var(--exits-page-gutter-inline);
   }
 
   .admin-shell__content {
-    padding-inline-start: var(--exits-page-gutter-inline);
+    padding-inline: var(--exits-page-gutter-inline);
     padding-block: var(--exits-page-gutter-block);
     box-sizing: border-box;
   }

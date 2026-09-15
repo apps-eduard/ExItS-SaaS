@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   createDefaultUiStandardsDisclosure,
   readUiStandardsDisclosure,
-  setTabDisclosure,
   writeUiStandardsDisclosure,
   type UiStandardsDisclosureState,
-  type UiStandardsTab,
 } from "@/features/ui-standards/ui-standards-disclosure";
 
 export function useUiStandardsDisclosure() {
@@ -36,17 +34,5 @@ export function useUiStandardsDisclosure() {
     });
   }, []);
 
-  const expandAll = useCallback((tab: UiStandardsTab) => {
-    setOpenMap((prev) => setTabDisclosure(prev, tab, true));
-  }, []);
-
-  const collapseAll = useCallback((tab: UiStandardsTab) => {
-    setOpenMap((prev) => setTabDisclosure(prev, tab, false));
-  }, []);
-
-  const resetLayout = useCallback(() => {
-    setOpenMap(createDefaultUiStandardsDisclosure());
-  }, []);
-
-  return { isOpen, setOpen, expandAll, collapseAll, resetLayout, openMap };
+  return { isOpen, setOpen, openMap };
 }

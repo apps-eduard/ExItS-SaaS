@@ -43,15 +43,15 @@ describe("POS-GLOBAL-CONTENT-GUTTER-AND-PAGE-HEADER-STANDARD-18", () => {
     expect(globalsCss).toMatch(/\[data-density="compact"\][\s\S]*?--exits-page-gutter-inline:\s*1rem/);
     expect(globalsCss).toMatch(/\[data-density="comfort"\][\s\S]*?--exits-page-gutter-inline:\s*1\.5rem/);
     expect(globalsCss).toContain("--exits-page-gutter-block");
-    expect(globalsCss).toContain("padding-inline-start: var(--exits-page-gutter-inline)");
+    expect(globalsCss).toContain("padding-inline: var(--exits-page-gutter-inline)");
   });
 
-  it("applies desktop content gutter without shell start gap (no seam)", () => {
+  it("applies equal desktop content gutters without shell start gap (no seam)", () => {
     expect(globalsCss).toMatch(
-      /\.operations-shell--viewport-lock:not\(\.operations-shell--sell-floor\) \.operations-shell__content[\s\S]*?padding-inline-start:\s*var\(--exits-page-gutter-inline\)/,
+      /\.operations-shell--viewport-lock:not\(\.operations-shell--sell-floor\) \.operations-shell__content[\s\S]*?padding-inline:\s*var\(--exits-page-gutter-inline\)/,
     );
     expect(globalsCss).toMatch(
-      /\.admin-shell__content[\s\S]*?padding-inline-start:\s*var\(--exits-page-gutter-inline\)/,
+      /\.admin-shell__content[\s\S]*?padding-inline:\s*var\(--exits-page-gutter-inline\)/,
     );
     expect(globalsCss).not.toMatch(/operations-shell__column[\s\S]{0,200}padding-inline-start:\s*var\(--exits-page-gutter/);
   });

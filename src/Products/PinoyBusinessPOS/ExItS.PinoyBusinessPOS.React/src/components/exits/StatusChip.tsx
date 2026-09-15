@@ -13,10 +13,14 @@ export type StatusChipTone =
 
 export type StatusChipShape = ChipShape;
 
+/** Fill treatment — independent from tone and shape. Soft is the locked default. */
+export type StatusChipAppearance = "soft" | "outline" | "solid";
+
 export function StatusChip({
   children,
   tone = "info",
   shape = "pill",
+  appearance = "soft",
   className,
   icon,
 }: {
@@ -24,6 +28,8 @@ export function StatusChip({
   tone?: StatusChipTone;
   /** Visual shape — independent from tone. Default remains pill for compatibility. */
   shape?: StatusChipShape;
+  /** Soft (default) / Outline / Solid — independent from tone and shape. */
+  appearance?: StatusChipAppearance;
   className?: string;
   /** Optional leading icon — scales via --exits-status-chip-icon-size / square icon token. */
   icon?: ReactNode;
@@ -33,10 +39,12 @@ export function StatusChip({
       className={cn(
         "exits-status-chip",
         `exits-status-chip--${tone}`,
+        appearance !== "soft" && `exits-status-chip--appearance-${appearance}`,
         shape !== "pill" && `exits-status-chip--shape-${shape}`,
         className,
       )}
       data-tone={tone}
+      data-appearance={appearance}
       data-shape={shape}
     >
       {icon ? (

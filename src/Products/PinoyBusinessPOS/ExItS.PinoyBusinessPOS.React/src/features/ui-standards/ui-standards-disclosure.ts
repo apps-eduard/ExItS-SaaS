@@ -1,6 +1,9 @@
 export const UI_STANDARDS_SECTIONS_STORAGE_KEY = "exits.uiStandards.sections.v1";
 
-/** Recommended first-load open/closed map (UI Standards). */
+/**
+ * Section open/closed defaults for remaining UI Standards disclosure
+ * (locked ExitsTable reference panel under Data filter).
+ */
 export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tables.demo": true,
   "tables.alignment": false,
@@ -11,90 +14,12 @@ export const UI_STANDARDS_DEFAULT_OPEN: Readonly<Record<string, boolean>> = {
   "tables.sticky-actions": false,
   "tables.mobile-edit": false,
   "tables.cheatsheet": false,
-
-  "buttons.shapes": true,
-  "buttons.treatments": true,
-  "buttons.samples": true,
-  "buttons.icon-only": false,
-  "buttons.motion": false,
-  "buttons.states": false,
-  "buttons.cheatsheet": false,
-
-  "buttons.samples.primary": true,
-  "buttons.samples.success": true,
-  "buttons.samples.muted": true,
-  "buttons.samples.outline": false,
-  "buttons.samples.ghost": false,
-  "buttons.samples.info": false,
-  "buttons.samples.warning": false,
-  "buttons.samples.danger": false,
-  "buttons.samples.danger-strong": false,
-
-  "chips.status": true,
-  "chips.control-shape": true,
-  "chips.filter": true,
-  "chips.tags": true,
-  "chips.shapes": true,
-  "chips.compact-tags": true,
-  "chips.status-icons": false,
-  "chips.filter-modes": false,
-  "chips.removable": false,
-  "chips.count": false,
-  "chips.count-badge": false,
-  "chips.real-world": false,
-  "chips.cheatsheet": false,
-
-  "tabs.variants": true,
-  "tabs.counts": true,
-  "tabs.real-world": true,
-  "tabs.icons": false,
-  "tabs.icon-options": true,
-  "tabs.pill-bar": true,
-  "tabs.states": false,
-  "tabs.mobile": false,
-  "tabs.cheatsheet": false,
-
-  "cards.treatments": true,
-  "cards.kpi": true,
-  "cards.entity": true,
-  "cards.selectable": true,
-  "cards.real-world": true,
-  "cards.basic": false,
-  "cards.action": false,
-  "cards.product": false,
-  "cards.status": false,
-  "cards.compact": false,
-  "cards.states": false,
-  "cards.motion": true,
-  "cards.featured-effects": true,
-  "cards.cheatsheet": false,
-
-  "module-subnav.comparison": true,
-  "module-subnav.icons": true,
-  "module-subnav.counts": true,
-  "module-subnav.pill-bar": true,
-  "module-subnav.real-world": true,
-  "module-subnav.cheatsheet": false,
-
-  "action-chips.overview": true,
-  "action-chips.variants": true,
-  "action-chips.shapes": true,
-  "action-chips.content": true,
-  "action-chips.groups": true,
-  "action-chips.real-world": true,
-  "action-chips.cheatsheet": false,
 };
 
 export type UiStandardsDisclosureState = Record<string, boolean>;
 
-export type UiStandardsTab =
-  | "tables"
-  | "buttons"
-  | "chips"
-  | "tabs"
-  | "cards"
-  | "module-subnav"
-  | "action-chips";
+/** Only Tables remains as a disclosable detailed panel. */
+export type UiStandardsTab = "tables";
 
 export function createDefaultUiStandardsDisclosure(): UiStandardsDisclosureState {
   return { ...UI_STANDARDS_DEFAULT_OPEN };

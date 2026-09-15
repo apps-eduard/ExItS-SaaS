@@ -4,6 +4,7 @@ export type UiStandardFilterCategory =
   | "feedback"
   | "overlays"
   | "forms"
+  | "cards"
   | "selects"
   | "navigation"
   | "data"
@@ -20,16 +21,8 @@ export type UiStandardLiveCardId =
   | "selects"
   | "nav"
   | "table"
-  | "states";
-
-export type UiStandardsDetailedTab =
-  | "tables"
-  | "buttons"
-  | "chips"
-  | "tabs"
   | "cards"
-  | "module-subnav"
-  | "action-chips";
+  | "states";
 
 export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   id: UiStandardFilterCategory;
@@ -40,6 +33,7 @@ export const UI_STANDARD_FILTER_OPTIONS: ReadonlyArray<{
   { id: "feedback", label: "Feedback" },
   { id: "overlays", label: "Overlays" },
   { id: "forms", label: "Forms" },
+  { id: "cards", label: "Cards" },
   { id: "selects", label: "Selects" },
   { id: "navigation", label: "Navigation" },
   { id: "data", label: "Data" },
@@ -70,17 +64,22 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
       "deactivate",
       "delete",
       "primary",
+      "neutral",
       "danger",
-      "outline",
-      "ghost",
-      "muted",
       "success",
       "warning",
       "info",
+      "solid",
+      "outline",
+      "ghost",
+      "elevated",
+      "gradient",
       "loading",
       "icon",
       "table action",
       "hierarchy",
+      "intent",
+      "appearance",
     ],
   },
   {
@@ -186,84 +185,33 @@ export const UI_STANDARD_LIVE_CARDS: ReadonlyArray<UiStandardLiveCardDef> = [
     keywords: ["table", "exitstable", "customer", "balance", "actions", "edit", "more"],
   },
   {
+    id: "cards",
+    title: "Cards",
+    category: "cards",
+    keywords: [
+      "card",
+      "basic",
+      "summary",
+      "invoice",
+      "kpi",
+      "action",
+      "entity",
+      "product",
+      "selectable",
+      "status",
+      "compact",
+      "featured",
+      "treatment",
+      "bordered",
+      "elevated",
+      "purchase summary",
+    ],
+  },
+  {
     id: "states",
     title: "States",
     category: "states",
     keywords: ["empty", "loading", "error", "retry", "emptystate", "loadingstate", "errorstate"],
-  },
-];
-
-export type UiStandardDetailedPanelDef = {
-  tab: UiStandardsDetailedTab;
-  title: string;
-  category: Exclude<UiStandardFilterCategory, "all">;
-  keywords: string[];
-};
-
-/** Existing classic catalog panels — reused, not rebuilt. */
-export const UI_STANDARD_DETAILED_PANELS: ReadonlyArray<UiStandardDetailedPanelDef> = [
-  {
-    tab: "tables",
-    title: "Tables",
-    category: "data",
-    keywords: [
-      "table",
-      "exitstable",
-      "full table",
-      "actions on",
-      "inline edit",
-      "field menu",
-      "apple",
-      "sku",
-      "pagination",
-      "alignment",
-    ],
-  },
-  {
-    tab: "buttons",
-    title: "Buttons",
-    category: "actions",
-    keywords: [
-      "button",
-      "primary",
-      "danger",
-      "save",
-      "cancel",
-      "circlex",
-      "shape",
-      "treatment",
-      "icon only",
-    ],
-  },
-  {
-    tab: "action-chips",
-    title: "Action chips",
-    category: "actions",
-    keywords: ["action chip", "actionchip", "chip bar"],
-  },
-  {
-    tab: "chips",
-    title: "Chips",
-    category: "feedback",
-    keywords: ["chip", "status", "filter chip", "tag", "count badge"],
-  },
-  {
-    tab: "tabs",
-    title: "Tabs",
-    category: "navigation",
-    keywords: ["tabs", "underline", "soft", "pill", "segmented", "pill bar"],
-  },
-  {
-    tab: "module-subnav",
-    title: "Module subnav",
-    category: "navigation",
-    keywords: ["module subnav", "modulesubnav", "route"],
-  },
-  {
-    tab: "cards",
-    title: "Cards",
-    category: "forms",
-    keywords: ["card", "kpi", "entity", "selectable", "footer"],
   },
 ];
 
@@ -321,8 +269,8 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     standard: "Chip",
     category: "feedback",
     status: "Locked",
-    summary: "Semantic status tones (neutral/info/success/warning/danger)",
-    keywords: ["status", "chip", "pending", "active", "danger"],
+    summary: "Tone + appearance (soft/outline/solid); shapes independent",
+    keywords: ["status", "chip", "pending", "active", "danger", "soft", "outline", "solid", "appearance"],
   },
   {
     id: "confirm",
@@ -436,10 +384,10 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     id: "card",
     component: "Card",
     standard: "Card",
-    category: "forms",
+    category: "cards",
     status: "Locked",
-    summary: "Treatments, KPI, entity, selectable cards",
-    keywords: ["card", "kpi", "entity"],
+    summary: "Types, treatments, KPI, summary/invoice, selectable cards",
+    keywords: ["card", "kpi", "entity", "summary", "invoice", "treatment", "featured"],
   },
   {
     id: "empty",
@@ -495,16 +443,6 @@ export function filterLiveCards(
   return UI_STANDARD_LIVE_CARDS.filter((card) => {
     if (category !== "all" && card.category !== category) return false;
     return matchesQuery([card.title, card.id, ...card.keywords], query);
-  });
-}
-
-export function filterDetailedPanels(
-  category: UiStandardFilterCategory,
-  query: string,
-): UiStandardDetailedPanelDef[] {
-  return UI_STANDARD_DETAILED_PANELS.filter((panel) => {
-    if (category !== "all" && panel.category !== category) return false;
-    return matchesQuery([panel.title, panel.tab, ...panel.keywords], query);
   });
 }
 

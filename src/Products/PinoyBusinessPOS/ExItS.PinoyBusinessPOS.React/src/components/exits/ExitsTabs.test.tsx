@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { ExitsTabs } from "@/components/exits/ExitsTabs";
 import type { ExitsTabsVariant } from "@/components/exits/ExitsTabs";
-import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
 
 function ControlledTabs({
   variant = "underline" as ExitsTabsVariant,
@@ -221,14 +220,5 @@ describe("ExitsTabs visual foundation", () => {
     screen.getByRole("tab", { name: "General" }).focus();
     await user.keyboard("{ArrowDown}");
     expect(screen.getByRole("tab", { name: "Branches" })).toHaveAttribute("aria-selected", "true");
-  });
-
-  it("UI Standards tabs disclosure defaults match pilot map", () => {
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.variants"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.counts"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.icon-options"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.pill-bar"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.real-world"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["tabs.cheatsheet"]).toBe(false);
   });
 });

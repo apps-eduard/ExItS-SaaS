@@ -3,7 +3,7 @@
 **Status:** ACTIVE  
 **Scope:** `ExItS.PinoyBusinessPOS.React`  
 **Compact visual reference:** `/ui-standards` (local-validation / DEV only; `/ui-standard` redirects here)  
-**Expanded catalog:** same page — Detailed catalog tabs + Classic/Simple views  
+**Live samples + catalog:** single canonical page (search + category filters)
 
 This document locks **interaction semantics** so features reuse one set of primitives instead of inventing local Save/Edit/Delete/toast/confirm/drawer/modal patterns.
 
@@ -183,19 +183,25 @@ Button `shape="auto"` follows Control Shape. Toast / dialog motion respects `pre
 
 ---
 
-## Reference page cards (`/ui-standard`)
+## Reference page cards (`/ui-standards`)
 
-Exactly **one card per category**:
+Exactly **one live card per category**:
 
-1. Buttons  
-2. Toasts  
-3. Confirm Dialog  
-4. Form Drawer  
-5. Modal  
-6. Status & Chips  
-7. Form Controls  
-8. Navigation & Selection  
-9. Table  
-10. States  
+1. Buttons
+2. Toasts
+3. Confirm Dialog
+4. Form Drawer
+5. Modal
+6. Status & Chips
+7. Form Controls
+8. Selects
+9. Navigation & Selection
+10. Table
+11. Cards (types + Customer Purchase Summary invoice sample)
+12. States
+
+Plus the filterable standards catalog table. Data filter also surfaces the locked ExitsTable reference panel.
 
 Samples must exercise **production** components (real toast / dialog / drawer / modal), not static mocks.
+
+Classic / Simple view modes were removed — `/ui-standards` is the only UI Standard page.

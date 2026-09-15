@@ -12,7 +12,6 @@ import {
   CardReveal,
   CardTitle,
 } from "@/components/ui/card";
-import { UI_STANDARDS_DEFAULT_OPEN } from "@/features/ui-standards/ui-standards-disclosure";
 
 describe("ExItS Card foundation (APPROVED / LOCKED)", () => {
   it("keeps bordered surface defaults compatible with legacy Card usage", () => {
@@ -150,18 +149,6 @@ describe("ExItS Card foundation (APPROVED / LOCKED)", () => {
     expect(screen.getByTestId("card-reveal")).toHaveAttribute("data-reveal", "true");
     expect(screen.getByTestId("card-media")).toHaveAttribute("data-zoom", "true");
     expect(screen.getByTestId("card-reveal-slot")).toBeInTheDocument();
-  });
-
-  it("UI Standards cards disclosure defaults match locked map", () => {
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.treatments"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.kpi"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.entity"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.selectable"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.real-world"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.motion"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.featured-effects"]).toBe(true);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.basic"]).toBe(false);
-    expect(UI_STANDARDS_DEFAULT_OPEN["cards.cheatsheet"]).toBe(false);
   });
 });
 

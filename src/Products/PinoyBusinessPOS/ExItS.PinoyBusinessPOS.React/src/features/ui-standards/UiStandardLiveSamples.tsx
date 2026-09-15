@@ -2,12 +2,14 @@ import { useMemo, useState, type ReactNode } from "react";
 import {
   Building2,
   ClipboardList,
+  Coins,
   Inbox,
   LayoutDashboard,
   Loader2,
   MoreHorizontal,
   PackageCheck,
   Receipt,
+  ShoppingCart,
   Truck,
   UserRound,
   Users,
@@ -44,13 +46,85 @@ import { useExitsToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { CreatableCombobox } from "@/components/exits/CreatableCombobox";
 import { Button, buttonIconMotion } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SettingsSelect } from "@/components/ui/settings-select";
 import { Switch } from "@/components/ui/switch";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { FilterChip } from "@/components/exits/FilterChip";
+import type { PosSaleDto } from "@/api/pos/pos-sales-client";
+import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
+import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
 import type { UiStandardLiveCardId } from "@/features/ui-standards/ui-standard-catalog";
+
+const DEMO_INVOICE_IDENTITY = {
+  businessName: "Paul Coffee",
+  address: "Iloilo City",
+  phone: "0917 000 0000",
+  email: "hello@paulcoffee.demo",
+  branchName: "Main branch",
+};
+
+const DEMO_INVOICE_VISIBILITY = {
+  showLogo: false,
+  showBusinessName: true,
+  showBusinessAddress: true,
+  showBusinessPhone: true,
+  showBusinessEmail: true,
+  showWebsite: false,
+  showBranchName: true,
+  showBranchAddress: false,
+};
+
+const DEMO_INVOICE_SALE = {
+  saleId: "11111111-1111-4111-8111-111111111111",
+  organizationId: "22222222-2222-4222-8222-222222222222",
+  saleNumber: "S-20260915-000042",
+  status: "Completed",
+  paymentMethod: "Cash",
+  subtotal: 250,
+  total: 230,
+  taxAmount: 0,
+  discountTotal: 20,
+  recordedAtUtc: "2026-09-15T10:00:00Z",
+  recordedBy: "33333333-3333-4333-8333-333333333333",
+  lines: [
+    {
+      saleLineId: "44444444-4444-4444-8444-444444444444",
+      productId: "55555555-5555-4555-8555-555555555555",
+      lineNumber: 1,
+      name: "Espresso",
+      sku: "ESP",
+      unitOfMeasure: "pc",
+      sellingMode: "Unit",
+      unitPrice: 50,
+      quantity: 2,
+      lineTotal: 100,
+      lineDiscountAmount: 0,
+    },
+    {
+      saleLineId: "66666666-6666-4666-8666-666666666666",
+      productId: "77777777-7777-4777-8777-777777777777",
+      lineNumber: 2,
+      name: "Croissant",
+      sku: "CRO",
+      unitOfMeasure: "pc",
+      sellingMode: "Unit",
+      unitPrice: 75,
+      quantity: 2,
+      lineTotal: 150,
+      lineDiscountAmount: 20,
+    },
+  ],
+  customerDisplayName: "Ada Reyes",
+} as PosSaleDto;
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
@@ -80,6 +154,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [kindTab, setKindTab] = useState("personal");
   const [filterSegment, setFilterSegment] = useState("all");
   const [purchasingDest, setPurchasingDest] = useState("incoming");
+  const [selectableWarehouse, setSelectableWarehouse] = useState("main");
   const [search, setSearch] = useState("");
   const [notify, setNotify] = useState(true);
   const [allowAccess, setAllowAccess] = useState(true);
@@ -455,40 +530,58 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
           <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-status">
             <CardTitle>Status & Chips</CardTitle>
             <div className="flex flex-col gap-2">
-              <SectionLabel>Neutral</SectionLabel>
+              <SectionLabel>Tone</SectionLabel>
               <div className="flex flex-wrap gap-2">
                 <StatusChip tone="neutral">Draft</StatusChip>
-                <StatusChip tone="neutral">Cancelled</StatusChip>
-                <StatusChip tone="neutral">Disabled</StatusChip>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Info</SectionLabel>
-              <div className="flex flex-wrap gap-2">
                 <StatusChip tone="info">Processing</StatusChip>
-                <StatusChip tone="info">Connected</StatusChip>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Success</SectionLabel>
-              <div className="flex flex-wrap gap-2">
                 <StatusChip tone="success">Active</StatusChip>
-                <StatusChip tone="success">Cleared</StatusChip>
-                <StatusChip tone="success">Completed</StatusChip>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Warning</SectionLabel>
-              <div className="flex flex-wrap gap-2">
                 <StatusChip tone="warning">Pending</StatusChip>
-                <StatusChip tone="warning">Warning</StatusChip>
+                <StatusChip tone="danger">Declined</StatusChip>
+                <StatusChip tone="primary">Preferred</StatusChip>
               </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Tone = semantic meaning. All samples use Soft appearance (default).
+              </p>
             </div>
             <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <SectionLabel>Danger</SectionLabel>
-              <div className="flex flex-wrap gap-2">
-                <StatusChip tone="danger">Declined</StatusChip>
+              <SectionLabel>Appearance</SectionLabel>
+              <div className="flex flex-col gap-2.5">
+                {(
+                  [
+                    ["Soft", "soft"],
+                    ["Outline", "outline"],
+                    ["Solid", "solid"],
+                  ] as const
+                ).map(([label, appearance]) => (
+                  <div key={appearance} className="flex min-w-0 flex-col gap-1.5">
+                    <span className="text-[length:var(--exits-text-xs)] text-muted">{label}</span>
+                    <div className="flex flex-wrap gap-2">
+                      <StatusChip appearance={appearance} tone="neutral">
+                        Draft
+                      </StatusChip>
+                      <StatusChip appearance={appearance} tone="info">
+                        Processing
+                      </StatusChip>
+                      <StatusChip appearance={appearance} tone="success">
+                        Active
+                      </StatusChip>
+                      <StatusChip appearance={appearance} tone="warning">
+                        Pending
+                      </StatusChip>
+                      <StatusChip appearance={appearance} tone="danger">
+                        Declined
+                      </StatusChip>
+                      <StatusChip appearance={appearance} tone="primary">
+                        Preferred
+                      </StatusChip>
+                    </div>
+                  </div>
+                ))}
               </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Appearance = how it is drawn. Soft is default; Outline / Solid are optional.
+                Independent from shape (pill / soft / square).
+              </p>
             </div>
           </Card>
         ) : null}
@@ -1026,7 +1119,10 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
         ) : null}
 
         {show("table") ? (
-          <Card className="flex min-w-0 flex-col gap-3 p-3" data-testid="ui-standard-card-table">
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-table"
+          >
             <CardTitle>Table</CardTitle>
             <ExitsTableContainer>
               <ExitsTable>
@@ -1080,6 +1176,198 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                 </ExitsTableBody>
               </ExitsTable>
             </ExitsTableContainer>
+          </Card>
+        ) : null}
+
+        {show("cards") ? (
+          <Card
+            className="flex min-w-0 flex-col gap-3 p-3 lg:col-span-2"
+            data-testid="ui-standard-card-cards"
+          >
+            <CardTitle>Cards</CardTitle>
+            <div className="flex flex-col gap-2">
+              <SectionLabel>Types</SectionLabel>
+              <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <Card treatment="bordered" data-testid="ui-standard-card-type-basic">
+                  <CardHeader>
+                    <div className="min-w-0">
+                      <CardTitle as="h4">Basic</CardTitle>
+                      <CardDescription>Grouped content / store information</CardDescription>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="m-0 text-[length:var(--exits-text-sm)]">
+                      <span className="text-muted">Business hours</span>
+                      <br />
+                      8:00 AM – 8:00 PM
+                    </p>
+                  </CardContent>
+                  <CardFooter className="justify-end border-t-0 pt-0">
+                    <Button type="button" intent="neutral" appearance="outline" shape="soft">
+                      Edit
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card treatment="bordered" data-testid="ui-standard-card-type-kpi">
+                  <CardDescription className="uppercase tracking-wide">Today&apos;s sales</CardDescription>
+                  <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                    ₱24,850.00
+                  </p>
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-[var(--exits-success)]">
+                    +8.4% vs yesterday
+                  </p>
+                </Card>
+
+                <Card treatment="bordered" interactive data-testid="ui-standard-card-type-action">
+                  <CardHeader>
+                    <ShoppingCart className="size-4 text-[var(--exits-primary)]" aria-hidden />
+                    <div className="min-w-0">
+                      <CardTitle as="h4">Action</CardTitle>
+                      <CardDescription>Start a new customer transaction.</CardDescription>
+                    </div>
+                  </CardHeader>
+                </Card>
+
+                <Card treatment="bordered" interactive data-testid="ui-standard-card-type-entity">
+                  <CardHeader>
+                    <div
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--exits-surface-muted)] text-[length:var(--exits-text-xs)] font-semibold"
+                      aria-hidden
+                    >
+                      KF
+                    </div>
+                    <div className="min-w-0">
+                      <CardTitle as="h4">Entity</CardTitle>
+                      <CardDescription>Kizy Fruits · Business customer</CardDescription>
+                    </div>
+                    <StatusChip tone="success">Active</StatusChip>
+                  </CardHeader>
+                </Card>
+
+                <Card
+                  treatment="accent"
+                  accentTone="warning"
+                  accentPosition="start"
+                  data-testid="ui-standard-card-type-status"
+                >
+                  <CardTitle as="h4">Status</CardTitle>
+                  <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+                    18 products
+                  </p>
+                  <StatusChip tone="warning">Needs attention</StatusChip>
+                </Card>
+
+                <Card treatment="bordered" padding="compact" data-testid="ui-standard-card-type-compact">
+                  <CardTitle as="h4" className="text-[length:var(--exits-text-sm)]">
+                    Compact
+                  </CardTitle>
+                  <CardDescription>Dense business information</CardDescription>
+                </Card>
+
+                <Card treatment="featured" data-testid="ui-standard-card-type-featured">
+                  <CardTitle as="h4">Featured</CardTitle>
+                  <CardDescription>Recommended / promoted option</CardDescription>
+                  <p className="m-0 mt-2 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                    ₱499
+                    <span className="text-[length:var(--exits-text-sm)] font-normal text-muted">
+                      {" "}
+                      / month
+                    </span>
+                  </p>
+                </Card>
+
+                <Card treatment="bordered" className="sm:col-span-2" data-testid="ui-standard-card-type-kpi-icon">
+                  <CardHeader className="items-center gap-2">
+                    <Coins className="size-4 shrink-0 text-muted" aria-hidden />
+                    <CardDescription className="uppercase tracking-wide">Cash in drawer</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-0.5 pt-0">
+                    <p className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums">
+                      ₱8,420.00
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Selectable</SectionLabel>
+              <div
+                className="grid gap-2 sm:grid-cols-2"
+                role="radiogroup"
+                aria-label="Warehouse"
+                data-testid="ui-standard-card-selectable-group"
+              >
+                {(
+                  [
+                    ["main", "Main warehouse"],
+                    ["iloilo", "Iloilo warehouse"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <Card
+                    key={key}
+                    as="button"
+                    type="button"
+                    role="radio"
+                    aria-checked={selectableWarehouse === key}
+                    treatment={selectableWarehouse === key ? "selected" : "bordered"}
+                    selected={selectableWarehouse === key}
+                    onClick={() => setSelectableWarehouse(key)}
+                    data-testid={`ui-standard-card-selectable-${key}`}
+                  >
+                    <CardTitle as="h4">{label}</CardTitle>
+                    <CardDescription>Selectable option</CardDescription>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Treatments</SectionLabel>
+              <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {(
+                  [
+                    ["Surface", "surface"],
+                    ["Bordered", "bordered"],
+                    ["Elevated", "elevated"],
+                    ["Interactive", "interactive"],
+                  ] as const
+                ).map(([label, treatment]) => (
+                  <Card
+                    key={treatment}
+                    treatment={treatment}
+                    interactive={treatment === "interactive"}
+                    data-testid={`ui-standard-card-treatment-${treatment}`}
+                  >
+                    <CardTitle as="h4">{label}</CardTitle>
+                    <CardDescription>treatment=&quot;{treatment}&quot;</CardDescription>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 border-t border-border pt-3">
+              <SectionLabel>Summary / invoice — Customer Purchase Summary</SectionLabel>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Same production BusinessDocument used for sale receipts (not a BIR invoice).
+              </p>
+              <div
+                className="max-h-[32rem] overflow-auto rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)]/20 p-2"
+                data-testid="ui-standard-card-invoice-sample"
+              >
+                <CustomerPurchaseSummaryDocument
+                  sale={DEMO_INVOICE_SALE}
+                  settings={DEFAULT_DOCUMENT_SETTINGS}
+                  identity={DEMO_INVOICE_IDENTITY}
+                  headerVisibility={DEMO_INVOICE_VISIBILITY}
+                  paymentLabel="Cash"
+                  cashierLabel="Cashier One"
+                  audience="Seller"
+                  preview
+                />
+              </div>
+            </div>
           </Card>
         ) : null}
 
