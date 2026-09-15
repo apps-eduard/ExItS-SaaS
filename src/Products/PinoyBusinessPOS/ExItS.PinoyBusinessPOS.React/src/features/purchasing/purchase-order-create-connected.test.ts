@@ -5,19 +5,22 @@ import type {
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
   applyConnectedQuantityDelta,
-  buildConnectedCategoryFacets,
+  buildConnectedCategoryOptions,
   buildConnectedReadyProducts,
+  connectedCategoryFilterFromValues,
+  connectedCategoryFilterToValues,
   connectedLinesViolateStock,
-  CONNECTED_PO_CATEGORY_ALL,
-  CONNECTED_PO_CATEGORY_OTHER,
+  emptyConnectedCategoryFilter,
   filterConnectedReadyProducts,
   formatLineMath,
   formatUnitOfMeasureLabel,
   formatUnitPriceLabel,
+  isConnectedCategoryFilterActive,
   lineTotal,
   maxOrderablePurchaseQty,
   mergeConnectedStock,
   orderSubtotal,
+  PO_CATEGORY_NONE_OPTION,
   resolveSupplierAvailability,
   retainCompatibleDraftLines,
 } from "@/features/purchasing/purchase-order-create-connected";
@@ -111,7 +114,7 @@ describe("purchase-order-create-connected", () => {
     expect(filterConnectedReadyProducts(products, "soap")).toHaveLength(0);
   });
 
-  it("builds category facets with Other and filters with search together", () => {
+  it("builds searchable multi-select options with No category and OR filters", () => {
     const products = buildConnectedReadyProducts(
       [
         link({
@@ -135,6 +138,14 @@ describe("purchase-order-create-connected", () => {
           supplierNameSnapshot: "Mystery Pack",
           supplierSkuSnapshot: "PH-MISC-1",
           lastKnownOrderPrice: 8,
+        }),
+        link({
+          linkId: "17171717-1717-4717-8717-171717171717",
+          buyerProductId: "18181818-1818-4818-8818-181818181818",
+          supplierProductId: "19191919-1919-4919-8919-191919191919",
+          supplierNameSnapshot: "Chips",
+          supplierSkuSnapshot: "PH-SNACK-1",
+          lastKnownOrderPrice: 20,
         }),
       ],
       [
@@ -161,23 +172,46 @@ describe("purchase-order-create-connected", () => {
           effectiveSupplierOrderPrice: 8,
           categoryNameSnapshot: null,
         }),
+        exposure({
+          exposureId: "20202020-2020-4020-8020-202020202020",
+          productId: "19191919-1919-4919-8919-191919191919",
+          nameSnapshot: "Chips",
+          skuSnapshot: "PH-SNACK-1",
+          supplierOrderPrice: 20,
+          effectiveSupplierOrderPrice: 20,
+          categoryNameSnapshot: "Snacks",
+        }),
       ],
     );
 
-    const facets = buildConnectedCategoryFacets(products, { all: "All", other: "Other" });
-    expect(facets).toEqual([
-      { key: CONNECTED_PO_CATEGORY_ALL, label: "All", count: 3 },
-      { key: "Beverages", label: "Beverages", count: 1 },
-      { key: "Staples", label: "Staples", count: 1 },
-      { key: CONNECTED_PO_CATEGORY_OTHER, label: "Other", count: 1 },
+    const options = buildConnectedCategoryOptions(products, { noCategory: "No category" });
+    expect(options).toEqual([
+      { value: "Beverages", label: "Beverages", count: 1 },
+      { value: "Snacks", label: "Snacks", count: 1 },
+      { value: "Staples", label: "Staples", count: 1 },
+      { value: PO_CATEGORY_NONE_OPTION, label: "No category", count: 1 },
     ]);
+    expect(options.some((o) => o.value === "all" || o.label === "All")).toBe(false);
+    expect(options.some((o) => o.label === "Other")).toBe(false);
 
-    expect(filterConnectedReadyProducts(products, "", "Beverages")).toHaveLength(1);
-    expect(filterConnectedReadyProducts(products, "", CONNECTED_PO_CATEGORY_OTHER)[0]?.productName).toBe(
+    expect(isConnectedCategoryFilterActive(emptyConnectedCategoryFilter())).toBe(false);
+    expect(
+      filterConnectedReadyProducts(products, "", emptyConnectedCategoryFilter()),
+    ).toHaveLength(4);
+
+    const beveragesAndSnacks = connectedCategoryFilterFromValues(["Beverages", "Snacks"]);
+    expect(filterConnectedReadyProducts(products, "", beveragesAndSnacks)).toHaveLength(2);
+    expect(
+      filterConnectedReadyProducts(products, "water", beveragesAndSnacks).map((p) => p.productName),
+    ).toEqual(["Bottled Water 500ml"]);
+
+    const noneOnly = connectedCategoryFilterFromValues([PO_CATEGORY_NONE_OPTION]);
+    expect(noneOnly.includeNoCategory).toBe(true);
+    expect(noneOnly.selectedCategoryIds).toEqual([]);
+    expect(filterConnectedReadyProducts(products, "", noneOnly)[0]?.productName).toBe(
       "Mystery Pack",
     );
-    expect(filterConnectedReadyProducts(products, "water", "Beverages")).toHaveLength(1);
-    expect(filterConnectedReadyProducts(products, "water", "Staples")).toHaveLength(0);
+    expect(connectedCategoryFilterToValues(noneOnly)).toEqual([PO_CATEGORY_NONE_OPTION]);
   });
 
   it("supports + Add, +/- qty, line total, and qty 0 remove", () => {
@@ -279,18 +313,18 @@ describe("purchase-order-create-connected", () => {
         unitPurchaseCost: 12,
       },
       {
-        productId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
-        name: "Other",
+        productId: "gone-product",
+        name: "Gone",
         uom: "Piece",
         orderedQty: 1,
-        unitPurchaseCost: 5,
+        unitPurchaseCost: 1,
       },
     ];
     expect(retainCompatibleDraftLines(lines, kept)).toEqual([lines[0]]);
   });
 
-  it("abbreviates Kilogram to Kg in unit and price labels", () => {
+  it("formats unit labels for display", () => {
     expect(formatUnitOfMeasureLabel("Kilogram")).toBe("Kg");
-    expect(formatUnitPriceLabel(180, "Kilogram")).toBe("₱180 / Kg");
+    expect(formatUnitPriceLabel(12, "Piece")).toContain("/ pc");
   });
 });

@@ -339,6 +339,41 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.getByTestId("po-ready-newProduct")).toHaveTextContent("New products (1)");
   });
 
+  it("filters linked products with searchable category multi-select", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+    await user.selectOptions(screen.getByTestId("po-supplier"), supplierId);
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId("po-category-filters")).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-category-multiselect")).toBeInTheDocument();
+    expect(screen.getByTestId("po-category-multiselect")).toHaveTextContent(/Categories/i);
+
+    await user.click(screen.getByTestId("po-category-multiselect"));
+    expect(screen.getByTestId("po-category-multiselect-search")).toBeInTheDocument();
+    expect(screen.getByTestId("po-category-multiselect-option-Beverages")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("po-category-multiselect-option-__po_no_category__"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("po-category-multiselect-select-all")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("po-category-multiselect-option-Beverages"));
+    expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`po-connected-product-${buyerProductId2}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId("po-category-multiselect")).toHaveTextContent(/Categories · 1/);
+
+    await user.click(screen.getByTestId("po-category-multiselect-option-__po_no_category__"));
+    expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`po-connected-product-${buyerProductId2}`)).toBeInTheDocument();
+    expect(screen.getByTestId("po-category-multiselect")).toHaveTextContent(/Categories · 2/);
+
+    await user.click(screen.getByTestId("po-category-multiselect-clear"));
+    expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`po-connected-product-${buyerProductId2}`)).toBeInTheDocument();
+  });
+
   it("preselects supplier from supplierId query when opening new purchase order", async () => {
     renderPage(`/purchasing/new?supplierId=${supplierId}`);
     await waitFor(() => expect(screen.getByTestId("po-supplier")).toHaveValue(supplierId));

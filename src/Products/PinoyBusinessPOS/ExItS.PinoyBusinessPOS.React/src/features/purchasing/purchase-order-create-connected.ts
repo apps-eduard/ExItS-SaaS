@@ -2,12 +2,13 @@ import type {
   BuyerSupplierProductLink,
   SupplierProductExposure,
 } from "@/api/pos/pos-connected-suppliers-client";
+import type { ExitsSelectOption } from "@/components/exits/ExitsSelect";
 
-/** Sentinel for the All category chip. */
-export const CONNECTED_PO_CATEGORY_ALL = "all";
-
-/** Sentinel for products without supplier category metadata. */
-export const CONNECTED_PO_CATEGORY_OTHER = "other";
+/**
+ * UI-only sentinel for the “No category” multi-select option.
+ * Never persisted to product / category master data.
+ */
+export const PO_CATEGORY_NONE_OPTION = "__po_no_category__";
 
 export type ConnectedPoReadyProduct = {
   linkId: string;
@@ -25,14 +26,19 @@ export type ConnectedPoReadyProduct = {
   stockTracked: boolean | null;
   /** Available quantity in base inventory units when tracked. */
   availableBaseQuantity: number | null;
-  /** Supplier category display name when present; otherwise null → Other. */
+  /**
+   * Stable category filter id when known (prefer CategoryId).
+   * Until exposure DTO carries CategoryId, uses the trimmed category name.
+   */
+  categoryId: string | null;
+  /** Display name; null → eligible for “No category”. */
   categoryName: string | null;
 };
 
-export type ConnectedPoCategoryFacet = {
-  key: string;
-  label: string;
-  count: number;
+export type ConnectedPoCategoryFilter = {
+  /** Real category filter ids (never the No-category sentinel). */
+  selectedCategoryIds: ReadonlyArray<string>;
+  includeNoCategory: boolean;
 };
 
 export type ConnectedPoDraftLine = {
@@ -43,6 +49,45 @@ export type ConnectedPoDraftLine = {
   unitPurchaseCost: number;
   purchaseUnitId?: string | null;
 };
+
+export function emptyConnectedCategoryFilter(): ConnectedPoCategoryFilter {
+  return { selectedCategoryIds: [], includeNoCategory: false };
+}
+
+export function isConnectedCategoryFilterActive(filter: ConnectedPoCategoryFilter): boolean {
+  return filter.selectedCategoryIds.length > 0 || filter.includeNoCategory;
+}
+
+/** Map multi-select values ↔ structured filter (No category kept separate). */
+export function connectedCategoryFilterFromValues(
+  values: ReadonlyArray<string>,
+): ConnectedPoCategoryFilter {
+  const includeNoCategory = values.includes(PO_CATEGORY_NONE_OPTION);
+  const selectedCategoryIds = values.filter((value) => value !== PO_CATEGORY_NONE_OPTION);
+  return { selectedCategoryIds, includeNoCategory };
+}
+
+export function connectedCategoryFilterToValues(
+  filter: ConnectedPoCategoryFilter,
+): string[] {
+  const values = [...filter.selectedCategoryIds];
+  if (filter.includeNoCategory) {
+    values.push(PO_CATEGORY_NONE_OPTION);
+  }
+  return values;
+}
+
+export function resolveConnectedCategoryId(
+  categoryId: string | null | undefined,
+  categoryName: string | null | undefined,
+): string | null {
+  const id = categoryId?.trim() ?? "";
+  if (id.length > 0) {
+    return id;
+  }
+  const name = categoryName?.trim() ?? "";
+  return name.length > 0 ? name : null;
+}
 
 export function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -106,6 +151,7 @@ export function buildConnectedReadyProducts(
       multiplierToBase: multiplier,
       stockTracked: null,
       availableBaseQuantity: null,
+      categoryId: resolveConnectedCategoryId(null, categoryRaw),
       categoryName: categoryRaw,
     });
   }
@@ -115,66 +161,73 @@ export function buildConnectedReadyProducts(
   );
 }
 
-export function resolveConnectedCategoryKey(categoryName: string | null | undefined): string {
-  const trimmed = categoryName?.trim() ?? "";
-  return trimmed.length > 0 ? trimmed : CONNECTED_PO_CATEGORY_OTHER;
+export function resolveConnectedCategoryKey(categoryName: string | null | undefined): string | null {
+  return resolveConnectedCategoryId(null, categoryName);
 }
 
-/** Category chips for orderable linked products (All + named + Other). Counts are of the given product set. */
-export function buildConnectedCategoryFacets(
-  products: ReadonlyArray<ConnectedPoReadyProduct>,
-  labels: { all: string; other: string },
-): ConnectedPoCategoryFacet[] {
-  const named = new Map<string, { label: string; count: number }>();
-  let otherCount = 0;
+type CategoryCountable = {
+  categoryId?: string | null;
+  categoryName?: string | null;
+};
+
+/** Multi-select options for the current readiness product set (no “All” option). */
+export function buildConnectedCategoryOptions(
+  products: ReadonlyArray<CategoryCountable>,
+  labels: { noCategory: string },
+): ExitsSelectOption[] {
+  const named = new Map<string, { id: string; label: string; count: number }>();
+  let noCategoryCount = 0;
   for (const product of products) {
-    const key = resolveConnectedCategoryKey(product.categoryName);
-    if (key === CONNECTED_PO_CATEGORY_OTHER) {
-      otherCount += 1;
+    const id = resolveConnectedCategoryId(product.categoryId, product.categoryName);
+    if (id == null) {
+      noCategoryCount += 1;
       continue;
     }
-    const existing = named.get(key.toLowerCase());
+    const label = product.categoryName?.trim() || id;
+    const existing = named.get(id.toLowerCase());
     if (existing) {
       existing.count += 1;
     } else {
-      named.set(key.toLowerCase(), { label: key, count: 1 });
+      named.set(id.toLowerCase(), { id, label, count: 1 });
     }
   }
 
-  const facets: ConnectedPoCategoryFacet[] = [
-    { key: CONNECTED_PO_CATEGORY_ALL, label: labels.all, count: products.length },
-  ];
-  const sortedNamed = [...named.values()].sort((a, b) =>
-    a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-  );
-  for (const entry of sortedNamed) {
-    facets.push({ key: entry.label, label: entry.label, count: entry.count });
-  }
-  if (otherCount > 0) {
-    facets.push({
-      key: CONNECTED_PO_CATEGORY_OTHER,
-      label: labels.other,
-      count: otherCount,
+  const options: ExitsSelectOption[] = [...named.values()]
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }))
+    .map((entry) => ({
+      value: entry.id,
+      label: entry.label,
+      count: entry.count,
+    }));
+
+  if (noCategoryCount > 0) {
+    options.push({
+      value: PO_CATEGORY_NONE_OPTION,
+      label: labels.noCategory,
+      count: noCategoryCount,
     });
   }
-  return facets;
+  return options;
 }
 
 export function filterConnectedReadyProducts(
   products: ReadonlyArray<ConnectedPoReadyProduct>,
   searchText: string,
-  categoryKey: string = CONNECTED_PO_CATEGORY_ALL,
+  categoryFilter: ConnectedPoCategoryFilter = emptyConnectedCategoryFilter(),
 ): ConnectedPoReadyProduct[] {
   const query = searchText.trim().toLowerCase();
-  const category = categoryKey.trim() || CONNECTED_PO_CATEGORY_ALL;
+  const categoryActive = isConnectedCategoryFilterActive(categoryFilter);
+  const selected = new Set(
+    categoryFilter.selectedCategoryIds.map((id) => id.trim().toLowerCase()).filter(Boolean),
+  );
+
   return products.filter((product) => {
-    if (category !== CONNECTED_PO_CATEGORY_ALL) {
-      const productKey = resolveConnectedCategoryKey(product.categoryName);
-      if (category === CONNECTED_PO_CATEGORY_OTHER) {
-        if (productKey !== CONNECTED_PO_CATEGORY_OTHER) {
-          return false;
-        }
-      } else if (productKey.toLowerCase() !== category.toLowerCase()) {
+    if (categoryActive) {
+      const productId = resolveConnectedCategoryId(product.categoryId, product.categoryName);
+      const matchesNamed =
+        productId != null && selected.has(productId.toLowerCase());
+      const matchesNone = categoryFilter.includeNoCategory && productId == null;
+      if (!matchesNamed && !matchesNone) {
         return false;
       }
     }
@@ -189,6 +242,27 @@ export function filterConnectedReadyProducts(
       product.categoryName ?? "",
     ];
     return tokens.some((token) => token.toLowerCase().includes(query));
+  });
+}
+
+/** Filter setup/readiness rows when category metadata is available via map. */
+export function filterItemsByConnectedCategory<T>(
+  items: ReadonlyArray<T>,
+  categoryFilter: ConnectedPoCategoryFilter,
+  resolveCategory: (item: T) => { categoryId: string | null; categoryName: string | null },
+): T[] {
+  if (!isConnectedCategoryFilterActive(categoryFilter)) {
+    return [...items];
+  }
+  const selected = new Set(
+    categoryFilter.selectedCategoryIds.map((id) => id.trim().toLowerCase()).filter(Boolean),
+  );
+  return items.filter((item) => {
+    const meta = resolveCategory(item);
+    const productId = resolveConnectedCategoryId(meta.categoryId, meta.categoryName);
+    const matchesNamed = productId != null && selected.has(productId.toLowerCase());
+    const matchesNone = categoryFilter.includeNoCategory && productId == null;
+    return matchesNamed || matchesNone;
   });
 }
 

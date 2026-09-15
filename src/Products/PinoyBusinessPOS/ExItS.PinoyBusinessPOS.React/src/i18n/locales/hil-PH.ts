@@ -712,6 +712,8 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "catalog.brandAlreadyExists": "May brand na sini.",
 
+  "catalog.categoryAlreadyExists": "May category na sini.",
+
   "catalog.brandOptional": "Opsyonal ang tatak.",
 
   "catalog.brandStatusFilter": "Status sang brand",
@@ -9206,6 +9208,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.categoriesTriggerCount": "Categories · {count}",
   "purchasing.selectAllCategories": "Pilion tanan",
   "purchasing.deselectAllCategories": "Kuhaon tanan",
   "purchasing.clearCategories": "Clear categories",
@@ -9361,6 +9364,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "supplierPayables.openCount": "Open payables",
 
   "supplierPayables.paidCount": "Paid payables",
+
+  "supplierPayables.approvedCreditLimit": "Approved credit limit",
 
   "supplierPayables.listTitle": "Payables",
 

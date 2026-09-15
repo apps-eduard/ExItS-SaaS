@@ -37,4 +37,33 @@ describe("ExitsMultiSelect", () => {
     );
     expect(screen.getByRole("menu")).toBeInTheDocument();
   });
+
+  it("supports searchable compact count trigger and hides select-all", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <ExitsMultiSelect
+        value={[]}
+        searchable
+        showSelectAll={false}
+        triggerMode="count"
+        placeholder="Categories"
+        selectedCountLabel={(count) => `Categories · ${count}`}
+        options={[
+          { value: "a", label: "Alpha", count: 3 },
+          { value: "b", label: "Beta", count: 2 },
+        ]}
+        onChange={onChange}
+        testId="cats"
+      />,
+    );
+
+    expect(screen.getByTestId("cats")).toHaveTextContent("Categories");
+    await user.click(screen.getByTestId("cats"));
+    expect(screen.getByTestId("cats-search")).toBeInTheDocument();
+    expect(screen.queryByTestId("cats-select-all")).not.toBeInTheDocument();
+    expect(screen.getByTestId("cats-option-a")).toHaveTextContent("3");
+    await user.click(screen.getByTestId("cats-option-a"));
+    expect(onChange).toHaveBeenCalledWith(["a"]);
+  });
 });

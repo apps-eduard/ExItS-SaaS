@@ -47,6 +47,7 @@ A compact Do / Don’t card covers Primary hierarchy, Intent vs Appearance, Soft
 | Status | `StatusChip` | `components/exits/StatusChip.tsx` |
 | Responsive collections | `ExitsResponsiveDataView` | `components/exits/ExitsResponsiveDataView.tsx` |
 | Upload | `ExitsUpload` | `components/exits/ExitsUpload.tsx` |
+| Quantity | `QuantityStepper` | `components/exits/MoneyQuantity.tsx` |
 | States | `EmptyState` / `LoadingState` / `ErrorState` | `components/exits/` |
 
 Changing a canonical component must update all consumers. Do **not** restyle via page-specific CSS selectors.
@@ -167,6 +168,17 @@ Legacy `ConfirmationDialog` in `SheetDialog` remains for existing call sites; pr
 
 `EditCreditTermsModal` and `RecordPaymentModal` use **ExitsModal** (short forms).  
 Branch access remains an on-page section today (FormDrawer migration deferred — medium UX risk).
+
+---
+
+## Filter control choice (chips vs searchable select)
+
+| Option set | Prefer |
+|------------|--------|
+| Small / fixed (≈2–8, unlikely to grow) | Segmented control / filter chips (`ExitsChipBar`, `UnderlineTabBar`) |
+| Large or growing (categories, branches, staff, products, …) | Searchable `ExitsSelect` / `ExitsMultiSelect` |
+
+Do **not** render every category as a permanent chip row when the org may eventually have dozens or hundreds.
 
 ---
 

@@ -26,6 +26,8 @@ const getSupplierPayableSummary = vi.fn();
 const listSupplierPayables = vi.fn();
 const listSupplierPayablePayments = vi.fn();
 const recordSupplierPayablePayment = vi.fn();
+const getBusinessCustomerCreditPolicy = vi.fn();
+const relationshipId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 const workspaceMock = {
   boundWorkspace: {
@@ -57,6 +59,11 @@ vi.mock("@/connectivity/browser-online", () => ({
 
 vi.mock("@/offline/organization-offline-context", () => ({
   useOrganizationOfflineContext: () => null,
+}));
+
+vi.mock("@/api/pos/pos-business-credit-policy-client", () => ({
+  getBusinessCustomerCreditPolicy: (...args: unknown[]) =>
+    getBusinessCustomerCreditPolicy(...args),
 }));
 
 vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
@@ -205,6 +212,41 @@ describe("SupplierDetailPage supplier credit", () => {
     });
     expect(screen.getByTestId("supplier-credit-overdue")).toBeInTheDocument();
     expect(screen.getByTestId("supplier-credit-open-count")).toHaveTextContent("1");
+    expect(screen.queryByTestId("supplier-credit-approved-limit")).not.toBeInTheDocument();
+  });
+
+  it("shows approved credit limit for connected supplier", async () => {
+    getSupplier.mockResolvedValue(
+      supplierDto({
+        connectionType: "ConnectedOrganization",
+        connectedRelationshipId: relationshipId,
+        name: "Mica store",
+      }),
+    );
+    getBusinessCustomerCreditPolicy.mockResolvedValue({
+      connectionId: relationshipId,
+      sellerOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerOrganizationId: orgId,
+      status: "Approved",
+      creditLimit: 50000,
+      defaultTermDays: 30,
+      outstandingAmount: 0,
+      availableCredit: 50000,
+      configuredByUserId: actorId,
+      configuredAtUtc: "2026-08-01T00:00:00Z",
+      approvedByUserId: actorId,
+      approvedAtUtc: "2026-08-02T00:00:00Z",
+      updatedByUserId: actorId,
+      updatedAtUtc: "2026-08-02T00:00:00Z",
+      expectedUpdatedAtUtc: "2026-08-02T00:00:00Z",
+    });
+
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("supplier-credit-approved-limit")).toBeInTheDocument();
+    });
+    expect(getBusinessCustomerCreditPolicy).toHaveBeenCalled();
+    expect(screen.getByTestId("supplier-credit-approved-limit").textContent).toMatch(/50[,.]?000/);
   });
 
   it("lists payables with backend statuses including Paid and Voided", async () => {

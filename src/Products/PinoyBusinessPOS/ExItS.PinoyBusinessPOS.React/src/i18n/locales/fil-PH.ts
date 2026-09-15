@@ -712,6 +712,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "catalog.brandAlreadyExists": "May brand na.",
 
+  "catalog.categoryAlreadyExists": "May category na.",
+
   "catalog.brandOptional": "Opsyonal ang brand.",
 
   "catalog.brandStatusFilter": "Status ng brand",
@@ -9213,6 +9215,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Kategorya",
   "purchasing.categoriesPlaceholder": "Pumili ng kategorya",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.categoriesTriggerCount": "Categories · {count}",
   "purchasing.selectAllCategories": "Piliin lahat",
   "purchasing.deselectAllCategories": "Alisin ang lahat",
   "purchasing.clearCategories": "Clear categories",
@@ -9369,6 +9372,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "supplierPayables.openCount": "Bukas na payables",
 
   "supplierPayables.paidCount": "Bayad na payables",
+
+  "supplierPayables.approvedCreditLimit": "Aprubadong credit limit",
 
   "supplierPayables.listTitle": "Payables",
 

@@ -126,6 +126,33 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
     }
 
     [Fact]
+    public async Task Get_allows_buyer_organization_to_read_approved_credit_limit()
+    {
+        var (relationships, policies, uow, connectionId) = await CreateActiveHarnessAsync();
+        var clock = new FixedClock(Now);
+        var upsert = new UpsertBusinessCustomerCreditPolicy(relationships, policies, uow, clock);
+        var configured = await upsert.ExecuteAsync(SellerOrgId, connectionId, 2_500m, 30, Actor, "cfg");
+        Assert.True(configured.IsSuccess);
+
+        var approve = new ApproveBusinessCustomerCreditPolicy(relationships, policies, uow, clock);
+        var approved = await approve.ExecuteAsync(
+            SellerOrgId,
+            connectionId,
+            Actor,
+            "approve",
+            configured.Value!.ExpectedUpdatedAtUtc!.Value);
+        Assert.True(approved.IsSuccess);
+
+        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
+        var buyerView = await get.ExecuteAsync(BuyerOrgId, connectionId);
+        Assert.True(buyerView.IsSuccess);
+        Assert.Equal(nameof(CustomerCreditPolicyStatus.Approved), buyerView.Value!.Status);
+        Assert.Equal(2_500m, buyerView.Value.CreditLimit);
+        Assert.Equal(SellerOrgId, buyerView.Value.SellerOrganizationId);
+        Assert.Equal(BuyerOrgId, buyerView.Value.BuyerOrganizationId);
+    }
+
+    [Fact]
     public async Task Upsert_does_not_create_pos_customer()
     {
         var (relationships, policies, uow, connectionId) = await CreateActiveHarnessAsync();

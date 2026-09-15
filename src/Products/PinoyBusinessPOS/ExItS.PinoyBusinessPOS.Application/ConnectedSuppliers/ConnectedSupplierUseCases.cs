@@ -4,12 +4,14 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Identity;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
@@ -412,6 +414,9 @@ public sealed class RequestConnection
     private readonly IPlatformOrganizationPublicResolve _organizationResolve;
     private readonly IPlatformSupplierLocationDirectory _supplierLocations;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly PartyBranchAccessService? _partyBranchAccess;
+    private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
+    private readonly IOrganizationBranchDirectory? _orgBranches;
     private readonly TimeProvider _clock;
 
     public RequestConnection(
@@ -422,7 +427,10 @@ public sealed class RequestConnection
         IPlatformOrganizationPublicResolve organizationResolve,
         IPlatformSupplierLocationDirectory supplierLocations,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        PartyBranchAccessService? partyBranchAccess = null,
+        IPartyBranchAccessActorAccessor? actorAccessor = null,
+        IOrganizationBranchDirectory? orgBranches = null)
     {
         _relationships = relationships;
         _suppliers = suppliers;
@@ -432,6 +440,9 @@ public sealed class RequestConnection
         _supplierLocations = supplierLocations;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _clock = clock ?? TimeProvider.System;
+        _partyBranchAccess = partyBranchAccess;
+        _actorAccessor = actorAccessor;
+        _orgBranches = orgBranches;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -535,6 +546,28 @@ public sealed class RequestConnection
                 notes: resolvedSupplier.Value.PublicOrganizationId);
             buyerSupplier.AttachConnectedRelationship(relationship.Id, utcNow);
             await _suppliers.AddAsync(buyerSupplier, ct).ConfigureAwait(false);
+
+            var actingBranch = _actorAccessor?.GetActor().ActingBranchId;
+            var branchId = actingBranch is Guid ab && ab != Guid.Empty
+                ? ab
+                : _orgBranches is null
+                    ? null
+                    : await _orgBranches.GetPrimaryBranchIdAsync(buyer.Value, ct).ConfigureAwait(false);
+            if (_partyBranchAccess is not null
+                && branchId is Guid grantBranch
+                && grantBranch != Guid.Empty)
+            {
+                await _partyBranchAccess
+                    .GrantSupplierAccessAsync(
+                        buyer.Value,
+                        grantBranch,
+                        buyerSupplier.Id.Value,
+                        PartyBranchGrantSource.CreateAtBranch,
+                        grantedByActorId: null,
+                        ct,
+                        persistChanges: false)
+                    .ConfigureAwait(false);
+            }
 
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
@@ -747,6 +780,9 @@ public sealed class RespondConnection
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly ISupplierRepository? _suppliers;
+    private readonly PartyBranchAccessService? _partyBranchAccess;
+    private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
+    private readonly IOrganizationBranchDirectory? _orgBranches;
     private readonly TimeProvider _clock;
 
     public RespondConnection(
@@ -758,7 +794,10 @@ public sealed class RespondConnection
         TimeProvider? clock = null,
         ICatalogProductRepository? products = null,
         ISupplierProductExposureRepository? exposures = null,
-        ISupplierRepository? suppliers = null)
+        ISupplierRepository? suppliers = null,
+        PartyBranchAccessService? partyBranchAccess = null,
+        IPartyBranchAccessActorAccessor? actorAccessor = null,
+        IOrganizationBranchDirectory? orgBranches = null)
     {
         _relationships = relationships;
         _uow = uow;
@@ -769,6 +808,9 @@ public sealed class RespondConnection
         _products = products;
         _exposures = exposures;
         _suppliers = suppliers;
+        _partyBranchAccess = partyBranchAccess;
+        _actorAccessor = actorAccessor;
+        _orgBranches = orgBranches;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierRelationshipDto>> ExecuteAsync(
@@ -858,13 +900,21 @@ public sealed class RespondConnection
                     }
                 }
 
-                // Same unit of work: Active A→B implies buyer B has exactly one connected Supplier projection of A.
+                // Same unit of work: Active A→B implies buyer B has exactly one connected Supplier projection of A
+                // with branch visibility so branch-scoped Suppliers lists can see it.
                 // Does not create reverse B→A sale / customer relationship.
                 // Production DI always injects ISupplierRepository; unit tests may omit it.
                 if (_suppliers is not null)
                 {
                     await BuyerConnectedSupplierMaster
-                        .EnsureAsync(_suppliers, r, utcNow, ct)
+                        .EnsureAsync(
+                            _suppliers,
+                            r,
+                            utcNow,
+                            ct,
+                            _partyBranchAccess,
+                            _actorAccessor?.GetActor().ActingBranchId,
+                            _orgBranches)
                         .ConfigureAwait(false);
                 }
             }
@@ -1273,7 +1323,7 @@ public sealed class ListRelationships
 
 /// <summary>
 /// Idempotent backfill: for every Active directional relationship where this org is the buyer,
-/// ensure exactly one connected Supplier projection of the seller exists.
+/// ensure exactly one connected Supplier projection of the seller exists (plus branch visibility).
 /// Does not create reverse-sale relationships or Organizations.
 /// </summary>
 public sealed class ReconcileBuyerConnectedSupplierProjections
@@ -1281,18 +1331,27 @@ public sealed class ReconcileBuyerConnectedSupplierProjections
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly ISupplierRepository _suppliers;
     private readonly IPosUnitOfWork _uow;
+    private readonly PartyBranchAccessService? _branchAccess;
+    private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly TimeProvider _clock;
 
     public ReconcileBuyerConnectedSupplierProjections(
         IConnectedSupplierRelationshipRepository relationships,
         ISupplierRepository suppliers,
         IPosUnitOfWork uow,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        PartyBranchAccessService? branchAccess = null,
+        IPartyBranchAccessActorAccessor? actorAccessor = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         _relationships = relationships;
         _suppliers = suppliers;
         _uow = uow;
         _clock = clock ?? TimeProvider.System;
+        _branchAccess = branchAccess;
+        _actorAccessor = actorAccessor;
+        _branches = branches;
     }
 
     public async Task<ApplicationResult<int>> ExecuteAsync(
@@ -1302,6 +1361,7 @@ public sealed class ReconcileBuyerConnectedSupplierProjections
         var buyer = PosOrganizationId.From(buyerOrganizationId);
         var rows = await _relationships.ListAsync(buyer, supplierView: false, ct).ConfigureAwait(false);
         var utcNow = _clock.GetUtcNow();
+        var actingBranchId = _actorAccessor?.GetActor().ActingBranchId;
         var healed = 0;
         foreach (var relationship in rows)
         {
@@ -1310,12 +1370,23 @@ public sealed class ReconcileBuyerConnectedSupplierProjections
                 continue;
             }
 
-            var result = await BuyerConnectedSupplierMaster
-                .EnsureAsync(_suppliers, relationship, utcNow, ct)
+            // Orientation lock: buyer list must use BuyerOrganizationId == Kath, not supplier id.
+            if (relationship.BuyerOrganizationId != buyer)
+            {
+                continue;
+            }
+
+            var outcome = await BuyerConnectedSupplierMaster
+                .EnsureAsync(
+                    _suppliers,
+                    relationship,
+                    utcNow,
+                    ct,
+                    _branchAccess,
+                    actingBranchId,
+                    _branches)
                 .ConfigureAwait(false);
-            if (result is BuyerConnectedSupplierEnsureResult.Created
-                or BuyerConnectedSupplierEnsureResult.LinkedExistingExternal
-                or BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict)
+            if (outcome.RequiresPersist)
             {
                 healed++;
             }

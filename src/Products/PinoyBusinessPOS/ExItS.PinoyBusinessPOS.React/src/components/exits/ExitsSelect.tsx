@@ -7,6 +7,8 @@ export type ExitsSelectOption<T extends string = string> = {
   value: T;
   label: string;
   disabled?: boolean;
+  /** Optional secondary count (e.g. category product totals). `0` renders; omit when unknown. */
+  count?: number | null;
 };
 
 export type ExitsSelectProps<T extends string = string> = {

@@ -534,7 +534,10 @@ export function SupplierDetailPage() {
         </Card>
       )}
 
-      <SupplierCreditSection supplierId={supplierId} />
+      <SupplierCreditSection
+        supplierId={supplierId}
+        connectedRelationshipId={connected ? relationshipId : null}
+      />
 
       <div className="supplier-detail-actions flex flex-wrap gap-2">
         {allowManage ? (

@@ -28,6 +28,7 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ExitsMultiSelect } from "@/components/exits/ExitsMultiSelect";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
@@ -38,18 +39,26 @@ import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   applyConnectedQuantityDelta,
+  buildConnectedCategoryOptions,
   buildConnectedReadyProducts,
-  connectedLinesViolateStock,
+  connectedCategoryFilterFromValues,
+  connectedCategoryFilterToValues,
+  emptyConnectedCategoryFilter,
   filterConnectedReadyProducts,
+  filterItemsByConnectedCategory,
   formatLineMath,
   formatUnitOfMeasureLabel,
   formatUnitPriceLabel,
+  isConnectedCategoryFilterActive,
   maxOrderablePurchaseQty,
   mergeConnectedStock,
+  connectedLinesViolateStock,
   orderSubtotal,
   orderUnitCount,
+  resolveConnectedCategoryId,
   resolveSupplierAvailability,
   retainCompatibleDraftLines,
+  type ConnectedPoCategoryFilter,
   type ConnectedPoDraftLine,
   type ConnectedPoReadyProduct,
 } from "@/features/purchasing/purchase-order-create-connected";
@@ -134,6 +143,9 @@ export function PurchaseOrderCreatePage() {
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<ConnectedPoCategoryFilter>(
+    emptyConnectedCategoryFilter,
+  );
   const [readinessFilter, setReadinessFilter] = useState<PoCatalogSetupFilter>("linked");
   const [connectedLines, setConnectedLines] = useState<ConnectedPoDraftLine[]>([]);
   const [externalLines, setExternalLines] = useState<ExternalDraftLine[]>([]);
@@ -155,7 +167,11 @@ export function PurchaseOrderCreatePage() {
 
   useEffect(() => {
     setSetupSelected(new Set());
-  }, [debounced, readinessFilter, supplierId]);
+  }, [debounced, readinessFilter, supplierId, categoryFilter]);
+
+  useEffect(() => {
+    setCategoryFilter(emptyConnectedCategoryFilter());
+  }, [supplierId]);
 
   const workspace = useMemo(
     () =>
@@ -192,12 +208,32 @@ export function PurchaseOrderCreatePage() {
         listLinks(workspace!, relationshipId!, signal),
         loadAllExposedCatalog(workspace!, relationshipId!, signal).catch(() => [] as SupplierProductExposure[]),
       ]);
-      return buildConnectedReadyProducts(links, exposures.length > 0 ? exposures : null);
+      const ready = buildConnectedReadyProducts(links, exposures.length > 0 ? exposures : null);
+      const categoryBySupplierProductId = new Map<
+        string,
+        { categoryId: string | null; categoryName: string | null }
+      >();
+      for (const exposure of exposures) {
+        const categoryName = exposure.categoryNameSnapshot?.trim() || null;
+        categoryBySupplierProductId.set(exposure.productId, {
+          categoryId: resolveConnectedCategoryId(null, categoryName),
+          categoryName,
+        });
+      }
+      for (const product of ready) {
+        if (!categoryBySupplierProductId.has(product.supplierProductId)) {
+          categoryBySupplierProductId.set(product.supplierProductId, {
+            categoryId: product.categoryId,
+            categoryName: product.categoryName,
+          });
+        }
+      }
+      return { ready, categoryBySupplierProductId };
     },
   });
 
   const supplierProductIdsKey = useMemo(() => {
-    const ids = (linkedProductsQuery.data ?? []).map((p) => p.supplierProductId);
+    const ids = (linkedProductsQuery.data?.ready ?? []).map((p) => p.supplierProductId);
     return [...new Set(ids)].sort().join(",");
   }, [linkedProductsQuery.data]);
 
@@ -209,10 +245,12 @@ export function PurchaseOrderCreatePage() {
       allowManage &&
       connected &&
       Boolean(relationshipId) &&
-      Boolean(linkedProductsQuery.data) &&
-      (linkedProductsQuery.data?.length ?? 0) > 0,
+      Boolean(linkedProductsQuery.data?.ready) &&
+      (linkedProductsQuery.data?.ready.length ?? 0) > 0,
     queryFn: async ({ signal }) => {
-      const ids = [...new Set((linkedProductsQuery.data ?? []).map((p) => p.supplierProductId))];
+      const ids = [
+        ...new Set((linkedProductsQuery.data?.ready ?? []).map((p) => p.supplierProductId)),
+      ];
       return getConnectedOrderStock(workspace!, relationshipId!, ids, signal);
     },
   });
@@ -241,7 +279,7 @@ export function PurchaseOrderCreatePage() {
   });
 
   const readyProducts = useMemo(() => {
-    const base = linkedProductsQuery.data ?? [];
+    const base = linkedProductsQuery.data?.ready ?? [];
     if (!orderStockQuery.data) {
       return base;
     }
@@ -260,16 +298,70 @@ export function PurchaseOrderCreatePage() {
     return mergeConnectedStock(base, map);
   }, [linkedProductsQuery.data, orderStockQuery.data]);
   const readinessCounts = useMemo(() => countByUserState(readinessQuery.data), [readinessQuery.data]);
-  const filteredConnected = useMemo(
-    () => filterConnectedReadyProducts(readyProducts, debounced),
-    [readyProducts, debounced],
+  const categoryBySupplierProductId =
+    linkedProductsQuery.data?.categoryBySupplierProductId ??
+    new Map<string, { categoryId: string | null; categoryName: string | null }>();
+
+  const categorySourceProducts = useMemo(() => {
+    if (readinessFilter === "linked") {
+      return readyProducts.map((product) => ({
+        categoryId: product.categoryId,
+        categoryName: product.categoryName,
+      }));
+    }
+    const items = readinessQuery.data?.items ?? [];
+    const filtered = filterReadinessItems(items, readinessFilter, "");
+    return filtered.map((item) => {
+      const meta = categoryBySupplierProductId.get(item.supplierProductId);
+      return {
+        categoryId: meta?.categoryId ?? null,
+        categoryName: meta?.categoryName ?? null,
+      };
+    });
+  }, [
+    categoryBySupplierProductId,
+    readinessFilter,
+    readinessQuery.data,
+    readyProducts,
+  ]);
+
+  const categoryOptions = useMemo(
+    () =>
+      buildConnectedCategoryOptions(categorySourceProducts, {
+        noCategory: t("catalog.noCategory"),
+      }),
+    [categorySourceProducts, t],
   );
+
+  const filteredConnected = useMemo(
+    () => filterConnectedReadyProducts(readyProducts, debounced, categoryFilter),
+    [readyProducts, debounced, categoryFilter],
+  );
+  const hasLinkedProductFilters =
+    debounced.length > 0 || isConnectedCategoryFilterActive(categoryFilter);
   const setupItems = useMemo(() => {
     if (!readinessQuery.data || readinessFilter === "linked") {
       return [];
     }
-    return filterReadinessItems(readinessQuery.data.items, readinessFilter, debounced);
-  }, [debounced, readinessFilter, readinessQuery.data]);
+    const bySearch = filterReadinessItems(
+      readinessQuery.data.items,
+      readinessFilter,
+      debounced,
+    );
+    return filterItemsByConnectedCategory(bySearch, categoryFilter, (item) => {
+      const meta = categoryBySupplierProductId.get(item.supplierProductId);
+      return {
+        categoryId: meta?.categoryId ?? null,
+        categoryName: meta?.categoryName ?? null,
+      };
+    });
+  }, [
+    categoryBySupplierProductId,
+    categoryFilter,
+    debounced,
+    readinessFilter,
+    readinessQuery.data,
+  ]);
 
   const selectableSetupItems = useMemo(
     () => setupItems.filter(isBulkConnectSelectable),
@@ -339,6 +431,7 @@ export function PurchaseOrderCreatePage() {
     setSupplierId(nextSupplierId);
     setSearch("");
     setDebounced("");
+    setCategoryFilter(emptyConnectedCategoryFilter());
     setReadinessFilter("linked");
     setSelectedProduct(null);
     setQtyText("1");
@@ -759,6 +852,144 @@ export function PurchaseOrderCreatePage() {
         }
       />
 
+      {supplierId ? (
+        <div className="flex flex-col gap-3" data-testid="po-order-cart">
+          {connected ? (
+            <PoDocumentSelectedItems
+              title={t("purchasing.orderItems")}
+              emptyTitle={t("purchasing.orderItemsEmpty")}
+              emptyDetail={t("purchasing.orderItemsEmptyHelp")}
+              productColLabel={t("purchasing.colProduct")}
+              qtyColLabel={t("purchasing.qty")}
+              unitCostColLabel={t("purchasing.unitCost")}
+              lineTotalColLabel={t("purchasing.lineTotal")}
+              actionsColLabel={t("purchasing.colActions")}
+              removeLabel={t("purchasing.removeLine")}
+              testId="po-connected-selected-items"
+              lineTestIdPrefix="po-connected-selected"
+              lines={connectedLines.map((line) => {
+                const product = readyProducts.find((p) => p.buyerProductId === line.productId);
+                const maxQty = product ? maxOrderablePurchaseQty(product) : null;
+                const atMax = maxQty != null && line.orderedQty >= maxQty;
+                const uom =
+                  line.uom ||
+                  (product
+                    ? formatUnitOfMeasureLabel(
+                        product.packageLabel || product.unitOfMeasure || "",
+                      )
+                    : "");
+                return {
+                  id: line.productId,
+                  productName: line.name,
+                  sku: product?.supplierSku,
+                  quantity: line.orderedQty,
+                  unitOfMeasure: uom,
+                  unitCost: line.unitPurchaseCost,
+                  lineTotal: line.orderedQty * line.unitPurchaseCost,
+                  quantityControl: product ? (
+                    <QuantityStepper
+                      compact
+                      value={line.orderedQty}
+                      valueTestId={`po-qty-${line.productId}`}
+                      increaseLabel={t("purchasing.increaseQty")}
+                      decreaseLabel={t("purchasing.decreaseQty")}
+                      incrementDisabled={!allowManage || !online || saving || atMax}
+                      onIncrement={() => setConnectedQty(product, line.orderedQty + 1)}
+                      onDecrement={() => setConnectedQty(product, line.orderedQty - 1)}
+                    />
+                  ) : undefined,
+                  onRemove: product
+                    ? () => setConnectedQty(product, 0)
+                    : () =>
+                        setConnectedLines((prev) =>
+                          prev.filter((l) => l.productId !== line.productId),
+                        ),
+                };
+              })}
+            />
+          ) : (
+            <PoDocumentSelectedItems
+              title={t("purchasing.orderItems")}
+              emptyTitle={t("purchasing.orderItemsEmpty")}
+              emptyDetail={t("purchasing.orderItemsEmptyHelp")}
+              productColLabel={t("purchasing.colProduct")}
+              qtyColLabel={t("purchasing.qty")}
+              unitCostColLabel={t("purchasing.unitCost")}
+              lineTotalColLabel={t("purchasing.lineTotal")}
+              actionsColLabel={t("purchasing.colActions")}
+              removeLabel={t("purchasing.removeLine")}
+              lines={externalLines.map((line) => ({
+                id: line.productId,
+                productName: line.name,
+                quantity: line.orderedQty,
+                unitOfMeasure: line.uom,
+                unitCost: line.unitPurchaseCost,
+                lineTotal: line.orderedQty * line.unitPurchaseCost,
+                quantityControl: (
+                  <span className="tabular-nums">
+                    {line.orderedQty} {line.uom}
+                  </span>
+                ),
+                onRemove: () =>
+                  setExternalLines((prev) => prev.filter((l) => l.productId !== line.productId)),
+              }))}
+            />
+          )}
+
+          <div className="flex flex-col gap-3" data-testid="po-order-summary">
+            <div className="po-document-totals">
+              <div className="po-document-totals__row">
+                <span className="po-document-totals__label">{t("purchasing.items")}</span>
+                <span className="po-document-totals__value tabular-nums">{activeLines.length}</span>
+              </div>
+              <div className="po-document-totals__row">
+                <span className="po-document-totals__label">{t("purchasing.subtotal")}</span>
+                <span className="po-document-totals__value tabular-nums">
+                  <MoneyDisplay amount={subtotal} testId="po-subtotal" />
+                </span>
+              </div>
+              <div className="po-document-totals__row po-document-totals__row--strong">
+                <span className="po-document-totals__label">{t("purchasing.orderTotal")}</span>
+                <span className="po-document-totals__value tabular-nums">
+                  <MoneyDisplay amount={subtotal} />
+                </span>
+              </div>
+            </div>
+            <p className="m-0 text-end text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.draftSummary")
+                .replace("{products}", String(activeLines.length))
+                .replace("{units}", String(unitCount))}
+            </p>
+            <Button
+              type="button"
+              className="w-full sm:ms-auto sm:w-auto"
+              disabled={
+                !allowManage ||
+                !online ||
+                saving ||
+                statusLocked ||
+                activeLines.length === 0 ||
+                stockBlocksCreate
+              }
+              onClick={() => void submit()}
+              data-testid="po-create-submit"
+            >
+              {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button type="button" disabled data-testid="po-create-submit">
+          {t("purchasing.createOrder")}
+        </Button>
+      )}
+
+      {error ? (
+        <Notice tone="danger" testId="po-create-error">
+          {error}
+        </Notice>
+      ) : null}
+
       {supplierId && connected ? (
         <section
           className="flex flex-col gap-3"
@@ -800,6 +1031,26 @@ export function PurchaseOrderCreatePage() {
               data-testid="po-product-search"
               containerClassName="po-setup-filter-search"
             />
+            {categoryOptions.length > 0 ? (
+              <ExitsMultiSelect
+                searchable
+                showSelectAll={false}
+                triggerMode="count"
+                value={connectedCategoryFilterToValues(categoryFilter)}
+                options={categoryOptions}
+                onChange={(next) => setCategoryFilter(connectedCategoryFilterFromValues(next))}
+                placeholder={t("purchasing.categories")}
+                menuLabel={t("purchasing.categoryFilter")}
+                searchPlaceholder={t("catalog.searchCategories")}
+                clearAllLabel={t("purchasing.deselectAllCategories")}
+                selectedCountLabel={(count) =>
+                  t("purchasing.categoriesTriggerCount").replace("{count}", String(count))
+                }
+                aria-label={t("purchasing.categoryFilter")}
+                testId="po-category-multiselect"
+                className="po-category-multiselect"
+              />
+            ) : null}
             <Button
               asChild
               variant="outline"
@@ -832,12 +1083,25 @@ export function PurchaseOrderCreatePage() {
               {linkedProductsQuery.isSuccess &&
               readyProducts.length > 0 &&
               filteredConnected.length === 0 &&
-              debounced ? (
+              hasLinkedProductFilters ? (
                 <EmptyState
-              align="center"
-              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
-                  title={t("purchasing.noProducts")}
-                  detail={t("purchasing.noProductsDetail")}
+                  align="center"
+                  icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+                  title={t("purchasing.noMatchingProducts")}
+                  detail={t("purchasing.noMatchingProductsDetail")}
+                  testId="po-connected-filter-empty"
+                  action={
+                    isConnectedCategoryFilterActive(categoryFilter) ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        data-testid="po-clear-categories"
+                        onClick={() => setCategoryFilter(emptyConnectedCategoryFilter())}
+                      >
+                        {t("purchasing.clearCategories")}
+                      </Button>
+                    ) : undefined
+                  }
                 />
               ) : null}
               <div className="po-order-table po-order-table--linked" data-testid="po-connected-product-list">
@@ -924,58 +1188,6 @@ export function PurchaseOrderCreatePage() {
                   })}
                 </ul>
               </div>
-              <PoDocumentSelectedItems
-                title={t("purchasing.orderItems")}
-                emptyTitle={t("purchasing.orderItemsEmpty")}
-                emptyDetail={t("purchasing.orderItemsEmptyHelp")}
-                productColLabel={t("purchasing.colProduct")}
-                qtyColLabel={t("purchasing.qty")}
-                unitCostColLabel={t("purchasing.unitCost")}
-                lineTotalColLabel={t("purchasing.lineTotal")}
-                actionsColLabel={t("purchasing.colActions")}
-                removeLabel={t("purchasing.removeLine")}
-                testId="po-connected-selected-items"
-                lineTestIdPrefix="po-connected-selected"
-                lines={connectedLines.map((line) => {
-                  const product = readyProducts.find((p) => p.buyerProductId === line.productId);
-                  const maxQty = product ? maxOrderablePurchaseQty(product) : null;
-                  const atMax = maxQty != null && line.orderedQty >= maxQty;
-                  const uom =
-                    line.uom ||
-                    (product
-                      ? formatUnitOfMeasureLabel(
-                          product.packageLabel || product.unitOfMeasure || "",
-                        )
-                      : "");
-                  return {
-                    id: line.productId,
-                    productName: line.name,
-                    sku: product?.supplierSku,
-                    quantity: line.orderedQty,
-                    unitOfMeasure: uom,
-                    unitCost: line.unitPurchaseCost,
-                    lineTotal: line.orderedQty * line.unitPurchaseCost,
-                    quantityControl: product ? (
-                      <QuantityStepper
-                        compact
-                        value={line.orderedQty}
-                        valueTestId={`po-qty-${line.productId}`}
-                        increaseLabel={t("purchasing.increaseQty")}
-                        decreaseLabel={t("purchasing.decreaseQty")}
-                        incrementDisabled={!allowManage || !online || saving || atMax}
-                        onIncrement={() => setConnectedQty(product, line.orderedQty + 1)}
-                        onDecrement={() => setConnectedQty(product, line.orderedQty - 1)}
-                      />
-                    ) : undefined,
-                    onRemove: product
-                      ? () => setConnectedQty(product, 0)
-                      : () =>
-                          setConnectedLines((prev) =>
-                            prev.filter((l) => l.productId !== line.productId),
-                          ),
-                  };
-                })}
-              />
             </>
           ) : (
             <>
@@ -1283,89 +1495,8 @@ export function PurchaseOrderCreatePage() {
               </Button>
             </div>
           ) : null}
-
-          <PoDocumentSelectedItems
-            title={t("purchasing.orderItems")}
-            emptyTitle={t("purchasing.orderItemsEmpty")}
-            emptyDetail={t("purchasing.orderItemsEmptyHelp")}
-            productColLabel={t("purchasing.colProduct")}
-            qtyColLabel={t("purchasing.qty")}
-            unitCostColLabel={t("purchasing.unitCost")}
-            lineTotalColLabel={t("purchasing.lineTotal")}
-            actionsColLabel={t("purchasing.colActions")}
-            removeLabel={t("purchasing.removeLine")}
-            lines={externalLines.map((line) => ({
-              id: line.productId,
-              productName: line.name,
-              quantity: line.orderedQty,
-              unitOfMeasure: line.uom,
-              unitCost: line.unitPurchaseCost,
-              lineTotal: line.orderedQty * line.unitPurchaseCost,
-              quantityControl: (
-                <span className="tabular-nums">
-                  {line.orderedQty} {line.uom}
-                </span>
-              ),
-              onRemove: () =>
-                setExternalLines((prev) => prev.filter((l) => l.productId !== line.productId)),
-            }))}
-          />
         </section>
       ) : null}
-
-      {error ? (
-        <Notice tone="danger" testId="po-create-error">
-          {error}
-        </Notice>
-      ) : null}
-
-      {supplierId ? (
-        <div className="flex flex-col gap-3" data-testid="po-order-summary">
-          <div className="po-document-totals">
-            <div className="po-document-totals__row">
-              <span className="po-document-totals__label">{t("purchasing.items")}</span>
-              <span className="po-document-totals__value tabular-nums">{activeLines.length}</span>
-            </div>
-            <div className="po-document-totals__row">
-              <span className="po-document-totals__label">{t("purchasing.subtotal")}</span>
-              <span className="po-document-totals__value tabular-nums">
-                <MoneyDisplay amount={subtotal} testId="po-subtotal" />
-              </span>
-            </div>
-            <div className="po-document-totals__row po-document-totals__row--strong">
-              <span className="po-document-totals__label">{t("purchasing.orderTotal")}</span>
-              <span className="po-document-totals__value tabular-nums">
-                <MoneyDisplay amount={subtotal} />
-              </span>
-            </div>
-          </div>
-          <p className="m-0 text-end text-[length:var(--exits-text-sm)] text-muted">
-            {t("purchasing.draftSummary")
-              .replace("{products}", String(activeLines.length))
-              .replace("{units}", String(unitCount))}
-          </p>
-          <Button
-            type="button"
-            className="w-full sm:ms-auto sm:w-auto"
-            disabled={
-              !allowManage ||
-              !online ||
-              saving ||
-              statusLocked ||
-              activeLines.length === 0 ||
-              stockBlocksCreate
-            }
-            onClick={() => void submit()}
-            data-testid="po-create-submit"
-          >
-            {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
-          </Button>
-        </div>
-      ) : (
-        <Button type="button" disabled data-testid="po-create-submit">
-          {t("purchasing.createOrder")}
-        </Button>
-      )}
     </div>
   );
 }

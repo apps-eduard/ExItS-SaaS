@@ -25,6 +25,9 @@ import type {
   CatalogProductScopeCode,
   PosCatalogProductDto,
   PosProductBrandDto,
+  PosProductBrandPagedResult,
+  PosProductCategoryDto,
+  PosProductCategoryPagedResult,
 } from "@/api/pos/pos-catalog-types";
 
 import {
@@ -160,6 +163,50 @@ function FormSelect({
       </select>
     </label>
   );
+}
+
+function isCategoryNameConflictError(err: unknown): boolean {
+  return (
+    err instanceof PosApiError &&
+    (err.errorCode === "pos.category.name.conflict" ||
+      /category.*already exists/i.test(err.problem.detail ?? err.message))
+  );
+}
+
+function findCategoryByName(
+  items: ReadonlyArray<PosProductCategoryDto>,
+  name: string,
+): PosProductCategoryDto | undefined {
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  return items.find((category) => category.name.trim().toLowerCase() === normalized);
+}
+
+function upsertCategoryInPagedCache(
+  previous: PosProductCategoryPagedResult | undefined,
+  category: PosProductCategoryDto,
+): PosProductCategoryPagedResult {
+  if (!previous) {
+    return {
+      items: [category],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    };
+  }
+  if (previous.items.some((item) => item.categoryId === category.categoryId)) {
+    return previous;
+  }
+  const items = [...previous.items, category].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
+  return {
+    ...previous,
+    items,
+    totalCount: previous.totalCount + 1,
+  };
 }
 
 function FormCheck({
@@ -353,6 +400,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const [newBrandName, setNewBrandName] = useState("");
+
+  /** Keeps a just-created category visible in the select before list refetch settles. */
+  const [pendingCategoryOption, setPendingCategoryOption] =
+    useState<PosProductCategoryDto | null>(null);
 
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", workspace?.organizationId, workspace?.branchId],
@@ -575,6 +626,111 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         throw new Error(t("catalog.duplicate.title"));
       }
 
+      const categoriesKey = [
+        "catalog",
+        "categories",
+        workspace.organizationId,
+        workspace.branchId,
+      ] as const;
+
+      let resolvedCategoryId = categoryId;
+      const pendingCategory = newCategoryName.trim();
+      if (pendingCategory) {
+        const known =
+          findCategoryByName(categoriesQuery.data?.items ?? [], pendingCategory) ??
+          (pendingCategoryOption &&
+          pendingCategoryOption.name.trim().toLowerCase() === pendingCategory.toLowerCase()
+            ? pendingCategoryOption
+            : undefined);
+        if (known) {
+          resolvedCategoryId = known.categoryId;
+        } else {
+          try {
+            const created = await createCatalogCategory(workspace, { name: pendingCategory });
+            queryClient.setQueryData<PosProductCategoryPagedResult>(categoriesKey, (previous) =>
+              upsertCategoryInPagedCache(previous, created),
+            );
+            setPendingCategoryOption(created);
+            resolvedCategoryId = created.categoryId;
+          } catch (err) {
+            if (!isCategoryNameConflictError(err)) {
+              throw err;
+            }
+            await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+            const refreshed = await listCatalogCategories(workspace, { status: "Active" });
+            queryClient.setQueryData(categoriesKey, refreshed);
+            const match = findCategoryByName(refreshed.items, pendingCategory);
+            if (!match) {
+              throw err;
+            }
+            setPendingCategoryOption(match);
+            resolvedCategoryId = match.categoryId;
+          }
+        }
+        setCategoryId(resolvedCategoryId);
+        setNewCategoryName("");
+      }
+
+      let resolvedBrandId = brandId;
+      const pendingBrand = newBrandName.trim();
+      if (pendingBrand) {
+        const brandsKey = [
+          "catalog",
+          "brands",
+          workspace.organizationId,
+          workspace.branchId,
+        ] as const;
+        const knownBrand = (brandsQuery.data?.items ?? []).find(
+          (brand) => brand.name.trim().toLowerCase() === pendingBrand.toLowerCase(),
+        );
+        if (knownBrand) {
+          resolvedBrandId = knownBrand.brandId;
+        } else {
+          try {
+            const created = await createCatalogBrand(workspace, { name: pendingBrand });
+            queryClient.setQueryData<PosProductBrandPagedResult>(brandsKey, (previous) => {
+              if (!previous) {
+                return {
+                  items: [created],
+                  totalCount: 1,
+                  page: 1,
+                  pageSize: 50,
+                };
+              }
+              if (previous.items.some((item) => item.brandId === created.brandId)) {
+                return previous;
+              }
+              return {
+                ...previous,
+                items: [...previous.items, created],
+                totalCount: previous.totalCount + 1,
+              };
+            });
+            resolvedBrandId = created.brandId;
+          } catch (err) {
+            const isConflict =
+              err instanceof PosApiError &&
+              (err.errorCode?.includes("brand.name.conflict") ||
+                /brand.*already exists/i.test(err.problem.detail ?? err.message));
+            if (!isConflict) {
+              throw err;
+            }
+            await queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
+            const refreshed = await listCatalogBrands(workspace, { status: "Active" });
+            queryClient.setQueryData(brandsKey, refreshed);
+            const match = refreshed.items.find(
+              (brand) => brand.name.trim().toLowerCase() === pendingBrand.toLowerCase(),
+            );
+            if (!match) {
+              throw err;
+            }
+            resolvedBrandId = match.brandId;
+          }
+        }
+        setBrandId(resolvedBrandId);
+        setNewBrandName("");
+      }
+
       const price = Number(sellingPrice);
 
       if (Number.isNaN(price) || price < 0) {
@@ -626,8 +782,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           description: description.trim() || null,
           sku: sku.trim() || null,
           barcode: barcode.trim() || null,
-          categoryId: categoryId || null,
-          brandId: brandId || null,
+          categoryId: resolvedCategoryId || null,
+          brandId: resolvedBrandId || null,
           unitOfMeasure,
           sellingPrice: price,
           sellingMode,
@@ -662,8 +818,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         description: description.trim() || null,
         sku: sku.trim() || null,
         barcode: barcode.trim() || null,
-        categoryId: categoryId || null,
-        brandId: brandId || null,
+        categoryId: resolvedCategoryId || null,
+        brandId: resolvedBrandId || null,
         unitOfMeasure,
         sellingPrice: price,
         sellingMode,
@@ -760,15 +916,43 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       if (!workspace || !newCategoryName.trim()) {
         throw new Error("Category name required");
       }
-      return createCatalogCategory(workspace, { name: newCategoryName.trim() });
+      const pendingCategory = newCategoryName.trim();
+      const existing = findCategoryByName(categoriesQuery.data?.items ?? [], pendingCategory);
+      if (existing) {
+        return existing;
+      }
+      return createCatalogCategory(workspace, { name: pendingCategory });
     },
     onSuccess: async (created) => {
-      await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+      const categoriesKey = [
+        "catalog",
+        "categories",
+        workspace?.organizationId,
+        workspace?.branchId,
+      ] as const;
+      queryClient.setQueryData<PosProductCategoryPagedResult>(categoriesKey, (previous) =>
+        upsertCategoryInPagedCache(previous, created),
+      );
+      setPendingCategoryOption(created);
       setCategoryId(created.categoryId);
       setNewCategoryName("");
       setError(null);
+      await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
     },
     onError: (err) => {
+      if (isCategoryNameConflictError(err)) {
+        const match = findCategoryByName(
+          categoriesQuery.data?.items ?? [],
+          newCategoryName,
+        );
+        if (match) {
+          setPendingCategoryOption(match);
+          setCategoryId(match.categoryId);
+          setNewCategoryName("");
+        }
+        setError(t("catalog.categoryAlreadyExists"));
+        return;
+      }
       setError(
         err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
       );
@@ -857,6 +1041,35 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         updatedAtUtc: productQuery.data?.updatedAtUtc ?? "",
       },
     ];
+  })();
+
+  const categoryOptions: PosProductCategoryDto[] = (() => {
+    const active = categoriesQuery.data?.items ?? [];
+    const byId = new Map(active.map((category) => [category.categoryId, category] as const));
+    if (
+      pendingCategoryOption &&
+      !byId.has(pendingCategoryOption.categoryId)
+    ) {
+      byId.set(pendingCategoryOption.categoryId, pendingCategoryOption);
+    }
+    const currentCategoryId = categoryId || productQuery.data?.categoryId || "";
+    const currentCategoryName = productQuery.data?.categoryName;
+    if (
+      currentCategoryId &&
+      !byId.has(currentCategoryId)
+    ) {
+      byId.set(currentCategoryId, {
+        categoryId: currentCategoryId,
+        organizationId: productQuery.data?.organizationId ?? workspace.organizationId,
+        name: currentCategoryName?.trim() || currentCategoryId,
+        status: "Active",
+        createdAtUtc: productQuery.data?.createdAtUtc ?? "",
+        updatedAtUtc: productQuery.data?.updatedAtUtc ?? "",
+      });
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
   })();
 
   return (
@@ -977,7 +1190,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               onChange={setCategoryId}
             >
               <option value="">{t("catalog.noCategory")}</option>
-              {categoriesQuery.data?.items.map((category) => (
+              {categoryOptions.map((category) => (
                 <option key={category.categoryId} value={category.categoryId}>
                   {category.name}
                 </option>

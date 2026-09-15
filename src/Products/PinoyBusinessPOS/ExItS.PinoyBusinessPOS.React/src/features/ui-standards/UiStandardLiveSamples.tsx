@@ -60,6 +60,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { SettingsSelect } from "@/components/ui/settings-select";
 import { Switch } from "@/components/ui/switch";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
@@ -178,6 +179,8 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [paymentTerms, setPaymentTerms] = useState("30");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [amount, setAmount] = useState("1,250.00");
+  const [stepperWhole, setStepperWhole] = useState(2);
+  const [stepperWeighted, setStepperWeighted] = useState(1);
   const [selectedRow, setSelectedRow] = useState("1");
   const [tableSearch, setTableSearch] = useState("");
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
@@ -769,6 +772,58 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               <span className="text-[length:var(--exits-text-xs)] text-[var(--exits-danger)]">
                 Enter a valid email address.
               </span>
+            </div>
+            <div className="flex flex-col gap-2" data-testid="ui-standard-quantity-stepper">
+              <SectionLabel>QuantityStepper</SectionLabel>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                Canonical <code className="text-foreground">QuantityStepper</code> — editable center,
+                domain step/precision from the feature.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <QuantityStepper
+                  compact
+                  value={stepperWhole}
+                  onChange={setStepperWhole}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  unit="Pack"
+                  decreaseLabel="Decrease whole quantity"
+                  increaseLabel="Increase whole quantity"
+                  ariaLabel="Whole unit quantity"
+                  valueTestId="ui-standard-qty-whole"
+                />
+                <QuantityStepper
+                  compact
+                  value={stepperWeighted}
+                  onChange={setStepperWeighted}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  unit="Kg"
+                  decreaseLabel="Decrease weight quantity"
+                  increaseLabel="Increase weight quantity"
+                  ariaLabel="Weighted quantity"
+                  valueTestId="ui-standard-qty-weighted"
+                />
+                <QuantityStepper
+                  compact
+                  value={1}
+                  onChange={() => undefined}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  disabled
+                  decreaseLabel="Decrease disabled quantity"
+                  increaseLabel="Increase disabled quantity"
+                  ariaLabel="Disabled quantity"
+                  valueTestId="ui-standard-qty-disabled"
+                />
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="ui-standard-qty-playground">
+                Playground — whole: {stepperWhole} · kg: {stepperWeighted} · step=1 (decimals like
+                0.001 not allowed)
+              </p>
             </div>
           </Card>
         ) : null}

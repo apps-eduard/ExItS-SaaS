@@ -395,12 +395,12 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
   },
   {
     id: "input",
-    component: "Input / SearchField / Switch",
+    component: "Input / SearchField / Switch / QuantityStepper",
     standard: "Form controls",
     category: "forms",
     status: "Locked",
-    summary: "Canonical form fields, search, validation, disabled",
-    keywords: ["form", "input", "search", "switch", "validation"],
+    summary: "Canonical form fields, search, validation, disabled, quantity stepper",
+    keywords: ["form", "input", "search", "switch", "validation", "quantity", "stepper"],
   },
   {
     id: "exits-upload",

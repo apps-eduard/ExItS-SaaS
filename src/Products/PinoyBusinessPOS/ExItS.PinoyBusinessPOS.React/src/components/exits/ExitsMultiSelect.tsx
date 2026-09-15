@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { CountBadge } from "@/components/exits/CountChip";
 import {
   EXITS_SELECT_TRIGGER_CLASS,
   type ExitsSelectOption,
@@ -20,8 +21,15 @@ export type ExitsMultiSelectProps<T extends string = string> = {
   placeholder?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
+  /** When false, hide Select all (empty selection already means “all”). Default true. */
+  showSelectAll?: boolean;
   selectAllLabel?: string;
   clearAllLabel?: string;
+  /**
+   * `labels` — show option label when one selected (legacy).
+   * `count` — always compact “placeholder · N” via selectedCountLabel (large option sets).
+   */
+  triggerMode?: "labels" | "count";
   selectedCountLabel?: (count: number) => string;
   testId?: string;
   "aria-label"?: string;
@@ -45,8 +53,10 @@ export function ExitsMultiSelect<T extends string>({
   placeholder = "Select…",
   searchable = false,
   searchPlaceholder = "Search…",
+  showSelectAll = true,
   selectAllLabel = "Select all",
   clearAllLabel = "Clear",
+  triggerMode = "labels",
   selectedCountLabel = (count) => `${count} selected`,
   testId,
   "aria-label": ariaLabel,
@@ -71,9 +81,11 @@ export function ExitsMultiSelect<T extends string>({
   const triggerText =
     value.length === 0
       ? placeholder
-      : value.length === 1
-        ? (options.find((o) => o.value === value[0])?.label ?? value[0])
-        : selectedCountLabel(value.length);
+      : triggerMode === "count"
+        ? selectedCountLabel(value.length)
+        : value.length === 1
+          ? (options.find((o) => o.value === value[0])?.label ?? value[0])
+          : selectedCountLabel(value.length);
 
   function toggle(next: T) {
     if (selected.has(next)) {
@@ -149,20 +161,22 @@ export function ExitsMultiSelect<T extends string>({
         </div>
       ) : null}
       <div className="receive-stock-category-menu__bulk" role="group">
-        <button
-          type="button"
-          role="menuitem"
-          className="receive-stock-category-menu__bulk-action"
-          disabled={allSelected}
-          data-testid={testId ? `${testId}-select-all` : undefined}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onChange(options.filter((o) => !o.disabled).map((o) => o.value));
-          }}
-        >
-          {selectAllLabel}
-        </button>
+        {showSelectAll ? (
+          <button
+            type="button"
+            role="menuitem"
+            className="receive-stock-category-menu__bulk-action"
+            disabled={allSelected}
+            data-testid={testId ? `${testId}-select-all` : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onChange(options.filter((o) => !o.disabled).map((o) => o.value));
+            }}
+          >
+            {selectAllLabel}
+          </button>
+        ) : null}
         <button
           type="button"
           role="menuitem"
@@ -190,7 +204,7 @@ export function ExitsMultiSelect<T extends string>({
               <button
                 key={option.value}
                 type="button"
-                role="menuitem"
+                role="menuitemcheckbox"
                 aria-checked={checked}
                 disabled={option.disabled}
                 className={cn(
@@ -216,6 +230,9 @@ export function ExitsMultiSelect<T extends string>({
                   {checked ? <Check className="size-3.5" strokeWidth={2.5} /> : null}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-start">{option.label}</span>
+                {option.count != null ? (
+                  <CountBadge count={option.count} tone={checked ? "primary" : "neutral"} />
+                ) : null}
               </button>
             );
           })

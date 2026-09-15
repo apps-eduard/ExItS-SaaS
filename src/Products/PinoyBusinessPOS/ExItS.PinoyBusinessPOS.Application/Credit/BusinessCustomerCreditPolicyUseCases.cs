@@ -82,6 +82,31 @@ internal static class BusinessCustomerCreditPolicyRelationshipGuard
         return ApplicationResult<ConnectedSupplierRelationship>.Success(relationship);
     }
 
+    /// <summary>
+    /// Resolves relationship for either party (seller or buyer). Used for read-only GET
+    /// so the buyer can see the approved credit limit on the connected supplier page.
+    /// </summary>
+    public static async Task<ApplicationResult<ConnectedSupplierRelationship>> ResolveForPartyAsync(
+        IConnectedSupplierRelationshipRepository relationships,
+        Guid organizationId,
+        Guid connectionId,
+        CancellationToken cancellationToken)
+    {
+        var relationship = await relationships
+            .GetAsync(ConnectedSupplierRelationshipId.From(connectionId), cancellationToken)
+            .ConfigureAwait(false);
+        var org = PosOrganizationId.From(organizationId);
+        if (relationship is null
+            || (relationship.SupplierOrganizationId != org && relationship.BuyerOrganizationId != org))
+        {
+            return ApplicationResult<ConnectedSupplierRelationship>.Failure(
+                ConnectedSupplierErrorCodes.NotFound,
+                "Business customer relationship was not found.");
+        }
+
+        return ApplicationResult<ConnectedSupplierRelationship>.Success(relationship);
+    }
+
     public static ApplicationResult<T> RequireActiveForMutation<T>(ConnectedSupplierRelationship relationship)
     {
         if (relationship.Status != ConnectedSupplierRelationshipStatus.Active)
@@ -112,12 +137,13 @@ public sealed class GetBusinessCustomerCreditPolicy
     }
 
     public async Task<ApplicationResult<BusinessCustomerCreditPolicyReadDto>> ExecuteAsync(
-        Guid sellerOrganizationId,
+        Guid organizationId,
         Guid connectionId,
         CancellationToken cancellationToken = default)
     {
+        // Buyer or seller may read — buyer needs the approved limit on the supplier page.
         var resolved = await BusinessCustomerCreditPolicyRelationshipGuard
-            .ResolveForSellerAsync(_relationships, sellerOrganizationId, connectionId, cancellationToken)
+            .ResolveForPartyAsync(_relationships, organizationId, connectionId, cancellationToken)
             .ConfigureAwait(false);
         if (!resolved.IsSuccess)
         {

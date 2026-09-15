@@ -34,6 +34,7 @@ import {
 } from "@/components/exits/ExitsTable";
 import { FilterChip } from "@/components/exits/FilterChip";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -76,13 +77,13 @@ type DraftLine = {
   name: string;
   sku: string | null;
   uom: string;
+  sellingMode: string;
   tracksExpiration: boolean;
   quantity: number;
   unitCost: number;
   /** Branch-effective catalog selling price at add time (margin comparison source). */
   effectiveSellingPrice: number;
   sellingPrice: number;
-  qtyInput: string;
   costInput: string;
   expiryDate: string;
   lotNumber: string;
@@ -141,6 +142,7 @@ export function ReceiveStockPage() {
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [finderOpen, setFinderOpen] = useState(false);
   const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
+  const [focusCostProductId, setFocusCostProductId] = useState<string | null>(null);
   const [trackedOnly, setTrackedOnly] = useState(false);
   const [productPage, setProductPage] = useState(1);
   const [productPageSize, setProductPageSize] = useState<number>(PRODUCT_PAGE_SIZE_OPTIONS[0]);
@@ -235,6 +237,24 @@ export function ReceiveStockPage() {
     const handle = window.setTimeout(() => setHighlightProductId(null), 1200);
     return () => window.clearTimeout(handle);
   }, [highlightProductId]);
+
+  useEffect(() => {
+    if (!focusCostProductId) {
+      return;
+    }
+    const productId = focusCostProductId;
+    const frame = window.requestAnimationFrame(() => {
+      const costInput = document.querySelector(
+        `[data-testid="direct-line-cost-${productId}"]`,
+      );
+      if (costInput instanceof HTMLInputElement) {
+        costInput.focus();
+        costInput.select();
+      }
+      setFocusCostProductId(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusCostProductId]);
 
   const estimatedTotal = useMemo(
     () => roundMoney(lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)),
@@ -461,18 +481,19 @@ export function ReceiveStockPage() {
       name: product.name,
       sku: product.sku ?? null,
       uom: product.unitOfMeasure,
+      sellingMode: product.sellingMode ?? "PerItem",
       tracksExpiration,
       quantity: 1,
       unitCost: 0,
       effectiveSellingPrice: catalogSelling,
       sellingPrice: catalogSelling,
-      qtyInput: "1",
       costInput: "",
       expiryDate: "",
       lotNumber: "",
     };
     setLines((prev) => [...prev, line]);
     setError(null);
+    setFocusCostProductId(product.productId);
     if (!prefersReducedMotion()) {
       setHighlightProductId(product.productId);
     }
@@ -480,17 +501,17 @@ export function ReceiveStockPage() {
 
   function patchLine(
     productId: string,
-    patch: Partial<
-      Pick<DraftLine, "qtyInput" | "costInput" | "expiryDate" | "lotNumber">
-    >,
+    patch: Partial<Pick<DraftLine, "costInput" | "expiryDate" | "lotNumber" | "quantity">>,
   ) {
     setLines((prev) =>
       prev.map((line) => {
         if (line.productId !== productId) return line;
         const next = { ...line, ...patch };
-        if (patch.qtyInput !== undefined) {
-          const qty = Number(patch.qtyInput);
-          next.quantity = Number.isFinite(qty) && qty > 0 ? qty : 0;
+        if (patch.quantity !== undefined) {
+          next.quantity =
+            Number.isFinite(patch.quantity) && patch.quantity >= 1
+              ? Math.trunc(patch.quantity)
+              : line.quantity;
         }
         if (patch.costInput !== undefined) {
           const cost = parseMoneyInput(patch.costInput);
@@ -875,23 +896,23 @@ export function ReceiveStockPage() {
                                 ) : null}
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
-                                <div className="flex items-center gap-1.5">
-                                  <input
-                                    className="exits-input receive-qty-input"
-                                    value={line.qtyInput}
-                                    onChange={(e) =>
-                                      patchLine(line.productId, { qtyInput: e.target.value })
-                                    }
-                                    inputMode="decimal"
-                                    aria-invalid={qtyInvalid || undefined}
-                                    aria-required
-                                    aria-label={t("purchasing.qtyShort")}
-                                    data-testid={`direct-line-qty-${line.productId}`}
-                                  />
-                                  <span className="text-[length:var(--exits-text-xs)] text-muted">
-                                    {line.uom}
-                                  </span>
-                                </div>
+                                <QuantityStepper
+                                  compact
+                                  value={line.quantity}
+                                  onChange={(next) =>
+                                    patchLine(line.productId, { quantity: next })
+                                  }
+                                  min={1}
+                                  step={1}
+                                  precision={0}
+                                  unit={line.uom}
+                                  invalid={qtyInvalid}
+                                  decreaseLabel={t("purchasing.decreaseQty")}
+                                  increaseLabel={t("purchasing.increaseQty")}
+                                  ariaLabel={t("purchasing.qtyShort")}
+                                  valueTestId={`direct-line-qty-${line.productId}`}
+                                  className="receive-qty-stepper"
+                                />
                               </ExitsTableCell>
                               <ExitsTableCell cellAlign="text">
                                 <input

@@ -516,6 +516,9 @@ describe("ReceiveStockPage receipt-first collapsible picker", () => {
       expect(screen.getByTestId("direct-add-products")).toBeInTheDocument();
       expect(screen.queryByTestId(`direct-product-${productId}`)).not.toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(screen.getByTestId(`direct-line-cost-${productId}`)).toHaveFocus();
+    });
     expect(screen.getByTestId("direct-add-products-trigger")).toHaveAttribute(
       "aria-expanded",
       "true",

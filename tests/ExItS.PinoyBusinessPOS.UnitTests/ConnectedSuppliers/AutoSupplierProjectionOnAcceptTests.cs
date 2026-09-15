@@ -37,7 +37,7 @@ public sealed class AutoSupplierProjectionOnAcceptTests
         Assert.Empty(suppliers.Items);
 
         var ensure = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now, default);
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, ensure);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, ensure.Result);
         Assert.Empty(suppliers.Items);
     }
 
@@ -102,8 +102,8 @@ public sealed class AutoSupplierProjectionOnAcceptTests
         var first = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now.AddMinutes(1), default);
         var second = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now.AddMinutes(2), default);
 
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.Created, first);
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, second);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.Created, first.Result);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, second.Result);
         Assert.Single(suppliers.Items);
     }
 
@@ -203,7 +203,7 @@ public sealed class AutoSupplierProjectionOnAcceptTests
         invite.Approve(Now.AddMinutes(1));
 
         var result = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now.AddMinutes(1), default);
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.LinkedExistingExternal, result);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.LinkedExistingExternal, result.Result);
         Assert.Single(suppliers.Items);
         Assert.Equal(invite.Id, suppliers.Items[0].ConnectedRelationshipId);
         Assert.Equal(SupplierConnectionType.ConnectedOrganization, suppliers.Items[0].ConnectionType);
@@ -225,7 +225,7 @@ public sealed class AutoSupplierProjectionOnAcceptTests
         invite.Approve(Now.AddMinutes(1));
 
         var result = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now.AddMinutes(1), default);
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict, result);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict, result.Result);
         Assert.Equal(2, suppliers.Items.Count);
         Assert.Null(suppliers.Items[0].ConnectedRelationshipId);
         Assert.Equal(invite.Id, suppliers.Items[1].ConnectedRelationshipId);
@@ -252,7 +252,7 @@ public sealed class AutoSupplierProjectionOnAcceptTests
         Assert.Equal(invite.Id, suppliers.Items[0].ConnectedRelationshipId);
         // Ensure must not recreate for non-Active
         var ensure = await BuyerConnectedSupplierMaster.EnsureAsync(suppliers, invite, Now.AddMinutes(6), default);
-        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, ensure);
+        Assert.Equal(BuyerConnectedSupplierEnsureResult.AlreadyPresent, ensure.Result);
         Assert.Single(suppliers.Items);
     }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  BadgeCheck,
   CheckCircle2,
   CircleDollarSign,
   ClipboardList,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
+import { getBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
 import {
   getSupplierPayableSummary,
   listSupplierPayablePayments,
@@ -95,9 +97,14 @@ function canRecordPayment(payable: PosSupplierPayableDto): boolean {
 
 type SupplierCreditSectionProps = {
   supplierId: string;
+  /** Connected B2B relationship — enables approved credit limit from seller policy. */
+  connectedRelationshipId?: string | null;
 };
 
-export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps) {
+export function SupplierCreditSection({
+  supplierId,
+  connectedRelationshipId = null,
+}: SupplierCreditSectionProps) {
   const { t } = useI18n();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -127,6 +134,19 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
     queryKey: ["supplier-payable-summary", workspace?.organizationId, supplierId],
     enabled: Boolean(workspace) && allowView && online,
     queryFn: ({ signal }) => getSupplierPayableSummary(workspace!, supplierId, signal),
+  });
+
+  const creditPolicyQuery = useQuery({
+    queryKey: [
+      "connected-suppliers",
+      "buyer-credit-policy",
+      workspace?.organizationId,
+      connectedRelationshipId,
+    ],
+    enabled:
+      Boolean(workspace) && allowView && online && Boolean(connectedRelationshipId),
+    queryFn: ({ signal }) =>
+      getBusinessCustomerCreditPolicy(workspace!, connectedRelationshipId!, signal),
   });
 
   const listQuery = useQuery({
@@ -166,6 +186,12 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
   const payables = listQuery.data?.items ?? [];
   const summary = summaryQuery.data;
   const paidCount = payables.filter((p) => p.status === "Paid").length;
+  const creditPolicy = creditPolicyQuery.data;
+  const approvedCreditLimit =
+    creditPolicy?.status === "Approved" && creditPolicy.creditLimit != null
+      ? creditPolicy.creditLimit
+      : null;
+  const showApprovedCreditLimit = Boolean(connectedRelationshipId);
   const paymentAmount = parseMoneyInput(amountText);
   const remainingAfterPayment =
     paymentTarget && paymentAmount !== null
@@ -231,7 +257,30 @@ export function SupplierCreditSection({ supplierId }: SupplierCreditSectionProps
             {t("supplierPayables.loadFailed")}
           </p>
         ) : (
-          <dl className="supplier-credit-stats m-0">
+          <dl
+            className={
+              showApprovedCreditLimit
+                ? "supplier-credit-stats supplier-credit-stats--with-limit m-0"
+                : "supplier-credit-stats m-0"
+            }
+          >
+            {showApprovedCreditLimit ? (
+              <div className="supplier-credit-stat supplier-credit-stat--limit">
+                <dt>
+                  <BadgeCheck className="supplier-credit-stat__icon" aria-hidden />
+                  {t("supplierPayables.approvedCreditLimit")}
+                </dt>
+                <dd className="m-0 tabular-nums" data-testid="supplier-credit-approved-limit">
+                  {creditPolicyQuery.isLoading ? (
+                    t("loading.label")
+                  ) : approvedCreditLimit != null ? (
+                    <MoneyDisplay amount={approvedCreditLimit} />
+                  ) : (
+                    "—"
+                  )}
+                </dd>
+              </div>
+            ) : null}
             <div className="supplier-credit-stat supplier-credit-stat--outstanding">
               <dt>
                 <CircleDollarSign className="supplier-credit-stat__icon" aria-hidden />

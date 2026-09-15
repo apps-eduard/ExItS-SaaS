@@ -712,6 +712,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "catalog.brandAlreadyExists": "Anaa na ang brand.",
 
+  "catalog.categoryAlreadyExists": "Anaa na ang category.",
+
   "catalog.brandOptional": "Opsyonal ang tatak.",
 
   "catalog.brandStatusFilter": "Status sa brand",
@@ -9206,6 +9208,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.categoriesTriggerCount": "Categories · {count}",
   "purchasing.selectAllCategories": "Pilia tanan",
   "purchasing.deselectAllCategories": "Tangtangon tanan",
   "purchasing.clearCategories": "Clear categories",
@@ -9361,6 +9364,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "supplierPayables.openCount": "Open payables",
 
   "supplierPayables.paidCount": "Paid payables",
+
+  "supplierPayables.approvedCreditLimit": "Approved credit limit",
 
   "supplierPayables.listTitle": "Payables",
 

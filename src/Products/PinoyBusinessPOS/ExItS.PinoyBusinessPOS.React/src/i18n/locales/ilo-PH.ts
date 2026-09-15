@@ -712,6 +712,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "catalog.brandAlreadyExists": "Addaen ti brand.",
 
+  "catalog.categoryAlreadyExists": "Addaen ti category.",
+
   "catalog.brandOptional": "Opsional ti brand.",
 
   "catalog.brandStatusFilter": "Status ti brand",
@@ -9206,6 +9208,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
   "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.categoriesTriggerCount": "Categories · {count}",
   "purchasing.selectAllCategories": "Pilien amin",
   "purchasing.deselectAllCategories": "Ikkaten amin",
   "purchasing.clearCategories": "Clear categories",
@@ -9361,6 +9364,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "supplierPayables.openCount": "Open payables",
 
   "supplierPayables.paidCount": "Paid payables",
+
+  "supplierPayables.approvedCreditLimit": "Approved credit limit",
 
   "supplierPayables.listTitle": "Payables",
 

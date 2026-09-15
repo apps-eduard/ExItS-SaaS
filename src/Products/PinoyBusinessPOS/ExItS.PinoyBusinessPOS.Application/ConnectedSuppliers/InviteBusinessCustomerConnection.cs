@@ -2,10 +2,12 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
@@ -359,22 +361,42 @@ public enum BuyerConnectedSupplierEnsureResult
     CreatedDistinctDueToNameConflict = 3
 }
 
+/// <summary>Ensure result plus whether a buyer-branch visibility grant was written.</summary>
+public sealed record BuyerConnectedSupplierEnsureOutcome(
+    BuyerConnectedSupplierEnsureResult Result,
+    Guid? SupplierId,
+    bool BranchAccessGranted)
+{
+    public bool RequiresPersist =>
+        BranchAccessGranted
+        || Result is BuyerConnectedSupplierEnsureResult.Created
+            or BuyerConnectedSupplierEnsureResult.LinkedExistingExternal
+            or BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict;
+}
+
 /// <summary>
 /// Idempotent buyer-side connected Supplier projection for SellerOrganization → BuyerOrganization.
 /// Keyed by ConnectedSupplierRelationshipId (commercial direction). Never invents a reverse B→A sale.
+/// Also ensures PartyBranchAccess so branch-scoped Suppliers lists can see the projection.
 /// </summary>
 public static class BuyerConnectedSupplierMaster
 {
-    public static async Task<BuyerConnectedSupplierEnsureResult> EnsureAsync(
+    public static async Task<BuyerConnectedSupplierEnsureOutcome> EnsureAsync(
         ISupplierRepository suppliers,
         ConnectedSupplierRelationship relationship,
         DateTimeOffset utcNow,
-        CancellationToken ct)
+        CancellationToken ct,
+        PartyBranchAccessService? branchAccess = null,
+        Guid? buyerActingBranchId = null,
+        IOrganizationBranchDirectory? branches = null)
     {
         if (relationship.Status != ConnectedSupplierRelationshipStatus.Active)
         {
             // Pending / Declined / Disconnected must not create an active purchasing projection.
-            return BuyerConnectedSupplierEnsureResult.AlreadyPresent;
+            return new BuyerConnectedSupplierEnsureOutcome(
+                BuyerConnectedSupplierEnsureResult.AlreadyPresent,
+                SupplierId: null,
+                BranchAccessGranted: false);
         }
 
         var buyer = relationship.BuyerOrganizationId;
@@ -383,7 +405,18 @@ public static class BuyerConnectedSupplierMaster
             .ConfigureAwait(false);
         if (existing is not null)
         {
-            return BuyerConnectedSupplierEnsureResult.AlreadyPresent;
+            var grantedExisting = await EnsureBuyerBranchVisibilityAsync(
+                    branchAccess,
+                    branches,
+                    buyer.Value,
+                    existing.Id.Value,
+                    buyerActingBranchId,
+                    ct)
+                .ConfigureAwait(false);
+            return new BuyerConnectedSupplierEnsureOutcome(
+                BuyerConnectedSupplierEnsureResult.AlreadyPresent,
+                existing.Id.Value,
+                grantedExisting);
         }
 
         var publicOrgId = relationship.SupplierPublicOrganizationIdSnapshot?.Trim();
@@ -407,7 +440,18 @@ public static class BuyerConnectedSupplierMaster
         {
             nameConflict.AttachConnectedRelationship(relationship.Id, utcNow);
             await suppliers.UpdateAsync(nameConflict, ct).ConfigureAwait(false);
-            return BuyerConnectedSupplierEnsureResult.LinkedExistingExternal;
+            var grantedLinked = await EnsureBuyerBranchVisibilityAsync(
+                    branchAccess,
+                    branches,
+                    buyer.Value,
+                    nameConflict.Id.Value,
+                    buyerActingBranchId,
+                    ct)
+                .ConfigureAwait(false);
+            return new BuyerConnectedSupplierEnsureOutcome(
+                BuyerConnectedSupplierEnsureResult.LinkedExistingExternal,
+                nameConflict.Id.Value,
+                grantedLinked);
         }
 
         var createdDistinct = false;
@@ -430,8 +474,80 @@ public static class BuyerConnectedSupplierMaster
             notes: publicOrgId);
         master.AttachConnectedRelationship(relationship.Id, utcNow);
         await suppliers.AddAsync(master, ct).ConfigureAwait(false);
-        return createdDistinct
-            ? BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict
-            : BuyerConnectedSupplierEnsureResult.Created;
+        var grantedCreated = await EnsureBuyerBranchVisibilityAsync(
+                branchAccess,
+                branches,
+                buyer.Value,
+                master.Id.Value,
+                buyerActingBranchId,
+                ct)
+            .ConfigureAwait(false);
+        return new BuyerConnectedSupplierEnsureOutcome(
+            createdDistinct
+                ? BuyerConnectedSupplierEnsureResult.CreatedDistinctDueToNameConflict
+                : BuyerConnectedSupplierEnsureResult.Created,
+            master.Id.Value,
+            grantedCreated);
+    }
+
+    /// <summary>
+    /// Branch-scoped Suppliers lists filter by supplier_branch_access.
+    /// Connected masters created without a grant are invisible at the acting branch.
+    /// </summary>
+    private static async Task<bool> EnsureBuyerBranchVisibilityAsync(
+        PartyBranchAccessService? branchAccess,
+        IOrganizationBranchDirectory? branches,
+        Guid buyerOrganizationId,
+        Guid supplierId,
+        Guid? buyerActingBranchId,
+        CancellationToken ct)
+    {
+        if (branchAccess is null || supplierId == Guid.Empty)
+        {
+            return false;
+        }
+
+        Guid? branchId = buyerActingBranchId is Guid acting && acting != Guid.Empty
+            ? acting
+            : null;
+        if (branchId is null && branches is not null)
+        {
+            branchId = await branches
+                .GetPrimaryBranchIdAsync(buyerOrganizationId, ct)
+                .ConfigureAwait(false);
+        }
+
+        if (branchId is not Guid resolved || resolved == Guid.Empty)
+        {
+            return false;
+        }
+
+        var alreadyVisible = await branchAccess
+            .CanViewSupplierAsync(
+                buyerOrganizationId,
+                resolved,
+                supplierId,
+                new PartyBranchAccessActor(
+                    PosRole: null,
+                    OrganizationManagementAuthority: false,
+                    ActingBranchId: resolved),
+                ct)
+            .ConfigureAwait(false);
+        if (alreadyVisible)
+        {
+            return false;
+        }
+
+        await branchAccess
+            .GrantSupplierAccessAsync(
+                buyerOrganizationId,
+                resolved,
+                supplierId,
+                PartyBranchGrantSource.CreateAtBranch,
+                grantedByActorId: null,
+                ct,
+                persistChanges: false)
+            .ConfigureAwait(false);
+        return true;
     }
 }
