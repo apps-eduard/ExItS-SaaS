@@ -34,6 +34,8 @@ export function WorkspaceTransitionOverlay({
       role="status"
       aria-live="polite"
       aria-busy={active ? "true" : "false"}
+      // Logical close must stop hit-testing immediately (fade may continue briefly).
+      style={active ? undefined : { pointerEvents: "none" }}
       {...(!active ? { inert: true } : {})}
     >
       <div className="exits-workspace-transition__backdrop" aria-hidden="true" />

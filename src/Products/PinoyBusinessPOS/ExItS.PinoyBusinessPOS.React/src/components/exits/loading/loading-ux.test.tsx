@@ -49,11 +49,10 @@ describe("loading UX system", () => {
     rerender(
       <WorkspaceTransitionOverlay active={false} label="Switching workspace…" detail="Kizy Store" />,
     );
-    expect(screen.getByTestId("workspace-transition-overlay")).toHaveAttribute(
-      "data-active",
-      "false",
-    );
-    expect(screen.getByTestId("workspace-transition-overlay")).toHaveAttribute("inert");
+    const overlay = screen.getByTestId("workspace-transition-overlay");
+    expect(overlay).toHaveAttribute("data-active", "false");
+    expect(overlay).toHaveAttribute("inert");
+    expect(overlay).toHaveStyle({ pointerEvents: "none" });
   });
 
   it("renders page skeleton without bare Loading text node", () => {

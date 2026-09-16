@@ -20917,12 +20917,19 @@ a.exits-chip--primary:hover {
   z-index: 1400;
   display: grid;
   place-items: center;
-  pointer-events: all;
+  /* Only block while actively binding — never by default. */
+  pointer-events: none;
 }
 
-/* Min-visible fade after bind settles — paint only, do not block the shell. */
-.exits-workspace-transition[data-active="false"] {
-  pointer-events: none;
+.exits-workspace-transition[data-active="true"] {
+  pointer-events: auto;
+}
+
+/* Min-visible fade after bind settles — paint only, do not block the shell.
+   Parent PE:none is not enough: descendants with PE:auto still hit-test (Case B). */
+.exits-workspace-transition[data-active="false"],
+.exits-workspace-transition[data-active="false"] * {
+  pointer-events: none !important;
 }
 
 .exits-workspace-transition__backdrop {
@@ -20930,6 +20937,7 @@ a.exits-chip--primary:hover {
   inset: 0;
   background: color-mix(in srgb, var(--exits-surface) 72%, transparent);
   backdrop-filter: blur(2px);
+  pointer-events: inherit;
 }
 
 .exits-workspace-transition__panel {

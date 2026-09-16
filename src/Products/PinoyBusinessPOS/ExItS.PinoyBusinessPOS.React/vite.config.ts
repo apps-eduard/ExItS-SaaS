@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -13,7 +14,28 @@ import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
+function resolvePosBuildSha(): string {
+  const fromEnv = process.env.VITE_POS_BUILD_SHA?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  try {
+    return execSync("git rev-parse HEAD", {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+const posBuildSha = resolvePosBuildSha();
+
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_POS_BUILD_SHA": JSON.stringify(posBuildSha),
+  },
   plugins: [
     react(),
     tailwindcss(),
