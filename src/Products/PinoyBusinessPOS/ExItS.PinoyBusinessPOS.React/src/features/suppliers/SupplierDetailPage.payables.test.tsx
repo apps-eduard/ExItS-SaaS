@@ -134,6 +134,7 @@ function payableDto(overrides: Partial<PosSupplierPayableDto> = {}): PosSupplier
     supplierName: "Fresh Farms",
     sourceType: "GoodsReceipt",
     sourceId: "11111111-2222-3333-4444-555555555555",
+    sourceReference: "PO-100",
     originalAmount: 1000,
     paidAtReceiptAmount: 200,
     paidAmount: 200,
@@ -218,10 +219,12 @@ describe("SupplierDetailPage supplier credit", () => {
     });
     expect(screen.getByTestId("supplier-credit-overdue")).toBeInTheDocument();
     expect(screen.getByTestId("supplier-credit-open-count")).toHaveTextContent("1");
-    expect(screen.queryByTestId("supplier-credit-approved-limit")).not.toBeInTheDocument();
+    expect(screen.getByTestId("supplier-credit-approved-limit")).toHaveTextContent("—");
+    expect(screen.queryByTestId("supplier-credit-paid-count")).not.toBeInTheDocument();
+    expect(screen.getByTestId("supplier-credit-payable-filters")).toBeInTheDocument();
   });
 
-  it("shows approved credit limit for connected supplier", async () => {
+  it("shows credit exposure cards and utilization for connected supplier", async () => {
     getSupplier.mockResolvedValue(
       supplierDto({
         connectionType: "ConnectedOrganization",
@@ -229,15 +232,19 @@ describe("SupplierDetailPage supplier credit", () => {
         name: "Mica store",
       }),
     );
+    getSupplierPayableSummary.mockResolvedValue(
+      summaryDto({ outstandingTotal: 643, overdueTotal: 0, openCount: 1 }),
+    );
     getBusinessCustomerCreditPolicy.mockResolvedValue({
       connectionId: relationshipId,
       sellerOrganizationId: "22222222-2222-4222-8222-222222222222",
       buyerOrganizationId: orgId,
       status: "Approved",
-      creditLimit: 50000,
+      creditLimit: 30000,
       defaultTermDays: 30,
-      outstandingAmount: 0,
-      availableCredit: 50000,
+      outstandingAmount: 643,
+      reservedByActivePos: 747,
+      availableCredit: 28610,
       configuredByUserId: actorId,
       configuredAtUtc: "2026-08-01T00:00:00Z",
       approvedByUserId: actorId,
@@ -252,10 +259,18 @@ describe("SupplierDetailPage supplier credit", () => {
       expect(screen.getByTestId("supplier-credit-approved-limit")).toBeInTheDocument();
     });
     expect(getBusinessCustomerCreditPolicy).toHaveBeenCalled();
-    expect(screen.getByTestId("supplier-credit-approved-limit").textContent).toMatch(/50[,.]?000/);
+    expect(screen.getByTestId("supplier-credit-approved-limit").textContent).toMatch(/30[,.]?000/);
+    expect(screen.getByTestId("supplier-credit-outstanding").textContent).toMatch(/643/);
+    expect(screen.getByTestId("supplier-credit-reserved").textContent).toMatch(/747/);
+    expect(screen.getByTestId("supplier-credit-available").textContent).toMatch(/28[,.]?610/);
+    expect(screen.getByTestId("supplier-credit-utilization-caption").textContent).toMatch(
+      /4\.6%/,
+    );
+    expect(screen.getByTestId("supplier-credit-utilization-bar")).toBeInTheDocument();
   });
 
-  it("lists payables with backend statuses including Paid and Voided", async () => {
+  it("defaults payable list to Open and supports Paid / All filters", async () => {
+    const user = userEvent.setup();
     listSupplierPayables.mockResolvedValue({
       items: [
         payableDto({ payableId, status: "Open", balance: 800, paidAmount: 200 }),
@@ -286,11 +301,24 @@ describe("SupplierDetailPage supplier credit", () => {
     });
     renderDetail();
     await waitFor(() => {
-      expect(screen.getByTestId(`supplier-payable-${payableId}`)).toHaveAttribute(
-        "data-status",
-        "Open",
-      );
+      expect(screen.getByTestId(`supplier-payable-${payableId}`)).toBeInTheDocument();
     });
+    expect(screen.getByTestId(`supplier-payable-${partialPayableId}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`supplier-payable-${paidPayableId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`supplier-payable-${voidedPayableId}`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("supplier-credit-filter-paid"));
+    expect(screen.getByTestId(`supplier-payable-${paidPayableId}`)).toHaveAttribute(
+      "data-status",
+      "Paid",
+    );
+    expect(screen.queryByTestId(`supplier-payable-${payableId}`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("supplier-credit-filter-all"));
+    expect(screen.getByTestId(`supplier-payable-${payableId}`)).toHaveAttribute(
+      "data-status",
+      "Open",
+    );
     expect(screen.getByTestId(`supplier-payable-${partialPayableId}`)).toHaveAttribute(
       "data-status",
       "PartiallyPaid",

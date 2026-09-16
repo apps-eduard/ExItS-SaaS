@@ -6,7 +6,7 @@ import {
   type PosCustomerCreditPolicy,
   upsertCustomerCreditPolicy,
 } from "@/api/pos/pos-credit-policy-client";
-import { getCustomerCreditSummary } from "@/api/pos/pos-customers-client";
+import { getCustomerUtangSummary } from "@/api/pos/pos-customers-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { CreditTermsSection } from "@/features/customers/CreditTermsSection";
 
@@ -53,7 +53,7 @@ export function CreditPolicySection(props: CreditPolicySectionProps) {
       statementPath={(customerId) => `/customers/${customerId}/statement`}
       getPolicy={getCustomerCreditPolicy}
       listPolicyHistory={listCustomerCreditPolicyHistory}
-      getUtangSummary={getCustomerCreditSummary}
+      getUtangSummary={getCustomerUtangSummary}
       upsertPolicy={upsertCustomerCreditPolicy}
       approvePolicy={approveCustomerCreditPolicy}
       disablePolicy={disableCustomerCreditPolicy}

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  defaultPaidNowForMode,
+  defaultReceivePaymentMode,
   directPurchaseCreditValidationKey,
   formatMoneyInput,
+  isConnectedUtangPaymentTerm,
   laterPaymentsAmount,
   parseMoneyInput,
   receiptReverseErrorMessage,
@@ -55,6 +58,26 @@ describe("receive-payment helpers", () => {
   it("computes later payments excluding paid-at-receipt", () => {
     expect(laterPaymentsAmount(500, 200)).toBe(300);
     expect(laterPaymentsAmount(200, 200)).toBe(0);
+  });
+
+  it("detects connected Utang payment terms and defaults receive mode to credit", () => {
+    expect(isConnectedUtangPaymentTerm("Utang")).toBe(true);
+    expect(isConnectedUtangPaymentTerm("Utang / Credit")).toBe(true);
+    expect(isConnectedUtangPaymentTerm("Cash")).toBe(false);
+    expect(
+      defaultReceivePaymentMode({
+        connectedPurchaseOrderId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        paymentTerm: "Utang",
+      }),
+    ).toBe("supplierCredit");
+    expect(
+      defaultReceivePaymentMode({
+        connectedPurchaseOrderId: null,
+        paymentTerm: "Utang",
+      }),
+    ).toBe("paidInFull");
+    expect(defaultPaidNowForMode("supplierCredit", 643)).toBe(0);
+    expect(defaultPaidNowForMode("paidInFull", 643)).toBe(643);
   });
 
   it("maps receipt reverse blocked-by-payments to friendly message", () => {

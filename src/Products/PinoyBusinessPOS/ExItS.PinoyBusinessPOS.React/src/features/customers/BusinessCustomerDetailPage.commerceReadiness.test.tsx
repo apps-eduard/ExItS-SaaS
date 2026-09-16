@@ -241,7 +241,7 @@ describe("BusinessCustomerDetailPage supplier readiness", () => {
     expect(await screen.findByTestId("branch-settings-page")).toBeInTheDocument();
   });
 
-  it("shows Review setup when all visible requirements are complete", async () => {
+  it("hides Supplier Readiness card when status is ready", async () => {
     getSupplierConnectedSupplierCommerceReadiness.mockResolvedValue({
       relationshipId: connectionId,
       isReady: true,
@@ -270,14 +270,8 @@ describe("BusinessCustomerDetailPage supplier readiness", () => {
 
     renderPage();
 
-    expect(await screen.findByTestId("business-customer-complete-setup")).toHaveTextContent(
-      "Review setup",
-    );
-    expect(screen.getByTestId("business-customer-complete-setup")).toHaveAttribute(
-      "href",
-      `/org/branches/${branchId}`,
-    );
-    expect(screen.getByTestId("commerce-readiness-filter-empty")).toBeInTheDocument();
-    expect(screen.queryByTestId("commerce-readiness-PaymentMethods")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("business-customer-detail")).toBeInTheDocument();
+    expect(screen.queryByTestId("business-customer-commerce-readiness")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-customer-complete-setup")).not.toBeInTheDocument();
   });
 });

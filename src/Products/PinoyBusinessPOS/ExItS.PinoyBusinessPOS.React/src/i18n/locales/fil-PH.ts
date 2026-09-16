@@ -2326,6 +2326,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "New Utang is paused. Existing balances can still be paid.",
 
   "customers.creditPolicy.outstanding": "Outstanding",
+  "customers.creditPolicy.overdue": "Overdue",
   "customers.creditPolicy.reservedActivePos": "Reserved by active POs",
 
   "customers.creditPolicy.outstandingOverLimitWarning":
@@ -6548,6 +6549,19 @@ export const filPH: Record<keyof typeof en, string> = {
   "admin.nav.profile": "Organization profile",
   "admin.nav.documentsPrinting": "Documents & Printing",
   "orgProfile.title": "Organization profile",
+  "orgProfile.lede": "Business name, contact details, and public organization ID.",
+  "orgProfile.editShort": "Edit",
+  "orgProfile.copyId": "Copy ID",
+  "orgProfile.copyFailed": "Could not copy organization ID.",
+  "orgProfile.contactTitle": "Contact details",
+  "orgProfile.incompleteTitle": "Add missing business details",
+  "orgProfile.incompleteBody":
+    "A phone number and full address help receipts, documents, and supplier connections.",
+  "orgProfile.incompleteAction": "Complete profile",
+  "orgProfile.addressCountryOnly": "Country only ({country}) — add street and city.",
+  "orgProfile.section.basics": "Basics",
+  "orgProfile.section.contact": "Contact",
+  "orgProfile.section.address": "Address",
   "orgProfile.edit": "Edit organization profile",
   "orgProfile.editTitle": "Edit organization profile",
   "orgProfile.save": "Save",
@@ -9651,6 +9665,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "supplierPayables.paidCount": "Bayad na payables",
 
   "supplierPayables.approvedCreditLimit": "Aprubadong credit limit",
+  "supplierPayables.reservedActivePos": "Reserved by active POs",
+  "supplierPayables.availableCredit": "Available credit",
+  "supplierPayables.usedOfLimit": "Used {percent}% of {limit}",
+  "supplierPayables.utilizationUnavailable": "Utilization unavailable",
+  "supplierPayables.utilizationProgress": "Credit utilization",
+  "supplierPayables.filterAria": "Filter payables",
+  "supplierPayables.filter.open": "Open",
+  "supplierPayables.filter.overdue": "Overdue",
+  "supplierPayables.filter.paid": "Paid",
+  "supplierPayables.filter.all": "All",
 
   "supplierPayables.listTitle": "Payables",
 
@@ -9713,6 +9737,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "supplierPayables.cancel": "Cancel",
 
   "supplierPayables.empty": "Wala pang supplier payables.",
+  "supplierPayables.emptyOpen": "No open payables.",
 
   "supplierPayables.noPayments": "Wala pang naitalang bayad.",
 

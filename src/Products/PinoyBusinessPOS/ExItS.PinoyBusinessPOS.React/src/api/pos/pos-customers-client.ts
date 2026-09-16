@@ -50,6 +50,20 @@ export const posCustomerCreditSummarySchema = z.object({
   totalEntryCount: z.number(),
 });
 
+export const posCustomerUtangSummarySchema = z.object({
+  customerId: guidSchema,
+  organizationId: guidSchema,
+  outstandingAmount: z.number(),
+  activeCreditTotal: z.number().optional().default(0),
+  activeRepaymentTotal: z.number().optional().default(0),
+  pendingCheckAmount: z.number().optional().default(0),
+  activeCreditCount: z.number().optional().default(0),
+  activeRepaymentCount: z.number().optional().default(0),
+  totalLedgerEntryCount: z.number().optional().default(0),
+  overdueAmount: z.number().optional().default(0),
+  overdueCreditCount: z.number().optional().default(0),
+});
+
 export const posCreditEntrySchema = z.object({
   creditEntryId: guidSchema,
   organizationId: guidSchema,
@@ -173,6 +187,7 @@ export type PosCustomerListItem = z.infer<typeof posCustomerListItemSchema>;
 export type PosCustomerDetail = z.infer<typeof posCustomerDetailSchema>;
 export type PosCustomerPagedResult = z.infer<typeof posCustomerPagedResultSchema>;
 export type PosCustomerCreditSummary = z.infer<typeof posCustomerCreditSummarySchema>;
+export type PosCustomerUtangSummary = z.infer<typeof posCustomerUtangSummarySchema>;
 export type PosCreditEntry = z.infer<typeof posCreditEntrySchema>;
 export type PosCreditEntryPagedResult = z.infer<typeof posCreditEntryPagedResultSchema>;
 export type PosRepayment = z.infer<typeof posRepaymentSchema>;
@@ -544,6 +559,20 @@ export async function getCustomerCreditSummary(
     path: customerPath(customerId, "/credit-summary"),
   });
   return posCustomerCreditSummarySchema.parse(raw);
+}
+
+export async function getCustomerUtangSummary(
+  workspace: PosWorkspaceScope,
+  customerId: string,
+  signal?: AbortSignal,
+): Promise<PosCustomerUtangSummary> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: customerPath(customerId, "/utang-summary"),
+  });
+  return posCustomerUtangSummarySchema.parse(raw);
 }
 
 export async function listCustomerCreditEntries(

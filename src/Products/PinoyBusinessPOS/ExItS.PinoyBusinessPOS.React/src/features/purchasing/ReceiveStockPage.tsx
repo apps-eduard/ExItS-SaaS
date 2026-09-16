@@ -303,7 +303,7 @@ export function ReceiveStockPage() {
       return;
     }
     if (!paidNowTouched) {
-      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setPaidNowText(formatMoneyInput(0));
     }
   }, [estimatedTotal, paidNowTouched, paymentMode]);
 
@@ -320,6 +320,8 @@ export function ReceiveStockPage() {
     if (mode === "paidInFull") {
       setPaidNowText(formatMoneyInput(estimatedTotal));
       setDueDate("");
+    } else {
+      setPaidNowText(formatMoneyInput(0));
     }
   }
 

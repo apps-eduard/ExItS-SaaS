@@ -79,6 +79,7 @@ type SharedPolicyHistoryPaged = {
 type SharedUtangSummary = {
   pendingCheckAmount: number;
   outstandingAmount?: number;
+  overdueAmount?: number;
 };
 
 type PersonalProps = {
@@ -246,6 +247,10 @@ export function CreditTermsSection({
     typeof summaryQuery.data?.outstandingAmount === "number"
       ? summaryQuery.data.outstandingAmount
       : (policy?.outstandingAmount ?? 0);
+  const overdue =
+    typeof summaryQuery.data?.overdueAmount === "number"
+      ? summaryQuery.data.overdueAmount
+      : 0;
   const reservedByActivePos = policy?.reservedByActivePos ?? 0;
   const available = policy?.availableCredit ?? 0;
   const limit = policy?.creditLimit ?? null;
@@ -287,6 +292,11 @@ export function CreditTermsSection({
     await queryClient.invalidateQueries({
       queryKey: [sectionQueryPrefix, "utang-summary", workspace.organizationId, id],
     });
+    // Buyer Supplier Credit reads the same policy via buyer-credit-policy key.
+    await queryClient.invalidateQueries({
+      queryKey: ["connected-suppliers", "buyer-credit-policy"],
+    });
+    await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
   };
 
   function toggleHistory() {
@@ -736,8 +746,20 @@ export function CreditTermsSection({
               />
               {t("customers.creditPolicy.outstanding")}
             </dt>
-            <dd className="tabular-nums">
+            <dd className="tabular-nums" data-testid={`${testIdPrefix}-credit-policy-outstanding`}>
               <MoneyDisplay amount={outstanding} />
+            </dd>
+          </div>
+          <div className="branch-mgmt-overview__item">
+            <dt>
+              <AlertTriangle
+                className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--overdue"
+                aria-hidden
+              />
+              {t("customers.creditPolicy.overdue")}
+            </dt>
+            <dd className="tabular-nums" data-testid={`${testIdPrefix}-credit-policy-overdue`}>
+              <MoneyDisplay amount={overdue} />
             </dd>
           </div>
           {entity.kind === "business" ? (

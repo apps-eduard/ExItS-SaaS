@@ -166,6 +166,9 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
         await queryClient.invalidateQueries({
           queryKey: ["business-customers", "repayments", workspace.organizationId, props.connectionId],
         });
+        await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
+        await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
+        await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
       }
 
       const formatted = formatMoneyAmountInput(amount ?? 0);

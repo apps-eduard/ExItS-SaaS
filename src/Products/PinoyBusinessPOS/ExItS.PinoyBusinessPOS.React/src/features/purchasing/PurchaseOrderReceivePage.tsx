@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -41,6 +41,8 @@ import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
+  defaultPaidNowForMode,
+  defaultReceivePaymentMode,
   formatMoneyInput,
   parseMoneyInput,
   remainingCredit,
@@ -99,6 +101,7 @@ export function PurchaseOrderReceivePage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const online = useBrowserOnline();
+  const queryClient = useQueryClient();
   const { purchaseOrderId } = useParams<{ purchaseOrderId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -119,6 +122,7 @@ export function PurchaseOrderReceivePage() {
   const [paymentMode, setPaymentMode] = useState<ReceivePaymentMode>("paidInFull");
   const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
   const [paidNowTouched, setPaidNowTouched] = useState(false);
+  const [utangDefaultsApplied, setUtangDefaultsApplied] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [lineFilter, setLineFilter] = useState<LineFilter>("outstanding");
@@ -275,9 +279,25 @@ export function PurchaseOrderReceivePage() {
       return;
     }
     if (!paidNowTouched) {
-      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setPaidNowText(formatMoneyInput(defaultPaidNowForMode(paymentMode, estimatedTotal)));
     }
   }, [estimatedTotal, paidNowTouched, paymentMode]);
+
+  useEffect(() => {
+    if (!po || utangDefaultsApplied) {
+      return;
+    }
+    const mode = defaultReceivePaymentMode({
+      connectedPurchaseOrderId: po.connectedPurchaseOrderId,
+      paymentTerm: po.paymentTerm,
+    });
+    if (mode === "supplierCredit") {
+      setPaymentMode("supplierCredit");
+      setPaidNowText(formatMoneyInput(0));
+      setPaidNowTouched(true);
+    }
+    setUtangDefaultsApplied(true);
+  }, [po, utangDefaultsApplied]);
 
   const paidNowValue = parseMoneyInput(paidNowText);
   const filterLabel =
@@ -339,6 +359,8 @@ export function PurchaseOrderReceivePage() {
     if (mode === "paidInFull") {
       setPaidNowText(formatMoneyInput(estimatedTotal));
       setDueDate("");
+    } else {
+      setPaidNowText(formatMoneyInput(0));
     }
   }
 
@@ -503,6 +525,17 @@ export function PurchaseOrderReceivePage() {
       });
       goodsReceiptIdRef.current = null;
       setCompletedReceipt(receipt);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["purchase-order"] }),
+        queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }),
+        queryClient.invalidateQueries({ queryKey: ["supplier-payables"] }),
+        queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["connected-suppliers", "buyer-credit-policy"],
+        }),
+      ]);
       setBusy(false);
     } catch (err) {
       setError(t("checkout.confirmingTransaction"));
@@ -513,6 +546,17 @@ export function PurchaseOrderReceivePage() {
       if (outcome.kind === "confirmed") {
         goodsReceiptIdRef.current = null;
         setCompletedReceipt(outcome.value);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["purchase-order"] }),
+          queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }),
+          queryClient.invalidateQueries({ queryKey: ["supplier-payables"] }),
+          queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] }),
+          queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+          queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+          queryClient.invalidateQueries({
+            queryKey: ["connected-suppliers", "buyer-credit-policy"],
+          }),
+        ]);
         setBusy(false);
         return;
       }

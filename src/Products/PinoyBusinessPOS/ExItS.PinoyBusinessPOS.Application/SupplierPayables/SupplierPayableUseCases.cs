@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -14,15 +15,18 @@ public sealed class SupplierPayableQueryService
 {
     private readonly ISupplierPayableRepository _payables;
     private readonly ISupplierRepository _suppliers;
+    private readonly SupplierPayableSourceReferenceResolver _sourceReferences;
     private readonly IClock _clock;
 
     public SupplierPayableQueryService(
         ISupplierPayableRepository payables,
         ISupplierRepository suppliers,
+        SupplierPayableSourceReferenceResolver sourceReferences,
         IClock clock)
     {
         _payables = payables;
         _suppliers = suppliers;
+        _sourceReferences = sourceReferences;
         _clock = clock;
     }
 
@@ -43,7 +47,10 @@ public sealed class SupplierPayableQueryService
         var supplier = await _suppliers
             .GetByIdAsync(org, payable.SupplierId, cancellationToken)
             .ConfigureAwait(false);
-        return SupplierPayableMapper.Map(payable, supplier?.Name, AsOfDate());
+        var sourceReference = await _sourceReferences
+            .ResolveOneAsync(org, payable, cancellationToken)
+            .ConfigureAwait(false);
+        return SupplierPayableMapper.Map(payable, supplier?.Name, AsOfDate(), sourceReference);
     }
 
     public async Task<PagedResult<PosSupplierPayableDto>> ListAsync(
@@ -80,9 +87,17 @@ public sealed class SupplierPayableQueryService
         var names = await LoadSupplierNamesAsync(org, items.Select(i => i.SupplierId).Distinct(), cancellationToken)
             .ConfigureAwait(false);
         var asOf = AsOfDate();
+        var sourceRefs = await _sourceReferences
+            .ResolveAsync(org, items, cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosSupplierPayableDto>(
-            items.Select(p => SupplierPayableMapper.Map(p, names.GetValueOrDefault(p.SupplierId.Value), asOf)).ToList(),
+            items.Select(p => SupplierPayableMapper.Map(
+                    p,
+                    names.GetValueOrDefault(p.SupplierId.Value),
+                    asOf,
+                    sourceRefs.GetValueOrDefault(p.Id.Value)))
+                .ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -154,8 +169,16 @@ public sealed class SupplierPayableQueryService
         var names = await LoadSupplierNamesAsync(org, items.Select(i => i.SupplierId).Distinct(), cancellationToken)
             .ConfigureAwait(false);
 
+        var sourceRefs = await _sourceReferences
+            .ResolveAsync(org, items, cancellationToken)
+            .ConfigureAwait(false);
+
         var payables = items
-            .Select(p => SupplierPayableMapper.MapReportRow(p, names.GetValueOrDefault(p.SupplierId.Value), asOf))
+            .Select(p => SupplierPayableMapper.MapReportRow(
+                p,
+                names.GetValueOrDefault(p.SupplierId.Value),
+                asOf,
+                sourceRefs.GetValueOrDefault(p.Id.Value)))
             .ToList();
 
         var summary = BuildReportSummary(items, asOf);
@@ -274,15 +297,18 @@ public sealed class RecordSupplierPayablePayment
     private readonly ISupplierPayableRepository _payables;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IClock _clock;
+    private readonly ConnectedB2bPaymentMirror? _b2bMirror;
 
     public RecordSupplierPayablePayment(
         ISupplierPayableRepository payables,
         IPosCommercialAccessAccessor access,
-        IClock clock)
+        IClock clock,
+        ConnectedB2bPaymentMirror? b2bMirror = null)
     {
         _payables = payables;
         _access = access;
         _clock = clock;
+        _b2bMirror = b2bMirror;
     }
 
     public async Task<ApplicationResult<PosSupplierPayablePaymentDto>> ExecuteAsync(
@@ -334,7 +360,22 @@ public sealed class RecordSupplierPayablePayment
                 request.Reference,
                 request.Notes);
 
+            // Mirror before UpdateAsync so one SaveChanges persists payable payment + seller repayment.
+            if (_b2bMirror is not null)
+            {
+                await _b2bMirror
+                    .MirrorBuyerPayablePaymentAsync(
+                        org,
+                        payable.SupplierId,
+                        payment.Amount,
+                        actorId,
+                        payment.Reference,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             await _payables.UpdateAsync(payable, cancellationToken).ConfigureAwait(false);
+
             return ApplicationResult<PosSupplierPayablePaymentDto>.Success(
                 SupplierPayableMapper.MapPayment(payment));
         }

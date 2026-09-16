@@ -7,8 +7,15 @@ import { laterPaymentsAmount } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 
-function sourceLabel(sourceType: string, t: (key: MessageKey) => string): string {
-  return sourceType === "DirectPurchaseReceipt"
+function sourceLabel(
+  row: { sourceType: string; sourceReference?: string | null },
+  t: (key: MessageKey) => string,
+): string {
+  const reference = row.sourceReference?.trim();
+  if (reference) {
+    return reference;
+  }
+  return row.sourceType === "DirectPurchaseReceipt"
     ? t("reports.supplierPayables.source.directPurchase")
     : t("reports.supplierPayables.source.goodsReceipt");
 }
@@ -177,7 +184,7 @@ export function SupplierPayablesReportView({ report }: SupplierPayablesReportVie
                       <td className="py-2 pr-2">
                         {row.supplierName?.trim() || t("reports.unknownSupplier")}
                       </td>
-                      <td className="py-2 pr-2">{sourceLabel(row.sourceType, t)}</td>
+                      <td className="py-2 pr-2">{sourceLabel(row, t)}</td>
                       <td className="py-2 pr-2">
                         {new Date(row.createdAtUtc).toLocaleDateString()}
                       </td>
@@ -230,7 +237,7 @@ export function SupplierPayablesReportView({ report }: SupplierPayablesReportVie
                   <dl className="m-0 grid gap-1">
                     <div className="flex justify-between gap-2">
                       <dt className="text-muted">{t("reports.supplierPayables.source")}</dt>
-                      <dd className="m-0">{sourceLabel(row.sourceType, t)}</dd>
+                      <dd className="m-0">{sourceLabel(row, t)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
                       <dt className="text-muted">{t("reports.supplierPayables.balance")}</dt>

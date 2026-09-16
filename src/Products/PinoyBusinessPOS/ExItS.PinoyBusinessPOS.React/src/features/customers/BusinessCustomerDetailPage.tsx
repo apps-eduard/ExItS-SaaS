@@ -652,7 +652,7 @@ export function BusinessCustomerDetailPage() {
         </Card>
       ) : null}
 
-      {isConnected && commerceReadinessQuery.data ? (
+      {isConnected && commerceReadinessQuery.data && !commerceReadinessQuery.data.isReady ? (
         <Card
           className="flex flex-col gap-3 p-3"
           data-testid="business-customer-commerce-readiness"

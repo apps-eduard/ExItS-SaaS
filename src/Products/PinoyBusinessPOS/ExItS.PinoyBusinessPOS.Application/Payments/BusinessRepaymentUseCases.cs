@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 
@@ -46,7 +47,8 @@ public sealed record BusinessUtangSummaryDto(
     decimal OutstandingAmount,
     decimal ActiveCreditTotal,
     decimal ActiveRepaymentTotal,
-    decimal PendingCheckAmount);
+    decimal PendingCheckAmount,
+    decimal OverdueAmount = 0m);
 
 public static class BusinessRepaymentMapper
 {
@@ -85,13 +87,16 @@ public sealed class BusinessOutstandingBalanceService
 {
     private readonly IBusinessCreditEntryRepository _credits;
     private readonly IBusinessRepaymentRepository _repayments;
+    private readonly IClock _clock;
 
     public BusinessOutstandingBalanceService(
         IBusinessCreditEntryRepository credits,
-        IBusinessRepaymentRepository repayments)
+        IBusinessRepaymentRepository repayments,
+        IClock clock)
     {
         _credits = credits;
         _repayments = repayments;
+        _clock = clock;
     }
 
     public async Task<decimal> GetOutstandingAsync(
@@ -116,9 +121,19 @@ public sealed class BusinessOutstandingBalanceService
     {
         var seller = PosOrganizationId.From(sellerOrganizationId);
         var buyer = PosOrganizationId.From(buyerOrganizationId);
-        var credits = await _credits.SumActiveAmountAsync(seller, buyer, cancellationToken).ConfigureAwait(false);
+        var creditItems = await _credits
+            .ListChronologicalForBuyerAsync(seller, buyer, cancellationToken)
+            .ConfigureAwait(false);
+        var credits = creditItems
+            .Where(c => c.Status == CreditEntryStatus.Active)
+            .Sum(c => c.Amount);
         var repayments = await _repayments.SumSettledAmountAsync(seller, buyer, cancellationToken).ConfigureAwait(false);
         var pending = await _repayments.SumPendingCheckAmountAsync(seller, buyer, cancellationToken).ConfigureAwait(false);
+        var aged = CreditFifoAging.AgeBusinessCredits(
+            creditItems,
+            repayments,
+            CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
+        var overdueAmount = aged.Where(a => a.IsOverdue).Sum(a => a.RemainingUnpaidAmount);
         return new BusinessUtangSummaryDto(
             connectionId,
             sellerOrganizationId,
@@ -126,7 +141,8 @@ public sealed class BusinessOutstandingBalanceService
             credits - repayments,
             credits,
             repayments,
-            pending);
+            pending,
+            overdueAmount);
     }
 }
 
@@ -137,19 +153,22 @@ public sealed class CreateBusinessRepayment
     private readonly BusinessOutstandingBalanceService _outstanding;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ConnectedB2bPaymentMirror? _b2bMirror;
 
     public CreateBusinessRepayment(
         IConnectedSupplierRelationshipRepository relationships,
         IBusinessRepaymentRepository repayments,
         BusinessOutstandingBalanceService outstanding,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ConnectedB2bPaymentMirror? b2bMirror = null)
     {
         _relationships = relationships;
         _repayments = repayments;
         _outstanding = outstanding;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _b2bMirror = b2bMirror;
     }
 
     public async Task<ApplicationResult<BusinessRepayment>> ExecuteAsync(
@@ -227,6 +246,11 @@ public sealed class CreateBusinessRepayment
                         accountName: command.AccountName,
                         reference: command.Reference);
                     await _repayments.AddAsync(repayment, ct).ConfigureAwait(false);
+                    if (_b2bMirror is not null)
+                    {
+                        await _b2bMirror.MirrorSellerRepaymentAsync(repayment, ct).ConfigureAwait(false);
+                    }
+
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     return ApplicationResult<BusinessRepayment>.Success(repayment);
                 }, cancellationToken)
@@ -249,17 +273,20 @@ public sealed class ClearBusinessCheckRepayment
     private readonly BusinessOutstandingBalanceService _outstanding;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ConnectedB2bPaymentMirror? _b2bMirror;
 
     public ClearBusinessCheckRepayment(
         IBusinessRepaymentRepository repayments,
         BusinessOutstandingBalanceService outstanding,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ConnectedB2bPaymentMirror? b2bMirror = null)
     {
         _repayments = repayments;
         _outstanding = outstanding;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _b2bMirror = b2bMirror;
     }
 
     public async Task<ApplicationResult<BusinessRepayment>> ExecuteAsync(
@@ -301,6 +328,11 @@ public sealed class ClearBusinessCheckRepayment
 
                     repayment.MarkCleared(clearedBy, _clock.UtcNow);
                     await _repayments.UpdateAsync(repayment, ct).ConfigureAwait(false);
+                    if (_b2bMirror is not null)
+                    {
+                        await _b2bMirror.MirrorSellerRepaymentAsync(repayment, ct).ConfigureAwait(false);
+                    }
+
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     return ApplicationResult<BusinessRepayment>.Success(repayment);
                 }, cancellationToken)

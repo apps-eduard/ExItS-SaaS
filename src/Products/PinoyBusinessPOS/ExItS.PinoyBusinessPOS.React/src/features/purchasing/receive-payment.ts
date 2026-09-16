@@ -34,6 +34,43 @@ export function formatMoneyInput(value: number): string {
 }
 
 /**
+ * Connected PO Utang terms must default to supplier credit (PaidNow = 0).
+ * Reservation converts to payable/receivable only for the unpaid received portion.
+ */
+export function isConnectedUtangPaymentTerm(paymentTerm?: string | null): boolean {
+  const normalized = (paymentTerm ?? "").trim().toLowerCase();
+  return (
+    normalized === "utang" ||
+    normalized === "utang / credit" ||
+    normalized === "utang/credit"
+  );
+}
+
+/**
+ * Default receive payment mode for a PO. Connected Utang → supplier credit; otherwise paid in full.
+ */
+export function defaultReceivePaymentMode(options: {
+  connectedPurchaseOrderId?: string | null;
+  paymentTerm?: string | null;
+}): ReceivePaymentMode {
+  if (
+    options.connectedPurchaseOrderId &&
+    isConnectedUtangPaymentTerm(options.paymentTerm)
+  ) {
+    return "supplierCredit";
+  }
+  return "paidInFull";
+}
+
+/**
+ * Default PaidNow for the selected mode. Utang/credit starts at 0 so buyer payable
+ * and seller receivable match the received obligation.
+ */
+export function defaultPaidNowForMode(mode: ReceivePaymentMode, estimatedTotal: number): number {
+  return mode === "paidInFull" ? estimatedTotal : 0;
+}
+
+/**
  * Direct purchase: credit (paidNow < total) requires a supplier.
  * Returns an i18n message key when invalid, otherwise null.
  */

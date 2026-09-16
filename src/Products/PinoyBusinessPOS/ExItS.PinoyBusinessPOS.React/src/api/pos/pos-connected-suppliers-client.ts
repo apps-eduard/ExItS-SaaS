@@ -1075,6 +1075,7 @@ export const businessUtangSummarySchema = z.object({
   activeCreditTotal: z.number(),
   activeRepaymentTotal: z.number(),
   pendingCheckAmount: z.number().optional().default(0),
+  overdueAmount: z.number().optional().default(0),
 });
 
 export const businessRepaymentSchema = z.object({

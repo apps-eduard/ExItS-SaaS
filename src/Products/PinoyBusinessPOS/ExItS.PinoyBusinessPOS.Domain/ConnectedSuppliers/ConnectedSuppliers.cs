@@ -1670,6 +1670,29 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Reverses previously posted Utang receipt conversion back into reservation capacity.
+    /// Used when a goods receipt that created outstanding Utang is voided.
+    /// </summary>
+    public void UnpostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        {
+            return;
+        }
+
+        if (receivedAmount <= 0m || CreditPostedAmount <= 0m)
+        {
+            return;
+        }
+
+        var rounded = SaleMoney.RoundMoney(receivedAmount);
+        var apply = rounded > CreditPostedAmount ? CreditPostedAmount : rounded;
+        CreditPostedAmount = SaleMoney.RoundMoney(CreditPostedAmount - apply);
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>Buyer withdraw while supplier has not yet accepted (New or awaiting buyer approval).</summary>
     public void WithdrawByBuyer(DateTimeOffset utcNow)
     {

@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BadgeCheck,
-  CheckCircle2,
   CircleDollarSign,
   ClipboardList,
   Eye,
   FileText,
+  Lock,
   Wallet,
   X,
 } from "lucide-react";
@@ -28,12 +28,21 @@ import {
 } from "@/api/pos/pos-supplier-payables-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { laterPaymentsAmount, parseMoneyInput, remainingCredit } from "@/features/purchasing/receive-payment";
+import {
+  computeSupplierCreditExposure,
+  countSupplierPayablesByFilter,
+  filterSupplierPayables,
+  formatUtilizationPercent,
+  type SupplierPayableListFilter,
+} from "@/features/suppliers/supplier-credit-exposure";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function payableStatusTone(
@@ -89,6 +98,17 @@ function sourceLabelKey(sourceType: string): MessageKey {
     : "supplierPayables.source.goodsReceipt";
 }
 
+function formatPayableSourceLabel(
+  payable: Pick<PosSupplierPayableDto, "sourceType" | "sourceReference">,
+  t: (key: MessageKey) => string,
+): string {
+  const reference = payable.sourceReference?.trim();
+  if (reference) {
+    return reference;
+  }
+  return t(sourceLabelKey(payable.sourceType));
+}
+
 function canRecordPayment(payable: PosSupplierPayableDto): boolean {
   return (
     (payable.status === "Open" || payable.status === "PartiallyPaid") && payable.balance > 0
@@ -114,6 +134,7 @@ export function SupplierCreditSection({
 
   const [paymentTarget, setPaymentTarget] = useState<PosSupplierPayableDto | null>(null);
   const [detailTarget, setDetailTarget] = useState<PosSupplierPayableDto | null>(null);
+  const [payableFilter, setPayableFilter] = useState<SupplierPayableListFilter>("open");
   const [amountText, setAmountText] = useState("");
   const [paymentMethod, setPaymentMethod] =
     useState<SupplierPayablePaymentMethodCode>("Cash");
@@ -185,18 +206,91 @@ export function SupplierCreditSection({
 
   const payables = listQuery.data?.items ?? [];
   const summary = summaryQuery.data;
-  const paidCount = payables.filter((p) => p.status === "Paid").length;
   const creditPolicy = creditPolicyQuery.data;
   const approvedCreditLimit =
     creditPolicy?.status === "Approved" && creditPolicy.creditLimit != null
       ? creditPolicy.creditLimit
       : null;
-  const showApprovedCreditLimit = Boolean(connectedRelationshipId);
+  const isConnected = Boolean(connectedRelationshipId);
+  // Prefer canonical business credit outstanding when connected; payable summary otherwise.
+  const outstanding =
+    isConnected && typeof creditPolicy?.outstandingAmount === "number"
+      ? creditPolicy.outstandingAmount
+      : (summary?.outstandingTotal ?? 0);
+  const reservedByActivePos =
+    isConnected && typeof creditPolicy?.reservedByActivePos === "number"
+      ? creditPolicy.reservedByActivePos
+      : 0;
+  const exposure = computeSupplierCreditExposure({
+    approvedCreditLimit,
+    outstanding,
+    reservedByActivePos,
+  });
+  // Prefer server available when approved; fall back to derived exposure.
+  const availableDisplay =
+    approvedCreditLimit != null && typeof creditPolicy?.availableCredit === "number"
+      ? creditPolicy.availableCredit
+      : exposure.availableCredit;
+  const overdueTotal = summary?.overdueTotal ?? 0;
+  const openCount = summary?.openCount ?? filterSupplierPayables(payables, "open").length;
+  const filterCounts = countSupplierPayablesByFilter(payables);
+  const filteredPayables = filterSupplierPayables(payables, payableFilter);
   const paymentAmount = parseMoneyInput(amountText);
   const remainingAfterPayment =
     paymentTarget && paymentAmount !== null
       ? remainingCredit(paymentTarget.balance, paymentAmount)
       : paymentTarget?.balance ?? 0;
+
+  const availableToneClass =
+    availableDisplay == null
+      ? ""
+      : availableDisplay < -1e-9 || exposure.isOverLimit
+        ? "supplier-credit-stat--available-danger"
+        : "supplier-credit-stat--available";
+
+  const payableFilterChips: ExitsChipItem[] = [
+    {
+      key: "open",
+      label: t("supplierPayables.filter.open"),
+      count: filterCounts.open,
+      state: payableFilter === "open" ? "active" : "idle",
+      testId: "supplier-credit-filter-open",
+      onSelect: () => setPayableFilter("open"),
+    },
+    {
+      key: "overdue",
+      label: t("supplierPayables.filter.overdue"),
+      count: filterCounts.overdue,
+      state: payableFilter === "overdue" ? "active" : "idle",
+      testId: "supplier-credit-filter-overdue",
+      onSelect: () => setPayableFilter("overdue"),
+    },
+    {
+      key: "paid",
+      label: t("supplierPayables.filter.paid"),
+      count: filterCounts.paid,
+      state: payableFilter === "paid" ? "active" : "idle",
+      testId: "supplier-credit-filter-paid",
+      onSelect: () => setPayableFilter("paid"),
+    },
+    {
+      key: "all",
+      label: t("supplierPayables.filter.all"),
+      count: filterCounts.all,
+      state: payableFilter === "all" ? "active" : "idle",
+      testId: "supplier-credit-filter-all",
+      onSelect: () => setPayableFilter("all"),
+    },
+  ];
+
+  const utilizationCaption =
+    exposure.hasApprovedLimit &&
+    exposure.utilizationPercent != null &&
+    approvedCreditLimit != null
+      ? t("supplierPayables.usedOfLimit")
+          .replace("{percent}", formatUtilizationPercent(exposure.utilizationPercent))
+          .replace("{limit}", formatPeso(approvedCreditLimit))
+      : t("supplierPayables.utilizationUnavailable");
 
   async function onRecordPayment() {
     if (!workspace || !paymentTarget || !allowManage || !online || recording) {
@@ -223,6 +317,11 @@ export function SupplierCreditSection({
       await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
       await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
       await queryClient.invalidateQueries({ queryKey: ["supplier-payable-payments"] });
+      await queryClient.invalidateQueries({ queryKey: ["business-customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["connected-suppliers", "buyer-credit-policy"],
+      });
     } catch (err) {
       setFormError(
         err instanceof PosApiError
@@ -250,45 +349,78 @@ export function SupplierCreditSection({
             </p>
           </div>
         </div>
-        {summaryQuery.isLoading || listQuery.isLoading ? (
+        {summaryQuery.isLoading || listQuery.isLoading || (isConnected && creditPolicyQuery.isLoading) ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("loading.label")}</p>
         ) : summaryQuery.isError || listQuery.isError ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
             {t("supplierPayables.loadFailed")}
           </p>
         ) : (
-          <dl
-            className={
-              showApprovedCreditLimit
-                ? "supplier-credit-stats supplier-credit-stats--with-limit m-0"
-                : "supplier-credit-stats m-0"
-            }
-          >
-            {showApprovedCreditLimit ? (
-              <div className="supplier-credit-stat supplier-credit-stat--limit">
-                <dt>
-                  <BadgeCheck className="supplier-credit-stat__icon" aria-hidden />
-                  {t("supplierPayables.approvedCreditLimit")}
-                </dt>
-                <dd className="m-0 tabular-nums" data-testid="supplier-credit-approved-limit">
-                  {creditPolicyQuery.isLoading ? (
-                    t("loading.label")
-                  ) : approvedCreditLimit != null ? (
-                    <MoneyDisplay amount={approvedCreditLimit} />
-                  ) : (
-                    "—"
-                  )}
-                </dd>
-              </div>
-            ) : null}
+          <dl className="supplier-credit-stats supplier-credit-stats--v2 m-0">
+            <div className="supplier-credit-stat supplier-credit-stat--limit">
+              <dt>
+                <BadgeCheck className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.approvedCreditLimit")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-approved-limit">
+                {approvedCreditLimit != null ? (
+                  <MoneyDisplay amount={approvedCreditLimit} />
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
             <div className="supplier-credit-stat supplier-credit-stat--outstanding">
               <dt>
                 <CircleDollarSign className="supplier-credit-stat__icon" aria-hidden />
                 {t("supplierPayables.outstanding")}
               </dt>
               <dd className="m-0 tabular-nums" data-testid="supplier-credit-outstanding">
-                <MoneyDisplay amount={summary?.outstandingTotal ?? 0} />
+                <MoneyDisplay amount={outstanding} />
               </dd>
+            </div>
+            <div className="supplier-credit-stat supplier-credit-stat--reserved">
+              <dt>
+                <Lock className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.reservedActivePos")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-reserved">
+                {isConnected ? <MoneyDisplay amount={reservedByActivePos} /> : "—"}
+              </dd>
+            </div>
+            <div
+              className={`supplier-credit-stat supplier-credit-stat--available-card ${availableToneClass}`}
+            >
+              <dt>
+                <Wallet className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.availableCredit")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-available">
+                {availableDisplay != null ? <MoneyDisplay amount={availableDisplay} /> : "—"}
+              </dd>
+              <p
+                className="supplier-credit-available__caption m-0"
+                data-testid="supplier-credit-utilization-caption"
+              >
+                {utilizationCaption}
+              </p>
+              {exposure.progressPercent != null ? (
+                <div
+                  className="supplier-credit-available__track"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(exposure.progressPercent)}
+                  aria-label={t("supplierPayables.utilizationProgress")}
+                  data-testid="supplier-credit-utilization-bar"
+                  data-over-limit={exposure.isOverLimit ? "true" : "false"}
+                >
+                  <span
+                    className="supplier-credit-available__fill"
+                    style={{ width: `${exposure.progressPercent}%` }}
+                  />
+                </div>
+              ) : null}
             </div>
             <div className="supplier-credit-stat supplier-credit-stat--overdue">
               <dt>
@@ -296,7 +428,7 @@ export function SupplierCreditSection({
                 {t("supplierPayables.overdue")}
               </dt>
               <dd className="m-0 tabular-nums" data-testid="supplier-credit-overdue">
-                <MoneyDisplay amount={summary?.overdueTotal ?? 0} />
+                <MoneyDisplay amount={overdueTotal} />
               </dd>
             </div>
             <div className="supplier-credit-stat supplier-credit-stat--open">
@@ -305,16 +437,7 @@ export function SupplierCreditSection({
                 {t("supplierPayables.openCount")}
               </dt>
               <dd className="m-0 tabular-nums" data-testid="supplier-credit-open-count">
-                {summary?.openCount ?? 0}
-              </dd>
-            </div>
-            <div className="supplier-credit-stat supplier-credit-stat--paid">
-              <dt>
-                <CheckCircle2 className="supplier-credit-stat__icon" aria-hidden />
-                {t("supplierPayables.paidCount")}
-              </dt>
-              <dd className="m-0 tabular-nums" data-testid="supplier-credit-paid-count">
-                {paidCount}
+                {openCount}
               </dd>
             </div>
           </dl>
@@ -330,13 +453,21 @@ export function SupplierCreditSection({
             {t("supplierPayables.listTitle")}
           </h3>
         </div>
-        {payables.length === 0 ? (
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("supplierPayables.filterAria")}
+          testId="supplier-credit-payable-filters"
+          items={payableFilterChips}
+        />
+        {filteredPayables.length === 0 ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="supplier-credit-empty">
-            {t("supplierPayables.empty")}
+            {payableFilter === "open"
+              ? t("supplierPayables.emptyOpen")
+              : t("supplierPayables.empty")}
           </p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="supplier-credit-list">
-            {payables.map((payable) => {
+            {filteredPayables.map((payable) => {
               const later = laterPaymentsAmount(payable.paidAmount, payable.paidAtReceiptAmount);
               const showPay = allowManage && online && canRecordPayment(payable);
               return (
@@ -355,7 +486,7 @@ export function SupplierCreditSection({
                     ) : null}
                   </div>
                   <p className="mt-2 mb-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {t(sourceLabelKey(payable.sourceType))}
+                    {formatPayableSourceLabel(payable, t)}
                     {payable.createdAtUtc
                       ? ` · ${new Date(payable.createdAtUtc).toLocaleDateString()}`
                       : ""}
@@ -572,7 +703,7 @@ export function SupplierCreditSection({
             <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
               <div>
                 <dt className="text-muted">{t("supplierPayables.source")}</dt>
-                <dd className="m-0">{t(sourceLabelKey(detailTarget.sourceType))}</dd>
+                <dd className="m-0">{formatPayableSourceLabel(detailTarget, t)}</dd>
               </div>
               <div>
                 <dt className="text-muted">{t("supplierPayables.receiptDate")}</dt>

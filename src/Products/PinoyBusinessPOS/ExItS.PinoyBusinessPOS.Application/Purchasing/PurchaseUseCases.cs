@@ -2286,10 +2286,20 @@ public sealed class ReceivePurchaseOrder
                                 request.EnableTrackingIfNeeded,
                                 ct)
                             .ConfigureAwait(false);
+
+                        var isConnectedUtang = connected is not null
+                            && ConnectedPoUtangCredit.UsesUtang(connected.EffectivePaymentTerm);
+                        var receivedAmount = SaleMoney.RoundMoney(
+                            grn.Lines.Sum(l => SaleMoney.RoundMoney(l.ReceivedQty * l.UnitPurchaseCostSnapshot)));
+                        var paidAtReceipt = ConnectedPoUtangObligationProjection.ResolvePaidAtReceipt(
+                            connected?.EffectivePaymentTerm ?? ConnectedPoPaymentTerm.Cash,
+                            receivedAmount,
+                            request.PaidNow);
+
                         await _createPayable
                             .CreateFromGoodsReceiptAsync(
                                 grn,
-                                request.PaidNow,
+                                paidAtReceipt,
                                 request.DueDate,
                                 request.PaymentMethodAtReceipt,
                                 actorId,
@@ -2297,30 +2307,30 @@ public sealed class ReceivePurchaseOrder
                                 ct)
                             .ConfigureAwait(false);
 
-                        if (connected is not null
-                            && ConnectedPoUtangCredit.UsesUtang(connected.EffectivePaymentTerm)
-                            && _businessCredits is not null)
+                        if (isConnectedUtang && _businessCredits is not null && receivedAmount > 0m)
                         {
-                            var receivedAmount = SaleMoney.RoundMoney(
-                                grn.Lines.Sum(l => SaleMoney.RoundMoney(l.ReceivedQty * l.UnitPurchaseCostSnapshot)));
-                            if (receivedAmount > 0m)
+                            var beforePosted = connected!.CreditPostedAmount;
+                            connected.PostUtangCreditFromReceipt(receivedAmount, utcNow);
+                            var postedDelta = SaleMoney.RoundMoney(connected.CreditPostedAmount - beforePosted);
+                            var obligation = ConnectedPoUtangObligationProjection.ObligationAmount(
+                                postedDelta,
+                                paidAtReceipt ?? 0m);
+                            if (obligation > 0m)
                             {
-                                var beforePosted = connected.CreditPostedAmount;
-                                connected.PostUtangCreditFromReceipt(receivedAmount, utcNow);
-                                var postedDelta = SaleMoney.RoundMoney(connected.CreditPostedAmount - beforePosted);
-                                if (postedDelta > 0m)
-                                {
-                                    var entry = BusinessCreditEntry.Create(
-                                        connected.SupplierOrganizationId,
-                                        connected.BuyerOrganizationId,
-                                        postedDelta,
-                                        $"Connected PO {po.PoNumber ?? po.Id.Value.ToString("D")} receipt",
-                                        utcNow,
-                                        connected.RelationshipId.Value);
-                                    await _businessCredits.AddAsync(entry, ct).ConfigureAwait(false);
-                                    await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
-                                }
+                                var entry = BusinessCreditEntry.Create(
+                                    connected.SupplierOrganizationId,
+                                    connected.BuyerOrganizationId,
+                                    obligation,
+                                    ConnectedPoUtangObligationProjection.BuildGoodsReceiptRemark(
+                                        grn.Id.Value,
+                                        po.PoNumber,
+                                        po.Id.Value),
+                                    utcNow,
+                                    connected.RelationshipId.Value);
+                                await _businessCredits.AddAsync(entry, ct).ConfigureAwait(false);
                             }
+
+                            await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
                         }
 
                         if (_branchAccess is not null && po.SupplierId is not null)
@@ -2429,6 +2439,8 @@ public sealed class VoidGoodsReceipt
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
+    private readonly IConnectedPurchaseOrderRepository? _connectedOrders;
+    private readonly IBusinessCreditEntryRepository? _businessCredits;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
 
@@ -2442,7 +2454,9 @@ public sealed class VoidGoodsReceipt
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IConnectedPurchaseOrderRepository? connectedOrders = null,
+        IBusinessCreditEntryRepository? businessCredits = null)
     {
         _orders = orders;
         _products = products;
@@ -2454,6 +2468,8 @@ public sealed class VoidGoodsReceipt
         _createPayable = createPayable;
         _clock = clock;
         _branches = branches;
+        _connectedOrders = connectedOrders;
+        _businessCredits = businessCredits;
     }
 
     public async Task<ApplicationResult<PosGoodsReceiptDto>> ExecuteAsync(
@@ -2537,6 +2553,52 @@ public sealed class VoidGoodsReceipt
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
+
+                        var connected = _connectedOrders is null
+                            ? null
+                            : await _connectedOrders
+                                .GetByBuyerPurchaseOrderAsync(receipt.PurchaseOrderId, ct)
+                                .ConfigureAwait(false);
+                        if (connected is not null
+                            && ConnectedPoUtangCredit.UsesUtang(connected.EffectivePaymentTerm))
+                        {
+                            var receivedAmount = SaleMoney.RoundMoney(
+                                receipt.Lines.Sum(l =>
+                                    SaleMoney.RoundMoney(l.QuantityReceived * l.UnitPurchaseCostSnapshot)));
+                            if (receivedAmount > 0m)
+                            {
+                                connected.UnpostUtangCreditFromReceipt(receivedAmount, utcNow);
+                                await _connectedOrders!.UpdateAsync(connected, ct).ConfigureAwait(false);
+                            }
+
+                            if (_businessCredits is not null)
+                            {
+                                var entries = await _businessCredits
+                                    .ListChronologicalForBuyerAsync(
+                                        connected.SupplierOrganizationId,
+                                        connected.BuyerOrganizationId,
+                                        ct)
+                                    .ConfigureAwait(false);
+                                foreach (var entry in entries)
+                                {
+                                    if (entry.Status != CreditEntryStatus.Active)
+                                    {
+                                        continue;
+                                    }
+
+                                    if (!ConnectedPoUtangObligationProjection.TryParseGoodsReceiptId(
+                                            entry.Remarks,
+                                            out var grnId)
+                                        || grnId != receipt.Id.Value)
+                                    {
+                                        continue;
+                                    }
+
+                                    entry.Reverse(voidReason, utcNow);
+                                    await _businessCredits.UpdateAsync(entry, ct).ConfigureAwait(false);
+                                }
+                            }
+                        }
 
                         var po = await _orders.GetByIdAsync(orgId, receipt.PurchaseOrderId, ct).ConfigureAwait(false);
                         if (po is null)

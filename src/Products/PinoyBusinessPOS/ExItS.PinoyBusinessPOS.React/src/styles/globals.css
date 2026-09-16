@@ -7260,6 +7260,16 @@ html:has(.admin-shell) #root {
   .supplier-credit-stats--with-limit {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
+
+  .supplier-credit-stats--v2 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .supplier-credit-stats--v2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .supplier-credit-stat {
@@ -7344,6 +7354,80 @@ html:has(.admin-shell) #root {
 .supplier-credit-stat--limit .supplier-credit-stat__icon,
 .supplier-credit-stat--limit dd {
   color: var(--exits-primary);
+}
+
+.supplier-credit-stat--reserved {
+  border-color: color-mix(in srgb, #0369a1 28%, var(--exits-border));
+  background: color-mix(in srgb, #0369a1 8%, var(--exits-surface));
+}
+
+.supplier-credit-stat--reserved .supplier-credit-stat__icon,
+.supplier-credit-stat--reserved dd {
+  color: #0369a1;
+}
+
+[data-theme="dark"] .supplier-credit-stat--reserved {
+  border-color: color-mix(in srgb, #7dd3fc 28%, var(--exits-border));
+  background: color-mix(in srgb, #7dd3fc 8%, var(--exits-surface));
+}
+
+[data-theme="dark"] .supplier-credit-stat--reserved .supplier-credit-stat__icon,
+[data-theme="dark"] .supplier-credit-stat--reserved dd {
+  color: #7dd3fc;
+}
+
+.supplier-credit-stat--available-card {
+  gap: 0.4rem;
+}
+
+.supplier-credit-stat--available {
+  border-color: color-mix(in srgb, var(--exits-info) 32%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
+}
+
+.supplier-credit-stat--available .supplier-credit-stat__icon,
+.supplier-credit-stat--available dd {
+  color: var(--exits-info);
+}
+
+.supplier-credit-stat--available-danger {
+  border-color: color-mix(in srgb, var(--exits-danger) 32%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger-soft) 70%, var(--exits-surface));
+}
+
+.supplier-credit-stat--available-danger .supplier-credit-stat__icon,
+.supplier-credit-stat--available-danger dd,
+.supplier-credit-stat--available-danger .supplier-credit-available__caption {
+  color: var(--exits-danger);
+}
+
+.supplier-credit-available__caption {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text-muted);
+}
+
+.supplier-credit-available__track {
+  width: 100%;
+  height: 0.35rem;
+  margin-top: 0.15rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-border) 70%, var(--exits-surface));
+}
+
+.supplier-credit-available__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--exits-info);
+  transition: width 160ms ease;
+}
+
+.supplier-credit-stat--available-danger .supplier-credit-available__fill,
+.supplier-credit-available__track[data-over-limit="true"] .supplier-credit-available__fill {
+  background: var(--exits-danger);
 }
 
 .supplier-payable-item {
@@ -20734,9 +20818,9 @@ a.exits-chip--primary:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* Credit & payment terms: limit / outstanding / available / term on one row */
+  /* Credit & payment terms: limit / outstanding / overdue / available / term (+ reserved on business) */
   .branch-mgmt-overview__grid:has(.credit-policy-stat-icon) {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   }
 }
 
@@ -20788,6 +20872,10 @@ a.exits-chip--primary:hover {
   color: var(--exits-warning);
 }
 
+.credit-policy-stat-icon--overdue {
+  color: var(--exits-danger);
+}
+
 .credit-policy-stat-icon--available {
   color: var(--exits-info);
 }
@@ -20808,6 +20896,11 @@ a.exits-chip--primary:hover {
 .branch-mgmt-overview__item:has(.credit-policy-stat-icon--outstanding) {
   border-color: color-mix(in srgb, var(--exits-warning) 28%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-warning) 8%, var(--exits-surface));
+}
+
+.branch-mgmt-overview__item:has(.credit-policy-stat-icon--overdue) {
+  border-color: color-mix(in srgb, var(--exits-danger) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger) 8%, var(--exits-surface));
 }
 
 .branch-mgmt-overview__item:has(.credit-policy-stat-icon--available) {
@@ -22703,4 +22796,162 @@ html[data-motion="reduced"] .exits-tooltip {
   .admin-quick-action:hover {
     box-shadow: none;
   }
+}
+
+/* Organization profile (Manage Business) */
+.org-profile-page .catalog-form-section {
+  border: 1px solid var(--exits-border);
+  box-shadow: none;
+  background: var(--exits-surface);
+  min-width: 0;
+}
+
+:root:not([data-theme="dark"]) .org-profile-page .catalog-form-section,
+[data-theme="light"] .org-profile-page .catalog-form-section {
+  background: #fff;
+}
+
+.org-profile-identity__row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.org-profile-identity__avatar {
+  display: flex;
+  width: 4.5rem;
+  height: 4.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--exits-radius-lg, 0.75rem);
+  object-fit: cover;
+}
+
+.org-profile-identity__avatar--initials {
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface-muted, var(--exits-surface)));
+  color: var(--exits-primary);
+  font-size: var(--exits-text-xl, 1.25rem);
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+.org-profile-identity__name {
+  font-size: var(--exits-text-lg);
+  font-weight: var(--exits-font-weight-semibold);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.org-profile-identity__id-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.org-profile-identity__id {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-medium);
+  letter-spacing: 0.04em;
+  color: var(--exits-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.org-profile-identity__copy-btn {
+  gap: 0.3rem;
+  height: auto;
+  min-height: 1.75rem;
+  padding-inline: 0.45rem;
+  color: var(--exits-text-muted);
+}
+
+.org-profile-contact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.org-profile-contact__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.org-profile-contact__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--exits-border);
+}
+
+.org-profile-contact__row:first-child {
+  border-top: 0;
+  padding-top: 0.15rem;
+}
+
+.org-profile-contact__row:last-child {
+  padding-bottom: 0.15rem;
+}
+
+.org-profile-contact__icon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface-muted, color-mix(in srgb, var(--exits-border) 35%, transparent));
+  color: var(--exits-text-muted);
+}
+
+.org-profile-contact__label {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+}
+
+.org-profile-contact__value {
+  margin-top: 0.15rem;
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  color: var(--exits-text);
+  word-break: break-word;
+}
+
+.org-profile-contact__value--empty {
+  font-weight: var(--exits-font-weight-medium);
+  color: var(--exits-text-muted);
+}
+
+.org-profile-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.35rem;
+}
+
+.org-profile-edit-group + .org-profile-edit-group {
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--exits-border);
+}
+
+.org-profile-edit-group__title {
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--exits-text-muted);
+}
+
+.org-profile-edit-group__label {
+  color: var(--exits-text);
+  font-weight: var(--exits-font-weight-medium);
 }

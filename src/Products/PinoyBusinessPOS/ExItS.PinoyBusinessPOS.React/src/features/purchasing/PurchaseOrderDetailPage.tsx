@@ -504,6 +504,10 @@ export function PurchaseOrderDetailPage() {
         queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
       });
       await queryClient.invalidateQueries({ queryKey: ["purchasing-hub"] });
+      await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
+      await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
       await query.refetch();
     } catch (err) {
       if (options?.reconcile) {
@@ -525,6 +529,10 @@ export function PurchaseOrderDetailPage() {
             queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
           });
           await queryClient.invalidateQueries({ queryKey: ["purchasing-hub"] });
+          await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+          await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+          await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
+          await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
           await query.refetch();
           return;
         }

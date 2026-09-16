@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
@@ -65,6 +66,7 @@ public sealed class CreateDirectPurchaseReceipt
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
+    private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bCreditSync;
     private readonly PartyBranchAccessService? _branchAccess;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
@@ -81,7 +83,8 @@ public sealed class CreateDirectPurchaseReceipt
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
         IOrganizationBranchDirectory? branches = null,
-        PartyBranchAccessService? branchAccess = null)
+        PartyBranchAccessService? branchAccess = null,
+        ConnectedB2bDirectPurchaseCreditSync? b2bCreditSync = null)
     {
         _receipts = receipts;
         _products = products;
@@ -92,6 +95,7 @@ public sealed class CreateDirectPurchaseReceipt
         _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
+        _b2bCreditSync = b2bCreditSync;
         _branchAccess = branchAccess;
         _clock = clock;
         _branches = branches;
@@ -351,6 +355,13 @@ public sealed class CreateDirectPurchaseReceipt
                                 payableResult.ErrorMessage!);
                         }
 
+                        if (_b2bCreditSync is not null)
+                        {
+                            await _b2bCreditSync
+                                .PostFromReceiptAsync(receipt, request.PaidNow, utcNow, ct)
+                                .ConfigureAwait(false);
+                        }
+
                         if (_branchAccess is not null && supplierId is not null)
                         {
                             await _branchAccess
@@ -442,6 +453,7 @@ public sealed class VoidDirectPurchaseReceipt
     private readonly BranchInventoryMutationService _branchMutations;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
+    private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bCreditSync;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
 
@@ -455,7 +467,8 @@ public sealed class VoidDirectPurchaseReceipt
         IPosUnitOfWork unitOfWork,
         CreateSupplierPayableFromReceipt createPayable,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ConnectedB2bDirectPurchaseCreditSync? b2bCreditSync = null)
     {
         _receipts = receipts;
         _products = products;
@@ -465,6 +478,7 @@ public sealed class VoidDirectPurchaseReceipt
         _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _createPayable = createPayable;
+        _b2bCreditSync = b2bCreditSync;
         _clock = clock;
         _branches = branches;
     }
@@ -554,6 +568,13 @@ public sealed class VoidDirectPurchaseReceipt
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
+
+                        if (_b2bCreditSync is not null)
+                        {
+                            await _b2bCreditSync
+                                .ReverseForReceiptAsync(receipt, voidReason, utcNow, ct)
+                                .ConfigureAwait(false);
+                        }
 
                         ApplicationResult<DirectPurchaseReceiptDto>? failure = null;
                         await _inventory
