@@ -71,6 +71,12 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
   cancelConnectionRequest: vi.fn(),
   isRelationshipActive: () => false,
   isRelationshipPending: () => false,
+  getBuyerConnectedSupplierCommerceReadiness: vi.fn(async () => ({
+    relationshipId: null,
+    isReady: true,
+    supportedFulfillmentMethods: [],
+    requirements: null,
+  })),
 }));
 
 vi.mock("@/api/pos/pos-suppliers-client", async (importOriginal) => {

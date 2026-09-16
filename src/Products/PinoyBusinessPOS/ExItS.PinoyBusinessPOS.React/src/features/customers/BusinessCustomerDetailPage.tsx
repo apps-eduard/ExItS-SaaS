@@ -10,6 +10,7 @@ import {
   cancelConnectionRequest,
   getBusinessCustomer,
   getBusinessCustomerUtangSummary,
+  getSupplierConnectedSupplierCommerceReadiness,
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
   formatPublicBusinessAddress,
@@ -109,15 +110,23 @@ export function BusinessCustomerDetailPage() {
     queryFn: ({ signal }) => getBusinessCustomer(workspace!, connectionId!, signal),
   });
 
+  const buyerOrgId = detailQuery.data?.buyerOrganizationId;
+  const isDetailConnected =
+    (detailQuery.data?.relationshipStatus ?? "").trim().toLowerCase() === "active";
+
   const utangSummaryQuery = useQuery({
     queryKey: ["business-customers", "utang-summary", workspace?.organizationId, connectionId],
     enabled: Boolean(workspace) && Boolean(connectionId) && online,
     queryFn: ({ signal }) => getBusinessCustomerUtangSummary(workspace!, connectionId!, signal),
   });
 
-  const buyerOrgId = detailQuery.data?.buyerOrganizationId;
-  const isDetailConnected =
-    (detailQuery.data?.relationshipStatus ?? "").trim().toLowerCase() === "active";
+  const commerceReadinessQuery = useQuery({
+    queryKey: ["business-customers", "commerce-readiness", workspace?.organizationId, connectionId],
+    enabled: Boolean(workspace) && Boolean(connectionId) && online && isDetailConnected,
+    queryFn: ({ signal }) =>
+      getSupplierConnectedSupplierCommerceReadiness(workspace!, connectionId!, signal),
+  });
+
   const publicOrgQuery = useQuery({
     queryKey: [
       "business-customers",
@@ -501,6 +510,90 @@ export function BusinessCustomerDetailPage() {
               </Button>
             ) : null}
           </div>
+        </Card>
+      ) : null}
+
+      {isConnected && commerceReadinessQuery.data ? (
+        <Card
+          className="flex flex-col gap-3 p-3"
+          data-testid="business-customer-commerce-readiness"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("customers.business.commerceReadinessTitle")}
+              </h2>
+              <div className="mt-2">
+                <StatusChip
+                  tone={commerceReadinessQuery.data.isReady ? "success" : "warning"}
+                  data-testid="business-customer-commerce-readiness-status"
+                >
+                  {commerceReadinessQuery.data.isReady
+                    ? t("customers.business.commerceReadinessReady")
+                    : t("customers.business.commerceReadinessSetupRequired")}
+                </StatusChip>
+              </div>
+              {!commerceReadinessQuery.data.isReady ? (
+                <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.business.commerceReadinessNotReady")}
+                </p>
+              ) : null}
+            </div>
+            {!commerceReadinessQuery.data.isReady && allowManage ? (
+              <Button
+                type="button"
+                asChild
+                data-testid="business-customer-complete-setup"
+              >
+                <Link
+                  to={
+                    customer.supplierBranchId
+                      ? `/org/branches/${customer.supplierBranchId}`
+                      : `/suppliers/connected/buyers/${customer.connectionId}/shared-products`
+                  }
+                >
+                  {t("customers.business.commerceReadinessCompleteSetup")}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          <ul
+            className="m-0 flex list-none flex-col gap-2 p-0"
+            data-testid="business-customer-commerce-readiness-checklist"
+          >
+            {(commerceReadinessQuery.data.requirements ?? [])
+              .filter((item) => item.status !== "NotApplicable")
+              .map((item) => (
+              <li
+                key={item.code}
+                className="rounded-md border border-border px-3 py-2"
+                data-testid={`commerce-readiness-${item.code}`}
+                data-status={item.status}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[length:var(--exits-text-sm)] font-medium">
+                    {item.title}
+                  </span>
+                  <StatusChip
+                    tone={
+                      item.status === "Complete"
+                        ? "success"
+                        : item.status === "Missing"
+                          ? "warning"
+                          : "neutral"
+                    }
+                  >
+                    {t(`customers.business.commerceReadinessStatus.${item.status}`)}
+                  </StatusChip>
+                </div>
+                {item.status === "Missing" && item.detail ? (
+                  <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {item.detail}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </Card>
       ) : null}
 

@@ -1322,6 +1322,7 @@ public sealed class SubmitPurchaseOrder
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
     private readonly BusinessCustomerCreditAuthorizationService? _businessCreditAuthorization;
+    private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
 
     public SubmitPurchaseOrder(
         IPurchaseOrderRepository orders,
@@ -1339,7 +1340,8 @@ public sealed class SubmitPurchaseOrder
         IInventoryRepository? inventory = null,
         IInventoryBranchBalanceRepository? branchBalances = null,
         IOrganizationBranchDirectory? branches = null,
-        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null)
+        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null,
+        ConnectedSupplierCommerceReadinessService? commerceReadiness = null)
     {
         _orders = orders;
         _products = products;
@@ -1357,6 +1359,7 @@ public sealed class SubmitPurchaseOrder
         _access = access;
         _clock = clock ?? TimeProvider.System;
         _businessCreditAuthorization = businessCreditAuthorization;
+        _commerceReadiness = commerceReadiness;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -1477,6 +1480,19 @@ public sealed class SubmitPurchaseOrder
                 connectedRelationship = connectedOutcome.Relationship;
                 resolvedBySupplier = connectedOutcome.ResolvedBySupplierProductId
                     .ToDictionary(x => x.Key, x => x.Value);
+
+                if (_commerceReadiness is not null)
+                {
+                    var readiness = await _commerceReadiness
+                        .EnsureReadyAsync(connectedRelationship, forBuyerMessage: true, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!readiness.IsSuccess)
+                    {
+                        return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                            readiness.ErrorCode!,
+                            readiness.ErrorMessage!);
+                    }
+                }
 
                 if (_inventory is not null && _branchBalances is not null)
                 {

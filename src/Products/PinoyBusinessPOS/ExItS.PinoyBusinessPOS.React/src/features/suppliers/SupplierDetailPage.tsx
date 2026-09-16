@@ -20,6 +20,7 @@ import {
 import {
   isRelationshipActive,
   cancelConnectionRequest,
+  getBuyerConnectedSupplierCommerceReadiness,
   isRelationshipPending,
   listRelationships,
   updateSupplierLocation,
@@ -42,6 +43,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
 import { SupplierCreditSection } from "@/features/suppliers/SupplierCreditSection";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -131,6 +133,16 @@ export function SupplierDetailPage() {
     },
   });
 
+  const relationshipIsActive =
+    (relationshipQuery.data?.status ?? "").trim().toLowerCase() === "active";
+
+  const commerceReadinessQuery = useQuery({
+    queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
+    enabled: Boolean(workspace) && Boolean(relationshipId) && relationshipIsActive,
+    queryFn: ({ signal }) =>
+      getBuyerConnectedSupplierCommerceReadiness(workspace!, relationshipId!, signal),
+  });
+
   if (!workspace || !supplierId) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -158,6 +170,11 @@ export function SupplierDetailPage() {
   const relationship = relationshipQuery.data;
   const relationshipActive = relationship ? isRelationshipActive(relationship) : false;
   const relationshipPending = relationship ? isRelationshipPending(relationship) : false;
+  const supplierCommerceReady = commerceReadinessQuery.data?.isReady === true;
+  const showSupplierNotReady =
+    relationshipActive &&
+    commerceReadinessQuery.isSuccess &&
+    commerceReadinessQuery.data?.isReady === false;
   const connectionChipLabel = relationshipPending
     ? t("connected.requestPending")
     : connected
@@ -337,9 +354,18 @@ export function SupplierDetailPage() {
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>
             <StatusChip tone={connectionChipTone}>{connectionChipLabel}</StatusChip>
+            {relationshipActive && supplierCommerceReady ? (
+              <StatusChip tone="success" data-testid="supplier-ready-for-po">
+                {t("purchasing.readyForPurchaseOrders")}
+              </StatusChip>
+            ) : null}
           </div>
         }
       />
+
+      {showSupplierNotReady ? (
+        <SupplierNotReadyForPoBanner testId="supplier-not-ready-for-po-banner" />
+      ) : null}
 
       {actionError ? (
         <Card data-testid="supplier-action-error">
@@ -504,17 +530,30 @@ export function SupplierDetailPage() {
                 </Link>
               </Button>
               {allowCreatePurchaseOrder ? (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="supplier-detail-action-btn"
-                  data-testid="supplier-create-purchase-order"
-                >
-                  <Link to={`/purchasing/new?supplierId=${encodeURIComponent(supplierId)}`}>
+                showSupplierNotReady ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="supplier-detail-action-btn"
+                    data-testid="supplier-create-purchase-order"
+                    disabled
+                  >
                     <ClipboardList className="size-4 shrink-0" aria-hidden />
                     {t("connected.createPurchaseOrder")}
-                  </Link>
-                </Button>
+                  </Button>
+                ) : (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="supplier-detail-action-btn"
+                    data-testid="supplier-create-purchase-order"
+                  >
+                    <Link to={`/purchasing/new?supplierId=${encodeURIComponent(supplierId)}`}>
+                      <ClipboardList className="size-4 shrink-0" aria-hidden />
+                      {t("connected.createPurchaseOrder")}
+                    </Link>
+                  </Button>
+                )
               ) : null}
             </div>
           ) : null}

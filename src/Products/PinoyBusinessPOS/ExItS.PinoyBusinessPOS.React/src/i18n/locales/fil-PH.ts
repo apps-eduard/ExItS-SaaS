@@ -2404,6 +2404,15 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "customers.business.manageCatalog": "Manage catalog & pricing",
   "customers.business.creditPolicy.title": "Credit & payment terms",
+  "customers.business.commerceReadinessTitle": "Supplier Readiness",
+  "customers.business.commerceReadinessReady": "Ready",
+  "customers.business.commerceReadinessSetupRequired": "Setup required",
+  "customers.business.commerceReadinessNotReady":
+    "Complete the items below before this connection can accept purchase orders.",
+  "customers.business.commerceReadinessCompleteSetup": "Complete setup",
+  "customers.business.commerceReadinessStatus.Complete": "Complete",
+  "customers.business.commerceReadinessStatus.Missing": "Needs setup",
+  "customers.business.commerceReadinessStatus.NotApplicable": "Not required",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
@@ -9180,6 +9189,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.utang.available": "Available credit",
   "purchasing.utang.thisPoTotal": "This PO total",
   "purchasing.utang.remainingAfterPo": "Remaining after PO",
+  "purchasing.supplierNotReadyTitle": "Supplier not ready for purchase orders",
+  "purchasing.supplierNotReadyBody":
+    "This supplier is not currently ready to accept purchase orders from your organization. Please contact your supplier.",
+  "purchasing.readyForPurchaseOrders": "Ready for purchase orders",
+  "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillment.pickup": "Pickup",
+  "purchasing.fulfillment.delivery": "Delivery",
+  "purchasing.fulfillment.singleMethodHelp": "This supplier supports {method} only.",
+  "purchasing.saveDraftAnyway": "Save draft",
 
   "purchasing.declineChanges": "Decline changes",
 

@@ -59,6 +59,7 @@ const listCatalogProducts = vi.fn();
 const createBuyerProductAndLink = vi.fn();
 const linkProduct = vi.fn();
 const getBusinessCustomerCreditPolicy = vi.fn();
+const getBuyerConnectedSupplierCommerceReadiness = vi.fn();
 
 vi.mock("@/api/pos/pos-business-credit-policy-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/pos/pos-business-credit-policy-client")>();
@@ -86,6 +87,8 @@ vi.mock("@/api/pos/pos-connected-suppliers-client", async (importOriginal) => {
     getConnectedOrderStock: (...args: unknown[]) => getConnectedOrderStock(...args),
     createBuyerProductAndLink: (...args: unknown[]) => createBuyerProductAndLink(...args),
     linkProduct: (...args: unknown[]) => linkProduct(...args),
+    getBuyerConnectedSupplierCommerceReadiness: (...args: unknown[]) =>
+      getBuyerConnectedSupplierCommerceReadiness(...args),
   };
 });
 
@@ -321,10 +324,17 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     createBuyerProductAndLink.mockReset();
     linkProduct.mockReset();
     getBusinessCustomerCreditPolicy.mockReset();
+    getBuyerConnectedSupplierCommerceReadiness.mockReset();
     listSuppliers.mockResolvedValue(linkedSupplier());
     listLinks.mockResolvedValue(readyLinkPayload());
     searchExposedCatalog.mockResolvedValue(readyCatalogPayload());
     classifyCatalogReadiness.mockResolvedValue(readinessPayload());
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: true,
+      supportedFulfillmentMethods: ["Pickup", "Delivery"],
+      requirements: null,
+    });
     getBusinessCustomerCreditPolicy.mockResolvedValue({
       status: "Approved",
       creditLimit: 100000,
@@ -645,5 +655,27 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       "href",
       `/suppliers/${supplierId}/connected-catalog`,
     );
+  });
+
+  it("blocks create and shows generic banner when supplier commerce is not ready", async () => {
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: false,
+      supportedFulfillmentMethods: [],
+      requirements: null,
+    });
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
+
+    const banner = await screen.findByTestId("po-supplier-not-ready-banner");
+    expect(banner).toHaveTextContent(/Supplier not ready for purchase orders/i);
+    expect(banner).toHaveTextContent(/Please contact your supplier/i);
+    expect(screen.queryByText(/Responsible contact/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Shared catalog/i)).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("po-create-submit")).toBeDisabled();
+    });
+    expect(createPurchaseOrder).not.toHaveBeenCalled();
   });
 });

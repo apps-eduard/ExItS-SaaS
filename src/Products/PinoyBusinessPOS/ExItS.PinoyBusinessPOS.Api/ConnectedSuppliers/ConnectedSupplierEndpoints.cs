@@ -211,6 +211,36 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,exposureId,ct),Results.Ok);});
         group.MapGet("/relationships/{id:guid}/catalog/readiness",async(HttpRequest req,Guid id,ClassifyCatalogReadiness use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapGet("/relationships/{id:guid}/commerce-readiness", async (
+            HttpRequest req,
+            Guid id,
+            GetBuyerConnectedSupplierCommerceReadiness use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ViewPurchasing, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(await use.ExecuteAsync(org, id, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapGet("/business-customers/{connectionId:guid}/commerce-readiness", async (
+            HttpRequest req,
+            Guid connectionId,
+            GetSupplierConnectedSupplierCommerceReadiness use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ViewSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await use.ExecuteAsync(org, connectionId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
         group.MapPost("/relationships/{id:guid}/catalog/auto-link-exact",async(HttpRequest req,Guid id,AutoLinkExactMatches use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/order-stock",async(HttpRequest req,Guid id,ConnectedOrderStockRequest body,GetConnectedSupplierOrderStock use,IPosCommercialAccessAccessor access,CancellationToken ct)=>

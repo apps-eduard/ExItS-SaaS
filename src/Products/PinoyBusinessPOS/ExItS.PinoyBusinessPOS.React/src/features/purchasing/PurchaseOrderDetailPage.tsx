@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
+import { getBuyerConnectedSupplierCommerceReadiness } from "@/api/pos/pos-connected-suppliers-client";
+import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
   acceptConnectedPurchaseOrderChanges,
   cancelPurchaseOrder,
@@ -16,6 +18,10 @@ import {
   type PosGoodsReceiptDto,
   type PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
+import {
+  isConnectedSupplier,
+  listSuppliers,
+} from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -415,6 +421,38 @@ export function PurchaseOrderDetailPage() {
 
   const po = query.data;
   const receipts = receiptsQuery.data ?? [];
+
+  const suppliersQuery = useQuery({
+    queryKey: ["suppliers", "po-detail", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && Boolean(po?.supplierId),
+    queryFn: ({ signal }) => listSuppliers(workspace!, { status: "Active", pageSize: 100 }, signal),
+  });
+
+  const connectedRelationshipId = useMemo(() => {
+    if (!po?.supplierId) {
+      return null;
+    }
+    const supplier = (suppliersQuery.data?.items ?? []).find((s) => s.supplierId === po.supplierId);
+    if (!supplier || !isConnectedSupplier(supplier)) {
+      return null;
+    }
+    return supplier.connectedRelationshipId ?? null;
+  }, [po?.supplierId, suppliersQuery.data]);
+
+  const commerceReadinessQuery = useQuery({
+    queryKey: ["connected-suppliers", "commerce-readiness", connectedRelationshipId],
+    enabled:
+      Boolean(workspace) &&
+      online &&
+      Boolean(connectedRelationshipId) &&
+      po?.status === "Draft",
+    queryFn: ({ signal }) =>
+      getBuyerConnectedSupplierCommerceReadiness(workspace!, connectedRelationshipId!, signal),
+    refetchOnWindowFocus: true,
+  });
+
+  const supplierCommerceReady =
+    !connectedRelationshipId || commerceReadinessQuery.data?.isReady !== false;
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
     po?.cancelledByUserId,
@@ -423,7 +461,12 @@ export function PurchaseOrderDetailPage() {
   ]);
   const displayStatus = po?.displayStatus || po?.status || "";
   const needsApproval = displayStatus === "ChangesNeedApproval";
-  const canSubmit = allowManage && online && po?.status === "Draft";
+  const canSubmit =
+    allowManage &&
+    online &&
+    po?.status === "Draft" &&
+    supplierCommerceReady &&
+    !commerceReadinessQuery.isFetching;
   const canCancel =
     allowManage && online && (po?.status === "Draft" || po?.canWithdrawConnected === true);
   const canReceive =
@@ -492,7 +535,9 @@ export function PurchaseOrderDetailPage() {
       }
       setError(
         err instanceof PosApiError
-          ? (err.problem.detail ?? t("purchasing.actionFailed"))
+          ? err.errorCode === "pos.connected_supplier.commerce_not_ready"
+            ? t("purchasing.supplierNotReadyBody")
+            : (err.problem.detail ?? t("purchasing.actionFailed"))
           : t("purchasing.actionFailed"),
       );
     } finally {
@@ -572,6 +617,12 @@ export function PurchaseOrderDetailPage() {
 
       {!online ? (
         <Notice tone="warning">{t("purchasing.offline")}</Notice>
+      ) : null}
+      {connectedRelationshipId &&
+      po.status === "Draft" &&
+      commerceReadinessQuery.isSuccess &&
+      !supplierCommerceReady ? (
+        <SupplierNotReadyForPoBanner />
       ) : null}
       {needsApproval ? (
         <Notice tone="warning" testId="po-needs-approval">
@@ -805,19 +856,51 @@ export function PurchaseOrderDetailPage() {
               type="button"
               disabled={busy}
               onClick={() =>
-                void runAction(
-                  () => submitPurchaseOrder(workspace, purchaseOrderId),
-                  "purchasing.submitted",
-                  {
-                    reconcile: async () => {
-                      const latest = await getPurchaseOrder(workspace, purchaseOrderId);
-                      return latest.status.toLowerCase() === "ordered";
+                void (async () => {
+                  if (connectedRelationshipId) {
+                    try {
+                      const readiness = await getBuyerConnectedSupplierCommerceReadiness(
+                        workspace,
+                        connectedRelationshipId,
+                      );
+                      await queryClient.invalidateQueries({
+                        queryKey: [
+                          "connected-suppliers",
+                          "commerce-readiness",
+                          connectedRelationshipId,
+                        ],
+                      });
+                      if (!readiness.isReady) {
+                        setError(t("purchasing.supplierNotReadyBody"));
+                        return;
+                      }
+                    } catch {
+                      setError(t("purchasing.supplierNotReadyBody"));
+                      return;
+                    }
+                  }
+                  await runAction(
+                    () => submitPurchaseOrder(workspace, purchaseOrderId),
+                    "purchasing.submitted",
+                    {
+                      reconcile: async () => {
+                        const latest = await getPurchaseOrder(workspace, purchaseOrderId);
+                        return latest.status.toLowerCase() === "ordered";
+                      },
                     },
-                  },
-                )
+                  );
+                })()
               }
               data-testid="po-submit"
             >
+              {t("purchasing.submit")}
+            </Button>
+          ) : po?.status === "Draft" &&
+            allowManage &&
+            online &&
+            connectedRelationshipId &&
+            !supplierCommerceReady ? (
+            <Button type="button" disabled data-testid="po-submit">
               {t("purchasing.submit")}
             </Button>
           ) : null}

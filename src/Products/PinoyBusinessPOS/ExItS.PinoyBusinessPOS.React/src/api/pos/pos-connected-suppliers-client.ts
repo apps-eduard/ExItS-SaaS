@@ -828,6 +828,58 @@ export async function classifyCatalogReadiness(
   return catalogReadinessResultSchema.parse(raw);
 }
 
+const commerceReadinessRequirementSchema = z.object({
+  code: z.string(),
+  status: z.string(),
+  title: z.string(),
+  detail: z.string().nullable().optional(),
+  actionPath: z.string().nullable().optional(),
+});
+
+export const connectedSupplierCommerceReadinessSchema = z.object({
+  relationshipId: guidSchema,
+  isReady: z.boolean(),
+  supportedFulfillmentMethods: z.array(z.string()).default([]),
+  requirements: z.array(commerceReadinessRequirementSchema).nullable().optional(),
+});
+
+export type ConnectedSupplierCommerceReadiness = z.infer<
+  typeof connectedSupplierCommerceReadinessSchema
+>;
+export type ConnectedSupplierCommerceReadinessRequirement = z.infer<
+  typeof commerceReadinessRequirementSchema
+>;
+
+/** Buyer projection — never includes internal missing-setup details. */
+export async function getBuyerConnectedSupplierCommerceReadiness(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierCommerceReadiness> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: relPath(relationshipId, "/commerce-readiness"),
+  });
+  return connectedSupplierCommerceReadinessSchema.parse(raw);
+}
+
+/** Supplier projection — includes detailed checklist. */
+export async function getSupplierConnectedSupplierCommerceReadiness(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierCommerceReadiness> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/commerce-readiness`,
+  });
+  return connectedSupplierCommerceReadinessSchema.parse(raw);
+}
+
 export async function autoLinkExactMatches(
   workspace: PosWorkspaceScope,
   relationshipId: string,

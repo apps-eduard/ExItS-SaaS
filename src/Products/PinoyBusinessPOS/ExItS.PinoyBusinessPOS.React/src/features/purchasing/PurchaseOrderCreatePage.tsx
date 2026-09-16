@@ -9,6 +9,7 @@ import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import {
   classifyCatalogReadiness,
   createBuyerProductAndLink,
+  getBuyerConnectedSupplierCommerceReadiness,
   getConnectedOrderStock,
   linkProduct,
   listLinks,
@@ -69,6 +70,7 @@ import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data
 import { PurchaseOrderLinkedProductsFinder } from "@/features/purchasing/PurchaseOrderLinkedProductsFinder";
 import { PurchaseOrderItemsView } from "@/features/purchasing/PurchaseOrderItemsView";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
+import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
   CONNECTED_PO_PAYMENT_OPTIONS,
   resolvePoUtangEligibility,
@@ -178,6 +180,7 @@ export function PurchaseOrderCreatePage() {
   const [setupBusyKey, setSetupBusyKey] = useState<string | null>(null);
   const [setupBulkBusy, setSetupBulkBusy] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<ConnectedPoPaymentMethodCode | "">("Cash");
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<"Pickup" | "Delivery" | "">("");
   const purchaseOrderIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -286,6 +289,33 @@ export function PurchaseOrderCreatePage() {
     enabled: Boolean(workspace) && online && allowManage && connected && Boolean(relationshipId),
     queryFn: ({ signal }) => getBusinessCustomerCreditPolicy(workspace!, relationshipId!, signal),
   });
+
+  const commerceReadinessQuery = useQuery({
+    queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
+    enabled: Boolean(workspace) && online && allowManage && connected && Boolean(relationshipId),
+    queryFn: ({ signal }) =>
+      getBuyerConnectedSupplierCommerceReadiness(workspace!, relationshipId!, signal),
+  });
+
+  const supplierCommerceReady = !connected || commerceReadinessQuery.data?.isReady === true;
+  const supportedFulfillmentMethods = commerceReadinessQuery.data?.supportedFulfillmentMethods ?? [];
+
+  useEffect(() => {
+    if (!connected) {
+      setFulfillmentMethod("");
+      return;
+    }
+    const methods = supportedFulfillmentMethods.filter(
+      (m): m is "Pickup" | "Delivery" => m === "Pickup" || m === "Delivery",
+    );
+    if (methods.length === 1) {
+      setFulfillmentMethod(methods[0]!);
+      return;
+    }
+    setFulfillmentMethod((prev) =>
+      prev && methods.includes(prev) ? prev : "",
+    );
+  }, [connected, supportedFulfillmentMethods.join("|")]);
 
   const productsQuery = useQuery({
     queryKey: ["catalog-products", "po-create", workspace?.organizationId, debounced],
@@ -710,6 +740,22 @@ export function PurchaseOrderCreatePage() {
         setError(t(utangEligibility.reasonKey));
         return;
       }
+      try {
+        const readiness = await getBuyerConnectedSupplierCommerceReadiness(
+          workspace,
+          relationshipId!,
+        );
+        await queryClient.invalidateQueries({
+          queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
+        });
+        if (!readiness.isReady) {
+          setError(t("purchasing.supplierNotReadyBody"));
+          return;
+        }
+      } catch {
+        setError(t("purchasing.supplierNotReadyBody"));
+        return;
+      }
     }
     setSaving(true);
     setError(null);
@@ -794,6 +840,10 @@ export function PurchaseOrderCreatePage() {
         backLabel={t("purchasing.backOrders")}
         backTestId="page-header-back-purchasing"
       />
+
+      {connected && commerceReadinessQuery.isSuccess && !supplierCommerceReady ? (
+        <SupplierNotReadyForPoBanner />
+      ) : null}
 
       {allowManage ? (
         <Notice tone="info" testId="po-create-notice">
@@ -1450,6 +1500,60 @@ export function PurchaseOrderCreatePage() {
             </ProductFinderPanel>
           ) : null}
 
+          {connected && supportedFulfillmentMethods.length > 0 ? (
+            <section
+              className="flex flex-col gap-2 rounded-md border border-border p-3"
+              data-testid="po-fulfillment-method"
+              aria-labelledby="po-fulfillment-method-heading"
+            >
+              <h3
+                id="po-fulfillment-method-heading"
+                className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+              >
+                {t("purchasing.fulfillmentMethod")}
+              </h3>
+              {supportedFulfillmentMethods.length === 1 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-fulfillment-readonly">
+                  {t("purchasing.fulfillment.singleMethodHelp").replace(
+                    "{method}",
+                    supportedFulfillmentMethods[0] === "Pickup"
+                      ? t("purchasing.fulfillment.pickup")
+                      : t("purchasing.fulfillment.delivery"),
+                  )}
+                </p>
+              ) : (
+                <div
+                  className="flex flex-col gap-2"
+                  role="radiogroup"
+                  aria-label={t("purchasing.fulfillmentMethod")}
+                >
+                  {supportedFulfillmentMethods.map((method) => (
+                    <label
+                      key={method}
+                      className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2"
+                    >
+                      <input
+                        type="radio"
+                        name="po-fulfillment-method"
+                        value={method}
+                        checked={fulfillmentMethod === method}
+                        onChange={() =>
+                          setFulfillmentMethod(method === "Pickup" ? "Pickup" : "Delivery")
+                        }
+                        disabled={!allowManage}
+                      />
+                      <span className="text-[length:var(--exits-text-sm)] font-medium">
+                        {method === "Pickup"
+                          ? t("purchasing.fulfillment.pickup")
+                          : t("purchasing.fulfillment.delivery")}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
+
           {connected ? (
             <section
               className="po-payment-method-section flex flex-col gap-2 rounded-md border border-border p-3"
@@ -1571,7 +1675,8 @@ export function PurchaseOrderCreatePage() {
                 saving ||
                 statusLocked ||
                 activeLines.length === 0 ||
-                (connected && !paymentTerm)
+                (connected && !paymentTerm) ||
+                (connected && !supplierCommerceReady)
               }
               onClick={() => void submit()}
               data-testid="po-create-submit"

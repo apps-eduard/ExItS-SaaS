@@ -44,6 +44,8 @@ public static class ConnectedSupplierErrorCodes
         "pos.connected_supplier.organization_contact.not_connected";
     public const string OrganizationContactInvalid =
         "pos.connected_supplier.organization_contact.invalid";
+    /// <summary>Connected supplier commerce setup is incomplete; buyer sees a generic message only.</summary>
+    public const string CommerceNotReady = "pos.connected_supplier.commerce_not_ready";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -2004,6 +2006,7 @@ public sealed class RespondIncomingOrder
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
 
     public RespondIncomingOrder(
         IConnectedPurchaseOrderRepository o,
@@ -2013,7 +2016,8 @@ public sealed class RespondIncomingOrder
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IConnectedSupplierRelationshipRepository? relationships = null,
         IPurchaseOrderRepository? buyerOrders = null,
-        IBuyerSupplierProductLinkRepository? links = null)
+        IBuyerSupplierProductLinkRepository? links = null,
+        ConnectedSupplierCommerceReadinessService? commerceReadiness = null)
     {
         _orders = o;
         _uow = u;
@@ -2023,6 +2027,7 @@ public sealed class RespondIncomingOrder
         _relationships = relationships!;
         _buyerOrders = buyerOrders;
         _links = links;
+        _commerceReadiness = commerceReadiness;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2053,6 +2058,23 @@ public sealed class RespondIncomingOrder
                 if (o.Status == ConnectedPurchaseOrderStatus.Accepted)
                 {
                     return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+                }
+
+                if (_commerceReadiness is not null && _relationships is not null)
+                {
+                    var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+                    if (rel is not null)
+                    {
+                        var readiness = await _commerceReadiness
+                            .EnsureReadyAsync(rel, forBuyerMessage: false, ct)
+                            .ConfigureAwait(false);
+                        if (!readiness.IsSuccess)
+                        {
+                            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                                readiness.ErrorCode!,
+                                readiness.ErrorMessage!);
+                        }
+                    }
                 }
 
                 o.Accept(now);
