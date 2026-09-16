@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -44,7 +45,11 @@ public sealed record BusinessCustomerDto(
     string? PreferredContactMethod = null,
     string? DeliveryInstructions = null,
     string? BillingContactNotes = null,
-    string? InternalNotes = null);
+    string? InternalNotes = null,
+    /// <summary>inherit | allow | block</summary>
+    string CustomerDeliveryOverride = "inherit",
+    bool OrgOfferDelivery = false,
+    bool EffectiveDeliveryAllowed = false);
 
 /// <summary>Seller-owned relationship contact update (does not modify buyer Organization identity).</summary>
 public sealed record UpdateBusinessCustomerRelationshipContactRequest(
@@ -276,7 +281,13 @@ public sealed class ListBusinessCustomers
             r.PreferredContactMethod,
             r.DeliveryInstructions,
             r.BillingContactNotes,
-            r.InternalNotes);
+            r.InternalNotes,
+            CustomerDeliveryOverride: r.CustomerDeliveryOverride switch
+            {
+                CustomerDeliveryOverride.Allow => "allow",
+                CustomerDeliveryOverride.Block => "block",
+                _ => "inherit",
+            });
     }
 }
 
@@ -292,19 +303,25 @@ public sealed class GetBusinessCustomer
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IPartyBranchAccessActorAccessor? _actorAccessor;
     private readonly IConnectedBuyerBusinessContactDirectory? _contacts;
+    private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
+    private readonly IOrganizationFulfillmentSettingsRepository? _fulfillmentSettings;
 
     public GetBusinessCustomer(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
         IPosCommercialAccessAccessor access,
         IPartyBranchAccessActorAccessor? actorAccessor = null,
-        IConnectedBuyerBusinessContactDirectory? contacts = null)
+        IConnectedBuyerBusinessContactDirectory? contacts = null,
+        ConnectedSupplierCommerceReadinessService? commerceReadiness = null,
+        IOrganizationFulfillmentSettingsRepository? fulfillmentSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
         _actorAccessor = actorAccessor;
         _contacts = contacts;
+        _commerceReadiness = commerceReadiness;
+        _fulfillmentSettings = fulfillmentSettings;
     }
 
     public async Task<ApplicationResult<BusinessCustomerDto>> ExecuteAsync(
@@ -367,8 +384,7 @@ public sealed class GetBusinessCustomer
             if (memberAvailable == true && live.Value is { } contact)
             {
                 // Refresh authoritative display snapshots for active linked members (do not persist here).
-                return ApplicationResult<BusinessCustomerDto>.Success(
-                    ListBusinessCustomers.Map(
+                var refreshed = ListBusinessCustomers.Map(
                         r,
                         eligibleCount,
                         stats,
@@ -381,7 +397,9 @@ public sealed class GetBusinessCustomer
                         ContactRole = contact.RoleTitle,
                         ContactPhone = contact.Phone,
                         ContactEmail = contact.Email
-                    });
+                    };
+                return ApplicationResult<BusinessCustomerDto>.Success(
+                    await EnrichDeliveryAsync(r, refreshed, ct).ConfigureAwait(false));
             }
         }
         else if (r.ContactSource == RelationshipContactSource.OrganizationMember)
@@ -389,13 +407,56 @@ public sealed class GetBusinessCustomer
             memberAvailable = false;
         }
 
+        var dto = ListBusinessCustomers.Map(
+            r,
+            eligibleCount,
+            stats,
+            displayNameIsLive: false,
+            organizationMemberAvailable: memberAvailable);
+
         return ApplicationResult<BusinessCustomerDto>.Success(
-            ListBusinessCustomers.Map(
-                r,
-                eligibleCount,
-                stats,
-                displayNameIsLive: false,
-                organizationMemberAvailable: memberAvailable));
+            await EnrichDeliveryAsync(r, dto, ct).ConfigureAwait(false));
+    }
+
+    private async Task<BusinessCustomerDto> EnrichDeliveryAsync(
+        ConnectedSupplierRelationship r,
+        BusinessCustomerDto dto,
+        CancellationToken ct)
+    {
+        var orgOffer = false;
+        if (_fulfillmentSettings is not null)
+        {
+            var settings = await _fulfillmentSettings
+                .GetAsync(r.SupplierOrganizationId, ct)
+                .ConfigureAwait(false);
+            orgOffer = settings?.OfferDelivery == true;
+        }
+
+        var readyBranch = false;
+        if (_commerceReadiness is not null)
+        {
+            var evaluated = await _commerceReadiness.EvaluateAsync(r, ct).ConfigureAwait(false);
+            readyBranch = evaluated.SupportedFulfillmentMethods.Contains(
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+                StringComparer.OrdinalIgnoreCase);
+            if (!readyBranch && orgOffer)
+            {
+                readyBranch = evaluated.Requirements.Any(req =>
+                    req.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig
+                    && req.Status == ConnectedSupplierCommerceReadiness.StatusComplete);
+            }
+        }
+
+        var effective = EffectiveDeliveryAllowance.IsAllowed(
+            orgOffer,
+            readyBranch,
+            r.CustomerDeliveryOverride);
+
+        return dto with
+        {
+            OrgOfferDelivery = orgOffer,
+            EffectiveDeliveryAllowed = effective,
+        };
     }
 }
 

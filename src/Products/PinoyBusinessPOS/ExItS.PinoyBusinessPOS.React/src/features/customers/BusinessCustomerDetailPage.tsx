@@ -11,6 +11,7 @@ import {
   getBusinessCustomer,
   getBusinessCustomerUtangSummary,
   getSupplierConnectedSupplierCommerceReadiness,
+  updateBusinessCustomerDeliveryAllowance,
 } from "@/api/pos/pos-connected-suppliers-client";
 import {
   formatPublicBusinessAddress,
@@ -30,6 +31,7 @@ import { BusinessCreditPolicySection } from "@/features/customers/BusinessCredit
 import { BusinessRelationshipContactEditDrawer } from "@/features/customers/BusinessRelationshipContactEditDrawer";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
 import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
+import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
 import {
   relationshipStatusLabelKey,
   relationshipStatusTone,
@@ -37,14 +39,37 @@ import {
 } from "@/features/customers/CustomerListCard";
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
-import { Clock, PackageOpen, Pencil, Users } from "lucide-react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { SegmentedControl, SegmentedOption } from "@/components/ui/segmented-control";
+import {
+  BUSINESS_CREDIT_POLICY_ANCHOR,
+  BUSINESS_RELATIONSHIP_CONTACT_ANCHOR,
+  DEFAULT_SUPPLIER_COMMERCE_READINESS_FILTER,
+  countSupplierCommerceReadinessFilters,
+  filterSupplierCommerceRequirements,
+  firstIncompleteSupplierCommerceRequirement,
+  firstVisibleSupplierCommerceRequirement,
+  resolveSupplierCommerceReadinessPath,
+  type SupplierCommerceReadinessFilter,
+} from "@/features/customers/supplier-commerce-readiness-nav";
+import { ChevronRight, Clock, PackageOpen, Pencil, Users } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+
+function commerceReadinessStatusLabelKey(status: string): MessageKey {
+  if (status === "Complete") {
+    return "customers.business.commerceReadinessStatus.Complete";
+  }
+  if (status === "Missing") {
+    return "customers.business.commerceReadinessStatus.Missing";
+  }
+  return "customers.business.commerceReadinessStatus.NotApplicable";
+}
 
 function mapRelationshipStatus(raw: string): CustomerListRelationshipStatus {
   switch (raw.trim().toLowerCase()) {
@@ -78,6 +103,7 @@ export function BusinessCustomerDetailPage() {
   const { t } = useI18n();
   const { preferences } = usePreferences();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -93,6 +119,9 @@ export function BusinessCustomerDetailPage() {
   const allowStatement = canViewStatement(sessionGrant);
   const [relationshipEditOpen, setRelationshipEditOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [readinessFilter, setReadinessFilter] = useState<SupplierCommerceReadinessFilter>(
+    DEFAULT_SUPPLIER_COMMERCE_READINESS_FILTER,
+  );
 
   useEffect(() => {
     if (searchParams.get("recordPayment") !== "1") {
@@ -103,6 +132,31 @@ export function BusinessCustomerDetailPage() {
     next.delete("recordPayment");
     setSearchParams(next, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("editContact") !== "1") {
+      return;
+    }
+    setRelationshipEditOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("editContact");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const hash = location.hash.replace(/^#/, "");
+    if (
+      hash !== BUSINESS_RELATIONSHIP_CONTACT_ANCHOR &&
+      hash !== BUSINESS_CREDIT_POLICY_ANCHOR
+    ) {
+      return;
+    }
+    const el = document.getElementById(hash);
+    if (!el) {
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [location.hash, connectionId]);
 
   const detailQuery = useQuery({
     queryKey: ["business-customers", "detail", workspace?.organizationId, connectionId],
@@ -151,6 +205,30 @@ export function BusinessCustomerDetailPage() {
         error instanceof PosApiError
           ? (error.problem.detail ?? error.message)
           : t("customers.business.requestRevokeFailed"),
+        "error",
+      );
+    },
+  });
+
+  const deliveryAllowanceMutation = useMutation({
+    mutationFn: (allowDelivery: boolean) =>
+      updateBusinessCustomerDeliveryAllowance(workspace!, connectionId!, {
+        allowDelivery,
+        expectedUpdatedAtUtc: detailQuery.data?.updatedAtUtc ?? null,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["business-customers", "detail", workspace?.organizationId, connectionId],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["business-customers", "commerce-readiness", workspace?.organizationId, connectionId],
+      });
+    },
+    onError: (error) => {
+      showToast(
+        error instanceof PosApiError
+          ? (error.problem.detail ?? error.message)
+          : t("customers.business.deliveryAllowanceFailed"),
         "error",
       );
     },
@@ -239,6 +317,33 @@ export function BusinessCustomerDetailPage() {
   );
   const contactUnavailable =
     customer.contactSource === "OrganizationMember" && customer.organizationMemberAvailable === false;
+
+  const readinessRequirements = commerceReadinessQuery.data?.requirements ?? [];
+  const readinessCounts = countSupplierCommerceReadinessFilters(readinessRequirements);
+  const filteredReadinessItems = filterSupplierCommerceRequirements(
+    readinessRequirements,
+    readinessFilter,
+  );
+  const firstIncompleteReadiness = firstIncompleteSupplierCommerceRequirement(readinessRequirements);
+  const firstVisibleReadiness = firstVisibleSupplierCommerceRequirement(readinessRequirements);
+  const readinessTopActionTarget = firstIncompleteReadiness ?? firstVisibleReadiness;
+  const readinessNavContext = {
+    connectionId: customer.connectionId,
+    supplierBranchId: customer.supplierBranchId,
+  };
+  const readinessTopActionPath = readinessTopActionTarget
+    ? resolveSupplierCommerceReadinessPath(
+        readinessTopActionTarget.code,
+        {
+          ...readinessNavContext,
+          openContactEditor:
+            readinessTopActionTarget.code === "ResponsibleContact" &&
+            allowManage &&
+            readinessTopActionTarget.status === "Missing",
+        },
+        readinessTopActionTarget.actionPath,
+      )
+    : null;
 
   return (
     <div
@@ -351,7 +456,11 @@ export function BusinessCustomerDetailPage() {
       </Card>
 
       {(isConnected || isPending) ? (
-        <Card className="customer-ownership-section p-4" data-testid="business-relationship-contact">
+        <Card
+          id={BUSINESS_RELATIONSHIP_CONTACT_ANCHOR}
+          className="customer-ownership-section p-4"
+          data-testid="business-relationship-contact"
+        >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="customer-ownership-section__title">
               {t("customers.business.relationshipContact.title")}
@@ -459,6 +568,36 @@ export function BusinessCustomerDetailPage() {
         </Card>
       ) : null}
 
+      {isConnected ? (
+        <Card className="flex flex-col gap-2 p-3" data-testid="business-customer-delivery-allowance">
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+            {t("customers.business.deliveryAllowanceTitle")}
+          </h2>
+          {!customer.orgOfferDelivery ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="business-delivery-org-off"
+            >
+              {t("customers.business.deliveryAllowanceOrgOff")}
+            </p>
+          ) : (
+            <BranchFulfillmentSwitch
+              checked={customer.customerDeliveryOverride !== "block"}
+              disabled={!allowManage || deliveryAllowanceMutation.isPending}
+              pending={deliveryAllowanceMutation.isPending}
+              label={t("customers.business.deliveryAllowance")}
+              hint={
+                customer.customerDeliveryOverride === "block"
+                  ? t("customers.business.deliveryAllowanceBlocked")
+                  : t("customers.business.deliveryAllowanceInherited")
+              }
+              testId="business-allow-delivery-switch"
+              onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
+            />
+          )}
+        </Card>
+      ) : null}
+
       {isPending ? (
         <Card
           data-testid="business-customer-pending-banner"
@@ -539,60 +678,128 @@ export function BusinessCustomerDetailPage() {
                 </p>
               ) : null}
             </div>
-            {!commerceReadinessQuery.data.isReady && allowManage ? (
+            {allowManage && readinessTopActionPath ? (
               <Button
                 type="button"
                 asChild
                 data-testid="business-customer-complete-setup"
               >
-                <Link
-                  to={
-                    customer.supplierBranchId
-                      ? `/org/branches/${customer.supplierBranchId}`
-                      : `/suppliers/connected/buyers/${customer.connectionId}/shared-products`
-                  }
-                >
-                  {t("customers.business.commerceReadinessCompleteSetup")}
+                <Link to={readinessTopActionPath}>
+                  {readinessCounts.needsSetup > 0
+                    ? t("customers.business.commerceReadinessFixItems").replace(
+                        "{n}",
+                        String(readinessCounts.needsSetup),
+                      )
+                    : t("customers.business.commerceReadinessReviewSetup")}
                 </Link>
               </Button>
             ) : null}
           </div>
+
+          <SegmentedControl label={t("customers.business.commerceReadinessFilterLabel")}>
+            <SegmentedOption
+              selected={readinessFilter === "needsSetup"}
+              onSelect={() => setReadinessFilter("needsSetup")}
+            >
+              <span data-testid="commerce-readiness-filter-needsSetup">
+                {t("customers.business.commerceReadinessFilter.needsSetup").replace(
+                  "{n}",
+                  String(readinessCounts.needsSetup),
+                )}
+              </span>
+            </SegmentedOption>
+            <SegmentedOption
+              selected={readinessFilter === "complete"}
+              onSelect={() => setReadinessFilter("complete")}
+            >
+              <span data-testid="commerce-readiness-filter-complete">
+                {t("customers.business.commerceReadinessFilter.complete").replace(
+                  "{n}",
+                  String(readinessCounts.complete),
+                )}
+              </span>
+            </SegmentedOption>
+            <SegmentedOption
+              selected={readinessFilter === "all"}
+              onSelect={() => setReadinessFilter("all")}
+            >
+              <span data-testid="commerce-readiness-filter-all">
+                {t("customers.business.commerceReadinessFilter.all").replace(
+                  "{n}",
+                  String(readinessCounts.all),
+                )}
+              </span>
+            </SegmentedOption>
+          </SegmentedControl>
+
           <ul
             className="m-0 flex list-none flex-col gap-2 p-0"
             data-testid="business-customer-commerce-readiness-checklist"
           >
-            {(commerceReadinessQuery.data.requirements ?? [])
-              .filter((item) => item.status !== "NotApplicable")
-              .map((item) => (
+            {filteredReadinessItems.length === 0 ? (
               <li
-                key={item.code}
-                className="rounded-md border border-border px-3 py-2"
-                data-testid={`commerce-readiness-${item.code}`}
-                data-status={item.status}
+                className="rounded-md border border-dashed border-border px-3 py-3 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="commerce-readiness-filter-empty"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[length:var(--exits-text-sm)] font-medium">
-                    {item.title}
-                  </span>
-                  <StatusChip
-                    tone={
-                      item.status === "Complete"
-                        ? "success"
-                        : item.status === "Missing"
-                          ? "warning"
-                          : "neutral"
-                    }
-                  >
-                    {t(`customers.business.commerceReadinessStatus.${item.status}`)}
-                  </StatusChip>
-                </div>
-                {item.status === "Missing" && item.detail ? (
-                  <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {item.detail}
-                  </p>
-                ) : null}
+                {t("customers.business.commerceReadinessEmptyFilter")}
               </li>
-            ))}
+            ) : (
+              filteredReadinessItems.map((item) => {
+                const href = resolveSupplierCommerceReadinessPath(
+                  item.code,
+                  {
+                    ...readinessNavContext,
+                    openContactEditor:
+                      item.code === "ResponsibleContact" &&
+                      allowManage &&
+                      item.status === "Missing",
+                  },
+                  item.actionPath,
+                );
+                return (
+                  <li key={item.code} className="m-0 p-0">
+                    <Link
+                      to={href}
+                      className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-inherit no-underline transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      data-testid={`commerce-readiness-${item.code}`}
+                      data-status={item.status}
+                      aria-label={t("customers.business.commerceReadinessOpenItem").replace(
+                        "{title}",
+                        item.title,
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                            {item.title}
+                          </span>
+                          <StatusChip
+                            tone={
+                              item.status === "Complete"
+                                ? "success"
+                                : item.status === "Missing"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          >
+                            {t(commerceReadinessStatusLabelKey(item.status))}
+                          </StatusChip>
+                        </div>
+                        {item.detail ? (
+                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                            {item.detail}
+                          </p>
+                        ) : null}
+                      </div>
+                      <ChevronRight
+                        className="size-4 shrink-0 text-muted"
+                        aria-hidden
+                      />
+                    </Link>
+                  </li>
+                );
+              })
+            )}
           </ul>
         </Card>
       ) : null}

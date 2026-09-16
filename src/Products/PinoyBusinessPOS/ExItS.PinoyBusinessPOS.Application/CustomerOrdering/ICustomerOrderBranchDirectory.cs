@@ -24,7 +24,9 @@ public sealed record CustomerOrderBranchSnapshot(
     decimal? Longitude,
     CustomerOrderBranchDeliveryPolicySnapshot? DeliveryPolicy,
     bool IsPrimary = false,
-    IReadOnlyList<CustomerOrderDeliveryServiceAreaSnapshot>? DeliveryServiceAreas = null);
+    IReadOnlyList<CustomerOrderDeliveryServiceAreaSnapshot>? DeliveryServiceAreas = null,
+    /// <summary>Setup complete for pickup (independent of store open-now / pause).</summary>
+    bool PickupReady = false);
 
 public sealed record CustomerOrderBranchDeliveryPolicySnapshot(
     decimal MinimumOrderAmount,

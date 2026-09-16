@@ -227,7 +227,7 @@ export async function listBusinessCustomerCreditPolicyHistory(
     signal,
     path: appendQuery(creditPolicyPath(connectionId, "/history"), {
       page: options.page ?? 1,
-      pageSize: options.pageSize ?? 20,
+      pageSize: options.pageSize ?? 10,
     }),
   });
   return posBusinessCustomerCreditPolicyHistoryPagedSchema.parse(raw);

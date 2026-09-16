@@ -215,6 +215,11 @@ public sealed class ConnectedSupplierRelationship
     public string? PreferredContactMethod { get; private set; }
     /// <summary>Seller-owned delivery notes for this relationship.</summary>
     public string? DeliveryInstructions { get; private set; }
+    /// <summary>
+    /// Per-customer Delivery override. <see cref="CustomerDeliveryOverride.Inherit"/> follows org Offer Delivery.
+    /// Explicit <see cref="CustomerDeliveryOverride.Block"/> must not create Needs Attention.
+    /// </summary>
+    public CustomerDeliveryOverride CustomerDeliveryOverride { get; private set; } = CustomerDeliveryOverride.Inherit;
     /// <summary>Seller-owned billing contact notes for this relationship.</summary>
     public string? BillingContactNotes { get; private set; }
     /// <summary>Seller-owned internal notes (not buyer Organization identity).</summary>
@@ -260,7 +265,8 @@ public sealed class ConnectedSupplierRelationship
         string? preferredContactMethod = null,
         string? deliveryInstructions = null,
         string? billingContactNotes = null,
-        string? internalNotes = null)
+        string? internalNotes = null,
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; InitiatedByParty = initiatedByParty;
@@ -279,6 +285,7 @@ public sealed class ConnectedSupplierRelationship
             contactPhone, contactEmail);
         PreferredContactMethod = CleanSnapshot(preferredContactMethod, 32);
         DeliveryInstructions = CleanSnapshot(deliveryInstructions, 1000);
+        CustomerDeliveryOverride = customerDeliveryOverride;
         BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
         InternalNotes = CleanSnapshot(internalNotes, 2000);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
@@ -499,6 +506,22 @@ public sealed class ConnectedSupplierRelationship
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Sets per-customer Delivery override without mass-writing other customers.
+    /// Pass <see cref="CustomerDeliveryOverride.Inherit"/> to restore organization default.
+    /// </summary>
+    public void SetCustomerDeliveryOverride(CustomerDeliveryOverride overrideValue, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        CustomerDeliveryOverride = overrideValue;
+        UpdatedAtUtc = utcNow;
+    }
+
     private void ApplyContactIdentity(
         RelationshipContactSource contactSource,
         Guid? organizationMemberId,
@@ -555,7 +578,8 @@ public sealed class ConnectedSupplierRelationship
         string? preferredContactMethod = null,
         string? deliveryInstructions = null,
         string? billingContactNotes = null,
-        string? internalNotes = null) =>
+        string? internalNotes = null,
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
@@ -563,7 +587,7 @@ public sealed class ConnectedSupplierRelationship
             initiatedByParty, sharedSupplierBranchIds,
             contactSource, organizationMemberId,
             contactPersonName, contactDepartment, contactRole, contactPhone, contactEmail, preferredContactMethod,
-            deliveryInstructions, billingContactNotes, internalNotes);
+            deliveryInstructions, billingContactNotes, internalNotes, customerDeliveryOverride);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

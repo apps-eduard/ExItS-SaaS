@@ -3,6 +3,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 /// <summary>
 /// Pure evaluation of whether a connected supplier is ready to accept buyer POs.
 /// Conditional requirements: Delivery/Pickup/Utang config only when that capability is enabled.
+/// DeliveryEnabled here means organization Offer Delivery (not per-customer override).
 /// </summary>
 public static class ConnectedSupplierCommerceReadiness
 {
@@ -25,11 +26,18 @@ public static class ConnectedSupplierCommerceReadiness
     public sealed record Input(
         bool HasSellingBranch,
         bool PickupEnabled,
+        /// <summary>Organization Offer Delivery is ON.</summary>
         bool DeliveryEnabled,
         bool PickupConfigured,
+        /// <summary>Delivery-capable selling branch is ready (config preserved even when org OFF).</summary>
         bool DeliveryConfigured,
         bool HasAcceptedPaymentMethod,
         bool UtangPaymentEnabled,
+        /// <summary>
+        /// Seller turned Allow credit ON for this connection (PendingApproval or Approved).
+        /// When false (OFF / NotConfigured / Disabled), CreditPolicy requirement is N/A.
+        /// </summary>
+        bool CreditAllowRequested,
         bool HasValidCreditPolicy,
         bool HasSharedCatalog,
         bool HasResponsibleContact);
@@ -43,16 +51,21 @@ public static class ConnectedSupplierCommerceReadiness
 
     public static Result Evaluate(Input input)
     {
+        // Buyer-usable methods: only include Delivery when org offers it AND branch is ready.
         var methods = new List<string>(2);
         if (input.PickupEnabled)
         {
             methods.Add(FulfillmentPickup);
         }
 
-        if (input.DeliveryEnabled)
+        if (input.DeliveryEnabled && input.DeliveryConfigured)
         {
             methods.Add(FulfillmentDelivery);
         }
+
+        // FulfillmentMethod: at least one offered method (Pickup enabled OR org Delivery ON).
+        // Pickup can independently satisfy this row; DeliveryConfig is separate when org Delivery ON.
+        var hasOfferedMethod = input.PickupEnabled || input.DeliveryEnabled;
 
         var requirements = new List<Requirement>
         {
@@ -63,15 +76,15 @@ public static class ConnectedSupplierCommerceReadiness
                 "Choose the branch that fulfills purchase orders for this connection."),
             Item(
                 FulfillmentMethod,
-                input.HasSellingBranch && methods.Count > 0,
+                input.HasSellingBranch && hasOfferedMethod,
                 "Fulfillment methods",
-                "Enable Delivery and/or Pickup on the selling branch."),
+                "Enable Pickup and/or turn on Offer Delivery for the organization."),
             Conditional(
                 DeliveryConfig,
                 applicable: input.DeliveryEnabled,
                 complete: input.DeliveryConfigured,
                 title: "Delivery configuration",
-                detail: "Finish delivery setup for the selling branch."),
+                detail: "Finish delivery setup for a delivery-capable selling branch."),
             Conditional(
                 PickupConfig,
                 applicable: input.PickupEnabled,
@@ -95,10 +108,11 @@ public static class ConnectedSupplierCommerceReadiness
                 "Set a contact person, phone, or email for this connection."),
             Conditional(
                 CreditPolicy,
-                applicable: input.UtangPaymentEnabled,
+                // Utang org method alone does not force credit; only when Allow credit is ON.
+                applicable: input.UtangPaymentEnabled && input.CreditAllowRequested,
                 complete: input.HasValidCreditPolicy,
                 title: "Credit setup",
-                detail: "Approve a valid credit policy for this business customer."),
+                detail: "Complete credit terms before this business can use Utang."),
         };
 
         var isReady = requirements.All(r =>

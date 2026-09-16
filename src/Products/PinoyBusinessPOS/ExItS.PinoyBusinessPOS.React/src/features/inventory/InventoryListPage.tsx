@@ -37,10 +37,27 @@ function parseLowStockFlag(value: string | null): boolean {
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 
+function parseStockStatusFilter(value: string | null): string | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  if (normalized.localeCompare("OutOfStock", undefined, { sensitivity: "accent" }) === 0) {
+    return "OutOfStock";
+  }
+  if (normalized.localeCompare("LowStock", undefined, { sensitivity: "accent" }) === 0) {
+    return "LowStock";
+  }
+  if (normalized.localeCompare("InStock", undefined, { sensitivity: "accent" }) === 0) {
+    return "InStock";
+  }
+  return undefined;
+}
+
 export function InventoryListPage() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const lowStockOnly = parseLowStockFlag(searchParams.get("lowStock"));
+  const stockStatusFilter = parseStockStatusFilter(searchParams.get("stockStatus"));
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
   const allowView = canViewInventory(sessionGrant);
   const allowManage = canManageInventory(sessionGrant);
@@ -49,7 +66,7 @@ export function InventoryListPage() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>(
-    lowStockOnly ? "tracked" : "all",
+    lowStockOnly || stockStatusFilter ? "tracked" : "all",
   );
 
   useEffect(() => {
@@ -174,6 +191,7 @@ export function InventoryListPage() {
       workspace?.branchId,
       debounced,
       lowStockOnly,
+      stockStatusFilter,
       trackingFilter,
     ],
     enabled: Boolean(workspace),
@@ -184,12 +202,13 @@ export function InventoryListPage() {
           search: debounced || undefined,
           pageSize: 50,
           tracked:
-            lowStockOnly || trackingFilter === "tracked"
+            lowStockOnly || stockStatusFilter || trackingFilter === "tracked"
               ? true
               : trackingFilter === "untracked"
                 ? false
                 : undefined,
           lowStock: lowStockOnly ? true : undefined,
+          stockStatus: stockStatusFilter,
         },
         signal,
       ),

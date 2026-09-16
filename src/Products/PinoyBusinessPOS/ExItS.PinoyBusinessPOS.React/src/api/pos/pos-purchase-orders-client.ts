@@ -177,6 +177,8 @@ export type CreatePurchaseOrderRequest = {
   purchaseOrderId?: string | null;
   /** Workspace branch that will receive goods when the PO is fulfilled. */
   intendedReceivingBranchId?: string | null;
+  /** Connected PO fulfillment method (Pickup|Delivery). Server-enforced. */
+  fulfillmentMethod?: string | null;
 };
 
 export type UpdatePurchaseOrderRequest = CreatePurchaseOrderRequest & {
@@ -281,6 +283,9 @@ function serializeCreateBody(body: CreatePurchaseOrderRequest): Record<string, u
   }
   if (body.intendedReceivingBranchId) {
     payload.intendedReceivingBranchId = body.intendedReceivingBranchId;
+  }
+  if (body.fulfillmentMethod) {
+    payload.fulfillmentMethod = body.fulfillmentMethod;
   }
   return payload;
 }

@@ -108,6 +108,27 @@ export function isCreditPolicyApproved(policy: PosCustomerCreditPolicy | null | 
   return (policy?.status ?? "").trim() === "Approved";
 }
 
+/** Allow credit switch is ON for Approved (active) or PendingApproval (needs setup). */
+export function isCreditAllowSwitchOn(status: string | null | undefined): boolean {
+  const s = (status ?? "").trim();
+  return s === "Approved" || s === "PendingApproval";
+}
+
+/** Terms exist and can be reused when re-enabling from Disabled. */
+export function creditPolicyHasReusableTerms(policy: {
+  status?: string | null;
+  creditLimit?: number | null;
+  defaultTermDays?: number | null;
+} | null | undefined): boolean {
+  if (!policy) return false;
+  const status = (policy.status ?? "").trim();
+  if (status === "NotConfigured") return false;
+  return policy.creditLimit != null && policy.defaultTermDays != null;
+}
+
+export const CREDIT_ALLOW_ENABLE_REASON = "Allow credit turned on.";
+export const CREDIT_ALLOW_DISABLE_REASON = "Allow credit turned off.";
+
 /**
  * Client-side convenience gate for Utang checkout. Server still enforces policy.
  * Works for Person and Business policies (status + availableCredit).

@@ -5,9 +5,11 @@ import {
   creditPolicyCheckoutBlockMessageKey,
   creditPolicyConfigureActionLabelKey,
   creditPolicyConfigureSubmitLabelKey,
+  creditPolicyHasReusableTerms,
   creditPolicyStatusLabelKey,
   creditPolicyStatusTone,
   formatCreditPolicySubjectIdentity,
+  isCreditAllowSwitchOn,
   outstandingExceedsNewLimit,
   resolveUtangCreditPolicyBlock,
   termDaysHelperLabelKey,
@@ -96,6 +98,39 @@ describe("credit-policy helpers", () => {
   it("warns when outstanding exceeds new limit", () => {
     expect(outstandingExceedsNewLimit(500, 400)).toBe(true);
     expect(outstandingExceedsNewLimit(500, 500)).toBe(false);
+  });
+
+  it("maps allow-credit switch on for Approved and PendingApproval only", () => {
+    expect(isCreditAllowSwitchOn("NotConfigured")).toBe(false);
+    expect(isCreditAllowSwitchOn("Disabled")).toBe(false);
+    expect(isCreditAllowSwitchOn("PendingApproval")).toBe(true);
+    expect(isCreditAllowSwitchOn("Approved")).toBe(true);
+    expect(isCreditAllowSwitchOn(null)).toBe(false);
+  });
+
+  it("detects reusable terms for re-enable from Disabled", () => {
+    expect(creditPolicyHasReusableTerms(null)).toBe(false);
+    expect(creditPolicyHasReusableTerms(policy({ status: "NotConfigured" }))).toBe(false);
+    expect(
+      creditPolicyHasReusableTerms(
+        policy({ status: "Disabled", creditLimit: null, defaultTermDays: 30 }),
+      ),
+    ).toBe(false);
+    expect(
+      creditPolicyHasReusableTerms(
+        policy({ status: "Disabled", creditLimit: 1000, defaultTermDays: null }),
+      ),
+    ).toBe(false);
+    expect(
+      creditPolicyHasReusableTerms(
+        policy({ status: "Disabled", creditLimit: 1000, defaultTermDays: 15 }),
+      ),
+    ).toBe(true);
+    expect(
+      creditPolicyHasReusableTerms(
+        policy({ status: "Approved", creditLimit: 1000, defaultTermDays: 15 }),
+      ),
+    ).toBe(true);
   });
 
   it("blocks checkout when policy is not approved or over limit", () => {

@@ -6,6 +6,7 @@ import { ChevronDown, MapPin, Store, Warehouse } from "lucide-react";
 import { listOrganizationNotifications } from "@/api/platform/organization-notifications-client";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
+import { ShellNeedsAttentionButton } from "@/components/exits/ShellNeedsAttentionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
 import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
 import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
@@ -210,6 +211,12 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
             testId="org-shell-connection-button"
             className="app-top-bar__action"
           />
+          {boundWorkspace ? (
+            <ShellNeedsAttentionButton
+              testId="org-needs-attention"
+              className="app-top-bar__action"
+            />
+          ) : null}
           {canOpenOrgNotifications ? (
             <ShellNotificationButton
               to="/org/notifications"

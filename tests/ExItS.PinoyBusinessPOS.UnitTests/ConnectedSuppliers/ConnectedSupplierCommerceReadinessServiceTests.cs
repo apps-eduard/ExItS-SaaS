@@ -69,6 +69,33 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
         Assert.True(gate.IsSuccess, gate.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Supplier_pickup_config_complete_when_pickup_ready_even_if_store_closed()
+    {
+        var relationship = ReadyRelationship();
+        var relationships = new FakeRelationships(relationship);
+        var shares = new FakeShares(true);
+        var branches = new FakeBranchesClosedButSetupReady();
+        var payments = new FakePayments();
+        var credits = new FakeCredits();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            relationships,
+            shares,
+            branches,
+            payments,
+            credits,
+            new FakeAccess());
+
+        var result = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        var pickup = Assert.Single(
+            result.Value!.Requirements!,
+            r => r.Code == ConnectedSupplierCommerceReadiness.PickupConfig);
+        Assert.Equal(ConnectedSupplierCommerceReadiness.StatusComplete, pickup.Status);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
     private static ConnectedSupplierRelationship ReadyRelationship(
         bool withContact = true,
         bool withBranch = true) =>
@@ -175,8 +202,34 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                         StoreStatusMessage: null,
                         Latitude: null,
                         Longitude: null,
-                        DeliveryPolicy: null)
+                        DeliveryPolicy: null,
+                        PickupReady: true)
                     : null);
+
+        public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
+    }
+
+    /// <summary>Pickup setup complete but store closed (not operational right now).</summary>
+    private sealed class FakeBranchesClosedButSetupReady : ICustomerOrderBranchDirectory
+    {
+        public Task<CustomerOrderBranchSnapshot?> GetBranchAsync(Guid sellerOrganizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrderBranchSnapshot?>(
+                new CustomerOrderBranchSnapshot(
+                    branchId,
+                    "Main",
+                    CustomerOrderingEnabled: true,
+                    PickupEnabled: true,
+                    DeliveryEnabled: false,
+                    CustomerOrderingOperational: false,
+                    PickupOperational: false,
+                    DeliveryOperational: false,
+                    OnlineOrdersPaused: false,
+                    StoreStatusMessage: "Closed",
+                    Latitude: null,
+                    Longitude: null,
+                    DeliveryPolicy: null,
+                    PickupReady: true));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);

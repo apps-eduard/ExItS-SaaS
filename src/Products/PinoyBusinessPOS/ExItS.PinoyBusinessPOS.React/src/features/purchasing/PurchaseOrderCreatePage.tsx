@@ -776,6 +776,7 @@ export function PurchaseOrderCreatePage() {
         notes: notes.trim() || null,
         intendedReceivingBranchId: workspace.branchId ?? null,
         paymentTerm: connected ? paymentTerm || null : null,
+        fulfillmentMethod: connected && fulfillmentMethod ? fulfillmentMethod : null,
         lines: activeLines.map((l) => ({
           productId: l.productId,
           orderedQty: l.orderedQty,

@@ -77,7 +77,8 @@ internal sealed class PosCustomerOrderBranchDirectory(
                             TestingAreaId,
                             "Manila",
                             "NCR")
-                    ])
+                    ],
+                    PickupReady: true)
             ];
         }
 
@@ -241,6 +242,7 @@ internal sealed class PosCustomerOrderBranchDirectory(
             branch.Longitude,
             policy,
             branch.IsPrimary,
-            areas);
+            areas,
+            branch.PickupReady);
     }
 }

@@ -16,6 +16,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: false,
                 HasAcceptedPaymentMethod: true,
                 UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
                 HasValidCreditPolicy: false,
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
@@ -31,7 +32,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
     }
 
     [Fact]
-    public void Delivery_config_required_only_when_delivery_enabled()
+    public void Delivery_config_required_only_when_org_offer_delivery_on()
     {
         var missing = ConnectedSupplierCommerceReadiness.Evaluate(
             new ConnectedSupplierCommerceReadiness.Input(
@@ -42,6 +43,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: false,
                 HasAcceptedPaymentMethod: true,
                 UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
                 HasValidCreditPolicy: false,
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
@@ -50,6 +52,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
         Assert.Equal(
             ConnectedSupplierCommerceReadiness.StatusMissing,
             missing.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
+        Assert.Empty(missing.SupportedFulfillmentMethods);
         Assert.Equal(
             ConnectedSupplierCommerceReadiness.StatusNotApplicable,
             missing.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.PickupConfig).Status);
@@ -63,6 +66,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: true,
                 HasAcceptedPaymentMethod: true,
                 UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
                 HasValidCreditPolicy: false,
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
@@ -72,8 +76,78 @@ public sealed class ConnectedSupplierCommerceReadinessTests
     }
 
     [Fact]
+    public void Org_delivery_off_makes_delivery_config_not_applicable()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: false,
+                PickupConfigured: true,
+                DeliveryConfigured: true,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.True(result.IsReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusNotApplicable,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
+        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentPickup], result.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public void Pickup_can_satisfy_fulfillment_method_while_delivery_incomplete()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                PickupConfigured: true,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.False(result.IsReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusComplete,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod).Status);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusMissing,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
+        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentPickup], result.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
     public void Utang_requires_credit_policy_when_enabled()
     {
+        var allowOff = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                PickupConfigured: true,
+                DeliveryConfigured: true,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: true,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.True(allowOff.IsReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusNotApplicable,
+            allowOff.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.CreditPolicy).Status);
+
         var withoutCredit = ConnectedSupplierCommerceReadiness.Evaluate(
             new ConnectedSupplierCommerceReadiness.Input(
                 HasSellingBranch: true,
@@ -83,6 +157,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: true,
                 HasAcceptedPaymentMethod: true,
                 UtangPaymentEnabled: true,
+                CreditAllowRequested: true,
                 HasValidCreditPolicy: false,
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
@@ -101,6 +176,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: true,
                 HasAcceptedPaymentMethod: true,
                 UtangPaymentEnabled: true,
+                CreditAllowRequested: true,
                 HasValidCreditPolicy: true,
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
@@ -126,6 +202,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 DeliveryConfigured: false,
                 HasAcceptedPaymentMethod: false,
                 UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
                 HasValidCreditPolicy: false,
                 HasSharedCatalog: false,
                 HasResponsibleContact: false));

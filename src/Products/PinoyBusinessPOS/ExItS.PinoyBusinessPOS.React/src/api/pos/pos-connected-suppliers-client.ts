@@ -1060,6 +1060,9 @@ export const businessCustomerSchema = z.object({
   deliveryInstructions: z.string().nullable().optional().default(null),
   billingContactNotes: z.string().nullable().optional().default(null),
   internalNotes: z.string().nullable().optional().default(null),
+  customerDeliveryOverride: z.enum(["inherit", "allow", "block"]).optional().default("inherit"),
+  orgOfferDelivery: z.boolean().optional().default(false),
+  effectiveDeliveryAllowed: z.boolean().optional().default(false),
 });
 
 export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;
@@ -1394,6 +1397,62 @@ export async function updateBusinessCustomerRelationshipContact(
     },
   });
   return businessCustomerSchema.parse(raw);
+}
+
+export async function updateBusinessCustomerDeliveryAllowance(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: { allowDelivery: boolean; expectedUpdatedAtUtc?: string | null },
+  signal?: AbortSignal,
+): Promise<BusinessCustomer> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/delivery-allowance`,
+    body: {
+      allowDelivery: input.allowDelivery,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+  });
+  return businessCustomerSchema.parse(raw);
+}
+
+export const organizationFulfillmentSettingsSchema = z.object({
+  organizationId: guidSchema,
+  offerDelivery: z.boolean(),
+});
+
+export type OrganizationFulfillmentSettings = z.infer<
+  typeof organizationFulfillmentSettingsSchema
+>;
+
+export async function getOrganizationFulfillmentSettings(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings`,
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
+}
+
+export async function updateOrganizationOfferDelivery(
+  workspace: PosWorkspaceScope,
+  offerDelivery: boolean,
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
+    body: { offerDelivery },
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
 }
 
 /** Connected relationships only — privacy-safe buyer Owner/staff contacts. */

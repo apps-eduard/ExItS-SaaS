@@ -407,6 +407,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.listLede": "I-set ti address, map coordinates, oras, ken pickup wenno delivery para iti tunggal branch.",
 
   "branches.listTitle": "Branch fulfillment",
+  "branches.offerDeliveryTitle": "Organization Delivery",
+  "branches.offerDeliveryLede": "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
+  "branches.offerDelivery": "Offer Delivery",
+  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
+  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
 
   "branches.loadError": "Saan a ma-load dagiti branch.",
 
@@ -493,6 +499,54 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.progress.of": "{complete} iti {total} kompleto",
 
   "branches.readinessTitle": "Readiness ti fulfillment",
+  "branches.poFulfillment.title": "Purchase Order Fulfillment",
+
+  "branches.poFulfillment.status.ready": "Ready",
+
+  "branches.poFulfillment.status.setupRequired": "Setup required",
+
+  "branches.poFulfillment.lede.setupRequired": "Complete the required fulfillment setup before this branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.lede.ready": "This branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.readyNote": "This branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
+
+  "branches.poFulfillment.checklist.branchInfo": "Complete required branch information",
+
+  "branches.poFulfillment.checklist.branchInfoComplete": "Required branch information complete",
+
+  "branches.poFulfillment.checklist.pickupReady": "Pickup ready",
+
+  "branches.poFulfillment.checklist.pickupIncomplete": "Finish Pickup setup",
+
+  "branches.poFulfillment.checklist.deliveryReady": "Delivery ready",
+
+  "branches.poFulfillment.checklist.deliveryIncomplete": "Finish Delivery setup",
+
+  "branches.poFulfillment.methodOff": "Off",
+
+  "branches.poFulfillment.methodReady": "Ready",
+
+  "branches.poFulfillment.methodSetup": "Setup required",
+
+  "branches.poFulfillment.configure": "Configure fulfillment",
+
+  "branches.poFulfillment.openDetails": "Branch details",
+
+  "branches.poFulfillment.summaryTitle": "Supplier readiness",
+
+  "branches.poFulfillment.summary.fulfillment": "Fulfillment",
+
+  "branches.poFulfillment.summary.catalog": "Catalog",
+
+  "branches.poFulfillment.summary.payments": "Payments",
+
+  "branches.poFulfillment.summary.contact": "Contact",
+
+  "branches.poFulfillment.viewSupplierReadiness": "View supplier readiness",
+
 
   "branches.reason.branchAddressIncomplete": "Saan a kompleto ti address ti branch",
 
@@ -2159,6 +2213,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.historyEmpty": "Awan pay a panagbaliw ti policy.",
 
   "customers.creditPolicy.historyStatus": "Status",
+  "customers.creditPolicy.loadMoreHistory": "Load 10 more",
+  "customers.creditPolicy.historyShowing": "Showing {shown} of {total}",
+  "customers.creditPolicy.historyEnd": "End of history",
 
   "customers.creditPolicy.invalidLimit": "Isurat ti valid a credit limit (max 2 decimal places).",
 
@@ -2217,6 +2274,19 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.creditPolicy.updateProposedTerms": "I-update ti proposed terms",
 
+  "customers.creditPolicy.allowCredit": "Allow credit (Utang)",
+  "customers.creditPolicy.allowCreditOffHint":
+    "Credit is currently disabled for this business.",
+  "customers.creditPolicy.allowCreditNeedsSetupHint":
+    "Complete credit terms before this business can use Utang.",
+  "customers.creditPolicy.confirmEnableTitle": "Turn on Allow credit?",
+  "customers.creditPolicy.confirmEnableDetail":
+    "Utang will be allowed once credit terms are active. Existing limit and payment term are reused when available.",
+  "customers.creditPolicy.confirmEnableConfirm": "Turn on",
+  "customers.creditPolicy.confirmDisableTitle": "Turn off Allow credit?",
+  "customers.creditPolicy.confirmDisableDetail":
+    "New Utang will be blocked. Credit limit, payment term, balances, and history are kept.",
+  "customers.creditPolicy.confirmDisableConfirm": "Turn off",
   "customers.creditPolicy.utangAllowed": "Mapalubusan ti Utang",
 
   "customers.creditPolicy.utangAllowedYes": "Wen",
@@ -2224,13 +2294,13 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.creditPolicy.customTerm": "Custom a term",
 
-  "customers.creditPolicy.status.Approved": "Approved",
+  "customers.creditPolicy.status.Approved": "Active",
 
-  "customers.creditPolicy.status.Disabled": "Paused",
+  "customers.creditPolicy.status.Disabled": "Off",
 
   "customers.creditPolicy.status.NotConfigured": "Saan pay a na-configure",
 
-  "customers.creditPolicy.status.PendingApproval": "Pending approval",
+  "customers.creditPolicy.status.PendingApproval": "Activating",
 
   "customers.creditPolicy.term": "Default payment term (in days)",
 
@@ -2403,9 +2473,37 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "customers.business.manageCatalog": "Manage catalog & pricing",
   "customers.business.creditPolicy.title": "Credit & payment terms",
+  "customers.business.commerceReadinessTitle": "Supplier Readiness",
+  "customers.business.commerceReadinessReady": "Ready",
+  "customers.business.commerceReadinessSetupRequired": "Setup required",
+  "customers.business.commerceReadinessNotReady":
+    "Complete the items below before this connection can accept purchase orders.",
+  "customers.business.commerceReadinessCompleteSetup": "Complete setup",
+  "customers.business.commerceReadinessFixItems": "Fix {n} items",
+  "customers.business.commerceReadinessReviewSetup": "Review setup",
+  "customers.business.commerceReadinessFilterLabel": "Readiness filter",
+  "customers.business.commerceReadinessFilter.needsSetup": "Needs setup ({n})",
+  "customers.business.commerceReadinessFilter.complete": "Complete ({n})",
+  "customers.business.commerceReadinessFilter.all": "All ({n})",
+  "customers.business.commerceReadinessEmptyFilter": "No items in this filter.",
+  "customers.business.commerceReadinessOpenItem": "Open {title}",
+  "customers.business.commerceReadinessStatus.Complete": "Complete",
+  "customers.business.commerceReadinessStatus.Missing": "Needs setup",
+  "customers.business.commerceReadinessStatus.NotApplicable": "Not required",
+  "customers.business.deliveryAllowanceTitle": "Delivery",
+  "customers.business.deliveryAllowance": "Allow delivery",
+  "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
+  "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
+  "customers.business.deliveryAllowanceOrgOff":
+    "Delivery is not currently offered by your organization.",
+  "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
+  "customers.business.creditPolicy.allowCreditOffHint":
+    "Credit is currently disabled for this business.",
+  "customers.business.creditPolicy.allowCreditNeedsSetupHint":
+    "Complete credit terms before this business can use Utang.",
   "customers.business.creditPolicy.checkoutNote": "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
 
   "customers.business.creditsEmptyDetail": "Utang sales for this business appear here.",
@@ -2624,6 +2722,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.payment": "Bayad",
 
   "customers.paymentExceeds": "Saan a mahti dakdakkel ngem Amount owed ti payment.",
+  "customers.paymentExceedsOutstanding":
+    "Payment exceeds outstanding balance. Maximum is {max}.",
 
   "customers.paymentInvalid": "Isurat iti valid a payment a dakdakkel ngem zero.",
 
@@ -10755,6 +10855,67 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shell.notifications.label": "Dagiti pakaammo",
 
   "shell.notifications.unreadLabel": "Dagiti pakaammo, {count} saan pay a nabasa",
+  "shell.needsAttention.title": "Needs attention",
+
+  "shell.needsAttention.countLabel": "Needs attention, {count} issues",
+
+  "shell.needsAttention.allClearLabel": "Needs attention, all clear",
+
+  "shell.needsAttention.allClear": "All clear",
+
+  "shell.needsAttention.allClearDetail": "No items currently need attention.",
+
+
+  "shell.needsAttention.close": "Close",
+
+  "shell.needsAttention.group.inventory": "Inventory",
+
+  "shell.needsAttention.group.connectedCommerce": "Connected commerce",
+
+  "shell.needsAttention.group.branchFulfillment": "Branch / fulfillment",
+
+  "shell.needsAttention.group.creditConfiguration": "Credit / configuration",
+
+  "shell.needsAttention.lowStock": "Low stock",
+
+  "shell.needsAttention.lowStockReason": "Products below reorder level",
+
+  "shell.needsAttention.outOfStock": "Out of stock",
+
+  "shell.needsAttention.outOfStockReason": "Tracked products with zero on hand",
+
+  "shell.needsAttention.expiringSoon": "Expiring soon",
+
+  "shell.needsAttention.expiringSoonReason": "Lots near expiry or already expired",
+
+  "shell.needsAttention.supplierReadiness": "Supplier readiness incomplete",
+
+  "shell.needsAttention.supplierReadinessReason": "Finish setup before buyers can order",
+
+  "shell.needsAttention.paymentSetup": "Payment setup incomplete",
+
+  "shell.needsAttention.paymentSetupReason": "Enable a purchase-order payment method",
+
+  "shell.needsAttention.creditSetup": "Credit setup incomplete",
+
+  "shell.needsAttention.creditSetupReason": "Complete credit terms for business customers with Allow credit on",
+
+  "shell.needsAttention.deliveryReadiness": "Delivery readiness incomplete",
+
+  "shell.needsAttention.deliveryReadinessReason": "Finish delivery setup for this branch",
+
+  "shell.needsAttention.pickupReadiness": "Pickup readiness incomplete",
+
+  "shell.needsAttention.pickupReadinessReason": "Finish pickup location setup for this branch",
+
+  "shell.needsAttention.missingFulfillment": "Missing fulfillment method",
+
+  "shell.needsAttention.missingFulfillmentReason": "Enable Delivery or Pickup so this branch can fulfill connected purchase orders",
+
+  "shell.needsAttention.branchInfo": "Required branch info incomplete",
+
+  "shell.needsAttention.branchInfoReason": "Complete required branch details",
+
 
   "shift.backToShifts": "Agsubli iti dagiti shift",
 

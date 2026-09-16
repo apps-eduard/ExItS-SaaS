@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 
@@ -47,6 +48,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
     private readonly ICustomerOrderBranchDirectory _branches;
     private readonly IOrganizationPaymentMethodSettingRepository _paymentSettings;
     private readonly IBusinessCustomerCreditPolicyRepository _creditPolicies;
+    private readonly IOrganizationFulfillmentSettingsRepository _fulfillmentSettings;
     private readonly IPosCommercialAccessAccessor _access;
 
     public ConnectedSupplierCommerceReadinessService(
@@ -55,13 +57,15 @@ public sealed class ConnectedSupplierCommerceReadinessService
         ICustomerOrderBranchDirectory branches,
         IOrganizationPaymentMethodSettingRepository paymentSettings,
         IBusinessCustomerCreditPolicyRepository creditPolicies,
-        IPosCommercialAccessAccessor access)
+        IPosCommercialAccessAccessor access,
+        IOrganizationFulfillmentSettingsRepository? fulfillmentSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
         _branches = branches;
         _paymentSettings = paymentSettings;
         _creditPolicies = creditPolicies;
+        _fulfillmentSettings = fulfillmentSettings ?? new NullOrganizationFulfillmentSettingsRepository();
         _access = access;
     }
 
@@ -89,8 +93,9 @@ public sealed class ConnectedSupplierCommerceReadinessService
         }
 
         var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
-            ToDto(relationship.Id.Value, evaluated, includeRequirements: false));
+            ToDto(relationship.Id.Value, forBuyer, includeRequirements: false));
     }
 
     public async Task<ApplicationResult<ConnectedSupplierCommerceReadinessDto>> GetForSupplierAsync(
@@ -140,6 +145,42 @@ public sealed class ConnectedSupplierCommerceReadinessService
             forBuyerMessage ? BuyerNotReadyMessage : SupplierNotReadyMessage);
     }
 
+    /// <summary>
+    /// Server gate for buyer selecting Delivery. Rejects when EffectiveDelivery is false.
+    /// </summary>
+    public async Task<ApplicationResult> EnsureFulfillmentMethodAllowedAsync(
+        ConnectedSupplierRelationship relationship,
+        string? fulfillmentMethod,
+        bool forBuyerMessage,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(fulfillmentMethod))
+        {
+            return ApplicationResult.Success();
+        }
+
+        var normalized = fulfillmentMethod.Trim();
+        if (!normalized.Equals(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ApplicationResult.Success();
+        }
+
+        var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
+        if (forBuyer.SupportedFulfillmentMethods.Contains(
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return ApplicationResult.Success();
+        }
+
+        return ApplicationResult.Failure(
+            ConnectedSupplierErrorCodes.CommerceNotReady,
+            forBuyerMessage
+                ? "Delivery is not available for this supplier connection."
+                : "Delivery is not available for this business customer.");
+    }
+
     public async Task<ConnectedSupplierCommerceReadiness.Result> EvaluateAsync(
         ConnectedSupplierRelationship relationship,
         CancellationToken cancellationToken = default)
@@ -147,8 +188,13 @@ public sealed class ConnectedSupplierCommerceReadinessService
         var supplierOrg = relationship.SupplierOrganizationId;
         var hasBranch = relationship.SupplierBranchId is Guid branchId && branchId != Guid.Empty;
 
+        var fulfillmentSettings = await _fulfillmentSettings
+            .GetAsync(supplierOrg, cancellationToken)
+            .ConfigureAwait(false);
+        // Missing row = Offer Delivery OFF (default).
+        var orgOfferDelivery = fulfillmentSettings?.OfferDelivery == true;
+
         bool pickupEnabled = false;
-        bool deliveryEnabled = false;
         bool pickupConfigured = false;
         bool deliveryConfigured = false;
         if (hasBranch)
@@ -159,11 +205,15 @@ public sealed class ConnectedSupplierCommerceReadinessService
             if (branch is not null)
             {
                 pickupEnabled = branch.PickupEnabled;
-                deliveryEnabled = branch.DeliveryEnabled;
-                pickupConfigured = branch.PickupOperational;
-                deliveryConfigured = branch.DeliveryOperational
-                    || branch.DeliveryPolicy is not null
-                    || !string.IsNullOrWhiteSpace(relationship.DeliveryInstructions);
+                // Setup completeness (not open-now operational). Closed store must not
+                // keep Supplier Readiness stuck on Pickup configuration.
+                pickupConfigured = branch.PickupReady;
+                // Preserve branch delivery config when org Offer Delivery is OFF;
+                // readiness only treats it as complete when org offers Delivery.
+                deliveryConfigured = branch.DeliveryEnabled
+                    && (branch.DeliveryOperational
+                        || branch.DeliveryPolicy is not null
+                        || !string.IsNullOrWhiteSpace(relationship.DeliveryInstructions));
             }
         }
 
@@ -174,12 +224,18 @@ public sealed class ConnectedSupplierCommerceReadinessService
         var hasPayment = enabledPoMethods.Count > 0;
         var utangEnabled = enabledPoMethods.Contains(PaymentMethodCatalog.Utang, StringComparer.OrdinalIgnoreCase);
 
+        var creditAllowRequested = false;
         var hasValidCredit = false;
         if (utangEnabled)
         {
             var policy = await _creditPolicies
                 .GetBySellerAndBuyerAsync(supplierOrg, relationship.BuyerOrganizationId, cancellationToken)
                 .ConfigureAwait(false);
+            // Allow credit ON = PendingApproval (needs setup) or Approved (complete).
+            // OFF = missing / Disabled / NotConfigured → CreditPolicy N/A.
+            creditAllowRequested = policy is not null
+                && (policy.Status == CustomerCreditPolicyStatus.PendingApproval
+                    || policy.Status == CustomerCreditPolicyStatus.Approved);
             hasValidCredit = policy is not null && policy.PermitsNewUtang;
         }
 
@@ -207,14 +263,71 @@ public sealed class ConnectedSupplierCommerceReadinessService
             new ConnectedSupplierCommerceReadiness.Input(
                 HasSellingBranch: hasBranch,
                 PickupEnabled: pickupEnabled,
-                DeliveryEnabled: deliveryEnabled,
+                DeliveryEnabled: orgOfferDelivery,
                 PickupConfigured: pickupConfigured,
                 DeliveryConfigured: deliveryConfigured,
                 HasAcceptedPaymentMethod: hasPayment,
                 UtangPaymentEnabled: utangEnabled,
+                CreditAllowRequested: creditAllowRequested,
                 HasValidCreditPolicy: hasValidCredit,
                 HasSharedCatalog: hasCatalog,
                 HasResponsibleContact: hasContact));
+    }
+
+    /// <summary>
+    /// Buyer-facing methods apply EffectiveDelivery (org ON + ready branch + override != block).
+    /// Customer Block must not appear as a supplier readiness gap.
+    /// </summary>
+    internal static ConnectedSupplierCommerceReadiness.Result ApplyBuyerDeliveryFilter(
+        ConnectedSupplierCommerceReadiness.Result evaluated,
+        ConnectedSupplierRelationship relationship)
+    {
+        var orgOffersDelivery = evaluated.Requirements.Any(r =>
+            r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig
+            && r.Status != ConnectedSupplierCommerceReadiness.StatusNotApplicable);
+        var readyBranch = evaluated.SupportedFulfillmentMethods.Contains(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            StringComparer.OrdinalIgnoreCase);
+        var allowed = EffectiveDeliveryAllowance.IsAllowed(
+            orgOffersDelivery,
+            readyBranch,
+            relationship.CustomerDeliveryOverride);
+
+        if (allowed
+            || !evaluated.SupportedFulfillmentMethods.Contains(
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return evaluated;
+        }
+
+        var filtered = evaluated.SupportedFulfillmentMethods
+            .Where(m => !m.Equals(
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+                StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        return new ConnectedSupplierCommerceReadiness.Result(
+            evaluated.IsReady,
+            filtered,
+            evaluated.Requirements);
+    }
+
+    private sealed class NullOrganizationFulfillmentSettingsRepository : IOrganizationFulfillmentSettingsRepository
+    {
+        public Task<OrganizationFulfillmentSettings?> GetAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<OrganizationFulfillmentSettings?>(null);
+
+        public Task AddAsync(
+            OrganizationFulfillmentSettings settings,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(
+            OrganizationFulfillmentSettings settings,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     internal static IReadOnlyList<string> ResolveEnabledPoPaymentMethods(

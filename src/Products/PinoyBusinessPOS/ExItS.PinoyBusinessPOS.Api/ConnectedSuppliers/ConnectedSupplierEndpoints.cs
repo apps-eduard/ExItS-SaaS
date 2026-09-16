@@ -107,6 +107,50 @@ internal static class ConnectedSupplierEndpoints
             if(!Authorize(req,access,UtangCapability.ManageSuppliers,out var org,out var problem))return problem!;
             return PosApiResults.FromResult(await use.ExecuteAsync(org,connectionId,body,ct),Results.Ok);
         });
+        group.MapPut("/business-customers/{connectionId:guid}/delivery-allowance", async (
+            HttpRequest req,
+            Guid connectionId,
+            UpdateBusinessCustomerDeliveryAllowanceRequest body,
+            UpdateBusinessCustomerDeliveryAllowance use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ManageSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await use.ExecuteAsync(org, connectionId, body, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+        group.MapGet("/organization/fulfillment-settings", async (
+            HttpRequest req,
+            GetOrganizationFulfillmentSettings use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ViewSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(await use.ExecuteAsync(org, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapPut("/organization/fulfillment-settings/offer-delivery", async (
+            HttpRequest req,
+            UpdateOrganizationOfferDeliveryRequest body,
+            UpdateOrganizationOfferDelivery use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ManageSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(await use.ExecuteAsync(org, body, ct).ConfigureAwait(false), Results.Ok);
+        });
         group.MapGet("/business-customers/{connectionId:guid}/organization-contacts", async (
             HttpRequest req,
             Guid connectionId,

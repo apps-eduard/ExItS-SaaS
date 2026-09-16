@@ -45,6 +45,8 @@ export function BusinessCreditPolicySection(props: BusinessCreditPolicySectionPr
         notApproved: "customers.business.creditPolicy.notApprovedHint",
         pending: "customers.business.creditPolicy.pendingHint",
         disabled: "customers.business.creditPolicy.disabledHint",
+        allowCreditOff: "customers.business.creditPolicy.allowCreditOffHint",
+        allowCreditNeedsSetup: "customers.business.creditPolicy.allowCreditNeedsSetupHint",
       }}
       checkoutNoteKey="customers.business.creditPolicy.checkoutNote"
       sectionQueryPrefix="business-customers"

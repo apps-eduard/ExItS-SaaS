@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PosBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
 import * as businessCreditClient from "@/api/pos/pos-business-credit-policy-client";
+import * as connectedSuppliersClient from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -61,7 +62,7 @@ function wrap(ui: ReactNode) {
 }
 
 describe("BusinessCreditPolicySection", () => {
-  it("renders NotConfigured with Set credit terms", () => {
+  it("defaults to Off (NotConfigured) with allow-credit switch off", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -69,19 +70,25 @@ describe("BusinessCreditPolicySection", () => {
         online
         canManage
         canApprove
+        canRecordPayment
         policyOverride={policy({ status: "NotConfigured" })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.NotConfigured",
+    expect(screen.queryByTestId("business-credit-policy-status")).not.toBeInTheDocument();
+    const allowSwitch = screen.getByTestId("business-credit-policy-allow-credit");
+    expect(allowSwitch).toHaveAttribute("aria-checked", "false");
+    expect(allowSwitch).toHaveTextContent("OFF");
+    expect(screen.getByTestId("business-credit-policy-allow-credit-hint")).toHaveTextContent(
+      "customers.business.creditPolicy.allowCreditOffHint",
     );
-    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
-      "customers.creditPolicy.setCreditTerms",
-    );
-    expect(screen.getByText("customers.business.creditPolicy.notApprovedHint")).toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-configure")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-disable")).not.toBeInTheDocument();
   });
 
-  it("renders PendingApproval with Approve credit and Edit proposed terms", () => {
+  it("renders PendingApproval as Activating with switch on and no approve/pause buttons", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -97,18 +104,23 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-approve")).toHaveTextContent(
-      "customers.creditPolicy.approveCredit",
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.PendingApproval",
     );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveTextContent("ON");
+    expect(screen.queryByTestId("business-credit-policy-allow-credit-hint")).not.toBeInTheDocument();
     expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
       "customers.creditPolicy.editProposedTerms",
     );
-    expect(screen.getByTestId("business-credit-policy-disable")).toHaveTextContent(
-      "customers.creditPolicy.pauseCredit",
-    );
+    expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-disable")).not.toBeInTheDocument();
   });
 
-  it("renders Approved with Utang allowed, Edit credit terms, and Pause credit", () => {
+  it("renders Approved as Active with switch on and metrics", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -128,21 +140,26 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-utang-allowed")).toHaveTextContent(
-      "customers.creditPolicy.utangAllowed",
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Approved",
     );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveTextContent("ON");
+    expect(screen.queryByTestId("business-credit-policy-allow-credit-hint")).not.toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-summary")).toBeInTheDocument();
     expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
       "customers.creditPolicy.editCreditTerms",
     );
-    expect(screen.getByTestId("business-credit-policy-disable")).toHaveTextContent(
-      "customers.creditPolicy.pauseCredit",
-    );
     expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-disable")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-statement")).not.toBeInTheDocument();
   });
 
-  it("renders Disabled as Paused with Set new credit terms", () => {
+  it("renders Disabled as Off with switch off", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -150,6 +167,7 @@ describe("BusinessCreditPolicySection", () => {
         online
         canManage
         canApprove
+        canRecordPayment
         policyOverride={policy({
           status: "Disabled",
           creditLimit: 1000,
@@ -158,13 +176,18 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.Disabled",
+    expect(screen.queryByTestId("business-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "false",
     );
-    expect(screen.getByText("customers.business.creditPolicy.disabledHint")).toBeInTheDocument();
-    expect(screen.getByTestId("business-credit-policy-configure")).toHaveTextContent(
-      "customers.creditPolicy.setNewCreditTerms",
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveTextContent("OFF");
+    expect(screen.getByTestId("business-credit-policy-allow-credit-hint")).toHaveTextContent(
+      "customers.business.creditPolicy.allowCreditOffHint",
     );
+    expect(screen.queryByTestId("business-credit-policy-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("business-credit-policy-configure")).not.toBeInTheDocument();
   });
 
   it("opens Edit credit terms with term presets, custom input, approval warning, and disabled save until changed", async () => {
@@ -219,6 +242,128 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.getByTestId("business-credit-policy-dialog-submit")).not.toBeDisabled();
   });
 
+  it("re-enables from Off using a fresh concurrency token without manual reload", async () => {
+    const user = userEvent.setup();
+    const approved = policy({
+      status: "Approved",
+      creditLimit: 5000,
+      defaultTermDays: 30,
+      expectedUpdatedAtUtc: "2026-09-10T00:00:00.000Z",
+      updatedAtUtc: "2026-09-10T00:00:00.000Z",
+    });
+    const disabled = policy({
+      status: "Disabled",
+      creditLimit: 5000,
+      defaultTermDays: 30,
+      expectedUpdatedAtUtc: "2026-09-10T00:01:00.000Z",
+      updatedAtUtc: "2026-09-10T00:01:00.000Z",
+    });
+    const pending = policy({
+      status: "PendingApproval",
+      creditLimit: 5000,
+      defaultTermDays: 30,
+      expectedUpdatedAtUtc: "2026-09-10T00:02:00.000Z",
+      updatedAtUtc: "2026-09-10T00:02:00.000Z",
+    });
+    const reapproved = policy({
+      status: "Approved",
+      creditLimit: 5000,
+      defaultTermDays: 30,
+      expectedUpdatedAtUtc: "2026-09-10T00:03:00.000Z",
+      updatedAtUtc: "2026-09-10T00:03:00.000Z",
+    });
+
+    const getSpy = vi
+      .spyOn(businessCreditClient, "getBusinessCustomerCreditPolicy")
+      .mockResolvedValueOnce(approved)
+      .mockResolvedValueOnce(disabled) // post-disable invalidate
+      .mockResolvedValueOnce(disabled) // enable-from-disabled fresh read
+      .mockResolvedValue(reapproved);
+    const disableSpy = vi
+      .spyOn(businessCreditClient, "disableBusinessCustomerCreditPolicy")
+      .mockResolvedValue(disabled);
+    const upsertSpy = vi
+      .spyOn(businessCreditClient, "upsertBusinessCustomerCreditPolicy")
+      .mockResolvedValue(pending);
+    const approveSpy = vi
+      .spyOn(businessCreditClient, "approveBusinessCustomerCreditPolicy")
+      .mockResolvedValue(reapproved);
+    vi.spyOn(connectedSuppliersClient, "getBusinessCustomerUtangSummary").mockResolvedValue({
+      outstandingAmount: 0,
+      pendingCheckAmount: 0,
+      availableCredit: 5000,
+    } as never);
+
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+      />,
+    );
+
+    expect(await screen.findByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit"));
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit-confirm-confirm"));
+    expect(await screen.findByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(disableSpy).toHaveBeenCalledWith(
+      workspace,
+      connectionId,
+      expect.objectContaining({ expectedUpdatedAtUtc: "2026-09-10T00:00:00.000Z" }),
+    );
+
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit"));
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit-confirm-confirm"));
+    expect(await screen.findByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(upsertSpy).toHaveBeenCalledWith(
+      workspace,
+      connectionId,
+      expect.objectContaining({
+        creditLimit: 5000,
+        defaultTermDays: 30,
+        expectedUpdatedAtUtc: "2026-09-10T00:01:00.000Z",
+      }),
+    );
+    expect(approveSpy).toHaveBeenCalledWith(
+      workspace,
+      connectionId,
+      expect.objectContaining({ expectedUpdatedAtUtc: "2026-09-10T00:02:00.000Z" }),
+    );
+    expect(screen.queryByText(/changed concurrently/i)).not.toBeInTheDocument();
+    expect(getSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("opens configure from allow-credit switch when NotConfigured", async () => {
+    const user = userEvent.setup();
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+        policyOverride={policy({ status: "NotConfigured" })}
+      />,
+    );
+
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit"));
+    expect(screen.getByTestId("business-credit-policy-allow-credit-confirm")).toBeInTheDocument();
+    await user.click(screen.getByTestId("business-credit-policy-allow-credit-confirm-confirm"));
+    expect(screen.getByTestId("business-credit-policy-dialog-configure")).toBeInTheDocument();
+  });
+
   it("hides management actions for Cashier", () => {
     wrap(
       <BusinessCreditPolicySection
@@ -235,6 +380,7 @@ describe("BusinessCreditPolicySection", () => {
         })}
       />,
     );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toBeDisabled();
     expect(screen.queryByTestId("business-credit-policy-configure")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-approve")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-disable")).not.toBeInTheDocument();
@@ -263,7 +409,7 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.queryByText(/POS API request failed/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId("business-credit-policy-retry"));
-    expect(await screen.findByTestId("business-credit-policy-configure")).toBeInTheDocument();
+    expect(await screen.findByTestId("business-credit-policy-allow-credit")).toBeInTheDocument();
     expect(getSpy).toHaveBeenCalledTimes(2);
     getSpy.mockRestore();
   });

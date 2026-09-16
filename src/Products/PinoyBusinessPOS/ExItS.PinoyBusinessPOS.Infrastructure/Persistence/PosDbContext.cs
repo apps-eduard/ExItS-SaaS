@@ -135,6 +135,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SupplierRecord> Suppliers => Set<SupplierRecord>();
     internal DbSet<SupplierCodeSequenceRecord> SupplierCodeSequences => Set<SupplierCodeSequenceRecord>();
     internal DbSet<ConnectedSupplierRelationshipRecord> ConnectedSupplierRelationships => Set<ConnectedSupplierRelationshipRecord>();
+    internal DbSet<OrganizationFulfillmentSettingsRecord> OrganizationFulfillmentSettings =>
+        Set<OrganizationFulfillmentSettingsRecord>();
     internal DbSet<SupplierProductExposureRecord> SupplierProductExposures => Set<SupplierProductExposureRecord>();
     internal DbSet<ConnectedBuyerProductShareRecord> ConnectedBuyerProductShares => Set<ConnectedBuyerProductShareRecord>();
     internal DbSet<BuyerSupplierProductLinkRecord> BuyerSupplierProductLinks => Set<BuyerSupplierProductLinkRecord>();
@@ -5301,6 +5303,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
                 tb.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
                 tb.HasCheckConstraint("ck_connected_supplier_relationships_initiated_by_party", "initiated_by_party BETWEEN 0 AND 1");
+                tb.HasCheckConstraint(
+                    "ck_connected_supplier_relationships_customer_delivery_override",
+                    "customer_delivery_override IS NULL OR customer_delivery_override IN ('allow', 'block')");
             });
             entity.HasKey(x=>x.Id); entity.Property(x=>x.Id).HasColumnName("id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
@@ -5330,6 +5335,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.ContactEmail).HasColumnName("contact_email").HasMaxLength(256);
             entity.Property(x=>x.PreferredContactMethod).HasColumnName("preferred_contact_method").HasMaxLength(32);
             entity.Property(x=>x.DeliveryInstructions).HasColumnName("delivery_instructions").HasMaxLength(1000);
+            entity.Property(x=>x.CustomerDeliveryOverride).HasColumnName("customer_delivery_override").HasMaxLength(16);
             entity.Property(x=>x.BillingContactNotes).HasColumnName("billing_contact_notes").HasMaxLength(1000);
             entity.Property(x=>x.InternalNotes).HasColumnName("internal_notes").HasMaxLength(2000);
             entity.Property(x=>x.CreatedAtUtc).HasColumnName("created_at_utc"); entity.Property(x=>x.UpdatedAtUtc).HasColumnName("updated_at_utc");
@@ -5338,6 +5344,19 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(x=>x.SupplierOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_supplier");
             entity.HasIndex(x=>x.BuyerOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_buyer");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SupplierBranchId}).HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
+        });
+        modelBuilder.Entity<OrganizationFulfillmentSettingsRecord>(entity =>
+        {
+            entity.ToTable("organization_fulfillment_settings");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.OrganizationId).HasColumnName("organization_id");
+            entity.Property(x => x.OfferDelivery).HasColumnName("offer_delivery");
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(x => x.OrganizationId)
+                .IsUnique()
+                .HasDatabaseName("ux_organization_fulfillment_settings_org");
         });
         modelBuilder.Entity<SupplierProductExposureRecord>(entity =>
         {

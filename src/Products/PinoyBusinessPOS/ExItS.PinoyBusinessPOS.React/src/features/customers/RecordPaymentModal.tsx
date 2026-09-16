@@ -11,6 +11,7 @@ import { createBusinessCustomerRepayment } from "@/api/pos/pos-connected-supplie
 import { PosApiError } from "@/api/pos/pos-http";
 import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
+import { Notice } from "@/components/exits/Notice";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import { useToast } from "@/components/exits/ToastProvider";
@@ -90,8 +91,16 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
   }, [props.open]);
 
   const amount = useMemo(() => parseMoneyAmountInput(amountText), [amountText]);
+  const exceedsOutstanding =
+    amount != null && amount - props.outstandingBalance > 1e-9;
+  const exceedsOutstandingMessage = exceedsOutstanding
+    ? t("customers.paymentExceedsOutstanding").replace(
+        "{max}",
+        `₱${formatMoneyAmountInput(props.outstandingBalance)}`,
+      )
+    : null;
   const remainingBalance =
-    amount == null
+    amount == null || exceedsOutstanding
       ? null
       : Math.max(0, Math.round((props.outstandingBalance - amount) * 100) / 100);
   const isCheck = paymentMethod === "Check";
@@ -105,7 +114,12 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
         throw new Error(t("customers.paymentInvalid"));
       }
       if (amount - props.outstandingBalance > 1e-9) {
-        throw new Error(t("customers.paymentExceeds"));
+        throw new Error(
+          t("customers.paymentExceedsOutstanding").replace(
+            "{max}",
+            `₱${formatMoneyAmountInput(props.outstandingBalance)}`,
+          ),
+        );
       }
       if (isCheck && (!checkNumber.trim() || !bankName.trim() || !checkDate.trim())) {
         throw new Error(t("customers.checkFieldsRequired"));
@@ -178,6 +192,14 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
     },
   });
 
+  const canSubmit =
+    !mutation.isPending &&
+    props.outstandingBalance > 0 &&
+    amount != null &&
+    amount > 0 &&
+    !exceedsOutstanding &&
+    (!isCheck || Boolean(checkNumber.trim() && bankName.trim() && checkDate.trim()));
+
   if (!props.open) {
     return null;
   }
@@ -187,7 +209,6 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
       open={props.open}
       onOpenChange={props.onOpenChange}
       title={`${t("customers.recordPayment")} - ${props.displayName}`}
-      description={`${t("customers.amountOwed")}: ₱${formatMoneyAmountInput(props.outstandingBalance)}`}
       busy={mutation.isPending}
       testId="record-payment-modal"
       closeLabel={t("customers.creditPolicy.cancel")}
@@ -206,7 +227,7 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
           <Button
             type="button"
             variant="default"
-            disabled={mutation.isPending || props.outstandingBalance <= 0}
+            disabled={!canSubmit}
             onClick={() => {
               setFormError(null);
               mutation.mutate();
@@ -220,6 +241,17 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
       }
     >
       <div className="grid gap-3">
+          <div className="border-t border-border pt-3">
+            <Notice
+              tone="info"
+              icon={null}
+              testId="record-payment-amount-owed"
+              className="px-2.5 py-1.5 text-[length:var(--exits-text-md)] font-semibold"
+            >
+              {`${t("customers.amountOwed")}: ₱${formatMoneyAmountInput(props.outstandingBalance)}`}
+            </Notice>
+          </div>
+
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("customers.payment")}
             <span className="checkout-cash-received-row">
@@ -229,7 +261,10 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
                 className="checkout-cash-received-row__input min-w-0 flex-1 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                 value={amountText}
                 disabled={mutation.isPending || props.outstandingBalance <= 0}
-                onChange={(event) => setAmountText(normalizeMoneyAmountTyping(event.target.value))}
+                onChange={(event) => {
+                  setFormError(null);
+                  setAmountText(normalizeMoneyAmountTyping(event.target.value));
+                }}
                 onBlur={() => {
                   if (amount !== null) {
                     setAmountText(formatMoneyAmountInput(amount));
@@ -243,12 +278,24 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
                 className="checkout-cash-received-row__exact shrink-0"
                 data-testid="record-payment-exact"
                 disabled={mutation.isPending || props.outstandingBalance <= 0}
-                onClick={() => setAmountText(formatMoneyAmountInput(props.outstandingBalance))}
+                onClick={() => {
+                  setFormError(null);
+                  setAmountText(formatMoneyAmountInput(props.outstandingBalance));
+                }}
               >
                 <Equal className={`size-4 shrink-0 ${buttonIconMotion.view}`} aria-hidden />
                 {t("checkout.cashExact")}
               </Button>
             </span>
+            {exceedsOutstandingMessage ? (
+              <Notice
+                tone="warning"
+                testId="record-payment-exceeds-warning"
+                className="px-2.5 py-1.5 text-[length:var(--exits-text-xs)]"
+              >
+                {exceedsOutstandingMessage}
+              </Notice>
+            ) : null}
           </label>
 
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">

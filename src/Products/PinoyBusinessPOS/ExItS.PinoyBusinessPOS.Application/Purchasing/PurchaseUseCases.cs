@@ -146,7 +146,9 @@ public sealed record CreatePurchaseOrderRequest(
     string? Notes = null,
     string? PaymentTerm = null,
     Guid? PurchaseOrderId = null,
-    Guid? IntendedReceivingBranchId = null);
+    Guid? IntendedReceivingBranchId = null,
+    /// <summary>Optional connected-PO fulfillment method (Pickup|Delivery). Server-enforced.</summary>
+    string? FulfillmentMethod = null);
 
 public sealed record UpdatePurchaseOrderRequest(
     Guid SupplierId,
@@ -792,6 +794,7 @@ public sealed class CreatePurchaseOrder
     private readonly IInventoryRepository? _inventory;
     private readonly IInventoryBranchBalanceRepository? _branchBalances;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -810,7 +813,8 @@ public sealed class CreatePurchaseOrder
         IConnectedBuyerProductShareRepository? connectedShares = null,
         IInventoryRepository? inventory = null,
         IInventoryBranchBalanceRepository? branchBalances = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        ConnectedSupplierCommerceReadinessService? commerceReadiness = null)
     {
         _orders = orders;
         _suppliers = suppliers;
@@ -823,6 +827,7 @@ public sealed class CreatePurchaseOrder
         _inventory = inventory;
         _branchBalances = branchBalances;
         _branches = branches;
+        _commerceReadiness = commerceReadiness;
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
@@ -919,6 +924,25 @@ public sealed class CreatePurchaseOrder
                 return ApplicationResult<PosPurchaseOrderDto>.Failure(
                     connectedEligibility.ErrorCode!,
                     connectedEligibility.ErrorMessage!);
+            }
+
+            if (connectedEligibility?.Value is { Relationship: var connectedRelationship }
+                && _commerceReadiness is not null
+                && !string.IsNullOrWhiteSpace(request.FulfillmentMethod))
+            {
+                var methodGate = await _commerceReadiness
+                    .EnsureFulfillmentMethodAllowedAsync(
+                        connectedRelationship,
+                        request.FulfillmentMethod,
+                        forBuyerMessage: true,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!methodGate.IsSuccess)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        methodGate.ErrorCode!,
+                        methodGate.ErrorMessage!);
+                }
             }
 
             var resolvedBySupplier = connectedEligibility?.Value?.ResolvedBySupplierProductId;

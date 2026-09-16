@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2, Save } from "lucide-react";
-import { canManageBranchFulfillment, canUseWarehouseBranches } from "@/access/pos-capabilities";
+import {
+  canManageBranchFulfillment,
+  canUseWarehouseBranches,
+  canViewSuppliers,
+  hasOrganizationManagementAuthority,
+  isPosOwnerRole,
+} from "@/access/pos-capabilities";
 import {
   addBranchDeliveryServiceArea,
   deleteBranchDeliveryServiceArea,
@@ -19,6 +25,11 @@ import {
   type BranchFulfillmentReadinessDto,
   type OrganizationBranchDto,
 } from "@/api/platform/branch-fulfillment-client";
+import {
+  getSupplierConnectedSupplierCommerceReadiness,
+  listBusinessCustomers,
+} from "@/api/pos/pos-connected-suppliers-client";
+import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -45,6 +56,8 @@ import { BranchDeliveryPolicyForm } from "@/features/branches/BranchDeliveryPoli
 import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
+import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
+import { hasEnabledPoPaymentMethod, requirementIsMissing } from "@/features/shell/needs-attention";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import {
@@ -64,6 +77,17 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export type { BranchSetupTab } from "@/features/branches/branch-setup-tabs";
 
+/** Owner / org-admin may view readiness; mutations still require canManageBranchFulfillment. */
+export function canAccessBranchFulfillmentPage(
+  grant: Parameters<typeof canManageBranchFulfillment>[0],
+): boolean {
+  return (
+    canManageBranchFulfillment(grant) ||
+    hasOrganizationManagementAuthority(grant) ||
+    isPosOwnerRole(grant)
+  );
+}
+
 function TabCompleteIcon({ complete }: { complete: boolean }) {
   if (!complete) {
     return null;
@@ -78,6 +102,8 @@ export function BranchFulfillmentEditPage() {
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
+  const canAccess = canAccessBranchFulfillmentPage(sessionGrant);
+  const allowSupplierSummary = canViewSuppliers(sessionGrant) || isPosOwnerRole(sessionGrant);
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId;
   const mapProviderReady = isMapProviderConfigured();
@@ -88,7 +114,7 @@ export function BranchFulfillmentEditPage() {
 
   const detailQuery = useQuery({
     queryKey: ["branch-fulfillment-detail", organizationId, branchId],
-    enabled: Boolean(organizationId && branchId && canManage),
+    enabled: Boolean(organizationId && branchId && canAccess),
     queryFn: async ({ signal }) => {
       const [branches, readiness, hours, areas] = await Promise.all([
         listOrganizationBranchesForFulfillment(organizationId!, signal),
@@ -98,6 +124,41 @@ export function BranchFulfillmentEditPage() {
       ]);
       const branch = branches.find((b) => b.id === branchId) ?? null;
       return { branch, readiness, hours, areas, branchCount: branches.length };
+    },
+  });
+
+  const supplierSummaryQuery = useQuery({
+    queryKey: ["branch-po-supplier-summary", organizationId, branchId, allowSupplierSummary],
+    enabled: Boolean(organizationId && branchId && canAccess && allowSupplierSummary),
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const workspace = { organizationId: organizationId!, branchId };
+      const [payments, customers] = await Promise.all([
+        listPaymentMethods(workspace, signal),
+        listBusinessCustomers(workspace, undefined, signal),
+      ]);
+      const paymentsOk = hasEnabledPoPaymentMethod(payments);
+      const active = customers.filter(
+        (row) =>
+          row.relationshipStatus.localeCompare("Active", undefined, {
+            sensitivity: "accent",
+          }) === 0,
+      );
+      const preferred =
+        active.find((row) => row.supplierBranchId === branchId) ?? active[0] ?? null;
+      if (!preferred) {
+        return { paymentsOk, catalogOk: false, contactOk: false };
+      }
+      const readiness = await getSupplierConnectedSupplierCommerceReadiness(
+        workspace,
+        preferred.connectionId,
+        signal,
+      );
+      return {
+        paymentsOk,
+        catalogOk: !requirementIsMissing(readiness.requirements, "SharedCatalog"),
+        contactOk: !requirementIsMissing(readiness.requirements, "ResponsibleContact"),
+      };
     },
   });
 
@@ -190,7 +251,7 @@ export function BranchFulfillmentEditPage() {
     return externalMapLinks(Number.isFinite(lat) ? lat : null, Number.isFinite(lng) ? lng : null);
   }, [latitude, longitude]);
 
-  if (!canManage) {
+  if (!canAccess) {
     return (
       <div
         data-testid="branch-fulfillment-denied"
@@ -570,16 +631,42 @@ export function BranchFulfillmentEditPage() {
       </div>
 
       {activeTab === "overview" ? (
-        <BranchOverviewPanel
-          readiness={currentReadiness}
-          busy={busy}
-          t={t}
-          onTogglePickup={(enabled) => void toggleFulfillment({ pickupEnabled: enabled })}
-          onToggleDelivery={(enabled) => void toggleFulfillment({ deliveryEnabled: enabled })}
-          onEnableOrdering={() => void toggleFulfillment({ customerOrderingEnabled: true })}
-          onPauseOrders={() => void pauseOrders(true)}
-          onResumeOrders={() => void pauseOrders(false)}
-        />
+        <>
+          <BranchPoFulfillmentReadinessPanel
+            branchId={branchId}
+            readiness={currentReadiness}
+            t={t}
+            catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
+            paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
+            contactOk={supplierSummaryQuery.data?.contactOk ?? null}
+            onConfigure={() => selectSetupTab("overview")}
+          />
+          <BranchOverviewPanel
+            readiness={currentReadiness}
+            busy={busy || !canManage}
+            t={t}
+            onTogglePickup={(enabled) => {
+              if (!canManage) return;
+              void toggleFulfillment({ pickupEnabled: enabled });
+            }}
+            onToggleDelivery={(enabled) => {
+              if (!canManage) return;
+              void toggleFulfillment({ deliveryEnabled: enabled });
+            }}
+            onEnableOrdering={() => {
+              if (!canManage) return;
+              void toggleFulfillment({ customerOrderingEnabled: true });
+            }}
+            onPauseOrders={() => {
+              if (!canManage) return;
+              void pauseOrders(true);
+            }}
+            onResumeOrders={() => {
+              if (!canManage) return;
+              void pauseOrders(false);
+            }}
+          />
+        </>
       ) : null}
 
       {activeTab === "details" ? (

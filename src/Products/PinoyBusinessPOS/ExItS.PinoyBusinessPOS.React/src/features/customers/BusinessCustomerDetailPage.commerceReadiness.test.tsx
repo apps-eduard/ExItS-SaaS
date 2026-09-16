@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { catalogs } from "@/i18n/messages";
@@ -102,6 +103,16 @@ function renderPage() {
       <MemoryRouter initialEntries={[`/customers/business/${connectionId}`]}>
         <Routes>
           <Route path="/customers/business/:connectionId" element={<BusinessCustomerDetailPage />} />
+          <Route
+            path="/suppliers/connected/buyers/:relationshipId/shared-products"
+            element={<div data-testid="shared-products-page" />}
+          />
+          <Route
+            path="/org/branches/:branchId/fulfillment"
+            element={<div data-testid="fulfillment-page" />}
+          />
+          <Route path="/org/payment-methods" element={<div data-testid="payment-methods-page" />} />
+          <Route path="/org/branches/:branchId" element={<div data-testid="branch-settings-page" />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -144,12 +155,25 @@ describe("BusinessCustomerDetailPage supplier readiness", () => {
     });
   });
 
-  it("shows Supplier Readiness checklist with missing requirements and Complete setup", async () => {
+  it("defaults to Needs setup, shows counts, Fix n items, and deep-links rows", async () => {
+    const user = userEvent.setup();
     getSupplierConnectedSupplierCommerceReadiness.mockResolvedValue({
       relationshipId: connectionId,
       isReady: false,
       supportedFulfillmentMethods: [],
       requirements: [
+        {
+          code: "SellingBranch",
+          status: "Complete",
+          title: "Selling/fulfillment location",
+          detail: "Choose the branch that fulfills purchase orders for this connection.",
+        },
+        {
+          code: "FulfillmentMethod",
+          status: "Missing",
+          title: "Fulfillment methods",
+          detail: "Enable Delivery and/or Pickup on the selling branch.",
+        },
         {
           code: "SharedCatalog",
           status: "Missing",
@@ -174,15 +198,86 @@ describe("BusinessCustomerDetailPage supplier readiness", () => {
     renderPage();
 
     expect(await screen.findByTestId("business-customer-commerce-readiness")).toBeInTheDocument();
-    expect(screen.getByTestId("business-customer-commerce-readiness-status")).toHaveTextContent(
-      /Setup required/i,
+    expect(screen.getByTestId("commerce-readiness-filter-needsSetup")).toHaveTextContent(
+      /Needs setup \(3\)/i,
     );
-    expect(screen.getByTestId("commerce-readiness-SharedCatalog")).toHaveAttribute(
-      "data-status",
-      "Missing",
-    );
-    expect(screen.getByTestId("commerce-readiness-ResponsibleContact")).toBeInTheDocument();
+    expect(screen.getByTestId("commerce-readiness-filter-complete")).toHaveTextContent(/Complete \(1\)/i);
+    expect(screen.getByTestId("commerce-readiness-filter-all")).toHaveTextContent(/All \(4\)/i);
+
+    const needsSetupRadio = screen.getByRole("radio", { name: /Needs setup \(3\)/i });
+    expect(needsSetupRadio).toHaveAttribute("aria-checked", "true");
+
+    expect(screen.getByTestId("commerce-readiness-FulfillmentMethod")).toBeInTheDocument();
+    expect(screen.getByTestId("commerce-readiness-SharedCatalog")).toBeInTheDocument();
+    expect(screen.queryByTestId("commerce-readiness-SellingBranch")).not.toBeInTheDocument();
     expect(screen.queryByTestId("commerce-readiness-CreditPolicy")).not.toBeInTheDocument();
-    expect(screen.getByTestId("business-customer-complete-setup")).toBeInTheDocument();
+
+    const fixAction = screen.getByTestId("business-customer-complete-setup");
+    expect(fixAction).toHaveTextContent("Fix 3 items");
+    expect(fixAction).toHaveAttribute("href", `/org/branches/${branchId}/fulfillment`);
+
+    expect(screen.getByTestId("commerce-readiness-SharedCatalog")).toHaveAttribute(
+      "href",
+      `/suppliers/connected/buyers/${connectionId}/shared-products`,
+    );
+    expect(screen.getByTestId("commerce-readiness-FulfillmentMethod")).toHaveAttribute(
+      "href",
+      `/org/branches/${branchId}/fulfillment`,
+    );
+
+    await user.click(screen.getByRole("radio", { name: /Complete \(1\)/i }));
+    const completeRow = screen.getByTestId("commerce-readiness-SellingBranch");
+    expect(completeRow).toBeInTheDocument();
+    expect(completeRow).toHaveAttribute("href", `/org/branches/${branchId}`);
+    expect(screen.queryByTestId("commerce-readiness-SharedCatalog")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: /All \(4\)/i }));
+    const checklist = screen.getByTestId("business-customer-commerce-readiness-checklist");
+    expect(within(checklist).getByTestId("commerce-readiness-SellingBranch")).toBeInTheDocument();
+    expect(within(checklist).getByTestId("commerce-readiness-SharedCatalog")).toBeInTheDocument();
+    expect(within(checklist).queryByTestId("commerce-readiness-CreditPolicy")).not.toBeInTheDocument();
+
+    await user.click(within(checklist).getByTestId("commerce-readiness-SellingBranch"));
+    expect(await screen.findByTestId("branch-settings-page")).toBeInTheDocument();
+  });
+
+  it("shows Review setup when all visible requirements are complete", async () => {
+    getSupplierConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId: connectionId,
+      isReady: true,
+      supportedFulfillmentMethods: ["Pickup"],
+      requirements: [
+        {
+          code: "SellingBranch",
+          status: "Complete",
+          title: "Selling/fulfillment location",
+          detail: "Choose the branch that fulfills purchase orders for this connection.",
+        },
+        {
+          code: "PaymentMethods",
+          status: "Complete",
+          title: "Accepted payment methods",
+          detail: "Enable at least one payment method buyers can use on purchase orders.",
+        },
+        {
+          code: "CreditPolicy",
+          status: "NotApplicable",
+          title: "Utang credit policy",
+          detail: null,
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId("business-customer-complete-setup")).toHaveTextContent(
+      "Review setup",
+    );
+    expect(screen.getByTestId("business-customer-complete-setup")).toHaveAttribute(
+      "href",
+      `/org/branches/${branchId}`,
+    );
+    expect(screen.getByTestId("commerce-readiness-filter-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("commerce-readiness-PaymentMethods")).not.toBeInTheDocument();
   });
 });

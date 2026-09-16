@@ -12,6 +12,24 @@ const getBranchFulfillmentReadiness = vi.fn();
 
 vi.mock("@/access/pos-capabilities", () => ({
   canManageBranchFulfillment: () => true,
+  canUseWarehouseBranches: () => false,
+  canViewSuppliers: () => true,
+  hasOrganizationManagementAuthority: () => true,
+  isPosOwnerRole: () => true,
+}));
+
+vi.mock("@/api/pos/pos-payment-methods-client", () => ({
+  listPaymentMethods: vi.fn(async () => []),
+}));
+
+vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
+  listBusinessCustomers: vi.fn(async () => []),
+  getSupplierConnectedSupplierCommerceReadiness: vi.fn(async () => ({
+    relationshipId: "33333333-3333-3333-3333-333333333333",
+    isReady: false,
+    supportedFulfillmentMethods: [],
+    requirements: [],
+  })),
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({

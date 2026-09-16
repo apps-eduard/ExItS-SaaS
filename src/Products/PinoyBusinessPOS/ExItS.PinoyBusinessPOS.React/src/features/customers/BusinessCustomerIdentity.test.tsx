@@ -197,13 +197,12 @@ describe("Business Customer identity display", () => {
     expect(screen.getByTestId("business-org-exits-id")).toHaveTextContent("ORGKIZY01");
     expect(screen.getByTestId("business-customer-status-chips")).toBeInTheDocument();
     expect(await screen.findByTestId("business-credit-policy-section")).toBeInTheDocument();
-    expect(await screen.findByTestId("business-credit-policy-status")).toHaveTextContent(
-      "Not configured",
+    expect(screen.queryByTestId("business-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "false",
     );
-    expect(screen.getByTestId("business-credit-policy-repay")).toHaveAttribute(
-      "href",
-      `/customers/business/${connectionId}/repay`,
-    );
+    expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
     expect(screen.getByTestId("business-credit-policy-statement")).toHaveAttribute(
       "href",
       `/customers/business/${connectionId}/statement`,

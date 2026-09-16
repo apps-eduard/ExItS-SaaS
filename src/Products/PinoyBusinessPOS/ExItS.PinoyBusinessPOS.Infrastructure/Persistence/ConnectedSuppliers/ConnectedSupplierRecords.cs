@@ -33,6 +33,8 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public string? ContactEmail { get; set; }
     public string? PreferredContactMethod { get; set; }
     public string? DeliveryInstructions { get; set; }
+    /// <summary>null = inherit, "allow", or "block".</summary>
+    public string? CustomerDeliveryOverride { get; set; }
     public string? BillingContactNotes { get; set; }
     public string? InternalNotes { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
@@ -132,7 +134,8 @@ internal static class ConnectedSupplierEntityMapper
         r.PreferredContactMethod,
         r.DeliveryInstructions,
         r.BillingContactNotes,
-        r.InternalNotes);
+        r.InternalNotes,
+        EffectiveDeliveryAllowance.ParseOverride(r.CustomerDeliveryOverride));
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
@@ -146,6 +149,7 @@ internal static class ConnectedSupplierEntityMapper
         ContactSource=(int)x.ContactSource,OrganizationMemberId=x.OrganizationMemberId,
         ContactPersonName=x.ContactPersonName,ContactDepartment=x.ContactDepartment,ContactRole=x.ContactRole,ContactPhone=x.ContactPhone,ContactEmail=x.ContactEmail,
         PreferredContactMethod=x.PreferredContactMethod,DeliveryInstructions=x.DeliveryInstructions,
+        CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride),
         BillingContactNotes=x.BillingContactNotes,InternalNotes=x.InternalNotes,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
@@ -157,6 +161,7 @@ internal static class ConnectedSupplierEntityMapper
      r.ContactSource=(int)x.ContactSource;r.OrganizationMemberId=x.OrganizationMemberId;
      r.ContactPersonName=x.ContactPersonName;r.ContactDepartment=x.ContactDepartment;r.ContactRole=x.ContactRole;r.ContactPhone=x.ContactPhone;r.ContactEmail=x.ContactEmail;
      r.PreferredContactMethod=x.PreferredContactMethod;r.DeliveryInstructions=x.DeliveryInstructions;
+     r.CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride);
      r.BillingContactNotes=x.BillingContactNotes;r.InternalNotes=x.InternalNotes;
      r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
