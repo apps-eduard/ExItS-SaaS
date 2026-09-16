@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { BranchFulfillmentReadinessDto } from "@/api/platform/branch-fulfillment-client";
 import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
@@ -9,7 +8,7 @@ import { catalogs } from "@/i18n/messages";
 const t = (key: keyof typeof catalogs.en) => catalogs.en[key];
 
 function readiness(
-  partial: Partial<BranchFulfillmentReadinessDto>,
+  partial: Partial<BranchFulfillmentReadinessDto> = {},
 ): BranchFulfillmentReadinessDto {
   return {
     branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -60,16 +59,22 @@ function renderPanel(partial: Partial<BranchFulfillmentReadinessDto> = {}) {
 }
 
 describe("BranchPoFulfillmentReadinessPanel", () => {
-  it("both methods OFF → Setup required without delivery detail warnings", () => {
+  it("both methods OFF → Setup required with why-required explanation", () => {
     renderPanel();
     expect(screen.getByTestId("branch-po-fulfillment-status")).toHaveTextContent(
       "Setup required",
     );
-    expect(screen.getByTestId("branch-po-fulfillment-item-enableMethod")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-po-fulfillment-why-required")).toHaveTextContent(
+      "Why is this required?",
+    );
+    expect(screen.getByTestId("branch-po-fulfillment-why-required")).toHaveTextContent(
+      /at least one active fulfillment method/,
+    );
+    expect(screen.queryByTestId("branch-po-fulfillment-item-enableMethod")).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-po-fulfillment-item-branchInfo")).toBeInTheDocument();
     expect(screen.queryByTestId("branch-po-fulfillment-item-deliveryProgress")).not.toBeInTheDocument();
     expect(screen.queryByTestId("branch-po-fulfillment-methods")).not.toBeInTheDocument();
-    expect(screen.getByTestId("branch-po-fulfillment-configure")).toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-configure")).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-po-supplier-summary-view")).toHaveAttribute(
       "href",
       "/customers?kind=businesses",
@@ -78,6 +83,29 @@ describe("BranchPoFulfillmentReadinessPanel", () => {
       "href",
       "/org/payment-methods",
     );
+  });
+
+  it("configured + both methods OFF → why-required only (no configured-but-off copy)", () => {
+    renderPanel({
+      branchDetailsComplete: true,
+      pickupSectionsComplete: 2,
+      deliverySectionsComplete: 5,
+    });
+    expect(screen.getByTestId("branch-po-fulfillment-status")).toHaveTextContent(
+      "Setup required",
+    );
+    expect(screen.queryByTestId("branch-po-fulfillment-configured-but-off")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("branch-po-fulfillment-why-required")).toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-item-enableMethod")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-checklist")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-configure")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-item-branchInfo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Setup requirements look complete.")).not.toBeInTheDocument();
   });
 
   it("Pickup ready only → Ready with compact channel chips (no duplicate copy)", () => {
@@ -93,6 +121,7 @@ describe("BranchPoFulfillmentReadinessPanel", () => {
     );
     expect(screen.getByTestId("branch-po-fulfillment-status")).toHaveTextContent("Ready");
     expect(screen.queryByTestId("branch-po-fulfillment-checklist")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-why-required")).not.toBeInTheDocument();
     expect(screen.queryByTestId("branch-po-fulfillment-ready-note")).not.toBeInTheDocument();
     expect(screen.getByTestId("branch-po-fulfillment-method-pickup")).toHaveTextContent(
       /Pickup · Ready · 2\/2/,
@@ -103,26 +132,49 @@ describe("BranchPoFulfillmentReadinessPanel", () => {
     expect(screen.getByTestId("po-supplier-summary-fulfillment")).toHaveTextContent("Ready");
   });
 
-  it("configure scrolls toward fulfillment toggles", async () => {
-    const user = userEvent.setup();
-    const onConfigure = vi.fn();
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-
-    render(
-      <MemoryRouter>
-        <div data-testid="branch-fulfillment-toggles" />
-        <BranchPoFulfillmentReadinessPanel
-          branchId="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
-          readiness={readiness()}
-          t={t}
-          onConfigure={onConfigure}
-        />
-      </MemoryRouter>,
+  it("Delivery ready only → Ready", () => {
+    renderPanel({
+      deliveryEnabled: true,
+      deliveryReady: true,
+      branchDetailsComplete: true,
+      deliverySectionsComplete: 5,
+    });
+    expect(screen.getByTestId("branch-po-fulfillment-panel")).toHaveAttribute(
+      "data-ready",
+      "true",
     );
+    expect(screen.getByTestId("branch-po-fulfillment-status")).toHaveTextContent("Ready");
+    expect(screen.getByTestId("branch-po-fulfillment-method-delivery")).toHaveTextContent(
+      /Delivery · Ready/,
+    );
+    expect(screen.getByTestId("branch-po-fulfillment-method-pickup")).toHaveTextContent(
+      /Pickup · Off/,
+    );
+  });
 
-    await user.click(screen.getByTestId("branch-po-fulfillment-configure"));
-    expect(onConfigure).toHaveBeenCalled();
-    expect(scrollIntoView).toHaveBeenCalled();
+  it("Online orders ON alone does not make PO fulfillment Ready", () => {
+    renderPanel({
+      branchDetailsComplete: true,
+      customerOrderingEnabled: true,
+      customerOrderingReady: true,
+      customerOrderingOperational: true,
+      pickupSectionsComplete: 2,
+      deliverySectionsComplete: 5,
+    });
+    expect(screen.getByTestId("branch-po-fulfillment-panel")).toHaveAttribute(
+      "data-ready",
+      "false",
+    );
+    expect(screen.getByTestId("branch-po-fulfillment-status")).toHaveTextContent(
+      "Setup required",
+    );
+    expect(screen.queryByTestId("branch-po-fulfillment-item-enableMethod")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-configure")).not.toBeInTheDocument();
+  });
+
+  it("Branch details CTA remains when details are incomplete", () => {
+    renderPanel({ branchDetailsComplete: false });
+    expect(screen.getByTestId("branch-po-fulfillment-open-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("branch-po-fulfillment-configure")).not.toBeInTheDocument();
   });
 });

@@ -15,6 +15,8 @@ import {
   type OperationsNavTabId,
 } from "@/features/operations/operations-nav-config";
 import { usePurchasingNavigationBadge } from "@/features/purchasing/usePurchasingNavigationBadge";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -30,13 +32,18 @@ const ICONS: Record<OperationsNavTabId, typeof Home> = {
   more: MoreHorizontal,
 };
 
-/** Operations bottom nav — visible below lg only (tablet + mobile). */
+/** Operations bottom nav — phone/tablet only; unmounted on desktop (>=1024). */
 export function OperationsBottomNav() {
   const { t } = useI18n();
   const location = useLocation();
   const { status: sessionStatus } = useSession();
   const { sessionGrant, boundWorkspace } = useWorkspace();
   const purchasingBadge = usePurchasingNavigationBadge();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+
+  if (isDesktop) {
+    return null;
+  }
 
   if (!isAuthenticatedOrColdStartOffline(sessionStatus) || !boundWorkspace) {
     return null;

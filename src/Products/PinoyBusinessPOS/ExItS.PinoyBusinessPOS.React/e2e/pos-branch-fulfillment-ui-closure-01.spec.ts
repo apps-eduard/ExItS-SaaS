@@ -327,12 +327,13 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
     await expect(page.getByTestId("delivery-area-country-readonly")).toContainText("Philippines (PH)");
     await expect(page.getByTestId("delivery-areas-list")).toContainText(/Bacolod/i);
 
-    // Add Murcia municipality (second official locality)
-    await page.getByTestId("delivery-area-search").fill("Murcia");
-    await expect(page.getByTestId("delivery-area-result-1804520000")).toBeVisible({ timeout: 15000 });
-    await page.getByTestId("delivery-area-result-1804520000").click();
+    // Add Murcia municipality (second official locality in NIR)
+    await page.getByTestId("delivery-area-region-1800000000").click();
+    await expect(page.getByTestId("delivery-area-city-list")).toBeVisible({ timeout: 15000 });
+    await page.getByTestId("delivery-area-city-1804520000").locator("input").check();
     await expect(page.getByTestId("branch-fulfillment-ok")).toBeVisible({ timeout: 20000 });
     await expect(page.getByTestId("delivery-areas-list")).toContainText(/Murcia/i);
+    await expect(page.getByTestId("delivery-area-city-list")).toHaveCount(0);
 
     await reloadAndRebindOwner(page, email, password);
     await openBranchEdit(page);
@@ -340,10 +341,11 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
     await expect(page.getByTestId("delivery-areas-list")).toContainText(/Murcia/i);
     await expect(page.getByTestId("delivery-areas-list")).toContainText(/Bacolod/i);
 
-    // Duplicate Bacolod should be disabled / already added
-    await page.getByTestId("delivery-area-search").fill("Bacolod");
-    await expect(page.getByTestId("delivery-area-result-1830200000")).toBeVisible({ timeout: 15000 });
-    await expect(page.getByTestId("delivery-area-result-1830200000")).toBeDisabled();
+    // Reopen region picker then city list; Bacolod stays checked
+    await page.getByTestId("delivery-area-region-change").click();
+    await page.getByTestId("delivery-area-region-1800000000").click();
+    await expect(page.getByTestId("delivery-area-city-list")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("delivery-area-city-1830200000").locator("input")).toBeChecked();
 
     const murciaChip = page.locator(".branch-area-chip").filter({ hasText: /Murcia/i });
     await murciaChip.getByTestId(/remove-delivery-area-/).click();
@@ -428,9 +430,9 @@ test.describe("POS-BRANCH-FULFILLMENT-UI-CLOSURE-01 live UI", () => {
 
       await page.getByTestId("branch-tab-areas").click();
       await expect(page.getByTestId("delivery-areas-list")).toBeVisible();
-      await expect(page.getByTestId("delivery-area-search")).toBeVisible();
+      await expect(page.getByTestId("delivery-area-region-search")).toBeVisible();
+      await expect(page.getByTestId("delivery-area-pick-region")).toBeVisible();
       await expect(page.getByTestId("delivery-area-country-readonly")).toBeVisible();
-      await expect(page.getByTestId("delivery-area-city")).toHaveCount(0);
 
       await page.getByTestId("branch-tab-location").click();
       await expect(page.getByTestId("branch-latitude")).toBeVisible();

@@ -250,6 +250,8 @@ builder.Services.AddScoped<ListBranchDeliveryServiceAreas>();
 builder.Services.AddScoped<AddBranchDeliveryServiceArea>();
 builder.Services.AddScoped<DeactivateBranchDeliveryServiceArea>();
 builder.Services.AddScoped<SearchPhilippineLocalities>();
+builder.Services.AddScoped<ListPhilippineRegions>();
+builder.Services.AddScoped<ListPhilippineLocalitiesByRegion>();
 builder.Services.AddScoped<EnsureMainBranchExists>();
 builder.Services.AddScoped<ListDevices>();
 builder.Services.AddScoped<ListAllDevices>();

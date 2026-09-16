@@ -8,7 +8,6 @@ import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs
 import type { MessageKey } from "@/i18n/messages";
 
 export type PoFulfillmentChecklistItemId =
-  | "enableMethod"
   | "branchInfo"
   | "pickupProgress"
   | "deliveryProgress";
@@ -31,11 +30,12 @@ export type PoFulfillmentMethodLine = {
 
 export type PoFulfillmentReadinessView = {
   ready: boolean;
+  /** Both Pickup and Delivery switches are OFF. */
+  noMethodEnabled: boolean;
   statusKey: MessageKey;
   ledeKey: MessageKey;
   checklist: PoFulfillmentChecklistItem[];
   methods: PoFulfillmentMethodLine[];
-  showConfigureAction: boolean;
 };
 
 export type SupplierReadinessSummaryItem = {
@@ -50,8 +50,9 @@ function progressText(complete: number, total: number): string {
 }
 
 /**
- * Ready when at least one enabled fulfillment method is fully ready.
- * Disabled methods never contribute missing-detail checklist rows.
+ * Ready when required branch info is complete and at least one enabled
+ * fulfillment method is fully ready. Disabled methods never contribute
+ * missing-detail checklist rows.
  */
 export function buildPoFulfillmentReadinessView(
   readiness: Pick<
@@ -72,17 +73,10 @@ export function buildPoFulfillmentReadinessView(
   const noMethod = !pickupEnabled && !deliveryEnabled;
   const pickupReady = pickupEnabled && readiness.pickupReady;
   const deliveryReady = deliveryEnabled && readiness.deliveryReady;
-  const ready = pickupReady || deliveryReady;
+  const ready =
+    readiness.branchDetailsComplete && (pickupReady || deliveryReady);
 
   const checklist: PoFulfillmentChecklistItem[] = [];
-
-  if (noMethod) {
-    checklist.push({
-      id: "enableMethod",
-      done: false,
-      labelKey: "branches.poFulfillment.checklist.enableMethod",
-    });
-  }
 
   if (!readiness.branchDetailsComplete) {
     checklist.push({
@@ -143,17 +137,19 @@ export function buildPoFulfillmentReadinessView(
     },
   ];
 
+  const ledeKey: MessageKey = ready
+    ? "branches.poFulfillment.lede.ready"
+    : "branches.poFulfillment.lede.setupRequired";
+
   return {
     ready,
+    noMethodEnabled: noMethod,
     statusKey: ready
       ? "branches.poFulfillment.status.ready"
       : "branches.poFulfillment.status.setupRequired",
-    ledeKey: ready
-      ? "branches.poFulfillment.lede.ready"
-      : "branches.poFulfillment.lede.setupRequired",
+    ledeKey,
     checklist,
     methods,
-    showConfigureAction: !ready,
   };
 }
 

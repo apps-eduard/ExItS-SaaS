@@ -732,7 +732,7 @@ export function BranchManagementDetailPage() {
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t(copy.codeLabel)}
             <input
-              className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+              className="exits-input bg-[var(--exits-surface-muted)] font-normal"
               value={branch.code}
               readOnly
               aria-readonly="true"
@@ -821,32 +821,101 @@ export function BranchManagementDetailPage() {
       ) : null}
 
       {activeTab === "fulfillment" && !isWarehouse ? (
-        <div className="flex flex-col gap-3" data-testid="branch-fulfillment-summary">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("branches.detail.fulfillmentLede")}
-          </p>
-          <dl className="branch-mgmt-card__meta">
-            <div>
-              <dt>{t("branches.mgmt.pickup")}</dt>
-              <dd>
-                {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                {summary?.pickupSectionsComplete ?? 0}/{summary?.pickupSectionsTotal ?? 2}
-              </dd>
-            </div>
-            <div>
-              <dt>{t("branches.mgmt.delivery")}</dt>
-              <dd>
-                {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")} ·{" "}
-                {summary?.deliverySectionsComplete ?? 0}/{summary?.deliverySectionsTotal ?? 5}
-              </dd>
-            </div>
-          </dl>
-          <Button asChild className="self-start" data-testid="branch-fulfillment-configure">
-            <Link to={branchFulfillmentEditPath(branch.id)}>
-              {t("branches.detail.configureFulfillment")}
-            </Link>
-          </Button>
-        </div>
+        <section
+          className="catalog-form-section exits-animate-panel branch-mgmt-fulfillment gap-3"
+          data-testid="branch-fulfillment-summary"
+        >
+          <div className="branch-mgmt-fulfillment__header">
+            <h2 className="catalog-form-section__title m-0">
+              {t("branches.detail.fulfillment")}
+            </h2>
+            <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {t("branches.detail.fulfillmentLede")}
+            </p>
+          </div>
+
+          <div className="branch-mgmt-fulfillment__grid">
+            <article
+              className="branch-mgmt-fulfillment__card"
+              data-testid="branch-fulfillment-pickup-card"
+            >
+              <div className="branch-mgmt-fulfillment__card-top">
+                <div className="branch-mgmt-fulfillment__identity">
+                  <span className="branch-mgmt-fulfillment__icon" aria-hidden>
+                    <Package className="size-4" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="branch-mgmt-fulfillment__label m-0">
+                      {t("branches.mgmt.pickup")}
+                    </p>
+                    <p className="branch-mgmt-fulfillment__progress m-0">
+                      {t("branches.progress.of")
+                        .replace(
+                          "{complete}",
+                          String(summary?.pickupSectionsComplete ?? 0),
+                        )
+                        .replace(
+                          "{total}",
+                          String(summary?.pickupSectionsTotal ?? 2),
+                        )}
+                    </p>
+                  </div>
+                </div>
+                <StatusChip
+                  tone={branch.pickupEnabled ? "success" : "neutral"}
+                  shape="soft"
+                  appearance="outline"
+                >
+                  {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                </StatusChip>
+              </div>
+            </article>
+
+            <article
+              className="branch-mgmt-fulfillment__card"
+              data-testid="branch-fulfillment-delivery-card"
+            >
+              <div className="branch-mgmt-fulfillment__card-top">
+                <div className="branch-mgmt-fulfillment__identity">
+                  <span className="branch-mgmt-fulfillment__icon" aria-hidden>
+                    <Truck className="size-4" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="branch-mgmt-fulfillment__label m-0">
+                      {t("branches.mgmt.delivery")}
+                    </p>
+                    <p className="branch-mgmt-fulfillment__progress m-0">
+                      {t("branches.progress.of")
+                        .replace(
+                          "{complete}",
+                          String(summary?.deliverySectionsComplete ?? 0),
+                        )
+                        .replace(
+                          "{total}",
+                          String(summary?.deliverySectionsTotal ?? 5),
+                        )}
+                    </p>
+                  </div>
+                </div>
+                <StatusChip
+                  tone={branch.deliveryEnabled ? "success" : "neutral"}
+                  shape="soft"
+                  appearance="outline"
+                >
+                  {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                </StatusChip>
+              </div>
+            </article>
+          </div>
+
+          <div className="branch-mgmt-fulfillment__actions">
+            <Button asChild data-testid="branch-fulfillment-configure">
+              <Link to={branchFulfillmentEditPath(branch.id)}>
+                {t("branches.detail.configureFulfillment")}
+              </Link>
+            </Button>
+          </div>
+        </section>
       ) : null}
 
       <ConfirmationDialog
@@ -888,7 +957,7 @@ export function BranchManagementDetailPage() {
             <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
               {t("branches.detail.reason")}
               <textarea
-                className="catalog-form-select min-h-24 font-normal"
+                className="exits-input min-h-24 font-normal"
                 value={lifecycleReason}
                 onChange={(e) => setLifecycleReason(e.target.value)}
                 data-testid="branch-lifecycle-reason"
@@ -899,7 +968,7 @@ export function BranchManagementDetailPage() {
             {t("devices.revoke.passwordLabel")}
             <span className="relative">
               <input
-                className="catalog-form-select w-full pr-11 font-normal"
+                className="exits-input w-full pr-11 font-normal"
                 type={lifecyclePasswordVisible ? "text" : "password"}
                 value={lifecyclePassword}
                 onChange={(e) => setLifecyclePassword(e.target.value)}

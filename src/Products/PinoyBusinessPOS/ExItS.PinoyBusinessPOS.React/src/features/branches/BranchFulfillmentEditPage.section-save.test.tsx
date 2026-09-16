@@ -205,6 +205,17 @@ describe("BranchFulfillmentEditPage section saves", () => {
     expect(screen.getByTestId("branch-tab-location")).toHaveAttribute("aria-selected", "true");
   });
 
+  it("stacks overview panels: PO fulfillment then fulfillment readiness", async () => {
+    renderPage();
+    const grid = await screen.findByTestId("branch-fulfillment-overview-grid");
+    expect(grid).toBeInTheDocument();
+    expect(screen.getByTestId("branch-po-fulfillment-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-readiness-panel")).toBeInTheDocument();
+    const po = screen.getByTestId("branch-po-fulfillment-panel");
+    const readiness = screen.getByTestId("branch-readiness-panel");
+    expect(po.compareDocumentPosition(readiness) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("renders after remount when query data is cached", async () => {
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },

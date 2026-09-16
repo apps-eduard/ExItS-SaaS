@@ -20,12 +20,28 @@ describe("buildPoFulfillmentReadinessView", () => {
   it("both methods OFF → Setup required with enable-method + branch info only", () => {
     const view = buildPoFulfillmentReadinessView(base);
     expect(view.ready).toBe(false);
+    expect(view.noMethodEnabled).toBe(true);
     expect(view.statusKey).toBe("branches.poFulfillment.status.setupRequired");
-    expect(view.checklist.map((c) => c.id)).toEqual(["enableMethod", "branchInfo"]);
+    expect(view.ledeKey).toBe("branches.poFulfillment.lede.setupRequired");
+    expect(view.checklist.map((c) => c.id)).toEqual(["branchInfo"]);
     expect(view.methods.every((m) => !m.enabled)).toBe(true);
     // Disabled methods must not invent detail-progress checklist rows.
     expect(view.checklist.some((c) => c.id === "pickupProgress")).toBe(false);
     expect(view.checklist.some((c) => c.id === "deliveryProgress")).toBe(false);
+  });
+
+  it("configured branch + both methods OFF → setup required without method checklist", () => {
+    const view = buildPoFulfillmentReadinessView({
+      ...base,
+      branchDetailsComplete: true,
+      pickupSectionsComplete: 2,
+      deliverySectionsComplete: 5,
+    });
+    expect(view.ready).toBe(false);
+    expect(view.noMethodEnabled).toBe(true);
+    expect(view.statusKey).toBe("branches.poFulfillment.status.setupRequired");
+    expect(view.ledeKey).toBe("branches.poFulfillment.lede.setupRequired");
+    expect(view.checklist).toEqual([]);
   });
 
   it("Pickup ready only → Ready (Delivery may stay Off)", () => {
@@ -38,11 +54,14 @@ describe("buildPoFulfillmentReadinessView", () => {
       deliverySectionsComplete: 0,
     });
     expect(view.ready).toBe(true);
+    expect(view.noMethodEnabled).toBe(false);
+    expect(view.ledeKey).toBe("branches.poFulfillment.lede.ready");
     expect(view.checklist.find((c) => c.id === "pickupProgress")).toMatchObject({
       done: true,
       progressLabel: "2/2",
     });
     expect(view.methods.find((m) => m.channel === "delivery")?.enabled).toBe(false);
+    expect(view.checklist.some((c) => c.id === "deliveryProgress")).toBe(false);
   });
 
   it("Delivery ready only → Ready", () => {
@@ -56,6 +75,23 @@ describe("buildPoFulfillmentReadinessView", () => {
     });
     expect(view.ready).toBe(true);
     expect(view.checklist.find((c) => c.id === "deliveryProgress")?.done).toBe(true);
+    expect(view.checklist.some((c) => c.id === "pickupProgress")).toBe(false);
+  });
+
+  it("both Pickup and Delivery ready → Ready", () => {
+    const view = buildPoFulfillmentReadinessView({
+      ...base,
+      pickupEnabled: true,
+      deliveryEnabled: true,
+      pickupReady: true,
+      deliveryReady: true,
+      branchDetailsComplete: true,
+      pickupSectionsComplete: 2,
+      deliverySectionsComplete: 5,
+    });
+    expect(view.ready).toBe(true);
+    expect(view.checklist.find((c) => c.id === "pickupProgress")?.done).toBe(true);
+    expect(view.checklist.find((c) => c.id === "deliveryProgress")?.done).toBe(true);
   });
 
   it("enabled but incomplete → Setup required with that method progress only", () => {
@@ -67,6 +103,8 @@ describe("buildPoFulfillmentReadinessView", () => {
       pickupSectionsComplete: 1,
     });
     expect(view.ready).toBe(false);
+    expect(view.noMethodEnabled).toBe(false);
+    expect(view.ledeKey).toBe("branches.poFulfillment.lede.setupRequired");
     expect(view.checklist.map((c) => c.id)).toEqual(["pickupProgress"]);
     expect(view.checklist[0]?.progressLabel).toBe("1/2");
     expect(view.checklist.some((c) => c.id === "deliveryProgress")).toBe(false);
@@ -81,6 +119,31 @@ describe("buildPoFulfillmentReadinessView", () => {
       deliverySectionsComplete: 2,
     });
     expect(view.checklist.map((c) => c.id)).toEqual(["branchInfo", "deliveryProgress"]);
+  });
+
+  it("method ready flags alone are not Ready without required branch info", () => {
+    const view = buildPoFulfillmentReadinessView({
+      ...base,
+      pickupEnabled: true,
+      pickupReady: true,
+      branchDetailsComplete: false,
+      pickupSectionsComplete: 2,
+    });
+    expect(view.ready).toBe(false);
+    expect(view.statusKey).toBe("branches.poFulfillment.status.setupRequired");
+    expect(view.checklist.map((c) => c.id)).toEqual(["branchInfo", "pickupProgress"]);
+  });
+
+  it("Online-orders fields are ignored — PO readiness uses Pickup/Delivery only", () => {
+    // Projection intentionally omits customerOrdering* — Online ON alone cannot satisfy Ready.
+    const view = buildPoFulfillmentReadinessView({
+      ...base,
+      branchDetailsComplete: true,
+      pickupSectionsComplete: 2,
+      deliverySectionsComplete: 5,
+    });
+    expect(view.ready).toBe(false);
+    expect(view.noMethodEnabled).toBe(true);
   });
 });
 

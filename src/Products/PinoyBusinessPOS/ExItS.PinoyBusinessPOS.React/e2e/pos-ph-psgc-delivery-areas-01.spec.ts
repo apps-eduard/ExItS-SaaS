@@ -15,6 +15,7 @@ const BUYER_EMAIL = "pilot.buyer.767012@exits.local";
 const APP = "http://127.0.0.1:5177";
 const BACOLOD_PSGC = "1830200000";
 const MURCIA_PSGC = "1804520000";
+const NIR_REGION = "1800000000";
 
 function readPilotOwnerEmail(): string | null {
   let dir = path.dirname(fileURLToPath(import.meta.url));
@@ -84,46 +85,37 @@ test.describe("POS-PH-PSGC-DELIVERY-AREAS-01", () => {
     await signInLive(page, email, password, "owner");
     await openBranchAreas(page);
     await expect(page.getByTestId("delivery-area-country-readonly")).toContainText("Philippines (PH)");
-    await expect(page.getByTestId("delivery-area-city")).toHaveCount(0);
-    await expect(page.getByTestId("delivery-area-region")).toHaveCount(0);
+    await expect(page.getByTestId("delivery-area-region-search")).toBeVisible();
+    await expect(page.getByTestId("delivery-area-pick-region")).toBeVisible();
     await expect(page.getByTestId("delivery-area-country")).toHaveCount(0);
-    await expect(page.getByTestId("delivery-area-search")).toBeVisible();
+    await expect(page.getByTestId("delivery-area-city-list")).toHaveCount(0);
   });
 
-  test("PSGC-UI-02..06 search add multi-chip duplicate remove", async ({ page, request }) => {
+  test("PSGC-UI-02..06 region city multi-select chip remove", async ({ page, request }) => {
     const { email, password } = await requireLiveApis(request);
     await signInLive(page, email, password, "owner");
     await openBranchAreas(page);
 
     const list = page.getByTestId("delivery-areas-list");
     const text = (await list.textContent()) ?? "";
+    await page.getByTestId(`delivery-area-region-${NIR_REGION}`).click();
+    await expect(page.getByTestId("delivery-area-city-list")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("delivery-area-region-selected")).toBeVisible();
+    await expect(page.getByTestId("delivery-area-region-list")).toHaveCount(0);
+
     if (!/Bacolod/i.test(text)) {
-      await page.getByTestId("delivery-area-search").fill("Bacolod");
-      await expect(page.getByTestId(`delivery-area-result-${BACOLOD_PSGC}`)).toBeVisible({
-        timeout: 15000,
-      });
-      await page.getByTestId(`delivery-area-result-${BACOLOD_PSGC}`).click();
+      await page.getByTestId(`delivery-area-city-${BACOLOD_PSGC}`).locator("input").check();
       await expect(page.getByTestId("branch-fulfillment-ok")).toBeVisible({ timeout: 20000 });
     }
     await expect(list).toContainText(/Bacolod/i);
 
     if (!/Murcia/i.test((await list.textContent()) ?? "")) {
-      await page.getByTestId("delivery-area-search").fill("Murcia");
-      await expect(page.getByTestId(`delivery-area-result-${MURCIA_PSGC}`)).toBeVisible({
-        timeout: 15000,
-      });
-      await page.getByTestId(`delivery-area-result-${MURCIA_PSGC}`).click();
+      await page.getByTestId("delivery-area-city-search").click();
+      await expect(page.getByTestId("delivery-area-city-list")).toBeVisible({ timeout: 15000 });
+      await page.getByTestId(`delivery-area-city-${MURCIA_PSGC}`).locator("input").check();
       await expect(page.getByTestId("branch-fulfillment-ok")).toBeVisible({ timeout: 20000 });
     }
     await expect(list).toContainText(/Murcia/i);
-    await expect(page.locator(".branch-area-chip")).toHaveCount(2, { timeout: 5000 }).catch(async () => {
-      await expect(page.locator(".branch-area-chip").filter({ hasText: /Bacolod|Murcia/i })).toHaveCount(2);
-    });
-
-    await page.getByTestId("delivery-area-search").fill("Bacolod");
-    await expect(page.getByTestId(`delivery-area-result-${BACOLOD_PSGC}`)).toBeDisabled({
-      timeout: 15000,
-    });
 
     await page.locator(".branch-area-chip").filter({ hasText: /Murcia/i }).getByTestId(/remove-delivery-area-/).click();
     await expect(page.getByTestId("branch-fulfillment-ok")).toBeVisible({ timeout: 20000 });
@@ -131,12 +123,12 @@ test.describe("POS-PH-PSGC-DELIVERY-AREAS-01", () => {
     await expect(list).toContainText(/Bacolod/i);
   });
 
-  test("PSGC-UI-07 360px search/chips usable", async ({ page, request }) => {
+  test("PSGC-UI-07 360px region/city/chips usable", async ({ page, request }) => {
     const { email, password } = await requireLiveApis(request);
     await signInLive(page, email, password, "owner");
     await page.setViewportSize({ width: 360, height: 800 });
     await openBranchAreas(page);
-    await expect(page.getByTestId("delivery-area-search")).toBeVisible();
+    await expect(page.getByTestId("delivery-area-region-search")).toBeVisible();
     await expect(page.getByTestId("delivery-areas-list")).toBeVisible();
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,

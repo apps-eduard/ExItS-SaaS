@@ -631,7 +631,10 @@ export function BranchFulfillmentEditPage() {
       </div>
 
       {activeTab === "overview" ? (
-        <>
+        <div
+          className="branch-fulfillment-overview-grid"
+          data-testid="branch-fulfillment-overview-grid"
+        >
           <BranchPoFulfillmentReadinessPanel
             branchId={branchId}
             readiness={currentReadiness}
@@ -639,7 +642,6 @@ export function BranchFulfillmentEditPage() {
             catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
             paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
             contactOk={supplierSummaryQuery.data?.contactOk ?? null}
-            onConfigure={() => selectSetupTab("overview")}
           />
           <BranchOverviewPanel
             readiness={currentReadiness}
@@ -666,7 +668,7 @@ export function BranchFulfillmentEditPage() {
               void pauseOrders(false);
             }}
           />
-        </>
+        </div>
       ) : null}
 
       {activeTab === "details" ? (
@@ -696,7 +698,12 @@ export function BranchFulfillmentEditPage() {
       ) : null}
 
       {activeTab === "hours" ? (
-        <BranchHoursForm hours={hours} t={t} onUpdateHour={updateHour} />
+        <BranchHoursForm
+          hours={hours}
+          t={t}
+          onUpdateHour={updateHour}
+          onReplaceHours={setHours}
+        />
       ) : null}
 
       {activeTab === "location" ? (
@@ -740,8 +747,7 @@ export function BranchFulfillmentEditPage() {
           busy={busy}
           t={t}
           onAdd={async (psgcCode) => {
-            if (!organizationId || busy) return;
-            setBusy(true);
+            if (!organizationId) return;
             setError(null);
             setOkMessage(null);
             try {
@@ -760,8 +766,7 @@ export function BranchFulfillmentEditPage() {
                   ? (err.problem.detail ?? t("branches.deliveryAreas.addFailed"))
                   : t("branches.deliveryAreas.addFailed"),
               );
-            } finally {
-              setBusy(false);
+              throw err;
             }
           }}
           onReplace={async (areaId, psgcCode) => {

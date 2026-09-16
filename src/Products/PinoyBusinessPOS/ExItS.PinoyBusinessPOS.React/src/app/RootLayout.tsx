@@ -8,10 +8,12 @@ import { shouldUseAdminManagementShell } from "@/features/admin/admin-nav-config
 import { OperationsShell } from "@/features/operations/OperationsShell";
 import { shouldUseOperationsShell } from "@/features/operations/operations-nav-config";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
 import {
   isSellTransactionPath,
   useOrgBottomNavHidden,
 } from "@/features/sell/sell-org-bottom-nav-chrome";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AppShell } from "@/layouts/AppShell";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -28,6 +30,7 @@ export function RootLayout() {
   const { status: workspaceStatus, boundWorkspace, sessionGrant } = useWorkspace();
   const cartOverlayHidesNav = useOrgBottomNavHidden();
   const sellTransactionHidesNav = isSellTransactionPath(location.pathname);
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
   const useAdminShell =
     !isPersonal &&
     !isOnboarding &&
@@ -53,11 +56,13 @@ export function RootLayout() {
     !isOnboarding &&
     !useAdminShell &&
     !useOpsShell &&
+    !isDesktop &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
   const orgBottomNavVisible =
     showOrgBottomNav && !cartOverlayHidesNav && !sellTransactionHidesNav;
-  const operationsHideBottomNav = cartOverlayHidesNav || sellTransactionHidesNav;
+  const operationsHideBottomNav =
+    isDesktop || cartOverlayHidesNav || sellTransactionHidesNav;
 
   const showWorkspaceTransition = workspaceStatus === "binding";
   const isSellFloor =

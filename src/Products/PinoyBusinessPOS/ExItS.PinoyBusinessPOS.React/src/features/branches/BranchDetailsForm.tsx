@@ -43,7 +43,7 @@ export function BranchDetailsForm({
           <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t(copy.nameLabel)}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={name}
               onChange={(e) => onChange("name", e.target.value)}
               data-testid="branch-name"
@@ -73,7 +73,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.contactPhone")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={contactPhone}
               onChange={(e) => onChange("contactPhone", e.target.value)}
               data-testid="branch-phone"
@@ -82,7 +82,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.timeZone")}
             <input
-              className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+              className="exits-input font-normal"
               value={BRANCH_DEFAULT_TIME_ZONE}
               readOnly
               aria-readonly="true"
@@ -101,7 +101,7 @@ export function BranchDetailsForm({
           <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.addressLine1")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={addressLine1}
               onChange={(e) => onChange("addressLine1", e.target.value)}
               data-testid="branch-address1"
@@ -110,7 +110,7 @@ export function BranchDetailsForm({
           <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.addressLine2")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={addressLine2}
               onChange={(e) => onChange("addressLine2", e.target.value)}
               data-testid="branch-address2"
@@ -119,7 +119,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.city")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={city}
               onChange={(e) => onChange("city", e.target.value)}
               data-testid="branch-city"
@@ -128,7 +128,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.region")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={region}
               onChange={(e) => onChange("region", e.target.value)}
               data-testid="branch-region"
@@ -137,7 +137,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.postalCode")}
             <input
-              className="catalog-form-select font-normal"
+              className="exits-input font-normal"
               value={postalCode}
               onChange={(e) => onChange("postalCode", e.target.value)}
               data-testid="branch-postal"
@@ -146,7 +146,7 @@ export function BranchDetailsForm({
           <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
             {t("branches.countryCode")}
             <input
-              className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+              className="exits-input font-normal"
               value={BRANCH_DEFAULT_COUNTRY_CODE}
               readOnly
               aria-readonly="true"

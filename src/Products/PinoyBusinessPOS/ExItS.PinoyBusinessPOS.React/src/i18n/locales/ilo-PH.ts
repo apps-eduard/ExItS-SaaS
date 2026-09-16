@@ -213,6 +213,34 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.cancel": "Ikansela",
 
   "branches.channel.delivery": "Panagipatulod",
+  "branches.confirm.enablePickupTitle": "Turn on Pickup?",
+  "branches.confirm.enablePickupDetail":
+    "This branch will accept pickup for purchase orders and customer orders that use pickup.",
+  "branches.confirm.enablePickupConfirm": "Turn on",
+  "branches.confirm.disablePickupTitle": "Turn off Pickup?",
+  "branches.confirm.disablePickupDetail":
+    "Pickup will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disablePickupConfirm": "Turn off",
+  "branches.confirm.enableDeliveryTitle": "Turn on Delivery?",
+  "branches.confirm.enableDeliveryDetail":
+    "This branch will accept delivery for purchase orders and customer orders that use delivery.",
+  "branches.confirm.enableDeliveryConfirm": "Turn on",
+  "branches.confirm.disableDeliveryTitle": "Turn off Delivery?",
+  "branches.confirm.disableDeliveryDetail":
+    "Delivery will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disableDeliveryConfirm": "Turn off",
+  "branches.confirm.enableOrderingTitle": "Turn on Online orders?",
+  "branches.confirm.enableOrderingDetail":
+    "Customers will be able to place online orders at this branch.",
+  "branches.confirm.enableOrderingConfirm": "Turn on",
+  "branches.confirm.pauseOrderingTitle": "Pause Online orders?",
+  "branches.confirm.pauseOrderingDetail":
+    "New online orders will be paused. Pickup and Delivery settings stay configured.",
+  "branches.confirm.pauseOrderingConfirm": "Pause",
+  "branches.confirm.resumeOrderingTitle": "Resume Online orders?",
+  "branches.confirm.resumeOrderingDetail":
+    "Online orders will be available again for this branch.",
+  "branches.confirm.resumeOrderingConfirm": "Resume",
 
   "branches.channel.ordering": "Online a panag-order",
 
@@ -252,7 +280,37 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.cityRequired": "Masapul ti siudad wenno munisipyo.",
 
-  "branches.deliveryAreas.region": "Rehion / probinsia",
+  "branches.deliveryAreas.region": "Rehion",
+
+  "branches.deliveryAreas.regionSelect": "Rehion",
+
+  "branches.deliveryAreas.regionPlaceholder": "Agpilika ti rehion",
+
+  "branches.deliveryAreas.regionSearchPlaceholder": "Biruken ti rehion…",
+
+  "branches.deliveryAreas.regionSelected": "Napili a rehion",
+
+  "branches.deliveryAreas.changeRegion": "Sukatan",
+
+  "branches.deliveryAreas.noRegionMatch": "Awan ti agpada a rehion",
+
+  "branches.deliveryAreas.regionsLoading": "Agload kadagiti rehion…",
+
+  "branches.deliveryAreas.regionsFailed": "Saan a ma-load dagiti rehion.",
+
+  "branches.deliveryAreas.pickRegionFirst": "Agpilika nga umuna ti rehion tapno makapili kadagiti siudad.",
+
+  "branches.deliveryAreas.citiesInRegion": "Dagiti siudad ken munisipyo",
+
+  "branches.deliveryAreas.citySelect": "Siudad / munisipyo",
+
+  "branches.deliveryAreas.cityPlaceholder": "Agpilika ti siudad wenno munisipyo",
+
+  "branches.deliveryAreas.citiesLoading": "Agload kadagiti siudad…",
+
+  "branches.deliveryAreas.citiesFailed": "Saan a ma-load dagiti siudad.",
+
+  "branches.deliveryAreas.noCitiesInRegion": "Awan ti siudad iti daytoy a rehion.",
 
   "branches.deliveryAreas.remove": "Ikkaten ti delivery area",
 
@@ -262,7 +320,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreasEmpty": "Awan pay delivery areas.",
 
-  "branches.deliveryAreasLede": "Pilien dagiti siudad wenno munisipyo a pagdeliveran daytoy a branch.",
+  "branches.deliveryAreasLede": "Agpilika ti rehion, kalpasanna pilien dagiti siudad wenno munisipyo a pagdeliveran ti branch.",
 
   "branches.deliveryAreasTitle": "Dagiti delivery area",
 
@@ -296,7 +354,7 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.replace": "Sukatan",
 
-  "branches.deliveryAreas.replaceHint": "Pilien ti opisial a siudad wenno munisipyo tapno masukatan ti di pay na-verify nga area.",
+  "branches.deliveryAreas.replaceHint": "Agpilika ti rehion, kalpasanna pilien ti opisial a siudad wenno munisipyo tapno sukatan ti di pay na-verify nga area.",
 
   "branches.deliveryDisabled": "Delivery: Naka-disable",
 
@@ -326,7 +384,6 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.enablePickup": "I-enable ti pickup",
 
-  "branches.enablementGapsTitle": "Saan pay a naikabil",
 
   "branches.freeThreshold": "Threshold para iti libre a delivery",
 
@@ -359,6 +416,19 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.hoursOpen": "Silulukat",
 
   "branches.hoursStart": "Agalukat",
+
+  "branches.hoursSameAllDaysTitle": "Same hours for every day",
+
+  "branches.hoursSameAllDaysLede":
+    "Set opens and closes once, then apply to all days — or mark every day open 24 hours.",
+
+  "branches.hoursApplyAll": "Apply to all days",
+
+  "branches.hoursApplyFromDay": "Apply to all days",
+
+  "branches.hoursAllDayEveryDay": "Open 24 hours every day",
+
+  "branches.hoursClosedEveryDay": "Closed every day",
 
   "branches.mapUnavailable": "Saan a magun-od ti mapa ita. Usaren ti agdama a lokasion wenno agikabil iti coordinates a manual.",
 
@@ -454,6 +524,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.missingNone": "Nakompletoen dagiti kasapulan ti setup.",
 
+  "branches.configuredButMethodsOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
+
   "branches.missingTitle": "Missing a configuration",
 
   "branches.name": "Nagan",
@@ -507,9 +580,23 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.poFulfillment.lede.setupRequired": "Complete the required fulfillment setup before this branch can fulfill connected purchase orders.",
 
+  "branches.poFulfillment.lede.configuredButOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
+
   "branches.poFulfillment.lede.ready": "This branch can fulfill connected purchase orders.",
 
   "branches.poFulfillment.readyNote": "This branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.whyRequiredTitle": "Why is this required?",
+
+  "branches.poFulfillment.whyRequiredBody":
+    "Connected purchase orders need at least one active fulfillment method. Enable Pickup or Delivery so buyers can choose how the order will be fulfilled.",
+
+  "branches.poFulfillment.helper.pickup":
+    "Enable if customers will collect connected purchase orders from this branch.",
+
+  "branches.poFulfillment.helper.delivery":
+    "Enable if this branch will deliver connected purchase orders.",
 
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
 

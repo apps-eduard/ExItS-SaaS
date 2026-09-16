@@ -19,13 +19,17 @@ import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
 import {
   canAccessReportsHub,
   canInviteOrganizationStaff,
+  canManageBranchFulfillment,
   canManageStoreAreas,
   canUseAdminExperience,
   canUseWarehouseBranches,
   canViewDashboard,
   hasOrganizationManagementAuthority,
 } from "@/access/pos-capabilities";
+import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import type { MessageKey } from "@/i18n/messages";
+import type { AccessibleOrganizationWorkspace } from "@/workspace/types";
 
 export type AdminNavGroupId =
   | "overview"
@@ -49,6 +53,7 @@ export type AdminNavItemId =
   | "businessQr"
   | "dashboard"
   | "reports"
+  | "configureFulfillment"
   | "ownership"
   | "preferences";
 
@@ -89,6 +94,7 @@ export type AdminMobileTab = {
  */
 export function buildAdminNavGroups(
   grant: PosSessionGrantFacts | null | undefined,
+  options?: { branchId?: string | null },
 ): AdminNavGroup[] {
   if (!canUseAdminExperience(grant) && !hasOrganizationManagementAuthority(grant)) {
     return [];
@@ -96,7 +102,9 @@ export function buildAdminNavGroups(
 
   const canInvite = canInviteOrganizationStaff(grant);
   const canAdmin = hasOrganizationManagementAuthority(grant);
+  const canFulfillment = canManageBranchFulfillment(grant);
   const areasEntitled = canManageStoreAreas(grant);
+  const branchId = options?.branchId?.trim() || null;
   const groups: AdminNavGroup[] = [];
 
   groups.push({
@@ -258,6 +266,17 @@ export function buildAdminNavGroups(
       matchPrefixes: ["/reports"],
     });
   }
+  if (canFulfillment) {
+    reviewItems.push({
+      id: "configureFulfillment",
+      // Branch fulfillment Overview (PO fulfillment + readiness) — not the branches list.
+      to: branchId ? branchFulfillmentEditPath(branchId, "overview") : "/org/branches",
+      labelKey: "branches.detail.configureFulfillment",
+      icon: Settings,
+      testId: "admin-nav-configure-fulfillment",
+      matchPrefixes: branchId ? [`/org/branches/${branchId}/fulfillment`] : [],
+    });
+  }
   if (reviewItems.length > 0) {
     groups.push({
       id: "review",
@@ -305,12 +324,46 @@ export function flattenAdminNavItems(groups: AdminNavGroup[]): AdminNavItem[] {
   return groups.flatMap((g) => g.items);
 }
 
+/**
+ * Prefer the bound branch; otherwise primary active retail branch for the org.
+ * Manage Business binds organization-only (branchId null), so Review → Configure
+ * Fulfillment must still land on a concrete fulfillment Overview page.
+ */
+export function resolveConfigureFulfillmentBranchId(input: {
+  boundBranchId?: string | null;
+  organizationId?: string | null;
+  workspaces: AccessibleOrganizationWorkspace[];
+}): string | null {
+  const bound = input.boundBranchId?.trim();
+  if (bound) return bound;
+
+  const organizationId = input.organizationId?.trim();
+  if (!organizationId) return null;
+
+  const org = input.workspaces.find((w) => w.organizationId === organizationId);
+  if (!org || org.branches.length === 0) return null;
+
+  const active = org.branches.filter((b) => b.isActive);
+  const pool = active.length > 0 ? active : org.branches;
+  const retail = pool.filter((b) => !isWarehouseBranch(b.branchType));
+  const candidates = retail.length > 0 ? retail : pool;
+  const primary = candidates.find((b) => b.isPrimary);
+  return (primary ?? candidates[0])?.branchId ?? null;
+}
+
 /** Resolve which sidebar item is active for the current path. */
 export function matchAdminNavItem(
   pathname: string,
   items: AdminNavItem[],
 ): AdminNavItemId | null {
   const path = pathname.split("?")[0] ?? pathname;
+
+  // Branch fulfillment edit pages belong to Configure Fulfillment (Review),
+  // not Branches & Warehouses — even when the workspace branch id differs.
+  if (/^\/org\/branches\/[^/]+\/fulfillment\/?$/.test(path)) {
+    const fulfillment = items.find((item) => item.id === "configureFulfillment");
+    if (fulfillment) return "configureFulfillment";
+  }
 
   // Prefer longest matching prefix so /org/branches wins over /org.
   let best: AdminNavItem | null = null;

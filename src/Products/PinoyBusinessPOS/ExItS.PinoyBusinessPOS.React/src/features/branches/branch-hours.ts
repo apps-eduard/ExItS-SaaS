@@ -20,6 +20,13 @@ export type HoursDayDraft = {
   closeTime: string;
 };
 
+export type HoursScheduleTemplate = {
+  isClosed: boolean;
+  isOpen24Hours: boolean;
+  openTime: string;
+  closeTime: string;
+};
+
 export function defaultHoursSchedule(): HoursDayDraft[] {
   return ORDERED_WEEKDAYS.map((day) => ({
     dayOfWeek: day,
@@ -64,7 +71,30 @@ export function hoursToRequest(days: HoursDayDraft[]): BranchOperatingHoursDayDt
 }
 
 export function hasConfiguredHours(days: HoursDayDraft[]): boolean {
-  return days.some((d) => !d.isClosed || d.isOpen24Hours);
+  return days.some((d) => !d.isClosed);
+}
+
+/** Apply one day's schedule (or a shared template) to every weekday. */
+export function applyHoursToAllDays(
+  days: HoursDayDraft[],
+  template: HoursScheduleTemplate,
+): HoursDayDraft[] {
+  return days.map((day) => ({
+    dayOfWeek: day.dayOfWeek,
+    isClosed: template.isClosed,
+    isOpen24Hours: template.isOpen24Hours && !template.isClosed,
+    openTime: template.openTime,
+    closeTime: template.closeTime,
+  }));
+}
+
+export function templateFromDay(day: HoursDayDraft): HoursScheduleTemplate {
+  return {
+    isClosed: day.isClosed,
+    isOpen24Hours: day.isOpen24Hours && !day.isClosed,
+    openTime: day.openTime,
+    closeTime: day.closeTime,
+  };
 }
 
 function normalizeTime(value: string | null | undefined): string | null {

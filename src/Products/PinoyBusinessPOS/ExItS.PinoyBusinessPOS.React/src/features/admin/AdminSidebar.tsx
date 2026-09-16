@@ -6,6 +6,7 @@ import {
   buildAdminNavGroups,
   flattenAdminNavItems,
   matchAdminNavItem,
+  resolveConfigureFulfillmentBranchId,
 } from "@/features/admin/admin-nav-config";
 import {
   capturePreferencesReturnFrom,
@@ -21,8 +22,15 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function AdminSidebar() {
   const { t } = useI18n();
   const location = useLocation();
-  const { sessionGrant } = useWorkspace();
-  const groups = buildAdminNavGroups(sessionGrant);
+  const { sessionGrant, boundWorkspace, workspaces } = useWorkspace();
+  const fulfillmentBranchId = resolveConfigureFulfillmentBranchId({
+    boundBranchId: boundWorkspace?.branchId,
+    organizationId: boundWorkspace?.organizationId,
+    workspaces,
+  });
+  const groups = buildAdminNavGroups(sessionGrant, {
+    branchId: fulfillmentBranchId,
+  });
   const items = flattenAdminNavItems(groups);
   const activeId = matchAdminNavItem(location.pathname, items);
   const switchLabel = t("workspace.switch");

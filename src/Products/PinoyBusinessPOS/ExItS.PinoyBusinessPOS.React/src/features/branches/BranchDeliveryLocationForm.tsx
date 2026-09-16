@@ -127,7 +127,7 @@ export function BranchDeliveryLocationForm({
             <input
               type="number"
               step="any"
-              className="catalog-form-select font-normal"
+              className="exits-input exits-input--no-spin font-normal"
               value={latitude}
               onChange={(e) => onLatitudeChange(e.target.value)}
               data-testid="branch-latitude"
@@ -138,7 +138,7 @@ export function BranchDeliveryLocationForm({
             <input
               type="number"
               step="any"
-              className="catalog-form-select font-normal"
+              className="exits-input exits-input--no-spin font-normal"
               value={longitude}
               onChange={(e) => onLongitudeChange(e.target.value)}
               data-testid="branch-longitude"

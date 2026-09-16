@@ -5,6 +5,8 @@ import {
   matchAdminMobileTab,
   type AdminMobileTabId,
 } from "@/features/admin/admin-nav-config";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -20,10 +22,11 @@ export function AdminMobileNav() {
   const { t } = useI18n();
   const location = useLocation();
   const { sessionGrant } = useWorkspace();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
   const tabs = buildAdminMobileTabs(sessionGrant);
   const activeId = matchAdminMobileTab(location.pathname, tabs);
 
-  if (tabs.length === 0) {
+  if (isDesktop || tabs.length === 0) {
     return null;
   }
 

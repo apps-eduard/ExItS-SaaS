@@ -6,6 +6,7 @@ import {
   flattenAdminNavItems,
   matchAdminMobileTab,
   matchAdminNavItem,
+  resolveConfigureFulfillmentBranchId,
   shouldUseAdminManagementShell,
 } from "@/features/admin/admin-nav-config";
 
@@ -84,6 +85,72 @@ describe("admin-nav-config", () => {
     expect(matchAdminNavItem("/dashboard", items)).toBe("dashboard");
     expect(matchAdminNavItem("/reports/operational/sales", items)).toBe("reports");
     expect(matchAdminNavItem("/settings/preferences", items)).toBe("preferences");
+    expect(
+      matchAdminNavItem("/org/branches/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/fulfillment", items),
+    ).toBe("configureFulfillment");
+  });
+
+  it("adds Configure Fulfillment under Review for org admins", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const branchId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    const withBranch = flattenAdminNavItems(
+      buildAdminNavGroups(owner, { branchId }),
+    ).find((i) => i.id === "configureFulfillment");
+    expect(withBranch?.to).toBe(`/org/branches/${branchId}/fulfillment`);
+    expect(withBranch?.testId).toBe("admin-nav-configure-fulfillment");
+
+    const withoutBranch = flattenAdminNavItems(buildAdminNavGroups(owner)).find(
+      (i) => i.id === "configureFulfillment",
+    );
+    expect(withoutBranch?.to).toBe("/org/branches");
+  });
+
+  it("resolves primary retail branch when Manage Business has no bound branch", () => {
+    const orgId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const primaryId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    const secondaryId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+    expect(
+      resolveConfigureFulfillmentBranchId({
+        boundBranchId: null,
+        organizationId: orgId,
+        workspaces: [
+          {
+            organizationId: orgId,
+            displayName: "Mica",
+            branches: [
+              {
+                branchId: secondaryId,
+                name: "Secondary",
+                secondaryLine: "",
+                isPrimary: false,
+                isActive: true,
+                branchType: "Retail",
+              },
+              {
+                branchId: primaryId,
+                name: "Main Branch",
+                secondaryLine: "",
+                isPrimary: true,
+                isActive: true,
+                branchType: "Retail",
+              },
+            ],
+          },
+        ],
+      }),
+    ).toBe(primaryId);
+
+    expect(
+      resolveConfigureFulfillmentBranchId({
+        boundBranchId: secondaryId,
+        organizationId: orgId,
+        workspaces: [],
+      }),
+    ).toBe(secondaryId);
   });
 
   it("mobile tabs exclude Sell and map nested paths", () => {

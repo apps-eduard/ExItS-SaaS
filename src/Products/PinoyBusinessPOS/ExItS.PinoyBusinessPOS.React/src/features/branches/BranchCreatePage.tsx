@@ -202,7 +202,7 @@ export function BranchCreatePage() {
                 ? t("branches.create.name.warehouse")
                 : t("branches.create.name")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 data-testid="branch-create-name"
@@ -214,7 +214,7 @@ export function BranchCreatePage() {
                 ? t("branches.create.code.warehouse")
                 : t("branches.create.code")}
               <input
-                className="catalog-form-select uppercase"
+                className="exits-input uppercase"
                 value={code}
                 onChange={(e) => {
                   setCodeTouched(true);
@@ -265,7 +265,7 @@ export function BranchCreatePage() {
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.timeZone")}
               <input
-                className="catalog-form-select catalog-form-select--readonly"
+                className="exits-input"
                 value={BRANCH_DEFAULT_TIME_ZONE}
                 readOnly
                 aria-readonly="true"
@@ -275,7 +275,7 @@ export function BranchCreatePage() {
             <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
               {t("branches.contactPhone")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
                 data-testid="branch-create-phone"
@@ -295,7 +295,7 @@ export function BranchCreatePage() {
             <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
               {t("branches.addressLine1")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
                 data-testid="branch-create-address1"
@@ -304,7 +304,7 @@ export function BranchCreatePage() {
             <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
               {t("branches.addressLine2")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
                 data-testid="branch-create-address2"
@@ -313,7 +313,7 @@ export function BranchCreatePage() {
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.city")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 data-testid="branch-create-city"
@@ -322,7 +322,7 @@ export function BranchCreatePage() {
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.region")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 data-testid="branch-create-region"
@@ -331,7 +331,7 @@ export function BranchCreatePage() {
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.postalCode")}
               <input
-                className="catalog-form-select"
+                className="exits-input"
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
                 data-testid="branch-create-postal"
@@ -340,7 +340,7 @@ export function BranchCreatePage() {
             <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.countryCode")}
               <input
-                className="catalog-form-select catalog-form-select--readonly"
+                className="exits-input"
                 value={BRANCH_DEFAULT_COUNTRY_CODE}
                 readOnly
                 aria-readonly="true"

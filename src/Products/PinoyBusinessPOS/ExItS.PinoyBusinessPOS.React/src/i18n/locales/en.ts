@@ -6397,10 +6397,25 @@ export const en = {
   "branches.toggle.deliveryNotInPlan": "Delivery not included in your plan",
   "branches.deliveryAreasTitle": "Delivery areas",
   "branches.deliveryAreasLede":
-    "Choose the cities or municipalities where this branch delivers.",
+    "Select a region, then choose cities or municipalities where this branch delivers.",
   "branches.deliveryAreasEmpty": "No delivery areas yet.",
   "branches.deliveryAreas.city": "City / municipality",
-  "branches.deliveryAreas.region": "Region / province",
+  "branches.deliveryAreas.region": "Region",
+  "branches.deliveryAreas.regionSelect": "Region",
+  "branches.deliveryAreas.regionPlaceholder": "Select a region",
+  "branches.deliveryAreas.regionSearchPlaceholder": "Search region…",
+  "branches.deliveryAreas.regionSelected": "Selected region",
+  "branches.deliveryAreas.changeRegion": "Change",
+  "branches.deliveryAreas.noRegionMatch": "No matching region",
+  "branches.deliveryAreas.regionsLoading": "Loading regions…",
+  "branches.deliveryAreas.regionsFailed": "Could not load regions.",
+  "branches.deliveryAreas.pickRegionFirst": "Select a region to choose cities.",
+  "branches.deliveryAreas.citiesInRegion": "Cities and municipalities",
+  "branches.deliveryAreas.citySelect": "City / municipality",
+  "branches.deliveryAreas.cityPlaceholder": "Select a city or municipality",
+  "branches.deliveryAreas.citiesLoading": "Loading cities…",
+  "branches.deliveryAreas.citiesFailed": "Could not load cities.",
+  "branches.deliveryAreas.noCitiesInRegion": "No cities in this region.",
   "branches.deliveryAreas.add": "Add area",
   "branches.deliveryAreas.remove": "Remove delivery area",
   "branches.deliveryAreas.cityRequired": "City or municipality is required.",
@@ -6424,7 +6439,7 @@ export const en = {
   "branches.deliveryAreas.verified": "Verified",
   "branches.deliveryAreas.replace": "Replace",
   "branches.deliveryAreas.replaceHint":
-    "Select an official city or municipality to replace the unverified area.",
+    "Select a region, then choose an official city or municipality to replace the unverified area.",
   "orders.deliveryArea": "Delivery area",
   "orders.deliveryAreaRequired": "Select a delivery area for this branch.",
   "orders.deliveryAreaEmpty": "This branch has no delivery areas configured.",
@@ -6452,10 +6467,19 @@ export const en = {
   "branches.poFulfillment.status.setupRequired": "Setup required",
   "branches.poFulfillment.lede.setupRequired":
     "Complete the required fulfillment setup before this branch can fulfill connected purchase orders.",
+  "branches.poFulfillment.lede.configuredButOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
   "branches.poFulfillment.lede.ready":
     "This branch can fulfill connected purchase orders.",
   "branches.poFulfillment.readyNote":
     "This branch can fulfill connected purchase orders.",
+  "branches.poFulfillment.whyRequiredTitle": "Why is this required?",
+  "branches.poFulfillment.whyRequiredBody":
+    "Connected purchase orders need at least one active fulfillment method. Enable Pickup or Delivery so buyers can choose how the order will be fulfilled.",
+  "branches.poFulfillment.helper.pickup":
+    "Enable if customers will collect connected purchase orders from this branch.",
+  "branches.poFulfillment.helper.delivery":
+    "Enable if this branch will deliver connected purchase orders.",
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
   "branches.poFulfillment.checklist.branchInfo": "Complete required branch information",
   "branches.poFulfillment.checklist.branchInfoComplete": "Required branch information complete",
@@ -6477,11 +6501,40 @@ export const en = {
   "branches.missingTitle": "Missing configuration",
   "branches.setupGapsTitle": "To complete setup",
   "branches.setupGapsLede": "Fill these in below, then save before enabling pickup or delivery.",
-  "branches.enablementGapsTitle": "Still turned off",
   "branches.missingNone": "Setup requirements look complete.",
+  "branches.configuredButMethodsOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
   "branches.channel.ordering": "Online orders",
   "branches.channel.pickup": "Pickup",
   "branches.channel.delivery": "Delivery",
+  "branches.confirm.enablePickupTitle": "Turn on Pickup?",
+  "branches.confirm.enablePickupDetail":
+    "This branch will accept pickup for purchase orders and customer orders that use pickup.",
+  "branches.confirm.enablePickupConfirm": "Turn on",
+  "branches.confirm.disablePickupTitle": "Turn off Pickup?",
+  "branches.confirm.disablePickupDetail":
+    "Pickup will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disablePickupConfirm": "Turn off",
+  "branches.confirm.enableDeliveryTitle": "Turn on Delivery?",
+  "branches.confirm.enableDeliveryDetail":
+    "This branch will accept delivery for purchase orders and customer orders that use delivery.",
+  "branches.confirm.enableDeliveryConfirm": "Turn on",
+  "branches.confirm.disableDeliveryTitle": "Turn off Delivery?",
+  "branches.confirm.disableDeliveryDetail":
+    "Delivery will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disableDeliveryConfirm": "Turn off",
+  "branches.confirm.enableOrderingTitle": "Turn on Online orders?",
+  "branches.confirm.enableOrderingDetail":
+    "Customers will be able to place online orders at this branch.",
+  "branches.confirm.enableOrderingConfirm": "Turn on",
+  "branches.confirm.pauseOrderingTitle": "Pause Online orders?",
+  "branches.confirm.pauseOrderingDetail":
+    "New online orders will be paused. Pickup and Delivery settings stay configured.",
+  "branches.confirm.pauseOrderingConfirm": "Pause",
+  "branches.confirm.resumeOrderingTitle": "Resume Online orders?",
+  "branches.confirm.resumeOrderingDetail":
+    "Online orders will be available again for this branch.",
+  "branches.confirm.resumeOrderingConfirm": "Resume",
   "branches.status.enabled": "Enabled",
   "branches.status.disabled": "Disabled",
   "branches.status.paused": "Paused",
@@ -6545,6 +6598,13 @@ export const en = {
   "branches.hoursClosed": "Closed",
   "branches.hoursStart": "Opens",
   "branches.hoursEnd": "Closes",
+  "branches.hoursSameAllDaysTitle": "Same hours for every day",
+  "branches.hoursSameAllDaysLede":
+    "Set opens and closes once, then apply to all days — or mark every day open 24 hours.",
+  "branches.hoursApplyAll": "Apply to all days",
+  "branches.hoursApplyFromDay": "Apply to all days",
+  "branches.hoursAllDayEveryDay": "Open 24 hours every day",
+  "branches.hoursClosedEveryDay": "Closed every day",
   "branches.day.monday": "Monday",
   "branches.day.tuesday": "Tuesday",
   "branches.day.wednesday": "Wednesday",

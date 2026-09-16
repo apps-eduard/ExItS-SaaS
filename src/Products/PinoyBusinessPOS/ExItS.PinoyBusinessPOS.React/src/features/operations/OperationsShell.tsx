@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { OperationsBottomNav } from "@/features/operations/OperationsBottomNav";
 import { OperationsSidebar } from "@/features/operations/OperationsSidebar";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -11,7 +13,7 @@ type OperationsShellProps = {
   header?: ReactNode;
   /** Sell floor uses near-fullscreen content width and pane-managed scroll. */
   sellFloor?: boolean;
-  /** Hide bottom nav (e.g. sell transaction chrome). */
+  /** Hide bottom nav (e.g. sell transaction chrome or desktop). */
   hideBottomNav?: boolean;
 };
 
@@ -30,13 +32,15 @@ export function OperationsShell({
   const { t } = useI18n();
   const { boundWorkspace } = useWorkspace();
   const warehouse = isWarehouseBranch(boundWorkspace?.branchType);
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+  const showBottomNav = !hideBottomNav && !isDesktop;
 
   return (
     <div
       className={cn(
         "operations-shell operations-shell--viewport-lock flex h-[100dvh] max-h-[100dvh] w-full min-w-0 flex-col overflow-hidden",
         "px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
-        hideBottomNav
+        hideBottomNav || isDesktop
           ? "pb-[max(2rem,env(safe-area-inset-bottom))] lg:pb-0"
           : "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-0",
         "lg:flex-row lg:gap-0 lg:px-0 lg:pt-0",
@@ -104,7 +108,7 @@ export function OperationsShell({
         </div>
       </div>
 
-      {!hideBottomNav ? <OperationsBottomNav /> : null}
+      {showBottomNav ? <OperationsBottomNav /> : null}
     </div>
   );
 }

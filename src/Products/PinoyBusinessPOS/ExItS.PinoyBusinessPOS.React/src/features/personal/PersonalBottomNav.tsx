@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { CheckSquare, Home, ListOrdered, MoreHorizontal, Wallet } from "lucide-react";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 
@@ -41,14 +43,20 @@ const tabs = [
   },
 ] as const;
 
+/** Personal bottom nav — phone/tablet only; unmounted on desktop (>=1024). */
 export function PersonalBottomNav() {
   const { t } = useI18n();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+
+  if (isDesktop) {
+    return null;
+  }
 
   return (
     <nav
       data-testid="personal-bottom-nav"
       aria-label={t("personal.nav.aria")}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto flex max-w-5xl items-stretch justify-between gap-1 px-2 pt-1">
         {tabs.map((tab) => {

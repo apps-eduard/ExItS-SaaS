@@ -848,7 +848,7 @@ export function PurchaseOrderCreatePage() {
 
       {allowManage ? (
         <Notice tone="info" testId="po-create-notice">
-          {t("purchasing.ordersNoStock")}
+        {t("purchasing.ordersNoStock")}
         </Notice>
       ) : null}
 
@@ -886,34 +886,34 @@ export function PurchaseOrderCreatePage() {
             key: "supplier",
             label: t("purchasing.supplier"),
             value: (
-              <select
+        <select
                 className="exits-select w-full"
-                value={supplierId}
+          value={supplierId}
                 onChange={(e) => onSupplierChange(e.target.value)}
-                disabled={!allowManage || !online}
-                data-testid="po-supplier"
+          disabled={!allowManage || !online}
+          data-testid="po-supplier"
                 aria-label={t("purchasing.supplier")}
-              >
-                <option value="">{t("purchasing.selectSupplier")}</option>
-                {(suppliersQuery.data?.items ?? []).map((s) => (
-                  <option key={s.supplierId} value={s.supplierId}>
+        >
+          <option value="">{t("purchasing.selectSupplier")}</option>
+          {(suppliersQuery.data?.items ?? []).map((s) => (
+            <option key={s.supplierId} value={s.supplierId}>
                     {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
-                  </option>
-                ))}
-              </select>
+            </option>
+          ))}
+        </select>
             ),
           },
           {
             key: "orderDate",
             label: t("purchasing.orderDate"),
             value: (
-              <input
-                type="date"
+        <input
+          type="date"
                 className="exits-input w-full"
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-                disabled={!allowManage || !online}
-                data-testid="po-order-date"
+          value={orderDate}
+          onChange={(e) => setOrderDate(e.target.value)}
+          disabled={!allowManage || !online}
+          data-testid="po-order-date"
                 aria-label={t("purchasing.orderDate")}
               />
             ),
@@ -921,15 +921,15 @@ export function PurchaseOrderCreatePage() {
         ]}
         testId="po-create-summary"
         footer={
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("purchasing.notes")}
-            <textarea
+      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        {t("purchasing.notes")}
+        <textarea
               className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              disabled={!allowManage || !online}
-            />
-          </label>
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          disabled={!allowManage || !online}
+        />
+      </label>
         }
       />
 
@@ -1431,72 +1431,72 @@ export function PurchaseOrderCreatePage() {
           )}
                 </div>
               ) : (
-<section className="flex flex-col gap-2" aria-labelledby="po-products-heading">
-          <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
-            {t("purchasing.addProducts")}
-          </h2>
-          <SearchField
-            label={t("purchasing.productSearch")}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("purchasing.productSearch")}
-            data-testid="po-product-search"
-          />
-          {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
-            <EmptyState
+      <section className="flex flex-col gap-2" aria-labelledby="po-products-heading">
+        <h2 id="po-products-heading" className="m-0 text-[length:var(--exits-text-md)] font-medium">
+          {t("purchasing.addProducts")}
+        </h2>
+        <SearchField
+          label={t("purchasing.productSearch")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={t("purchasing.productSearch")}
+          data-testid="po-product-search"
+        />
+        {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
+          <EmptyState
               align="center"
               icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
-              title={t("purchasing.noProducts")}
-              detail={t("purchasing.noProductsDetail")}
-            />
-          ) : null}
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {(productsQuery.data?.items ?? []).map((p) => (
-              <li key={p.productId}>
-                <button
-                  type="button"
+            title={t("purchasing.noProducts")}
+            detail={t("purchasing.noProductsDetail")}
+          />
+        ) : null}
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          {(productsQuery.data?.items ?? []).map((p) => (
+            <li key={p.productId}>
+              <button
+                type="button"
                   className={` w-full rounded-md border px-3 text-left ${
-                    selectedProduct?.productId === p.productId
-                      ? "border-primary bg-muted"
-                      : "border-border bg-background"
-                  }`}
-                  onClick={() => setSelectedProduct(p)}
-                  data-testid={`po-product-${p.productId}`}
-                >
-                  {p.name}
-                  {p.sku ? ` · ${p.sku}` : ""}
-                  {p.barcode ? ` · ${p.barcode}` : ""}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {selectedProduct ? (
+                  selectedProduct?.productId === p.productId
+                    ? "border-primary bg-muted"
+                    : "border-border bg-background"
+                }`}
+                onClick={() => setSelectedProduct(p)}
+                data-testid={`po-product-${p.productId}`}
+              >
+                {p.name}
+                {p.sku ? ` · ${p.sku}` : ""}
+                {p.barcode ? ` · ${p.barcode}` : ""}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {selectedProduct ? (
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("purchasing.qty")}
-                <input
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.qty")}
+              <input
                   className="po-document-create-qty rounded-md border border-border bg-background px-3"
-                  value={qtyText}
-                  onChange={(e) => setQtyText(e.target.value)}
-                  data-testid="po-line-qty"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("purchasing.unitCost")}
-                <input
+                value={qtyText}
+                onChange={(e) => setQtyText(e.target.value)}
+                data-testid="po-line-qty"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.unitCost")}
+              <input
                   className="po-document-create-cost rounded-md border border-border bg-background px-3"
-                  value={costText}
-                  onChange={(e) => setCostText(e.target.value)}
-                  data-testid="po-line-cost"
-                />
-              </label>
+                value={costText}
+                onChange={(e) => setCostText(e.target.value)}
+                data-testid="po-line-cost"
+              />
+            </label>
               <Button type="button" onClick={addExternalLine} data-testid="po-add-line">
                 {t("purchasing.addLine")}
               </Button>
-            </div>
-          ) : null}
-        </section>
+          </div>
+        ) : null}
+      </section>
               )}
             </ProductFinderPanel>
           ) : null}
@@ -1551,8 +1551,8 @@ export function PurchaseOrderCreatePage() {
                     </label>
                   ))}
                 </div>
-              )}
-            </section>
+        )}
+      </section>
           ) : null}
 
           {connected ? (
@@ -1657,11 +1657,11 @@ export function PurchaseOrderCreatePage() {
                 </div>
               ) : null}
             </section>
-          ) : null}
+      ) : null}
 
           <div className="receive-stock-actions product-selection-workspace__actions">
-            <Button
-              type="button"
+      <Button
+        type="button"
               variant="destructive"
               onClick={() => navigate("/purchasing/orders")}
               data-testid="po-create-cancel"
@@ -1679,11 +1679,11 @@ export function PurchaseOrderCreatePage() {
                 (connected && !paymentTerm) ||
                 (connected && !supplierCommerceReady)
               }
-              onClick={() => void submit()}
-              data-testid="po-create-submit"
-            >
-              {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
-            </Button>
+        onClick={() => void submit()}
+        data-testid="po-create-submit"
+      >
+        {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
+      </Button>
           </div>
         </div>
       ) : (

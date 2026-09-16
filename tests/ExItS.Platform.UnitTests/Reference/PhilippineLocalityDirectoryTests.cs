@@ -78,4 +78,22 @@ public sealed class PhilippineLocalityDirectoryTests
         Assert.True(namedQuezon.Count >= 2);
         Assert.Equal(namedQuezon.Count, namedQuezon.Select(r => r.PsgcCode).Distinct().Count());
     }
+
+    [Fact]
+    public void ListRegions_and_ListByRegionCode_cover_known_geography()
+    {
+        var regions = _directory.ListRegions();
+        Assert.NotEmpty(regions);
+        Assert.Equal(regions.Count, regions.Select(r => r.RegionCode).Distinct().Count());
+        Assert.Contains(regions, r => r.RegionCode == "1800000000");
+
+        var nir = _directory.ListByRegionCode("1800000000");
+        Assert.NotEmpty(nir);
+        Assert.All(nir, r => Assert.Equal("1800000000", r.RegionCode));
+        Assert.Contains(nir, r => r.PsgcCode == "1830200000");
+        Assert.True(nir.Count >= 2);
+
+        Assert.Empty(_directory.ListByRegionCode(""));
+        Assert.Empty(_directory.ListByRegionCode("9999999999"));
+    }
 }

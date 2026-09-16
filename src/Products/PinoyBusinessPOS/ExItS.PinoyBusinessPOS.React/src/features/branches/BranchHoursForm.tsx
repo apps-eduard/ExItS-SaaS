@@ -1,7 +1,12 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
+  applyHoursToAllDays,
   hasConfiguredHours,
   ORDERED_WEEKDAYS,
+  templateFromDay,
   type HoursDayDraft,
+  type HoursScheduleTemplate,
 } from "@/features/branches/branch-hours";
 import type { MessageKey } from "@/i18n/messages";
 
@@ -22,9 +27,56 @@ type BranchHoursFormProps = {
   hours: HoursDayDraft[];
   t: (key: MessageKey) => string;
   onUpdateHour: (dayOfWeek: string, patch: Partial<HoursDayDraft>) => void;
+  onReplaceHours: (next: HoursDayDraft[]) => void;
 };
 
-export function BranchHoursForm({ hours, t, onUpdateHour }: BranchHoursFormProps) {
+export function BranchHoursForm({
+  hours,
+  t,
+  onUpdateHour,
+  onReplaceHours,
+}: BranchHoursFormProps) {
+  const [bulkOpen, setBulkOpen] = useState("08:00");
+  const [bulkClose, setBulkClose] = useState("21:00");
+
+  function applyBulkOpenClose() {
+    const template: HoursScheduleTemplate = {
+      isClosed: false,
+      isOpen24Hours: false,
+      openTime: bulkOpen,
+      closeTime: bulkClose,
+    };
+    onReplaceHours(applyHoursToAllDays(hours, template));
+  }
+
+  function applyAllDayEveryDay() {
+    onReplaceHours(
+      applyHoursToAllDays(hours, {
+        isClosed: false,
+        isOpen24Hours: true,
+        openTime: bulkOpen,
+        closeTime: bulkClose,
+      }),
+    );
+  }
+
+  function applyClosedEveryDay() {
+    onReplaceHours(
+      applyHoursToAllDays(hours, {
+        isClosed: true,
+        isOpen24Hours: false,
+        openTime: bulkOpen,
+        closeTime: bulkClose,
+      }),
+    );
+  }
+
+  function applyDayToAll(dayName: string) {
+    const day = hours.find((h) => h.dayOfWeek === dayName);
+    if (!day) return;
+    onReplaceHours(applyHoursToAllDays(hours, templateFromDay(day)));
+  }
+
   return (
     <section
       className="catalog-form-section exits-animate-panel gap-3"
@@ -32,16 +84,95 @@ export function BranchHoursForm({ hours, t, onUpdateHour }: BranchHoursFormProps
     >
       <h2 className="catalog-form-section__title">{t("branches.hoursTitle")}</h2>
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {hasConfiguredHours(hours) ? t("branches.hoursConfigured") : t("branches.hoursNotConfigured")}
+        {hasConfiguredHours(hours)
+          ? t("branches.hoursConfigured")
+          : t("branches.hoursNotConfigured")}
       </p>
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+
+      <div
+        className="branch-hours-bulk flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border p-3"
+        data-testid="branch-hours-bulk"
+      >
+        <div className="min-w-0">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.hoursSameAllDaysTitle")}
+          </p>
+          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+            {t("branches.hoursSameAllDaysLede")}
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.hoursStart")}
+            <input
+              type="time"
+              className="catalog-form-select font-normal"
+              value={bulkOpen}
+              onChange={(e) => setBulkOpen(e.target.value)}
+              data-testid="hours-bulk-start"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.hoursEnd")}
+            <input
+              type="time"
+              className="catalog-form-select font-normal"
+              value={bulkClose}
+              onChange={(e) => setBulkClose(e.target.value)}
+              data-testid="hours-bulk-end"
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            data-testid="hours-apply-all-open"
+            onClick={applyBulkOpenClose}
+          >
+            {t("branches.hoursApplyAll")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="hours-apply-all-24h"
+            onClick={applyAllDayEveryDay}
+          >
+            {t("branches.hoursAllDayEveryDay")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="hours-apply-all-closed"
+            onClick={applyClosedEveryDay}
+          >
+            {t("branches.hoursClosedEveryDay")}
+          </Button>
+        </div>
+      </div>
+
+      <ul
+        className="branch-hours-days m-0 grid list-none grid-cols-1 gap-2 p-0 lg:grid-cols-2"
+        data-testid="branch-hours-days"
+      >
         {ORDERED_WEEKDAYS.map((dayName) => {
           const day = hours.find((h) => h.dayOfWeek === dayName)!;
           return (
-            <li key={dayName} className="branch-hours-day">
-              <p className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
-                {t(dayLabelKey(dayName))}
-              </p>
+            <li key={dayName} className="branch-hours-day" data-testid={`hours-day-${dayName}`}>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t(dayLabelKey(dayName))}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  data-testid={`hours-apply-from-${dayName}`}
+                  onClick={() => applyDayToAll(dayName)}
+                >
+                  {t("branches.hoursApplyFromDay")}
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-3">
                 <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
                   <input

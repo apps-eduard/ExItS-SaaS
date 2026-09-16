@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   CircleAlert,
   CircleCheck,
@@ -7,15 +8,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { BranchFulfillmentReadinessDto } from "@/api/platform/branch-fulfillment-client";
+import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Switch } from "@/components/ui/switch";
 import {
   deliveryEnablementLabel,
-  filterRedundantReasonCodes,
   missingRequirementMessageKey,
   orderingEnablementLabel,
   pickupEnablementLabel,
-  reasonCodeMessageKey,
   type EnablementLabel,
 } from "@/features/branches/branch-readiness-labels";
 import { resolveFulfillmentToggle } from "@/features/branches/fulfillment-toggle";
@@ -63,6 +63,11 @@ type ChannelCardProps = {
   t: (key: MessageKey) => string;
   onCheckedChange: (next: boolean) => void;
 };
+
+type ToggleConfirm =
+  | { kind: "pickup"; next: boolean }
+  | { kind: "delivery"; next: boolean }
+  | { kind: "ordering"; action: "enable" | "pause" | "resume" };
 
 function ChannelCard({
   testId,
@@ -127,6 +132,69 @@ function ChannelCard({
   );
 }
 
+function confirmCopy(
+  confirm: ToggleConfirm,
+  t: (key: MessageKey) => string,
+): {
+  variant: "info" | "warning";
+  title: string;
+  description: string;
+  confirmLabel: string;
+} {
+  if (confirm.kind === "pickup") {
+    return confirm.next
+      ? {
+          variant: "info",
+          title: t("branches.confirm.enablePickupTitle"),
+          description: t("branches.confirm.enablePickupDetail"),
+          confirmLabel: t("branches.confirm.enablePickupConfirm"),
+        }
+      : {
+          variant: "warning",
+          title: t("branches.confirm.disablePickupTitle"),
+          description: t("branches.confirm.disablePickupDetail"),
+          confirmLabel: t("branches.confirm.disablePickupConfirm"),
+        };
+  }
+  if (confirm.kind === "delivery") {
+    return confirm.next
+      ? {
+          variant: "info",
+          title: t("branches.confirm.enableDeliveryTitle"),
+          description: t("branches.confirm.enableDeliveryDetail"),
+          confirmLabel: t("branches.confirm.enableDeliveryConfirm"),
+        }
+      : {
+          variant: "warning",
+          title: t("branches.confirm.disableDeliveryTitle"),
+          description: t("branches.confirm.disableDeliveryDetail"),
+          confirmLabel: t("branches.confirm.disableDeliveryConfirm"),
+        };
+  }
+  if (confirm.action === "enable") {
+    return {
+      variant: "info",
+      title: t("branches.confirm.enableOrderingTitle"),
+      description: t("branches.confirm.enableOrderingDetail"),
+      confirmLabel: t("branches.confirm.enableOrderingConfirm"),
+    };
+  }
+  if (confirm.action === "resume") {
+    return {
+      variant: "info",
+      title: t("branches.confirm.resumeOrderingTitle"),
+      description: t("branches.confirm.resumeOrderingDetail"),
+      confirmLabel: t("branches.confirm.resumeOrderingConfirm"),
+    };
+  }
+  return {
+    variant: "warning",
+    title: t("branches.confirm.pauseOrderingTitle"),
+    description: t("branches.confirm.pauseOrderingDetail"),
+    confirmLabel: t("branches.confirm.pauseOrderingConfirm"),
+  };
+}
+
 export function BranchOverviewPanel({
   readiness,
   busy,
@@ -137,15 +205,15 @@ export function BranchOverviewPanel({
   onPauseOrders,
   onResumeOrders,
 }: BranchOverviewPanelProps) {
+  const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(null);
   const orderingLabel = orderingEnablementLabel(readiness);
   const pickupLabel = pickupEnablementLabel(readiness);
   const deliveryLabel = deliveryEnablementLabel(readiness);
   const missingRequirements = readiness.missingRequirements;
-  const extraReasonCodes = filterRedundantReasonCodes(
-    missingRequirements,
-    readiness.reasonCodes,
-  );
   const setupComplete = missingRequirements.length === 0;
+  const noFulfillmentMethod =
+    !readiness.pickupEnabled && !readiness.deliveryEnabled;
+  const configCompleteButMethodsOff = setupComplete && noFulfillmentMethod;
 
   const pickup = resolveFulfillmentToggle({
     channel: "pickup",
@@ -173,6 +241,28 @@ export function BranchOverviewPanel({
     busy ||
     (!orderingCanPauseResume && !orderingCanEnable) ||
     !readiness.canUseCustomerOrdering;
+
+  const dialogCopy = toggleConfirm ? confirmCopy(toggleConfirm, t) : null;
+
+  function applyToggleConfirm(confirm: ToggleConfirm) {
+    if (confirm.kind === "pickup") {
+      onTogglePickup(confirm.next);
+      return;
+    }
+    if (confirm.kind === "delivery") {
+      onToggleDelivery(confirm.next);
+      return;
+    }
+    if (confirm.action === "enable") {
+      onEnableOrdering();
+      return;
+    }
+    if (confirm.action === "resume") {
+      onResumeOrders();
+      return;
+    }
+    onPauseOrders();
+  }
 
   return (
     <section
@@ -207,11 +297,15 @@ export function BranchOverviewPanel({
             checked={pickup.checked}
             disabled={pickup.disabled}
             busy={busy}
-            hint={pickup.hintKey ? t(pickup.hintKey) : null}
+            hint={
+              pickup.hintKey
+                ? t(pickup.hintKey)
+                : t("branches.poFulfillment.helper.pickup")
+            }
             t={t}
             onCheckedChange={(next) => {
               if (next && pickup.enableBlocked) return;
-              onTogglePickup(next);
+              setToggleConfirm({ kind: "pickup", next });
             }}
           />
           <ChannelCard
@@ -228,16 +322,21 @@ export function BranchOverviewPanel({
             checked={delivery.checked}
             disabled={delivery.disabled}
             busy={busy}
-            hint={delivery.hintKey ? t(delivery.hintKey) : null}
+            hint={
+              delivery.hintKey
+                ? t(delivery.hintKey)
+                : t("branches.poFulfillment.helper.delivery")
+            }
             t={t}
             onCheckedChange={(next) => {
               if (next && delivery.enableBlocked) return;
-              onToggleDelivery(next);
+              setToggleConfirm({ kind: "delivery", next });
             }}
           />
           <ChannelCard
             testId="ordering-progress"
             statusTestId="ordering-status"
+            className="branch-overview-progress__item--ordering"
             title={t("branches.channel.ordering")}
             statusLabel={orderingLabel}
             Icon={Store}
@@ -257,16 +356,16 @@ export function BranchOverviewPanel({
             onCheckedChange={(next) => {
               if (next) {
                 if (readiness.onlineOrdersPaused) {
-                  onResumeOrders();
+                  setToggleConfirm({ kind: "ordering", action: "resume" });
                   return;
                 }
                 if (!readiness.customerOrderingEnabled) {
-                  onEnableOrdering();
+                  setToggleConfirm({ kind: "ordering", action: "enable" });
                 }
                 return;
               }
               if (readiness.customerOrderingEnabled && !readiness.onlineOrdersPaused) {
-                onPauseOrders();
+                setToggleConfirm({ kind: "ordering", action: "pause" });
               }
             }}
           />
@@ -289,30 +388,51 @@ export function BranchOverviewPanel({
           </ul>
         </div>
       ) : (
-        <div className="branch-readiness__ready" data-testid="branch-missing-none" role="status">
-          <CircleCheck className="branch-readiness__ready-icon" aria-hidden />
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("branches.missingNone")}</p>
+        <div
+          className={
+            configCompleteButMethodsOff
+              ? "branch-readiness__checklist branch-readiness__checklist--secondary"
+              : "branch-readiness__ready"
+          }
+          data-testid="branch-missing-none"
+          role="status"
+        >
+          {configCompleteButMethodsOff ? (
+            <CircleAlert className="branch-readiness__item-icon" aria-hidden />
+          ) : (
+            <CircleCheck className="branch-readiness__ready-icon" aria-hidden />
+          )}
+          <p className="m-0 text-[length:var(--exits-text-sm)]">
+            {configCompleteButMethodsOff
+              ? t("branches.configuredButMethodsOff")
+              : t("branches.missingNone")}
+          </p>
         </div>
       )}
 
-      {extraReasonCodes.length > 0 ? (
-        <div
-          className="branch-readiness__checklist branch-readiness__checklist--secondary"
-          data-testid="branch-reason-codes"
-        >
-          <p className="branch-readiness__checklist-title m-0">
-            {t("branches.enablementGapsTitle")}
-          </p>
-          <ul className="branch-readiness__items m-0 list-none p-0">
-            {extraReasonCodes.map((code) => (
-              <li key={code} className="branch-readiness__item branch-readiness__item--muted">
-                <span className="branch-readiness__item-dot" aria-hidden />
-                <span>{t(reasonCodeMessageKey(code))}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <ConfirmActionDialog
+        open={toggleConfirm != null}
+        variant={dialogCopy?.variant ?? "default"}
+        title={dialogCopy?.title ?? ""}
+        description={dialogCopy?.description ?? ""}
+        confirmLabel={dialogCopy?.confirmLabel ?? ""}
+        cancelLabel={t("branches.cancel")}
+        pending={busy}
+        testId="branch-readiness-toggle-confirm"
+        onCancel={() => {
+          if (!busy) {
+            setToggleConfirm(null);
+          }
+        }}
+        onConfirm={() => {
+          if (!toggleConfirm || busy) {
+            return;
+          }
+          const intent = toggleConfirm;
+          setToggleConfirm(null);
+          applyToggleConfirm(intent);
+        }}
+      />
     </section>
   );
 }
