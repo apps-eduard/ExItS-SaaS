@@ -5411,6 +5411,7 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
             entity.Property(x=>x.ProposedPaymentTerm).HasColumnName("proposed_payment_term");
             entity.Property(x=>x.ConfirmedPaymentTerm).HasColumnName("confirmed_payment_term");
+            entity.Property(x=>x.CreditPostedAmount).HasColumnName("credit_posted_amount").HasPrecision(18, 2).HasDefaultValue(0m);
             entity.Property(x=>x.ChangesProposedAtUtc).HasColumnName("changes_proposed_at_utc");
             entity.Property(x=>x.ChangesProposedByUserId).HasColumnName("changes_proposed_by_user_id");
             entity.Property(x=>x.BuyerRespondedAtUtc).HasColumnName("buyer_responded_at_utc");

@@ -89,6 +89,7 @@ internal sealed class ConnectedPurchaseOrderRecord
     public int PaymentTerm { get; set; }
     public int? ProposedPaymentTerm { get; set; }
     public int? ConfirmedPaymentTerm { get; set; }
+    public decimal CreditPostedAmount { get; set; }
     public DateTimeOffset? ChangesProposedAtUtc { get; set; }
     public Guid? ChangesProposedByUserId { get; set; }
     public DateTimeOffset? BuyerRespondedAtUtc { get; set; }
@@ -273,7 +274,8 @@ internal static class ConnectedSupplierEntityMapper
             r.BuyerRespondedAtUtc,
             r.BuyerRespondedByUserId,
             r.ProposedPaymentTerm is int ppt ? (ConnectedPoPaymentTerm)ppt : null,
-            r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null);
+            r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null,
+            r.CreditPostedAmount);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -285,6 +287,7 @@ internal static class ConnectedSupplierEntityMapper
         PaymentTerm=(int)x.PaymentTerm,
         ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value,
         ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value,
+        CreditPostedAmount=x.CreditPostedAmount,
         ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
         BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
@@ -300,6 +303,7 @@ internal static class ConnectedSupplierEntityMapper
         r.PaymentTerm=(int)x.PaymentTerm;
         r.ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value;
         r.ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value;
+        r.CreditPostedAmount=x.CreditPostedAmount;
         r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
         r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;
         var domainLines=x.Lines.ToList();

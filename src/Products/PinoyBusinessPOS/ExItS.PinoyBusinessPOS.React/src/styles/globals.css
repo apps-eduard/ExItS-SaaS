@@ -6987,7 +6987,8 @@ html:has(.admin-shell) #root {
   flex-wrap: unset;
 }
 
-/* Selling: keep chips at half card width */
+/* Selling primary + by status: full-width chips in 2 columns */
+.purchasing-hub-page [data-testid="purchasing-selling-primary"].exits-chip-bar,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"].exits-chip-bar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6998,6 +6999,7 @@ html:has(.admin-shell) #root {
 
 .purchasing-hub-page [data-testid="purchasing-buying-primary"] .exits-chip,
 .purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip,
+.purchasing-hub-page [data-testid="purchasing-selling-primary"] .exits-chip,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip {
   width: 100%;
   min-width: 0;
@@ -7007,6 +7009,7 @@ html:has(.admin-shell) #root {
 
 .purchasing-hub-page [data-testid="purchasing-buying-primary"] .exits-chip__label,
 .purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-chip__label,
+.purchasing-hub-page [data-testid="purchasing-selling-primary"] .exits-chip__label,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-chip__label {
   flex: 1 1 auto;
   min-width: 0;
@@ -7016,6 +7019,7 @@ html:has(.admin-shell) #root {
 }
 
 .purchasing-hub-page [data-testid="purchasing-buying-actions"] .exits-count-badge,
+.purchasing-hub-page [data-testid="purchasing-selling-primary"] .exits-count-badge,
 .purchasing-hub-page [data-testid="purchasing-selling-actions"] .exits-count-badge {
   margin-inline-start: auto;
   flex-shrink: 0;

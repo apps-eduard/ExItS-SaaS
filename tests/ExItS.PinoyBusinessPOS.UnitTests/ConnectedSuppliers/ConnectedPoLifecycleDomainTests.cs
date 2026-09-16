@@ -123,7 +123,7 @@ public sealed class ConnectedPoLifecycleDomainTests
         Assert.Equal(ConnectedPoDisplayStatus.Preparing, ConnectedPoDisplayStatus.ForBuyer(po, order));
 
         order.MarkFulfilled(Now.AddMinutes(5));
-        Assert.Equal(ConnectedPoDisplayStatus.Ready, ConnectedPoDisplayStatus.ForBuyer(po, order));
+        Assert.Equal(ConnectedPoDisplayStatus.Shipped, ConnectedPoDisplayStatus.ForBuyer(po, order));
     }
 
     [Fact]

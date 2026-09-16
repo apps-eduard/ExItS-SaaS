@@ -177,7 +177,7 @@ export function PurchaseOrderCreatePage() {
   const [setupSelected, setSetupSelected] = useState<Set<string>>(() => new Set());
   const [setupBusyKey, setSetupBusyKey] = useState<string | null>(null);
   const [setupBulkBusy, setSetupBulkBusy] = useState(false);
-  const [paymentTerm, setPaymentTerm] = useState<ConnectedPoPaymentMethodCode | "">("");
+  const [paymentTerm, setPaymentTerm] = useState<ConnectedPoPaymentMethodCode | "">("Cash");
   const purchaseOrderIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -435,7 +435,7 @@ export function PurchaseOrderCreatePage() {
     setExternalLines([]);
     setSetupSelected(new Set());
     setFinderOpen(false);
-    setPaymentTerm("");
+    setPaymentTerm("Cash");
   }
 
   function openFinder() {
@@ -1506,6 +1506,50 @@ export function PurchaseOrderCreatePage() {
                 <Notice tone="info" testId="po-payment-help">
                   {t(selectedPaymentHelp)}
                 </Notice>
+              ) : null}
+              {paymentTerm === "Utang" && creditPolicyQuery.data ? (
+                <div
+                  className="po-utang-credit-picture grid gap-1 rounded-md border border-border bg-muted/30 p-3 text-[length:var(--exits-text-sm)]"
+                  data-testid="po-utang-credit-picture"
+                >
+                  <div className="flex justify-between gap-2">
+                    <span>{t("purchasing.utang.creditLimit")}</span>
+                    <span className="tabular-nums font-medium">
+                      {(creditPolicyQuery.data.creditLimit ?? 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>{t("purchasing.utang.outstanding")}</span>
+                    <span className="tabular-nums font-medium">
+                      {creditPolicyQuery.data.outstandingAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>{t("purchasing.utang.reservedActivePos")}</span>
+                    <span className="tabular-nums font-medium">
+                      {(creditPolicyQuery.data.reservedByActivePos ?? 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>{t("purchasing.utang.available")}</span>
+                    <span className="tabular-nums font-medium">
+                      {creditPolicyQuery.data.availableCredit.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span>{t("purchasing.utang.thisPoTotal")}</span>
+                    <span className="tabular-nums font-medium">{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between gap-2 border-t border-border pt-1">
+                    <span>{t("purchasing.utang.remainingAfterPo")}</span>
+                    <span className="tabular-nums font-semibold">
+                      {Math.max(
+                        0,
+                        creditPolicyQuery.data.availableCredit - subtotal,
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               ) : null}
             </section>
           ) : null}

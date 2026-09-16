@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FilePlus,
   Inbox,
+  List,
   Package,
   PackageCheck,
   PackagePlus,
@@ -47,6 +48,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 type BrowseKey =
   | "orders"
   | "incoming"
+  | "incoming-all"
   | "incoming-accepted"
   | "incoming-preparing"
   | "incoming-completed"
@@ -62,6 +64,7 @@ type BrowseDef = {
   href: string;
   testId: string;
   count: number;
+  emphasis?: ExitsChipItem["emphasis"];
 };
 
 function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
@@ -74,6 +77,7 @@ function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
       icon: <Icon />,
       label: item.label,
       count: item.count,
+      emphasis: item.emphasis,
     };
   });
 }
@@ -224,57 +228,83 @@ export function PurchasingHubPage() {
     t,
   ]);
 
-  const sellingDefs = useMemo(() => {
-    const items: BrowseDef[] = [];
-    if (allowViewPurchasing) {
-      items.push({
-        key: "incoming",
+  const sellingPrimaryDefs = useMemo(() => {
+    if (!allowViewPurchasing) {
+      return [] as BrowseDef[];
+    }
+    return [
+      {
+        key: "incoming" as const,
         label: t("incomingOrders.title"),
         icon: Inbox,
         href: "/purchasing/incoming-orders",
         testId: "purchasing-incoming-orders",
         count: incomingPendingCount,
-      });
-      items.push({
-        key: "incoming-accepted",
-        label: t("incomingOrders.filterAccepted"),
-        icon: CheckCircle2,
-        href: "/purchasing/incoming-orders?status=accepted",
-        testId: "purchasing-incoming-accepted",
-        count: incomingStatusCounts.accepted,
-      });
-      items.push({
-        key: "incoming-preparing",
+        emphasis: "primary" as const,
+      },
+      {
+        key: "incoming-preparing" as const,
         label: t("incomingOrders.filterPreparing"),
         icon: Package,
         href: "/purchasing/incoming-orders?status=preparing",
         testId: "purchasing-incoming-preparing",
         count: incomingStatusCounts.preparing,
-      });
-      items.push({
-        key: "incoming-completed",
+        emphasis: "primary" as const,
+      },
+    ];
+  }, [allowViewPurchasing, incomingPendingCount, incomingStatusCounts.preparing, t]);
+
+  const sellingStatusDefs = useMemo(() => {
+    if (!allowViewPurchasing) {
+      return [] as BrowseDef[];
+    }
+    const allCount =
+      incomingStatusCounts.pending +
+      incomingStatusCounts.accepted +
+      incomingStatusCounts.preparing +
+      incomingStatusCounts.completed +
+      incomingStatusCounts.declined;
+    return [
+      {
+        key: "incoming-all" as const,
+        label: t("incomingOrders.filterAll"),
+        icon: List,
+        href: "/purchasing/incoming-orders?status=all",
+        testId: "purchasing-incoming-all",
+        count: allCount,
+      },
+      {
+        key: "incoming-accepted" as const,
+        label: t("incomingOrders.filterAccepted"),
+        icon: CheckCircle2,
+        href: "/purchasing/incoming-orders?status=accepted",
+        testId: "purchasing-incoming-accepted",
+        count: incomingStatusCounts.accepted,
+      },
+      {
+        key: "incoming-completed" as const,
         label: t("incomingOrders.filterCompleted"),
         icon: PackageCheck,
         href: "/purchasing/incoming-orders?status=completed",
         testId: "purchasing-incoming-completed",
         count: incomingStatusCounts.completed,
-      });
-      items.push({
-        key: "incoming-declined",
+      },
+      {
+        key: "incoming-declined" as const,
         label: t("incomingOrders.filterDeclined"),
         icon: Ban,
         href: "/purchasing/incoming-orders?status=declined",
         testId: "purchasing-incoming-declined",
         count: incomingStatusCounts.declined,
-      });
-    }
-    return items;
-  }, [allowViewPurchasing, incomingPendingCount, incomingStatusCounts, t]);
+      },
+    ];
+  }, [allowViewPurchasing, incomingStatusCounts, t]);
 
   const buyingManageItems = toChipItems(buyingManageDefs);
-  const sellingItems = toChipItems(sellingDefs);
+  const sellingPrimaryItems = toChipItems(sellingPrimaryDefs);
+  const sellingStatusItems = toChipItems(sellingStatusDefs);
   const showBuying = buyingPrimaryItems.length > 0 || buyingManageItems.length > 0;
-  const showSelling = sellingItems.length > 0;
+  const showSelling = sellingPrimaryItems.length > 0 || sellingStatusItems.length > 0;
 
   return (
     <div
@@ -362,13 +392,36 @@ export function PurchasingHubPage() {
                   <p className="purchasing-hub-direction__lede m-0">{t("purchasing.sellingLede")}</p>
                 </div>
               </div>
-              <ExitsChipBar
-                variant="actions"
-                ariaLabel={t("purchasing.sellingTitle")}
-                testId="purchasing-selling-actions"
-                className="purchasing-hub-direction__actions exits-animate-toolbar"
-                items={sellingItems}
-              />
+
+              {sellingPrimaryItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.sellingPrimary")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.sellingPrimary")}
+                    testId="purchasing-selling-primary"
+                    className="purchasing-hub-direction__actions purchasing-hub-direction__actions--primary exits-animate-toolbar"
+                    items={sellingPrimaryItems}
+                  />
+                </div>
+              ) : null}
+
+              {sellingStatusItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.sellingStatus")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.sellingStatus")}
+                    testId="purchasing-selling-actions"
+                    className="purchasing-hub-direction__actions exits-animate-toolbar"
+                    items={sellingStatusItems}
+                  />
+                </div>
+              ) : null}
             </Card>
           ) : null}
         </div>

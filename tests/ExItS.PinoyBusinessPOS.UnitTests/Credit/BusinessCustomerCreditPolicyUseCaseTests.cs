@@ -9,6 +9,7 @@ using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Credit;
 
@@ -116,7 +117,8 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
     public async Task Get_returns_NotConfigured_200_when_no_row()
     {
         var (relationships, policies, _, connectionId) = await CreateActiveHarnessAsync();
-        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
+        var get = new GetBusinessCustomerCreditPolicy(
+            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.NotConfigured), result.Value!.Status);
@@ -143,7 +145,8 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             configured.Value!.ExpectedUpdatedAtUtc!.Value);
         Assert.True(approved.IsSuccess);
 
-        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
+        var get = new GetBusinessCustomerCreditPolicy(
+            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
         var buyerView = await get.ExecuteAsync(BuyerOrgId, connectionId);
         Assert.True(buyerView.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.Approved), buyerView.Value!.Status);
@@ -175,7 +178,8 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
         Assert.True((await upsert.ExecuteAsync(SellerOrgId, connectionId, 100m, 7, Actor, "cfg")).IsSuccess);
 
         relationships.Disconnect(connectionId, Now.AddHours(1));
-        var get = new GetBusinessCustomerCreditPolicy(relationships, policies, new EmptyBusinessCredits());
+        var get = new GetBusinessCustomerCreditPolicy(
+            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.PendingApproval), result.Value!.Status);
@@ -327,6 +331,23 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
 
         public Task UpdateAsync(ConnectedSupplierRelationship relationship, CancellationToken ct = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class EmptyConnectedOrders : IConnectedPurchaseOrderRepository
+    {
+        public Task AddAsync(ConnectedPurchaseOrder order, CancellationToken ct = default) => Task.CompletedTask;
+        public Task UpdateAsync(ConnectedPurchaseOrder order, CancellationToken ct = default) => Task.CompletedTask;
+        public Task<ConnectedPurchaseOrder?> GetAsync(ConnectedPurchaseOrderId id, CancellationToken ct = default) =>
+            Task.FromResult<ConnectedPurchaseOrder?>(null);
+        public Task<ConnectedPurchaseOrder?> GetByBuyerPurchaseOrderAsync(PurchaseOrderId id, CancellationToken ct = default) =>
+            Task.FromResult<ConnectedPurchaseOrder?>(null);
+        public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier, CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>([]);
+        public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListBetweenOrganizationsAsync(
+            PosOrganizationId supplierOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>([]);
     }
 
     private sealed class EmptyBusinessCredits : IBusinessCreditEntryRepository

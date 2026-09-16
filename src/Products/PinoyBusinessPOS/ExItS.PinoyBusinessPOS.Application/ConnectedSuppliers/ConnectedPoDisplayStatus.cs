@@ -16,6 +16,7 @@ public static class ConnectedPoDisplayStatus
     public const string SupplierDeclined = "SupplierDeclined";
     public const string Preparing = "Preparing";
     public const string Ready = "Ready";
+    public const string Shipped = "Shipped";
     public const string PartiallyReceived = "PartiallyReceived";
     public const string Received = "Received";
     public const string ReceivedWithIssues = "ReceivedWithIssues";
@@ -77,7 +78,7 @@ public static class ConnectedPoDisplayStatus
             ConnectedPurchaseOrderStatus.ChangesProposed => ChangesNeedApproval,
             ConnectedPurchaseOrderStatus.Accepted => SupplierAccepted,
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
-            ConnectedPurchaseOrderStatus.Fulfilled => Ready,
+            ConnectedPurchaseOrderStatus.Fulfilled => Shipped,
             _ => WaitingForSupplier
         };
     }
@@ -113,7 +114,7 @@ public static class ConnectedPoDisplayStatus
             ConnectedPurchaseOrderStatus.ChangesProposed => "ChangesProposed",
             ConnectedPurchaseOrderStatus.Accepted => "Accepted",
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
-            ConnectedPurchaseOrderStatus.Fulfilled => "Fulfilled",
+            ConnectedPurchaseOrderStatus.Fulfilled => Shipped,
             _ => connected.Status.ToString()
         };
     }

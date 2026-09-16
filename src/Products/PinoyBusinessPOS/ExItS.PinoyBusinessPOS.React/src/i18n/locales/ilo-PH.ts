@@ -2182,6 +2182,7 @@ export const iloPH: Record<keyof typeof en, string> = {
     "New Utang is paused. Existing balances can still be paid.",
 
   "customers.creditPolicy.outstanding": "Outstanding",
+  "customers.creditPolicy.reservedActivePos": "Reserved by active POs",
 
   "customers.creditPolicy.outstandingOverLimitWarning":
     "Nadadakkel ti outstanding ngem ti baro a limit. Zero ti available credit agingga bumaba ti balance.",
@@ -9029,6 +9030,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.buyingManage": "Manage",
   "purchasing.sellingTitle": "Selling",
   "purchasing.sellingLede": "Review and manage orders other businesses place with you.",
+  "purchasing.sellingPrimary": "Primary actions",
+  "purchasing.sellingStatus": "By status",
 
   "purchasing.invalidLine": "Enter a valid quantity and unit cost.",
 
@@ -9164,6 +9167,12 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "purchasing.utang.insufficientCredit":
     "Order total exceeds available credit. Reduce the order or choose another payment method.",
+  "purchasing.utang.creditLimit": "Credit limit",
+  "purchasing.utang.outstanding": "Outstanding Utang",
+  "purchasing.utang.reservedActivePos": "Reserved by active POs",
+  "purchasing.utang.available": "Available credit",
+  "purchasing.utang.thisPoTotal": "This PO total",
+  "purchasing.utang.remainingAfterPo": "Remaining after PO",
 
   "purchasing.declineChanges": "Decline changes",
 

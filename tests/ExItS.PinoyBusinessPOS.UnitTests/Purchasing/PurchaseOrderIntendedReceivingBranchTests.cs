@@ -245,6 +245,11 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
             Task.FromResult<ConnectedPurchaseOrder?>(null);
         public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier, CancellationToken ct = default) =>
             Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>([]);
+        public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListBetweenOrganizationsAsync(
+            PosOrganizationId supplierOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>([]);
     }
 
     private sealed class InMemoryProducts : ICatalogProductRepository

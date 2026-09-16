@@ -191,6 +191,16 @@ public sealed class ConnectedSupplierNotificationLifecycleTests
             Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>(
                 Items.Where(x => x.SupplierOrganizationId == supplier).ToList());
 
+        public Task<IReadOnlyList<ConnectedPurchaseOrder>> ListBetweenOrganizationsAsync(
+            PosOrganizationId supplierOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>(
+                Items.Where(x =>
+                        x.SupplierOrganizationId == supplierOrganizationId
+                        && x.BuyerOrganizationId == buyerOrganizationId)
+                    .ToList());
+
         public Task UpdateAsync(ConnectedPurchaseOrder order, CancellationToken ct = default) => Task.CompletedTask;
     }
 

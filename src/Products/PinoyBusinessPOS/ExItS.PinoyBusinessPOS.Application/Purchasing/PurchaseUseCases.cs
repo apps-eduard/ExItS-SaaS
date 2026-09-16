@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
@@ -9,10 +10,12 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
@@ -1318,6 +1321,7 @@ public sealed class SubmitPurchaseOrder
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly BusinessCustomerCreditAuthorizationService? _businessCreditAuthorization;
 
     public SubmitPurchaseOrder(
         IPurchaseOrderRepository orders,
@@ -1334,7 +1338,8 @@ public sealed class SubmitPurchaseOrder
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IInventoryRepository? inventory = null,
         IInventoryBranchBalanceRepository? branchBalances = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null)
     {
         _orders = orders;
         _products = products;
@@ -1351,6 +1356,7 @@ public sealed class SubmitPurchaseOrder
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
+        _businessCreditAuthorization = businessCreditAuthorization;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -1597,6 +1603,31 @@ public sealed class SubmitPurchaseOrder
                             createdConnected = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
                                 connectedRelationship, po.Id, po.PoNumber, po.OrderDate, po.Notes, connectedLines, utcNow,
                                 paymentTerm: po.PaymentTerm);
+
+                            if (po.PaymentTerm == ConnectedPoPaymentTerm.Utang)
+                            {
+                                if (_businessCreditAuthorization is null)
+                                {
+                                    throw new DomainException(
+                                        ApplicationErrorCodes.BusinessCustomerCreditNotApproved,
+                                        "Utang authorization is unavailable.");
+                                }
+
+                                var poTotal = SaleMoney.RoundMoney(connectedLines.Sum(x => x.LineTotal));
+                                var auth = await _businessCreditAuthorization
+                                    .AuthorizeNewCreditAsync(
+                                        connectedRelationship.SupplierOrganizationId,
+                                        connectedRelationship.BuyerOrganizationId,
+                                        poTotal,
+                                        businessDate,
+                                        ct)
+                                    .ConfigureAwait(false);
+                                if (!auth.IsSuccess)
+                                {
+                                    throw new DomainException(auth.ErrorCode!, auth.ErrorMessage!);
+                                }
+                            }
+
                             await _connectedOrders.AddAsync(createdConnected, ct).ConfigureAwait(false);
                         },
                     cancellationToken)
@@ -1756,6 +1787,7 @@ public sealed class AcceptConnectedPoChanges
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly BusinessCustomerCreditAuthorizationService? _businessCreditAuthorization;
 
     public AcceptConnectedPoChanges(
         IPurchaseOrderRepository orders,
@@ -1765,7 +1797,8 @@ public sealed class AcceptConnectedPoChanges
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
@@ -1775,6 +1808,7 @@ public sealed class AcceptConnectedPoChanges
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
+        _businessCreditAuthorization = businessCreditAuthorization;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -1815,6 +1849,29 @@ public sealed class AcceptConnectedPoChanges
             if (connected.Status == ConnectedPurchaseOrderStatus.Accepted)
             {
                 return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));
+            }
+
+            var nextPayment = connected.ProposedPaymentTerm ?? connected.PaymentTerm;
+            var nextTotal = connected.ProposedTotalAmount;
+            if (nextPayment == ConnectedPoPaymentTerm.Utang
+                && _businessCreditAuthorization is not null)
+            {
+                var auth = await _businessCreditAuthorization
+                    .AuthorizeNewCreditAsync(
+                        connected.SupplierOrganizationId,
+                        connected.BuyerOrganizationId,
+                        nextTotal,
+                        PurchaseOrderNumbers.BusinessDateOf(utcNow),
+                        cancellationToken,
+                        excludeConnectedPurchaseOrderId: connected.Id.Value)
+                    .ConfigureAwait(false);
+                if (!auth.IsSuccess)
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        auth.ErrorCode!,
+                        (auth.ErrorMessage ?? "Accepted changes would exceed available credit.")
+                        + " Accept Changes is blocked until additional credit is available.");
+                }
             }
 
             connected.AcceptProposedChanges(utcNow, actorId == Guid.Empty ? null : actorId);
@@ -1973,6 +2030,7 @@ public sealed class ReceivePurchaseOrder
     private readonly IPosCommercialAccessAccessor _access;
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly PartyBranchAccessService? _branchAccess;
+    private readonly IBusinessCreditEntryRepository? _businessCredits;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -1985,7 +2043,8 @@ public sealed class ReceivePurchaseOrder
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IBuyerSupplierProductLinkRepository? links = null,
-        PartyBranchAccessService? branchAccess = null)
+        PartyBranchAccessService? branchAccess = null,
+        IBusinessCreditEntryRepository? businessCredits = null)
     {
         _orders = orders;
         _products = products;
@@ -1996,6 +2055,7 @@ public sealed class ReceivePurchaseOrder
         _access = access;
         _createPayable = createPayable;
         _branchAccess = branchAccess;
+        _businessCredits = businessCredits;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2063,7 +2123,7 @@ public sealed class ReceivePurchaseOrder
                 {
                     return ApplicationResult<PosGoodsReceiptDto>.Failure(
                         ConnectedSupplierDomainErrorCodes.InvalidTransition,
-                        "Goods receipt is only allowed after the supplier accepts the connected order.");
+                        "Goods receipt is only allowed after the supplier ships or dispatches the connected order. Preparing remains read-only.");
                 }
 
                 if (existing.Lines.Any(l => l.NeedsBuyerProductSetup)
@@ -2196,6 +2256,33 @@ public sealed class ReceivePurchaseOrder
                                 utcNow,
                                 ct)
                             .ConfigureAwait(false);
+
+                        if (connected is not null
+                            && ConnectedPoUtangCredit.UsesUtang(connected.EffectivePaymentTerm)
+                            && _businessCredits is not null)
+                        {
+                            var receivedAmount = SaleMoney.RoundMoney(
+                                grn.Lines.Sum(l => SaleMoney.RoundMoney(l.ReceivedQty * l.UnitPurchaseCostSnapshot)));
+                            if (receivedAmount > 0m)
+                            {
+                                var beforePosted = connected.CreditPostedAmount;
+                                connected.PostUtangCreditFromReceipt(receivedAmount, utcNow);
+                                var postedDelta = SaleMoney.RoundMoney(connected.CreditPostedAmount - beforePosted);
+                                if (postedDelta > 0m)
+                                {
+                                    var entry = BusinessCreditEntry.Create(
+                                        connected.SupplierOrganizationId,
+                                        connected.BuyerOrganizationId,
+                                        postedDelta,
+                                        $"Connected PO {po.PoNumber ?? po.Id.Value.ToString("D")} receipt",
+                                        utcNow,
+                                        connected.RelationshipId.Value);
+                                    await _businessCredits.AddAsync(entry, ct).ConfigureAwait(false);
+                                    await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
+                                }
+                            }
+                        }
+
                         if (_branchAccess is not null && po.SupplierId is not null)
                         {
                             await _branchAccess

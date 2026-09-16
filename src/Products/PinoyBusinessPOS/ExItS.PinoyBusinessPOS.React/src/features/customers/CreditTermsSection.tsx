@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   CircleDollarSign,
+  ClipboardList,
   FileText,
   History,
   Pencil,
@@ -44,6 +45,7 @@ type SharedPolicy = {
   creditLimit?: number | null;
   defaultTermDays?: number | null;
   outstandingAmount?: number | null;
+  reservedByActivePos?: number | null;
   availableCredit?: number | null;
   approvedByUserId?: string | null;
   approvedAtUtc?: string | null;
@@ -220,6 +222,7 @@ export function CreditTermsSection({
   const policy = useOverride ? policyOverride : policyQuery.data;
   const status = policy?.status ?? "NotConfigured";
   const outstanding = policy?.outstandingAmount ?? 0;
+  const reservedByActivePos = policy?.reservedByActivePos ?? 0;
   const available = policy?.availableCredit ?? 0;
   const limit = policy?.creditLimit ?? null;
   const term = policy?.defaultTermDays ?? null;
@@ -490,6 +493,23 @@ export function CreditTermsSection({
               <MoneyDisplay amount={outstanding} />
             </dd>
           </div>
+          {entity.kind === "business" ? (
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <ClipboardList
+                  className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--reserved"
+                  aria-hidden
+                />
+                {t("customers.creditPolicy.reservedActivePos")}
+              </dt>
+              <dd
+                className="tabular-nums"
+                data-testid={`${testIdPrefix}-credit-policy-reserved`}
+              >
+                <MoneyDisplay amount={reservedByActivePos} />
+              </dd>
+            </div>
+          ) : null}
           <div className="branch-mgmt-overview__item">
             <dt>
               <Wallet

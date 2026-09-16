@@ -5025,6 +5025,7 @@ export const en = {
   "customers.creditPolicy.limitHelper":
     "Maximum unpaid credit this customer may have at one time.",
   "customers.creditPolicy.outstanding": "Outstanding",
+  "customers.creditPolicy.reservedActivePos": "Reserved by active POs",
   "customers.creditPolicy.available": "Available credit",
   "customers.creditPolicy.utangAllowed": "Utang allowed",
   "customers.creditPolicy.utangAllowedYes": "Yes",
@@ -5616,6 +5617,8 @@ export const en = {
   "purchasing.buyingManage": "Manage",
   "purchasing.sellingTitle": "Selling",
   "purchasing.sellingLede": "Review and manage orders other businesses place with you.",
+  "purchasing.sellingPrimary": "Primary actions",
+  "purchasing.sellingStatus": "By status",
   "purchasing.choiceReceive":
     "Receive stock when goods are already here ? inventory increases immediately.",
   "purchasing.choiceOrder":
@@ -5853,6 +5856,12 @@ export const en = {
   "purchasing.utang.noAvailableCredit": "No available credit on this relationship.",
   "purchasing.utang.insufficientCredit":
     "Order total exceeds available credit. Reduce the order or choose another payment method.",
+  "purchasing.utang.creditLimit": "Credit limit",
+  "purchasing.utang.outstanding": "Outstanding Utang",
+  "purchasing.utang.reservedActivePos": "Reserved by active POs",
+  "purchasing.utang.available": "Available credit",
+  "purchasing.utang.thisPoTotal": "This PO total",
+  "purchasing.utang.remainingAfterPo": "Remaining after PO",
   "purchasing.declineChanges": "Decline changes",
   "purchasing.changesDeclined": "Proposed changes declined. Waiting for supplier response.",
   "purchasing.changesNeedApproval": "Supplier proposed changes. Accept them before receiving.",

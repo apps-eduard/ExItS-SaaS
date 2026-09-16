@@ -162,12 +162,25 @@ describe("PurchasingHubPage buying/selling groups", () => {
     expect(within(buying).queryByTestId("purchasing-incoming-orders")).not.toBeInTheDocument();
 
     expect(within(selling).getByTestId("purchasing-incoming-orders")).toBeInTheDocument();
-    expect(within(selling).getByTestId("purchasing-incoming-accepted")).toBeInTheDocument();
     expect(within(selling).getByTestId("purchasing-incoming-preparing")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-all")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-accepted")).toBeInTheDocument();
     expect(within(selling).getByTestId("purchasing-incoming-completed")).toBeInTheDocument();
     expect(within(selling).getByTestId("purchasing-incoming-declined")).toBeInTheDocument();
     expect(within(selling).queryByTestId("purchasing-orders")).not.toBeInTheDocument();
     expect(within(selling).queryByTestId("purchasing-receive-stock")).not.toBeInTheDocument();
+
+    expect(within(selling).getByText("purchasing.sellingPrimary")).toBeInTheDocument();
+    expect(within(selling).getByText("purchasing.sellingStatus")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-selling-primary")).toContainElement(
+      within(selling).getByTestId("purchasing-incoming-orders"),
+    );
+    expect(within(selling).getByTestId("purchasing-selling-primary")).toContainElement(
+      within(selling).getByTestId("purchasing-incoming-preparing"),
+    );
+    expect(within(selling).getByTestId("purchasing-selling-actions")).toContainElement(
+      within(selling).getByTestId("purchasing-incoming-all"),
+    );
 
     expect(screen.queryByTestId("purchasing-toolbar")).not.toBeInTheDocument();
     expect(document.querySelectorAll(".purchasing-hub-choices")).toHaveLength(0);
@@ -186,17 +199,20 @@ describe("PurchasingHubPage buying/selling groups", () => {
 
     const buyingPrimary = await screen.findByTestId("purchasing-buying-primary");
     const buyingActions = screen.getByTestId("purchasing-buying-actions");
+    const sellingPrimary = screen.getByTestId("purchasing-selling-primary");
     const sellingActions = screen.getByTestId("purchasing-selling-actions");
     expect(buyingPrimary.className).toMatch(/exits-chip-bar--actions/);
     expect(buyingActions).toHaveAttribute("role", "toolbar");
     expect(buyingActions.className).toMatch(/exits-chip-bar--actions/);
+    expect(sellingPrimary.className).toMatch(/exits-chip-bar--actions/);
     expect(sellingActions.className).toMatch(/exits-chip-bar--actions/);
 
     await waitFor(() => {
       expect(within(screen.getByTestId("purchasing-orders")).getByText("12")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-orders")).getByText("2")).toBeInTheDocument();
-      expect(within(screen.getByTestId("purchasing-incoming-accepted")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-preparing")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-all")).getByText("6")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-accepted")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-completed")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-declined")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-receipts")).getByText("1")).toBeInTheDocument();

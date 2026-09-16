@@ -117,6 +117,11 @@ public interface IConnectedPurchaseOrderRepository
     Task<ConnectedPurchaseOrder?> GetAsync(ConnectedPurchaseOrderId id, CancellationToken ct = default);
     Task<ConnectedPurchaseOrder?> GetByBuyerPurchaseOrderAsync(PurchaseOrderId id, CancellationToken ct = default);
     Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier, CancellationToken ct = default);
+    /// <summary>Buyer↔seller connected POs used for Utang reservation totals.</summary>
+    Task<IReadOnlyList<ConnectedPurchaseOrder>> ListBetweenOrganizationsAsync(
+        PosOrganizationId supplierOrganizationId,
+        PosOrganizationId buyerOrganizationId,
+        CancellationToken ct = default);
     Task AddAsync(ConnectedPurchaseOrder order, CancellationToken ct = default);
     Task UpdateAsync(ConnectedPurchaseOrder order, CancellationToken ct = default);
 }

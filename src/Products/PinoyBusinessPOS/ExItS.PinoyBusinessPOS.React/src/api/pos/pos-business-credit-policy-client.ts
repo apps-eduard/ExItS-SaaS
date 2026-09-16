@@ -22,6 +22,7 @@ export const posBusinessCustomerCreditPolicySchema = z.object({
   creditLimit: z.number().nullable().optional(),
   defaultTermDays: z.number().int().nullable().optional(),
   outstandingAmount: z.number(),
+  reservedByActivePos: z.number().default(0),
   availableCredit: z.number(),
   configuredByUserId: guidSchema.nullable().optional(),
   configuredAtUtc: isoDateTimeSchema.nullable().optional(),

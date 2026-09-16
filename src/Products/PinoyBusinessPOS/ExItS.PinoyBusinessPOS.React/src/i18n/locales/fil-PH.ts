@@ -2182,6 +2182,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "New Utang is paused. Existing balances can still be paid.",
 
   "customers.creditPolicy.outstanding": "Outstanding",
+  "customers.creditPolicy.reservedActivePos": "Reserved by active POs",
 
   "customers.creditPolicy.outstandingOverLimitWarning":
     "Mas malaki ang outstanding kaysa sa bagong limit. Zero ang available credit hanggang bumaba ang balance.",
@@ -9028,6 +9029,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.buyingManage": "Pamahalaan",
   "purchasing.sellingTitle": "Pagbebenta",
   "purchasing.sellingLede": "Suriin at pamahalaan ang mga order na inilagay ng ibang negosyo sa inyo.",
+  "purchasing.sellingPrimary": "Pangunahing aksyon",
+  "purchasing.sellingStatus": "Ayon sa status",
 
   "purchasing.invalidLine": "Maglagay ng wastong dami at unit cost.",
 
@@ -9171,6 +9174,12 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.utang.insufficientCredit":
     "Order total exceeds available credit. Reduce the order or choose another payment method.",
+  "purchasing.utang.creditLimit": "Credit limit",
+  "purchasing.utang.outstanding": "Outstanding Utang",
+  "purchasing.utang.reservedActivePos": "Reserved by active POs",
+  "purchasing.utang.available": "Available credit",
+  "purchasing.utang.thisPoTotal": "This PO total",
+  "purchasing.utang.remainingAfterPo": "Remaining after PO",
 
   "purchasing.declineChanges": "Decline changes",
 

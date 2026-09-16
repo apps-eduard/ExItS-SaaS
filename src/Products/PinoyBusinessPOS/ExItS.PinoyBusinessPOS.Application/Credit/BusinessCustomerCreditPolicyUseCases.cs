@@ -17,6 +17,7 @@ public sealed record BusinessCustomerCreditPolicyReadDto(
     decimal? CreditLimit,
     int? DefaultTermDays,
     decimal OutstandingAmount,
+    decimal ReservedByActivePos,
     decimal AvailableCredit,
     Guid? ConfiguredByUserId,
     DateTimeOffset? ConfiguredAtUtc,
@@ -125,15 +126,18 @@ public sealed class GetBusinessCustomerCreditPolicy
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IBusinessCustomerCreditPolicyRepository _policies;
     private readonly IBusinessCreditEntryRepository _businessCredits;
+    private readonly IConnectedPurchaseOrderRepository _connectedOrders;
 
     public GetBusinessCustomerCreditPolicy(
         IConnectedSupplierRelationshipRepository relationships,
         IBusinessCustomerCreditPolicyRepository policies,
-        IBusinessCreditEntryRepository businessCredits)
+        IBusinessCreditEntryRepository businessCredits,
+        IConnectedPurchaseOrderRepository connectedOrders)
     {
         _relationships = relationships;
         _policies = policies;
         _businessCredits = businessCredits;
+        _connectedOrders = connectedOrders;
     }
 
     public async Task<ApplicationResult<BusinessCustomerCreditPolicyReadDto>> ExecuteAsync(
@@ -172,6 +176,7 @@ public sealed class GetBusinessCustomerCreditPolicy
                     CreditLimit: null,
                     DefaultTermDays: null,
                     OutstandingAmount: 0m,
+                    ReservedByActivePos: 0m,
                     AvailableCredit: 0m,
                     ConfiguredByUserId: null,
                     ConfiguredAtUtc: null,
@@ -189,14 +194,23 @@ public sealed class GetBusinessCustomerCreditPolicy
                 cancellationToken)
             .ConfigureAwait(false);
 
+        var orders = await _connectedOrders
+            .ListBetweenOrganizationsAsync(
+                policy.SellerOrganizationId,
+                policy.BuyerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var reserved = ConnectedPoUtangCredit.SumActiveReservations(orders);
+
         return ApplicationResult<BusinessCustomerCreditPolicyReadDto>.Success(
-            Map(policy, connectionId, outstanding));
+            Map(policy, connectionId, outstanding, reserved));
     }
 
     internal static BusinessCustomerCreditPolicyReadDto Map(
         BusinessCustomerCreditPolicy policy,
         Guid connectionId,
-        decimal outstanding = 0m) =>
+        decimal outstanding = 0m,
+        decimal reservedByActivePos = 0m) =>
         new(
             connectionId,
             policy.SellerOrganizationId.Value,
@@ -205,7 +219,12 @@ public sealed class GetBusinessCustomerCreditPolicy
             policy.CreditLimit,
             policy.DefaultTermDays,
             outstanding,
-            BusinessCustomerCreditPolicy.AvailableCredit(policy.Status, policy.CreditLimit, outstanding),
+            reservedByActivePos,
+            ConnectedPoUtangCredit.AvailableCredit(
+                policy.Status,
+                policy.CreditLimit,
+                outstanding,
+                reservedByActivePos),
             policy.ConfiguredByUserId,
             policy.ConfiguredAtUtc,
             policy.ApprovedByUserId,

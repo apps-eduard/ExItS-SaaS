@@ -62,9 +62,9 @@ public enum ConnectedPurchaseOrderStatus
 
 /// <summary>
 /// Buyer-selected settlement term for a connected purchase order (intended/agreed method — not proof of payment).
-/// <see cref="Cash"/> is COD / pay-on-delivery.
+/// <see cref="Cash"/> is COD / pay-on-delivery (create default).
 /// <see cref="ManualGCash"/> is manual e-wallet reference (no gateway verification).
-/// <see cref="Utang"/> is a B2B payable term only; this package does not post customer-credit debt at PO create/confirm.
+/// <see cref="Utang"/> reserves available credit on submit; receipts convert reservation into Outstanding Utang.
 /// </summary>
 public enum ConnectedPoPaymentTerm
 {
@@ -1316,6 +1316,11 @@ public sealed class ConnectedPurchaseOrder
     public Guid? BuyerRespondedByUserId { get; private set; }
     public ConnectedPoDeclineReason? DeclineReason { get; private set; }
     public string? DeclineNote { get; private set; }
+    /// <summary>
+    /// Amount already converted from Utang reservation into Outstanding Utang (via goods receipts).
+    /// Active reservation = reservation base − this value.
+    /// </summary>
+    public decimal CreditPostedAmount { get; private set; }
     public IReadOnlyList<ConnectedPurchaseOrderLine> Lines => _lines;
     public decimal ProposedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ProposedLineTotal));
     public decimal ConfirmedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ConfirmedLineTotal));
@@ -1348,7 +1353,8 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? buyerRespondedAtUtc = null,
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
-        ConnectedPoPaymentTerm? confirmedPaymentTerm = null)
+        ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        decimal creditPostedAmount = 0m)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -1376,6 +1382,7 @@ public sealed class ConnectedPurchaseOrder
         ChangesProposedByUserId = changesProposedByUserId;
         BuyerRespondedAtUtc = buyerRespondedAtUtc;
         BuyerRespondedByUserId = buyerRespondedByUserId;
+        CreditPostedAmount = creditPostedAmount < 0m ? 0m : SaleMoney.RoundMoney(creditPostedAmount);
         _lines = lines;
     }
 
@@ -1604,6 +1611,41 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Converts received Utang amount from reservation into Outstanding Utang tracking on this PO.
+    /// Does not create the ledger entry — Application posts <see cref="Credit.BusinessCreditEntry"/>.
+    /// </summary>
+    public void PostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        {
+            return;
+        }
+
+        if (receivedAmount <= 0m)
+        {
+            return;
+        }
+
+        var rounded = SaleMoney.RoundMoney(receivedAmount);
+        var bas = ConnectedPoUtangCredit.ReservationBaseAmount(this);
+        var maxPostable = bas - CreditPostedAmount;
+        if (maxPostable < 0m)
+        {
+            maxPostable = 0m;
+        }
+
+        var apply = rounded > maxPostable ? maxPostable : rounded;
+        if (apply <= 0m)
+        {
+            return;
+        }
+
+        CreditPostedAmount = SaleMoney.RoundMoney(CreditPostedAmount + apply);
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>Buyer withdraw while supplier has not yet accepted (New or awaiting buyer approval).</summary>
     public void WithdrawByBuyer(DateTimeOffset utcNow)
     {
@@ -1622,9 +1664,12 @@ public sealed class ConnectedPurchaseOrder
 
     public bool CanBuyerWithdraw => Status is ConnectedPurchaseOrderStatus.New
         or ConnectedPurchaseOrderStatus.ChangesProposed;
-    public bool CanBuyerReceive => Status is ConnectedPurchaseOrderStatus.Accepted
-        or ConnectedPurchaseOrderStatus.Preparing
-        or ConnectedPurchaseOrderStatus.Fulfilled;
+
+    /// <summary>
+    /// Buyer may receive only after supplier ships/dispatches (<see cref="ConnectedPurchaseOrderStatus.Fulfilled"/>).
+    /// Accepted / Preparing remain read-only for receiving.
+    /// </summary>
+    public bool CanBuyerReceive => Status == ConnectedPurchaseOrderStatus.Fulfilled;
 
     private void ReplaceLines(List<ConnectedPurchaseOrderLine> lines)
     {
@@ -1687,7 +1732,8 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? buyerRespondedAtUtc = null,
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
-        ConnectedPoPaymentTerm? confirmedPaymentTerm = null) =>
+        ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        decimal creditPostedAmount = 0m) =>
         new(
             id,
             relationshipId,
@@ -1715,5 +1761,6 @@ public sealed class ConnectedPurchaseOrder
             buyerRespondedAtUtc,
             buyerRespondedByUserId,
             proposedPaymentTerm,
-            confirmedPaymentTerm);
+            confirmedPaymentTerm,
+            creditPostedAmount);
 }
