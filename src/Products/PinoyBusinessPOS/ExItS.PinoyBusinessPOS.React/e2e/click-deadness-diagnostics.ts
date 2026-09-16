@@ -1,5 +1,11 @@
 import type { Page } from "@playwright/test";
 
+/**
+ * Permanent failure diagnostics for click-deadness regression e2e.
+ * Used only when a real (non-force) probe click fails — dumps elementsFromPoint
+ * and fullscreen overlay inventory so the ACTUAL_CLICK_BLOCKER is identifiable.
+ */
+
 export type HitTestElementReport = {
   tag: string;
   className: string;

@@ -4,6 +4,10 @@ import { useDeferredVisible } from "@/components/exits/loading/useDeferredVisibl
 /**
  * Blocking overlay for workspace/account transitions.
  * Keeps the existing shell painted underneath; does not clear content.
+ *
+ * VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
+ * When `active=false`, fade may remain mounted briefly, but root + every
+ * descendant must be pointer-events:none (and inert) until unmount.
  */
 export function WorkspaceTransitionOverlay({
   active,

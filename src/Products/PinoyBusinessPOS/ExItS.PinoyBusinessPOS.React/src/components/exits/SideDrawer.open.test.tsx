@@ -66,6 +66,10 @@ describe("SideDrawer open toggle", () => {
       "data-interactive",
       "false",
     );
+    expect(screen.getByTestId("probe-drawer")).toHaveAttribute(
+      "data-interactive",
+      "false",
+    );
     expect(screen.getByTestId("probe-drawer")).toHaveAttribute("inert");
 
     // Rapid reopen/close must not leave an interactive ghost backdrop.
@@ -81,6 +85,7 @@ describe("SideDrawer open toggle", () => {
       vi.advanceTimersByTime(600);
     });
     await waitFor(() => {
+      // Eventual unmount after exit animation.
       expect(screen.queryByTestId("probe-drawer")).not.toBeInTheDocument();
     });
 

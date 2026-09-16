@@ -17,12 +17,14 @@ async function bootstrap() {
     throw new Error("Root element #root was not found.");
   }
 
+  // Non-secret build label for runtime/bundle verification (e2e + support).
+  // Window global is DEV-only; dataset remains available in all modes.
   const buildSha = readPosBuildLabel();
   rootElement.dataset.exitsPosBuildSha = buildSha;
   document.documentElement.dataset.exitsPosBuildSha = buildSha;
-  (window as Window & { __EXITS_POS_BUILD_SHA__?: string }).__EXITS_POS_BUILD_SHA__ = buildSha;
   if (import.meta.env.DEV) {
-    console.info(`[ExItS POS] build SHA ${buildSha}`);
+    (window as Window & { __EXITS_POS_BUILD_SHA__?: string }).__EXITS_POS_BUILD_SHA__ = buildSha;
+    console.info(`[ExItS POS] build ${buildSha}`);
   }
 
   createRoot(rootElement).render(

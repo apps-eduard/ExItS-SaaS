@@ -14,10 +14,17 @@ import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-function resolvePosBuildSha(): string {
+/**
+ * Build identity for runtime verification (dev / e2e). Not a secret.
+ * Production assets omit git SHA unless VITE_POS_BUILD_SHA or VITE_POS_EXPOSE_GIT_SHA=1.
+ */
+function resolvePosBuildSha(mode: string): string {
   const fromEnv = process.env.VITE_POS_BUILD_SHA?.trim();
   if (fromEnv) {
     return fromEnv;
+  }
+  if (mode === "production" && process.env.VITE_POS_EXPOSE_GIT_SHA !== "1") {
+    return mode;
   }
   try {
     return execSync("git rev-parse HEAD", {
@@ -30,11 +37,9 @@ function resolvePosBuildSha(): string {
   }
 }
 
-const posBuildSha = resolvePosBuildSha();
-
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   define: {
-    "import.meta.env.VITE_POS_BUILD_SHA": JSON.stringify(posBuildSha),
+    "import.meta.env.VITE_POS_BUILD_SHA": JSON.stringify(resolvePosBuildSha(mode)),
   },
   plugins: [
     react(),
@@ -143,4 +148,4 @@ export default defineConfig({
       "scripts/emulator-port-forward.test.mjs",
     ],
   },
-});
+}));

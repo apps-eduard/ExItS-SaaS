@@ -287,6 +287,7 @@ export function DropdownMenu({
         maxHeight: coords?.maxHeight,
         width: coords?.width,
         minWidth: coords?.width,
+        // VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
         // visibility:hidden still hit-tests — disable pointer events until positioned.
         visibility: coords ? "visible" : "hidden",
         pointerEvents: coords ? "auto" : "none",

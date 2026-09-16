@@ -4,9 +4,9 @@ import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 /**
- * Proves inactive fullscreen overlays cannot leave children hit-testing.
+ * VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
  * Parent `pointer-events:none` alone is insufficient — descendants default to `auto`
- * and still intercept clicks (CSS UI / MDN).
+ * and still intercept clicks (Case B / CSS UI / MDN).
  */
 const cssPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -33,6 +33,30 @@ test.describe("Overlay pointer-events invariant", () => {
       .getByTestId("ws-backdrop")
       .evaluate((el) => getComputedStyle(el).pointerEvents);
     expect(backdropPe, "ACTUAL_CLICK_BLOCKER=workspace-transition__backdrop").toBe("none");
+
+    const hit = await page.evaluate(() => {
+      const el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+      return el instanceof Element ? el.id || el.getAttribute("data-testid") : null;
+    });
+    expect(hit).toBe("under");
+  });
+
+  test("closed SideDrawer must defeat child pointer-events:auto", async ({ page }) => {
+    const css = fs.readFileSync(cssPath, "utf8");
+    await page.setContent(`<!DOCTYPE html>
+<html><head><style>${css}</style></head>
+<body>
+  <button id="under" style="position:fixed;inset:0;z-index:1">under</button>
+  <div class="exits-side-drawer" data-interactive="false" data-open="false" data-testid="drawer">
+    <div class="exits-side-drawer__backdrop" data-interactive="false" data-open="false" data-testid="drawer-backdrop" style="pointer-events:auto;opacity:0"></div>
+    <div class="exits-side-drawer__panel" data-interactive="false" data-open="false" data-testid="drawer-panel" style="pointer-events:auto">panel</div>
+  </div>
+</body></html>`);
+
+    const backdropPe = await page
+      .getByTestId("drawer-backdrop")
+      .evaluate((el) => getComputedStyle(el).pointerEvents);
+    expect(backdropPe, "ACTUAL_CLICK_BLOCKER=side-drawer__backdrop").toBe("none");
 
     const hit = await page.evaluate(() => {
       const el = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);

@@ -128,7 +128,7 @@ test.describe("Click deadness real-interaction stress", () => {
 
     const buildSha = await readRuntimeBuildSha(page);
     expect(buildSha, "runtime must expose build SHA from CURRENT HEAD bundle").toBeTruthy();
-    expect(buildSha).toMatch(/^[0-9a-f]{7,40}$|development|unknown/i);
+    expect(buildSha).toMatch(/^[0-9a-f]{7,40}$|development|production|unknown/i);
 
     // SW blocked by test.use; still assert controller absence.
     const swCount = await page.evaluate(() => (navigator.serviceWorker?.controller ? 1 : 0));
