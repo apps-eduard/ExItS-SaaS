@@ -1,9 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Ban,
+  CheckCircle2,
   ClipboardList,
   FilePlus,
   Inbox,
+  Package,
   PackageCheck,
   PackagePlus,
   ShoppingCart,
@@ -30,9 +33,10 @@ import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBa
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Card } from "@/components/ui/card";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { countIncomingOrdersByUiFilter } from "@/features/purchasing/incoming-orders-helpers";
 import {
   purchasingHubDirectPurchasesQueryKey,
-  purchasingHubIncomingPendingQueryKey,
+  purchasingHubIncomingOrdersQueryKey,
   purchasingHubPurchaseOrdersQueryKey,
   purchasingHubSuppliersQueryKey,
 } from "@/features/purchasing/purchasing-nav-activity";
@@ -40,7 +44,16 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-type BrowseKey = "orders" | "incoming" | "receipts" | "direct" | "suppliers";
+type BrowseKey =
+  | "orders"
+  | "incoming"
+  | "incoming-accepted"
+  | "incoming-preparing"
+  | "incoming-completed"
+  | "incoming-declined"
+  | "receipts"
+  | "direct"
+  | "suppliers";
 
 type BrowseDef = {
   key: BrowseKey;
@@ -95,14 +108,14 @@ export function PurchasingHubPage() {
     queryFn: ({ signal }) => listPurchaseOrders(workspace!, { page: 1, pageSize: 40 }, signal),
   });
 
-  const incomingPendingQuery = useQuery({
-    queryKey: purchasingHubIncomingPendingQueryKey(
+  const incomingOrdersQuery = useQuery({
+    queryKey: purchasingHubIncomingOrdersQueryKey(
       workspace?.organizationId,
       workspace?.branchId,
     ),
     enabled: Boolean(workspace) && online && allowViewPurchasing,
     staleTime: 30_000,
-    queryFn: ({ signal }) => listIncomingOrders(workspace!, { status: "New" }, signal),
+    queryFn: ({ signal }) => listIncomingOrders(workspace!, {}, signal),
   });
 
   const directPurchasesQuery = useQuery({
@@ -126,7 +139,11 @@ export function PurchasingHubPage() {
   const receivableCount = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
     isPurchaseOrderReceivable(po),
   ).length;
-  const incomingPendingCount = incomingPendingQuery.data?.length ?? 0;
+  const incomingStatusCounts = useMemo(
+    () => countIncomingOrdersByUiFilter(incomingOrdersQuery.data ?? []),
+    [incomingOrdersQuery.data],
+  );
+  const incomingPendingCount = incomingStatusCounts.pending;
   const directTotal = directPurchasesQuery.data?.totalCount ?? 0;
   const suppliersTotal = suppliersQuery.data?.totalCount ?? 0;
 
@@ -218,9 +235,41 @@ export function PurchasingHubPage() {
         testId: "purchasing-incoming-orders",
         count: incomingPendingCount,
       });
+      items.push({
+        key: "incoming-accepted",
+        label: t("incomingOrders.filterAccepted"),
+        icon: CheckCircle2,
+        href: "/purchasing/incoming-orders?status=accepted",
+        testId: "purchasing-incoming-accepted",
+        count: incomingStatusCounts.accepted,
+      });
+      items.push({
+        key: "incoming-preparing",
+        label: t("incomingOrders.filterPreparing"),
+        icon: Package,
+        href: "/purchasing/incoming-orders?status=preparing",
+        testId: "purchasing-incoming-preparing",
+        count: incomingStatusCounts.preparing,
+      });
+      items.push({
+        key: "incoming-completed",
+        label: t("incomingOrders.filterCompleted"),
+        icon: PackageCheck,
+        href: "/purchasing/incoming-orders?status=completed",
+        testId: "purchasing-incoming-completed",
+        count: incomingStatusCounts.completed,
+      });
+      items.push({
+        key: "incoming-declined",
+        label: t("incomingOrders.filterDeclined"),
+        icon: Ban,
+        href: "/purchasing/incoming-orders?status=declined",
+        testId: "purchasing-incoming-declined",
+        count: incomingStatusCounts.declined,
+      });
     }
     return items;
-  }, [allowViewPurchasing, incomingPendingCount, t]);
+  }, [allowViewPurchasing, incomingPendingCount, incomingStatusCounts, t]);
 
   const buyingManageItems = toChipItems(buyingManageDefs);
   const sellingItems = toChipItems(sellingDefs);

@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { ConnectedPurchaseOrder } from "@/api/pos/pos-connected-suppliers-client";
 import {
   countIncomingLines,
+  countIncomingOrdersByUiFilter,
   countIncomingUnits,
   filterIncomingOrdersBySearch,
+  filterIncomingOrdersByUiStatus,
   formatIncomingLineMath,
   uiFilterToApiStatus,
 } from "@/features/purchasing/incoming-orders-helpers";
@@ -84,5 +86,44 @@ describe("incoming-orders-helpers", () => {
     expect(filterIncomingOrdersBySearch(rows, "paul")).toHaveLength(1);
     expect(filterIncomingOrdersBySearch(rows, "000123")).toHaveLength(1);
     expect(filterIncomingOrdersBySearch(rows, "missing")).toHaveLength(0);
+  });
+
+  it("counts status tabs and filters by UI status", () => {
+    const rows = [
+      order({ status: "New" }),
+      order({
+        connectedPurchaseOrderId: "11111111-1111-4111-8111-111111111111",
+        status: "New",
+      }),
+      order({
+        connectedPurchaseOrderId: "22222222-2222-4222-8222-222222222222",
+        status: "Accepted",
+      }),
+      order({
+        connectedPurchaseOrderId: "33333333-3333-4333-8333-333333333333",
+        status: "Preparing",
+      }),
+      order({
+        connectedPurchaseOrderId: "44444444-4444-4444-8444-444444444444",
+        status: "Fulfilled",
+      }),
+      order({
+        connectedPurchaseOrderId: "55555555-5555-4555-8555-555555555555",
+        status: "Declined",
+      }),
+      order({
+        connectedPurchaseOrderId: "66666666-6666-4666-8666-666666666666",
+        status: "Withdrawn",
+      }),
+    ];
+    expect(countIncomingOrdersByUiFilter(rows)).toEqual({
+      pending: 2,
+      accepted: 1,
+      preparing: 1,
+      completed: 1,
+      declined: 1,
+    });
+    expect(filterIncomingOrdersByUiStatus(rows, "pending")).toHaveLength(2);
+    expect(filterIncomingOrdersByUiStatus(rows, "all")).toHaveLength(7);
   });
 });

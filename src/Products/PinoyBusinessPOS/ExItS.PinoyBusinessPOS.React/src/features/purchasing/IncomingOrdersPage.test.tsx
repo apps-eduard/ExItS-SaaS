@@ -190,13 +190,15 @@ describe("IncomingOrders React flow", () => {
     await waitFor(() => expect(screen.getByTestId(`incoming-order-row-${cpoId}`)).toBeInTheDocument());
     expect(listIncomingOrders).toHaveBeenCalledWith(
       expect.objectContaining({ organizationId: orgId }),
-      { status: "New" },
+      {},
       expect.anything(),
     );
     expect(screen.getAllByText("PO-000123").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Paul Store/).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Incoming connection requests")).not.toBeInTheDocument();
     expect(screen.getByTestId("incoming-orders-filter-pending")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("incoming-orders-filter-pending")).toHaveAccessibleName(/Pending.*1/i);
+    expect(screen.getByTestId("incoming-orders-filter-all")).not.toHaveAccessibleName(/All,\s*\d/i);
   });
 
   it("accepts a pending order and hides accept/decline", async () => {

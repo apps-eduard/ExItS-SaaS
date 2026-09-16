@@ -136,8 +136,12 @@ describe("PurchasingHubPage buying/selling groups", () => {
       pageSize: 40,
     });
     listIncomingOrders.mockResolvedValue([
-      { connectedPurchaseOrderId: "a" },
-      { connectedPurchaseOrderId: "b" },
+      { connectedPurchaseOrderId: "a", status: "New" },
+      { connectedPurchaseOrderId: "b", status: "New" },
+      { connectedPurchaseOrderId: "c", status: "Accepted" },
+      { connectedPurchaseOrderId: "d", status: "Preparing" },
+      { connectedPurchaseOrderId: "e", status: "Fulfilled" },
+      { connectedPurchaseOrderId: "f", status: "Declined" },
     ]);
     listDirectPurchases.mockResolvedValue({ items: [], totalCount: 4, page: 1, pageSize: 1 });
     listSuppliers.mockResolvedValue({ items: [], totalCount: 9, page: 1, pageSize: 1 });
@@ -158,6 +162,10 @@ describe("PurchasingHubPage buying/selling groups", () => {
     expect(within(buying).queryByTestId("purchasing-incoming-orders")).not.toBeInTheDocument();
 
     expect(within(selling).getByTestId("purchasing-incoming-orders")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-accepted")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-preparing")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-completed")).toBeInTheDocument();
+    expect(within(selling).getByTestId("purchasing-incoming-declined")).toBeInTheDocument();
     expect(within(selling).queryByTestId("purchasing-orders")).not.toBeInTheDocument();
     expect(within(selling).queryByTestId("purchasing-receive-stock")).not.toBeInTheDocument();
 
@@ -187,6 +195,10 @@ describe("PurchasingHubPage buying/selling groups", () => {
     await waitFor(() => {
       expect(within(screen.getByTestId("purchasing-orders")).getByText("12")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-incoming-orders")).getByText("2")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-accepted")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-preparing")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-completed")).getByText("1")).toBeInTheDocument();
+      expect(within(screen.getByTestId("purchasing-incoming-declined")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-receipts")).getByText("1")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-direct")).getByText("4")).toBeInTheDocument();
       expect(within(screen.getByTestId("purchasing-suppliers")).getByText("9")).toBeInTheDocument();
@@ -208,6 +220,16 @@ describe("PurchasingHubPage buying/selling groups", () => {
 
     await screen.findByTestId("purchasing-incoming-orders");
     await user.click(screen.getByTestId("purchasing-incoming-orders"));
+    expect(await screen.findByText("incoming-page")).toBeInTheDocument();
+  });
+
+  it("navigates from Selling Accepted quick access with status query", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const accepted = await screen.findByTestId("purchasing-incoming-accepted");
+    expect(accepted).toHaveAttribute("href", "/purchasing/incoming-orders?status=accepted");
+    await user.click(accepted);
     expect(await screen.findByText("incoming-page")).toBeInTheDocument();
   });
 

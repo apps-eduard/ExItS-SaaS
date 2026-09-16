@@ -18,7 +18,16 @@ export function purchasingHubIncomingPendingQueryKey(
   organizationId: string | undefined,
   branchId: string | undefined,
 ) {
-  return ["purchasing-hub", "incoming-pending", organizationId, branchId] as const;
+  // Shared with full incoming list — pending count is derived client-side.
+  return purchasingHubIncomingOrdersQueryKey(organizationId, branchId);
+}
+
+/** Full incoming PO list for Selling hub quick-access counts (all statuses). */
+export function purchasingHubIncomingOrdersQueryKey(
+  organizationId: string | undefined,
+  branchId: string | undefined,
+) {
+  return ["purchasing-hub", "incoming-orders", organizationId, branchId] as const;
 }
 
 export function purchasingHubDirectPurchasesQueryKey(

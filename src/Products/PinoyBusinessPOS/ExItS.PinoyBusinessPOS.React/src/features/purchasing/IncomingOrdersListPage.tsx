@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { canViewPurchasing } from "@/access/pos-capabilities";
@@ -31,10 +31,11 @@ import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   countIncomingLines,
+  countIncomingOrdersByUiFilter,
   countIncomingUnits,
   filterIncomingOrdersBySearch,
+  filterIncomingOrdersByUiStatus,
   incomingOrderStatusTone,
-  uiFilterToApiStatus,
   type IncomingOrdersUiFilter,
 } from "@/features/purchasing/incoming-orders-helpers";
 import {
@@ -69,6 +70,20 @@ const FILTERS: Array<{
   { value: "declined", labelKey: "incomingOrders.filterDeclined" },
 ];
 
+function parseIncomingStatusParam(raw: string | null): IncomingOrdersUiFilter | null {
+  switch (raw) {
+    case "all":
+    case "pending":
+    case "accepted":
+    case "preparing":
+    case "completed":
+    case "declined":
+      return raw;
+    default:
+      return null;
+  }
+}
+
 function statusLabel(t: (key: MessageKey) => string, status: string, displayStatus: string): string {
   switch (status) {
     case "New":
@@ -94,9 +109,11 @@ export function IncomingOrdersListPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
-  const [filter, setFilter] = useState<IncomingOrdersUiFilter>("pending");
+  const initialFilter = parseIncomingStatusParam(searchParams.get("status")) ?? "pending";
+  const [filter, setFilter] = useState<IncomingOrdersUiFilter>(initialFilter);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -111,7 +128,6 @@ export function IncomingOrdersListPage() {
   );
 
   const allowView = canViewPurchasing(sessionGrant);
-  const apiStatus = uiFilterToApiStatus(filter);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 250);
@@ -119,18 +135,43 @@ export function IncomingOrdersListPage() {
   }, [searchInput]);
 
   useEffect(() => {
+    const fromUrl = parseIncomingStatusParam(searchParams.get("status")) ?? "pending";
+    setFilter((current) => (current === fromUrl ? current : fromUrl));
+  }, [searchParams]);
+
+  useEffect(() => {
     setPage(1);
   }, [filter, debouncedSearch]);
 
+  function selectFilter(next: IncomingOrdersUiFilter) {
+    setFilter(next);
+    if (next === "pending") {
+      setSearchParams({}, { replace: true });
+      return;
+    }
+    setSearchParams({ status: next }, { replace: true });
+  }
+
+  // Load all statuses once so tab badges stay accurate while filtering client-side.
   const query = useQuery({
-    queryKey: ["connected-suppliers", "incoming-orders", workspace?.organizationId, apiStatus ?? "All"],
+    queryKey: ["connected-suppliers", "incoming-orders", workspace?.organizationId, "All"],
     enabled: Boolean(workspace) && online && allowView,
-    queryFn: ({ signal }) => listIncomingOrders(workspace!, { status: apiStatus }, signal),
+    queryFn: ({ signal }) => listIncomingOrders(workspace!, {}, signal),
   });
 
+  const statusCounts = useMemo(
+    () => countIncomingOrdersByUiFilter(query.data ?? []),
+    [query.data],
+  );
+
+  const statusScoped = useMemo(
+    () => filterIncomingOrdersByUiStatus(query.data ?? [], filter),
+    [query.data, filter],
+  );
+
   const filtered = useMemo(
-    () => filterIncomingOrdersBySearch(query.data ?? [], debouncedSearch),
-    [query.data, debouncedSearch],
+    () => filterIncomingOrdersBySearch(statusScoped, debouncedSearch),
+    [statusScoped, debouncedSearch],
   );
 
   const paged = useMemo(() => {
@@ -236,8 +277,10 @@ export function IncomingOrdersListPage() {
           key: item.value,
           label: t(item.labelKey),
           state: filter === item.value ? "active" : "idle",
+          // All has no badge; other tabs show authoritative status counts (incl. 0).
+          count: item.value === "all" ? undefined : statusCounts[item.value],
           testId: `incoming-orders-filter-${item.value}`,
-          onSelect: () => setFilter(item.value),
+          onSelect: () => selectFilter(item.value),
         }))}
       />
 

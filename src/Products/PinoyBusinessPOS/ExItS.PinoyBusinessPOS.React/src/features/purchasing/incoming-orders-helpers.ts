@@ -27,6 +27,57 @@ export function uiFilterToApiStatus(filter: IncomingOrdersUiFilter): string | un
   }
 }
 
+/** Counts for status tabs — excludes `all` (no badge on All). */
+export type IncomingOrdersStatusCounts = Record<
+  Exclude<IncomingOrdersUiFilter, "all">,
+  number
+>;
+
+export function countIncomingOrdersByUiFilter(
+  orders: ReadonlyArray<Pick<ConnectedPurchaseOrder, "status">>,
+): IncomingOrdersStatusCounts {
+  const counts: IncomingOrdersStatusCounts = {
+    pending: 0,
+    accepted: 0,
+    preparing: 0,
+    completed: 0,
+    declined: 0,
+  };
+  for (const order of orders) {
+    switch (order.status) {
+      case "New":
+        counts.pending += 1;
+        break;
+      case "Accepted":
+        counts.accepted += 1;
+        break;
+      case "Preparing":
+        counts.preparing += 1;
+        break;
+      case "Fulfilled":
+        counts.completed += 1;
+        break;
+      case "Declined":
+        counts.declined += 1;
+        break;
+      default:
+        break;
+    }
+  }
+  return counts;
+}
+
+export function filterIncomingOrdersByUiStatus(
+  orders: ReadonlyArray<ConnectedPurchaseOrder>,
+  filter: IncomingOrdersUiFilter,
+): ConnectedPurchaseOrder[] {
+  const apiStatus = uiFilterToApiStatus(filter);
+  if (!apiStatus) {
+    return [...orders];
+  }
+  return orders.filter((order) => order.status === apiStatus);
+}
+
 export function incomingOrderStatusTone(
   status: string,
 ): "success" | "warning" | "info" | "danger" {

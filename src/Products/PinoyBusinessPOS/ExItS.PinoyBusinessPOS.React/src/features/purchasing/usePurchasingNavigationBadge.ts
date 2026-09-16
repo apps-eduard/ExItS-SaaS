@@ -4,11 +4,12 @@ import { canViewPurchasing } from "@/access/pos-capabilities";
 import { listIncomingOrders } from "@/api/pos/pos-connected-suppliers-client";
 import { listPurchaseOrders } from "@/api/pos/pos-purchase-orders-client";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { countIncomingOrdersByUiFilter } from "@/features/purchasing/incoming-orders-helpers";
 import {
   countReceivablePurchaseOrders,
   derivePurchasingNavigationCount,
   formatPurchasingNavBadgeCount,
-  purchasingHubIncomingPendingQueryKey,
+  purchasingHubIncomingOrdersQueryKey,
   purchasingHubPurchaseOrdersQueryKey,
 } from "@/features/purchasing/purchasing-nav-activity";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -49,30 +50,30 @@ export function usePurchasingNavigationBadge(): PurchasingNavigationBadge {
     queryFn: ({ signal }) => listPurchaseOrders(workspace!, { page: 1, pageSize: 40 }, signal),
   });
 
-  const incomingPendingQuery = useQuery({
-    queryKey: purchasingHubIncomingPendingQueryKey(
+  const incomingOrdersQuery = useQuery({
+    queryKey: purchasingHubIncomingOrdersQueryKey(
       workspace?.organizationId,
       workspace?.branchId,
     ),
     enabled,
     staleTime: 30_000,
-    queryFn: ({ signal }) => listIncomingOrders(workspace!, { status: "New" }, signal),
+    queryFn: ({ signal }) => listIncomingOrders(workspace!, {}, signal),
   });
 
   if (!enabled) {
     return { count: null, display: null };
   }
 
-  if (purchaseOrdersQuery.isError || incomingPendingQuery.isError) {
+  if (purchaseOrdersQuery.isError || incomingOrdersQuery.isError) {
     return { count: null, display: null };
   }
 
-  if (!purchaseOrdersQuery.isSuccess || !incomingPendingQuery.isSuccess) {
+  if (!purchaseOrdersQuery.isSuccess || !incomingOrdersQuery.isSuccess) {
     return { count: null, display: null };
   }
 
   const total = derivePurchasingNavigationCount({
-    incomingPendingCount: incomingPendingQuery.data.length,
+    incomingPendingCount: countIncomingOrdersByUiFilter(incomingOrdersQuery.data).pending,
     receivableCount: countReceivablePurchaseOrders(purchaseOrdersQuery.data.items),
   });
 
