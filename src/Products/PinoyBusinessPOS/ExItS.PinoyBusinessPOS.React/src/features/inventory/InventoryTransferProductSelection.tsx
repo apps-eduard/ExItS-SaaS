@@ -11,24 +11,13 @@ import { cn } from "@/lib/cn";
 
 type Translate = (key: string) => string;
 
-const qtyFieldClassName = cn(
-  "exits-input box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
-  "min-w-0 rounded-[var(--exits-field-radius)] border border-border bg-surface",
-  "px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] font-normal text-foreground",
-  "outline-none transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
-  "placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-field-border-hover)]",
-  "exits-input--no-spin",
-);
-
 export type InventoryTransferProductSelectionProps = {
   layout: ResponsiveDataLayout;
   products: readonly PosInventoryAccountDto[];
-  qtyByProduct: Readonly<Record<string, string>>;
   lotByProduct: Readonly<Record<string, string>>;
   lotsCache: Readonly<Record<string, PosInventoryLotDto[]>>;
   online: boolean;
   formatAvailable: (qty: number, uom: string) => string;
-  onQtyChange: (productId: string, value: string) => void;
   onLotChange: (productId: string, lotId: string) => void;
   onLotFocus: (productId: string) => void;
   onAddProduct: (row: PosInventoryAccountDto) => void;
@@ -36,18 +25,16 @@ export type InventoryTransferProductSelectionProps = {
 };
 
 /**
- * Branch Transfer adapter — source availability / qty / lot → ProductSelectionView.
- * Destination, draft lines, and inventory movement stay on the page.
+ * Branch Transfer adapter — source availability / lot → ProductSelectionView.
+ * Quantity is edited on draft lines after add (default +1 per click).
  */
 export function InventoryTransferProductSelection({
   layout,
   products,
-  qtyByProduct,
   lotByProduct,
   lotsCache,
   online,
   formatAvailable,
-  onQtyChange,
   onLotChange,
   onLotFocus,
   onAddProduct,
@@ -91,34 +78,17 @@ export function InventoryTransferProductSelection({
         {t("transfer.unavailable")}
       </span>
     ) : (
-      <div className="product-selection__inline-action flex flex-wrap items-center justify-end gap-1.5">
-        <label className="sr-only" htmlFor={`transfer-qty-${row.productId}`}>
-          {t("transfer.quantity")}
-        </label>
-        <input
-          id={`transfer-qty-${row.productId}`}
-          type="number"
-          inputMode="decimal"
-          step="any"
-          min={0}
-          className={cn(qtyFieldClassName, "w-[5.5rem] shrink-0")}
-          placeholder={t("transfer.quantity")}
-          value={qtyByProduct[row.productId] ?? ""}
-          onChange={(e) => onQtyChange(row.productId, e.target.value)}
-          data-testid={`transfer-picker-qty-${row.productId}`}
-        />
-        <Button
-          type="button"
-          size="icon"
-          className="shrink-0 rounded-full"
-          disabled={addDisabled}
-          aria-label={t("transfer.addProduct")}
-          onClick={() => onAddProduct(row)}
-          data-testid={`transfer-add-${row.productId}`}
-        >
-          <Plus className="size-4" aria-hidden />
-        </Button>
-      </div>
+      <Button
+        type="button"
+        size="icon"
+        className="shrink-0"
+        disabled={addDisabled}
+        aria-label={t("transfer.addProduct")}
+        onClick={() => onAddProduct(row)}
+        data-testid={`transfer-add-${row.productId}`}
+      >
+        <Plus className="size-4" aria-hidden />
+      </Button>
     );
 
     const details =

@@ -4103,6 +4103,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "transfer.dispatchConfirmTitle": "Dispatch inventory transfer?",
 
   "transfer.itemsEmpty": "No items added yet",
+  "transfer.itemsEmptyDetail": "Search or browse products at the source branch to add transfer lines.",
+  "transfer.findProducts": "Find products",
+  "transfer.closeFindProducts": "Close",
+  "transfer.detailsTitle": "Transfer details",
 
   "transfer.listSection": "Transfers",
 

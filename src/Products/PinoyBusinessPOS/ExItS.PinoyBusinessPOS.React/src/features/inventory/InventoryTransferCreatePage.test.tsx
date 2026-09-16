@@ -105,6 +105,11 @@ function renderCreate() {
   );
 }
 
+async function chooseDestination(user: ReturnType<typeof userEvent.setup>, branchName: string) {
+  await user.click(screen.getByTestId("transfer-destination-branch"));
+  await user.click(await screen.findByRole("menuitem", { name: new RegExp(branchName, "i") }));
+}
+
 describe("inventory-transfer-stock-guard helpers", () => {
   it("blocks over-stock and allows exact stock", () => {
     expect(
@@ -185,17 +190,33 @@ describe("InventoryTransferCreatePage stock guard", () => {
         /Available:\s*10\s*Piece/,
       );
     });
-    expect(screen.getByTestId(`transfer-picker-available-${zeroId}`)).toHaveTextContent(/Out of stock/i);
-    expect(screen.getByTestId(`transfer-picker-unavailable-${zeroId}`)).toBeInTheDocument();
-    expect(screen.queryByTestId(`transfer-add-${zeroId}`)).not.toBeInTheDocument();
+    // Out-of-stock products are hidden until the Out of stock category filter is selected.
+    expect(screen.queryByTestId(`transfer-picker-available-${zeroId}`)).not.toBeInTheDocument();
 
-    await user.selectOptions(screen.getByTestId("transfer-destination-branch"), branchBId);
-    await user.type(screen.getByTestId(`transfer-picker-qty-${soapId}`), "10");
+    await chooseDestination(user, "Iloilo Branch");
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
 
     await waitFor(() => {
       expect(screen.getByTestId(`transfer-line-${soapId}:none`)).toBeInTheDocument();
     });
+    // Added products leave the finder table.
+    expect(screen.queryByTestId(`transfer-add-${soapId}`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("transfer-category-multiselect"));
+    await user.click(
+      await screen.findByTestId("transfer-category-multiselect-option-__transfer_out_of_stock__"),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-picker-available-${zeroId}`)).toHaveTextContent(/Out of stock/i);
+    });
+    expect(screen.getByTestId(`transfer-picker-unavailable-${zeroId}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`transfer-add-${zeroId}`)).not.toBeInTheDocument();
+
+    const lineQty = screen.getByTestId(`transfer-line-qty-${soapId}:none`);
+    await user.clear(lineQty);
+    await user.type(lineQty, "10");
+    await user.tab();
     expect(screen.getByTestId("transfer-save-draft")).not.toBeDisabled();
   });
 
@@ -204,16 +225,20 @@ describe("InventoryTransferCreatePage stock guard", () => {
     renderCreate();
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
 
-    await user.selectOptions(screen.getByTestId("transfer-destination-branch"), branchBId);
-    await user.type(screen.getByTestId(`transfer-picker-qty-${soapId}`), "11");
+    await chooseDestination(user, "Iloilo Branch");
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+
+    const lineQty = screen.getByTestId(`transfer-line-qty-${soapId}:none`);
+    await user.clear(lineQty);
+    await user.type(lineQty, "11");
+    await user.tab();
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-create-error")).toHaveTextContent(
         /Only 10 Piece available at Main Branch/i,
       );
     });
-    expect(screen.queryByTestId(`transfer-line-${soapId}:none`)).not.toBeInTheDocument();
     expect(screen.getByTestId("transfer-save-draft")).toBeDisabled();
   });
 
@@ -221,10 +246,14 @@ describe("InventoryTransferCreatePage stock guard", () => {
     const user = userEvent.setup();
     renderCreate();
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
-    await user.selectOptions(screen.getByTestId("transfer-destination-branch"), branchBId);
-    await user.type(screen.getByTestId(`transfer-picker-qty-${soapId}`), "10");
+    await chooseDestination(user, "Iloilo Branch");
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
     await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+
+    const lineQty = screen.getByTestId(`transfer-line-qty-${soapId}:none`);
+    await user.clear(lineQty);
+    await user.type(lineQty, "10");
+    await user.tab();
 
     const line = screen.getByTestId(`transfer-line-${soapId}:none`);
     expect(within(line).getByTestId(`transfer-line-available-${soapId}:none`)).toHaveTextContent(
@@ -246,10 +275,14 @@ describe("InventoryTransferCreatePage stock guard", () => {
 
     renderCreate();
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
-    await user.selectOptions(screen.getByTestId("transfer-destination-branch"), branchBId);
-    await user.type(screen.getByTestId(`transfer-picker-qty-${soapId}`), "10");
+    await chooseDestination(user, "Iloilo Branch");
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
     await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+
+    const lineQty = screen.getByTestId(`transfer-line-qty-${soapId}:none`);
+    await user.clear(lineQty);
+    await user.type(lineQty, "10");
+    await user.tab();
     await user.click(screen.getByTestId("transfer-save-draft"));
 
     await waitFor(() => {

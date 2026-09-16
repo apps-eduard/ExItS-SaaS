@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, ArrowRightLeft, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { ArrowLeftRight, ArrowRight, ArrowRightLeft, RotateCcw, X } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listInventory,
@@ -12,10 +12,14 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { createInventoryTransfer } from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsSelect } from "@/components/exits/ExitsSelect";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
@@ -23,6 +27,7 @@ import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView
 import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { SearchField } from "@/components/exits/SearchField";
 import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
+import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
 import {
@@ -38,14 +43,8 @@ import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-const qtyFieldClassName = cn(
-  "exits-input box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)]",
-  "w-full min-w-0 rounded-[var(--exits-field-radius)] border border-border bg-surface",
-  "px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] font-normal text-foreground",
-  "outline-none transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
-  "placeholder:text-[var(--exits-text-subtle)] hover:border-[var(--exits-field-border-hover)]",
-  "exits-input--no-spin",
-);
+/** Synthetic category filter id — not a real catalog category. */
+const OUT_OF_STOCK_FILTER_ID = "__transfer_out_of_stock__";
 
 type DraftLine = {
   key: string;
@@ -80,7 +79,6 @@ export function InventoryTransferCreatePage() {
   const [debounced, setDebounced] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lines, setLines] = useState<DraftLine[]>([]);
-  const [qtyByProduct, setQtyByProduct] = useState<Record<string, string>>({});
   const [lotByProduct, setLotByProduct] = useState<Record<string, string>>({});
   const [lotsCache, setLotsCache] = useState<Record<string, PosInventoryLotDto[]>>({});
   const [error, setError] = useState<string | null>(null);
@@ -163,20 +161,51 @@ export function InventoryTransferCreatePage() {
 
   const pickerRows = useMemo(() => {
     const tracked = (pickerQuery.data?.items ?? []).filter((row) => row.isTracked);
-    if (categoryIds.length === 0) {
-      return tracked;
-    }
-    const selected = new Set(categoryIds);
-    return tracked.filter(
-      (row) => row.categoryId != null && selected.has(row.categoryId),
-    );
-  }, [pickerQuery.data?.items, categoryIds]);
+    const addedProductIds = new Set(lines.map((line) => line.productId));
+    const wantOutOfStock = categoryIds.includes(OUT_OF_STOCK_FILTER_ID);
+    const realCategoryIds = categoryIds.filter((id) => id !== OUT_OF_STOCK_FILTER_ID);
+    const realSelected = new Set(realCategoryIds);
+
+    return tracked.filter((row) => {
+      if (addedProductIds.has(row.productId)) {
+        return false;
+      }
+      const outOfStock = row.onHandQuantity <= 0;
+      if (wantOutOfStock) {
+        if (!outOfStock) {
+          return false;
+        }
+        if (realSelected.size === 0) {
+          return true;
+        }
+        return row.categoryId != null && realSelected.has(row.categoryId);
+      }
+      // Default: in-stock only. Optional real category filter.
+      if (outOfStock) {
+        return false;
+      }
+      if (realSelected.size === 0) {
+        return true;
+      }
+      return row.categoryId != null && realSelected.has(row.categoryId);
+    });
+  }, [pickerQuery.data?.items, categoryIds, lines]);
 
   const transferCategoryOptions = useMemo(() => {
+    const tracked = (pickerQuery.data?.items ?? []).filter((r) => r.isTracked);
+    const addedProductIds = new Set(lines.map((line) => line.productId));
     const counts = new Map<string, { name: string; count: number }>();
-    for (const row of (pickerQuery.data?.items ?? []).filter((r) => r.isTracked)) {
+    let outOfStockCount = 0;
+    for (const row of tracked) {
+      if (addedProductIds.has(row.productId)) {
+        continue;
+      }
+      if (row.onHandQuantity <= 0) {
+        outOfStockCount += 1;
+      }
       const id = row.categoryId?.trim();
-      if (!id) {
+      if (!id || row.onHandQuantity <= 0) {
+        // Real category counts reflect in-stock products (default table).
         continue;
       }
       const name = row.categoryName?.trim() || id;
@@ -187,14 +216,22 @@ export function InventoryTransferCreatePage() {
         counts.set(id, { name, count: 1 });
       }
     }
-    return [...counts.entries()]
+    const categories = [...counts.entries()]
       .sort((a, b) => a[1].name.localeCompare(b[1].name, undefined, { sensitivity: "base" }))
       .map(([categoryId, meta]) => ({
         categoryId,
         name: meta.name,
         count: meta.count,
       }));
-  }, [pickerQuery.data?.items]);
+    return [
+      {
+        categoryId: OUT_OF_STOCK_FILTER_ID,
+        name: t("transfer.outOfStock"),
+        count: outOfStockCount,
+      },
+      ...categories,
+    ];
+  }, [pickerQuery.data?.items, lines, t]);
 
   function stockIssueMessage(issue: TransferLineStockIssue, available: number, uom: string): string {
     switch (issue) {
@@ -236,11 +273,6 @@ export function InventoryTransferCreatePage() {
     const tracksExpiration = row.tracksExpiration === true;
     const availableQuantity = Math.max(0, row.onHandQuantity);
     const lots = await ensureLots(row.productId, tracksExpiration);
-    const qtyParsed = parseTransferQuantity(qtyByProduct[row.productId] ?? "");
-    if (qtyParsed === "empty" || qtyParsed === "invalid") {
-      setError(t("transfer.invalidQuantity"));
-      return;
-    }
     let sourceLotId: string | null = null;
     let lotNumber: string | null = null;
     let expirationDate: string | null = null;
@@ -268,6 +300,9 @@ export function InventoryTransferCreatePage() {
     }
 
     const key = lineKeyOf({ productId: row.productId, sourceLotId });
+    const existing = lines.find((l) => l.key === key);
+    // Each Add click adds one unit; adjust further on the draft line stepper.
+    const qtyParsed = existing ? existing.quantity + 1 : 1;
     const existingProductDemand = productDemandExcludingLine(lines, row.productId, key);
     const existingLotDemand =
       sourceLotId != null ? lotDemandExcludingLine(lines, sourceLotId, key) : 0;
@@ -319,7 +354,6 @@ export function InventoryTransferCreatePage() {
         },
       ];
     });
-    setQtyByProduct((prev) => ({ ...prev, [row.productId]: "" }));
   }
 
   function removeLine(key: string) {
@@ -355,15 +389,6 @@ export function InventoryTransferCreatePage() {
     });
   }
 
-  function stepLineQuantity(key: string, delta: number) {
-    const line = lines.find((l) => l.key === key);
-    if (!line) {
-      return;
-    }
-    const next = Math.max(0, Math.round((line.quantity + delta) * 10000) / 10000);
-    updateLineQuantity(key, String(next));
-  }
-
   function resetForm() {
     if (saving) {
       return;
@@ -372,8 +397,8 @@ export function InventoryTransferCreatePage() {
     setNotes("");
     setSearch("");
     setDebounced("");
+    setCategoryIds([]);
     setLines([]);
-    setQtyByProduct({});
     setLotByProduct({});
     setError(null);
     operationIdRef.current = null;
@@ -511,6 +536,19 @@ export function InventoryTransferCreatePage() {
   const createDisabled =
     !online || saving || Boolean(createBlockedReason) || lines.length === 0 || !destinationBranchId;
 
+  const destinationOptions = useMemo(
+    () => [
+      { value: "", label: t("transfer.selectDestination") },
+      ...destinations.map((branch) => ({
+        value: branch.branchId,
+        label: branch.secondaryLine
+          ? `${branch.name} — ${branch.secondaryLine}`
+          : branch.name,
+      })),
+    ],
+    [destinations, t],
+  );
+
   return (
     <div
       className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-3 pb-4"
@@ -525,7 +563,9 @@ export function InventoryTransferCreatePage() {
       />
 
       {!online ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
+        <Notice tone="warning" testId="transfer-offline-notice">
+          {t("transfer.offline")}
+        </Notice>
       ) : null}
 
       {error ? (
@@ -543,60 +583,86 @@ export function InventoryTransferCreatePage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="exits-type-label">{t("transfer.fromBranch")}</span>
-          <p
-            className="m-0 text-[length:var(--exits-text-md)] font-medium text-foreground"
-            data-testid="transfer-source-branch"
-          >
-            {sourceName}
-          </p>
-          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.sourceFixedHint")}</p>
+      <Card
+        as="section"
+        padding="compact"
+        className="transfer-create-details"
+        data-testid="transfer-create-details"
+        aria-labelledby="transfer-create-details-heading"
+      >
+        <h2
+          id="transfer-create-details-heading"
+          className="transfer-create-details__title m-0"
+        >
+          {t("transfer.detailsTitle")}
+        </h2>
+
+        <div className="transfer-create-route">
+          <div className="transfer-create-route__from flex min-w-0 flex-col gap-1">
+            <span className="exits-type-label">{t("transfer.fromBranch")}</span>
+            <p
+              className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
+              data-testid="transfer-source-branch"
+            >
+              {sourceName}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("transfer.sourceFixedHint")}
+            </p>
+          </div>
+
+          <div className="transfer-create-route__arrow" aria-hidden>
+            <ArrowRight className="size-5 text-muted" strokeWidth={1.75} />
+          </div>
+
+          <div className="transfer-create-route__to flex min-w-0 flex-col gap-1">
+            <span className="exits-type-label" id="transfer-to-branch-label">
+              {t("transfer.toBranch")}
+            </span>
+            <ExitsSelect
+              value={destinationBranchId}
+              options={destinationOptions}
+              onChange={setDestinationBranchId}
+              searchable={destinations.length > 6}
+              searchPlaceholder={t("transfer.selectDestination")}
+              menuLabel={t("transfer.toBranch")}
+              aria-labelledby="transfer-to-branch-label"
+              testId="transfer-destination-branch"
+              invalid={!destinationBranchId && lines.length > 0}
+            />
+          </div>
         </div>
 
-        <label className="flex min-w-0 flex-col gap-1">
-          <span className="exits-type-label">{t("transfer.toBranch")}</span>
-          <select
-            className="exits-select"
-            value={destinationBranchId}
-            onChange={(e) => setDestinationBranchId(e.target.value)}
-            data-testid="transfer-destination-branch"
-          >
-            <option value="">{t("transfer.selectDestination")}</option>
-            {destinations.map((branch) => (
-              <option key={branch.branchId} value={branch.branchId}>
-                {branch.name}
-                {branch.secondaryLine ? ` — ${branch.secondaryLine}` : ""}
-              </option>
-            ))}
-          </select>
+        <label className="transfer-create-notes flex min-w-0 flex-col gap-1">
+          <span className="exits-type-label">
+            {t("transfer.notes")}{" "}
+            <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
+          </span>
+          <textarea
+            className="exits-input transfer-create-notes__input resize-y"
+            rows={2}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            maxLength={512}
+            data-testid="transfer-notes"
+          />
         </label>
-      </div>
+      </Card>
 
-      <label className="flex min-w-0 flex-col gap-1">
-        <span className="exits-type-label">
-          {t("transfer.notes")}{" "}
-          <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
-        </span>
-        <textarea
-          className="exits-input resize-y [min-height:unset]"
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          maxLength={512}
-          data-testid="transfer-notes"
-        />
-      </label>
-
-      <section className="flex flex-col gap-1.5" data-testid="transfer-draft-lines">
-        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-          {t("transfer.items")}
-        </h2>
-        {lines.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.itemsEmpty")}</p>
-        ) : (
-          <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
+      {lines.length > 0 ? (
+        <section
+          className="transfer-draft-lines-panel flex flex-col gap-2"
+          data-testid="transfer-draft-lines"
+          aria-labelledby="transfer-draft-items-heading"
+        >
+          <h2
+            id="transfer-draft-items-heading"
+            className="m-0 flex items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+          >
+            <span>{t("transfer.items")}</span>
+            <CountBadge count={lines.length} tone="primary" />
+          </h2>
+          <ul className="transfer-draft-lines m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
             {lines.map((line) => {
               const issue = lineIssues.get(line.key);
               const maxQty =
@@ -608,11 +674,13 @@ export function InventoryTransferCreatePage() {
               return (
                 <li
                   key={line.key}
-                  className="flex flex-wrap items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+                  className="transfer-draft-line flex flex-wrap items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
                   data-testid={`transfer-line-${line.key}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">{line.name}</p>
+                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">
+                      {line.name}
+                    </p>
                     <p
                       className={cn(
                         "m-0 text-[length:var(--exits-text-xs)]",
@@ -628,56 +696,27 @@ export function InventoryTransferCreatePage() {
                         : ""}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      className={cn(
-                        "size-9 shrink-0 rounded-full border-border text-foreground",
-                        canDecrease
-                          ? "hover:border-[var(--exits-border-strong)] hover:bg-[var(--exits-surface-muted)]"
-                          : "text-muted opacity-50",
-                      )}
-                      disabled={!canDecrease}
-                      aria-label={t("transfer.decreaseQuantity")}
-                      onClick={() => stepLineQuantity(line.key, -1)}
-                      data-testid={`transfer-line-dec-${line.key}`}
-                    >
-                      <Minus className="size-4" aria-hidden />
-                    </Button>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      min={0}
-                      className={cn(qtyFieldClassName, "w-[4.25rem] shrink-0 text-center")}
-                      value={line.quantity > 0 ? String(line.quantity) : ""}
-                      onChange={(e) => updateLineQuantity(line.key, e.target.value)}
-                      data-testid={`transfer-line-qty-${line.key}`}
-                      aria-invalid={Boolean(issue)}
-                    />
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant={canIncrease ? "default" : "outline"}
-                      className={cn(
-                        "size-9 shrink-0 rounded-full",
-                        !canIncrease && "text-muted opacity-50",
-                      )}
-                      disabled={!canIncrease}
-                      aria-label={t("transfer.increaseQuantity")}
-                      onClick={() => stepLineQuantity(line.key, 1)}
-                      data-testid={`transfer-line-inc-${line.key}`}
-                    >
-                      <Plus className="size-4" aria-hidden />
-                    </Button>
-                  </div>
+                  <QuantityStepper
+                    compact
+                    value={line.quantity}
+                    min={0}
+                    precision={4}
+                    step={1}
+                    onChange={(next) => updateLineQuantity(line.key, String(next))}
+                    increaseLabel={t("transfer.increaseQuantity")}
+                    decreaseLabel={t("transfer.decreaseQuantity")}
+                    incrementDisabled={!canIncrease}
+                    decrementDisabled={!canDecrease}
+                    invalid={Boolean(issue)}
+                    unit={line.unitOfMeasure}
+                    valueTestId={`transfer-line-qty-${line.key}`}
+                    ariaLabel={t("transfer.quantity")}
+                  />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="shrink-0 rounded-full"
+                    className="shrink-0"
                     aria-label={t("transfer.remove")}
                     onClick={() => removeLine(line.key)}
                     data-testid={`transfer-remove-${line.key}`}
@@ -688,13 +727,20 @@ export function InventoryTransferCreatePage() {
               );
             })}
           </ul>
-        )}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="flex flex-col gap-2">
+      <section
+        className="transfer-find-products flex flex-col gap-2"
+        data-testid="transfer-add-products"
+        aria-labelledby="transfer-find-products-heading"
+      >
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-            {t("transfer.addProducts")}
+          <h2
+            id="transfer-find-products-heading"
+            className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+          >
+            {t("transfer.findProducts")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.baseUomHint")}</p>
         </div>
@@ -702,24 +748,22 @@ export function InventoryTransferCreatePage() {
           className="transfer-product-selection__filters"
           testId="transfer-product-filters"
         >
-          {transferCategoryOptions.length > 0 ? (
-            <ProductCategoryMultiSelect
-              categories={transferCategoryOptions}
-              selectedIds={categoryIds}
-              onChange={setCategoryIds}
-              placeholder={t("purchasing.categoriesPlaceholder")}
-              selectedCountLabel={(count) =>
-                t("purchasing.categoriesSelected").replace("{count}", String(count))
-              }
-              selectAllLabel={t("purchasing.selectAllCategories")}
-              clearAllLabel={t("purchasing.deselectAllCategories")}
-              searchPlaceholder={t("catalog.searchCategories")}
-              menuLabel={t("purchasing.categoryFilter")}
-              aria-label={t("purchasing.categoryFilter")}
-              testId="transfer-category-multiselect"
-              className="transfer-category-multiselect"
-            />
-          ) : null}
+          <ProductCategoryMultiSelect
+            categories={transferCategoryOptions}
+            selectedIds={categoryIds}
+            onChange={setCategoryIds}
+            placeholder={t("purchasing.categoriesPlaceholder")}
+            selectedCountLabel={(count) =>
+              t("purchasing.categoriesSelected").replace("{count}", String(count))
+            }
+            selectAllLabel={t("purchasing.selectAllCategories")}
+            clearAllLabel={t("purchasing.deselectAllCategories")}
+            searchPlaceholder={t("catalog.searchCategories")}
+            menuLabel={t("purchasing.categoryFilter")}
+            aria-label={t("purchasing.categoryFilter")}
+            testId="transfer-category-multiselect"
+            className="transfer-category-multiselect"
+          />
           <SearchField
             label={t("transfer.searchProducts")}
             value={search}
@@ -734,6 +778,7 @@ export function InventoryTransferCreatePage() {
         {!pickerQuery.isLoading && pickerRows.length === 0 ? (
           <EmptyState
             align="center"
+            size="compact"
             icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
             title={t("transfer.noProducts")}
             detail={t("transfer.noProductsDetail")}
@@ -743,14 +788,10 @@ export function InventoryTransferCreatePage() {
           <InventoryTransferProductSelection
             layout={pickerLayout}
             products={pickerRows}
-            qtyByProduct={qtyByProduct}
             lotByProduct={lotByProduct}
             lotsCache={lotsCache}
             online={online}
             formatAvailable={formatAvailable}
-            onQtyChange={(productId, value) =>
-              setQtyByProduct((prev) => ({ ...prev, [productId]: value }))
-            }
             onLotChange={(productId, lotId) =>
               setLotByProduct((prev) => ({ ...prev, [productId]: lotId }))
             }
@@ -765,6 +806,7 @@ export function InventoryTransferCreatePage() {
         <Button
           type="button"
           variant="outline"
+          className={EXITS_CANCEL_BUTTON_CLASS}
           disabled={saving}
           onClick={() => navigate("/inventory/transfers")}
           data-testid="transfer-cancel-create"
@@ -795,3 +837,4 @@ export function InventoryTransferCreatePage() {
     </div>
   );
 }
+

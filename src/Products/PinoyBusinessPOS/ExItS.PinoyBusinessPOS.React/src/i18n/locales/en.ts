@@ -4218,6 +4218,10 @@ export const en = {
     "This will remove the listed quantities from {source} and mark the transfer as in transit to {destination}.\n\nItems: {count}",
   "transfer.dispatchConfirmTitle": "Dispatch inventory transfer?",
   "transfer.itemsEmpty": "No items added yet",
+  "transfer.itemsEmptyDetail": "Search or browse products at the source branch to add transfer lines.",
+  "transfer.findProducts": "Find products",
+  "transfer.closeFindProducts": "Close",
+  "transfer.detailsTitle": "Transfer details",
   "transfer.listSection": "Transfers",
   "transfer.receiveConfirmTitle": "Receive transfer?",
   "transfer.receiveFinalConfirmDetail":

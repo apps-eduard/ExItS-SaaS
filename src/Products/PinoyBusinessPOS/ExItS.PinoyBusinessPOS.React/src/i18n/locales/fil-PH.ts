@@ -4104,6 +4104,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.dispatchConfirmTitle": "Dispatch inventory transfer?",
 
   "transfer.itemsEmpty": "No items added yet",
+  "transfer.itemsEmptyDetail": "Maghanap o mag-browse ng produkto mula sa source branch para magdagdag ng linya.",
+  "transfer.findProducts": "Maghanap ng produkto",
+  "transfer.closeFindProducts": "Isara",
+  "transfer.detailsTitle": "Detalye ng transfer",
 
   "transfer.listSection": "Transfers",
 

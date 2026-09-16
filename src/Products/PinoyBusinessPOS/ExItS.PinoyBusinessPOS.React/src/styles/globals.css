@@ -16815,16 +16815,64 @@ a.exits-chip--primary:hover {
 
 .transfer-product-selection__action-col,
 .transfer-product-selection__action-col.product-selection__action-col {
-  width: auto;
-  min-width: 8.5rem;
-  max-width: none;
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 5rem;
   padding-inline: 0.35rem;
 }
 
 .transfer-product-selection__action-col .exits-table__actions {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: 0.35rem;
+}
+
+.transfer-create-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.transfer-create-details__title {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  color: var(--exits-foreground);
+}
+
+.transfer-create-route {
+  display: grid;
+  gap: 0.75rem 1rem;
+  align-items: start;
+}
+
+@media (min-width: 640px) {
+  .transfer-create-route {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .transfer-create-route__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 1.35rem;
+  }
+}
+
+.transfer-create-route__arrow {
+  display: none;
+}
+
+.transfer-create-notes__input {
+  min-height: 4.5rem;
+}
+
+.transfer-create-workspace {
+  gap: 0.75rem;
+}
+
+.transfer-draft-lines {
+  margin-top: 0.25rem;
 }
 
 .product-selection__details-cell {
@@ -18013,7 +18061,9 @@ a.exits-chip--primary:hover {
   pointer-events: none;
 }
 
-/* Exiting / not-yet-entered: never steal clicks (opacity alone still hit-tests). */
+/* VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
+   Exiting / not-yet-entered: never steal clicks (opacity alone still hit-tests;
+   parent PE:none is insufficient when descendants use PE:auto — Case B). */
 .exits-side-drawer[data-interactive="false"],
 .exits-side-drawer[data-interactive="false"] * {
   pointer-events: none !important;
@@ -20925,7 +20975,8 @@ a.exits-chip--primary:hover {
   pointer-events: auto;
 }
 
-/* Min-visible fade after bind settles — paint only, do not block the shell.
+/* VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
+   Min-visible fade after bind settles — paint only, do not block the shell.
    Parent PE:none is not enough: descendants with PE:auto still hit-test (Case B). */
 .exits-workspace-transition[data-active="false"],
 .exits-workspace-transition[data-active="false"] * {
