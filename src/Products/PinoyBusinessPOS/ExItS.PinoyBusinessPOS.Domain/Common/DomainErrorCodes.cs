@@ -571,6 +571,12 @@ public static class DomainErrorCodes
     public const string InvalidSupplierPayableVoidReason = "pos.supplier_payable.void.reason.invalid";
     public const string SupplierPayableOverpayNotAllowed = "pos.supplier_payable.overpay.not_allowed";
     public const string SupplierPayableVoidBlockedByPayments = "pos.supplier_payable.void.blocked_by_payments";
+    /// <summary>
+    /// Buyer cannot manually self-settle supplier payables via RecordSupplierPayablePayment.
+    /// Seller→buyer mirror (ConnectedB2bPaymentMirror applying <c>ApplyPayment</c> directly) remains allowed.
+    /// </summary>
+    public const string SupplierPayableBuyerManualSettlementForbidden =
+        "pos.supplier_payable.buyer_manual_settlement.forbidden";
     public const string DirectPurchaseRequiresSupplierForCredit =
         "pos.direct_purchase_receipt.supplier.required_for_credit";
     public const string SupplierPayableReceiptReversalBlocked =

@@ -9467,6 +9467,13 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.recordPayment": "Record Payment",
 
+  "supplierPayables.payNow": "Bayad karon",
+
+  "supplierPayables.payNowNotReady": "Wala pa andam ang online payment initiation.",
+
+  "supplierPayables.onlinePaymentUnavailable":
+    "Wala pa available ang online supplier payment. Walay manual self-settlement.",
+
   "supplierPayables.paymentHistory": "Payment History",
 
   "supplierPayables.remainingBalance": "Nahabilin nga balanse",

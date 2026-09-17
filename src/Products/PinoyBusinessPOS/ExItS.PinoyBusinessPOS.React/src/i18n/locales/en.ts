@@ -6045,6 +6045,10 @@ export const en = {
   "supplierPayables.balanceDue": "Balance Due",
   "supplierPayables.dueDate": "Due Date",
   "supplierPayables.recordPayment": "Record Payment",
+  "supplierPayables.payNow": "Pay now",
+  "supplierPayables.payNowNotReady": "Online payment initiation is not ready yet.",
+  "supplierPayables.onlinePaymentUnavailable":
+    "Online supplier payment is not available yet. Manual self-settlement is not offered.",
   "supplierPayables.paymentHistory": "Payment History",
   "supplierPayables.remainingBalance": "Remaining balance",
   "supplierPayables.viewDetails": "View details",

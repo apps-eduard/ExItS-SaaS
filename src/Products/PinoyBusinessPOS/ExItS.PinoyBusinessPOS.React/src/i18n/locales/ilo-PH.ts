@@ -9467,6 +9467,13 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.recordPayment": "Record Payment",
 
+  "supplierPayables.payNow": "Bayadan ita",
+
+  "supplierPayables.payNowNotReady": "Saan pay a nakasagana ti online payment initiation.",
+
+  "supplierPayables.onlinePaymentUnavailable":
+    "Saan pay a magun-od ti online supplier payment. Awan ti manual self-settlement.",
+
   "supplierPayables.paymentHistory": "Payment History",
 
   "supplierPayables.remainingBalance": "Nabati a balanse",

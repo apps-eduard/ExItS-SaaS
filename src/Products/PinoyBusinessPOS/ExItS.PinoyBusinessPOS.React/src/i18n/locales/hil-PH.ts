@@ -9467,6 +9467,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.recordPayment": "Record Payment",
 
+  "supplierPayables.payNow": "Bayad subong",
+
+  "supplierPayables.payNowNotReady": "Wala pa handa ang online payment initiation.",
+
+  "supplierPayables.onlinePaymentUnavailable":
+    "Wala pa available ang online supplier payment. Wala sang manual self-settlement.",
+
   "supplierPayables.paymentHistory": "Payment History",
 
   "supplierPayables.remainingBalance": "Nabilin nga balanse",

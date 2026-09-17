@@ -271,18 +271,18 @@ public sealed class SupplierPayableQueryService
 
 public sealed class RecordSupplierPayablePayment
 {
-    private readonly ISupplierPayableRepository _payables;
     private readonly IPosCommercialAccessAccessor _access;
-    private readonly IClock _clock;
 
     public RecordSupplierPayablePayment(
         ISupplierPayableRepository payables,
         IPosCommercialAccessAccessor access,
         IClock clock)
     {
-        _payables = payables;
+        // Constructor shape preserved for DI; payables/clock unused while buyer
+        // manual settle is rejected. Seller→buyer mirror uses ApplyPayment directly.
+        _ = payables;
+        _ = clock;
         _access = access;
-        _clock = clock;
     }
 
     public async Task<ApplicationResult<PosSupplierPayablePaymentDto>> ExecuteAsync(
@@ -292,55 +292,19 @@ public sealed class RecordSupplierPayablePayment
         Guid actorId,
         CancellationToken cancellationToken = default)
     {
+        await Task.CompletedTask.ConfigureAwait(false);
+
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
         if (!gate.IsSuccess)
         {
             return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
         }
 
-        if (actorId == Guid.Empty)
-        {
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                ApplicationErrorCodes.ActorRequired,
-                "An actor identifier is required to record a supplier payment.");
-        }
-
-        try
-        {
-            if (!SupplierPayablePaymentMethods.TryParse(request.PaymentMethod, out var method))
-            {
-                return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                    DomainErrorCodes.InvalidSupplierPayablePaymentMethod,
-                    $"Payment method must be one of: {string.Join(", ", SupplierPayablePaymentMethods.Codes)}.");
-            }
-
-            var org = PosOrganizationId.From(organizationId);
-            var id = SupplierPayableId.From(payableId);
-            var payable = await _payables.GetByIdAsync(org, id, cancellationToken).ConfigureAwait(false);
-            if (payable is null)
-            {
-                return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                    ApplicationErrorCodes.SupplierPayableNotFound,
-                    "Supplier payable was not found.");
-            }
-
-            var utcNow = _clock.UtcNow;
-            var payment = payable.ApplyPayment(
-                request.Amount,
-                method,
-                actorId,
-                utcNow,
-                request.PaidAtUtc,
-                request.Reference,
-                request.Notes);
-
-            await _payables.UpdateAsync(payable, cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Success(
-                SupplierPayableMapper.MapPayment(payment));
-        }
-        catch (DomainException ex)
-        {
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(ex.ErrorCode, ex.Message);
-        }
+        // Buyer free manual settle is forbidden. Seller→buyer mirror applies
+        // SupplierPayable.ApplyPayment directly and must not use this use case.
+        _ = (organizationId, payableId, request, actorId, cancellationToken);
+        return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
+            DomainErrorCodes.SupplierPayableBuyerManualSettlementForbidden,
+            "Buyer manual settlement of supplier payables is not allowed. Use online payment when Platform makes it available, or wait for the supplier to record payment.");
     }
 }
