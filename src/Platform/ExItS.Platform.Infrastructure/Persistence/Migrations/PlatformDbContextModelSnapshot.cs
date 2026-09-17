@@ -2853,6 +2853,39 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.ToTable("organization_sales_document_capabilities", "platform");
                 });
 
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("Disabled")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UpdatedByActorReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("updated_by_actor_reference");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("organization_online_supplier_payments_capabilities", "platform");
+                });
+
             modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.Organizations.BranchDeliveryPolicyRecord", b =>
                 {
                     b.Property<Guid>("BranchId")
@@ -7110,6 +7143,15 @@ namespace ExItS.Platform.Infrastructure.Persistence.Migrations
                     b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
                         .WithOne()
                         .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.OrganizationSalesDocumentCapabilityRecord", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", b =>
+                {
+                    b.HasOne("ExItS.Platform.Infrastructure.Persistence.Organizations.PlatformOrganizationRecord", null)
+                        .WithOne()
+                        .HasForeignKey("ExItS.Platform.Infrastructure.Persistence.OrganizationOnlineSupplierPaymentsCapabilityRecord", "OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
