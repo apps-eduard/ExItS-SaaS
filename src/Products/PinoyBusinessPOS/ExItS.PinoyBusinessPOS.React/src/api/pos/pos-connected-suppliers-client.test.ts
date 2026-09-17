@@ -6,6 +6,7 @@ import {
   approveConnection,
   assertNotInventoryMutationUrl,
   bulkMutateBuyerProductShares,
+  buildCreateBusinessRepaymentPayload,
   createBuyerProductAndLink,
   declineConnection,
   declineIncomingOrder,
@@ -350,5 +351,29 @@ describe("pos-connected-suppliers-client", () => {
     expect(url).toContain(`/business-customers/${connectionId}/statement`);
     expect(url).toContain("periodStart=2026-08-15");
     expect(url).toContain("periodEnd=2026-09-14");
+  });
+
+  it("omits check fields from Cash business repayment payloads", () => {
+    const payload = buildCreateBusinessRepaymentPayload({
+      amount: 100,
+      paymentMethod: "Cash",
+      checkNumber: "CHK-1",
+      bankName: "BDO",
+      checkDate: "2026-09-17",
+      accountName: "Acme",
+      reference: "ref-1",
+      allocations: [
+        { creditEntryId: "11111111-1111-4111-8111-111111111111", amount: 100 },
+      ],
+    });
+
+    expect(payload.paymentMethod).toBe("Cash");
+    expect(payload).not.toHaveProperty("checkNumber");
+    expect(payload).not.toHaveProperty("bankName");
+    expect(payload).not.toHaveProperty("checkDate");
+    expect(payload).not.toHaveProperty("accountName");
+    expect(payload.allocations).toEqual([
+      { creditEntryId: "11111111-1111-4111-8111-111111111111", amount: 100 },
+    ]);
   });
 });

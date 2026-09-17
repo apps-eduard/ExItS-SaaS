@@ -11,6 +11,7 @@ public static class ConnectedPoUtangObligationProjection
 {
     public const string GoodsReceiptRemarkPrefix = "grn:";
     public const string DirectPurchaseRemarkPrefix = "dpr:";
+    public const string SaleRemarkPrefix = "sale:";
 
     /// <summary>
     /// For Utang POs, omitted PaidNow means 0 (credit), never default to full receipt total.
@@ -100,8 +101,31 @@ public static class ConnectedPoUtangObligationProjection
         return Guid.TryParse(token, out directPurchaseReceiptId);
     }
 
+    public static string BuildSaleRemark(Guid saleId, string? saleNumber)
+    {
+        var label = string.IsNullOrWhiteSpace(saleNumber)
+            ? saleId.ToString("D")
+            : saleNumber.Trim();
+        return $"{SaleRemarkPrefix}{saleId:D}|{ProductBasedUtangRemarks.ForSaleNumber(label)}";
+    }
+
+    public static bool TryParseSaleId(string? remarks, out Guid saleId)
+    {
+        saleId = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(remarks)
+            || !remarks.StartsWith(SaleRemarkPrefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var rest = remarks[SaleRemarkPrefix.Length..];
+        var pipe = rest.IndexOf('|');
+        var token = pipe >= 0 ? rest[..pipe] : rest;
+        return Guid.TryParse(token, out saleId);
+    }
+
     /// <summary>
-    /// Human label for payable/credit UI: "PO-100" or "Direct purchase DPR-…".
+    /// Human label for payable/credit UI: "PO-100", "Direct purchase DPR-…", or "Product sale …".
     /// </summary>
     public static string? TryFormatSourceLabelFromRemark(string? remarks)
     {
@@ -153,6 +177,18 @@ public static class ConnectedPoUtangObligationProjection
             }
 
             return label;
+        }
+
+        if (remarks.StartsWith(SaleRemarkPrefix, StringComparison.Ordinal))
+        {
+            var pipe = remarks.IndexOf('|');
+            if (pipe < 0 || pipe >= remarks.Length - 1)
+            {
+                return "Sale";
+            }
+
+            var label = remarks[(pipe + 1)..].Trim();
+            return string.IsNullOrWhiteSpace(label) ? "Sale" : label;
         }
 
         return null;

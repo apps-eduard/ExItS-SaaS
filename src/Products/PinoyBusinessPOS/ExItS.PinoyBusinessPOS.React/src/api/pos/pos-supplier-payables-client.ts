@@ -25,7 +25,11 @@ export const SUPPLIER_PAYABLE_PAYMENT_METHODS = [
 ] as const;
 export type SupplierPayablePaymentMethodCode = (typeof SUPPLIER_PAYABLE_PAYMENT_METHODS)[number];
 
-export const SUPPLIER_PAYABLE_SOURCE_TYPES = ["GoodsReceipt", "DirectPurchaseReceipt"] as const;
+export const SUPPLIER_PAYABLE_SOURCE_TYPES = [
+  "GoodsReceipt",
+  "DirectPurchaseReceipt",
+  "Sale",
+] as const;
 export type SupplierPayableSourceTypeCode = (typeof SUPPLIER_PAYABLE_SOURCE_TYPES)[number];
 
 export const SUPPLIER_PAYABLE_PAYMENT_REFERENCE_MAX = 128;

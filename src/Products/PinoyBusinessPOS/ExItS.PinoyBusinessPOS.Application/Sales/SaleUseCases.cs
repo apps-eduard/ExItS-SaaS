@@ -307,6 +307,7 @@ public sealed class CheckoutSale
     private readonly IOrganizationPaymentMethodSettingRepository? _paymentMethodSettings;
     private readonly IPosCommercialAccessAccessor? _commercialAccess;
     private readonly IQuotationRepository? _quotations;
+    private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bPayableMirror;
 
     public CheckoutSale(
         ISaleRepository sales,
@@ -332,7 +333,8 @@ public sealed class CheckoutSale
         IConnectedSupplierRelationshipRepository? connectedRelationships = null,
         IOrganizationPaymentMethodSettingRepository? paymentMethodSettings = null,
         IPosCommercialAccessAccessor? commercialAccess = null,
-        IQuotationRepository? quotations = null)
+        IQuotationRepository? quotations = null,
+        ConnectedB2bDirectPurchaseCreditSync? b2bPayableMirror = null)
     {
         _priceAuthorities = priceAuthorities;
         _costResolver = costResolver;
@@ -358,6 +360,7 @@ public sealed class CheckoutSale
         _paymentMethodSettings = paymentMethodSettings;
         _commercialAccess = commercialAccess;
         _quotations = quotations;
+        _b2bPayableMirror = b2bPayableMirror;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -905,13 +908,45 @@ public sealed class CheckoutSale
                                 orgId,
                                 buyerOrgId,
                                 createdSale.Total,
-                                ProductBasedUtangRemarks.ForSaleNumber(createdSale.SaleNumber),
+                                ConnectedPoUtangObligationProjection.BuildSaleRemark(
+                                    createdSale.Id.Value,
+                                    createdSale.SaleNumber),
                                 utcNow,
                                 capturedConnectionId,
                                 capturedBusinessCreditEntryId,
                                 createdSale.Id);
                             businessEntry.ApplyCurrentDueDate(businessAppliedDue);
                             await _businessCredits.AddAsync(businessEntry, ct).ConfigureAwait(false);
+
+                            if (_b2bPayableMirror is not null
+                                && capturedConnectionId is Guid connectionId
+                                && connectionId != Guid.Empty)
+                            {
+                                await _b2bPayableMirror
+                                    .EnsurePayableForSaleAsync(
+                                        orgId,
+                                        buyerOrgId,
+                                        connectionId,
+                                        createdSale.Id.Value,
+                                        createdSale.Total,
+                                        businessAppliedDue,
+                                        capturedActorId,
+                                        utcNow,
+                                        ct)
+                                    .ConfigureAwait(false);
+
+                                // Heal any older sale/DPR credits missing buyer payables (idempotent).
+                                await _b2bPayableMirror
+                                    .ReconcileMissingPayablesForRelationshipAsync(
+                                        orgId,
+                                        buyerOrgId,
+                                        connectionId,
+                                        capturedActorId,
+                                        utcNow,
+                                        ct)
+                                    .ConfigureAwait(false);
+                            }
+
                             return;
                         }
 
@@ -1690,6 +1725,7 @@ public sealed class VoidSale
     private readonly ISaleStockService _saleStock;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ConnectedB2bDirectPurchaseCreditSync? _b2bPayableMirror;
 
     public VoidSale(
         ISaleRepository sales,
@@ -1699,7 +1735,8 @@ public sealed class VoidSale
         IOutstandingBalanceService outstanding,
         ISaleStockService saleStock,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ConnectedB2bDirectPurchaseCreditSync? b2bPayableMirror = null)
     {
         _sales = sales;
         _saleMutationLock = saleMutationLock;
@@ -1709,6 +1746,7 @@ public sealed class VoidSale
         _saleStock = saleStock;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _b2bPayableMirror = b2bPayableMirror;
     }
 
     public async Task<ApplicationResult<Sale>> ExecuteAsync(
@@ -1800,6 +1838,20 @@ public sealed class VoidSale
                                                 ApplicationErrorCodes.SaleVoidBlockedBySubsequentUtangActivity,
                                                 "Voiding this Utang sale would make outstanding negative because of subsequent activity.");
                                         }
+                                    }
+
+                                    if (_b2bPayableMirror is not null)
+                                    {
+                                        // Void buyer payable first — posted payments block before sale/credit reverse.
+                                        await _b2bPayableMirror
+                                            .ReversePayableForSaleAsync(
+                                                buyerOrgId,
+                                                current.Id.Value,
+                                                reason,
+                                                actorId,
+                                                _clock.UtcNow,
+                                                ct)
+                                            .ConfigureAwait(false);
                                     }
 
                                     current.Void(reason, actorId, _clock.UtcNow);

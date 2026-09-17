@@ -30,28 +30,91 @@ export function computeCreditPolicyDueDate(
 export function creditPolicyStatusTone(status: string | null | undefined): StatusChipTone {
   switch ((status ?? "").trim()) {
     case "Approved":
+    case "Active":
+    case "Available":
       return "success";
     case "PendingApproval":
+    case "NeedsSetup":
       return "warning";
     case "Disabled":
+    case "Paused":
       return "danger";
     case "NotConfigured":
+    case "Unavailable":
     default:
       return "neutral";
   }
 }
 
+/**
+ * Seller display chip: Credit unavailable | Needs setup | Active | Paused.
+ * Prefer server sellerDisplayStatus when present; otherwise derive from status + hasEverBeenApproved.
+ */
+export function resolveSellerCreditDisplayStatus(args: {
+  status?: string | null;
+  hasEverBeenApproved?: boolean | null;
+  sellerDisplayStatus?: string | null;
+}): string {
+  const fromServer = (args.sellerDisplayStatus ?? "").trim();
+  if (fromServer) {
+    return fromServer;
+  }
+  const status = (args.status ?? "").trim();
+  const ever = args.hasEverBeenApproved === true;
+  if (status === "Approved") return "Active";
+  if (status === "PendingApproval") return "NeedsSetup";
+  if (status === "Disabled" && ever) return "Paused";
+  return "Unavailable";
+}
+
+/**
+ * Buyer display: Credit unavailable | Credit available | Credit paused.
+ */
+export function resolveBuyerCreditDisplayStatus(args: {
+  status?: string | null;
+  hasEverBeenApproved?: boolean | null;
+  buyerDisplayStatus?: string | null;
+}): string {
+  const fromServer = (args.buyerDisplayStatus ?? "").trim();
+  if (fromServer) {
+    return fromServer;
+  }
+  const status = (args.status ?? "").trim();
+  const ever = args.hasEverBeenApproved === true;
+  if (status === "Approved") return "Available";
+  if (status === "Disabled" && ever) return "Paused";
+  return "Unavailable";
+}
+
 export function creditPolicyStatusLabelKey(status: string | null | undefined): MessageKey {
   switch ((status ?? "").trim()) {
     case "Approved":
-      return "customers.creditPolicy.status.Approved";
+    case "Active":
+      return "customers.creditPolicy.status.Active";
     case "PendingApproval":
-      return "customers.creditPolicy.status.PendingApproval";
+    case "NeedsSetup":
+      return "customers.creditPolicy.status.NeedsSetup";
     case "Disabled":
-      return "customers.creditPolicy.status.Disabled";
+    case "Paused":
+      return "customers.creditPolicy.status.Paused";
+    case "Available":
+      return "customers.creditPolicy.buyerStatus.Available";
     case "NotConfigured":
+    case "Unavailable":
     default:
-      return "customers.creditPolicy.status.NotConfigured";
+      return "customers.creditPolicy.status.Unavailable";
+  }
+}
+
+export function buyerCreditStatusLabelKey(displayStatus: string | null | undefined): MessageKey {
+  switch ((displayStatus ?? "").trim()) {
+    case "Available":
+      return "customers.creditPolicy.buyerStatus.Available";
+    case "Paused":
+      return "customers.creditPolicy.buyerStatus.Paused";
+    case "Unavailable":
+    default:
+      return "customers.creditPolicy.buyerStatus.Unavailable";
   }
 }
 

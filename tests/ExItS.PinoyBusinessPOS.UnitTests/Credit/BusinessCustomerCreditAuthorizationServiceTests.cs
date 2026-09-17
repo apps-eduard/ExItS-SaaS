@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Credit;
 
@@ -23,7 +25,10 @@ public sealed class BusinessCustomerCreditAuthorizationServiceTests
         await SeedApprovedAsync(policies, creditLimit: 1_000m, termDays: 14);
         credits.SeedActive(Seller, Buyer, 200m);
 
-        var service = new BusinessCustomerCreditAuthorizationService(policies, credits);
+        var service = new BusinessCustomerCreditAuthorizationService(
+            policies,
+            credits,
+            new EmptyBusinessRepayments());
         var result = await service.AuthorizeNewCreditAsync(Seller, Buyer, 100m, BusinessDate);
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
@@ -40,7 +45,10 @@ public sealed class BusinessCustomerCreditAuthorizationServiceTests
         await SeedApprovedAsync(policies, creditLimit: 500m, termDays: 7);
         credits.SeedActive(Seller, Buyer, 400m);
 
-        var service = new BusinessCustomerCreditAuthorizationService(policies, credits);
+        var service = new BusinessCustomerCreditAuthorizationService(
+            policies,
+            credits,
+            new EmptyBusinessRepayments());
         var result = await service.AuthorizeNewCreditAsync(Seller, Buyer, 150m, BusinessDate);
 
         Assert.False(result.IsSuccess);
@@ -63,11 +71,31 @@ public sealed class BusinessCustomerCreditAuthorizationServiceTests
             Now);
         await policies.AddAsync(policy);
 
-        var service = new BusinessCustomerCreditAuthorizationService(policies, credits);
+        var service = new BusinessCustomerCreditAuthorizationService(
+            policies,
+            credits,
+            new EmptyBusinessRepayments());
         var result = await service.AuthorizeNewCreditAsync(Seller, Buyer, 50m, BusinessDate);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ApplicationErrorCodes.BusinessCustomerCreditNotApproved, result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Net_outstanding_subtracts_settled_repayments()
+    {
+        var policies = new InMemoryPolicies();
+        var credits = new InMemoryBusinessCredits();
+        var repayments = new EmptyBusinessRepayments { Settled = 150m };
+        await SeedApprovedAsync(policies, creditLimit: 1_000m, termDays: 14);
+        credits.SeedActive(Seller, Buyer, 400m);
+
+        var service = new BusinessCustomerCreditAuthorizationService(policies, credits, repayments);
+        var result = await service.AuthorizeNewCreditAsync(Seller, Buyer, 100m, BusinessDate);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(250m, result.Value!.Outstanding);
+        Assert.Equal(750m, result.Value.AvailableCredit);
     }
 
     private static async Task SeedApprovedAsync(
@@ -210,5 +238,53 @@ public sealed class BusinessCustomerCreditAuthorizationServiceTests
             PosOrganizationId buyerOrganizationId,
             CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class EmptyBusinessRepayments : IBusinessRepaymentRepository
+    {
+        public decimal Settled { get; init; }
+
+        public Task<BusinessRepayment?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessRepayment?>(null);
+
+        public Task AddAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddAllocationsAsync(
+            IReadOnlyList<BusinessRepaymentAllocation> allocations,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<BusinessRepaymentAllocation>> ListAllocationsByRepaymentAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepaymentAllocation>>([]);
+
+        public Task<decimal> SumSettledAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Settled);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyList<BusinessRepayment>> ListByConnectionAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid connectionId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepayment>>([]);
     }
 }

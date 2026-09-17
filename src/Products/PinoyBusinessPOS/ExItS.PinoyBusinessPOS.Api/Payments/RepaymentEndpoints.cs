@@ -332,7 +332,10 @@ public sealed record CreateRepaymentRequest(
     string? BankName = null,
     DateOnly? CheckDate = null,
     string? AccountName = null,
-    string? Reference = null);
+    string? Reference = null,
+    IReadOnlyList<RepaymentAllocationRequest>? Allocations = null);
+
+public sealed record RepaymentAllocationRequest(Guid CreditEntryId, decimal Amount);
 
 public sealed record ReverseRepaymentRequest(string Reason);
 

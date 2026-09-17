@@ -1,26 +1,31 @@
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 
 namespace ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 
 /// <summary>
-/// Resolves human-readable payable source labels: "PO-xxxx" or "Direct purchase …".
+/// Resolves human-readable payable source labels: "PO-xxxx", "Direct purchase …", or "Product sale …".
 /// </summary>
 public sealed class SupplierPayableSourceReferenceResolver
 {
     private readonly IPurchaseOrderRepository _orders;
     private readonly IDirectPurchaseReceiptRepository _directReceipts;
+    private readonly ISaleRepository? _sales;
 
     public SupplierPayableSourceReferenceResolver(
         IPurchaseOrderRepository orders,
-        IDirectPurchaseReceiptRepository directReceipts)
+        IDirectPurchaseReceiptRepository directReceipts,
+        ISaleRepository? sales = null)
     {
         _orders = orders;
         _directReceipts = directReceipts;
+        _sales = sales;
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> ResolveAsync(
@@ -57,6 +62,24 @@ public sealed class SupplierPayableSourceReferenceResolver
             }
 
             return "Direct purchase";
+        }
+
+        if (payable.SourceType == SupplierPayableSourceType.Sale)
+        {
+            if (_sales is not null)
+            {
+                var sale = await _sales
+                    .GetByIdAsync(organizationId, SaleId.From(payable.SourceId), cancellationToken)
+                    .ConfigureAwait(false);
+                // Sale lives on the seller org — buyer org lookup is expected to miss.
+                // Prefer seller-side number when available via sync remark; otherwise stable fallback.
+                if (sale is not null && !string.IsNullOrWhiteSpace(sale.SaleNumber))
+                {
+                    return ProductBasedUtangRemarks.ForSaleNumber(sale.SaleNumber);
+                }
+            }
+
+            return "Sale (connected B2B)";
         }
 
         var goodsReceipt = await _orders

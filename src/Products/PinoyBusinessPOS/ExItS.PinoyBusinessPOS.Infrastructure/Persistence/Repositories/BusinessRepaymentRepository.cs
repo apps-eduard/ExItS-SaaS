@@ -1,7 +1,9 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Payments;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Repositories;
@@ -30,6 +32,49 @@ internal sealed class BusinessRepaymentRepository : IBusinessRepaymentRepository
     {
         _db.BusinessRepayments.Add(BusinessRepaymentEntityMapper.ToRecord(repayment));
         return Task.CompletedTask;
+    }
+
+    public Task AddAllocationsAsync(
+        IReadOnlyList<BusinessRepaymentAllocation> allocations,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var allocation in allocations)
+        {
+            _db.BusinessRepaymentAllocations.Add(new BusinessRepaymentAllocationRecord
+            {
+                Id = allocation.Id,
+                SellerOrganizationId = allocation.SellerOrganizationId.Value,
+                RepaymentId = allocation.RepaymentId.Value,
+                CreditEntryId = allocation.CreditEntryId.Value,
+                Amount = allocation.Amount,
+                CreatedAtUtc = allocation.CreatedAtUtc,
+            });
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public async Task<IReadOnlyList<BusinessRepaymentAllocation>> ListAllocationsByRepaymentAsync(
+        PosOrganizationId sellerOrganizationId,
+        BusinessRepaymentId repaymentId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.BusinessRepaymentAllocations.AsNoTracking()
+            .Where(e => e.SellerOrganizationId == sellerOrganizationId.Value
+                        && e.RepaymentId == repaymentId.Value)
+            .OrderBy(e => e.CreatedAtUtc)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records
+            .Select(r => BusinessRepaymentAllocation.Rehydrate(
+                r.Id,
+                PosOrganizationId.From(r.SellerOrganizationId),
+                BusinessRepaymentId.From(r.RepaymentId),
+                BusinessCreditEntryId.From(r.CreditEntryId),
+                r.Amount,
+                r.CreatedAtUtc))
+            .ToList();
     }
 
     public async Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default)

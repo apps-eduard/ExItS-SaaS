@@ -31,6 +31,9 @@ export const posBusinessCustomerCreditPolicySchema = z.object({
   updatedByUserId: guidSchema.nullable().optional(),
   updatedAtUtc: isoDateTimeSchema.nullable().optional(),
   expectedUpdatedAtUtc: isoDateTimeSchema.nullable().optional(),
+  hasEverBeenApproved: z.boolean().default(false),
+  sellerDisplayStatus: z.string().nullable().optional(),
+  buyerDisplayStatus: z.string().nullable().optional(),
 });
 
 export const posBusinessCustomerCreditPolicyChangeSchema = z.object({

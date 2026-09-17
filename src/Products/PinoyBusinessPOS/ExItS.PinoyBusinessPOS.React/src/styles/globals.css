@@ -7250,6 +7250,11 @@ html:has(.admin-shell) #root {
   .supplier-credit-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  /* Match business Credit & payment terms: two rows of three */
+  .supplier-credit-stats--v2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 64rem) {
@@ -7261,12 +7266,6 @@ html:has(.admin-shell) #root {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
-  .supplier-credit-stats--v2 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 40rem) and (max-width: 63.99rem) {
   .supplier-credit-stats--v2 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -7401,7 +7400,22 @@ html:has(.admin-shell) #root {
   color: var(--exits-danger);
 }
 
+.supplier-credit-available__amount-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  min-width: 0;
+}
+
+.supplier-credit-available__amount-row dd {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .supplier-credit-available__caption {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: var(--exits-text-xs);
   font-weight: var(--exits-font-weight-medium);
   line-height: var(--exits-leading-normal);
@@ -19316,7 +19330,6 @@ a.exits-chip--primary:hover {
 }
 
 .manager-snapshot-card__chevron {
-  margin-block-start: 0.2rem;
   transition: color var(--exits-motion-fast) ease;
 }
 
@@ -20822,6 +20835,37 @@ a.exits-chip--primary:hover {
   .branch-mgmt-overview__grid:has(.credit-policy-stat-icon) {
     grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
   }
+
+  /* Business: six core cards in two rows of three (limit/outstanding/overdue · reserved/available/term) */
+  .branch-mgmt-overview__grid.branch-mgmt-overview__grid--credit-business:has(
+    .credit-policy-stat-icon
+  ) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023.98px) {
+  .branch-mgmt-overview__grid.branch-mgmt-overview__grid--credit-business {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.credit-policy-stat-icon--reserved {
+  color: #0f766e;
+}
+
+[data-theme="dark"] .credit-policy-stat-icon--reserved {
+  color: #5eead4;
+}
+
+.branch-mgmt-overview__item:has(.credit-policy-stat-icon--reserved) {
+  border-color: color-mix(in srgb, #0f766e 28%, var(--exits-border));
+  background: color-mix(in srgb, #0f766e 8%, var(--exits-surface));
+}
+
+[data-theme="dark"] .branch-mgmt-overview__item:has(.credit-policy-stat-icon--reserved) {
+  border-color: color-mix(in srgb, #5eead4 28%, var(--exits-border));
+  background: color-mix(in srgb, #5eead4 8%, var(--exits-surface));
 }
 
 .branch-mgmt-overview__item {
@@ -20906,6 +20950,53 @@ a.exits-chip--primary:hover {
 .branch-mgmt-overview__item:has(.credit-policy-stat-icon--available) {
   border-color: color-mix(in srgb, var(--exits-info) 28%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-info) 8%, var(--exits-surface));
+}
+
+.credit-policy-available__amount-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  min-width: 0;
+}
+
+.credit-policy-available__amount-row dd {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.credit-policy-available__caption {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--exits-text-xs);
+  font-weight: var(--exits-font-weight-medium);
+  line-height: var(--exits-leading-normal);
+  color: var(--exits-text-muted);
+}
+
+.credit-policy-available-card {
+  gap: 0.4rem;
+}
+
+.credit-policy-available__track {
+  width: 100%;
+  height: 0.35rem;
+  margin-top: 0.15rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--exits-border) 70%, var(--exits-surface));
+}
+
+.credit-policy-available__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--exits-info);
+  transition: width 160ms ease;
+}
+
+.credit-policy-available__track[data-over-limit="true"] .credit-policy-available__fill {
+  background: var(--exits-danger);
 }
 
 .branch-mgmt-overview__item:has(.credit-policy-stat-icon--term) {

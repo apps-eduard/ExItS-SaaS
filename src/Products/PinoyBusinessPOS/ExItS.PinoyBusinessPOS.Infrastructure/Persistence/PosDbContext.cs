@@ -66,6 +66,7 @@ public sealed class PosDbContext : DbContext
         Set<BusinessCustomerCreditPolicyChangeRecord>();
     internal DbSet<BusinessCreditEntryRecord> BusinessCreditEntries => Set<BusinessCreditEntryRecord>();
     internal DbSet<BusinessRepaymentRecord> BusinessRepayments => Set<BusinessRepaymentRecord>();
+    internal DbSet<BusinessRepaymentAllocationRecord> BusinessRepaymentAllocations => Set<BusinessRepaymentAllocationRecord>();
     internal DbSet<RepaymentRecord> Repayments => Set<RepaymentRecord>();
     internal DbSet<WriteOffRecord> WriteOffs => Set<WriteOffRecord>();
     internal DbSet<PaymentAttemptRecord> PaymentAttempts => Set<PaymentAttemptRecord>();
@@ -504,6 +505,9 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ConfiguredAtUtc).HasColumnName("configured_at_utc");
             entity.Property(e => e.ApprovedByUserId).HasColumnName("approved_by_user_id");
             entity.Property(e => e.ApprovedAtUtc).HasColumnName("approved_at_utc");
+            entity.Property(e => e.HasEverBeenApproved)
+                .HasColumnName("has_ever_been_approved")
+                .IsRequired();
             entity.Property(e => e.UpdatedByUserId).HasColumnName("updated_by_user_id").IsRequired();
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.Xmin)
@@ -778,6 +782,32 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_business_repayments_seller_buyer_status");
             entity.HasIndex(e => e.ConnectionId)
                 .HasDatabaseName("ix_business_repayments_connection_id");
+        });
+
+        modelBuilder.Entity<BusinessRepaymentAllocationRecord>(entity =>
+        {
+            entity.ToTable("business_repayment_allocations", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_business_repayment_allocations_amount_positive",
+                    "amount > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(e => e.RepaymentId).HasColumnName("repayment_id").IsRequired();
+            entity.Property(e => e.CreditEntryId).HasColumnName("credit_entry_id").IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.RepaymentId })
+                .HasDatabaseName("ix_business_repayment_allocations_repayment");
+            entity.HasIndex(e => new { e.SellerOrganizationId, e.CreditEntryId })
+                .HasDatabaseName("ix_business_repayment_allocations_credit");
+            entity.HasIndex(e => new { e.RepaymentId, e.CreditEntryId })
+                .IsUnique()
+                .HasDatabaseName("ux_business_repayment_allocations_repayment_credit");
         });
 
         modelBuilder.Entity<WriteOffRecord>(entity =>

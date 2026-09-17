@@ -38,6 +38,11 @@ public static class DomainErrorCodes
     public const string InvalidRepaymentActor = "pos.repayment.actor.invalid";
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
+    public const string InvalidRepaymentAllocationAmount = "pos.repayment.allocation.amount.invalid";
+    public const string RepaymentAllocationSumMismatch = "pos.repayment.allocation.sum_mismatch";
+    public const string RepaymentAllocationExceedsReceivable = "pos.repayment.allocation.exceeds_receivable";
+    public const string RepaymentAllocationUnknownReceivable = "pos.repayment.allocation.unknown_receivable";
+    public const string RepaymentAllocationDuplicateReceivable = "pos.repayment.allocation.duplicate_receivable";
     public const string InvalidUtangPaymentMethod = "pos.utang.payment_method.invalid";
     public const string InvalidUtangCheckNumber = "pos.utang.check.number.invalid";
     public const string InvalidUtangBankName = "pos.utang.check.bank_name.invalid";

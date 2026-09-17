@@ -254,7 +254,7 @@ export function ManagerSnapshotLink({
     <Link
       to={href}
       className={cn(
-        "manager-snapshot-card exits-card exits-card--interactive flex min-w-0 items-start gap-2.5 px-3 py-2.5 no-underline text-inherit",
+        "manager-snapshot-card exits-card exits-card--interactive flex min-w-0 items-center gap-2.5 px-3 py-2.5 no-underline text-inherit",
         tone === "attention" && "manager-snapshot-card--attention",
       )}
       data-testid={testId}

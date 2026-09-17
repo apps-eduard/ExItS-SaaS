@@ -25,6 +25,11 @@ public sealed class BusinessCustomerCreditPolicy
     public DateTimeOffset ConfiguredAtUtc { get; private set; }
     public Guid? ApprovedByUserId { get; private set; }
     public DateTimeOffset? ApprovedAtUtc { get; private set; }
+    /// <summary>
+    /// True after any successful Approve. Survives Disable and term reconfiguration.
+    /// Distinguishes Paused (was once Active) from Credit unavailable (never activated).
+    /// </summary>
+    public bool HasEverBeenApproved { get; private set; }
     public Guid UpdatedByUserId { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -40,6 +45,7 @@ public sealed class BusinessCustomerCreditPolicy
         DateTimeOffset configuredAtUtc,
         Guid? approvedByUserId,
         DateTimeOffset? approvedAtUtc,
+        bool hasEverBeenApproved,
         Guid updatedByUserId,
         DateTimeOffset updatedAtUtc)
     {
@@ -54,6 +60,7 @@ public sealed class BusinessCustomerCreditPolicy
         ConfiguredAtUtc = configuredAtUtc;
         ApprovedByUserId = approvedByUserId;
         ApprovedAtUtc = approvedAtUtc;
+        HasEverBeenApproved = hasEverBeenApproved;
         UpdatedByUserId = updatedByUserId;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -71,7 +78,8 @@ public sealed class BusinessCustomerCreditPolicy
         Guid? approvedByUserId,
         DateTimeOffset? approvedAtUtc,
         Guid updatedByUserId,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        bool hasEverBeenApproved = false) =>
         new(
             id,
             sellerOrganizationId,
@@ -84,6 +92,7 @@ public sealed class BusinessCustomerCreditPolicy
             configuredAtUtc,
             approvedByUserId,
             approvedAtUtc,
+            hasEverBeenApproved,
             updatedByUserId,
             updatedAtUtc);
 
@@ -121,6 +130,7 @@ public sealed class BusinessCustomerCreditPolicy
             utcNow,
             null,
             null,
+            hasEverBeenApproved: false,
             actorUserId,
             utcNow);
 
@@ -254,6 +264,7 @@ public sealed class BusinessCustomerCreditPolicy
         Status = CustomerCreditPolicyStatus.Approved;
         ApprovedByUserId = actorUserId;
         ApprovedAtUtc = utcNow;
+        HasEverBeenApproved = true;
         UpdatedByUserId = actorUserId;
         UpdatedAtUtc = utcNow;
 
@@ -310,6 +321,34 @@ public sealed class BusinessCustomerCreditPolicy
     }
 
     public bool PermitsNewUtang => Status == CustomerCreditPolicyStatus.Approved;
+
+    /// <summary>
+    /// Seller-facing availability label: Unavailable | NeedsSetup | Active | Paused.
+    /// Reuses persisted Status; does not invent a fifth DB state.
+    /// </summary>
+    public static string ResolveSellerDisplayStatus(
+        CustomerCreditPolicyStatus status,
+        bool hasEverBeenApproved) =>
+        status switch
+        {
+            CustomerCreditPolicyStatus.Approved => "Active",
+            CustomerCreditPolicyStatus.PendingApproval => "NeedsSetup",
+            CustomerCreditPolicyStatus.Disabled when hasEverBeenApproved => "Paused",
+            _ => "Unavailable"
+        };
+
+    /// <summary>
+    /// Buyer-facing availability: Unavailable | Available | Paused (no seller workflow detail).
+    /// </summary>
+    public static string ResolveBuyerDisplayStatus(
+        CustomerCreditPolicyStatus status,
+        bool hasEverBeenApproved) =>
+        status switch
+        {
+            CustomerCreditPolicyStatus.Approved => "Available",
+            CustomerCreditPolicyStatus.Disabled when hasEverBeenApproved => "Paused",
+            _ => "Unavailable"
+        };
 
     /// <summary>
     /// AvailableCredit = Approved ? max(0, limit - outstanding) : 0.

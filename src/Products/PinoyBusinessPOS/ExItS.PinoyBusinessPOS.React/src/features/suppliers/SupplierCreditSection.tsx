@@ -40,6 +40,11 @@ import {
   formatUtilizationPercent,
   type SupplierPayableListFilter,
 } from "@/features/suppliers/supplier-credit-exposure";
+import {
+  buyerCreditStatusLabelKey,
+  creditPolicyStatusTone,
+  resolveBuyerCreditDisplayStatus,
+} from "@/features/customers/credit-policy";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
@@ -93,9 +98,13 @@ function methodLabelKey(method: string): MessageKey {
 }
 
 function sourceLabelKey(sourceType: string): MessageKey {
-  return sourceType === "DirectPurchaseReceipt"
-    ? "supplierPayables.source.directPurchase"
-    : "supplierPayables.source.goodsReceipt";
+  if (sourceType === "DirectPurchaseReceipt") {
+    return "supplierPayables.source.directPurchase";
+  }
+  if (sourceType === "Sale") {
+    return "supplierPayables.source.sale";
+  }
+  return "supplierPayables.source.goodsReceipt";
 }
 
 function formatPayableSourceLabel(
@@ -151,12 +160,6 @@ export function SupplierCreditSection({
     [boundWorkspace],
   );
 
-  const summaryQuery = useQuery({
-    queryKey: ["supplier-payable-summary", workspace?.organizationId, supplierId],
-    enabled: Boolean(workspace) && allowView && online,
-    queryFn: ({ signal }) => getSupplierPayableSummary(workspace!, supplierId, signal),
-  });
-
   const creditPolicyQuery = useQuery({
     queryKey: [
       "connected-suppliers",
@@ -170,9 +173,22 @@ export function SupplierCreditSection({
       getBusinessCustomerCreditPolicy(workspace!, connectedRelationshipId!, signal),
   });
 
+  // Connected buyers: wait for credit-policy GET (heals missing Direct Purchase payables) before listing.
+  const payablesReady =
+    Boolean(workspace) &&
+    allowView &&
+    online &&
+    (!connectedRelationshipId || creditPolicyQuery.isSuccess);
+
+  const summaryQuery = useQuery({
+    queryKey: ["supplier-payable-summary", workspace?.organizationId, supplierId],
+    enabled: payablesReady,
+    queryFn: ({ signal }) => getSupplierPayableSummary(workspace!, supplierId, signal),
+  });
+
   const listQuery = useQuery({
     queryKey: ["supplier-payables", workspace?.organizationId, supplierId],
-    enabled: Boolean(workspace) && allowView && online,
+    enabled: payablesReady,
     queryFn: ({ signal }) =>
       listSupplierPayables(
         workspace!,
@@ -292,6 +308,14 @@ export function SupplierCreditSection({
           .replace("{limit}", formatPeso(approvedCreditLimit))
       : t("supplierPayables.utilizationUnavailable");
 
+  const buyerCreditDisplayStatus = isConnected
+    ? resolveBuyerCreditDisplayStatus({
+        status: creditPolicy?.status,
+        hasEverBeenApproved: creditPolicy?.hasEverBeenApproved,
+        buyerDisplayStatus: creditPolicy?.buyerDisplayStatus,
+      })
+    : "Unavailable";
+
   async function onRecordPayment() {
     if (!workspace || !paymentTarget || !allowManage || !online || recording) {
       return;
@@ -341,9 +365,18 @@ export function SupplierCreditSection({
             <Wallet className="size-4" />
           </span>
           <div className="min-w-0">
-            <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
-              {t("supplierPayables.title")}
-            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="m-0 text-[length:var(--exits-text-base)] font-semibold">
+                {t("supplierPayables.title")}
+              </h2>
+              {isConnected ? (
+                <span data-testid="supplier-credit-buyer-status">
+                  <StatusChip tone={creditPolicyStatusTone(buyerCreditDisplayStatus)}>
+                    {t(buyerCreditStatusLabelKey(buyerCreditDisplayStatus))}
+                  </StatusChip>
+                </span>
+              ) : null}
+            </div>
             <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] text-muted">
               {t("supplierPayables.summaryLede")}
             </p>
@@ -379,6 +412,15 @@ export function SupplierCreditSection({
                 <MoneyDisplay amount={outstanding} />
               </dd>
             </div>
+            <div className="supplier-credit-stat supplier-credit-stat--overdue">
+              <dt>
+                <AlertTriangle className="supplier-credit-stat__icon" aria-hidden />
+                {t("supplierPayables.overdue")}
+              </dt>
+              <dd className="m-0 tabular-nums" data-testid="supplier-credit-overdue">
+                <MoneyDisplay amount={overdueTotal} />
+              </dd>
+            </div>
             <div className="supplier-credit-stat supplier-credit-stat--reserved">
               <dt>
                 <Lock className="supplier-credit-stat__icon" aria-hidden />
@@ -395,15 +437,17 @@ export function SupplierCreditSection({
                 <Wallet className="supplier-credit-stat__icon" aria-hidden />
                 {t("supplierPayables.availableCredit")}
               </dt>
-              <dd className="m-0 tabular-nums" data-testid="supplier-credit-available">
-                {availableDisplay != null ? <MoneyDisplay amount={availableDisplay} /> : "—"}
-              </dd>
-              <p
-                className="supplier-credit-available__caption m-0"
-                data-testid="supplier-credit-utilization-caption"
-              >
-                {utilizationCaption}
-              </p>
+              <div className="supplier-credit-available__amount-row">
+                <dd className="m-0 tabular-nums" data-testid="supplier-credit-available">
+                  {availableDisplay != null ? <MoneyDisplay amount={availableDisplay} /> : "—"}
+                </dd>
+                <p
+                  className="supplier-credit-available__caption m-0"
+                  data-testid="supplier-credit-utilization-caption"
+                >
+                  {utilizationCaption}
+                </p>
+              </div>
               {exposure.progressPercent != null ? (
                 <div
                   className="supplier-credit-available__track"
@@ -421,15 +465,6 @@ export function SupplierCreditSection({
                   />
                 </div>
               ) : null}
-            </div>
-            <div className="supplier-credit-stat supplier-credit-stat--overdue">
-              <dt>
-                <AlertTriangle className="supplier-credit-stat__icon" aria-hidden />
-                {t("supplierPayables.overdue")}
-              </dt>
-              <dd className="m-0 tabular-nums" data-testid="supplier-credit-overdue">
-                <MoneyDisplay amount={overdueTotal} />
-              </dd>
             </div>
             <div className="supplier-credit-stat supplier-credit-stat--open">
               <dt>

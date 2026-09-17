@@ -127,7 +127,8 @@ public static class CreditFifoAging
     }
 
     /// <summary>
-    /// FIFO aging for B2B business credit entries (seller/buyer). Same rules as personal credits.
+    /// Aging for B2B business credit entries. Remaining unpaid is computed by applying the
+    /// settled repayment pool in allocation order: due date ASC (nulls last), then CreatedAtUtc, then Id.
     /// </summary>
     public static IReadOnlyList<AgedCreditDto> AgeBusinessCredits(
         IEnumerable<BusinessCreditEntry> credits,
@@ -136,7 +137,12 @@ public static class CreditFifoAging
     {
         var pool = activeRepaymentTotal < 0m ? 0m : activeRepaymentTotal;
         var results = new List<AgedCreditDto>();
-        foreach (var credit in credits.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id.Value))
+        var ordered = credits
+            .OrderBy(c => c.CurrentDueDate is null)
+            .ThenBy(c => c.CurrentDueDate ?? DateOnly.MaxValue)
+            .ThenBy(c => c.CreatedAtUtc)
+            .ThenBy(c => c.Id.Value);
+        foreach (var credit in ordered)
         {
             decimal remaining;
             if (credit.Status == CreditEntryStatus.Reversed)

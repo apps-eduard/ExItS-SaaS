@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
 
 /**
  * Connected-supplier API client for `/api/v1/pos/connected-suppliers/*`.
@@ -1076,7 +1081,22 @@ export const businessUtangSummarySchema = z.object({
   activeRepaymentTotal: z.number(),
   pendingCheckAmount: z.number().optional().default(0),
   overdueAmount: z.number().optional().default(0),
+  openReceivableCount: z.number().optional().default(0),
+  openReceivableTotal: z.number().optional().default(0),
 });
+
+export const businessReceivableSchema = z.object({
+  creditEntryId: guidSchema,
+  sourceType: z.string(),
+  sourceReference: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
+  outstandingBalance: z.number(),
+  originalAmount: z.number(),
+  createdAtUtc: isoDateSchema,
+  remarks: z.string().nullable().optional(),
+});
+
+export type BusinessReceivable = z.infer<typeof businessReceivableSchema>;
 
 export const businessRepaymentSchema = z.object({
   repaymentId: guidSchema,
@@ -1129,21 +1149,33 @@ export type CreateBusinessRepaymentInput = {
   checkDate?: string | null;
   accountName?: string | null;
   reference?: string | null;
+  allocations?: { creditEntryId: string; amount: number }[] | null;
 };
 
 export function buildCreateBusinessRepaymentPayload(input: CreateBusinessRepaymentInput) {
   const method = input.paymentMethod ?? "Cash";
-  return {
+  const payload: Record<string, unknown> = {
     amount: input.amount,
     remarks: input.remarks?.trim() || null,
     paymentMethod: method,
-    checkNumber: method === "Check" ? (input.checkNumber?.trim() || null) : null,
-    bankName: method === "Check" ? (input.bankName?.trim() || null) : null,
-    checkDate: method === "Check" ? (input.checkDate?.trim() || null) : null,
-    accountName: method === "Check" ? (input.accountName?.trim() || null) : null,
     reference: input.reference?.trim() || null,
-    ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
   };
+  if (input.repaymentId) {
+    payload.repaymentId = input.repaymentId;
+  }
+  if (method === "Check") {
+    payload.checkNumber = input.checkNumber?.trim() || null;
+    payload.bankName = input.bankName?.trim() || null;
+    payload.checkDate = input.checkDate?.trim() || null;
+    payload.accountName = input.accountName?.trim() || null;
+  }
+  if (input.allocations && input.allocations.length > 0) {
+    payload.allocations = input.allocations.map((a) => ({
+      creditEntryId: a.creditEntryId,
+      amount: a.amount,
+    }));
+  }
+  return payload;
 }
 
 const buyerOrganizationBusinessContactSchema = z.object({
@@ -1222,6 +1254,20 @@ export async function getBusinessCustomerUtangSummary(
   return businessUtangSummarySchema.parse(raw);
 }
 
+export async function listBusinessCustomerReceivables(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<BusinessReceivable[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/receivables`,
+  });
+  return z.array(businessReceivableSchema).parse(raw);
+}
+
 export async function listBusinessCustomerRepayments(
   workspace: PosWorkspaceScope,
   connectionId: string,
@@ -1246,12 +1292,20 @@ export async function createBusinessCustomerRepayment(
   input: CreateBusinessRepaymentInput,
   signal?: AbortSignal,
 ): Promise<BusinessRepayment> {
+  const repaymentId = input.repaymentId?.trim() || createSecureMutationId();
+  const body = buildCreateBusinessRepaymentPayload({ ...input, repaymentId });
+  const headers = await buildPosMutationIdempotencyHeaders(
+    repaymentId,
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.BusinessRepaymentCreate,
+  );
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,
     signal,
     path: `${PATH}/business-customers/${connectionId}/repayments`,
-    body: buildCreateBusinessRepaymentPayload(input),
+    body,
+    headers,
   });
   return businessRepaymentSchema.parse(raw);
 }

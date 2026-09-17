@@ -358,7 +358,12 @@ public sealed class CreateDirectPurchaseReceipt
                         if (_b2bCreditSync is not null)
                         {
                             await _b2bCreditSync
-                                .PostFromReceiptAsync(receipt, request.PaidNow, utcNow, ct)
+                                .PostFromReceiptAsync(
+                                    receipt,
+                                    request.PaidNow,
+                                    utcNow,
+                                    ct,
+                                    request.DueDate)
                                 .ConfigureAwait(false);
                         }
 
@@ -572,7 +577,7 @@ public sealed class VoidDirectPurchaseReceipt
                         if (_b2bCreditSync is not null)
                         {
                             await _b2bCreditSync
-                                .ReverseForReceiptAsync(receipt, voidReason, utcNow, ct)
+                                .ReverseForReceiptAsync(receipt, voidReason, utcNow, ct, actorId)
                                 .ConfigureAwait(false);
                         }
 

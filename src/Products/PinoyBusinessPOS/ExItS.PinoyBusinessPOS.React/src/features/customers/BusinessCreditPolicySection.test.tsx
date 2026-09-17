@@ -50,6 +50,8 @@ function policy(partial: Partial<PosBusinessCustomerCreditPolicy>): PosBusinessC
     updatedByUserId: null,
     updatedAtUtc: null,
     expectedUpdatedAtUtc: null,
+    reservedByActivePos: 0,
+    hasEverBeenApproved: false,
     ...partial,
   };
 }
@@ -74,7 +76,9 @@ describe("BusinessCreditPolicySection", () => {
         policyOverride={policy({ status: "NotConfigured" })}
       />,
     );
-    expect(screen.queryByTestId("business-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Unavailable",
+    );
     const allowSwitch = screen.getByTestId("business-credit-policy-allow-credit");
     expect(allowSwitch).toHaveAttribute("aria-checked", "false");
     expect(allowSwitch).toHaveTextContent("OFF");
@@ -105,7 +109,7 @@ describe("BusinessCreditPolicySection", () => {
       />,
     );
     expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.PendingApproval",
+      "customers.creditPolicy.status.NeedsSetup",
     );
     expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
@@ -141,7 +145,7 @@ describe("BusinessCreditPolicySection", () => {
       />,
     );
     expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.Approved",
+      "customers.creditPolicy.status.Active",
     );
     expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
@@ -159,7 +163,7 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.queryByTestId("business-credit-policy-statement")).not.toBeInTheDocument();
   });
 
-  it("renders Disabled as Off with switch off", () => {
+  it("renders Disabled without prior approval as Credit unavailable", () => {
     wrap(
       <BusinessCreditPolicySection
         workspace={workspace}
@@ -172,11 +176,14 @@ describe("BusinessCreditPolicySection", () => {
           status: "Disabled",
           creditLimit: 1000,
           defaultTermDays: 15,
+          hasEverBeenApproved: false,
           expectedUpdatedAtUtc: "2026-09-10T00:00:00Z",
         })}
       />,
     );
-    expect(screen.queryByTestId("business-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Unavailable",
+    );
     expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
       "false",
@@ -188,6 +195,36 @@ describe("BusinessCreditPolicySection", () => {
     expect(screen.queryByTestId("business-credit-policy-summary")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-repay")).not.toBeInTheDocument();
     expect(screen.queryByTestId("business-credit-policy-configure")).not.toBeInTheDocument();
+  });
+
+  it("renders Disabled after approval as Paused", () => {
+    wrap(
+      <BusinessCreditPolicySection
+        workspace={workspace}
+        connectionId={connectionId}
+        online
+        canManage
+        canApprove
+        canRecordPayment
+        policyOverride={policy({
+          status: "Disabled",
+          creditLimit: 1000,
+          defaultTermDays: 15,
+          hasEverBeenApproved: true,
+          outstandingAmount: 250,
+          expectedUpdatedAtUtc: "2026-09-10T00:00:00Z",
+          approvedAtUtc: "2026-09-09T00:00:00Z",
+        })}
+      />,
+    );
+    expect(screen.getByTestId("business-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Paused",
+    );
+    expect(screen.getByTestId("business-credit-policy-allow-credit")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByTestId("business-credit-policy-repay")).toBeInTheDocument();
   });
 
   it("opens Edit credit terms with term presets, custom input, approval warning, and disabled save until changed", async () => {

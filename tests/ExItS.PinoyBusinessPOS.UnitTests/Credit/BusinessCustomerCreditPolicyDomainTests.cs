@@ -28,6 +28,9 @@ public sealed class BusinessCustomerCreditPolicyDomainTests
 
         Assert.Equal(CustomerCreditPolicyStatus.PendingApproval, policy.Status);
         Assert.False(policy.PermitsNewUtang);
+        Assert.False(policy.HasEverBeenApproved);
+        Assert.Equal("NeedsSetup", BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
+        Assert.Equal("Unavailable", BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
         Assert.Equal(CustomerCreditPolicyChangeAction.Configured, configureChange.Action);
         Assert.Equal(BusinessCustomerCreditPolicy.InitialConfigureReason, configureChange.Reason);
         Assert.Equal(ConnectionId, policy.ConnectionId);
@@ -35,6 +38,9 @@ public sealed class BusinessCustomerCreditPolicyDomainTests
         var approveChange = policy.Approve(ActorA, "Approved for credit.", Now.AddSeconds(1));
         Assert.Equal(CustomerCreditPolicyStatus.Approved, policy.Status);
         Assert.True(policy.PermitsNewUtang);
+        Assert.True(policy.HasEverBeenApproved);
+        Assert.Equal("Active", BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
+        Assert.Equal("Available", BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
         Assert.Equal(ActorA, policy.ApprovedByUserId);
         Assert.Equal(CustomerCreditPolicyChangeAction.Approved, approveChange.Action);
     }
@@ -60,7 +66,7 @@ public sealed class BusinessCustomerCreditPolicyDomainTests
     }
 
     [Fact]
-    public void Limit_change_on_approved_policy_returns_to_pending()
+    public void Limit_change_on_approved_policy_returns_to_pending_but_keeps_HasEverBeenApproved()
     {
         var (policy, _) = BusinessCustomerCreditPolicy.Configure(
             Seller, Buyer, ConnectionId, 1_000m, 30, ActorA, null, Now);
@@ -69,32 +75,63 @@ public sealed class BusinessCustomerCreditPolicyDomainTests
         var change = policy.UpdateTerms(2_000m, 30, ActorA, "Raise limit", Now.AddMinutes(1));
         Assert.Equal(CustomerCreditPolicyStatus.PendingApproval, policy.Status);
         Assert.False(policy.PermitsNewUtang);
+        Assert.True(policy.HasEverBeenApproved);
         Assert.Null(policy.ApprovedByUserId);
         Assert.Null(policy.ApprovedAtUtc);
         Assert.Equal(2_000m, policy.CreditLimit);
         Assert.Equal(CustomerCreditPolicyChangeAction.CreditLimitChanged, change.Action);
         Assert.Equal(CustomerCreditPolicyStatus.Approved, change.PreviousStatus);
+        Assert.Equal("NeedsSetup", BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
     }
 
     [Fact]
-    public void Disable_from_approved_blocks_new_utang()
+    public void Disable_from_approved_is_Paused_and_blocks_new_utang()
     {
         var (policy, _) = BusinessCustomerCreditPolicy.Configure(
-            Seller, Buyer, ConnectionId, 500m, 7, ActorA, null, Now);
-        policy.Approve(ActorB, "Approve", Now.AddSeconds(1));
+            Seller, Buyer, ConnectionId, 1_000m, 30, ActorA, null, Now);
+        policy.Approve(ActorA, "Approve", Now.AddSeconds(1));
+        policy.Disable(ActorA, "Pause credit", Now.AddMinutes(1));
 
-        var disable = policy.Disable(ActorA, "Stop credit", Now.AddMinutes(1));
         Assert.Equal(CustomerCreditPolicyStatus.Disabled, policy.Status);
         Assert.False(policy.PermitsNewUtang);
-        Assert.Equal(CustomerCreditPolicyChangeAction.Disabled, disable.Action);
-        Assert.Equal(0m, BusinessCustomerCreditPolicy.AvailableCredit(policy.Status, policy.CreditLimit));
+        Assert.True(policy.HasEverBeenApproved);
+        Assert.Equal("Paused", BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
+        Assert.Equal("Paused", BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
     }
 
     [Fact]
-    public void AvailableCredit_uses_zero_outstanding_for_b2b()
+    public void Disable_from_pending_without_prior_approval_is_Unavailable_not_Paused()
+    {
+        var (policy, _) = BusinessCustomerCreditPolicy.Configure(
+            Seller, Buyer, ConnectionId, 1_000m, 30, ActorA, null, Now);
+        policy.Disable(ActorA, "Cancel setup", Now.AddMinutes(1));
+
+        Assert.Equal(CustomerCreditPolicyStatus.Disabled, policy.Status);
+        Assert.False(policy.HasEverBeenApproved);
+        Assert.Equal("Unavailable", BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
+        Assert.Equal("Unavailable", BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(policy.Status, policy.HasEverBeenApproved));
+    }
+
+    [Fact]
+    public void AvailableCredit_is_zero_unless_approved()
     {
         Assert.Equal(0m, BusinessCustomerCreditPolicy.AvailableCredit(CustomerCreditPolicyStatus.PendingApproval, 100m));
         Assert.Equal(100m, BusinessCustomerCreditPolicy.AvailableCredit(CustomerCreditPolicyStatus.Approved, 100m));
         Assert.Equal(40m, BusinessCustomerCreditPolicy.AvailableCredit(CustomerCreditPolicyStatus.Approved, 100m, outstanding: 60m));
+    }
+
+    [Fact]
+    public void NotConfigured_display_is_Unavailable_for_both_sides()
+    {
+        Assert.Equal(
+            "Unavailable",
+            BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(
+                CustomerCreditPolicyStatus.NotConfigured,
+                hasEverBeenApproved: false));
+        Assert.Equal(
+            "Unavailable",
+            BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(
+                CustomerCreditPolicyStatus.NotConfigured,
+                hasEverBeenApproved: false));
     }
 }

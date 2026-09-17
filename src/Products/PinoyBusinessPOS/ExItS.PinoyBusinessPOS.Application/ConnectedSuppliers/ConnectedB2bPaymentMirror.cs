@@ -1,8 +1,10 @@
+﻿using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -22,6 +24,7 @@ public sealed class ConnectedB2bPaymentMirror
     private readonly ISupplierRepository _suppliers;
     private readonly ISupplierPayableRepository _payables;
     private readonly IBusinessRepaymentRepository _repayments;
+    private readonly IBusinessCreditEntryRepository _credits;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IClock _clock;
 
@@ -29,12 +32,14 @@ public sealed class ConnectedB2bPaymentMirror
         ISupplierRepository suppliers,
         ISupplierPayableRepository payables,
         IBusinessRepaymentRepository repayments,
+        IBusinessCreditEntryRepository credits,
         IConnectedSupplierRelationshipRepository relationships,
         IClock clock)
     {
         _suppliers = suppliers;
         _payables = payables;
         _repayments = repayments;
+        _credits = credits;
         _relationships = relationships;
         _clock = clock;
     }
@@ -43,9 +48,6 @@ public sealed class ConnectedB2bPaymentMirror
         !string.IsNullOrWhiteSpace(value)
         && value.StartsWith(SyncReferencePrefix, StringComparison.Ordinal);
 
-    /// <summary>
-    /// Buyer recorded a payable payment → mirror as seller BusinessRepayment when supplier is connected.
-    /// </summary>
     public async Task MirrorBuyerPayablePaymentAsync(
         PosOrganizationId buyerOrganizationId,
         SupplierId supplierId,
@@ -91,11 +93,15 @@ public sealed class ConnectedB2bPaymentMirror
         await _repayments.AddAsync(repayment, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Seller recorded a BusinessRepayment → apply FIFO payments on buyer open SupplierPayables.
-    /// </summary>
+    public Task MirrorSellerRepaymentAsync(
+        BusinessRepayment repayment,
+        CancellationToken cancellationToken = default) =>
+        MirrorSellerRepaymentAsync(repayment, allocations: null, creditEntries: null, cancellationToken);
+
     public async Task MirrorSellerRepaymentAsync(
         BusinessRepayment repayment,
+        IReadOnlyList<BusinessRepaymentAllocation>? allocations,
+        IReadOnlyList<BusinessCreditEntry>? creditEntries,
         CancellationToken cancellationToken = default)
     {
         if (IsSyncMarker(repayment.Remarks) || repayment.Amount <= 0m)
@@ -103,7 +109,6 @@ public sealed class ConnectedB2bPaymentMirror
             return;
         }
 
-        // Only settle immediately for cash-like methods; checks wait until cleared.
         if (repayment.PaymentMethod == UtangPaymentMethod.Check
             && repayment.CheckClearingStatus != UtangCheckClearingStatus.Cleared)
         {
@@ -121,6 +126,70 @@ public sealed class ConnectedB2bPaymentMirror
             return;
         }
 
+        var resolvedAllocations = allocations
+            ?? await _repayments
+                .ListAllocationsByRepaymentAsync(
+                    repayment.SellerOrganizationId,
+                    repayment.Id,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+        IReadOnlyDictionary<Guid, BusinessCreditEntry> creditById;
+        if (creditEntries is not null)
+        {
+            creditById = creditEntries.ToDictionary(c => c.Id.Value);
+        }
+        else if (resolvedAllocations.Count > 0)
+        {
+            var loaded = await _credits
+                .ListChronologicalForBuyerAsync(
+                    repayment.SellerOrganizationId,
+                    repayment.BuyerOrganizationId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            creditById = loaded.ToDictionary(c => c.Id.Value);
+        }
+        else
+        {
+            creditById = new Dictionary<Guid, BusinessCreditEntry>();
+        }
+
+        var remaining = SaleMoney.RoundMoney(repayment.Amount);
+
+        if (resolvedAllocations.Count > 0)
+        {
+            foreach (var allocation in resolvedAllocations)
+            {
+                if (remaining <= 0m)
+                {
+                    break;
+                }
+
+                if (!creditById.TryGetValue(allocation.CreditEntryId.Value, out var credit))
+                {
+                    continue;
+                }
+
+                var apply = remaining > allocation.Amount ? allocation.Amount : remaining;
+                var mirrored = await TryApplyToMatchingPayableAsync(
+                        repayment,
+                        supplier,
+                        credit,
+                        apply,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (mirrored)
+                {
+                    remaining = SaleMoney.RoundMoney(remaining - apply);
+                }
+            }
+        }
+
+        if (remaining <= 0m)
+        {
+            return;
+        }
+
         var (openPayables, _) = await _payables
             .ListAsync(
                 repayment.BuyerOrganizationId,
@@ -132,10 +201,11 @@ public sealed class ConnectedB2bPaymentMirror
                 cancellationToken)
             .ConfigureAwait(false);
 
-        var remaining = SaleMoney.RoundMoney(repayment.Amount);
         foreach (var payable in openPayables
                      .Where(p => p.Balance > 0m)
-                     .OrderBy(p => p.CreatedAtUtc)
+                     .OrderBy(p => p.DueDate is null)
+                     .ThenBy(p => p.DueDate ?? DateOnly.MaxValue)
+                     .ThenBy(p => p.CreatedAtUtc)
                      .ThenBy(p => p.Id.Value))
         {
             if (remaining <= 0m)
@@ -154,5 +224,78 @@ public sealed class ConnectedB2bPaymentMirror
             await _payables.UpdateAsync(payable, cancellationToken).ConfigureAwait(false);
             remaining = SaleMoney.RoundMoney(remaining - apply);
         }
+    }
+
+    private async Task<bool> TryApplyToMatchingPayableAsync(
+        BusinessRepayment repayment,
+        Supplier supplier,
+        BusinessCreditEntry credit,
+        decimal amount,
+        CancellationToken cancellationToken)
+    {
+        var creditRemarks = credit.Remarks;
+        SupplierPayable? payable = null;
+        if (ConnectedPoUtangObligationProjection.TryParseGoodsReceiptId(creditRemarks, out var grnId))
+        {
+            payable = await _payables
+                .FindBySourceAsync(
+                    repayment.BuyerOrganizationId,
+                    SupplierPayableSourceType.GoodsReceipt,
+                    grnId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else if (ConnectedPoUtangObligationProjection.TryParseDirectPurchaseReceiptId(creditRemarks, out var dprId))
+        {
+            payable = await _payables
+                .FindBySourceAsync(
+                    repayment.BuyerOrganizationId,
+                    SupplierPayableSourceType.DirectPurchaseReceipt,
+                    dprId,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else if (ConnectedPoUtangObligationProjection.TryParseSaleId(creditRemarks, out var saleIdFromRemark))
+        {
+            payable = await _payables
+                .FindBySourceAsync(
+                    repayment.BuyerOrganizationId,
+                    SupplierPayableSourceType.Sale,
+                    saleIdFromRemark,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else if (credit.SourceSaleId is not null)
+        {
+            // Historical Sell Utang credits used free-text remarks without sale: prefix.
+            payable = await _payables
+                .FindBySourceAsync(
+                    repayment.BuyerOrganizationId,
+                    SupplierPayableSourceType.Sale,
+                    credit.SourceSaleId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (payable is null || payable.SupplierId != supplier.Id || payable.Balance <= 0m)
+        {
+            return false;
+        }
+
+        var apply = amount > payable.Balance ? payable.Balance : amount;
+        if (apply <= 0m)
+        {
+            return false;
+        }
+
+        payable.ApplyPayment(
+            apply,
+            SupplierPayablePaymentMethod.Other,
+            repayment.RecordedBy,
+            _clock.UtcNow,
+            reference: $"{SyncReferencePrefix}{repayment.Id.Value:D}",
+            notes: "Mirrored from seller business repayment");
+        await _payables.UpdateAsync(payable, cancellationToken).ConfigureAwait(false);
+        return true;
     }
 }

@@ -1,11 +1,15 @@
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
+using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
@@ -24,7 +28,7 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
     [Fact]
     public async Task PostFromReceipt_connected_Utang_posts_seller_BusinessCreditEntry()
     {
-        var (sync, credits, relationship, supplier) = await CreateHarnessAsync();
+        var (sync, credits, payables, relationship, supplier) = await CreateHarnessAsync();
         var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
 
         await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
@@ -39,53 +43,293 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
                 out var receiptId));
         Assert.Equal(receipt.Id.Value, receiptId);
         Assert.Equal(relationship.Id.Value, entries[0].ConnectionId);
+
+        var payable = await payables.FindBySourceAsync(
+            Buyer,
+            SupplierPayableSourceType.DirectPurchaseReceipt,
+            receipt.Id.Value);
+        Assert.NotNull(payable);
+        Assert.Equal(747m, payable!.OriginalAmount);
+        Assert.Equal(0m, payable.PaidAtReceiptAmount);
+        Assert.Equal(747m, payable.Balance);
+    }
+
+    [Fact]
+    public async Task PostFromReceipt_creates_payable_when_missing()
+    {
+        var (sync, _, payables, _, supplier) = await CreateHarnessAsync();
+        var receipt = CreateReceipt(supplier.Id, totalCost: 500m, paidActor: Actor);
+
+        await sync.PostFromReceiptAsync(receipt, paidNow: 100m, Now, dueDate: new DateOnly(2026, 10, 1));
+
+        var payable = await payables.FindBySourceAsync(
+            Buyer,
+            SupplierPayableSourceType.DirectPurchaseReceipt,
+            receipt.Id.Value);
+        Assert.NotNull(payable);
+        Assert.Equal(500m, payable!.OriginalAmount);
+        Assert.Equal(100m, payable.PaidAtReceiptAmount);
+        Assert.Equal(400m, payable.Balance);
+        Assert.Equal(new DateOnly(2026, 10, 1), payable.DueDate);
+        Assert.Equal(supplier.Id, payable.SupplierId);
+    }
+
+    [Fact]
+    public async Task PostFromReceipt_is_idempotent_for_credit_and_payable()
+    {
+        var (sync, credits, payables, _, supplier) = await CreateHarnessAsync();
+        var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
+
+        await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
+        await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
+
+        var entries = await credits.ListChronologicalForBuyerAsync(Seller, Buyer);
+        Assert.Single(entries);
+        Assert.Equal(747m, await credits.SumActiveAmountAsync(Seller, Buyer));
+        Assert.Equal(1, payables.Count);
+    }
+
+    [Fact]
+    public async Task ReconcileMissingPayables_creates_once_second_call_noop()
+    {
+        var (sync, credits, payables, relationship, supplier) = await CreateHarnessAsync();
+        var receiptId = Guid.Parse("cccccccc-cccc-4ccc-8ccc-cccccccccccc");
+        var entry = BusinessCreditEntry.Create(
+            Seller,
+            Buyer,
+            321m,
+            ConnectedPoUtangObligationProjection.BuildDirectPurchaseRemark(receiptId, "DPR-1"),
+            Now,
+            relationship.Id.Value);
+        entry.ApplyCurrentDueDate(new DateOnly(2026, 11, 1));
+        await credits.AddAsync(entry);
+
+        var first = await sync.ReconcileMissingPayablesForRelationshipAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            Actor,
+            Now);
+        var second = await sync.ReconcileMissingPayablesForRelationshipAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            Actor,
+            Now.AddMinutes(1));
+
+        Assert.Equal(1, first);
+        Assert.Equal(0, second);
+        Assert.Equal(1, payables.Count);
+        var payable = await payables.FindBySourceAsync(
+            Buyer,
+            SupplierPayableSourceType.DirectPurchaseReceipt,
+            receiptId);
+        Assert.NotNull(payable);
+        Assert.Equal(321m, payable!.OriginalAmount);
+        Assert.Equal(0m, payable.PaidAtReceiptAmount);
+        Assert.Equal(new DateOnly(2026, 11, 1), payable.DueDate);
+        Assert.Equal(supplier.Id, payable.SupplierId);
     }
 
     [Fact]
     public async Task PostFromReceipt_fully_paid_does_not_post_credit()
     {
-        var (sync, credits, _, supplier) = await CreateHarnessAsync();
+        var (sync, credits, payables, _, supplier) = await CreateHarnessAsync();
         var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
 
         await sync.PostFromReceiptAsync(receipt, paidNow: 747m, Now);
 
         Assert.Equal(0m, await credits.SumActiveAmountAsync(Seller, Buyer));
+        Assert.Equal(0, payables.Count);
     }
 
     [Fact]
     public async Task PostFromReceipt_unconnected_supplier_skips()
     {
         var credits = new InMemoryBusinessCredits();
+        var payables = new InMemoryPayables();
         var suppliers = new InMemorySuppliers();
         var relationships = new InMemoryRelationships();
         var localSupplier = Supplier.Create(Buyer, "SUP-000099", "Local Supplier", Now);
         await suppliers.AddAsync(localSupplier);
-        var sync = new ConnectedB2bDirectPurchaseCreditSync(suppliers, relationships, credits);
+        var sync = new ConnectedB2bDirectPurchaseCreditSync(suppliers, relationships, credits, payables);
         var receipt = CreateReceipt(localSupplier.Id, totalCost: 100m);
 
         await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
 
         Assert.Equal(0m, await credits.SumActiveAmountAsync(Seller, Buyer));
+        Assert.Equal(0, payables.Count);
+    }
+
+    [Fact]
+    public async Task EnsurePayableForSale_creates_once_second_call_noop()
+    {
+        var (sync, _, payables, relationship, supplier) = await CreateHarnessAsync();
+        var saleId = Guid.Parse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+
+        await sync.EnsurePayableForSaleAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            saleId,
+            amount: 815m,
+            dueDate: new DateOnly(2026, 10, 15),
+            Actor,
+            Now);
+        await sync.EnsurePayableForSaleAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            saleId,
+            amount: 815m,
+            dueDate: new DateOnly(2026, 10, 15),
+            Actor,
+            Now.AddMinutes(1));
+
+        Assert.Equal(1, payables.Count);
+        var payable = await payables.FindBySourceAsync(Buyer, SupplierPayableSourceType.Sale, saleId);
+        Assert.NotNull(payable);
+        Assert.Equal(815m, payable!.OriginalAmount);
+        Assert.Equal(815m, payable.Balance);
+        Assert.Equal(SupplierPayableStatus.Open, payable.Status);
+        Assert.Equal(supplier.Id, payable.SupplierId);
+        Assert.Equal(new DateOnly(2026, 10, 15), payable.DueDate);
+    }
+
+    [Fact]
+    public async Task ReconcileMissingPayables_heals_sale_sourced_credit_without_remark_prefix()
+    {
+        var (sync, credits, payables, relationship, supplier) = await CreateHarnessAsync();
+        var saleId = Guid.Parse("ffffffff-ffff-4fff-8fff-ffffffffffff");
+        var entry = BusinessCreditEntry.Create(
+            Seller,
+            Buyer,
+            815m,
+            ProductBasedUtangRemarks.ForSaleNumber("SALE-20260917-000815"),
+            Now,
+            relationship.Id.Value,
+            sourceSaleId: SaleId.From(saleId));
+        entry.ApplyCurrentDueDate(new DateOnly(2026, 11, 1));
+        await credits.AddAsync(entry);
+
+        var first = await sync.ReconcileMissingPayablesForRelationshipAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            Actor,
+            Now);
+        var second = await sync.ReconcileMissingPayablesForRelationshipAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            Actor,
+            Now.AddMinutes(1));
+
+        Assert.Equal(1, first);
+        Assert.Equal(0, second);
+        var payable = await payables.FindBySourceAsync(Buyer, SupplierPayableSourceType.Sale, saleId);
+        Assert.NotNull(payable);
+        Assert.Equal(815m, payable!.OriginalAmount);
+        Assert.Equal(supplier.Id, payable.SupplierId);
+    }
+
+    [Fact]
+    public async Task ReversePayableForSale_voids_matching_payable()
+    {
+        var (sync, _, payables, relationship, _) = await CreateHarnessAsync();
+        var saleId = Guid.Parse("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee");
+        await sync.EnsurePayableForSaleAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            saleId,
+            815m,
+            dueDate: null,
+            Actor,
+            Now);
+
+        await sync.ReversePayableForSaleAsync(Buyer, saleId, "void sale", Actor, Now.AddMinutes(1));
+
+        var payable = await payables.FindBySourceAsync(Buyer, SupplierPayableSourceType.Sale, saleId);
+        Assert.NotNull(payable);
+        Assert.Equal(SupplierPayableStatus.Voided, payable!.Status);
+    }
+
+    [Fact]
+    public async Task ReversePayableForSale_blocks_when_payable_has_posted_payments()
+    {
+        var (sync, _, payables, relationship, _) = await CreateHarnessAsync();
+        var saleId = Guid.Parse("bbbbbbbb-cccc-4ddd-8eee-ffffffffffff");
+        await sync.EnsurePayableForSaleAsync(
+            Seller,
+            Buyer,
+            relationship.Id.Value,
+            saleId,
+            815m,
+            dueDate: null,
+            Actor,
+            Now);
+        var payable = await payables.FindBySourceAsync(Buyer, SupplierPayableSourceType.Sale, saleId);
+        Assert.NotNull(payable);
+        payable!.ApplyPayment(100m, SupplierPayablePaymentMethod.Cash, Actor, Now.AddMinutes(1));
+        await payables.UpdateAsync(payable);
+
+        await Assert.ThrowsAsync<DomainException>(() =>
+            sync.ReversePayableForSaleAsync(Buyer, saleId, "void sale", Actor, Now.AddMinutes(2)));
+
+        Assert.Equal(SupplierPayableStatus.PartiallyPaid, payable.Status);
     }
 
     [Fact]
     public async Task ReverseForReceipt_reverses_matching_credit_entry()
     {
-        var (sync, credits, _, supplier) = await CreateHarnessAsync();
+        var (sync, credits, payables, _, supplier) = await CreateHarnessAsync();
         var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
         await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
 
-        await sync.ReverseForReceiptAsync(receipt, "void receipt", Now.AddMinutes(1));
+        await sync.ReverseForReceiptAsync(receipt, "void receipt", Now.AddMinutes(1), actorId: Actor);
 
         Assert.Equal(0m, await credits.SumActiveAmountAsync(Seller, Buyer));
         var entries = await credits.ListChronologicalForBuyerAsync(Seller, Buyer);
         Assert.Equal(CreditEntryStatus.Reversed, entries[0].Status);
+        var payable = await payables.FindBySourceAsync(
+            Buyer,
+            SupplierPayableSourceType.DirectPurchaseReceipt,
+            receipt.Id.Value);
+        Assert.NotNull(payable);
+        Assert.Equal(SupplierPayableStatus.Voided, payable!.Status);
+    }
+
+    [Fact]
+    public async Task ReverseForReceipt_blocks_when_payable_has_posted_payments()
+    {
+        var (sync, credits, payables, _, supplier) = await CreateHarnessAsync();
+        var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
+        await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
+        var payable = await payables.FindBySourceAsync(
+            Buyer,
+            SupplierPayableSourceType.DirectPurchaseReceipt,
+            receipt.Id.Value);
+        Assert.NotNull(payable);
+        payable!.ApplyPayment(
+            50m,
+            SupplierPayablePaymentMethod.Cash,
+            Actor,
+            Now.AddMinutes(1),
+            reference: "partial");
+        await payables.UpdateAsync(payable);
+
+        await Assert.ThrowsAsync<DomainException>(() =>
+            sync.ReverseForReceiptAsync(receipt, "void receipt", Now.AddMinutes(2), actorId: Actor));
+
+        Assert.Equal(747m, await credits.SumActiveAmountAsync(Seller, Buyer));
+        Assert.Equal(SupplierPayableStatus.PartiallyPaid, payable.Status);
     }
 
     [Fact]
     public async Task Mixed_PO_remark_and_Direct_remark_sum_to_1390()
     {
-        var (sync, credits, relationship, supplier) = await CreateHarnessAsync();
+        var (sync, credits, _, relationship, supplier) = await CreateHarnessAsync();
         var receipt = CreateReceipt(supplier.Id, totalCost: 747m);
         await sync.PostFromReceiptAsync(receipt, paidNow: 0m, Now);
 
@@ -107,6 +351,7 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
     private static async Task<(
         ConnectedB2bDirectPurchaseCreditSync Sync,
         InMemoryBusinessCredits Credits,
+        InMemoryPayables Payables,
         ConnectedSupplierRelationship Relationship,
         Supplier Supplier)> CreateHarnessAsync()
     {
@@ -121,11 +366,15 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
         await suppliers.AddAsync(supplier);
 
         var credits = new InMemoryBusinessCredits();
-        var sync = new ConnectedB2bDirectPurchaseCreditSync(suppliers, relationships, credits);
-        return (sync, credits, relationship, supplier);
+        var payables = new InMemoryPayables();
+        var sync = new ConnectedB2bDirectPurchaseCreditSync(suppliers, relationships, credits, payables);
+        return (sync, credits, payables, relationship, supplier);
     }
 
-    private static DirectPurchaseReceipt CreateReceipt(SupplierId supplierId, decimal totalCost)
+    private static DirectPurchaseReceipt CreateReceipt(
+        SupplierId supplierId,
+        decimal totalCost,
+        Guid? paidActor = null)
     {
         var unitCost = totalCost;
         return DirectPurchaseReceipt.Create(
@@ -142,11 +391,65 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
                     unitCost,
                     SellingMode.PerItem)
             ],
-            Actor,
+            paidActor ?? Actor,
             Now,
             supplierId,
             sourceName: "Connected Seller",
             receivingBranchId: Branch);
+    }
+
+    private sealed class InMemoryPayables : ISupplierPayableRepository
+    {
+        private readonly List<SupplierPayable> _items = [];
+
+        public int Count => _items.Count;
+
+        public Task<SupplierPayable?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableId payableId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(p =>
+                p.OrganizationId == organizationId && p.Id == payableId));
+
+        public Task<SupplierPayable?> FindBySourceAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableSourceType sourceType,
+            Guid sourceId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_items.FirstOrDefault(p =>
+                p.OrganizationId == organizationId
+                && p.SourceType == sourceType
+                && p.SourceId == sourceId));
+
+        public Task<(IReadOnlyList<SupplierPayable> Items, int TotalCount)> ListAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableFilter filter,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<SupplierPayable>, int)>((_items, _items.Count));
+
+        public Task<IReadOnlyList<SupplierPayablePayment>> ListPaymentsAsync(
+            PosOrganizationId organizationId,
+            SupplierPayableId payableId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<SupplierPayablePayment>>([]);
+
+        public Task AddAsync(SupplierPayable payable, CancellationToken cancellationToken = default)
+        {
+            _items.Add(payable);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(SupplierPayable payable, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<SupplierPayableSummaryTotals> GetSupplierSummaryAsync(
+            PosOrganizationId organizationId,
+            SupplierId supplierId,
+            DateOnly asOfDate,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new SupplierPayableSummaryTotals(0m, 0m, 0));
     }
 
     private sealed class InMemoryBusinessCredits : IBusinessCreditEntryRepository

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Equal, Wallet } from "lucide-react";
 import {
   createCustomerRepayment,
@@ -7,7 +7,11 @@ import {
   type UtangRepaymentPaymentMethod,
   UTANG_REPAYMENT_PAYMENT_METHODS,
 } from "@/api/pos/pos-customers-client";
-import { createBusinessCustomerRepayment } from "@/api/pos/pos-connected-suppliers-client";
+import {
+  createBusinessCustomerRepayment,
+  listBusinessCustomerReceivables,
+  type BusinessReceivable,
+} from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
@@ -16,12 +20,19 @@ import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-butto
 import { Button, buttonIconMotion } from "@/components/ui/button";
 import { useToast } from "@/components/exits/ToastProvider";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import {
   formatMoneyAmountInput,
   normalizeMoneyAmountTyping,
   parseMoneyAmountInput,
 } from "@/lib/money-input";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
+import {
+  allocatePaymentAutomatically,
+  validateManualAllocations,
+  type AllocationPreviewLine,
+  type OpenReceivableForAllocation,
+} from "@/features/customers/business-payment-allocation";
 
 type SharedRecordPaymentModalProps = {
   open: boolean;
@@ -36,12 +47,14 @@ type PersonalRecordPaymentModalProps = SharedRecordPaymentModalProps & {
   customerKind: "personal";
   customerId: string;
   connectionId?: never;
+  preselectedCreditEntryId?: never;
 };
 
 type BusinessRecordPaymentModalProps = SharedRecordPaymentModalProps & {
   customerKind: "business";
   connectionId: string;
   customerId?: never;
+  preselectedCreditEntryId?: string | null;
 };
 
 export type RecordPaymentModalProps =
@@ -59,6 +72,73 @@ function methodLabelKey(method: UtangRepaymentPaymentMethod) {
   }
 }
 
+function receivableSourceLabelKey(sourceType: string | null | undefined): MessageKey {
+  const normalized = (sourceType ?? "").trim().toLowerCase();
+  if (normalized === "po") {
+    return "customers.receivables.source.po";
+  }
+  if (normalized === "directpurchase" || normalized === "direct") {
+    return "customers.receivables.source.direct";
+  }
+  if (normalized === "sale") {
+    return "customers.receivables.source.sale";
+  }
+  return "customers.receivables.source.other";
+}
+
+function toOpenReceivables(items: BusinessReceivable[]): OpenReceivableForAllocation[] {
+  return items.map((item) => ({
+    creditEntryId: item.creditEntryId,
+    outstandingBalance: item.outstandingBalance,
+    dueDate: item.dueDate,
+    createdAtUtc: item.createdAtUtc,
+    sourceType: item.sourceType,
+    sourceReference: item.sourceReference,
+  }));
+}
+
+function formatDueDate(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    return trimmed.slice(0, 10);
+  }
+  return trimmed;
+}
+
+function seedManualFromLines(
+  open: OpenReceivableForAllocation[],
+  lines: AllocationPreviewLine[],
+): Record<string, string> {
+  const byId = new Map(lines.map((line) => [line.creditEntryId, line.amount]));
+  const next: Record<string, string> = {};
+  for (const receivable of open) {
+    const amount = byId.get(receivable.creditEntryId);
+    next[receivable.creditEntryId] =
+      amount != null && amount > 0 ? formatMoneyAmountInput(amount) : "";
+  }
+  return next;
+}
+
+function seedPreselectedManual(
+  open: OpenReceivableForAllocation[],
+  preselectedCreditEntryId: string,
+  paymentAmount: number,
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const receivable of open) {
+    if (receivable.creditEntryId === preselectedCreditEntryId) {
+      const apply = Math.round(Math.min(paymentAmount, receivable.outstandingBalance) * 100) / 100;
+      next[receivable.creditEntryId] = apply > 0 ? formatMoneyAmountInput(apply) : "";
+    } else {
+      next[receivable.creditEntryId] = "";
+    }
+  }
+  return next;
+}
+
 export function RecordPaymentModal(props: RecordPaymentModalProps) {
   const { t } = useI18n();
   const { showToast } = useToast();
@@ -74,6 +154,13 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
   const [accountName, setAccountName] = useState("");
   const [reference, setReference] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [allocationMode, setAllocationMode] = useState<"auto" | "manual">("auto");
+  const [manualAmounts, setManualAmounts] = useState<Record<string, string>>({});
+  const [preselectSeedActive, setPreselectSeedActive] = useState(false);
+
+  const isBusiness = props.customerKind === "business";
+  const preselectedCreditEntryId = isBusiness ? (props.preselectedCreditEntryId ?? null) : null;
+  const connectionId = isBusiness ? props.connectionId : null;
 
   useEffect(() => {
     if (!props.open) {
@@ -88,7 +175,32 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
     setAccountName("");
     setReference("");
     setFormError(null);
-  }, [props.open]);
+    if (isBusiness && preselectedCreditEntryId) {
+      setAllocationMode("manual");
+      setPreselectSeedActive(true);
+    } else {
+      setAllocationMode("auto");
+      setPreselectSeedActive(false);
+    }
+    setManualAmounts({});
+  }, [props.open, isBusiness, preselectedCreditEntryId]);
+
+  const receivablesQuery = useQuery({
+    queryKey: [
+      "business-customers",
+      "receivables",
+      workspace?.organizationId,
+      connectionId,
+    ],
+    enabled: Boolean(props.open && isBusiness && workspace && connectionId),
+    queryFn: ({ signal }) =>
+      listBusinessCustomerReceivables(workspace!, connectionId!, signal),
+  });
+
+  const openReceivables = useMemo(
+    () => toOpenReceivables(receivablesQuery.data ?? []).filter((item) => item.outstandingBalance > 0),
+    [receivablesQuery.data],
+  );
 
   const amount = useMemo(() => parseMoneyAmountInput(amountText), [amountText]);
   const exceedsOutstanding =
@@ -104,6 +216,113 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
       ? null
       : Math.max(0, Math.round((props.outstandingBalance - amount) * 100) / 100);
   const isCheck = paymentMethod === "Check";
+
+  useEffect(() => {
+    if (!props.open || !isBusiness || allocationMode !== "manual" || !preselectSeedActive) {
+      return;
+    }
+    if (!preselectedCreditEntryId || amount == null || amount <= 0 || openReceivables.length === 0) {
+      return;
+    }
+    setManualAmounts(seedPreselectedManual(openReceivables, preselectedCreditEntryId, amount));
+  }, [
+    props.open,
+    isBusiness,
+    allocationMode,
+    preselectSeedActive,
+    preselectedCreditEntryId,
+    amount,
+    openReceivables,
+  ]);
+
+  const autoPreviewLines = useMemo(() => {
+    if (!isBusiness || amount == null || amount <= 0 || exceedsOutstanding) {
+      return [] as AllocationPreviewLine[];
+    }
+    return allocatePaymentAutomatically(openReceivables, amount);
+  }, [isBusiness, amount, exceedsOutstanding, openReceivables]);
+
+  const manualAllocationResult = useMemo(() => {
+    if (!isBusiness || allocationMode !== "manual" || amount == null || amount <= 0) {
+      return null;
+    }
+    const allocations = openReceivables
+      .map((receivable) => ({
+        creditEntryId: receivable.creditEntryId,
+        amount: parseMoneyAmountInput(manualAmounts[receivable.creditEntryId] ?? "") ?? 0,
+      }))
+      .filter((row) => row.amount > 0);
+    return validateManualAllocations({
+      open: openReceivables,
+      allocations,
+      paymentAmount: amount,
+    });
+  }, [isBusiness, allocationMode, amount, openReceivables, manualAmounts]);
+
+  const previewLines: AllocationPreviewLine[] =
+    !isBusiness || amount == null || amount <= 0 || exceedsOutstanding
+      ? []
+      : allocationMode === "auto"
+        ? autoPreviewLines
+        : manualAllocationResult?.ok
+          ? manualAllocationResult.lines
+          : openReceivables
+              .map((receivable) => {
+                const applied =
+                  parseMoneyAmountInput(manualAmounts[receivable.creditEntryId] ?? "") ?? 0;
+                if (!(applied > 0)) {
+                  return null;
+                }
+                return {
+                  creditEntryId: receivable.creditEntryId,
+                  amount: applied,
+                  outstandingBefore: receivable.outstandingBalance,
+                  outstandingAfter: Math.round((receivable.outstandingBalance - applied) * 100) / 100,
+                  sourceType: receivable.sourceType,
+                  sourceReference: receivable.sourceReference,
+                  dueDate: receivable.dueDate,
+                } satisfies AllocationPreviewLine;
+              })
+              .filter((line): line is AllocationPreviewLine => line != null);
+
+  const allocationErrorKey = useMemo((): MessageKey | null => {
+    if (!isBusiness || amount == null || amount <= 0 || exceedsOutstanding) {
+      return null;
+    }
+    if (allocationMode === "auto") {
+      const sum = Math.round(autoPreviewLines.reduce((s, line) => s + line.amount, 0) * 100) / 100;
+      if (Math.abs(sum - amount) > 1e-9) {
+        return "customers.receivables.allocationSumMismatch";
+      }
+      return null;
+    }
+    if (!manualAllocationResult) {
+      return null;
+    }
+    if (manualAllocationResult.ok) {
+      return null;
+    }
+    switch (manualAllocationResult.error) {
+      case "exceeds_receivable":
+        return "customers.receivables.allocationExceeds";
+      case "invalid_line":
+        return "customers.receivables.allocationInvalidLine";
+      case "sum_mismatch":
+        return "customers.receivables.allocationSumMismatch";
+      case "duplicate":
+      case "unknown":
+        return "customers.receivables.allocationInvalidLine";
+      default:
+        return "customers.receivables.allocationSumMismatch";
+    }
+  }, [
+    isBusiness,
+    amount,
+    exceedsOutstanding,
+    allocationMode,
+    autoPreviewLines,
+    manualAllocationResult,
+  ]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -125,22 +344,49 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
         throw new Error(t("customers.checkFieldsRequired"));
       }
 
-      const payload: CreatePosRepaymentInput = {
+      if (props.customerKind === "personal") {
+        const payload: CreatePosRepaymentInput = {
+          amount,
+          remarks,
+          paymentMethod,
+          checkNumber,
+          bankName,
+          checkDate,
+          accountName,
+          reference,
+        };
+        await createCustomerRepayment(workspace, props.customerId, payload);
+        return;
+      }
+
+      const lines =
+        allocationMode === "auto"
+          ? autoPreviewLines
+          : manualAllocationResult?.ok
+            ? manualAllocationResult.lines
+            : null;
+      if (!lines || lines.length === 0) {
+        throw new Error(t("customers.receivables.allocationSumMismatch"));
+      }
+      const allocationSum = Math.round(lines.reduce((s, line) => s + line.amount, 0) * 100) / 100;
+      if (Math.abs(allocationSum - amount) > 1e-9) {
+        throw new Error(t("customers.receivables.allocationSumMismatch"));
+      }
+
+      await createBusinessCustomerRepayment(workspace, props.connectionId, {
         amount,
         remarks,
         paymentMethod,
-        checkNumber,
-        bankName,
-        checkDate,
-        accountName,
+        checkNumber: isCheck ? checkNumber : undefined,
+        bankName: isCheck ? bankName : undefined,
+        checkDate: isCheck ? checkDate : undefined,
+        accountName: isCheck ? accountName : undefined,
         reference,
-      };
-
-      if (props.customerKind === "personal") {
-        await createCustomerRepayment(workspace, props.customerId, payload);
-      } else {
-        await createBusinessCustomerRepayment(workspace, props.connectionId, payload);
-      }
+        allocations: lines.map((line) => ({
+          creditEntryId: line.creditEntryId,
+          amount: line.amount,
+        })),
+      });
     },
     onSuccess: async () => {
       if (!workspace) {
@@ -165,6 +411,9 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
         });
         await queryClient.invalidateQueries({
           queryKey: ["business-customers", "repayments", workspace.organizationId, props.connectionId],
+        });
+        await queryClient.invalidateQueries({
+          queryKey: ["business-customers", "receivables", workspace.organizationId, props.connectionId],
         });
         await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
         await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
@@ -195,16 +444,43 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
     },
   });
 
+  const businessAllocationReady =
+    !isBusiness ||
+    (amount != null &&
+      amount > 0 &&
+      !exceedsOutstanding &&
+      allocationErrorKey == null &&
+      previewLines.length > 0);
+
   const canSubmit =
     !mutation.isPending &&
     props.outstandingBalance > 0 &&
     amount != null &&
     amount > 0 &&
     !exceedsOutstanding &&
-    (!isCheck || Boolean(checkNumber.trim() && bankName.trim() && checkDate.trim()));
+    (!isCheck || Boolean(checkNumber.trim() && bankName.trim() && checkDate.trim())) &&
+    businessAllocationReady;
 
   if (!props.open) {
     return null;
+  }
+
+  function switchToManual() {
+    setAllocationMode("manual");
+    setPreselectSeedActive(false);
+    if (amount != null && amount > 0) {
+      setManualAmounts(seedManualFromLines(openReceivables, autoPreviewLines));
+    } else {
+      setManualAmounts(
+        Object.fromEntries(openReceivables.map((item) => [item.creditEntryId, ""])),
+      );
+    }
+  }
+
+  function switchToAuto() {
+    setAllocationMode("auto");
+    setPreselectSeedActive(false);
+    setManualAmounts({});
   }
 
   return (
@@ -381,6 +657,171 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
             <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="record-payment-remaining-balance">
               {t("customers.remainingBalance")}: ₱{formatMoneyAmountInput(remainingBalance)}
             </p>
+          ) : null}
+
+          {isBusiness ? (
+            <div
+              className="grid gap-2 rounded-[var(--exits-radius-md)] border border-border p-3"
+              data-testid="record-payment-allocation"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="grid gap-0.5">
+                  <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                    {t("customers.receivables.allocationPreview")}
+                  </p>
+                  <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {allocationMode === "auto"
+                      ? t("customers.receivables.allocationAuto")
+                      : t("customers.receivables.allocationManual")}
+                  </p>
+                </div>
+                {allocationMode === "auto" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={mutation.isPending || openReceivables.length === 0}
+                    onClick={switchToManual}
+                    data-testid="record-payment-allocate-manually"
+                  >
+                    {t("customers.receivables.allocateManually")}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={mutation.isPending}
+                    onClick={switchToAuto}
+                    data-testid="record-payment-allocate-automatically"
+                  >
+                    {t("customers.receivables.allocateAutomatically")}
+                  </Button>
+                )}
+              </div>
+
+              {receivablesQuery.isLoading ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.receivables.loading")}
+                </p>
+              ) : null}
+
+              {receivablesQuery.isError ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+                  {t("customers.receivables.loadFailed")}
+                </p>
+              ) : null}
+
+              {!receivablesQuery.isLoading &&
+              !receivablesQuery.isError &&
+              openReceivables.length === 0 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.receivables.empty")}
+                </p>
+              ) : null}
+
+              {allocationMode === "manual" && openReceivables.length > 0 ? (
+                <div className="grid gap-2" data-testid="record-payment-manual-allocations">
+                  {openReceivables.map((receivable) => (
+                    <label
+                      key={receivable.creditEntryId}
+                      className="grid gap-1 rounded-md border border-border/70 p-2 text-[length:var(--exits-text-sm)]"
+                      data-testid={`record-payment-manual-row-${receivable.creditEntryId}`}
+                    >
+                      <span className="font-medium">
+                        {t(receivableSourceLabelKey(receivable.sourceType))}
+                        {receivable.sourceReference
+                          ? ` · ${receivable.sourceReference}`
+                          : ""}
+                      </span>
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">
+                        {t("customers.receivables.dueDate")}: {formatDueDate(receivable.dueDate)}
+                        {" · "}
+                        {t("customers.receivables.outstanding")}: ₱
+                        {formatMoneyAmountInput(receivable.outstandingBalance)}
+                      </span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="rounded-md border border-border bg-background px-3 tabular-nums"
+                        value={manualAmounts[receivable.creditEntryId] ?? ""}
+                        disabled={mutation.isPending}
+                        onChange={(event) => {
+                          setPreselectSeedActive(false);
+                          setFormError(null);
+                          const nextValue = normalizeMoneyAmountTyping(event.target.value);
+                          setManualAmounts((prev) => ({
+                            ...prev,
+                            [receivable.creditEntryId]: nextValue,
+                          }));
+                        }}
+                        onBlur={() => {
+                          const parsed = parseMoneyAmountInput(
+                            manualAmounts[receivable.creditEntryId] ?? "",
+                          );
+                          if (parsed !== null) {
+                            setManualAmounts((prev) => ({
+                              ...prev,
+                              [receivable.creditEntryId]: formatMoneyAmountInput(parsed),
+                            }));
+                          }
+                        }}
+                        data-testid={`record-payment-manual-amount-${receivable.creditEntryId}`}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+
+              {allocationMode === "auto" && previewLines.length > 0 ? (
+                <ul
+                  className="m-0 grid list-none gap-2 p-0"
+                  data-testid="record-payment-allocation-preview"
+                >
+                  {previewLines.map((line) => (
+                    <li
+                      key={line.creditEntryId}
+                      className="grid gap-0.5 rounded-md border border-border/70 p-2 text-[length:var(--exits-text-sm)]"
+                      data-testid={`record-payment-allocation-line-${line.creditEntryId}`}
+                    >
+                      <span className="font-medium">
+                        {t(receivableSourceLabelKey(line.sourceType))}
+                        {line.sourceReference ? ` · ${line.sourceReference}` : ""}
+                      </span>
+                      <span className="text-[length:var(--exits-text-xs)] text-muted">
+                        {t("customers.receivables.dueDate")}: {formatDueDate(line.dueDate)}
+                      </span>
+                      <span className="tabular-nums">
+                        {t("customers.receivables.amountApplied")}: ₱
+                        {formatMoneyAmountInput(line.amount)}
+                        {" · "}
+                        {t("customers.receivables.remaining")}: ₱
+                        {formatMoneyAmountInput(line.outstandingAfter)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {allocationMode === "manual" &&
+              manualAllocationResult?.ok &&
+              previewLines.length > 0 ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+                  data-testid="record-payment-manual-preview-summary"
+                >
+                  {t("customers.receivables.allocationPreviewReady")}
+                </p>
+              ) : null}
+
+              {allocationErrorKey && amount != null && amount > 0 && !exceedsOutstanding ? (
+                <Notice
+                  tone="warning"
+                  testId="record-payment-allocation-error"
+                  className="px-2.5 py-1.5 text-[length:var(--exits-text-xs)]"
+                >
+                  {t(allocationErrorKey)}
+                </Notice>
+              ) : null}
+            </div>
           ) : null}
         </div>
 

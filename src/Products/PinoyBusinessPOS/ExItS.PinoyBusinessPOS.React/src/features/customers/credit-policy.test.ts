@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { PosCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client";
 import {
+  buyerCreditStatusLabelKey,
   computeCreditPolicyDueDate,
   creditPolicyCheckoutBlockMessageKey,
   creditPolicyConfigureActionLabelKey,
@@ -11,6 +12,8 @@ import {
   formatCreditPolicySubjectIdentity,
   isCreditAllowSwitchOn,
   outstandingExceedsNewLimit,
+  resolveBuyerCreditDisplayStatus,
+  resolveSellerCreditDisplayStatus,
   resolveUtangCreditPolicyBlock,
   termDaysHelperLabelKey,
 } from "@/features/customers/credit-policy";
@@ -35,23 +38,74 @@ function policy(partial: Partial<PosCustomerCreditPolicy>): PosCustomerCreditPol
 }
 
 describe("credit-policy helpers", () => {
-  it("maps status labels and tones", () => {
-    expect(creditPolicyStatusLabelKey("NotConfigured")).toBe(
-      "customers.creditPolicy.status.NotConfigured",
+  it("maps seller display statuses from status + HasEverBeenApproved", () => {
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "NotConfigured", hasEverBeenApproved: false }),
+    ).toBe("Unavailable");
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "PendingApproval", hasEverBeenApproved: false }),
+    ).toBe("NeedsSetup");
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "Approved", hasEverBeenApproved: true }),
+    ).toBe("Active");
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "Disabled", hasEverBeenApproved: true }),
+    ).toBe("Paused");
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "Disabled", hasEverBeenApproved: false }),
+    ).toBe("Unavailable");
+    expect(
+      resolveSellerCreditDisplayStatus({
+        status: "Disabled",
+        hasEverBeenApproved: false,
+        sellerDisplayStatus: "Paused",
+      }),
+    ).toBe("Paused");
+  });
+
+  it("maps buyer display statuses without seller workflow labels", () => {
+    expect(
+      resolveBuyerCreditDisplayStatus({ status: "NotConfigured", hasEverBeenApproved: false }),
+    ).toBe("Unavailable");
+    expect(
+      resolveBuyerCreditDisplayStatus({ status: "PendingApproval", hasEverBeenApproved: false }),
+    ).toBe("Unavailable");
+    expect(
+      resolveBuyerCreditDisplayStatus({ status: "Approved", hasEverBeenApproved: true }),
+    ).toBe("Available");
+    expect(
+      resolveBuyerCreditDisplayStatus({ status: "Disabled", hasEverBeenApproved: true }),
+    ).toBe("Paused");
+    expect(buyerCreditStatusLabelKey("Available")).toBe(
+      "customers.creditPolicy.buyerStatus.Available",
     );
-    expect(creditPolicyStatusLabelKey("PendingApproval")).toBe(
-      "customers.creditPolicy.status.PendingApproval",
+    expect(buyerCreditStatusLabelKey("Paused")).toBe(
+      "customers.creditPolicy.buyerStatus.Paused",
     );
-    expect(creditPolicyStatusLabelKey("Approved")).toBe(
-      "customers.creditPolicy.status.Approved",
+    expect(buyerCreditStatusLabelKey("Unavailable")).toBe(
+      "customers.creditPolicy.buyerStatus.Unavailable",
     );
-    expect(creditPolicyStatusLabelKey("Disabled")).toBe(
-      "customers.creditPolicy.status.Disabled",
+  });
+
+  it("maps status labels and tones for display statuses", () => {
+    expect(creditPolicyStatusLabelKey("Unavailable")).toBe(
+      "customers.creditPolicy.status.Unavailable",
     );
-    expect(creditPolicyStatusTone("Approved")).toBe("success");
-    expect(creditPolicyStatusTone("PendingApproval")).toBe("warning");
-    expect(creditPolicyStatusTone("Disabled")).toBe("danger");
-    expect(creditPolicyStatusTone("NotConfigured")).toBe("neutral");
+    expect(creditPolicyStatusLabelKey("NeedsSetup")).toBe(
+      "customers.creditPolicy.status.NeedsSetup",
+    );
+    expect(creditPolicyStatusLabelKey("Active")).toBe("customers.creditPolicy.status.Active");
+    expect(creditPolicyStatusLabelKey("Paused")).toBe("customers.creditPolicy.status.Paused");
+    expect(creditPolicyStatusTone("Active")).toBe("success");
+    expect(creditPolicyStatusTone("NeedsSetup")).toBe("warning");
+    expect(creditPolicyStatusTone("Paused")).toBe("danger");
+    expect(creditPolicyStatusTone("Unavailable")).toBe("neutral");
+  });
+
+  it("does not treat history-only or Disabled-without-approval as Paused", () => {
+    expect(
+      resolveSellerCreditDisplayStatus({ status: "Disabled", hasEverBeenApproved: false }),
+    ).not.toBe("Paused");
   });
 
   it("flags 90-day term helper", () => {

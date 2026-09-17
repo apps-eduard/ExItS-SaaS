@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
@@ -25,7 +26,10 @@ public sealed record BusinessCustomerCreditPolicyReadDto(
     DateTimeOffset? ApprovedAtUtc,
     Guid? UpdatedByUserId,
     DateTimeOffset? UpdatedAtUtc,
-    DateTimeOffset? ExpectedUpdatedAtUtc);
+    DateTimeOffset? ExpectedUpdatedAtUtc,
+    bool HasEverBeenApproved = false,
+    string? SellerDisplayStatus = null,
+    string? BuyerDisplayStatus = null);
 
 public sealed record BusinessCustomerCreditPolicyChangeDto(
     Guid ChangeId,
@@ -126,24 +130,37 @@ public sealed class GetBusinessCustomerCreditPolicy
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IBusinessCustomerCreditPolicyRepository _policies;
     private readonly IBusinessCreditEntryRepository _businessCredits;
+    private readonly IBusinessRepaymentRepository _businessRepayments;
     private readonly IConnectedPurchaseOrderRepository _connectedOrders;
+    private readonly ConnectedB2bDirectPurchaseCreditSync? _directPurchaseCreditSync;
+    private readonly IPosUnitOfWork? _unitOfWork;
+    private readonly IClock _clock;
 
     public GetBusinessCustomerCreditPolicy(
         IConnectedSupplierRelationshipRepository relationships,
         IBusinessCustomerCreditPolicyRepository policies,
         IBusinessCreditEntryRepository businessCredits,
-        IConnectedPurchaseOrderRepository connectedOrders)
+        IBusinessRepaymentRepository businessRepayments,
+        IConnectedPurchaseOrderRepository connectedOrders,
+        IClock clock,
+        ConnectedB2bDirectPurchaseCreditSync? directPurchaseCreditSync = null,
+        IPosUnitOfWork? unitOfWork = null)
     {
         _relationships = relationships;
         _policies = policies;
         _businessCredits = businessCredits;
+        _businessRepayments = businessRepayments;
         _connectedOrders = connectedOrders;
+        _clock = clock;
+        _directPurchaseCreditSync = directPurchaseCreditSync;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ApplicationResult<BusinessCustomerCreditPolicyReadDto>> ExecuteAsync(
         Guid organizationId,
         Guid connectionId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? actorUserId = null)
     {
         // Buyer or seller may read — buyer needs the approved limit on the supplier page.
         var resolved = await BusinessCustomerCreditPolicyRelationshipGuard
@@ -157,6 +174,28 @@ public sealed class GetBusinessCustomerCreditPolicy
         }
 
         var relationship = resolved.Value!;
+
+        // Buyer read heals missing SupplierPayables for historical Direct Purchase credits.
+        if (_directPurchaseCreditSync is not null
+            && PosOrganizationId.From(organizationId) == relationship.BuyerOrganizationId)
+        {
+            var healed = await _directPurchaseCreditSync
+                .ReconcileMissingPayablesForRelationshipAsync(
+                    relationship.SupplierOrganizationId,
+                    relationship.BuyerOrganizationId,
+                    connectionId,
+                    actorUserId is Guid actor && actor != Guid.Empty
+                        ? actor
+                        : ConnectedB2bDirectPurchaseCreditSync.SystemRepairActorId,
+                    _clock.UtcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (healed > 0 && _unitOfWork is not null)
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         var policy = await _policies
             .GetBySellerAndBuyerAsync(
                 relationship.SupplierOrganizationId,
@@ -184,15 +223,30 @@ public sealed class GetBusinessCustomerCreditPolicy
                     ApprovedAtUtc: null,
                     UpdatedByUserId: null,
                     UpdatedAtUtc: null,
-                    ExpectedUpdatedAtUtc: null));
+                    ExpectedUpdatedAtUtc: null,
+                    HasEverBeenApproved: false,
+                    SellerDisplayStatus: BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(
+                        CustomerCreditPolicyStatus.NotConfigured,
+                        hasEverBeenApproved: false),
+                    BuyerDisplayStatus: BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(
+                        CustomerCreditPolicyStatus.NotConfigured,
+                        hasEverBeenApproved: false)));
         }
 
-        var outstanding = await _businessCredits
+        // Net outstanding = active credits − settled repayments (matches BusinessOutstandingBalanceService).
+        var credits = await _businessCredits
             .SumActiveAmountAsync(
                 policy.SellerOrganizationId,
                 policy.BuyerOrganizationId,
                 cancellationToken)
             .ConfigureAwait(false);
+        var repayments = await _businessRepayments
+            .SumSettledAmountAsync(
+                policy.SellerOrganizationId,
+                policy.BuyerOrganizationId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        var outstanding = credits - repayments;
 
         var orders = await _connectedOrders
             .ListBetweenOrganizationsAsync(
@@ -231,7 +285,14 @@ public sealed class GetBusinessCustomerCreditPolicy
             policy.ApprovedAtUtc,
             policy.UpdatedByUserId,
             policy.UpdatedAtUtc,
-            policy.UpdatedAtUtc);
+            policy.UpdatedAtUtc,
+            policy.HasEverBeenApproved,
+            BusinessCustomerCreditPolicy.ResolveSellerDisplayStatus(
+                policy.Status,
+                policy.HasEverBeenApproved),
+            BusinessCustomerCreditPolicy.ResolveBuyerDisplayStatus(
+                policy.Status,
+                policy.HasEverBeenApproved));
 }
 
 public sealed class UpsertBusinessCustomerCreditPolicy

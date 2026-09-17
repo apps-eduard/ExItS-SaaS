@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
@@ -11,20 +12,24 @@ namespace ExItS.PinoyBusinessPOS.Application.Credit;
 /// Shared NEW-Utang authorization against BusinessCustomerCreditPolicy + outstanding ledger
 /// + active connected-PO Utang reservations.
 /// Call inside an ambient transaction after <see cref="IBusinessCreditEntryRepository.AcquireBusinessCreditLockAsync"/>.
+/// Outstanding is net: active credits − settled BusinessRepayments (matches BusinessOutstandingBalanceService).
 /// </summary>
 public sealed class BusinessCustomerCreditAuthorizationService
 {
     private readonly IBusinessCustomerCreditPolicyRepository _policies;
     private readonly IBusinessCreditEntryRepository _businessCredits;
+    private readonly IBusinessRepaymentRepository _businessRepayments;
     private readonly IConnectedPurchaseOrderRepository? _connectedOrders;
 
     public BusinessCustomerCreditAuthorizationService(
         IBusinessCustomerCreditPolicyRepository policies,
         IBusinessCreditEntryRepository businessCredits,
+        IBusinessRepaymentRepository businessRepayments,
         IConnectedPurchaseOrderRepository? connectedOrders = null)
     {
         _policies = policies;
         _businessCredits = businessCredits;
+        _businessRepayments = businessRepayments;
         _connectedOrders = connectedOrders;
     }
 
@@ -59,8 +64,10 @@ public sealed class BusinessCustomerCreditAuthorizationService
                 "Utang is not approved for this business customer.");
         }
 
-        var outstanding = await _businessCredits
-            .SumActiveAmountAsync(sellerOrganizationId, buyerOrganizationId, cancellationToken)
+        var outstanding = await ComputeNetOutstandingAsync(
+                sellerOrganizationId,
+                buyerOrganizationId,
+                cancellationToken)
             .ConfigureAwait(false);
 
         var reserved = 0m;
@@ -98,8 +105,10 @@ public sealed class BusinessCustomerCreditAuthorizationService
         decimal creditLimit,
         CancellationToken cancellationToken = default)
     {
-        var outstanding = await _businessCredits
-            .SumActiveAmountAsync(sellerOrganizationId, buyerOrganizationId, cancellationToken)
+        var outstanding = await ComputeNetOutstandingAsync(
+                sellerOrganizationId,
+                buyerOrganizationId,
+                cancellationToken)
             .ConfigureAwait(false);
 
         var reserved = 0m;
@@ -113,5 +122,19 @@ public sealed class BusinessCustomerCreditAuthorizationService
 
         var available = ConnectedPoUtangCredit.AvailableCredit(status, creditLimit, outstanding, reserved);
         return (outstanding, reserved, available);
+    }
+
+    private async Task<decimal> ComputeNetOutstandingAsync(
+        PosOrganizationId sellerOrganizationId,
+        PosOrganizationId buyerOrganizationId,
+        CancellationToken cancellationToken)
+    {
+        var credits = await _businessCredits
+            .SumActiveAmountAsync(sellerOrganizationId, buyerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var repayments = await _businessRepayments
+            .SumSettledAmountAsync(sellerOrganizationId, buyerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return credits - repayments;
     }
 }

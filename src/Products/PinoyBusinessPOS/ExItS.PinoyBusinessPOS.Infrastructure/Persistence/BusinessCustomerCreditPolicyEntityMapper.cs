@@ -20,7 +20,8 @@ internal static class BusinessCustomerCreditPolicyEntityMapper
             record.ApprovedByUserId,
             record.ApprovedAtUtc,
             record.UpdatedByUserId,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.HasEverBeenApproved);
 
     public static BusinessCustomerCreditPolicyRecord ToRecord(BusinessCustomerCreditPolicy policy) =>
         new()
@@ -36,6 +37,7 @@ internal static class BusinessCustomerCreditPolicyEntityMapper
             ConfiguredAtUtc = policy.ConfiguredAtUtc,
             ApprovedByUserId = policy.ApprovedByUserId,
             ApprovedAtUtc = policy.ApprovedAtUtc,
+            HasEverBeenApproved = policy.HasEverBeenApproved,
             UpdatedByUserId = policy.UpdatedByUserId,
             UpdatedAtUtc = policy.UpdatedAtUtc
         };
@@ -50,6 +52,7 @@ internal static class BusinessCustomerCreditPolicyEntityMapper
         record.ConfiguredAtUtc = policy.ConfiguredAtUtc;
         record.ApprovedByUserId = policy.ApprovedByUserId;
         record.ApprovedAtUtc = policy.ApprovedAtUtc;
+        record.HasEverBeenApproved = policy.HasEverBeenApproved;
         record.UpdatedByUserId = policy.UpdatedByUserId;
         record.UpdatedAtUtc = policy.UpdatedAtUtc;
     }

@@ -321,7 +321,10 @@ public sealed record CreateUtangRepaymentCommand(
     DateOnly? CheckDate,
     string? AccountName,
     string? Reference,
-    Guid? RepaymentId = null);
+    Guid? RepaymentId = null,
+    IReadOnlyList<RepaymentAllocationLine>? Allocations = null);
+
+public sealed record RepaymentAllocationLine(Guid CreditEntryId, decimal Amount);
 
 public sealed class CreateRepayment
 {

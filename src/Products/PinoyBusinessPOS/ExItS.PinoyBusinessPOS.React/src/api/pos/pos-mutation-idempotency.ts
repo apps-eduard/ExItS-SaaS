@@ -54,6 +54,8 @@ export const OFFLINE_OPERATION_TYPES = {
   BusinessCustomerCreditPolicyUpsert: "business_customer_credit_policy.upsert",
   BusinessCustomerCreditPolicyApprove: "business_customer_credit_policy.approve",
   BusinessCustomerCreditPolicyDisable: "business_customer_credit_policy.disable",
+  /** Online-only B2B business repayment create — mirrors OfflineOperationTypes.BusinessRepaymentCreate. */
+  BusinessRepaymentCreate: "business_repayment.create",
 } as const;
 
 function guidToN(guid: string): string {

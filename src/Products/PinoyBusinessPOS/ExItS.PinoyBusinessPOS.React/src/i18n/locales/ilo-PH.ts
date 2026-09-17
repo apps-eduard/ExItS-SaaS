@@ -2280,6 +2280,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.approvedBy": "In-approve ni",
 
   "customers.creditPolicy.available": "Available credit",
+  "customers.creditPolicy.usedOfLimit": "Used {percent}% of {limit}",
+  "customers.creditPolicy.utilizationProgress": "Credit utilization",
 
   "customers.creditPolicy.cancel": "Cancel",
 
@@ -2387,6 +2389,19 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.status.Disabled": "Off",
 
   "customers.creditPolicy.status.NotConfigured": "Saan pay a na-configure",
+  "customers.creditPolicy.status.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.status.NeedsSetup": "Needs setup",
+  "customers.creditPolicy.status.Active": "Active",
+  "customers.creditPolicy.status.Paused": "Paused",
+  "customers.creditPolicy.buyerStatus.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.buyerStatus.Available": "Credit available",
+  "customers.creditPolicy.buyerStatus.Paused": "Credit paused",
+  "customers.creditPolicy.confirmPauseTitle": "Pause credit?",
+  "customers.creditPolicy.confirmPauseDetail": "New Utang sales and new Utang PO exposure will be blocked.\nExisting balances, payments, statements, reservations, and history remain.",
+  "customers.creditPolicy.confirmPauseConfirm": "Pause credit",
+  "customers.creditPolicy.confirmResumeTitle": "Resume credit?",
+  "customers.creditPolicy.confirmResumeDetail": "If prior terms are still valid, credit returns to Active. Otherwise you will finish setup before credit is usable.",
+  "customers.creditPolicy.confirmResumeConfirm": "Resume credit",
 
   "customers.creditPolicy.status.PendingApproval": "Activating",
 
@@ -2928,6 +2943,35 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.paymentMethod.check": "Check",
   "customers.paymentMethod.manualGcash": "GCash (manual)",
   "customers.pendingChecks": "Pending checks",
+  "customers.receivables.pageTitle": "Dagiti nalukatan a receivable",
+  "customers.receivables.openTitle": "Dagiti nalukatan a receivable",
+  "customers.receivables.openCount": "{count} nalukatan",
+  "customers.receivables.allocateManually": "I-allocate a manual",
+  "customers.receivables.allocateAutomatically": "I-allocate nga automatic",
+  "customers.receivables.allocationPreview": "Preview ti allocation",
+  "customers.receivables.allocationAuto": "Automatic (kadadaan a due immuna)",
+  "customers.receivables.allocationManual": "Manual a allocation",
+  "customers.receivables.allocationPreviewReady": "Agpada ti manual allocation iti payment.",
+  "customers.receivables.allocationSumMismatch": "Masapul nga agpada ti total allocation iti payment.",
+  "customers.receivables.allocationExceeds": "Saan a mabalin ti ag-allocate a nangatngato ngem outstanding ti receivable.",
+  "customers.receivables.allocationInvalidLine": "Isurat ti positibo nga amount para iti tunggal napili a receivable.",
+  "customers.receivables.source.po": "PO",
+  "customers.receivables.source.direct": "Direct purchase",
+  "customers.receivables.source.sale": "Sale",
+  "customers.receivables.source.other": "Sabali",
+  "customers.receivables.columnSource": "Source",
+  "customers.receivables.columnReference": "Reference",
+  "customers.receivables.dueDate": "Due",
+  "customers.receivables.outstanding": "Outstanding",
+  "customers.receivables.amountApplied": "Na-apply",
+  "customers.receivables.remaining": "Natio",
+  "customers.receivables.loading": "Aglo-load ti receivables…",
+  "customers.receivables.loadFailed": "Saan a ma-load ti receivables.",
+  "customers.receivables.empty": "Awan ti nalukatan a receivable",
+  "customers.receivables.emptyDetail": "Nabayaranen amin a credit line daytoy a business customer.",
+  "customers.receivables.offline": "Saan a available ti receivables offline",
+  "customers.receivables.offlineDetail": "Agkonekta manen tapno makita ti nalukatan a receivables.",
+  "customers.receivables.backToCustomer": "Agsubli iti business customer",
   "customers.recordedPaymentCashToast": "Payment of {amount} recorded.",
   "customers.recordedPaymentCheckToast": "Check payment of {amount} recorded and is pending clearing.",
   "customers.reference": "Reference (optional)",
@@ -9742,6 +9786,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "supplierPayables.source.goodsReceipt": "Goods receipt",
 
   "supplierPayables.source.directPurchase": "Direct purchase",
+  "supplierPayables.source.sale": "Sale",
 
   "purchasing.unitCost": "Unit cost",
   "purchasing.catalogPrice": "Supplier/catalog price",
@@ -10331,6 +10376,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "reports.supplierPayables.source.goodsReceipt": "Goods Receipt",
 
   "reports.supplierPayables.source.directPurchase": "Direct Purchase",
+  "reports.supplierPayables.source.sale": "Sale",
 
   "reports.switchBranch": "Switch branch",
 

@@ -3,11 +3,13 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Application.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
@@ -118,7 +120,12 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
     {
         var (relationships, policies, _, connectionId) = await CreateActiveHarnessAsync();
         var get = new GetBusinessCustomerCreditPolicy(
-            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
+            relationships,
+            policies,
+            new EmptyBusinessCredits(),
+            new EmptyBusinessRepayments(),
+            new EmptyConnectedOrders(),
+            new FixedClock(Now));
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.NotConfigured), result.Value!.Status);
@@ -146,13 +153,55 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
         Assert.True(approved.IsSuccess);
 
         var get = new GetBusinessCustomerCreditPolicy(
-            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
+            relationships,
+            policies,
+            new EmptyBusinessCredits(),
+            new EmptyBusinessRepayments(),
+            new EmptyConnectedOrders(),
+            new FixedClock(Now));
         var buyerView = await get.ExecuteAsync(BuyerOrgId, connectionId);
         Assert.True(buyerView.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.Approved), buyerView.Value!.Status);
         Assert.Equal(2_500m, buyerView.Value.CreditLimit);
         Assert.Equal(SellerOrgId, buyerView.Value.SellerOrganizationId);
         Assert.Equal(BuyerOrgId, buyerView.Value.BuyerOrganizationId);
+    }
+
+    [Fact]
+    public async Task Get_buyer_net_outstanding_subtracts_settled_repayments()
+    {
+        var (relationships, policies, uow, connectionId) = await CreateActiveHarnessAsync();
+        var clock = new FixedClock(Now);
+        var upsert = new UpsertBusinessCustomerCreditPolicy(relationships, policies, uow, clock);
+        var configured = await upsert.ExecuteAsync(SellerOrgId, connectionId, 30_000m, 30, Actor, "cfg");
+        var approve = new ApproveBusinessCustomerCreditPolicy(relationships, policies, uow, clock);
+        var approved = await approve.ExecuteAsync(
+            SellerOrgId,
+            connectionId,
+            Actor,
+            "approve",
+            configured.Value!.ExpectedUpdatedAtUtc!.Value);
+        Assert.True(approved.IsSuccess);
+
+        var credits = new EmptyBusinessCredits { ActiveSum = 2_000m };
+        var repayments = new EmptyBusinessRepayments { Settled = 165m };
+        var get = new GetBusinessCustomerCreditPolicy(
+            relationships,
+            policies,
+            credits,
+            repayments,
+            new EmptyConnectedOrders(),
+            clock);
+        var sellerView = await get.ExecuteAsync(SellerOrgId, connectionId);
+        var buyerView = await get.ExecuteAsync(BuyerOrgId, connectionId);
+
+        Assert.True(sellerView.IsSuccess);
+        Assert.True(buyerView.IsSuccess);
+        Assert.Equal(30_000m, sellerView.Value!.CreditLimit);
+        Assert.Equal(30_000m, buyerView.Value!.CreditLimit);
+        Assert.Equal(1_835m, sellerView.Value.OutstandingAmount);
+        Assert.Equal(1_835m, buyerView.Value.OutstandingAmount);
+        Assert.Equal(sellerView.Value.AvailableCredit, buyerView.Value.AvailableCredit);
     }
 
     [Fact]
@@ -179,7 +228,12 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
 
         relationships.Disconnect(connectionId, Now.AddHours(1));
         var get = new GetBusinessCustomerCreditPolicy(
-            relationships, policies, new EmptyBusinessCredits(), new EmptyConnectedOrders());
+            relationships,
+            policies,
+            new EmptyBusinessCredits(),
+            new EmptyBusinessRepayments(),
+            new EmptyConnectedOrders(),
+            new FixedClock(Now));
         var result = await get.ExecuteAsync(SellerOrgId, connectionId);
         Assert.True(result.IsSuccess);
         Assert.Equal(nameof(CustomerCreditPolicyStatus.PendingApproval), result.Value!.Status);
@@ -350,8 +404,58 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             Task.FromResult<IReadOnlyList<ConnectedPurchaseOrder>>([]);
     }
 
+    private sealed class EmptyBusinessRepayments : IBusinessRepaymentRepository
+    {
+        public decimal Settled { get; init; }
+
+        public Task<BusinessRepayment?> GetByIdAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<BusinessRepayment?>(null);
+
+        public Task AddAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task AddAllocationsAsync(
+            IReadOnlyList<BusinessRepaymentAllocation> allocations,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<BusinessRepaymentAllocation>> ListAllocationsByRepaymentAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepaymentAllocation>>([]);
+
+        public Task<decimal> SumSettledAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Settled);
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId sellerOrganizationId,
+            PosOrganizationId buyerOrganizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
+
+        public Task<IReadOnlyList<BusinessRepayment>> ListByConnectionAsync(
+            PosOrganizationId sellerOrganizationId,
+            Guid connectionId,
+            int skip,
+            int take,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepayment>>([]);
+    }
+
     private sealed class EmptyBusinessCredits : IBusinessCreditEntryRepository
     {
+        public decimal ActiveSum { get; init; }
+
         public Task<BusinessCreditEntry?> GetByIdAsync(
             PosOrganizationId sellerOrganizationId,
             BusinessCreditEntryId entryId,
@@ -368,7 +472,7 @@ public sealed class BusinessCustomerCreditPolicyUseCaseTests
             PosOrganizationId sellerOrganizationId,
             PosOrganizationId buyerOrganizationId,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(0m);
+            Task.FromResult(ActiveSum);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByBuyerIdsAsync(
             PosOrganizationId sellerOrganizationId,

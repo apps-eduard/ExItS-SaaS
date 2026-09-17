@@ -1,6 +1,8 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
+using ExItS.PinoyBusinessPOS.Application.Abstractions;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Offline;
 using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -53,6 +55,45 @@ internal static class BusinessRepaymentEndpoints
             return Results.Ok(summary);
         });
 
+        group.MapGet("/receivables", async (
+            HttpRequest request,
+            Guid connectionId,
+            IConnectedSupplierRelationshipRepository relationships,
+            BusinessOutstandingBalanceService outstanding,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+            {
+                return problem!;
+            }
+
+            var relationship = await relationships
+                .GetAsync(ConnectedSupplierRelationshipId.From(connectionId), ct)
+                .ConfigureAwait(false);
+            var seller = PosOrganizationId.From(organizationId);
+            if (relationship is null || relationship.SupplierOrganizationId != seller)
+            {
+                return PosApiResults.Problem(
+                    ConnectedSupplierErrorCodes.NotFound,
+                    "Business customer relationship was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            var items = await outstanding
+                .ListOpenReceivablesAsync(
+                    relationship.SupplierOrganizationId.Value,
+                    relationship.BuyerOrganizationId.Value,
+                    ct)
+                .ConfigureAwait(false);
+            return Results.Ok(items);
+        });
+
         group.MapGet("/repayments", async (
             HttpRequest request,
             Guid connectionId,
@@ -83,6 +124,7 @@ internal static class BusinessRepaymentEndpoints
             Guid connectionId,
             CreateRepaymentRequest body,
             CreateBusinessRepayment useCase,
+            IPosIdempotencyService idempotency,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -101,29 +143,38 @@ internal static class BusinessRepaymentEndpoints
                 return problem!;
             }
 
-            var result = await useCase
-                .ExecuteAsync(
+            var allocations = body.Allocations?
+                .Select(a => new RepaymentAllocationLine(a.CreditEntryId, a.Amount))
+                .ToList();
+
+            return await PosIdempotencyEndpointHelper
+                .ExecuteMutationAsync(
+                    request,
                     organizationId,
-                    connectionId,
-                    new CreateUtangRepaymentCommand(
-                        body.Amount,
-                        body.Remarks,
-                        body.PaymentMethod,
-                        body.CheckNumber,
-                        body.BankName,
-                        body.CheckDate,
-                        body.AccountName,
-                        body.Reference,
-                        body.RepaymentId),
-                    actorId,
+                    OfflineOperationTypes.BusinessRepaymentCreate,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(
+                        organizationId,
+                        connectionId,
+                        new CreateUtangRepaymentCommand(
+                            body.Amount,
+                            body.Remarks,
+                            body.PaymentMethod,
+                            body.CheckNumber,
+                            body.BankName,
+                            body.CheckDate,
+                            body.AccountName,
+                            body.Reference,
+                            body.RepaymentId,
+                            allocations),
+                        actorId,
+                        ct2),
+                    r => BusinessRepaymentMapper.Map(r),
+                    dto => Results.Created(
+                        $"/api/v1/pos/connected-suppliers/business-repayments/{dto.RepaymentId:D}",
+                        dto),
                     ct)
                 .ConfigureAwait(false);
-
-            return PosApiResults.FromResult(
-                result,
-                r => Results.Created(
-                    $"/api/v1/pos/connected-suppliers/business-repayments/{r.Id.Value:D}",
-                    BusinessRepaymentMapper.Map(r)));
         });
 
         var repaymentGroup = app.MapGroup("/api/v1/pos/connected-suppliers/business-repayments");

@@ -48,7 +48,19 @@ public sealed record BusinessUtangSummaryDto(
     decimal ActiveCreditTotal,
     decimal ActiveRepaymentTotal,
     decimal PendingCheckAmount,
-    decimal OverdueAmount = 0m);
+    decimal OverdueAmount = 0m,
+    int OpenReceivableCount = 0,
+    decimal OpenReceivableTotal = 0m);
+
+public sealed record BusinessReceivableDto(
+    Guid CreditEntryId,
+    string SourceType,
+    string? SourceReference,
+    DateOnly? DueDate,
+    decimal OutstandingBalance,
+    decimal OriginalAmount,
+    DateTimeOffset CreatedAtUtc,
+    string? Remarks);
 
 public static class BusinessRepaymentMapper
 {
@@ -134,6 +146,7 @@ public sealed class BusinessOutstandingBalanceService
             repayments,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
         var overdueAmount = aged.Where(a => a.IsOverdue).Sum(a => a.RemainingUnpaidAmount);
+        var open = BusinessCreditPaymentAllocator.FromAged(aged);
         return new BusinessUtangSummaryDto(
             connectionId,
             sellerOrganizationId,
@@ -142,7 +155,61 @@ public sealed class BusinessOutstandingBalanceService
             credits,
             repayments,
             pending,
-            overdueAmount);
+            overdueAmount,
+            open.Count,
+            open.Sum(o => o.RemainingUnpaidAmount));
+    }
+
+    public async Task<IReadOnlyList<BusinessReceivableDto>> ListOpenReceivablesAsync(
+        Guid sellerOrganizationId,
+        Guid buyerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var seller = PosOrganizationId.From(sellerOrganizationId);
+        var buyer = PosOrganizationId.From(buyerOrganizationId);
+        var creditItems = await _credits
+            .ListChronologicalForBuyerAsync(seller, buyer, cancellationToken)
+            .ConfigureAwait(false);
+        var repayments = await _repayments.SumSettledAmountAsync(seller, buyer, cancellationToken).ConfigureAwait(false);
+        var aged = CreditFifoAging.AgeBusinessCredits(
+            creditItems,
+            repayments,
+            CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
+        var creditById = creditItems.ToDictionary(c => c.Id.Value);
+        return BusinessCreditPaymentAllocator.FromAged(aged)
+            .Select(o =>
+            {
+                var sourceType = "Other";
+                if (ConnectedPoUtangObligationProjection.TryParseGoodsReceiptId(o.Remarks, out _))
+                {
+                    sourceType = "PO";
+                }
+                else if (ConnectedPoUtangObligationProjection.TryParseDirectPurchaseReceiptId(o.Remarks, out _))
+                {
+                    sourceType = "DirectPurchase";
+                }
+                else if (ConnectedPoUtangObligationProjection.TryParseSaleId(o.Remarks, out _)
+                    || (creditById.TryGetValue(o.CreditEntryId, out var credit)
+                        && credit.SourceSaleId is not null))
+                {
+                    sourceType = "Sale";
+                }
+
+                return new BusinessReceivableDto(
+                    o.CreditEntryId,
+                    sourceType,
+                    ConnectedPoUtangObligationProjection.TryFormatSourceLabelFromRemark(o.Remarks)
+                        ?? (creditById.TryGetValue(o.CreditEntryId, out var linked)
+                            && linked.SourceSaleId is not null
+                            ? linked.Remarks
+                            : null),
+                    o.CurrentDueDate,
+                    o.RemainingUnpaidAmount,
+                    aged.First(a => a.CreditEntryId == o.CreditEntryId).Amount,
+                    o.CreatedAtUtc,
+                    o.Remarks);
+            })
+            .ToList();
     }
 }
 
@@ -150,6 +217,7 @@ public sealed class CreateBusinessRepayment
 {
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IBusinessRepaymentRepository _repayments;
+    private readonly IBusinessCreditEntryRepository _credits;
     private readonly BusinessOutstandingBalanceService _outstanding;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -158,6 +226,7 @@ public sealed class CreateBusinessRepayment
     public CreateBusinessRepayment(
         IConnectedSupplierRelationshipRepository relationships,
         IBusinessRepaymentRepository repayments,
+        IBusinessCreditEntryRepository credits,
         BusinessOutstandingBalanceService outstanding,
         IPosUnitOfWork unitOfWork,
         IClock clock,
@@ -165,6 +234,7 @@ public sealed class CreateBusinessRepayment
     {
         _relationships = relationships;
         _repayments = repayments;
+        _credits = credits;
         _outstanding = outstanding;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -209,6 +279,24 @@ public sealed class CreateBusinessRepayment
         var seller = relationship.SupplierOrganizationId;
         var buyer = relationship.BuyerOrganizationId;
 
+        if (command.RepaymentId is not null)
+        {
+            var existing = await _repayments
+                .GetByIdAsync(seller, BusinessRepaymentId.From(command.RepaymentId.Value), cancellationToken)
+                .ConfigureAwait(false);
+            if (existing is not null)
+            {
+                if (existing.ConnectionId != connectionId || existing.BuyerOrganizationId != buyer)
+                {
+                    return ApplicationResult<BusinessRepayment>.Failure(
+                        ApplicationErrorCodes.ConcurrencyConflict,
+                        "Repayment id is already assigned to another business customer.");
+                }
+
+                return ApplicationResult<BusinessRepayment>.Success(existing);
+            }
+        }
+
         try
         {
             return await _unitOfWork
@@ -230,6 +318,32 @@ public sealed class CreateBusinessRepayment
                             "Repayment amount exceeds the current outstanding balance.");
                     }
 
+                    var creditItems = await _credits
+                        .ListChronologicalForBuyerAsync(seller, buyer, ct)
+                        .ConfigureAwait(false);
+                    var settled = await _repayments.SumSettledAmountAsync(seller, buyer, ct).ConfigureAwait(false);
+                    // Pending checks do not reduce outstanding yet; age from settled only.
+                    var aged = CreditFifoAging.AgeBusinessCredits(
+                        creditItems,
+                        settled,
+                        CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
+                    var open = BusinessCreditPaymentAllocator.FromAged(aged);
+
+                    IReadOnlyList<BusinessCreditPaymentAllocator.AllocationLine> allocationLines;
+                    if (command.Allocations is { Count: > 0 })
+                    {
+                        allocationLines = BusinessCreditPaymentAllocator.ValidateManual(
+                            open,
+                            command.Allocations
+                                .Select(a => new BusinessCreditPaymentAllocator.AllocationLine(a.CreditEntryId, a.Amount))
+                                .ToList(),
+                            normalized);
+                    }
+                    else
+                    {
+                        allocationLines = BusinessCreditPaymentAllocator.AllocateAutomatically(open, normalized);
+                    }
+
                     var repayment = BusinessRepayment.Create(
                         seller,
                         buyer,
@@ -246,9 +360,22 @@ public sealed class CreateBusinessRepayment
                         accountName: command.AccountName,
                         reference: command.Reference);
                     await _repayments.AddAsync(repayment, ct).ConfigureAwait(false);
+
+                    var persistedAllocations = allocationLines
+                        .Select(line => BusinessRepaymentAllocation.Create(
+                            seller,
+                            repayment.Id,
+                            BusinessCreditEntryId.From(line.CreditEntryId),
+                            line.Amount,
+                            _clock.UtcNow))
+                        .ToList();
+                    await _repayments.AddAllocationsAsync(persistedAllocations, ct).ConfigureAwait(false);
+
                     if (_b2bMirror is not null)
                     {
-                        await _b2bMirror.MirrorSellerRepaymentAsync(repayment, ct).ConfigureAwait(false);
+                        await _b2bMirror
+                            .MirrorSellerRepaymentAsync(repayment, persistedAllocations, creditItems, ct)
+                            .ConfigureAwait(false);
                     }
 
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -270,6 +397,7 @@ public sealed class CreateBusinessRepayment
 public sealed class ClearBusinessCheckRepayment
 {
     private readonly IBusinessRepaymentRepository _repayments;
+    private readonly IBusinessCreditEntryRepository _credits;
     private readonly BusinessOutstandingBalanceService _outstanding;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -277,12 +405,14 @@ public sealed class ClearBusinessCheckRepayment
 
     public ClearBusinessCheckRepayment(
         IBusinessRepaymentRepository repayments,
+        IBusinessCreditEntryRepository credits,
         BusinessOutstandingBalanceService outstanding,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         ConnectedB2bPaymentMirror? b2bMirror = null)
     {
         _repayments = repayments;
+        _credits = credits;
         _outstanding = outstanding;
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -330,7 +460,15 @@ public sealed class ClearBusinessCheckRepayment
                     await _repayments.UpdateAsync(repayment, ct).ConfigureAwait(false);
                     if (_b2bMirror is not null)
                     {
-                        await _b2bMirror.MirrorSellerRepaymentAsync(repayment, ct).ConfigureAwait(false);
+                        var credits = await _credits
+                            .ListChronologicalForBuyerAsync(seller, repayment.BuyerOrganizationId, ct)
+                            .ConfigureAwait(false);
+                        var allocations = await _repayments
+                            .ListAllocationsByRepaymentAsync(seller, repayment.Id, ct)
+                            .ConfigureAwait(false);
+                        await _b2bMirror
+                            .MirrorSellerRepaymentAsync(repayment, allocations, credits, ct)
+                            .ConfigureAwait(false);
                     }
 
                     await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);

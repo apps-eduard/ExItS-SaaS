@@ -14,6 +14,15 @@ public interface IBusinessRepaymentRepository
 
     Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default);
 
+    Task AddAllocationsAsync(
+        IReadOnlyList<BusinessRepaymentAllocation> allocations,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<BusinessRepaymentAllocation>> ListAllocationsByRepaymentAsync(
+        PosOrganizationId sellerOrganizationId,
+        BusinessRepaymentId repaymentId,
+        CancellationToken cancellationToken = default);
+
     Task<decimal> SumSettledAmountAsync(
         PosOrganizationId sellerOrganizationId,
         PosOrganizationId buyerOrganizationId,

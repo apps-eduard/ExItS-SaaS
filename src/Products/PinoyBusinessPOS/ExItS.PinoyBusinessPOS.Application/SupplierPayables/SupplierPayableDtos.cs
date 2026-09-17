@@ -164,7 +164,10 @@ public static class SupplierPayableMapper
         && due < asOfDate;
 
     public static string FormatFallbackSourceReference(SupplierPayableSourceType sourceType) =>
-        sourceType == SupplierPayableSourceType.DirectPurchaseReceipt
-            ? "Direct purchase"
-            : "PO";
+        sourceType switch
+        {
+            SupplierPayableSourceType.DirectPurchaseReceipt => "Direct purchase",
+            SupplierPayableSourceType.Sale => "Sale",
+            _ => "PO"
+        };
 }

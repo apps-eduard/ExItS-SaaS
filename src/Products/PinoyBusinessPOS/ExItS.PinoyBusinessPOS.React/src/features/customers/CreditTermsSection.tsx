@@ -7,6 +7,7 @@ import {
   creditPolicyStatusTone,
   isCreditAllowSwitchOn,
   outstandingExceedsNewLimit,
+  resolveSellerCreditDisplayStatus,
   termDaysHelperLabelKey,
 } from "@/features/customers/credit-policy";
 import {
@@ -41,6 +42,11 @@ import {
 import { Link } from "react-router-dom";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import {
+  computeSupplierCreditExposure,
+  formatUtilizationPercent,
+} from "@/features/suppliers/supplier-credit-exposure";
+import { formatPeso } from "@/lib/format-money";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -56,6 +62,9 @@ type SharedPolicy = {
   approvedByUserId?: string | null;
   approvedAtUtc?: string | null;
   expectedUpdatedAtUtc?: string | null;
+  hasEverBeenApproved?: boolean | null;
+  sellerDisplayStatus?: string | null;
+  buyerDisplayStatus?: string | null;
 };
 
 type SharedPolicyHistoryItem = {
@@ -80,6 +89,8 @@ type SharedUtangSummary = {
   pendingCheckAmount: number;
   outstandingAmount?: number;
   overdueAmount?: number;
+  openReceivableCount?: number;
+  openReceivableTotal?: number;
 };
 
 type PersonalProps = {
@@ -256,7 +267,28 @@ export function CreditTermsSection({
   const limit = policy?.creditLimit ?? null;
   const term = policy?.defaultTermDays ?? null;
   const pendingCheckAmount = summaryQuery.data?.pendingCheckAmount ?? 0;
+  const openReceivableCount = summaryQuery.data?.openReceivableCount ?? 0;
+  const openReceivableTotal = summaryQuery.data?.openReceivableTotal ?? 0;
+  const showOpenReceivablesLink =
+    entity.kind === "business" &&
+    online &&
+    (openReceivableCount > 0 || outstanding > 1e-9 || openReceivableTotal > 1e-9);
+  const openReceivablesDisplayTotal =
+    openReceivableTotal > 1e-9 ? openReceivableTotal : outstanding;
   const showRecordPayment = canRecordPayment && outstanding > 1e-9;
+  const creditExposure = computeSupplierCreditExposure({
+    approvedCreditLimit: status === "Approved" ? limit : null,
+    outstanding,
+    reservedByActivePos: entity.kind === "business" ? reservedByActivePos : 0,
+  });
+  const availableUtilizationCaption =
+    creditExposure.hasApprovedLimit &&
+    creditExposure.utilizationPercent != null &&
+    limit != null
+      ? t("customers.creditPolicy.usedOfLimit")
+          .replace("{percent}", formatUtilizationPercent(creditExposure.utilizationPercent))
+          .replace("{limit}", formatPeso(limit))
+      : null;
 
   const historyItems = useMemo(
     () => historyQuery.data?.pages.flatMap((page) => page.items) ?? [],
@@ -589,6 +621,16 @@ export function CreditTermsSection({
     enableFromDisabledMutation.isPending;
 
   const allowCreditOn = isCreditAllowSwitchOn(status);
+  const hasEverBeenApproved =
+    policy?.hasEverBeenApproved === true ||
+    (policy?.hasEverBeenApproved == null &&
+      (status === "Approved" || Boolean(policy?.approvedAtUtc)));
+  const sellerDisplayStatus = resolveSellerCreditDisplayStatus({
+    status,
+    hasEverBeenApproved,
+    sellerDisplayStatus: policy?.sellerDisplayStatus,
+  });
+  const pauseResumeMode = hasEverBeenApproved;
   const allowCreditSwitchDisabled =
     !online ||
     busy ||
@@ -698,13 +740,11 @@ export function CreditTermsSection({
               onCheckedChange={handleAllowCreditChange}
             />
           </div>
-          {allowCreditOn ? (
-            <span data-testid={`${testIdPrefix}-credit-policy-status`}>
-              <StatusChip tone={creditPolicyStatusTone(status)}>
-                {t(creditPolicyStatusLabelKey(status))}
-              </StatusChip>
-            </span>
-          ) : null}
+          <span data-testid={`${testIdPrefix}-credit-policy-status`}>
+            <StatusChip tone={creditPolicyStatusTone(sellerDisplayStatus)}>
+              {t(creditPolicyStatusLabelKey(sellerDisplayStatus))}
+            </StatusChip>
+          </span>
         </div>
         {allowCreditSwitchHint ? (
           <p
@@ -725,7 +765,13 @@ export function CreditTermsSection({
           className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]"
           data-testid={`${testIdPrefix}-credit-policy-summary`}
         >
-          <div className="branch-mgmt-overview__grid">
+          <div
+            className={
+              entity.kind === "business"
+                ? "branch-mgmt-overview__grid branch-mgmt-overview__grid--credit-business"
+                : "branch-mgmt-overview__grid"
+            }
+          >
           <div className="branch-mgmt-overview__item">
             <dt>
               <CircleDollarSign
@@ -779,7 +825,7 @@ export function CreditTermsSection({
               </dd>
             </div>
           ) : null}
-          <div className="branch-mgmt-overview__item">
+          <div className="branch-mgmt-overview__item credit-policy-available-card">
             <dt>
               <Wallet
                 className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--available"
@@ -787,9 +833,39 @@ export function CreditTermsSection({
               />
               {t("customers.creditPolicy.available")}
             </dt>
-            <dd className="tabular-nums" data-testid={`${testIdPrefix}-credit-policy-available`}>
-              <MoneyDisplay amount={available} />
-            </dd>
+            <div className="credit-policy-available__amount-row">
+              <dd
+                className="tabular-nums"
+                data-testid={`${testIdPrefix}-credit-policy-available`}
+              >
+                <MoneyDisplay amount={available} />
+              </dd>
+              {availableUtilizationCaption ? (
+                <p
+                  className="credit-policy-available__caption m-0"
+                  data-testid={`${testIdPrefix}-credit-policy-utilization-caption`}
+                >
+                  {availableUtilizationCaption}
+                </p>
+              ) : null}
+            </div>
+            {creditExposure.progressPercent != null ? (
+              <div
+                className="credit-policy-available__track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(creditExposure.progressPercent)}
+                aria-label={t("customers.creditPolicy.utilizationProgress")}
+                data-testid={`${testIdPrefix}-credit-policy-utilization-bar`}
+                data-over-limit={creditExposure.isOverLimit ? "true" : "false"}
+              >
+                <span
+                  className="credit-policy-available__fill"
+                  style={{ width: `${creditExposure.progressPercent}%` }}
+                />
+              </div>
+            ) : null}
           </div>
           <div className="branch-mgmt-overview__item">
             <dt>
@@ -822,6 +898,37 @@ export function CreditTermsSection({
               </dt>
               <dd className="tabular-nums">
                 <MoneyDisplay amount={pendingCheckAmount} />
+              </dd>
+            </div>
+          ) : null}
+          {showOpenReceivablesLink ? (
+            <div
+              className="branch-mgmt-overview__item"
+              data-testid={`${testIdPrefix}-credit-policy-open-receivables`}
+            >
+              <dt>
+                <ClipboardList
+                  className="branch-mgmt-overview__icon credit-policy-stat-icon credit-policy-stat-icon--reserved"
+                  aria-hidden
+                />
+                {t("customers.receivables.openTitle")}
+              </dt>
+              <dd className="m-0">
+                <Link
+                  to={`/customers/business/${id}/receivables`}
+                  className="inline-flex flex-col gap-0.5 text-[inherit] no-underline hover:underline"
+                  data-testid={`${testIdPrefix}-credit-policy-open-receivables-link`}
+                >
+                  <span className="tabular-nums font-medium">
+                    {t("customers.receivables.openCount").replace(
+                      "{count}",
+                      String(openReceivableCount),
+                    )}
+                  </span>
+                  <span className="tabular-nums">
+                    <MoneyDisplay amount={openReceivablesDisplayTotal} />
+                  </span>
+                </Link>
               </dd>
             </div>
           ) : null}
@@ -990,18 +1097,30 @@ export function CreditTermsSection({
         variant={allowCreditConfirm === "disable" ? "warning" : "info"}
         title={
           allowCreditConfirm === "disable"
-            ? t("customers.creditPolicy.confirmDisableTitle")
-            : t("customers.creditPolicy.confirmEnableTitle")
+            ? pauseResumeMode
+              ? t("customers.creditPolicy.confirmPauseTitle")
+              : t("customers.creditPolicy.confirmDisableTitle")
+            : pauseResumeMode
+              ? t("customers.creditPolicy.confirmResumeTitle")
+              : t("customers.creditPolicy.confirmEnableTitle")
         }
         description={
           allowCreditConfirm === "disable"
-            ? t("customers.creditPolicy.confirmDisableDetail")
-            : t("customers.creditPolicy.confirmEnableDetail")
+            ? pauseResumeMode
+              ? t("customers.creditPolicy.confirmPauseDetail")
+              : t("customers.creditPolicy.confirmDisableDetail")
+            : pauseResumeMode
+              ? t("customers.creditPolicy.confirmResumeDetail")
+              : t("customers.creditPolicy.confirmEnableDetail")
         }
         confirmLabel={
           allowCreditConfirm === "disable"
-            ? t("customers.creditPolicy.confirmDisableConfirm")
-            : t("customers.creditPolicy.confirmEnableConfirm")
+            ? pauseResumeMode
+              ? t("customers.creditPolicy.confirmPauseConfirm")
+              : t("customers.creditPolicy.confirmDisableConfirm")
+            : pauseResumeMode
+              ? t("customers.creditPolicy.confirmResumeConfirm")
+              : t("customers.creditPolicy.confirmEnableConfirm")
         }
         cancelLabel={t("customers.creditPolicy.cancel")}
         pending={busy}

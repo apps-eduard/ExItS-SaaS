@@ -3,6 +3,7 @@ using System;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PosDbContext))]
-    partial class PosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917070000_SyncBusinessRepaymentAllocationsModel")]
+    partial class SyncBusinessRepaymentAllocationsModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -8662,7 +8665,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_supplier_payables_payment_method_at_receipt", "payment_method_at_receipt IS NULL OR payment_method_at_receipt IN ('Cash', 'BankTransfer', 'GCash', 'Other')");
 
-                            t.HasCheckConstraint("ck_supplier_payables_source_type", "source_type IN ('GoodsReceipt', 'DirectPurchaseReceipt', 'Sale')");
+                            t.HasCheckConstraint("ck_supplier_payables_source_type", "source_type IN ('GoodsReceipt', 'DirectPurchaseReceipt')");
 
                             t.HasCheckConstraint("ck_supplier_payables_status", "status IN ('Open', 'PartiallyPaid', 'Paid', 'Voided')");
 

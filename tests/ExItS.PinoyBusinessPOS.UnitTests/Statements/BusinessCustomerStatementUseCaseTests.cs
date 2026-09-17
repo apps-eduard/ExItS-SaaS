@@ -131,6 +131,17 @@ public sealed class BusinessCustomerStatementUseCaseTests
         public Task AddAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task AddAllocationsAsync(
+            IReadOnlyList<BusinessRepaymentAllocation> allocations,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<BusinessRepaymentAllocation>> ListAllocationsByRepaymentAsync(
+            PosOrganizationId sellerOrganizationId,
+            BusinessRepaymentId repaymentId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<BusinessRepaymentAllocation>>(Array.Empty<BusinessRepaymentAllocation>());
+
         public Task UpdateAsync(BusinessRepayment repayment, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 

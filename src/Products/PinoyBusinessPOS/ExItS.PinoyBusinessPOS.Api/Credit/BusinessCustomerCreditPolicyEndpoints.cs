@@ -8,7 +8,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Credit;
 
 /// <summary>
 /// B2B business-customer credit policy endpoints under connected-suppliers.
-/// Does not create POSCustomer stubs. Outstanding is always 0 until a B2B ledger exists.
+/// Does not create POSCustomer stubs. Outstanding is net of active credits minus settled repayments.
 /// </summary>
 internal static class BusinessCustomerCreditPolicyEndpoints
 {
@@ -153,8 +153,14 @@ internal static class BusinessCustomerCreditPolicyEndpoints
             return problem!;
         }
 
+        Guid? actorUserId = null;
+        if (PosOrganizationScope.TryGetActorId(request, out var actorId, out _))
+        {
+            actorUserId = actorId;
+        }
+
         var result = await useCase
-            .ExecuteAsync(organizationId, connectionId, ct)
+            .ExecuteAsync(organizationId, connectionId, ct, actorUserId)
             .ConfigureAwait(false);
         return PosApiResults.FromResult(result, Results.Ok);
     }

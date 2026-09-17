@@ -68,7 +68,9 @@ describe("CreditPolicySection", () => {
         policyOverride={policy({ status: "NotConfigured" })}
       />,
     );
-    expect(screen.queryByTestId("customer-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Unavailable",
+    );
     expect(screen.getByTestId("customer-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
       "false",
@@ -101,7 +103,7 @@ describe("CreditPolicySection", () => {
       />,
     );
     expect(screen.getByTestId("customer-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.PendingApproval",
+      "customers.creditPolicy.status.NeedsSetup",
     );
     expect(screen.getByTestId("customer-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
@@ -146,7 +148,7 @@ describe("CreditPolicySection", () => {
       />,
     );
     expect(screen.getByTestId("customer-credit-policy-status")).toHaveTextContent(
-      "customers.creditPolicy.status.Approved",
+      "customers.creditPolicy.status.Active",
     );
     expect(screen.getByTestId("customer-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
@@ -204,7 +206,9 @@ describe("CreditPolicySection", () => {
         })}
       />,
     );
-    expect(screen.queryByTestId("customer-credit-policy-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-credit-policy-status")).toHaveTextContent(
+      "customers.creditPolicy.status.Unavailable",
+    );
     expect(screen.getByTestId("customer-credit-policy-allow-credit")).toHaveAttribute(
       "aria-checked",
       "false",

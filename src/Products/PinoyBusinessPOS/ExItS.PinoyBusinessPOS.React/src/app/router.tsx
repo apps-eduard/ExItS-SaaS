@@ -118,6 +118,7 @@ import { CustomerBusinessAddChooserPage } from "@/features/customers/CustomerBus
 import { CustomerBusinessLocalFormPage } from "@/features/customers/CustomerBusinessLocalFormPage";
 import { CustomerBusinessOrgConnectPage } from "@/features/customers/CustomerBusinessOrgConnectPage";
 import { BusinessCustomerDetailPage } from "@/features/customers/BusinessCustomerDetailPage";
+import { BusinessCustomerReceivablesPage } from "@/features/customers/BusinessCustomerReceivablesPage";
 import { BusinessCustomerRepayPage } from "@/features/customers/BusinessCustomerRepayPage";
 import { BusinessCustomerStatementPage } from "@/features/customers/BusinessCustomerStatementPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
@@ -932,6 +933,14 @@ export const appRoutes = [
                 element: (
                   <RequireViewStatement>
                     <BusinessCustomerStatementPage />
+                  </RequireViewStatement>
+                ),
+              },
+              {
+                path: "business/:connectionId/receivables",
+                element: (
+                  <RequireViewStatement>
+                    <BusinessCustomerReceivablesPage />
                   </RequireViewStatement>
                 ),
               },

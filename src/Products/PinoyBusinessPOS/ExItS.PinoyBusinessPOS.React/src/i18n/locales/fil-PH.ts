@@ -2280,6 +2280,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.approvedBy": "In-approve ni",
 
   "customers.creditPolicy.available": "Available credit",
+  "customers.creditPolicy.usedOfLimit": "Used {percent}% of {limit}",
+  "customers.creditPolicy.utilizationProgress": "Credit utilization",
 
   "customers.creditPolicy.cancel": "Cancel",
 
@@ -2387,6 +2389,19 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditPolicy.status.Disabled": "Off",
 
   "customers.creditPolicy.status.NotConfigured": "Hindi pa naka-configure",
+  "customers.creditPolicy.status.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.status.NeedsSetup": "Needs setup",
+  "customers.creditPolicy.status.Active": "Active",
+  "customers.creditPolicy.status.Paused": "Paused",
+  "customers.creditPolicy.buyerStatus.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.buyerStatus.Available": "Credit available",
+  "customers.creditPolicy.buyerStatus.Paused": "Credit paused",
+  "customers.creditPolicy.confirmPauseTitle": "Pause credit?",
+  "customers.creditPolicy.confirmPauseDetail": "New Utang sales and new Utang PO exposure will be blocked.\nExisting balances, payments, statements, reservations, and history remain.",
+  "customers.creditPolicy.confirmPauseConfirm": "Pause credit",
+  "customers.creditPolicy.confirmResumeTitle": "Resume credit?",
+  "customers.creditPolicy.confirmResumeDetail": "If prior terms are still valid, credit returns to Active. Otherwise you will finish setup before credit is usable.",
+  "customers.creditPolicy.confirmResumeConfirm": "Resume credit",
 
   "customers.creditPolicy.status.PendingApproval": "Activating",
 
@@ -2929,6 +2944,35 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.paymentMethod.check": "Check",
   "customers.paymentMethod.manualGcash": "GCash (manual)",
   "customers.pendingChecks": "Pending checks",
+  "customers.receivables.pageTitle": "Mga bukas na receivable",
+  "customers.receivables.openTitle": "Mga bukas na receivable",
+  "customers.receivables.openCount": "{count} bukas",
+  "customers.receivables.allocateManually": "I-allocate nang manual",
+  "customers.receivables.allocateAutomatically": "I-allocate nang awtomatiko",
+  "customers.receivables.allocationPreview": "Preview ng allocation",
+  "customers.receivables.allocationAuto": "Awtomatiko (pinakamatandang due muna)",
+  "customers.receivables.allocationManual": "Manual na allocation",
+  "customers.receivables.allocationPreviewReady": "Tugma ang manual allocation sa bayad.",
+  "customers.receivables.allocationSumMismatch": "Dapat tumugma ang kabuuang allocation sa bayad.",
+  "customers.receivables.allocationExceeds": "Hindi pwedeng mag-allocate nang higit sa outstanding ng receivable.",
+  "customers.receivables.allocationInvalidLine": "Maglagay ng positibong halaga para sa bawat napiling receivable.",
+  "customers.receivables.source.po": "PO",
+  "customers.receivables.source.direct": "Direct purchase",
+  "customers.receivables.source.sale": "Sale",
+  "customers.receivables.source.other": "Iba pa",
+  "customers.receivables.columnSource": "Source",
+  "customers.receivables.columnReference": "Reference",
+  "customers.receivables.dueDate": "Due",
+  "customers.receivables.outstanding": "Outstanding",
+  "customers.receivables.amountApplied": "Inilapat",
+  "customers.receivables.remaining": "Natitira",
+  "customers.receivables.loading": "Naglo-load ng receivables…",
+  "customers.receivables.loadFailed": "Hindi ma-load ang receivables.",
+  "customers.receivables.empty": "Walang bukas na receivable",
+  "customers.receivables.emptyDetail": "Bayad na ang lahat ng credit line para sa business customer na ito.",
+  "customers.receivables.offline": "Hindi available ang receivables offline",
+  "customers.receivables.offlineDetail": "Kumonekta ulit para makita ang bukas na receivables.",
+  "customers.receivables.backToCustomer": "Bumalik sa business customer",
   "customers.recordedPaymentCashToast": "Payment of {amount} recorded.",
   "customers.recordedPaymentCheckToast": "Check payment of {amount} recorded and is pending clearing.",
   "customers.reference": "Reference (optional)",
@@ -9762,6 +9806,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "supplierPayables.source.goodsReceipt": "Goods receipt",
 
   "supplierPayables.source.directPurchase": "Direct purchase",
+  "supplierPayables.source.sale": "Sale",
 
   "purchasing.unitCost": "Unit cost",
   "purchasing.catalogPrice": "Supplier/catalog price",
@@ -10351,6 +10396,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "reports.supplierPayables.source.goodsReceipt": "Goods Receipt",
 
   "reports.supplierPayables.source.directPurchase": "Direct Purchase",
+  "reports.supplierPayables.source.sale": "Sale",
 
   "reports.switchBranch": "Switch branch",
 
