@@ -112,6 +112,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
     internal DbSet<OrganizationSalesDocumentCapabilityRecord> OrganizationSalesDocumentCapabilities =>
         Set<OrganizationSalesDocumentCapabilityRecord>();
+    internal DbSet<OrganizationOnlineSupplierPaymentsCapabilityRecord> OrganizationOnlineSupplierPaymentsCapabilities =>
+        Set<OrganizationOnlineSupplierPaymentsCapabilityRecord>();
     internal DbSet<OrganizationComplianceProfileRecord> OrganizationComplianceProfiles =>
         Set<OrganizationComplianceProfileRecord>();
     internal DbSet<BranchComplianceProfileRecord> BranchComplianceProfiles =>
@@ -360,6 +362,29 @@ public sealed class PlatformDbContext : DbContext
             entity.HasOne<PlatformOrganizationRecord>()
                 .WithOne()
                 .HasForeignKey<OrganizationSalesDocumentCapabilityRecord>(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<OrganizationOnlineSupplierPaymentsCapabilityRecord>(entity =>
+        {
+            entity.ToTable("organization_online_supplier_payments_capabilities");
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(64)
+                .HasDefaultValue("Disabled")
+                .IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorReference)
+                .HasColumnName("updated_by_actor_reference")
+                .HasMaxLength(256);
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(1000);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithOne()
+                .HasForeignKey<OrganizationOnlineSupplierPaymentsCapabilityRecord>(e => e.OrganizationId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

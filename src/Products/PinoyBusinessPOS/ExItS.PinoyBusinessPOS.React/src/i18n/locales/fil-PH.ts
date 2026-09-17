@@ -9742,6 +9742,13 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "supplierPayables.recordPayment": "Record Payment",
 
+  "supplierPayables.payNow": "Magbayad ngayon",
+
+  "supplierPayables.payNowNotReady": "Hindi pa handa ang online payment initiation.",
+
+  "supplierPayables.onlinePaymentUnavailable":
+    "Hindi pa available ang online supplier payment. Walang manual self-settlement.",
+
   "supplierPayables.paymentHistory": "Payment History",
 
   "supplierPayables.remainingBalance": "Natitirang balanse",

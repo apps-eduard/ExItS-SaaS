@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -25,9 +25,26 @@ const getSupplier = vi.fn();
 const getSupplierPayableSummary = vi.fn();
 const listSupplierPayables = vi.fn();
 const listSupplierPayablePayments = vi.fn();
-const recordSupplierPayablePayment = vi.fn();
+const getOrganizationOnlineSupplierPaymentsCapability = vi.fn();
+const listPaymentMethods = vi.fn();
 const getBusinessCustomerCreditPolicy = vi.fn();
 const relationshipId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+const comingSoonOnlineMethod = {
+  methodCode: "OnlineGCash",
+  requiredCapability: "OnlinePayments",
+  integrationMode: "Online",
+  settlementMode: "ExternalConfirmation",
+  availability: "ComingSoon",
+  entitled: true,
+  isEnabled: false,
+  isCheckoutEligible: false,
+  comingSoon: true,
+  requireReference: false,
+  branchScope: "AllBranches",
+  selectedBranchIds: [],
+  canConfigure: false,
+};
 
 const workspaceMock = {
   boundWorkspace: {
@@ -96,9 +113,17 @@ vi.mock("@/api/pos/pos-supplier-payables-client", async (importOriginal) => {
     getSupplierPayableSummary: (...args: unknown[]) => getSupplierPayableSummary(...args),
     listSupplierPayables: (...args: unknown[]) => listSupplierPayables(...args),
     listSupplierPayablePayments: (...args: unknown[]) => listSupplierPayablePayments(...args),
-    recordSupplierPayablePayment: (...args: unknown[]) => recordSupplierPayablePayment(...args),
   };
 });
+
+vi.mock("@/api/platform/organization-online-supplier-payments-client", () => ({
+  getOrganizationOnlineSupplierPaymentsCapability: (...args: unknown[]) =>
+    getOrganizationOnlineSupplierPaymentsCapability(...args),
+}));
+
+vi.mock("@/api/pos/pos-payment-methods-client", () => ({
+  listPaymentMethods: (...args: unknown[]) => listPaymentMethods(...args),
+}));
 
 function supplierDto(overrides: Partial<PosSupplier> = {}): PosSupplier {
   return {
@@ -195,17 +220,14 @@ describe("SupplierDetailPage supplier credit", () => {
       pageSize: 50,
     });
     listSupplierPayablePayments.mockResolvedValue([] as PosSupplierPayablePaymentDto[]);
-    recordSupplierPayablePayment.mockResolvedValue({
-      paymentId,
-      payableId,
-      amount: 100,
-      paymentMethod: "Cash",
-      reference: null,
-      notes: null,
-      paidAtUtc: "2026-08-30T08:00:00Z",
-      recordedBy: actorId,
-      recordedAtUtc: "2026-08-30T08:00:00Z",
+    getOrganizationOnlineSupplierPaymentsCapability.mockResolvedValue({
+      organizationId: orgId,
+      status: "Disabled",
+      updatedAtUtc: null,
+      updatedByActorReference: null,
+      reason: null,
     });
+    listPaymentMethods.mockResolvedValue([comingSoonOnlineMethod]);
   });
 
   afterEach(() => {
@@ -333,7 +355,7 @@ describe("SupplierDetailPage supplier credit", () => {
     );
   });
 
-  it("shows record payment for Open and PartiallyPaid only", async () => {
+  it("hides Pay now when platform online supplier payments are Disabled", async () => {
     listSupplierPayables.mockResolvedValue({
       items: [
         payableDto({ payableId, status: "Open", balance: 800 }),
@@ -362,85 +384,81 @@ describe("SupplierDetailPage supplier credit", () => {
     });
     renderDetail();
     await waitFor(() => {
-      expect(screen.getByTestId(`supplier-payable-record-${payableId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`supplier-payable-${payableId}`)).toBeInTheDocument();
     });
+    expect(screen.queryByTestId(`supplier-payable-record-${payableId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`supplier-payable-pay-now-${payableId}`)).not.toBeInTheDocument();
     expect(
-      screen.getByTestId(`supplier-payable-record-${partialPayableId}`),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByTestId(`supplier-payable-record-${paidPayableId}`),
+      screen.queryByTestId(`supplier-payable-pay-now-${partialPayableId}`),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId(`supplier-payable-record-${voidedPayableId}`),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("supplier-credit-online-unavailable")).not.toBeInTheDocument();
   });
 
-  it("lists outstanding payables and records a payment that refreshes summary", async () => {
-    const user = userEvent.setup();
+  it("shows unavailable state when Available but online methods are ComingSoon", async () => {
+    getOrganizationOnlineSupplierPaymentsCapability.mockResolvedValue({
+      organizationId: orgId,
+      status: "Available",
+      updatedAtUtc: null,
+      updatedByActorReference: null,
+      reason: null,
+    });
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId("supplier-credit-online-unavailable")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`supplier-payable-record-${payableId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`supplier-payable-pay-now-${payableId}`)).not.toBeInTheDocument();
+  });
+
+  it("shows Pay now when Available and a ready online method exists", async () => {
+    getOrganizationOnlineSupplierPaymentsCapability.mockResolvedValue({
+      organizationId: orgId,
+      status: "Available",
+      updatedAtUtc: null,
+      updatedByActorReference: null,
+      reason: null,
+    });
+    listPaymentMethods.mockResolvedValue([
+      {
+        ...comingSoonOnlineMethod,
+        availability: "Configurable",
+        comingSoon: false,
+        entitled: true,
+      },
+    ]);
+    renderDetail();
+    await waitFor(() => {
+      expect(screen.getByTestId(`supplier-payable-pay-now-${payableId}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`supplier-payable-record-${payableId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("supplier-credit-online-unavailable")).not.toBeInTheDocument();
+  });
+
+  it("lists outstanding payables without offering manual Record Payment", async () => {
     renderDetail();
 
     await waitFor(() => {
       expect(screen.getByTestId("supplier-credit-outstanding")).toBeInTheDocument();
     });
     expect(screen.getByTestId("supplier-credit-list")).toBeInTheDocument();
-
-    await user.click(screen.getByTestId(`supplier-payable-record-${payableId}`));
-    const dialog = screen.getByTestId("supplier-payment-dialog");
-    const amount = within(dialog).getByTestId("supplier-payment-amount");
-    await user.clear(amount);
-    await user.type(amount, "100");
-    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
-
-    await waitFor(() => {
-      expect(recordSupplierPayablePayment).toHaveBeenCalledWith(
-        expect.objectContaining({ organizationId: orgId }),
-        payableId,
-        expect.objectContaining({ amount: 100, paymentMethod: "Cash" }),
-      );
-    });
-    await waitFor(() => {
-      expect(getSupplierPayableSummary).toHaveBeenCalled();
-      expect(listSupplierPayables).toHaveBeenCalled();
-    });
+    expect(screen.queryByTestId(`supplier-payable-record-${payableId}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("supplier-payment-dialog")).not.toBeInTheDocument();
   });
 
-  it("blocks overpay before calling the API", async () => {
-    const user = userEvent.setup();
+  it("never offers buyer manual settle dialog", async () => {
+    getOrganizationOnlineSupplierPaymentsCapability.mockResolvedValue({
+      organizationId: orgId,
+      status: "Available",
+      updatedAtUtc: null,
+      updatedByActorReference: null,
+      reason: null,
+    });
     renderDetail();
     await waitFor(() => {
-      expect(screen.getByTestId(`supplier-payable-record-${payableId}`)).toBeInTheDocument();
+      expect(screen.getByTestId("supplier-credit-list")).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId(`supplier-payable-record-${payableId}`));
-    const dialog = screen.getByTestId("supplier-payment-dialog");
-    const amount = within(dialog).getByTestId("supplier-payment-amount");
-    await user.clear(amount);
-    await user.type(amount, "900");
-    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
-
-    expect(await screen.findByTestId("supplier-payment-error")).toBeInTheDocument();
-    expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
-  });
-
-  it("blocks zero and negative payment amounts", async () => {
-    const user = userEvent.setup();
-    renderDetail();
-    await waitFor(() => {
-      expect(screen.getByTestId(`supplier-payable-record-${payableId}`)).toBeInTheDocument();
-    });
-    await user.click(screen.getByTestId(`supplier-payable-record-${payableId}`));
-    const dialog = screen.getByTestId("supplier-payment-dialog");
-    const amount = within(dialog).getByTestId("supplier-payment-amount");
-    await user.clear(amount);
-    await user.type(amount, "0");
-    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
-    expect(await screen.findByTestId("supplier-payment-error")).toBeInTheDocument();
-    expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
-
-    await user.clear(amount);
-    await user.type(amount, "-5");
-    await user.click(within(dialog).getByTestId("supplier-payment-confirm"));
-    expect(screen.getByTestId("supplier-payment-error")).toBeInTheDocument();
-    expect(recordSupplierPayablePayment).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("supplier-payment-dialog")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("supplier-payment-confirm")).not.toBeInTheDocument();
   });
 
   it("renders payment history in payable detail", async () => {

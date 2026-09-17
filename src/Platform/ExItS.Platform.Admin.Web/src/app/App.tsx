@@ -15,6 +15,7 @@ import { OrganizationPeoplePage } from "@/features/organizations/OrganizationPeo
 import { OrganizationProductsPage } from "@/features/organizations/OrganizationProductsPage";
 import { OrganizationBillingPage } from "@/features/organizations/OrganizationBillingPage";
 import { OrganizationActivityPage } from "@/features/organizations/OrganizationActivityPage";
+import { OrganizationCommerceCompliancePage } from "@/features/organizations/OrganizationCommerceCompliancePage";
 import { OrganizationEnabledProductsPage } from "@/features/organizations/OrganizationEnabledProductsPage";
 import { OrganizationProductAccessPage } from "@/features/organizations/OrganizationProductAccessPage";
 import { OrganizationRolesPage } from "@/features/organizations/OrganizationRolesPage";
@@ -191,6 +192,10 @@ export function App() {
                             <Route path="entitlements" element={<OrganizationEntitlementsPage />} />
                             <Route path="billing" element={<OrganizationBillingPage />} />
                             <Route path="activity" element={<OrganizationActivityPage />} />
+                            <Route
+                              path="commerce-compliance"
+                              element={<OrganizationCommerceCompliancePage />}
+                            />
                             <Route path="*" element={<ShellCatchAllPage />} />
                           </Route>
                         </Route>

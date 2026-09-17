@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -12,19 +12,15 @@ import {
   X,
 } from "lucide-react";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
-import { PosApiError } from "@/api/pos/pos-http";
+import { getOrganizationOnlineSupplierPaymentsCapability } from "@/api/platform/organization-online-supplier-payments-client";
 import { getBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
+import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import {
   getSupplierPayableSummary,
   listSupplierPayablePayments,
   listSupplierPayables,
-  recordSupplierPayablePayment,
-  SUPPLIER_PAYABLE_PAYMENT_METHODS,
-  SUPPLIER_PAYABLE_PAYMENT_NOTES_MAX,
-  SUPPLIER_PAYABLE_PAYMENT_REFERENCE_MAX,
   type PosSupplierPayableDto,
   type PosSupplierPayablePaymentDto,
-  type SupplierPayablePaymentMethodCode,
 } from "@/api/pos/pos-supplier-payables-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,7 +28,7 @@ import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBa
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { laterPaymentsAmount, parseMoneyInput, remainingCredit } from "@/features/purchasing/receive-payment";
+import { laterPaymentsAmount } from "@/features/purchasing/receive-payment";
 import {
   computeSupplierCreditExposure,
   countSupplierPayablesByFilter,
@@ -40,6 +36,7 @@ import {
   formatUtilizationPercent,
   type SupplierPayableListFilter,
 } from "@/features/suppliers/supplier-credit-exposure";
+import { resolveBuyerSupplierPaymentCta } from "@/features/suppliers/buyer-supplier-payment-gate";
 import {
   buyerCreditStatusLabelKey,
   creditPolicyStatusTone,
@@ -118,7 +115,7 @@ function formatPayableSourceLabel(
   return t(sourceLabelKey(payable.sourceType));
 }
 
-function canRecordPayment(payable: PosSupplierPayableDto): boolean {
+function canPayPayable(payable: PosSupplierPayableDto): boolean {
   return (
     (payable.status === "Open" || payable.status === "PartiallyPaid") && payable.balance > 0
   );
@@ -137,20 +134,11 @@ export function SupplierCreditSection({
   const { t } = useI18n();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
-  const queryClient = useQueryClient();
   const allowView = canViewPurchasing(sessionGrant);
   const allowManage = canManagePurchasing(sessionGrant);
 
-  const [paymentTarget, setPaymentTarget] = useState<PosSupplierPayableDto | null>(null);
   const [detailTarget, setDetailTarget] = useState<PosSupplierPayableDto | null>(null);
   const [payableFilter, setPayableFilter] = useState<SupplierPayableListFilter>("open");
-  const [amountText, setAmountText] = useState("");
-  const [paymentMethod, setPaymentMethod] =
-    useState<SupplierPayablePaymentMethodCode>("Cash");
-  const [reference, setReference] = useState("");
-  const [notes, setNotes] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -197,24 +185,28 @@ export function SupplierCreditSection({
       ),
   });
 
-  const historyPayableId = detailTarget?.payableId ?? paymentTarget?.payableId;
+  const platformPaymentsQuery = useQuery({
+    queryKey: ["online-supplier-payments", workspace?.organizationId],
+    enabled: Boolean(workspace) && allowView && online,
+    queryFn: ({ signal }) =>
+      getOrganizationOnlineSupplierPaymentsCapability(workspace!.organizationId, signal),
+    staleTime: 60_000,
+  });
+
+  const paymentMethodsQuery = useQuery({
+    queryKey: ["payment-methods", workspace?.organizationId],
+    enabled: Boolean(workspace) && allowView && online,
+    queryFn: ({ signal }) => listPaymentMethods(workspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const historyPayableId = detailTarget?.payableId;
 
   const paymentsQuery = useQuery({
     queryKey: ["supplier-payable-payments", workspace?.organizationId, historyPayableId],
     enabled: Boolean(workspace) && allowView && online && Boolean(historyPayableId),
     queryFn: ({ signal }) => listSupplierPayablePayments(workspace!, historyPayableId!, signal),
   });
-
-  useEffect(() => {
-    if (!paymentTarget) {
-      return;
-    }
-    setAmountText(String(paymentTarget.balance));
-    setPaymentMethod("Cash");
-    setReference("");
-    setNotes("");
-    setFormError(null);
-  }, [paymentTarget]);
 
   if (!allowView) {
     return null;
@@ -251,11 +243,6 @@ export function SupplierCreditSection({
   const openCount = summary?.openCount ?? filterSupplierPayables(payables, "open").length;
   const filterCounts = countSupplierPayablesByFilter(payables);
   const filteredPayables = filterSupplierPayables(payables, payableFilter);
-  const paymentAmount = parseMoneyInput(amountText);
-  const remainingAfterPayment =
-    paymentTarget && paymentAmount !== null
-      ? remainingCredit(paymentTarget.balance, paymentAmount)
-      : paymentTarget?.balance ?? 0;
 
   const availableToneClass =
     availableDisplay == null
@@ -316,45 +303,28 @@ export function SupplierCreditSection({
       })
     : "Unavailable";
 
-  async function onRecordPayment() {
-    if (!workspace || !paymentTarget || !allowManage || !online || recording) {
-      return;
-    }
-    if (paymentAmount === null || paymentAmount <= 0) {
-      setFormError(t("supplierPayables.amountRequired"));
-      return;
-    }
-    if (paymentAmount > paymentTarget.balance) {
-      setFormError(t("supplierPayables.overpay"));
-      return;
-    }
-    setRecording(true);
-    setFormError(null);
-    try {
-      await recordSupplierPayablePayment(workspace, paymentTarget.payableId, {
-        amount: paymentAmount,
-        paymentMethod,
-        reference: reference.trim() || null,
-        notes: notes.trim() || null,
-      });
-      setPaymentTarget(null);
-      await queryClient.invalidateQueries({ queryKey: ["supplier-payable-summary"] });
-      await queryClient.invalidateQueries({ queryKey: ["supplier-payables"] });
-      await queryClient.invalidateQueries({ queryKey: ["supplier-payable-payments"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers"] });
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
-      await queryClient.invalidateQueries({
-        queryKey: ["connected-suppliers", "buyer-credit-policy"],
-      });
-    } catch (err) {
-      setFormError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("supplierPayables.recordFailed"))
-          : t("supplierPayables.recordFailed"),
-      );
-    } finally {
-      setRecording(false);
-    }
+  const platformCapability = platformPaymentsQuery.data;
+  const paymentMethods = paymentMethodsQuery.data;
+  const showOnlineUnavailableBanner =
+    allowManage &&
+    online &&
+    platformCapability?.status === "Available" &&
+    resolveBuyerSupplierPaymentCta({
+      platformCapability,
+      paymentMethods,
+      payableEligible: true,
+      allowManage,
+      online,
+    }) === "unavailable";
+
+  function paymentCtaFor(payable: PosSupplierPayableDto) {
+    return resolveBuyerSupplierPaymentCta({
+      platformCapability,
+      paymentMethods,
+      payableEligible: canPayPayable(payable),
+      allowManage,
+      online,
+    });
   }
 
   return (
@@ -479,6 +449,15 @@ export function SupplierCreditSection({
         )}
       </Card>
 
+      {showOnlineUnavailableBanner ? (
+        <p
+          className="m-0 rounded-md border border-border px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="supplier-credit-online-unavailable"
+        >
+          {t("supplierPayables.onlinePaymentUnavailable")}
+        </p>
+      ) : null}
+
       <Card className="supplier-credit-card">
         <div className="supplier-credit-card__header">
           <span className="supplier-credit-card__header-icon" aria-hidden>
@@ -504,7 +483,7 @@ export function SupplierCreditSection({
           <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="supplier-credit-list">
             {filteredPayables.map((payable) => {
               const later = laterPaymentsAmount(payable.paidAmount, payable.paidAtReceiptAmount);
-              const showPay = allowManage && online && canRecordPayment(payable);
+              const cta = paymentCtaFor(payable);
               return (
                 <li
                   key={payable.payableId}
@@ -563,15 +542,16 @@ export function SupplierCreditSection({
                     </div>
                   </dl>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {showPay ? (
+                    {cta === "pay_now" ? (
                       <Button
                         type="button"
                         className="supplier-detail-action-btn"
-                        data-testid={`supplier-payable-record-${payable.payableId}`}
-                        onClick={() => setPaymentTarget(payable)}
+                        data-testid={`supplier-payable-pay-now-${payable.payableId}`}
+                        disabled
+                        title={t("supplierPayables.payNowNotReady")}
                       >
                         <Wallet className="size-4 shrink-0" aria-hidden />
-                        {t("supplierPayables.recordPayment")}
+                        {t("supplierPayables.payNow")}
                       </Button>
                     ) : null}
                     <Button
@@ -591,129 +571,6 @@ export function SupplierCreditSection({
           </ul>
         )}
       </Card>
-
-      {paymentTarget ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="supplier-payment-dialog-title"
-          data-testid="supplier-payment-dialog"
-        >
-          <Card className="w-full max-w-md">
-            <h2
-              id="supplier-payment-dialog-title"
-              className="m-0 mb-2 text-[length:var(--exits-text-base)] font-semibold"
-            >
-              {t("supplierPayables.recordPayment")}
-            </h2>
-            <dl
-              className="m-0 mb-3 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3"
-              data-testid="supplier-payment-preview"
-            >
-              <div>
-                <dt className="text-muted">{t("supplierPayables.balance")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay amount={paymentTarget.balance} />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.amount")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay amount={paymentAmount ?? 0} />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.remainingBalance")}</dt>
-                <dd className="m-0" data-testid="supplier-payment-remaining">
-                  <MoneyDisplay amount={remainingAfterPayment} />
-                </dd>
-              </div>
-            </dl>
-            {formError ? (
-              <p
-                className="mb-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-                data-testid="supplier-payment-error"
-              >
-                {formError}
-              </p>
-            ) : null}
-            <div className="grid gap-3">
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("supplierPayables.amount")}
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  className="rounded-md border border-border bg-background px-3"
-                  value={amountText}
-                  onChange={(e) => setAmountText(e.target.value)}
-                  data-testid="supplier-payment-amount"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("supplierPayables.paymentMethod")}
-                <select
-                  className="exits-select"
-                  value={paymentMethod}
-                  onChange={(e) =>
-                    setPaymentMethod(e.target.value as SupplierPayablePaymentMethodCode)
-                  }
-                  data-testid="supplier-payment-method"
-                >
-                  {SUPPLIER_PAYABLE_PAYMENT_METHODS.map((method) => (
-                    <option key={method} value={method}>
-                      {t(methodLabelKey(method))}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("supplierPayables.reference")}
-                <input
-                  className="rounded-md border border-border bg-background px-3"
-                  value={reference}
-                  maxLength={SUPPLIER_PAYABLE_PAYMENT_REFERENCE_MAX}
-                  onChange={(e) => setReference(e.target.value)}
-                  data-testid="supplier-payment-reference"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("supplierPayables.notes")}
-                <textarea
-                  className="min-h-20 rounded-md border border-border bg-background px-3 py-2"
-                  value={notes}
-                  maxLength={SUPPLIER_PAYABLE_PAYMENT_NOTES_MAX}
-                  onChange={(e) => setNotes(e.target.value)}
-                  data-testid="supplier-payment-notes"
-                />
-              </label>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={recording}
-                onClick={() => setPaymentTarget(null)}
-                data-testid="supplier-payment-cancel"
-              >
-                <X className="size-4 shrink-0" aria-hidden />
-                {t("supplierPayables.cancel")}
-              </Button>
-              <Button
-                type="button"
-                disabled={recording}
-                onClick={() => void onRecordPayment()}
-                data-testid="supplier-payment-confirm"
-              >
-                <Wallet className="size-4 shrink-0" aria-hidden />
-                {recording
-                  ? t("supplierPayables.recording")
-                  : t("supplierPayables.confirmPayment")}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      ) : null}
 
       {detailTarget ? (
         <div
@@ -830,18 +687,16 @@ export function SupplierCreditSection({
               </ul>
             )}
             <div className="mt-4 flex flex-wrap gap-2">
-              {allowManage && online && canRecordPayment(detailTarget) ? (
+              {paymentCtaFor(detailTarget) === "pay_now" ? (
                 <Button
                   type="button"
                   className="supplier-detail-action-btn"
-                  data-testid="supplier-payable-detail-record"
-                  onClick={() => {
-                    setPaymentTarget(detailTarget);
-                    setDetailTarget(null);
-                  }}
+                  data-testid="supplier-payable-detail-pay-now"
+                  disabled
+                  title={t("supplierPayables.payNowNotReady")}
                 >
                   <Wallet className="size-4 shrink-0" aria-hidden />
-                  {t("supplierPayables.recordPayment")}
+                  {t("supplierPayables.payNow")}
                 </Button>
               ) : null}
               <Button

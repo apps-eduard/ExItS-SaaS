@@ -22,4 +22,18 @@ describe("isBirComplianceModuleUnlocked", () => {
       }),
     ).toBe(false);
   });
+
+  it("keeps BIR locked for Pending, Rejected, Suspended, and Revoked", () => {
+    for (const status of ["NotRequested", "Pending", "Rejected", "Suspended", "Revoked"]) {
+      expect(
+        isBirComplianceModuleUnlocked({
+          organizationId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          complianceEligibilityStatus: status,
+          taxDocumentIssuanceEnabled: true,
+          taxConfigurationEnabled: true,
+          taxDocumentImplementationAvailable: true,
+        }),
+      ).toBe(false);
+    }
+  });
 });

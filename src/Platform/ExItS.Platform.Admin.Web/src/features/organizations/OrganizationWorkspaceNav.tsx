@@ -129,6 +129,15 @@ export function OrganizationWorkspaceNav() {
             {t("organization.workspace.nav.activity")}
           </NavLink>
         </li>
+        <li>
+          <NavLink
+            className={linkClass}
+            state={state}
+            to={organizationWorkspaceHref(organizationId, "commerce-compliance")}
+          >
+            {t("organization.workspace.nav.commerceCompliance")}
+          </NavLink>
+        </li>
       </ul>
     </nav>
   );
