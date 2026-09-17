@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -35,6 +35,10 @@ import { DashboardMetricCard } from "@/features/reports/DashboardMetricCards";
 import { PersonalCommerceNav } from "@/features/customer-ordering/PersonalCommerceNav";
 import { PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY } from "@/features/personal/ownership/PersonalOwnershipTransfersPage";
 import { UtangAccountCard } from "@/features/personal/utang/UtangAccountCard";
+import {
+  capturePreferencesReturnFrom,
+  preferencesNavigationState,
+} from "@/features/preferences/preferences-return";
 import {
   countSegment,
   filterUtangAccounts,
@@ -178,7 +182,7 @@ export function PersonalUtangHubPage() {
       ) : null}
 
       <div className="exits-animate-panel">
-        <Button asChild className="min-h-11 w-full sm:w-auto" data-testid="utang-hub-record">
+        <Button asChild className="w-full sm:w-auto" data-testid="utang-hub-record">
           <Link to="/personal/utang/lent">
             <HandCoins className="size-4 shrink-0" aria-hidden />
             {t("personal.utang.recordLent")}
@@ -207,7 +211,7 @@ export function PersonalUtangHubPage() {
           </p>
           <Link
             to="/personal/utang/lent"
-            className="inline-flex min-h-11 items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
+            className="inline-flex items-center gap-1.5 text-[length:var(--exits-text-sm)] font-semibold text-[var(--exits-primary)] no-underline"
             data-testid="utang-hub-pending-review"
           >
             {t("personal.utang.reviewAccounts")}
@@ -219,6 +223,8 @@ export function PersonalUtangHubPage() {
       {emptyWorkspace ? (
         <div className="exits-animate-panel" data-testid="utang-hub-empty">
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.utang.workspaceEmptyTitle")}
             detail={t("personal.utang.workspaceEmptyDetail")}
           />
@@ -310,7 +316,7 @@ export function PersonalUtangHubPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t("personal.utang.searchPlaceholder")}
-                  className="min-h-11 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface pl-10 pr-3 text-[length:var(--exits-text-sm)]"
+                  className="w-full rounded-[var(--exits-radius-md)] border border-border bg-surface pl-10 pr-3 text-[length:var(--exits-text-sm)]"
                   data-testid="utang-hub-search"
                 />
               </label>
@@ -326,6 +332,9 @@ export function PersonalUtangHubPage() {
               </p>
             ) : visibleAccounts.length === 0 ? (
               <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
                 title={t("personal.utang.accountsFilterEmptyTitle")}
                 detail={t("personal.utang.accountsFilterEmptyDetail")}
               />
@@ -379,6 +388,8 @@ export function PersonalUtangHubPage() {
 
 export function PersonalMorePage() {
   const { t } = useI18n();
+  const location = useLocation();
+  const preferencesState = preferencesNavigationState(location.pathname, location.search);
   const { canSwitch, switching, switchToBusiness, online } = useSwitchToBusiness();
   const pendingOwnershipQuery = useQuery({
     queryKey: PERSONAL_OWNERSHIP_TRANSFERS_QUERY_KEY,
@@ -528,6 +539,13 @@ export function PersonalMorePage() {
               icon: Settings,
               testId: "more-open-preferences",
               to: "/settings/preferences",
+              ...(preferencesState
+                ? {
+                    state: preferencesState,
+                    onClick: () =>
+                      capturePreferencesReturnFrom(location.pathname, location.search),
+                  }
+                : {}),
             },
             {
               key: "profile",

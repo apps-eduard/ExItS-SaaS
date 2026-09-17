@@ -31,6 +31,7 @@ const report: PosSupplierPayableReportDto = {
       supplierName: "Fresh Farms",
       sourceType: "GoodsReceipt",
       sourceId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      sourceReference: "PO-100",
       originalAmount: 1000,
       paidAtReceiptAmount: 200,
       paidAmount: 200,
@@ -54,6 +55,6 @@ describe("SupplierPayablesReportView", () => {
     expect(screen.getByTestId("supplier-payables-as-of")).toHaveTextContent("2026-08-30");
     expect(screen.getByTestId("supplier-payables-open-count")).toHaveTextContent("1");
     expect(screen.getByTestId("supplier-payables-supplier-list")).toHaveTextContent("Fresh Farms");
-    expect(screen.getByTestId("supplier-payables-table")).toHaveTextContent("Goods Receipt");
+    expect(screen.getByTestId("supplier-payables-table")).toHaveTextContent("PO-100");
   });
 });

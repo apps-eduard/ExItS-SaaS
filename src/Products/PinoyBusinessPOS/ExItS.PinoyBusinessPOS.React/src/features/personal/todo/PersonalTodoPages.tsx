@@ -1,20 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ListPlus,
-  Loader2,
-  Pencil,
-  RefreshCw,
-  RotateCcw,
-  Save,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronRight, ListPlus, Loader2, Pencil, RefreshCw, RotateCcw, Save, Search, SlidersHorizontal, Users, X } from "lucide-react";
 import {
   cancelPersonalTodo,
   completePersonalTodo,
@@ -154,7 +141,7 @@ function TodoConflictBanner({
       data-testid="todo-conflict-banner"
     >
       <p className="m-0 text-[length:var(--exits-text-sm)]">{t("personal.todo.concurrencyConflictDetail")}</p>
-      <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={onReload}>
+      <Button type="button" className="w-full sm:w-auto" onClick={onReload}>
         <RefreshCw className="size-4 shrink-0" aria-hidden />
         {t("personal.todo.reloadAndRetry")}
       </Button>
@@ -445,7 +432,7 @@ export function PersonalTodoHubPage() {
         <div className="exits-animate-toolbar flex w-full justify-center">
           <Button
             type="button"
-            className="personal-error-retry min-h-11 w-full"
+            className="personal-error-retry w-full"
             onClick={() => void todosQuery.refetch()}
             data-testid="todo-hub-retry"
           >
@@ -486,7 +473,7 @@ export function PersonalTodoHubPage() {
           items={TABS.map((item) => {
             const count =
               counts == null
-                ? 0
+                ? null
                 : item.id === "today"
                   ? counts.today
                   : item.id === "upcoming"
@@ -500,7 +487,8 @@ export function PersonalTodoHubPage() {
                         : counts.cancelled;
             return {
               key: item.id,
-              label: `${t(item.labelKey)} (${count})`,
+              label: t(item.labelKey),
+              count,
               testId: `todo-tab-${item.id}`,
             };
           })}
@@ -587,7 +575,7 @@ export function PersonalTodoHubPage() {
                   <input
                     id="todo-create-title"
                     data-testid="todo-create-title"
-                    className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                     value={form.title}
                     onChange={(event) => setForm({ ...form, title: event.target.value })}
                     required
@@ -595,7 +583,7 @@ export function PersonalTodoHubPage() {
                 </label>
                 <Button
                   type="submit"
-                  className="personal-todo-submit min-h-11 w-full sm:w-auto"
+                  className="personal-todo-submit w-full sm:w-auto"
                   disabled={createMutation.isPending || offlineBlocked}
                   data-testid="todo-create-submit"
                   tabIndex={createFormOpen ? undefined : -1}
@@ -651,7 +639,9 @@ export function PersonalTodoHubPage() {
       </section>
 
       {filtered.length === 0 ? (
-        <EmptyState title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t(emptyState.titleKey)} detail={t(emptyState.detailKey)} />
       ) : (
         <section
           className="personal-todo-list-section catalog-form-section exits-animate-panel personal-section gap-2"
@@ -734,7 +724,7 @@ export function PersonalTodoHubPage() {
                             <>
                               <Button
                                 type="button"
-                                className="personal-todo-row__action min-h-11"
+                                className="personal-todo-row__action"
                                 data-testid={`todo-complete-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() =>
@@ -749,7 +739,7 @@ export function PersonalTodoHubPage() {
                               <Button
                                 asChild
                                 variant="outline"
-                                className="personal-todo-row__action min-h-11"
+                                className="personal-todo-row__action"
                                 data-testid={`todo-edit-${item.id}`}
                               >
                                 <Link to={`/personal/todo/${item.id}?edit=1`}>
@@ -760,7 +750,7 @@ export function PersonalTodoHubPage() {
                               <Button
                                 type="button"
                                 variant="ghost"
-                                className="personal-todo-row__action min-h-11"
+                                className="personal-todo-row__action"
                                 data-testid={`todo-cancel-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() =>
@@ -778,7 +768,7 @@ export function PersonalTodoHubPage() {
                             <>
                               <Button
                                 type="button"
-                                className="personal-todo-row__action min-h-11"
+                                className="personal-todo-row__action"
                                 data-testid={`todo-reopen-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
@@ -791,7 +781,7 @@ export function PersonalTodoHubPage() {
                               <Button
                                 type="button"
                                 variant="ghost"
-                                className="personal-todo-row__action min-h-11"
+                                className="personal-todo-row__action"
                                 data-testid={`todo-cancel-${item.id}`}
                                 disabled={actionMutation.isPending || offlineBlocked}
                                 onClick={() =>
@@ -808,7 +798,7 @@ export function PersonalTodoHubPage() {
                           {item.status === "Cancelled" ? (
                             <Button
                               type="button"
-                              className="personal-todo-reactivate personal-todo-row__action min-h-11"
+                              className="personal-todo-reactivate personal-todo-row__action"
                               data-testid={`todo-reactivate-${item.id}`}
                               disabled={actionMutation.isPending || offlineBlocked}
                               onClick={() => actionMutation.mutate({ action: "reopen", todo: item })}
@@ -1075,7 +1065,7 @@ export function PersonalTodoDetailPage() {
           <div className="personal-todo-edit-form__actions">
             <Button
               type="submit"
-              className="personal-todo-edit-form__action min-h-11"
+              className="personal-todo-edit-form__action"
               disabled={saveMutation.isPending || offlineBlocked}
               data-testid="todo-edit-save"
             >
@@ -1087,7 +1077,7 @@ export function PersonalTodoDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="personal-todo-edit-form__action min-h-11"
+              className="personal-todo-edit-form__action"
               data-testid="todo-edit-cancel"
               onClick={() => {
                 setEditing(false);
@@ -1154,7 +1144,7 @@ export function PersonalTodoDetailPage() {
               <>
                 <Button
                   type="button"
-                  className="personal-todo-row__action min-h-11"
+                  className="personal-todo-row__action"
                   data-testid="todo-detail-complete"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "complete", todo })}
@@ -1167,7 +1157,7 @@ export function PersonalTodoDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="personal-todo-row__action min-h-11"
+                  className="personal-todo-row__action"
                   data-testid="todo-detail-edit"
                   onClick={() => {
                     setForm(todoFormFromDto(todo));
@@ -1180,7 +1170,7 @@ export function PersonalTodoDetailPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="personal-todo-row__action min-h-11"
+                  className="personal-todo-row__action"
                   data-testid="todo-detail-cancel"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "cancel", todo })}
@@ -1196,7 +1186,7 @@ export function PersonalTodoDetailPage() {
               <>
                 <Button
                   type="button"
-                  className="personal-todo-row__action min-h-11"
+                  className="personal-todo-row__action"
                   data-testid="todo-detail-reopen"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "reopen", todo })}
@@ -1209,7 +1199,7 @@ export function PersonalTodoDetailPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="personal-todo-row__action min-h-11"
+                  className="personal-todo-row__action"
                   data-testid="todo-detail-cancel-completed"
                   disabled={actionMutation.isPending || offlineBlocked}
                   onClick={() => actionMutation.mutate({ action: "cancel", todo })}
@@ -1224,7 +1214,7 @@ export function PersonalTodoDetailPage() {
             {todo.status === "Cancelled" ? (
               <Button
                 type="button"
-                className="personal-todo-reactivate personal-todo-row__action min-h-11"
+                className="personal-todo-reactivate personal-todo-row__action"
                 data-testid="todo-detail-reactivate"
                 disabled={actionMutation.isPending || offlineBlocked}
                 onClick={() => actionMutation.mutate({ action: "reopen", todo })}

@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, CircleAlert, CircleCheck, Loader2, Save } from "lucide-react";
-import { canManageBranchFulfillment } from "@/access/pos-capabilities";
+import { Check, Loader2, Save } from "lucide-react";
+import {
+  canManageBranchFulfillment,
+  canUseWarehouseBranches,
+  canViewSuppliers,
+  hasOrganizationManagementAuthority,
+  isPosOwnerRole,
+} from "@/access/pos-capabilities";
 import {
   addBranchDeliveryServiceArea,
   deleteBranchDeliveryServiceArea,
@@ -19,13 +25,20 @@ import {
   type BranchFulfillmentReadinessDto,
   type OrganizationBranchDto,
 } from "@/api/platform/branch-fulfillment-client";
+import {
+  getSupplierConnectedSupplierCommerceReadiness,
+  listBusinessCustomers,
+} from "@/api/pos/pos-connected-suppliers-client";
+import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import {
   formatCoordinate,
   isMapProviderConfigured,
@@ -44,12 +57,15 @@ import { BranchDeliveryPolicyForm } from "@/features/branches/BranchDeliveryPoli
 import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
+import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
+import { hasEnabledPoPaymentMethod, requirementIsMissing } from "@/features/shell/needs-attention";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   BRANCH_SETUP_TABS,
   BRANCH_SETUP_TAB_LABEL_KEYS,
@@ -61,6 +77,17 @@ import {
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export type { BranchSetupTab } from "@/features/branches/branch-setup-tabs";
+
+/** Owner / org-admin may view readiness; mutations still require canManageBranchFulfillment. */
+export function canAccessBranchFulfillmentPage(
+  grant: Parameters<typeof canManageBranchFulfillment>[0],
+): boolean {
+  return (
+    canManageBranchFulfillment(grant) ||
+    hasOrganizationManagementAuthority(grant) ||
+    isPosOwnerRole(grant)
+  );
+}
 
 function TabCompleteIcon({ complete }: { complete: boolean }) {
   if (!complete) {
@@ -76,6 +103,9 @@ export function BranchFulfillmentEditPage() {
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
+  const canAccess = canAccessBranchFulfillmentPage(sessionGrant);
+  const allowSupplierSummary = canViewSuppliers(sessionGrant) || isPosOwnerRole(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId;
   const mapProviderReady = isMapProviderConfigured();
 
@@ -85,7 +115,7 @@ export function BranchFulfillmentEditPage() {
 
   const detailQuery = useQuery({
     queryKey: ["branch-fulfillment-detail", organizationId, branchId],
-    enabled: Boolean(organizationId && branchId && canManage),
+    enabled: Boolean(organizationId && branchId && canAccess),
     queryFn: async ({ signal }) => {
       const [branches, readiness, hours, areas] = await Promise.all([
         listOrganizationBranchesForFulfillment(organizationId!, signal),
@@ -98,6 +128,54 @@ export function BranchFulfillmentEditPage() {
     },
   });
 
+  const branchFallbackPath = !canAccess
+    ? pageBackNav.org.to
+    : branchFulfillmentBackPath(branchId);
+  const branchFallbackLabel =
+    !canAccess || detailQuery.data?.branchCount === 1
+      ? t(pageBackNav.org.labelKey)
+      : t(pageBackNav.orgBranches.labelKey);
+  const smartBack = usePageSmartBack({
+    fallback: branchFallbackPath,
+    backLabel: branchFallbackLabel,
+    backTestId: "page-header-back-org",
+  });
+
+  const supplierSummaryQuery = useQuery({
+    queryKey: ["branch-po-supplier-summary", organizationId, branchId, allowSupplierSummary],
+    enabled: Boolean(organizationId && branchId && canAccess && allowSupplierSummary),
+    staleTime: 60_000,
+    queryFn: async ({ signal }) => {
+      const workspace = { organizationId: organizationId!, branchId };
+      const [payments, customers] = await Promise.all([
+        listPaymentMethods(workspace, signal),
+        listBusinessCustomers(workspace, undefined, signal),
+      ]);
+      const paymentsOk = hasEnabledPoPaymentMethod(payments);
+      const active = customers.filter(
+        (row) =>
+          row.relationshipStatus.localeCompare("Active", undefined, {
+            sensitivity: "accent",
+          }) === 0,
+      );
+      const preferred =
+        active.find((row) => row.supplierBranchId === branchId) ?? active[0] ?? null;
+      if (!preferred) {
+        return { paymentsOk, catalogOk: false, contactOk: false };
+      }
+      const readiness = await getSupplierConnectedSupplierCommerceReadiness(
+        workspace,
+        preferred.connectionId,
+        signal,
+      );
+      return {
+        paymentsOk,
+        catalogOk: !requirementIsMissing(readiness.requirements, "SharedCatalog"),
+        contactOk: !requirementIsMissing(readiness.requirements, "ResponsibleContact"),
+      };
+    },
+  });
+
   const [name, setName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -105,6 +183,7 @@ export function BranchFulfillmentEditPage() {
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [branchType, setBranchType] = useState<"Retail" | "Warehouse">("Retail");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [hours, setHours] = useState<HoursDayDraft[]>(defaultHoursSchedule);
@@ -166,6 +245,7 @@ export function BranchFulfillmentEditPage() {
     setCity(branch.city ?? "");
     setRegion(branch.region ?? "");
     setPostalCode(branch.postalCode ?? "");
+    setBranchType(branch.branchType === "Warehouse" ? "Warehouse" : "Retail");
     setLatitude(formatCoordinate(branch.latitude));
     setLongitude(formatCoordinate(branch.longitude));
     const policy = branch.deliveryPolicy;
@@ -185,7 +265,7 @@ export function BranchFulfillmentEditPage() {
     return externalMapLinks(Number.isFinite(lat) ? lat : null, Number.isFinite(lng) ? lng : null);
   }, [latitude, longitude]);
 
-  if (!canManage) {
+  if (!canAccess) {
     return (
       <div
         data-testid="branch-fulfillment-denied"
@@ -194,9 +274,7 @@ export function BranchFulfillmentEditPage() {
         <PageHeader
           title={t("branches.editTitle")}
           description={t("branches.denied")}
-          backTo={pageBackNav.org.to}
-          backLabel={t(pageBackNav.org.labelKey)}
-          backTestId="page-header-back-org"
+          {...smartBack}
         />
       </div>
     );
@@ -215,9 +293,7 @@ export function BranchFulfillmentEditPage() {
         <PageHeader
           title={t("branches.editTitle")}
           description={t("branches.editLede")}
-          backTo={pageBackNav.orgBranches.to}
-          backLabel={t(pageBackNav.orgBranches.labelKey)}
-          backTestId="page-header-back-org"
+          {...smartBack}
         />
         <ErrorState title={t("branches.notFound")} detail={t("branches.editLede")} />
       </div>
@@ -229,12 +305,10 @@ export function BranchFulfillmentEditPage() {
   }
 
   const branch = detailQuery.data.branch;
+  if (isWarehouseBranch(branch.branchType)) {
+    return <Navigate to={`/org/branches/${branch.id}`} replace />;
+  }
   const currentReadiness = readiness ?? detailQuery.data.readiness;
-  const branchBackPath = branchFulfillmentBackPath(branchId);
-  const branchBackLabel =
-    detailQuery.data.branchCount === 1
-      ? t(pageBackNav.org.labelKey)
-      : t(pageBackNav.orgBranches.labelKey);
 
   async function refreshAreasAndReadiness() {
     if (!organizationId) return;
@@ -244,6 +318,12 @@ export function BranchFulfillmentEditPage() {
     ]);
     setAreas(nextAreas);
     setReadiness(nextReadiness);
+  }
+
+  async function invalidateCommerceReadinessQueries() {
+    await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
+    await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
+    await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
   }
 
   async function afterSectionSave(okKey: MessageKey) {
@@ -258,6 +338,7 @@ export function BranchFulfillmentEditPage() {
     await queryClient.invalidateQueries({
       queryKey: ["branch-fulfillment-detail", organizationId, branchId],
     });
+    await invalidateCommerceReadinessQueries();
     setOkMessage(t(okKey));
   }
 
@@ -285,6 +366,7 @@ export function BranchFulfillmentEditPage() {
         countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         contactPhone: contactPhone.trim() || null,
         timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
+        branchType,
       });
       applyBranch(updated);
       await afterSectionSave("branches.savedDetails");
@@ -318,6 +400,7 @@ export function BranchFulfillmentEditPage() {
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-detail", organizationId, branchId],
       });
+      await invalidateCommerceReadinessQueries();
       setOkMessage(t("branches.savedHours"));
     } catch (err) {
       setError(
@@ -446,6 +529,7 @@ export function BranchFulfillmentEditPage() {
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
       });
+      await invalidateCommerceReadinessQueries();
       setOkMessage(t("branches.saved"));
     } catch (err) {
       setError(
@@ -533,34 +617,18 @@ export function BranchFulfillmentEditPage() {
       <PageHeader
         title={branch.name}
         description={t("branches.editLede")}
-        backTo={branchBackPath}
-        backLabel={branchBackLabel}
-        backTestId="page-header-back-org"
+        {...smartBack}
       />
 
       {error ? (
-        <div
-          className="exits-alert exits-alert--error"
-          role="alert"
-          data-testid="branch-fulfillment-error"
-        >
-          <div className="flex gap-3">
-            <CircleAlert className="mt-0.5 size-5 shrink-0" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-          </div>
-        </div>
+        <Notice tone="danger" testId="branch-fulfillment-error">
+          {error}
+        </Notice>
       ) : null}
       {okMessage ? (
-        <div
-          className="exits-alert exits-alert--success"
-          role="status"
-          data-testid="branch-fulfillment-ok"
-        >
-          <div className="flex gap-3">
-            <CircleCheck className="mt-0.5 size-5 shrink-0" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{okMessage}</p>
-          </div>
-        </div>
+        <Notice tone="success" testId="branch-fulfillment-ok">
+          {okMessage}
+        </Notice>
       ) : null}
 
       <div className="branch-setup-tabs-scroll">
@@ -575,16 +643,44 @@ export function BranchFulfillmentEditPage() {
       </div>
 
       {activeTab === "overview" ? (
-        <BranchOverviewPanel
-          readiness={currentReadiness}
-          busy={busy}
-          t={t}
-          onTogglePickup={(enabled) => void toggleFulfillment({ pickupEnabled: enabled })}
-          onToggleDelivery={(enabled) => void toggleFulfillment({ deliveryEnabled: enabled })}
-          onEnableOrdering={() => void toggleFulfillment({ customerOrderingEnabled: true })}
-          onPauseOrders={() => void pauseOrders(true)}
-          onResumeOrders={() => void pauseOrders(false)}
-        />
+        <div
+          className="branch-fulfillment-overview-grid"
+          data-testid="branch-fulfillment-overview-grid"
+        >
+          <BranchPoFulfillmentReadinessPanel
+            branchId={branchId}
+            readiness={currentReadiness}
+            t={t}
+            catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
+            paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
+            contactOk={supplierSummaryQuery.data?.contactOk ?? null}
+          />
+          <BranchOverviewPanel
+            readiness={currentReadiness}
+            busy={busy || !canManage}
+            t={t}
+            onTogglePickup={(enabled) => {
+              if (!canManage) return;
+              void toggleFulfillment({ pickupEnabled: enabled });
+            }}
+            onToggleDelivery={(enabled) => {
+              if (!canManage) return;
+              void toggleFulfillment({ deliveryEnabled: enabled });
+            }}
+            onEnableOrdering={() => {
+              if (!canManage) return;
+              void toggleFulfillment({ customerOrderingEnabled: true });
+            }}
+            onPauseOrders={() => {
+              if (!canManage) return;
+              void pauseOrders(true);
+            }}
+            onResumeOrders={() => {
+              if (!canManage) return;
+              void pauseOrders(false);
+            }}
+          />
+        </div>
       ) : null}
 
       {activeTab === "details" ? (
@@ -596,6 +692,8 @@ export function BranchFulfillmentEditPage() {
           city={city}
           region={region}
           postalCode={postalCode}
+          branchType={branchType}
+          warehouseAllowed={warehouseAllowed}
           t={t}
           onChange={(field, value) => {
             if (field === "name") setName(value);
@@ -605,12 +703,19 @@ export function BranchFulfillmentEditPage() {
             else if (field === "city") setCity(value);
             else if (field === "region") setRegion(value);
             else if (field === "postalCode") setPostalCode(value);
+            else if (field === "branchType")
+              setBranchType(value === "Warehouse" ? "Warehouse" : "Retail");
           }}
         />
       ) : null}
 
       {activeTab === "hours" ? (
-        <BranchHoursForm hours={hours} t={t} onUpdateHour={updateHour} />
+        <BranchHoursForm
+          hours={hours}
+          t={t}
+          onUpdateHour={updateHour}
+          onReplaceHours={setHours}
+        />
       ) : null}
 
       {activeTab === "location" ? (
@@ -654,8 +759,7 @@ export function BranchFulfillmentEditPage() {
           busy={busy}
           t={t}
           onAdd={async (psgcCode) => {
-            if (!organizationId || busy) return;
-            setBusy(true);
+            if (!organizationId) return;
             setError(null);
             setOkMessage(null);
             try {
@@ -667,6 +771,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.added"));
             } catch (err) {
               setError(
@@ -674,8 +779,7 @@ export function BranchFulfillmentEditPage() {
                   ? (err.problem.detail ?? t("branches.deliveryAreas.addFailed"))
                   : t("branches.deliveryAreas.addFailed"),
               );
-            } finally {
-              setBusy(false);
+              throw err;
             }
           }}
           onReplace={async (areaId, psgcCode) => {
@@ -693,6 +797,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.added"));
             } catch (err) {
               setError(
@@ -720,6 +825,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.removed"));
             } catch (err) {
               setError(
@@ -762,7 +868,7 @@ export function BranchFulfillmentEditPage() {
             </Button>
           </div>
           <div className="catalog-form-actions__secondary">
-            <Button asChild variant="outline" className="min-h-11 w-full sm:w-auto">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link to={branchBackPath}>{t("branches.cancel")}</Link>
             </Button>
           </div>

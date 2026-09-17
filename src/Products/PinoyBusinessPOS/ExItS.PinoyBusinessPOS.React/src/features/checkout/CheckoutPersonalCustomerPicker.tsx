@@ -33,7 +33,8 @@ function toCheckoutOption(
   },
 ): CheckoutCustomerOption {
   return {
-    customerId: item.customerId,
+    kind: "Customer",
+    customerId: item.customerId!,
     displayName: item.displayName,
     mobileNumber: item.mobileNumber,
     status: item.status,
@@ -175,7 +176,7 @@ export function CheckoutPersonalCustomerPicker({
               </p>
               <div className="flex flex-wrap gap-2">
                 {linkHref ? (
-                  <Button asChild className="min-h-11" data-testid="checkout-personal-add-link">
+                  <Button asChild data-testid="checkout-personal-add-link">
                     <Link to={linkHref}>{t("checkout.addLinkCustomer")}</Link>
                   </Button>
                 ) : (
@@ -186,7 +187,6 @@ export function CheckoutPersonalCustomerPicker({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
                   data-testid="checkout-personal-not-linked-cancel"
                   disabled={disabled || busy}
                   onClick={clearState}

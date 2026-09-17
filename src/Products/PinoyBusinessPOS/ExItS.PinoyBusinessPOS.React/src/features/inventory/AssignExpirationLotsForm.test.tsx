@@ -135,7 +135,7 @@ describe("AssignExpirationLotsForm", () => {
 
     const submit = screen.getByTestId("enable-expiration-submit");
     expect(submit).toBeEnabled();
-    expect(submit).toHaveTextContent(/assign expiration dates/i);
+    expect(submit).toHaveTextContent(/assign expiry/i);
     await user.click(submit);
 
     await waitFor(() =>

@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Suppliers;
@@ -171,6 +172,20 @@ internal sealed class SupplierRepository : ISupplierRepository
                 s => s.OrganizationId == organizationId.Value
                      && s.NormalizedTaxOrRegistrationNumber == normalizedTax
                      && s.Status == active,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : SupplierEntityMapper.ToDomain(record);
+    }
+
+    public async Task<Supplier?> FindByConnectedRelationshipIdAsync(
+        PosOrganizationId organizationId,
+        ConnectedSupplierRelationshipId relationshipId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.Suppliers.AsNoTracking()
+            .FirstOrDefaultAsync(
+                s => s.OrganizationId == organizationId.Value
+                     && s.ConnectedRelationshipId == relationshipId.Value,
                 cancellationToken)
             .ConfigureAwait(false);
         return record is null ? null : SupplierEntityMapper.ToDomain(record);

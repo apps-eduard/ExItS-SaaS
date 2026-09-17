@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Search, Undo2 } from "lucide-react";
 import { canProcessReturn } from "@/access/pos-capabilities";
 import { listSaleReturns } from "@/api/pos/pos-sale-returns-client";
 import { formatPaymentMethodLabel, listSales } from "@/api/pos/pos-sales-client";
@@ -92,7 +92,10 @@ export function ReturnsHubPage() {
         backTestId="page-header-back-returns"
       />
 
-      <form className="flex min-w-0 flex-col gap-2" onSubmit={onSearchSubmit}>
+      <form
+        className="flex min-w-0 flex-row items-center gap-2"
+        onSubmit={onSearchSubmit}
+      >
         <SearchField
           label={t("returns.searchTransaction")}
           value={search}
@@ -103,13 +106,13 @@ export function ReturnsHubPage() {
           }}
           placeholder={t("returns.transactionNumber")}
           data-testid="returns-search-input"
-          containerClassName="returns-hub-page__search exits-page__search"
+          containerClassName="returns-hub-page__search exits-page__search min-w-0 flex-1"
         />
         <ExitsChipBar
           variant="actions"
           ariaLabel={t("returns.search")}
           testId="returns-toolbar"
-          className="exits-animate-toolbar"
+          className="exits-animate-toolbar shrink-0"
           items={[
             {
               key: "search",
@@ -137,7 +140,9 @@ export function ReturnsHubPage() {
             />
           ) : null}
           {saleSearchQuery.isSuccess && saleSearchQuery.data.items.length === 0 ? (
-            <EmptyState title={t("returns.transactionNotFound")} detail={t("returns.tryAnother")} />
+            <EmptyState
+              align="center"
+              icon={<Undo2 className="size-5" strokeWidth={1.75} />} title={t("returns.transactionNotFound")} detail={t("returns.tryAnother")} />
           ) : null}
           <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="returns-search-list">
             {saleSearchQuery.data?.items.map((sale) => {
@@ -165,7 +170,6 @@ export function ReturnsHubPage() {
                       {canReturn ? (
                         <Button
                           type="button"
-                          className="min-h-11"
                           data-testid={`returns-open-sale-${sale.saleId}`}
                           onClick={() => navigate(`/returns/sale/${sale.saleId}`)}
                         >
@@ -202,7 +206,9 @@ export function ReturnsHubPage() {
           />
         ) : null}
         {recentReturnsQuery.isSuccess && recentReturnsQuery.data.items.length === 0 ? (
-          <EmptyState title={t("returns.recentEmpty")} detail={t("returns.recentEmptyDetail")} />
+          <EmptyState
+              align="center"
+              icon={<Undo2 className="size-5" strokeWidth={1.75} />} title={t("returns.recentEmpty")} detail={t("returns.recentEmptyDetail")} />
         ) : null}
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="returns-recent-list-items">
           {recentReturnsQuery.data?.items.map((item) => (

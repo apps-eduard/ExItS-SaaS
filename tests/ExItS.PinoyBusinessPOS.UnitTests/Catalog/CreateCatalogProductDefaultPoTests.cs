@@ -23,7 +23,8 @@ public sealed class CreateCatalogProductDefaultPoTests
         var product = Assert.Single(products.Items);
         Assert.Equal(18.50m, product.SellingPrice);
         Assert.Equal(18.50m, product.DefaultConnectedPoPrice);
-        Assert.True(product.CanExposeToConnectedBuyers);
+        // Untracked create must not share; tracking is a separate enable step.
+        Assert.False(product.CanExposeToConnectedBuyers);
     }
 
     [Fact]

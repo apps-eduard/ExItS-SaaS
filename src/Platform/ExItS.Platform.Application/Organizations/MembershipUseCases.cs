@@ -29,7 +29,12 @@ public sealed record OrganizationMembershipDto(
     IReadOnlyList<string>? ProductRoles = null,
     string? AccountStatus = null,
     string? EmployeeCode = null,
-    string? Branch = null);
+    string? Branch = null,
+    string? Department = null,
+    string? JobTitle = null,
+    string? WorkPhone = null,
+    string? WorkEmail = null,
+    bool IsBusinessContact = false);
 
 public sealed class MembershipQueryService
 {
@@ -192,7 +197,12 @@ public sealed class MembershipQueryService
             productRoles.Count > 0 ? productRoles : null,
             user?.Status.ToString(),
             user?.EmployeeCode,
-            Branch: null);
+            Branch: null,
+            Department: membership.Department,
+            JobTitle: membership.JobTitle,
+            WorkPhone: membership.WorkPhone,
+            WorkEmail: membership.WorkEmail,
+            IsBusinessContact: membership.IsBusinessContact);
     }
 }
 

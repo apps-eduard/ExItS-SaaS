@@ -19,4 +19,4 @@ COPY deploy/docker/platform-admin-web/40-exits-runtime-config.sh /docker-entrypo
 RUN chmod +x /docker-entrypoint.d/40-exits-runtime-config.sh
 COPY --from=build /src/dist /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=3s --retries=10 CMD wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1
+HEALTHCHECK --interval=10s --timeout=3s --retries=10 CMD wget -qO- http://127.0.0.1:8080/nginx-health >/dev/null || exit 1

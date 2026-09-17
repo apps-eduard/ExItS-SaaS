@@ -160,9 +160,11 @@ public sealed class CustomerStatementService : ICustomerStatementService
             DateOnly? dueDate = null;
             string? dueStatus = null;
             var isOverdue = false;
+            Guid? sourceSaleId = null;
             if (isCredit && creditById.TryGetValue(entry.EntryId, out var credit))
             {
                 dueDate = credit.CurrentDueDate;
+                sourceSaleId = credit.SourceSaleId?.Value;
                 if (agedById.TryGetValue(entry.EntryId, out var agedCredit))
                 {
                     dueStatus = agedCredit.DueStatus;
@@ -182,7 +184,8 @@ public sealed class CustomerStatementService : ICustomerStatementService
                 dueStatus,
                 isOverdue,
                 isReversed,
-                running));
+                running,
+                sourceSaleId));
         }
 
         var closing = opening + periodEntries.Sum(e => e.SignedEffect);

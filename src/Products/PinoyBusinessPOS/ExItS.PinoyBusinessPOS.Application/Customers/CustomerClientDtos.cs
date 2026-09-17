@@ -13,7 +13,8 @@ public sealed record PosCustomerListItemDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record PosCustomerDetailDto(
     Guid CustomerId,
@@ -28,7 +29,8 @@ public sealed record PosCustomerDetailDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record CreatePosCustomerRequest(
     string DisplayName,
@@ -36,7 +38,10 @@ public sealed record CreatePosCustomerRequest(
     string? Address,
     string? Notes,
     Guid? CustomerId = null,
-    Guid? PlatformBusinessCustomerId = null);
+    Guid? PlatformBusinessCustomerId = null,
+    string? PartyKind = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record UpdatePosCustomerRequest(
     string DisplayName,
@@ -51,12 +56,41 @@ public sealed record PosCustomerPagedResult(
     int Page,
     int PageSize);
 
-/// <summary>Narrow checkout customer row — no notes, address, balances, links, or history.</summary>
+/// <summary>
+/// Narrow checkout selection row for CreateSale.
+/// Kind=Customer: POS people or POS Business party (attach via customerId).
+/// Kind=Business: Active B2B Organization counterparty (no POSCustomer; BuyerConnectionId).
+/// PartyKind is set for POS Business party Customer rows so the Businesses filter can show them.
+/// Credit* fields: Kind=Customer person rows use CustomerCreditPolicy;
+/// Kind=Business connection rows use BusinessCustomerCreditPolicy (seller + buyer).
+/// NotConfigured when no policy row. Outstanding for Business comes from active business credits.
+/// </summary>
 public sealed record CheckoutCustomerSearchItemDto(
-    Guid CustomerId,
+    string Kind,
     string DisplayName,
-    string? MobileNumber,
-    string Status);
+    string Status,
+    Guid? CustomerId = null,
+    string? MobileNumber = null,
+    Guid? ConnectionId = null,
+    Guid? BuyerOrganizationId = null,
+    string? BuyerPublicOrganizationId = null,
+    string? PartyKind = null,
+    string? InitiatedByParty = null,
+    string? CreditStatus = null,
+    decimal? CreditLimit = null,
+    decimal? OutstandingAmount = null,
+    decimal? AvailableCredit = null,
+    int? DefaultTermDays = null,
+    string? LinkedPersonalPublicUserId = null,
+    /// <summary>
+    /// Platform BusinessCustomer id for Personal link overlay (Pending/Connected).
+    /// Required so checkout Utang Connection matches org link requests / linked users.
+    /// </summary>
+    Guid? PlatformBusinessCustomerId = null)
+{
+    public const string KindCustomer = "Customer";
+    public const string KindBusiness = "Business";
+}
 
 public sealed record CheckoutCustomerSearchResult(
     List<CheckoutCustomerSearchItemDto> Items,

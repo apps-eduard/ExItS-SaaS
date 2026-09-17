@@ -200,6 +200,7 @@ describe("SellFloorPage", () => {
       expect(screen.getByTestId("sell-floor")).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId("page-header")).toHaveAttribute("data-variant", "compact");
     expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     expect(screen.getByTestId("sell-info-toggle")).toHaveTextContent("Info");
     expect(screen.getByTestId("sell-out-of-stock-toggle")).toHaveTextContent("Out of stock");
@@ -310,15 +311,16 @@ describe("SellFloorPage", () => {
     });
 
     await user.click(screen.getByTestId(`sell-product-${MOCK_MEAT_PRODUCT_ID}`));
-    await user.clear(screen.getByTestId("sell-weight-input"));
-    await user.type(screen.getByTestId("sell-weight-input"), "20");
-    await user.click(screen.getByTestId("sell-weight-confirm"));
+    const weightInput = screen.getByTestId("sell-weight-input");
+    await user.clear(weightInput);
+    await user.type(weightInput, "20");
 
     await waitFor(() => {
-      expect(screen.getByTestId("sell-stock-error")).toHaveTextContent(
+      expect(screen.getByTestId("sell-weight-inline-error")).toHaveTextContent(
         "Only 12.50 kg available.",
       );
     });
+    expect(screen.getByTestId("sell-weight-confirm")).toBeDisabled();
     expect(
       screen.queryByTestId(`sell-cart-line-${MOCK_MEAT_PRODUCT_ID}::base`),
     ).not.toBeInTheDocument();

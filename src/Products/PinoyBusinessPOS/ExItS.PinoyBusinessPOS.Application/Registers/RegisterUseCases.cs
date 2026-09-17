@@ -2,11 +2,14 @@ using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Options;
+using ExItS.PinoyBusinessPOS.Application.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
+using Microsoft.Extensions.Options;
 
 namespace ExItS.PinoyBusinessPOS.Application.Registers;
 
@@ -28,7 +31,9 @@ public sealed record PosRegisterDto(
     DateTimeOffset UpdatedAtUtc,
     Guid UpdatedBy,
     bool HasOpenShift,
-    Guid? OpenShiftActorId = null);
+    Guid? OpenShiftActorId = null,
+    Guid? OpenShiftId = null,
+    DateTimeOffset? OpenShiftOpenedAtUtc = null);
 
 public sealed record PosRegisterActivityDto(
     Guid RegisterId,
@@ -40,7 +45,10 @@ public sealed record PosRegisterActivityDto(
     int CompletedSaleCount,
     decimal GrossSalesTotal,
     DateTimeOffset? ActivityFromUtc,
-    DateTimeOffset? ActivityToUtc);
+    DateTimeOffset? ActivityToUtc,
+    decimal CashSalesTotal = 0m,
+    decimal ManualGCashSalesTotal = 0m,
+    decimal UtangSalesTotal = 0m);
 
 public sealed record CreateRegisterRequest(string Name, string? Description = null);
 
@@ -54,7 +62,9 @@ public static class RegisterMapper
     public static PosRegisterDto Map(
         Register register,
         bool hasOpenShift = false,
-        Guid? openShiftActorId = null) =>
+        Guid? openShiftActorId = null,
+        Guid? openShiftId = null,
+        DateTimeOffset? openShiftOpenedAtUtc = null) =>
         new(
             register.Id.Value,
             register.OrganizationId.Value,
@@ -67,7 +77,9 @@ public static class RegisterMapper
             register.UpdatedAtUtc,
             register.UpdatedBy,
             hasOpenShift,
-            openShiftActorId);
+            openShiftActorId,
+            openShiftId,
+            openShiftOpenedAtUtc);
 
     public static PosRegisterSummaryDto MapSummary(Register register) =>
         new(register.Id.Value, register.RegisterCode, register.Name, register.Status.ToString());
@@ -77,11 +89,16 @@ public sealed class RegisterQueryService
 {
     private readonly IRegisterRepository _registers;
     private readonly ICashierShiftRepository _shifts;
+    private readonly ISaleRepository _sales;
 
-    public RegisterQueryService(IRegisterRepository registers, ICashierShiftRepository shifts)
+    public RegisterQueryService(
+        IRegisterRepository registers,
+        ICashierShiftRepository shifts,
+        ISaleRepository sales)
     {
         _registers = registers;
         _shifts = shifts;
+        _sales = sales;
     }
 
     public async Task<PosRegisterDto?> GetByIdAsync(
@@ -101,7 +118,12 @@ public sealed class RegisterQueryService
         var openShift = await _shifts
             .FindOpenForRegisterAsync(org, register.Id.Value, cancellationToken)
             .ConfigureAwait(false);
-        return RegisterMapper.Map(register, openShift is not null, openShift?.ActorId);
+        return RegisterMapper.Map(
+            register,
+            openShift is not null,
+            openShift?.ActorId,
+            openShift?.Id.Value,
+            openShift?.OpenedAtUtc);
     }
 
     public async Task<PagedResult<PosRegisterDto>> ListAsync(
@@ -123,7 +145,13 @@ public sealed class RegisterQueryService
             var openShift = await _shifts
                 .FindOpenForRegisterAsync(org, register.Id.Value, cancellationToken)
                 .ConfigureAwait(false);
-            mapped.Add(RegisterMapper.Map(register, openShift is not null, openShift?.ActorId));
+            mapped.Add(
+                RegisterMapper.Map(
+                    register,
+                    openShift is not null,
+                    openShift?.ActorId,
+                    openShift?.Id.Value,
+                    openShift?.OpenedAtUtc));
         }
 
         return new PagedResult<PosRegisterDto>(mapped, total, Math.Max(page ?? 1, 1), take);
@@ -144,6 +172,7 @@ public sealed class RegisterQueryService
         Guid registerId,
         DateTimeOffset? fromUtc,
         DateTimeOffset? toUtc,
+        Guid? actorId = null,
         CancellationToken cancellationToken = default)
     {
         var org = PosOrganizationId.From(organizationId);
@@ -157,7 +186,7 @@ public sealed class RegisterQueryService
         var (shifts, _) = await _shifts
             .ListAsync(
                 org,
-                new CashierShiftFilter(RegisterId: registerId),
+                new CashierShiftFilter(ActorId: actorId, RegisterId: registerId),
                 0,
                 500,
                 cancellationToken)
@@ -175,6 +204,25 @@ public sealed class RegisterQueryService
         }
 
         var list = scoped.ToList();
+
+        DateOnly? fromDate = fromUtc is null
+            ? null
+            : DateOnly.FromDateTime(fromUtc.Value.UtcDateTime);
+        DateOnly? toDate = toUtc is null
+            ? null
+            : DateOnly.FromDateTime(toUtc.Value.UtcDateTime);
+
+        var salesAggregate = await _sales
+            .AggregateAsync(
+                org,
+                new SaleFilter(
+                    FromDateUtc: fromDate,
+                    ToDateUtc: toDate,
+                    RegisterId: registerId,
+                    RecordedBy: actorId),
+                cancellationToken)
+            .ConfigureAwait(false);
+
         return new PosRegisterActivityDto(
             register.Id.Value,
             register.RegisterCode,
@@ -182,10 +230,13 @@ public sealed class RegisterQueryService
             register.Status.ToString(),
             list.Count(s => s.Status == CashierShiftStatus.Open),
             list.Count(s => s.Status == CashierShiftStatus.Closed),
-            0,
-            0m,
+            salesAggregate.CompletedCount,
+            salesAggregate.CompletedTotal,
             fromUtc,
-            toUtc);
+            toUtc,
+            salesAggregate.CashTotal,
+            salesAggregate.ManualGCashTotal,
+            salesAggregate.UtangTotal);
     }
 }
 
@@ -258,6 +309,150 @@ public sealed class CreateRegister
         {
             return ApplicationResult<PosRegisterDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Narrow operational path for pure React PWA shift open: reuse any free Active register, or
+/// auto-create the next <c>PWA-NNNN</c> display name. Requires <see cref="UtangCapability.ManageShifts"/>
+/// only — does not grant general register management to cashiers.
+/// </summary>
+public sealed class EnsureAvailablePwaRegisterForShift
+{
+    private readonly IRegisterRepository _registers;
+    private readonly ICashierShiftRepository _shifts;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly PosDeviceAuthorizationOptions _deviceAuthorization;
+    private readonly TimeProvider _clock;
+
+    public EnsureAvailablePwaRegisterForShift(
+        IRegisterRepository registers,
+        ICashierShiftRepository shifts,
+        IPosUnitOfWork unitOfWork,
+        IPosCommercialAccessAccessor access,
+        IOptions<PosDeviceAuthorizationOptions> deviceAuthorization,
+        TimeProvider? clock = null)
+    {
+        _registers = registers;
+        _shifts = shifts;
+        _unitOfWork = unitOfWork;
+        _access = access;
+        _deviceAuthorization = deviceAuthorization.Value;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<PosRegisterDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid actorId,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManageShifts);
+        if (!gate.IsSuccess)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        if (_deviceAuthorization.EnforcementEnabled)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(
+                ApplicationErrorCodes.PwaRegisterEnsureDeviceEnforcementEnabled,
+                "Automatic PWA register provisioning is disabled while POS device enforcement is enabled.");
+        }
+
+        if (actorId == Guid.Empty)
+        {
+            return ApplicationResult<PosRegisterDto>.Failure(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to ensure a PWA register.");
+        }
+
+        var org = PosOrganizationId.From(organizationId);
+        var blockedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var attempt = 0; attempt < PwaRegisterAllocation.MaxCreateAttempts; attempt++)
+        {
+            var free = await _registers
+                .ListAvailableForShiftAsync(org, cancellationToken)
+                .ConfigureAwait(false);
+            if (free.Count > 0)
+            {
+                var chosen = free[0];
+                var openShift = await _shifts
+                    .FindOpenForRegisterAsync(org, chosen.Id.Value, cancellationToken)
+                    .ConfigureAwait(false);
+                return ApplicationResult<PosRegisterDto>.Success(
+                    RegisterMapper.Map(chosen, openShift is not null, openShift?.ActorId));
+            }
+
+            var (allRegisters, _) = await _registers
+                .ListAsync(org, new RegisterFilter(), 0, 500, cancellationToken)
+                .ConfigureAwait(false);
+            var candidateName = PwaRegisterAllocation.NextDisplayName(
+                allRegisters.Select(r => r.Name).Concat(blockedNames));
+
+            var existingNamed = await _registers
+                .FindByNormalizedNameAsync(org, candidateName.ToUpperInvariant(), cancellationToken)
+                .ConfigureAwait(false);
+            if (existingNamed is not null)
+            {
+                if (existingNamed.Status == RegisterStatus.Active)
+                {
+                    var hasOpen = await _registers
+                        .HasOpenShiftAsync(org, existingNamed.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!hasOpen)
+                    {
+                        return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(existingNamed));
+                    }
+                }
+
+                blockedNames.Add(candidateName);
+                continue;
+            }
+
+            try
+            {
+                var utcNow = _clock.GetUtcNow();
+                var code = await _registers.AllocateNextRegisterCodeAsync(org, cancellationToken).ConfigureAwait(false);
+                var register = Register.Create(
+                    org,
+                    code,
+                    candidateName,
+                    actorId,
+                    utcNow,
+                    PwaRegisterAllocation.Description);
+                await _registers.AddAsync(register, cancellationToken).ConfigureAwait(false);
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(register));
+            }
+            catch (DomainException ex) when (
+                ex.ErrorCode is ApplicationErrorCodes.RegisterNameConflict
+                    or ApplicationErrorCodes.RegisterCodeConflict)
+            {
+                blockedNames.Add(candidateName);
+            }
+            catch (PersistenceConflictException)
+            {
+                blockedNames.Add(candidateName);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<PosRegisterDto>.Failure(ex.ErrorCode, ex.Message);
+            }
+        }
+
+        var fallbackFree = await _registers
+            .ListAvailableForShiftAsync(org, cancellationToken)
+            .ConfigureAwait(false);
+        if (fallbackFree.Count > 0)
+        {
+            return ApplicationResult<PosRegisterDto>.Success(RegisterMapper.Map(fallbackFree[0]));
+        }
+
+        return ApplicationResult<PosRegisterDto>.Failure(
+            ApplicationErrorCodes.PwaRegisterEnsureExhausted,
+            "Could not ensure an available PWA cash register after concurrent create retries.");
     }
 }
 

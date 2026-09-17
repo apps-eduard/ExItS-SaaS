@@ -1,3 +1,5 @@
+using ExItS.PinoyBusinessPOS.Domain.Customers;
+
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers;
 
 internal sealed class POSCustomerRecord
@@ -10,6 +12,7 @@ internal sealed class POSCustomerRecord
     public string? Address { get; set; }
     public string? Notes { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string PartyKind { get; set; } = nameof(CustomerPartyKind.Person);
     public Guid? PlatformBusinessCustomerId { get; set; }
     public string? LinkedPersonalPublicUserId { get; set; }
     public Guid? LinkedBuyerOrganizationId { get; set; }

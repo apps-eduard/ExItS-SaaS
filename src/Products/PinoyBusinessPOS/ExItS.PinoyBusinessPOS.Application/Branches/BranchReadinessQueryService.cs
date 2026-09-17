@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Parties;
 
 namespace ExItS.PinoyBusinessPOS.Application.Branches;
 
@@ -316,6 +317,48 @@ public sealed class PartyBranchExplicitAssignService
             .ConfigureAwait(false);
         await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return ApplicationResult.Success();
+    }
+
+    public async Task<ApplicationResult<CustomerBranchAccessListDto>> ListCustomerAccessAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = RequireGovernance();
+        if (!gate.IsSuccess)
+        {
+            return ApplicationResult<CustomerBranchAccessListDto>.Failure(gate);
+        }
+
+        var orgId = PosOrganizationId.From(organizationId);
+        var customer = await _customers
+            .GetByIdAsync(orgId, POSCustomerId.From(customerId), cancellationToken)
+            .ConfigureAwait(false);
+        if (customer is null)
+        {
+            return ApplicationResult<CustomerBranchAccessListDto>.Failure(
+                ApplicationErrorCodes.CustomerNotFound,
+                "Customer was not found.");
+        }
+
+        var rows = await _access
+            .ListCustomerAccessAsync(organizationId, customerId, cancellationToken)
+            .ConfigureAwait(false);
+        var items = rows
+            .Select(r => new CustomerBranchAccessItemDto(
+                r.BranchId.Value,
+                PartyBranchGrantSources.ToCode(r.GrantSource),
+                r.GrantedAtUtc))
+            .ToList();
+        var home = rows
+            .Where(r => r.GrantSource == PartyBranchGrantSource.CreateAtBranch)
+            .OrderBy(r => r.GrantedAtUtc)
+            .Select(r => (Guid?)r.BranchId.Value)
+            .FirstOrDefault()
+            ?? rows.OrderBy(r => r.GrantedAtUtc).Select(r => (Guid?)r.BranchId.Value).FirstOrDefault();
+
+        return ApplicationResult<CustomerBranchAccessListDto>.Success(
+            new CustomerBranchAccessListDto(customerId, home, items));
     }
 
     public async Task<ApplicationResult> GrantSupplierAsync(

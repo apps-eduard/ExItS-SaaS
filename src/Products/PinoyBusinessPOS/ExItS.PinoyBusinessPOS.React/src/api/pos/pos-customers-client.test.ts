@@ -67,6 +67,30 @@ describe("pos-customers-client", () => {
   });
 
   it("searches checkout customers with narrow DTO path", async () => {
+    const blank = await searchCheckoutCustomers(workspace, { search: "  " });
+    expect(blank.items).toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        items: [
+          {
+            kind: "Customer",
+            customerId,
+            displayName: "Walk-in Ana",
+            mobileNumber: "09171110001",
+            status: "Active",
+          },
+        ],
+        totalCount: 1,
+        page: 1,
+        pageSize: 20,
+      }),
+    );
+    const idlePeople = await searchCheckoutCustomers(workspace, { kind: "Customer" });
+    expect(idlePeople.items[0]?.displayName).toBe("Walk-in Ana");
+    expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain("kind=Customer");
+
     vi.mocked(fetch).mockResolvedValueOnce(
       jsonResponse({
         items: [
@@ -82,14 +106,9 @@ describe("pos-customers-client", () => {
         pageSize: 20,
       }),
     );
-
-    const blank = await searchCheckoutCustomers(workspace, { search: "  " });
-    expect(blank.items).toEqual([]);
-    expect(fetch).not.toHaveBeenCalled();
-
     const page = await searchCheckoutCustomers(workspace, { search: "Juan", pageSize: 50 });
     expect(page.items[0]?.displayName).toBe("Juan Dela Cruz");
-    const url = String(vi.mocked(fetch).mock.calls[0][0]);
+    const url = String(vi.mocked(fetch).mock.calls[1][0]);
     expect(url).toContain("/api/v1/pos/customers/checkout-search");
     expect(url).toContain("search=Juan");
     expect(url).toContain("pageSize=20");

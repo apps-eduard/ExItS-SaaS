@@ -127,7 +127,6 @@ export function OrgBusinessQrPage() {
         <div className="flex flex-wrap justify-center gap-2">
           <Button
             type="button"
-            className="min-h-11"
             data-testid="org-business-qr-copy-link"
             onClick={() => void copyStoreLink()}
           >
@@ -137,7 +136,6 @@ export function OrgBusinessQrPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             data-testid="org-business-qr-copy"
             onClick={() => void copyBusinessId()}
           >
@@ -148,7 +146,6 @@ export function OrgBusinessQrPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="org-business-qr-share"
               onClick={() => void share()}
             >

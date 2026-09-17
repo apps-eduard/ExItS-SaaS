@@ -10,6 +10,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.OperationalSetup;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -200,9 +201,24 @@ public sealed class P24Wp12HistorySecurityRegressionTests
                 Credits = credits,
                 Repayments = repayments,
                 Receipt = new GetLinkedCustomerSaleReceipt(
-                    authorize, sales, credits, outstanding, entitlements, options, clock)
+                    authorize, sales, credits, outstanding, entitlements, options, clock,
+                    new EmptyOperationalSetups())
             };
         }
+    }
+
+    private sealed class EmptyOperationalSetups : IPosOperationalSetupRepository
+    {
+        public Task<PosOperationalSetup?> GetByOrganizationIdAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<PosOperationalSetup?>(null);
+
+        public Task AddAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(PosOperationalSetup setup, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakePlatform : ILinkedCustomerPlatformAuthorization
@@ -349,7 +365,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
                 c.OrganizationId == organizationId && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, bool peopleOnly = false, CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -358,7 +374,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
             PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, false, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId, IReadOnlyCollection<POSCustomerId> customerIds,
@@ -427,6 +443,8 @@ public sealed class P24Wp12HistorySecurityRegressionTests
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
     }
 
+
+
     private sealed class InMemoryRepayments : IRepaymentRepository
     {
         public List<Repayment> All { get; } = [];
@@ -466,6 +484,12 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Task.FromResult(All.Where(r =>
                 r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active)
                 .Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId, CancellationToken cancellationToken = default) =>
@@ -523,6 +547,7 @@ public sealed class P24Wp12HistorySecurityRegressionTests
             Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
 
         public Task<SalePeriodAggregate> AggregatePeriodAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, SaleStatus? status = null, SalePaymentMethod? paymentMethod = null, Guid? customerId = null, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<SalePeriodAggregate> AggregateAsync(PosOrganizationId organizationId, SaleFilter filter, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(PosOrganizationId organizationId, DateOnly fromDateUtc, DateOnly toDateUtc, Guid? branchId = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 

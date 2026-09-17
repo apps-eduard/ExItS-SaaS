@@ -16,6 +16,7 @@ public static class DomainErrorCodes
         "pos.customer.platform_business_customer.correlation_conflict";
 
     public const string InvalidCreditEntryId = "pos.credit_entry.id.invalid";
+    public const string InvalidBusinessCreditEntryId = "pos.business_credit_entry.id.invalid";
     public const string InvalidCreditAmount = "pos.credit_entry.amount.invalid";
     public const string InvalidCreditRemarks = "pos.credit_entry.remarks.invalid";
     public const string InvalidCreditReversalReason = "pos.credit_entry.reversal_reason.invalid";
@@ -27,7 +28,9 @@ public static class DomainErrorCodes
     public const string InvalidCreditDueDateActor = "pos.credit_due_date.actor.invalid";
     public const string CreditDueDateUnchanged = "pos.credit_due_date.unchanged";
 
+
     public const string InvalidRepaymentId = "pos.repayment.id.invalid";
+    public const string InvalidBusinessRepaymentId = "pos.business_repayment.id.invalid";
     public const string InvalidRepaymentAmount = "pos.repayment.amount.invalid";
     public const string InvalidRepaymentRemarks = "pos.repayment.remarks.invalid";
     public const string InvalidRepaymentReversalReason = "pos.repayment.reversal_reason.invalid";
@@ -35,6 +38,21 @@ public static class DomainErrorCodes
     public const string InvalidRepaymentActor = "pos.repayment.actor.invalid";
     public const string RepaymentExceedsOutstanding = "pos.repayment.exceeds_outstanding";
     public const string RepaymentOutstandingZero = "pos.repayment.outstanding_zero";
+    public const string InvalidRepaymentAllocationAmount = "pos.repayment.allocation.amount.invalid";
+    public const string RepaymentAllocationSumMismatch = "pos.repayment.allocation.sum_mismatch";
+    public const string RepaymentAllocationExceedsReceivable = "pos.repayment.allocation.exceeds_receivable";
+    public const string RepaymentAllocationUnknownReceivable = "pos.repayment.allocation.unknown_receivable";
+    public const string RepaymentAllocationDuplicateReceivable = "pos.repayment.allocation.duplicate_receivable";
+    public const string InvalidUtangPaymentMethod = "pos.utang.payment_method.invalid";
+    public const string InvalidUtangCheckNumber = "pos.utang.check.number.invalid";
+    public const string InvalidUtangBankName = "pos.utang.check.bank_name.invalid";
+    public const string InvalidUtangCheckDate = "pos.utang.check.date.invalid";
+    public const string InvalidUtangCheckAccountName = "pos.utang.check.account_name.invalid";
+    public const string InvalidUtangCheckReference = "pos.utang.check.reference.invalid";
+    public const string InvalidUtangCheckDispositionReason = "pos.utang.check.disposition_reason.invalid";
+    public const string InvalidUtangCheckFieldsForMethod = "pos.utang.check.fields.invalid_for_method";
+    public const string InvalidUtangCheckClearingTransition = "pos.utang.check.clearing.invalid_transition";
+    public const string CheckClearExceedsOutstanding = "pos.utang.check.clear.exceeds_outstanding";
 
     public const string InvalidWriteOffId = "pos.write_off.id.invalid";
     public const string InvalidWriteOffAmount = "pos.write_off.amount.invalid";
@@ -91,6 +109,15 @@ public static class DomainErrorCodes
     public const string InvalidSaleStatus = "pos.sale.status.invalid";
     public const string InvalidSaleStatusTransition = "pos.sale.status.invalid_transition";
     public const string InvalidSalePaymentMethod = "pos.sale.payment_method.invalid";
+    public const string PaymentMethodNotEntitled = "pos.payment_method.not_entitled";
+    public const string PaymentMethodDisabled = "pos.payment_method.disabled";
+    public const string PaymentMethodNotAvailableForBranch = "pos.payment_method.branch_unavailable";
+    public const string PaymentMethodNotConfigurable = "pos.payment_method.not_configurable";
+    public const string PaymentMethodBranchesRequired = "pos.payment_method.branches_required";
+    public const string InvalidPaymentMethodDisplayName = "pos.payment_method.display_name.invalid";
+    public const string InvalidPaymentMethodInstructions = "pos.payment_method.instructions.invalid";
+    public const string InvalidPaymentMethodAccountHint = "pos.payment_method.account_hint.invalid";
+    public const string InvalidCheckSettlementStatus = "pos.sale.check_settlement.invalid";
     public const string InvalidSaleActor = "pos.sale.actor.invalid";
     public const string SaleRequiresAtLeastOneLine = "pos.sale.lines.required";
     public const string SaleTotalTooLarge = "pos.sale.total.too_large";
@@ -169,8 +196,15 @@ public static class DomainErrorCodes
         "pos.sale.electronic.total_must_be_positive";
     public const string SaleCashMustNotLinkCredit = "pos.sale.cash_must_not_link_credit";
     public const string InvalidSaleBuyerParty = "pos.sale.buyer_party.invalid";
+    /// <summary>Direct B2B Organization checkout cannot use Product-Based Utang.</summary>
+    public const string SaleB2bUtangNotSupported = "pos.sale.b2b.utang_not_supported";
+    /// <summary>Organization buyer at checkout requires an Active seller-side B2B relationship.</summary>
+    public const string SaleB2bRelationshipRequired = "pos.sale.b2b.relationship_required";
+    public const string SaleB2bCreditRequiresAcceptedRelationship =
+        "pos.sale.b2b.credit_requires_accepted_relationship";
     public const string InvalidCustomerExItsIdentityLink = "pos.customer.exits_identity_link.invalid";
     public const string CustomerExItsIdentityLinkConflict = "pos.customer.exits_identity_link.conflict";
+    public const string InvalidCustomerPartyKind = "pos.customer.party_kind.invalid";
     public const string ConnectedSupplierRequiresBusinessQr = "pos.connected_supplier.requires_business_qr";
     public const string ConnectedSupplierQrPurposeMismatch = "pos.connected_supplier.qr_purpose_mismatch";
     public const string ConnectedSupplierBranchRequired = "pos.connected_supplier.branch_required";
@@ -187,6 +221,13 @@ public static class DomainErrorCodes
     public const string InvalidInventorySourceType = "pos.inventory.source_type.invalid";
     public const string InvalidInventoryQuantity = "pos.inventory.quantity.invalid";
     public const string InventoryNotTracked = "pos.inventory.not_tracked";
+    public const string IngredientRequiresTrackedInventory = "pos.inventory.ingredient_requires_tracked";
+    /// <summary>Enable Connected Buyer sharing requires InventoryAccount.IsTracked.</summary>
+    public const string ConnectedShareRequiresTrackedInventory =
+        "pos.catalog.connected_share_requires_tracked";
+    /// <summary>Disable inventory tracking is blocked while product is shared with connected buyers.</summary>
+    public const string ConnectedShareBlocksDisableTracking =
+        "pos.catalog.connected_share_blocks_disable_tracking";
     public const string InventoryAlreadyTracked = "pos.inventory.already_tracked";
     public const string InventoryDisableRequiresZero = "pos.inventory.disable_requires_zero";
     public const string InventoryInsufficientStock = "pos.inventory.insufficient_stock";
@@ -243,6 +284,26 @@ public static class DomainErrorCodes
     public const string InventoryTransferReceiveRequiresLines = "pos.inventory.transfer.receive.lines.required";
     public const string InventoryTransferDuplicateProduct = "pos.inventory.transfer.duplicate_product";
     public const string InventoryTransferSameBranch = "pos.inventory.transfer.same_branch";
+    public const string InvalidSupplyRouteId = "pos.inventory.supply_route.id.invalid";
+    public const string SupplyRouteSameLocation = "pos.inventory.supply_route.same_location";
+    public const string SupplyRouteDuplicateSource = "pos.inventory.supply_route.duplicate_source";
+    public const string SupplyRouteSourceMustBeWarehouse = "pos.inventory.supply_route.source.must_be_warehouse";
+    public const string SupplyRouteSourceInactive = "pos.inventory.supply_route.source.inactive";
+    public const string SupplyRouteDestinationInactive = "pos.inventory.supply_route.destination.inactive";
+    public const string InvalidSupplyRouteNotes = "pos.inventory.supply_route.notes.invalid";
+    public const string InvalidStockRequestId = "pos.inventory.stock_request.id.invalid";
+    public const string InvalidStockRequestLineId = "pos.inventory.stock_request.line.id.invalid";
+    public const string InvalidStockRequestNumber = "pos.inventory.stock_request.number.invalid";
+    public const string InvalidStockRequestStatus = "pos.inventory.stock_request.status.invalid";
+    public const string InvalidStockRequestStatusTransition = "pos.inventory.stock_request.status.invalid_transition";
+    public const string InvalidStockRequestQuantity = "pos.inventory.stock_request.quantity.invalid";
+    public const string InvalidStockRequestNotes = "pos.inventory.stock_request.notes.invalid";
+    public const string InvalidStockRequestLine = "pos.inventory.stock_request.line.invalid";
+    public const string InvalidStockRequestRejectionReason = "pos.inventory.stock_request.rejection_reason.invalid";
+    public const string StockRequestRequiresLines = "pos.inventory.stock_request.lines.required";
+    public const string StockRequestDuplicateProduct = "pos.inventory.stock_request.duplicate_product";
+    public const string StockRequestRouteRequired = "pos.inventory.stock_request.route.required";
+    public const string StockRequestSourceMustBeWarehouse = "pos.inventory.stock_request.source.must_be_warehouse";
 
     public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
     public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";
@@ -471,6 +532,7 @@ public static class DomainErrorCodes
     public const string InvalidCatalogSource = "pos.catalog.source.invalid";
 
     public const string InvalidCustomerOrderId = "pos.customer_order.id.invalid";
+    public const string InvalidConnectedPurchaseOrderId = "pos.connected_purchase_order.id.invalid";
     public const string InvalidCustomerOrderLineId = "pos.customer_order.line.id.invalid";
     public const string InvalidCustomerOrderNumber = "pos.customer_order.number.invalid";
     public const string InvalidCustomerOrderStatusTransition = "pos.customer_order.status.invalid_transition";
@@ -514,8 +576,50 @@ public static class DomainErrorCodes
     public const string InvalidSupplierPayableVoidReason = "pos.supplier_payable.void.reason.invalid";
     public const string SupplierPayableOverpayNotAllowed = "pos.supplier_payable.overpay.not_allowed";
     public const string SupplierPayableVoidBlockedByPayments = "pos.supplier_payable.void.blocked_by_payments";
+    /// <summary>
+    /// Buyer cannot manually self-settle supplier payables via RecordSupplierPayablePayment.
+    /// Seller→buyer mirror (ConnectedB2bPaymentMirror applying <c>ApplyPayment</c> directly) remains allowed.
+    /// </summary>
+    public const string SupplierPayableBuyerManualSettlementForbidden =
+        "pos.supplier_payable.buyer_manual_settlement.forbidden";
     public const string DirectPurchaseRequiresSupplierForCredit =
         "pos.direct_purchase_receipt.supplier.required_for_credit";
     public const string SupplierPayableReceiptReversalBlocked =
         "pos.supplier_payable.receipt_reversal.blocked_by_payments";
+
+    public const string InvalidCustomerCreditPolicyId = "pos.customer_credit_policy.id.invalid";
+    public const string InvalidCustomerCreditPolicyChangeId = "pos.customer_credit_policy_change.id.invalid";
+    public const string InvalidCustomerCreditLimit = "pos.customer_credit_policy.limit.invalid";
+    public const string InvalidCustomerCreditTermDays = "pos.customer_credit_policy.term_days.invalid";
+    public const string InvalidCustomerCreditPolicyReason = "pos.customer_credit_policy.reason.invalid";
+    public const string InvalidCustomerCreditPolicyActor = "pos.customer_credit_policy.actor.invalid";
+    public const string InvalidCustomerCreditPolicyStatusTransition =
+        "pos.customer_credit_policy.status.invalid_transition";
+    public const string CustomerCreditPolicyUnchanged = "pos.customer_credit_policy.unchanged";
+    public const string CustomerCreditNotApproved = "pos.customer_credit.not_approved";
+    public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
+    public const string CustomerCreditDueDateOverrideDenied =
+        "pos.customer_credit.due_date_override_denied";
+
+    public const string InvalidBusinessCustomerCreditPolicyId =
+        "pos.business_customer_credit_policy.id.invalid";
+    public const string InvalidBusinessCustomerCreditPolicyChangeId =
+        "pos.business_customer_credit_policy_change.id.invalid";
+
+    public const string InvalidQuotationId = "pos.quotation.id.invalid";
+    public const string InvalidQuotationLineId = "pos.quotation_line.id.invalid";
+    public const string InvalidQuotationNumber = "pos.quotation.number.invalid";
+    public const string InvalidQuotationStatus = "pos.quotation.status.invalid";
+    public const string InvalidQuotationStatusTransition = "pos.quotation.status.invalid_transition";
+    public const string InvalidQuotationQuantity = "pos.quotation.quantity.invalid";
+    public const string InvalidQuotationUnitPrice = "pos.quotation.unit_price.invalid";
+    public const string InvalidQuotationLine = "pos.quotation.line.invalid";
+    public const string InvalidQuotationLineDiscount = "pos.quotation.line.discount.invalid";
+    public const string InvalidQuotationNotes = "pos.quotation.notes.invalid";
+    public const string InvalidQuotationTerms = "pos.quotation.terms.invalid";
+    public const string InvalidQuotationReference = "pos.quotation.reference.invalid";
+    public const string InvalidQuotationCustomerSnapshot = "pos.quotation.customer_snapshot.invalid";
+    public const string InvalidQuotationConvertedSaleId = "pos.quotation.converted_sale_id.invalid";
+    public const string QuotationRequiresLines = "pos.quotation.lines.required";
+    public const string QuotationDuplicateProduct = "pos.quotation.duplicate_product";
 }

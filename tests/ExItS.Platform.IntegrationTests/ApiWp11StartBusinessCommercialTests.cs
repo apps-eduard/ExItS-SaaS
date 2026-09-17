@@ -264,6 +264,48 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         await EnsureMvpCatalogAsync();
         var (token, _, _, _) = await SeedPersonalUserAsync("sbpay");
         var primaryBusinessTypeId = await ResolvePrimaryBusinessTypeIdAsync(token);
+
+        using var createPayment = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/subscription-payments",
+            token,
+            new
+            {
+                planKey = MvpPosPlanCodes.Starter,
+                billingCycle = "Monthly"
+            });
+        var createResponse = await _client.SendAsync(createPayment);
+        if (createResponse.StatusCode != HttpStatusCode.Created)
+        {
+            Assert.Fail($"Create payment failed ({createResponse.StatusCode}): {await createResponse.Content.ReadAsStringAsync()}");
+        }
+
+        var pending = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var paymentId = pending.GetProperty("id").GetGuid();
+        Assert.Equal("Pending", pending.GetProperty("status").GetString());
+        Assert.Equal(JsonValueKind.Null, pending.GetProperty("organizationId").ValueKind);
+
+        using var process = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/subscription-payments/{paymentId}/process",
+            token,
+            new { channel = "GCash" });
+        var processResponse = await _client.SendAsync(process);
+        if (!processResponse.IsSuccessStatusCode)
+        {
+            Assert.Fail($"Process failed ({processResponse.StatusCode}): {await processResponse.Content.ReadAsStringAsync()}");
+        }
+
+        var paid = await processResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Paid", paid.GetProperty("status").GetString());
+        Assert.False(paid.GetProperty("subscriptionActivated").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, paid.GetProperty("organizationId").ValueKind);
+
+        var adminAfterProcess = await _admin.GetAsync($"/api/v1/platform/subscription-payments/{paymentId}");
+        adminAfterProcess.EnsureSuccessStatusCode();
+        var adminAfterProcessBody = await adminAfterProcess.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Paid", adminAfterProcessBody.GetProperty("status").GetString());
+
         var slug = Unique("sbpay");
         using var request = Authed(
             HttpMethod.Post,
@@ -279,6 +321,7 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
                 billingCycle = "Monthly",
                 startAsTrial = false,
                 payNow = true,
+                paidPaymentTransactionId = paymentId,
                 activatePosEntitlement = true,
                 assignPosOwnerRole = false
             });
@@ -289,14 +332,106 @@ public sealed class ApiWp11StartBusinessCommercialTests(PostgreSqlFixture fixtur
         }
 
         var started = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.True(started.GetProperty("organizationOwnerGranted").GetBoolean());
-        Assert.True(started.GetProperty("posOwnerRoleGranted").GetBoolean());
+        Assert.False(started.GetProperty("requiresCheckout").GetBoolean());
+        Assert.True(started.GetProperty("posEntitlementActivated").GetBoolean());
         var subscriptionId = started.GetProperty("subscriptionId").GetGuid();
+        Assert.NotEqual(Guid.Empty, subscriptionId);
+
         var subscription = await _admin.GetAsync($"/api/v1/platform/subscriptions/{subscriptionId}");
         subscription.EnsureSuccessStatusCode();
         var subBody = await subscription.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("Active", subBody.GetProperty("status").GetString());
         Assert.Equal("Starter", subBody.GetProperty("planDisplayName").GetString());
+
+        using var getPaid = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/subscription-payments/{paymentId}",
+            token);
+        // After Start Business, session is Organization — personal get may 403.
+        // Admin detail remains the source of truth for activation.
+        var adminPayment = await _admin.GetAsync($"/api/v1/platform/subscription-payments/{paymentId}");
+        adminPayment.EnsureSuccessStatusCode();
+        var adminBody = await adminPayment.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Paid", adminBody.GetProperty("status").GetString());
+        Assert.True(adminBody.GetProperty("subscriptionActivated").GetBoolean());
+        Assert.Equal(started.GetProperty("organizationId").GetGuid(), adminBody.GetProperty("organizationId").GetGuid());
+    }
+
+    [Fact]
+    public async Task Personal_subscription_payment_rejects_cross_user_access()
+    {
+        await EnsureMvpCatalogAsync();
+        var (ownerToken, _, _, _) = await SeedPersonalUserAsync("payown");
+        var (otherToken, _, _, _) = await SeedPersonalUserAsync("payoth");
+
+        using var createPayment = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/subscription-payments",
+            ownerToken,
+            new { planKey = MvpPosPlanCodes.Starter, billingCycle = "Monthly" });
+        var createResponse = await _client.SendAsync(createPayment);
+        createResponse.EnsureSuccessStatusCode();
+        var pending = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var paymentId = pending.GetProperty("id").GetGuid();
+
+        using var otherGet = Authed(
+            HttpMethod.Get,
+            $"/api/v1/personal/subscription-payments/{paymentId}",
+            otherToken);
+        var otherResponse = await _client.SendAsync(otherGet);
+        Assert.Equal(HttpStatusCode.Forbidden, otherResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Personal_subscription_payment_retry_creates_new_attempt()
+    {
+        await EnsureMvpCatalogAsync();
+        var (token, _, _, _) = await SeedPersonalUserAsync("payret");
+
+        using var createPayment = Authed(
+            HttpMethod.Post,
+            "/api/v1/personal/subscription-payments",
+            token,
+            new { planKey = MvpPosPlanCodes.Starter, billingCycle = "Monthly" });
+        var createResponse = await _client.SendAsync(createPayment);
+        createResponse.EnsureSuccessStatusCode();
+        var pending = await createResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var paymentId = pending.GetProperty("id").GetGuid();
+        var firstReference = pending.GetProperty("referenceNumber").GetString();
+
+        using var process = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/subscription-payments/{paymentId}/process",
+            token,
+            new
+            {
+                channel = "Card",
+                cardNumber = "4000000000000002",
+                cardExpiry = "12/30",
+                cardName = "Test",
+                cardCvv = "123"
+            });
+        var processResponse = await _client.SendAsync(process);
+        processResponse.EnsureSuccessStatusCode();
+        var failed = await processResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Failed", failed.GetProperty("status").GetString());
+
+        using var retry = Authed(
+            HttpMethod.Post,
+            $"/api/v1/personal/subscription-payments/{paymentId}/retry",
+            token);
+        var retryResponse = await _client.SendAsync(retry);
+        Assert.Equal(HttpStatusCode.Created, retryResponse.StatusCode);
+        var next = await retryResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(paymentId, next.GetProperty("id").GetGuid());
+        Assert.Equal("Pending", next.GetProperty("status").GetString());
+        Assert.NotEqual(firstReference, next.GetProperty("referenceNumber").GetString());
+
+        var adminFailed = await _admin.GetAsync($"/api/v1/platform/subscription-payments/{paymentId}");
+        adminFailed.EnsureSuccessStatusCode();
+        var failedBody = await adminFailed.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Failed", failedBody.GetProperty("status").GetString());
+        Assert.Equal(firstReference, failedBody.GetProperty("referenceNumber").GetString());
     }
 
     [Fact]

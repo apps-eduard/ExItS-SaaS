@@ -8,6 +8,7 @@ import { SignInPage } from "@/features/auth/SignInPage";
 import { PreferencesProvider } from "@/hooks/usePreferences";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { SessionProvider } from "@/session/SessionProvider";
+import { ToastProvider } from "@/components/exits/ToastProvider";
 import { probeExternalAuthProvider } from "@/api/platform/platform-auth-client";
 
 vi.mock("@/api/platform/platform-auth-client", async (importOriginal) => {
@@ -49,11 +50,13 @@ function renderSignInPage() {
     <QueryClientProvider client={client}>
       <PreferencesProvider>
         <I18nProvider>
-          <SessionProvider>
-            <MemoryRouter>
-              <SignInPage />
-            </MemoryRouter>
-          </SessionProvider>
+          <ToastProvider>
+            <SessionProvider>
+              <MemoryRouter>
+                <SignInPage />
+              </MemoryRouter>
+            </SessionProvider>
+          </ToastProvider>
         </I18nProvider>
       </PreferencesProvider>
     </QueryClientProvider>,
@@ -225,14 +228,16 @@ describe("SignInPage LOGIN-UX-01", () => {
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <PreferencesProvider>
           <I18nProvider>
-            <SessionProvider>
-              <MemoryRouter initialEntries={["/sign-in"]}>
-                <Routes>
-                  <Route path="/sign-in" element={<SignInPage />} />
-                  <Route path="/offline-pin" element={<div data-testid="offline-pin-page" />} />
-                </Routes>
-              </MemoryRouter>
-            </SessionProvider>
+            <ToastProvider>
+              <SessionProvider>
+                <MemoryRouter initialEntries={["/sign-in"]}>
+                  <Routes>
+                    <Route path="/sign-in" element={<SignInPage />} />
+                    <Route path="/offline-pin" element={<div data-testid="offline-pin-page" />} />
+                  </Routes>
+                </MemoryRouter>
+              </SessionProvider>
+            </ToastProvider>
           </I18nProvider>
         </PreferencesProvider>
       </QueryClientProvider>,
@@ -293,5 +298,7 @@ describe("SignInPage LOGIN-UX-01", () => {
     expect(screen.getByText("Pinoy Business POS")).toBeInTheDocument();
     expect(screen.getByTestId("auth-experience-hero")).toBeInTheDocument();
     expect(screen.getByTestId("auth-experience-sheet")).toBeInTheDocument();
+    expect(screen.getByTestId("auth-experience-aside")).toBeInTheDocument();
+    expect(screen.getByTestId("auth-experience-main")).toHaveClass("lg:flex-row");
   });
 });

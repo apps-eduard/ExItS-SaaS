@@ -71,12 +71,13 @@ internal static class PurchaseOrderEndpoints
             }
 
             PosOrganizationScope.TryGetActorId(request, out var actorId, out _);
+            PosOrganizationScope.TryGetBranchId(request, out var actingBranchId, out _);
             return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
                     request,
                     organizationId,
                     OfflineOperationTypes.PurchaseOrderCreate,
                     idempotency,
-                    ct2 => useCase.ExecuteAsync(organizationId, body, ct2, actorId),
+                    ct2 => useCase.ExecuteAsync(organizationId, body, ct2, actorId, actingBranchId),
                     dto => dto,
                     dto => Results.Created($"/api/v1/pos/purchase-orders/{dto.PurchaseOrderId:D}", dto),
                     ct)
@@ -166,7 +167,12 @@ internal static class PurchaseOrderEndpoints
                 return problem!;
             }
 
-            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, ct).ConfigureAwait(false);
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, actorId, ct).ConfigureAwait(false);
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
@@ -174,6 +180,28 @@ internal static class PurchaseOrderEndpoints
             HttpRequest request,
             Guid purchaseOrderId,
             AcceptConnectedPoChanges useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, purchaseOrderId, actorId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
+        group.MapPost("/{purchaseOrderId:guid}/decline-changes", async (
+            HttpRequest request,
+            Guid purchaseOrderId,
+            DeclineConnectedPoChanges useCase,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {

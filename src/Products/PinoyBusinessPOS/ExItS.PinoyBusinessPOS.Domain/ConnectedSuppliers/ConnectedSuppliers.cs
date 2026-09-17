@@ -10,6 +10,17 @@ public enum ConnectedSupplierRelationshipStatus { Pending = 0, Active = 1, Decli
 public enum SupplierConnectionType { External = 0, ConnectedOrganization = 1 }
 
 /// <summary>
+/// Which organization party created the Pending connection request.
+/// Historical rows are Buyer-initiated; seller Business Customer invitations use Supplier.
+/// </summary>
+public enum ConnectionInitiatedByParty
+{
+    Buyer = 0,
+    Supplier = 1
+}
+
+
+/// <summary>
 /// How a supplier-buyer connection publishes eligible catalog products.
 /// Legacy connections default to <see cref="SelectedOnly"/> so visibility does not broaden on migration.
 /// </summary>
@@ -19,6 +30,15 @@ public enum CatalogSharingMode
     SelectedOnly = 0,
     /// <summary>All eligible products are shared unless explicitly excluded (IsShared=false).</summary>
     AllEligible = 1
+}
+
+/// <summary>Seller relationship contact identity source (not a duplicate OrganizationMember record).</summary>
+public enum RelationshipContactSource
+{
+    /// <summary>Seller-managed freeform contact (external purchasing/accounting contacts).</summary>
+    Custom = 0,
+    /// <summary>Linked to an Active buyer OrganizationMembership (snapshot + membership id).</summary>
+    OrganizationMember = 1
 }
 
 /// <summary>Server-side source for the buyer-facing effective purchase price.</summary>
@@ -41,15 +61,19 @@ public enum ConnectedPurchaseOrderStatus
 }
 
 /// <summary>
-/// Buyer-selected settlement term for a connected purchase order.
-/// GCash is persisted as <see cref="ManualGCash"/> — there is no payment-gateway verification.
-/// Utang is a B2B payable term only; this package does not post customer-credit debt.
+/// Buyer-selected settlement term for a connected purchase order (intended/agreed method — not proof of payment).
+/// <see cref="Cash"/> is COD / pay-on-delivery (create default).
+/// <see cref="ManualGCash"/> is manual e-wallet reference (no gateway verification).
+/// <see cref="Utang"/> reserves available credit on submit; receipts convert reservation into Outstanding Utang.
 /// </summary>
 public enum ConnectedPoPaymentTerm
 {
     Cash = 0,
     ManualGCash = 1,
-    Utang = 2
+    Utang = 2,
+    BankTransfer = 3,
+    BankDeposit = 4,
+    Check = 5
 }
 
 public enum ConnectedPoLineAvailability
@@ -141,6 +165,8 @@ public sealed class ConnectedSupplierRelationship
     public PosOrganizationId BuyerOrganizationId { get; }
     public PosOrganizationId SupplierOrganizationId { get; }
     public ConnectedSupplierRelationshipStatus Status { get; private set; }
+    /// <summary>Who opened the Pending request — Buyer (classic) or Supplier (Business Customer invite).</summary>
+    public ConnectionInitiatedByParty InitiatedByParty { get; }
     public DateTimeOffset RequestedAtUtc { get; }
     public Guid? RequestedByUserId { get; }
     public DateTimeOffset? RespondedAtUtc { get; private set; }
@@ -160,12 +186,64 @@ public sealed class ConnectedSupplierRelationship
     public decimal? CustomerDiscountPercent { get; private set; }
     /// <summary>
     /// Operational supplier source branch (Platform branch id). Organization remains the relationship anchor.
+    /// This is the home branch for Business Customer visibility (CreateAtBranch equivalent).
     /// </summary>
     public Guid? SupplierBranchId { get; private set; }
     /// <summary>Display name of <see cref="SupplierBranchId"/> at set time (safe for buyer UX; no UUID).</summary>
     public string? SupplierBranchNameSnapshot { get; private set; }
+    /// <summary>
+    /// Additional supplier branches with explicit visibility (never Area ids).
+    /// Home (<see cref="SupplierBranchId"/>) is always visible and is never stored here.
+    /// </summary>
+    public IReadOnlyList<Guid> SharedSupplierBranchIds { get; private set; } = Array.Empty<Guid>();
+    /// <summary>How relationship contact identity was chosen (Custom vs linked Organization membership).</summary>
+    public RelationshipContactSource ContactSource { get; private set; } = RelationshipContactSource.Custom;
+    /// <summary>
+    /// Buyer <c>OrganizationMembershipId</c> when <see cref="ContactSource"/> is OrganizationMember.
+    /// Preserved for history when the member later leaves or is disabled.
+    /// </summary>
+    public Guid? OrganizationMemberId { get; private set; }
+    /// <summary>Contact person display (seller-owned Custom, or snapshot from Organization member).</summary>
+    public string? ContactPersonName { get; private set; }
+    /// <summary>Contact department for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactDepartment { get; private set; }
+    /// <summary>Contact role / title for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactRole { get; private set; }
+    /// <summary>Contact phone for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactPhone { get; private set; }
+    /// <summary>Contact email for this relationship (seller Custom, or snapshot).</summary>
+    public string? ContactEmail { get; private set; }
+    /// <summary>Optional freeform preference (e.g. Phone, Email, Either).</summary>
+    public string? PreferredContactMethod { get; private set; }
+    /// <summary>Seller-owned delivery notes for this relationship.</summary>
+    public string? DeliveryInstructions { get; private set; }
+    /// <summary>
+    /// Per-customer Delivery override. <see cref="CustomerDeliveryOverride.Inherit"/> follows org Offer Delivery.
+    /// Explicit <see cref="CustomerDeliveryOverride.Block"/> must not create Needs Attention.
+    /// </summary>
+    public CustomerDeliveryOverride CustomerDeliveryOverride { get; private set; } = CustomerDeliveryOverride.Inherit;
+    /// <summary>Seller-owned billing contact notes for this relationship.</summary>
+    public string? BillingContactNotes { get; private set; }
+    /// <summary>Seller-owned internal notes (not buyer Organization identity).</summary>
+    public string? InternalNotes { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
+
+    public PosOrganizationId InitiatorOrganizationId =>
+        InitiatedByParty == ConnectionInitiatedByParty.Supplier
+            ? SupplierOrganizationId
+            : BuyerOrganizationId;
+
+    public PosOrganizationId RecipientOrganizationId =>
+        InitiatedByParty == ConnectionInitiatedByParty.Supplier
+            ? BuyerOrganizationId
+            : SupplierOrganizationId;
+
+    public bool IsInitiator(PosOrganizationId organizationId) =>
+        organizationId == InitiatorOrganizationId;
+
+    public bool IsRecipient(PosOrganizationId organizationId) =>
+        organizationId == RecipientOrganizationId;
 
     private ConnectedSupplierRelationship(ConnectedSupplierRelationshipId id, PosOrganizationId buyerOrganizationId,
         PosOrganizationId supplierOrganizationId, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
@@ -176,10 +254,25 @@ public sealed class ConnectedSupplierRelationship
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null)
+        string? supplierBranchNameSnapshot = null,
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer,
+        IReadOnlyList<Guid>? sharedSupplierBranchIds = null,
+        RelationshipContactSource contactSource = RelationshipContactSource.Custom,
+        Guid? organizationMemberId = null,
+        string? contactPersonName = null,
+        string? contactDepartment = null,
+        string? contactRole = null,
+        string? contactPhone = null,
+        string? contactEmail = null,
+        string? preferredContactMethod = null,
+        string? deliveryInstructions = null,
+        string? billingContactNotes = null,
+        string? internalNotes = null,
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
-        Status = status; RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
+        Status = status; InitiatedByParty = initiatedByParty;
+        RequestedAtUtc = requestedAtUtc; RequestedByUserId = requestedByUserId;
         RespondedAtUtc = respondedAtUtc; RespondedByUserId = respondedByUserId; DisconnectedAtUtc = disconnectedAtUtc;
         BuyerDisplayNameSnapshot = CleanSnapshot(buyerDisplayNameSnapshot, 128);
         BuyerPublicOrganizationIdSnapshot = CleanSnapshot(buyerPublicOrganizationIdSnapshot, 32);
@@ -189,14 +282,52 @@ public sealed class ConnectedSupplierRelationship
         CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = CleanSnapshot(supplierBranchNameSnapshot, 128);
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(sharedSupplierBranchIds, SupplierBranchId);
+        ApplyContactIdentity(contactSource, organizationMemberId, contactPersonName, contactDepartment, contactRole,
+            contactPhone, contactEmail);
+        PreferredContactMethod = CleanSnapshot(preferredContactMethod, 32);
+        DeliveryInstructions = CleanSnapshot(deliveryInstructions, 1000);
+        CustomerDeliveryOverride = customerDeliveryOverride;
+        BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
+        InternalNotes = CleanSnapshot(internalNotes, 2000);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
     }
 
+    /// <summary>Buyer-initiated request (classic Suppliers → Connect).</summary>
     public static ConnectedSupplierRelationship Request(PosOrganizationId buyer, PosOrganizationId supplier,
         DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
         string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
         string? supplierDisplayName = null, string? supplierPublicOrganizationId = null,
-        Guid? supplierBranchId = null, string? supplierBranchName = null)
+        Guid? supplierBranchId = null, string? supplierBranchName = null) =>
+        CreatePending(
+            buyer, supplier, ConnectionInitiatedByParty.Buyer, utcNow, requestedByUserId, id,
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
+            supplierBranchId, supplierBranchName);
+
+    /// <summary>Supplier-initiated Business Customer invitation (Customers → Add business).</summary>
+    public static ConnectedSupplierRelationship InviteBuyer(PosOrganizationId buyer, PosOrganizationId supplier,
+        DateTimeOffset utcNow, Guid? requestedByUserId = null, ConnectedSupplierRelationshipId? id = null,
+        string? buyerDisplayName = null, string? buyerPublicOrganizationId = null,
+        string? supplierDisplayName = null, string? supplierPublicOrganizationId = null,
+        Guid? supplierBranchId = null, string? supplierBranchName = null) =>
+        CreatePending(
+            buyer, supplier, ConnectionInitiatedByParty.Supplier, utcNow, requestedByUserId, id,
+            buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
+            supplierBranchId, supplierBranchName);
+
+    private static ConnectedSupplierRelationship CreatePending(
+        PosOrganizationId buyer,
+        PosOrganizationId supplier,
+        ConnectionInitiatedByParty initiatedByParty,
+        DateTimeOffset utcNow,
+        Guid? requestedByUserId,
+        ConnectedSupplierRelationshipId? id,
+        string? buyerDisplayName,
+        string? buyerPublicOrganizationId,
+        string? supplierDisplayName,
+        string? supplierPublicOrganizationId,
+        Guid? supplierBranchId,
+        string? supplierBranchName)
     {
         EnsureUtc(utcNow);
         if (buyer == supplier)
@@ -210,7 +341,7 @@ public sealed class ConnectedSupplierRelationship
             ConnectedSupplierRelationshipStatus.Pending, utcNow, requestedByUserId, null, null, null, utcNow, utcNow,
             buyerDisplayName, buyerPublicOrganizationId, supplierDisplayName, supplierPublicOrganizationId,
             CatalogSharingMode.SelectedOnly, customerDiscountPercent: null,
-            supplierBranchId, supplierBranchName);
+            supplierBranchId, supplierBranchName, initiatedByParty);
     }
 
     /// <summary>Sets or changes the operational supplier source branch (Pending or Active only).</summary>
@@ -232,6 +363,64 @@ public sealed class ConnectedSupplierRelationship
                 "Supplier branch name is required.");
         SupplierBranchId = branchId;
         SupplierBranchNameSnapshot = name;
+        // Moving home never auto-shares the previous home; drop the new home from explicit shares.
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(SharedSupplierBranchIds, SupplierBranchId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Replaces explicit shared branch visibility. Home branch is always excluded from the stored set.
+    /// </summary>
+    public void ReplaceSharedSupplierBranchIds(IEnumerable<Guid> branchIds, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        SharedSupplierBranchIds = NormalizeSharedBranchIds(branchIds, SupplierBranchId);
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ShareSupplierBranch(Guid branchId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = NormalizeBranchId(branchId)
+            ?? throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Branch is required.");
+        if (SupplierBranchId is Guid home && normalized == home)
+        {
+            return;
+        }
+
+        if (SharedSupplierBranchIds.Contains(normalized))
+        {
+            return;
+        }
+
+        SharedSupplierBranchIds = SharedSupplierBranchIds.Append(normalized).OrderBy(id => id).ToArray();
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void UnshareSupplierBranch(Guid branchId, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        var normalized = NormalizeBranchId(branchId);
+        if (normalized is null)
+        {
+            return;
+        }
+
+        if (SupplierBranchId is Guid home && normalized == home)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidId,
+                "Home branch visibility cannot be revoked.");
+        }
+
+        SharedSupplierBranchIds = SharedSupplierBranchIds.Where(id => id != normalized).ToArray();
         UpdatedAtUtc = utcNow;
     }
 
@@ -270,6 +459,105 @@ public sealed class ConnectedSupplierRelationship
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Seller-owned relationship contact fields only. Does not change Status, org ids,
+    /// identity snapshots, catalog settings, or branch sharing.
+    /// Allowed for Pending and Active relationships.
+    /// OrganizationMember source requires Active relationship (Pending = Custom only).
+    /// </summary>
+    public void UpdateRelationshipContact(
+        RelationshipContactSource contactSource,
+        Guid? organizationMemberId,
+        string? contactPersonName,
+        string? contactDepartment,
+        string? contactRole,
+        string? contactPhone,
+        string? contactEmail,
+        string? preferredContactMethod,
+        string? deliveryInstructions,
+        string? billingContactNotes,
+        string? internalNotes,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        if (contactSource == RelationshipContactSource.OrganizationMember
+            && Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Organization staff contacts are only available for Connected relationships.");
+        }
+
+        ApplyContactIdentity(
+            contactSource,
+            organizationMemberId,
+            contactPersonName,
+            contactDepartment,
+            contactRole,
+            contactPhone,
+            contactEmail);
+        PreferredContactMethod = CleanSnapshot(preferredContactMethod, 32);
+        DeliveryInstructions = CleanSnapshot(deliveryInstructions, 1000);
+        BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
+        InternalNotes = CleanSnapshot(internalNotes, 2000);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Sets per-customer Delivery override without mass-writing other customers.
+    /// Pass <see cref="CustomerDeliveryOverride.Inherit"/> to restore organization default.
+    /// </summary>
+    public void SetCustomerDeliveryOverride(CustomerDeliveryOverride overrideValue, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        CustomerDeliveryOverride = overrideValue;
+        UpdatedAtUtc = utcNow;
+    }
+
+    private void ApplyContactIdentity(
+        RelationshipContactSource contactSource,
+        Guid? organizationMemberId,
+        string? contactPersonName,
+        string? contactDepartment,
+        string? contactRole,
+        string? contactPhone,
+        string? contactEmail)
+    {
+        if (contactSource == RelationshipContactSource.OrganizationMember)
+        {
+            if (organizationMemberId is null || organizationMemberId == Guid.Empty)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidId,
+                    "Organization member is required for Organization contact.");
+            }
+
+            ContactSource = RelationshipContactSource.OrganizationMember;
+            OrganizationMemberId = organizationMemberId;
+        }
+        else
+        {
+            ContactSource = RelationshipContactSource.Custom;
+            OrganizationMemberId = null;
+        }
+
+        ContactPersonName = CleanSnapshot(contactPersonName, 128);
+        ContactDepartment = CleanSnapshot(contactDepartment, 128);
+        ContactRole = CleanSnapshot(contactRole, 128);
+        ContactPhone = CleanSnapshot(contactPhone, 32);
+        ContactEmail = CleanSnapshot(contactEmail, 256);
+    }
+
     public static ConnectedSupplierRelationship Rehydrate(ConnectedSupplierRelationshipId id, PosOrganizationId buyer,
         PosOrganizationId supplier, ConnectedSupplierRelationshipStatus status, DateTimeOffset requestedAtUtc,
         Guid? requestedBy, DateTimeOffset? respondedAtUtc, Guid? respondedBy, DateTimeOffset? disconnectedAtUtc,
@@ -279,14 +567,49 @@ public sealed class ConnectedSupplierRelationship
         CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly,
         decimal? customerDiscountPercent = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchNameSnapshot = null) =>
+        string? supplierBranchNameSnapshot = null,
+        ConnectionInitiatedByParty initiatedByParty = ConnectionInitiatedByParty.Buyer,
+        IReadOnlyList<Guid>? sharedSupplierBranchIds = null,
+        RelationshipContactSource contactSource = RelationshipContactSource.Custom,
+        Guid? organizationMemberId = null,
+        string? contactPersonName = null,
+        string? contactDepartment = null,
+        string? contactRole = null,
+        string? contactPhone = null,
+        string? contactEmail = null,
+        string? preferredContactMethod = null,
+        string? deliveryInstructions = null,
+        string? billingContactNotes = null,
+        string? internalNotes = null,
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
-            catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot);
+            catalogSharingMode, customerDiscountPercent, supplierBranchId, supplierBranchNameSnapshot,
+            initiatedByParty, sharedSupplierBranchIds,
+            contactSource, organizationMemberId,
+            contactPersonName, contactDepartment, contactRole, contactPhone, contactEmail, preferredContactMethod,
+            deliveryInstructions, billingContactNotes, internalNotes, customerDeliveryOverride);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;
+
+    private static IReadOnlyList<Guid> NormalizeSharedBranchIds(
+        IEnumerable<Guid>? branchIds,
+        Guid? homeBranchId)
+    {
+        if (branchIds is null)
+        {
+            return Array.Empty<Guid>();
+        }
+
+        return branchIds
+            .Where(id => id != Guid.Empty)
+            .Where(id => homeBranchId is null || id != homeBranchId.Value)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToArray();
+    }
 
     private static string? CleanSnapshot(string? value, int maxLength)
     {
@@ -724,10 +1047,15 @@ public sealed class BuyerSupplierProductLink
     }
 }
 
-public sealed record ConnectedPoLineProposal(CatalogProductId ProductId, decimal ProposedQty, bool Unavailable);
+public sealed record ConnectedPoLineProposal(
+    CatalogProductId ProductId,
+    decimal ProposedQty,
+    bool Unavailable = false,
+    decimal? ProposedUnitPrice = null);
 
 public static class ConnectedPoPaymentTerms
 {
+    /// <summary>Parse known aliases. Blank defaults to Cash (legacy). Prefer <see cref="ParseRequired"/> for create.</summary>
     public static ConnectedPoPaymentTerm Parse(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -735,33 +1063,109 @@ public static class ConnectedPoPaymentTerms
             return ConnectedPoPaymentTerm.Cash;
         }
 
-        var trimmed = value.Trim();
-        if (trimmed.Equals("Cash", StringComparison.OrdinalIgnoreCase))
+        if (!TryParse(value, out var term))
         {
-            return ConnectedPoPaymentTerm.Cash;
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Payment term must be COD, Cash, BankTransfer, BankDeposit, Check, GCash, or Utang.");
+        }
+
+        return term;
+    }
+
+    /// <summary>Require an explicit payment method (connected PO create/submit).</summary>
+    public static ConnectedPoPaymentTerm ParseRequired(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Payment method is required.");
+        }
+
+        if (!TryParse(value, out var term))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                "Payment term must be COD, Cash, BankTransfer, BankDeposit, Check, GCash, or Utang.");
+        }
+
+        return term;
+    }
+
+    public static bool TryParse(string? value, out ConnectedPoPaymentTerm term)
+    {
+        term = ConnectedPoPaymentTerm.Cash;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Equals("Cash", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("COD", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("PayOnDelivery", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Pay on delivery", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.Cash;
+            return true;
+        }
+
+        if (trimmed.Equals("BankTransfer", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Bank transfer", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.BankTransfer;
+            return true;
+        }
+
+        if (trimmed.Equals("BankDeposit", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Bank deposit", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Bank Deposit", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.BankDeposit;
+            return true;
+        }
+
+        if (trimmed.Equals("Check", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Cheque", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.Check;
+            return true;
         }
 
         if (trimmed.Equals("GCash", StringComparison.OrdinalIgnoreCase)
-            || trimmed.Equals("ManualGCash", StringComparison.OrdinalIgnoreCase))
+            || trimmed.Equals("ManualGCash", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("GCash / Manual e-wallet", StringComparison.OrdinalIgnoreCase))
         {
-            return ConnectedPoPaymentTerm.ManualGCash;
+            term = ConnectedPoPaymentTerm.ManualGCash;
+            return true;
         }
 
-        if (trimmed.Equals("Utang", StringComparison.OrdinalIgnoreCase))
+        if (trimmed.Equals("Utang", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Credit", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Utang / Credit", StringComparison.OrdinalIgnoreCase))
         {
-            return ConnectedPoPaymentTerm.Utang;
+            term = ConnectedPoPaymentTerm.Utang;
+            return true;
         }
 
-        throw new DomainException(
-            ConnectedSupplierDomainErrorCodes.InvalidOrder,
-            "Payment term must be Cash, GCash, or Utang.");
+        return false;
     }
 
     public static string ToApi(ConnectedPoPaymentTerm term) => term.ToString();
 
     /// <summary>Merchant-facing label. GCash is never implied to be gateway-verified.</summary>
     public static string ToUiLabel(ConnectedPoPaymentTerm term) =>
-        term == ConnectedPoPaymentTerm.ManualGCash ? "GCash" : term.ToString();
+        term switch
+        {
+            ConnectedPoPaymentTerm.Cash => "COD / Pay on delivery",
+            ConnectedPoPaymentTerm.ManualGCash => "GCash / Manual e-wallet",
+            ConnectedPoPaymentTerm.BankTransfer => "Bank transfer",
+            ConnectedPoPaymentTerm.BankDeposit => "Bank deposit",
+            ConnectedPoPaymentTerm.Check => "Check",
+            ConnectedPoPaymentTerm.Utang => "Utang / Credit",
+            _ => term.ToString(),
+        };
 }
 
 public sealed record ConnectedPurchaseOrderLine(
@@ -774,16 +1178,21 @@ public sealed record ConnectedPurchaseOrderLine(
     string UnitOfMeasureCode,
     decimal? ProposedQty = null,
     decimal? ConfirmedQty = null,
-    ConnectedPoLineAvailability Availability = ConnectedPoLineAvailability.Pending)
+    ConnectedPoLineAvailability Availability = ConnectedPoLineAvailability.Pending,
+    decimal? ProposedUnitPrice = null,
+    decimal? ConfirmedUnitPrice = null)
 {
     public decimal RequestedQty => Qty;
     public decimal EffectiveProposedQty => ProposedQty ?? Qty;
-    public decimal ProposedLineTotal => SaleMoney.RoundMoney(EffectiveProposedQty * UnitPriceSnapshot);
-    public decimal ConfirmedLineTotal => SaleMoney.RoundMoney((ConfirmedQty ?? 0m) * UnitPriceSnapshot);
+    public decimal EffectiveProposedUnitPrice => ProposedUnitPrice ?? UnitPriceSnapshot;
+    public decimal EffectiveConfirmedUnitPrice => ConfirmedUnitPrice ?? UnitPriceSnapshot;
+    public decimal ProposedLineTotal => SaleMoney.RoundMoney(EffectiveProposedQty * EffectiveProposedUnitPrice);
+    public decimal ConfirmedLineTotal => SaleMoney.RoundMoney((ConfirmedQty ?? 0m) * EffectiveConfirmedUnitPrice);
     public decimal FulfillmentQty => ConfirmedQty ?? 0m;
     public bool HasSupplierChange =>
         Availability == ConnectedPoLineAvailability.Unavailable
-        || (ProposedQty is decimal proposed && proposed != Qty);
+        || (ProposedQty is decimal proposed && proposed != Qty)
+        || (ProposedUnitPrice is decimal proposedPrice && proposedPrice != UnitPriceSnapshot);
 
     public static ConnectedPurchaseOrderLine Create(CatalogProductId productId,string name,string? sku,decimal qty,decimal unitPrice,string uom)
     {
@@ -798,10 +1207,12 @@ public sealed record ConnectedPurchaseOrderLine(
         {
             ProposedQty = Qty,
             ConfirmedQty = Qty,
+            ProposedUnitPrice = null,
+            ConfirmedUnitPrice = UnitPriceSnapshot,
             Availability = ConnectedPoLineAvailability.Available
         };
 
-    public ConnectedPurchaseOrderLine ApplyProposal(decimal proposedQty, bool unavailable)
+    public ConnectedPurchaseOrderLine ApplyProposal(decimal proposedQty, bool unavailable, decimal? proposedUnitPrice = null)
     {
         if (unavailable)
         {
@@ -816,6 +1227,8 @@ public sealed record ConnectedPurchaseOrderLine(
             {
                 ProposedQty = 0m,
                 ConfirmedQty = null,
+                ProposedUnitPrice = null,
+                ConfirmedUnitPrice = null,
                 Availability = ConnectedPoLineAvailability.Unavailable
             };
         }
@@ -841,26 +1254,64 @@ public sealed record ConnectedPurchaseOrderLine(
                 "Mark the line unavailable instead of proposing zero.");
         }
 
+        decimal? nextProposedPrice = null;
+        if (proposedUnitPrice is decimal price)
+        {
+            if (price < 0m)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOrder,
+                    "Proposed unit price cannot be negative.");
+            }
+
+            nextProposedPrice = SupplierProductExposure.Money(price);
+            if (nextProposedPrice == UnitPriceSnapshot)
+            {
+                nextProposedPrice = null;
+            }
+        }
+
         return this with
         {
             ProposedQty = proposedQty,
             ConfirmedQty = null,
+            ProposedUnitPrice = nextProposedPrice,
+            ConfirmedUnitPrice = null,
             Availability = ConnectedPoLineAvailability.Available
         };
     }
+
+    public ConnectedPurchaseOrderLine ClearProposal() =>
+        this with
+        {
+            ProposedQty = null,
+            ConfirmedQty = null,
+            ProposedUnitPrice = null,
+            ConfirmedUnitPrice = null,
+            Availability = ConnectedPoLineAvailability.Pending
+        };
 
     public ConnectedPurchaseOrderLine ConfirmProposal()
     {
         if (Availability == ConnectedPoLineAvailability.Unavailable)
         {
-            return this with { ConfirmedQty = 0m, ProposedQty = ProposedQty ?? 0m };
+            return this with
+            {
+                ConfirmedQty = 0m,
+                ProposedQty = ProposedQty ?? 0m,
+                ConfirmedUnitPrice = UnitPriceSnapshot,
+                ProposedUnitPrice = null
+            };
         }
 
         var qty = ProposedQty ?? Qty;
+        var price = ProposedUnitPrice ?? UnitPriceSnapshot;
         return this with
         {
             ConfirmedQty = qty,
             ProposedQty = qty,
+            ConfirmedUnitPrice = price,
+            ProposedUnitPrice = null,
             Availability = ConnectedPoLineAvailability.Available
         };
     }
@@ -882,7 +1333,19 @@ public sealed class ConnectedPurchaseOrder
     public ConnectedPurchaseOrderStatus Status { get; private set; }
     /// <summary>Original requested total. Never overwritten by supplier proposals.</summary>
     public decimal TotalAmount { get; }
+    /// <summary>Original buyer-submitted payment term. Never overwritten by proposals.</summary>
     public ConnectedPoPaymentTerm PaymentTerm { get; }
+    /// <summary>Supplier-proposed payment term while awaiting buyer review (null = unchanged).</summary>
+    public ConnectedPoPaymentTerm? ProposedPaymentTerm { get; private set; }
+    /// <summary>Agreed payment term after accept (null until accepted).</summary>
+    public ConnectedPoPaymentTerm? ConfirmedPaymentTerm { get; private set; }
+    public ConnectedPoPaymentTerm EffectivePaymentTerm =>
+        ConfirmedPaymentTerm
+        ?? ProposedPaymentTerm
+        ?? PaymentTerm;
+    public bool HasProposedPaymentChange =>
+        ProposedPaymentTerm is ConnectedPoPaymentTerm proposed && proposed != PaymentTerm;
+    public bool HasProposedMaterialChanges => HasProposedLineChanges || HasProposedPaymentChange;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? AcceptedAtUtc { get; private set; }
@@ -896,6 +1359,14 @@ public sealed class ConnectedPurchaseOrder
     public Guid? BuyerRespondedByUserId { get; private set; }
     public ConnectedPoDeclineReason? DeclineReason { get; private set; }
     public string? DeclineNote { get; private set; }
+    /// <summary>
+    /// Amount already converted from Utang reservation into Outstanding Utang (via goods receipts).
+    /// Active reservation = reservation base − this value.
+    /// </summary>
+    public decimal CreditPostedAmount { get; private set; }
+    public ConnectedPoInventoryReservationState InventoryReservationState { get; private set; }
+    public DateTimeOffset? InventoryReservationExpiresAtUtc { get; private set; }
+    public int InventoryReservationRevision { get; private set; }
     public IReadOnlyList<ConnectedPurchaseOrderLine> Lines => _lines;
     public decimal ProposedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ProposedLineTotal));
     public decimal ConfirmedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ConfirmedLineTotal));
@@ -926,7 +1397,13 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? changesProposedAtUtc = null,
         Guid? changesProposedByUserId = null,
         DateTimeOffset? buyerRespondedAtUtc = null,
-        Guid? buyerRespondedByUserId = null)
+        Guid? buyerRespondedByUserId = null,
+        ConnectedPoPaymentTerm? proposedPaymentTerm = null,
+        ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        decimal creditPostedAmount = 0m,
+        ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
+        DateTimeOffset? inventoryReservationExpiresAtUtc = null,
+        int inventoryReservationRevision = 0)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -939,6 +1416,8 @@ public sealed class ConnectedPurchaseOrder
         Status = status;
         TotalAmount = total;
         PaymentTerm = paymentTerm;
+        ProposedPaymentTerm = proposedPaymentTerm;
+        ConfirmedPaymentTerm = confirmedPaymentTerm;
         CreatedAtUtc = created;
         UpdatedAtUtc = updated;
         AcceptedAtUtc = accepted;
@@ -952,6 +1431,10 @@ public sealed class ConnectedPurchaseOrder
         ChangesProposedByUserId = changesProposedByUserId;
         BuyerRespondedAtUtc = buyerRespondedAtUtc;
         BuyerRespondedByUserId = buyerRespondedByUserId;
+        CreditPostedAmount = creditPostedAmount < 0m ? 0m : SaleMoney.RoundMoney(creditPostedAmount);
+        InventoryReservationState = inventoryReservationState;
+        InventoryReservationExpiresAtUtc = inventoryReservationExpiresAtUtc;
+        InventoryReservationRevision = inventoryReservationRevision < 0 ? 0 : inventoryReservationRevision;
         _lines = lines;
     }
 
@@ -1005,13 +1488,16 @@ public sealed class ConnectedPurchaseOrder
         ReplaceLines(_lines.Select(x => x.ConfirmRequested()).ToList());
         Status = ConnectedPurchaseOrderStatus.Accepted;
         AcceptedAtUtc = utcNow;
+        ProposedPaymentTerm = null;
+        ConfirmedPaymentTerm = PaymentTerm;
         UpdatedAtUtc = utcNow;
     }
 
     public void ProposeLineChanges(
         IReadOnlyList<ConnectedPoLineProposal> proposals,
         DateTimeOffset utcNow,
-        Guid? actorId = null)
+        Guid? actorId = null,
+        ConnectedPoPaymentTerm? proposedPaymentTerm = null)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
         EnsureNew();
@@ -1044,14 +1530,20 @@ public sealed class ConnectedPurchaseOrder
         foreach (var line in _lines)
         {
             var proposal = byProduct[line.ProductId.Value];
-            updated.Add(line.ApplyProposal(proposal.ProposedQty, proposal.Unavailable));
+            updated.Add(line.ApplyProposal(proposal.ProposedQty, proposal.Unavailable, proposal.ProposedUnitPrice));
         }
 
-        if (!updated.Any(x => x.HasSupplierChange))
+        ConnectedPoPaymentTerm? nextProposedPayment = null;
+        if (proposedPaymentTerm is ConnectedPoPaymentTerm payment && payment != PaymentTerm)
+        {
+            nextProposedPayment = payment;
+        }
+
+        if (!updated.Any(x => x.HasSupplierChange) && nextProposedPayment is null)
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidOrder,
-                "No quantity changes to propose. Confirm the order instead.");
+                "No material changes to propose. Confirm the order instead.");
         }
 
         if (!updated.Any(x =>
@@ -1064,9 +1556,72 @@ public sealed class ConnectedPurchaseOrder
         }
 
         ReplaceLines(updated);
+        ProposedPaymentTerm = nextProposedPayment;
+        ConfirmedPaymentTerm = null;
         Status = ConnectedPurchaseOrderStatus.ChangesProposed;
         ChangesProposedAtUtc = utcNow;
         ChangesProposedByUserId = actorId;
+        BeginNewProposalRevision();
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Bumps the reservation revision so a new temporary hold can replace a prior proposal hold.
+    /// </summary>
+    public void BeginNewProposalRevision()
+    {
+        InventoryReservationRevision++;
+    }
+
+    public void MarkInventoryTemporaryHold(DateTimeOffset expiresAtUtc, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        ConnectedSupplierRelationship.EnsureUtc(expiresAtUtc);
+        InventoryReservationState = ConnectedPoInventoryReservationState.TemporaryProposal;
+        InventoryReservationExpiresAtUtc = expiresAtUtc;
+        if (InventoryReservationRevision < 1)
+        {
+            InventoryReservationRevision = 1;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryConfirmed(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        InventoryReservationState = ConnectedPoInventoryReservationState.Confirmed;
+        InventoryReservationExpiresAtUtc = null;
+        if (InventoryReservationRevision < 1)
+        {
+            InventoryReservationRevision = 1;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryReleased(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (InventoryReservationState is ConnectedPoInventoryReservationState.None
+            or ConnectedPoInventoryReservationState.Released
+            or ConnectedPoInventoryReservationState.Consumed)
+        {
+            InventoryReservationExpiresAtUtc = null;
+            UpdatedAtUtc = utcNow;
+            return;
+        }
+
+        InventoryReservationState = ConnectedPoInventoryReservationState.Released;
+        InventoryReservationExpiresAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryConsumed(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        InventoryReservationState = ConnectedPoInventoryReservationState.Consumed;
+        InventoryReservationExpiresAtUtc = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1089,6 +1644,8 @@ public sealed class ConnectedPurchaseOrder
         }
 
         ReplaceLines(confirmed);
+        ConfirmedPaymentTerm = ProposedPaymentTerm ?? PaymentTerm;
+        ProposedPaymentTerm = null;
         Status = ConnectedPurchaseOrderStatus.Accepted;
         AcceptedAtUtc = utcNow;
         BuyerRespondedAtUtc = utcNow;
@@ -1096,6 +1653,10 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Buyer declines the supplier proposal only — returns the order to New for supplier re-response.
+    /// Does not cancel/withdraw the purchase order.
+    /// </summary>
     public void RejectProposedChanges(DateTimeOffset utcNow, Guid? actorId = null)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
@@ -1106,11 +1667,41 @@ public sealed class ConnectedPurchaseOrder
                 "Only a proposed revision can be rejected by the buyer.");
         }
 
-        Status = ConnectedPurchaseOrderStatus.Withdrawn;
-        WithdrawnAtUtc = utcNow;
+        ReplaceLines(_lines.Select(x => x.ClearProposal()).ToList());
+        ProposedPaymentTerm = null;
+        ConfirmedPaymentTerm = null;
+        Status = ConnectedPurchaseOrderStatus.New;
+        ChangesProposedAtUtc = null;
+        ChangesProposedByUserId = null;
         BuyerRespondedAtUtc = utcNow;
         BuyerRespondedByUserId = actorId;
         UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Supplier withdraws an active proposal — returns the order to New for a fresh response.
+    /// Releases temporary reservation state separately via application services.
+    /// </summary>
+    public void WithdrawProposedChanges(DateTimeOffset utcNow, Guid? actorId = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.ChangesProposed)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only an active proposal can be withdrawn by the supplier.");
+        }
+
+        ReplaceLines(_lines.Select(x => x.ClearProposal()).ToList());
+        ProposedPaymentTerm = null;
+        ConfirmedPaymentTerm = null;
+        Status = ConnectedPurchaseOrderStatus.New;
+        ChangesProposedAtUtc = null;
+        ChangesProposedByUserId = null;
+        BuyerRespondedAtUtc = null;
+        BuyerRespondedByUserId = null;
+        UpdatedAtUtc = utcNow;
+        _ = actorId;
     }
 
     public void Decline(DateTimeOffset utcNow, ConnectedPoDeclineReason? reason = null, string? note = null)
@@ -1127,15 +1718,35 @@ public sealed class ConnectedPurchaseOrder
     public void StartPreparing(DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
-        if (Status != ConnectedPurchaseOrderStatus.Accepted)
+        // Accepted → first prepare; Fulfilled → prepare remaining after partial buyer receipt.
+        if (Status is not (ConnectedPurchaseOrderStatus.Accepted or ConnectedPurchaseOrderStatus.Fulfilled))
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidTransition,
-                "Only an accepted order can move to preparing.");
+                "Only an accepted or partially fulfilled order can move to preparing.");
         }
 
         Status = ConnectedPurchaseOrderStatus.Preparing;
         PreparingAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// After buyer partial receipt with outstanding qty, reopen so seller must prepare/ship remaining
+    /// before the buyer can receive again. Does not clear prior FulfilledAtUtc history.
+    /// </summary>
+    public void ReopenForRemainingFulfillment(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.Fulfilled)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only a shipped/ready order can reopen for remaining fulfillment.");
+        }
+
+        Status = ConnectedPurchaseOrderStatus.Accepted;
+        InventoryReservationRevision++;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1159,6 +1770,64 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Converts received Utang amount from reservation into Outstanding Utang tracking on this PO.
+    /// Does not create the ledger entry — Application posts <see cref="Credit.BusinessCreditEntry"/>.
+    /// </summary>
+    public void PostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        {
+            return;
+        }
+
+        if (receivedAmount <= 0m)
+        {
+            return;
+        }
+
+        var rounded = SaleMoney.RoundMoney(receivedAmount);
+        var bas = ConnectedPoUtangCredit.ReservationBaseAmount(this);
+        var maxPostable = bas - CreditPostedAmount;
+        if (maxPostable < 0m)
+        {
+            maxPostable = 0m;
+        }
+
+        var apply = rounded > maxPostable ? maxPostable : rounded;
+        if (apply <= 0m)
+        {
+            return;
+        }
+
+        CreditPostedAmount = SaleMoney.RoundMoney(CreditPostedAmount + apply);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Reverses previously posted Utang receipt conversion back into reservation capacity.
+    /// Used when a goods receipt that created outstanding Utang is voided.
+    /// </summary>
+    public void UnpostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        {
+            return;
+        }
+
+        if (receivedAmount <= 0m || CreditPostedAmount <= 0m)
+        {
+            return;
+        }
+
+        var rounded = SaleMoney.RoundMoney(receivedAmount);
+        var apply = rounded > CreditPostedAmount ? CreditPostedAmount : rounded;
+        CreditPostedAmount = SaleMoney.RoundMoney(CreditPostedAmount - apply);
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>Buyer withdraw while supplier has not yet accepted (New or awaiting buyer approval).</summary>
     public void WithdrawByBuyer(DateTimeOffset utcNow)
     {
@@ -1177,9 +1846,12 @@ public sealed class ConnectedPurchaseOrder
 
     public bool CanBuyerWithdraw => Status is ConnectedPurchaseOrderStatus.New
         or ConnectedPurchaseOrderStatus.ChangesProposed;
-    public bool CanBuyerReceive => Status is ConnectedPurchaseOrderStatus.Accepted
-        or ConnectedPurchaseOrderStatus.Preparing
-        or ConnectedPurchaseOrderStatus.Fulfilled;
+
+    /// <summary>
+    /// Buyer may receive only after supplier ships/dispatches (<see cref="ConnectedPurchaseOrderStatus.Fulfilled"/>).
+    /// Accepted / Preparing remain read-only for receiving.
+    /// </summary>
+    public bool CanBuyerReceive => Status == ConnectedPurchaseOrderStatus.Fulfilled;
 
     private void ReplaceLines(List<ConnectedPurchaseOrderLine> lines)
     {
@@ -1240,7 +1912,13 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset? changesProposedAtUtc = null,
         Guid? changesProposedByUserId = null,
         DateTimeOffset? buyerRespondedAtUtc = null,
-        Guid? buyerRespondedByUserId = null) =>
+        Guid? buyerRespondedByUserId = null,
+        ConnectedPoPaymentTerm? proposedPaymentTerm = null,
+        ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        decimal creditPostedAmount = 0m,
+        ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
+        DateTimeOffset? inventoryReservationExpiresAtUtc = null,
+        int inventoryReservationRevision = 0) =>
         new(
             id,
             relationshipId,
@@ -1266,5 +1944,11 @@ public sealed class ConnectedPurchaseOrder
             changesProposedAtUtc,
             changesProposedByUserId,
             buyerRespondedAtUtc,
-            buyerRespondedByUserId);
+            buyerRespondedByUserId,
+            proposedPaymentTerm,
+            confirmedPaymentTerm,
+            creditPostedAmount,
+            inventoryReservationState,
+            inventoryReservationExpiresAtUtc,
+            inventoryReservationRevision);
 }

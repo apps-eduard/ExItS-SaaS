@@ -1,8 +1,9 @@
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
 /// <summary>
-/// Branch routing for supplier-side connection requests. Relationships stay organization-anchored;
-/// <c>SupplierBranchId</c> is the exact target operational location.
+/// Branch routing for supplier-side connection requests and Business Customer visibility.
+/// Relationships stay organization-anchored; <c>SupplierBranchId</c> is home;
+/// <c>SharedSupplierBranchIds</c> are explicit additional visibility grants.
 /// </summary>
 public static class SupplierConnectionBranchRouting
 {
@@ -14,9 +15,24 @@ public static class SupplierConnectionBranchRouting
     public static bool IsVisibleInSupplierInbox(
         Guid? relationshipSupplierBranchId,
         Guid? workspaceBranchId,
-        bool organizationWideInbox)
+        bool organizationWideInbox) =>
+        IsVisibleAtSupplierBranch(
+            relationshipSupplierBranchId,
+            sharedSupplierBranchIds: Array.Empty<Guid>(),
+            workspaceBranchId,
+            organizationWideInbox);
+
+    /// <summary>
+    /// Business Customer / checkout visibility: home branch, explicit shared branches, or org-wide view.
+    /// Main/Primary never auto-shares.
+    /// </summary>
+    public static bool IsVisibleAtSupplierBranch(
+        Guid? homeBranchId,
+        IReadOnlyCollection<Guid>? sharedSupplierBranchIds,
+        Guid? workspaceBranchId,
+        bool organizationWide)
     {
-        if (organizationWideInbox)
+        if (organizationWide)
         {
             return true;
         }
@@ -26,7 +42,25 @@ public static class SupplierConnectionBranchRouting
             return false;
         }
 
-        return relationshipSupplierBranchId == workspaceBranchId;
+        if (homeBranchId == workspaceBranchId)
+        {
+            return true;
+        }
+
+        if (sharedSupplierBranchIds is null || sharedSupplierBranchIds.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var branchId in sharedSupplierBranchIds)
+        {
+            if (branchId == workspaceBranchId)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

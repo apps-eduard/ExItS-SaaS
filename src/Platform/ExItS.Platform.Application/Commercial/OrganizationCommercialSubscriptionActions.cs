@@ -182,15 +182,21 @@ public sealed class StartOrganizationCommercialSubscription
         PaymentProviderResult paymentResult;
         try
         {
+            var quote = SubscriptionBillingPricing.Quote(paidPlan, billingCycle);
             paymentResult = await _paymentProvider
                 .ChargeAsync(
                     new PaymentChargeRequest(
                         organizationId.Value,
                         activated.Id.Value,
-                        paidPlan.PriceForCycle(billingCycle),
+                        quote.FinalAmount,
                         paidPlan.CurrencyCode,
                         idempotencyKey,
-                        Purpose: "org-commercial-subscribe"),
+                        Purpose: "org-commercial-subscribe",
+                        PlanKey: quote.PlanKey,
+                        BillingCycle: quote.BillingCycle.ToString(),
+                        BaseAmount: quote.BaseAmount,
+                        DiscountAmount: quote.DiscountAmount,
+                        DiscountPercent: quote.DiscountPercent),
                     cancellationToken)
                 .ConfigureAwait(false);
         }

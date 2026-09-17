@@ -86,6 +86,7 @@ public sealed class UpdateConnectionCatalogSettings
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly ICatalogProductRepository _products;
     private readonly ISupplierProductExposureRepository _exposures;
+    private readonly Inventory.IInventoryRepository? _inventory;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -96,7 +97,8 @@ public sealed class UpdateConnectionCatalogSettings
         IPosCommercialAccessAccessor access,
         ICatalogProductRepository products,
         ISupplierProductExposureRepository exposures,
-        TimeProvider? clock = null)
+        TimeProvider? clock = null,
+        Inventory.IInventoryRepository? inventory = null)
     {
         _relationships = relationships;
         _uow = uow;
@@ -104,6 +106,7 @@ public sealed class UpdateConnectionCatalogSettings
         _products = products;
         _exposures = exposures;
         _clock = clock ?? TimeProvider.System;
+        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<ConnectionCatalogSettingsDto>> ExecuteAsync(
@@ -158,7 +161,8 @@ public sealed class UpdateConnectionCatalogSettings
                         _products,
                         _exposures,
                         _clock.GetUtcNow(),
-                        ct)
+                        ct,
+                        _inventory)
                     .ConfigureAwait(false);
             }
 

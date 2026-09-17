@@ -142,7 +142,7 @@ export function PeoplePage() {
         <button
           type="button"
           className={cn(
-            "flex w-full min-h-[var(--exits-touch-target-min)] items-start gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
+            "flex w-full min-h-[var(--exits-row-min-height)] items-start gap-3 rounded-[var(--exits-radius-md)] border-0 bg-transparent p-0 text-left text-inherit",
             "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
           data-testid="people-add-toggle"
@@ -204,7 +204,7 @@ export function PeoplePage() {
             ) : null;
           })()}
         </div>
-        <Button asChild variant="outline" className="min-h-[var(--exits-touch-target-min)] justify-between">
+        <Button asChild variant="outline" className="justify-between">
           <Link to="/personal/invitations">
             <span>{t("people.connectionInbox")}</span>
             <ChevronRight className="size-4" aria-hidden="true" />

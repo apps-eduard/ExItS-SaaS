@@ -289,7 +289,6 @@ export function LiveQrCameraScanner({
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="live-qr-upload-fallback"
           onClick={() => {
             handleClose();
@@ -302,7 +301,6 @@ export function LiveQrCameraScanner({
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="live-qr-manual-fallback"
           onClick={() => {
             handleClose();
@@ -331,7 +329,7 @@ export function LiveQrCameraScanner({
             <p className="m-0 text-[length:var(--exits-text-sm)]">{t("qr.liveScanPrompt")}</p>
             <Button
               type="button"
-              className="min-h-11 w-full sm:w-auto"
+              className="w-full sm:w-auto"
               data-testid="live-qr-open-camera"
               onClick={() => void startCamera()}
             >
@@ -388,7 +386,6 @@ export function LiveQrCameraScanner({
                     <Button
                       type="button"
                       variant="ghost"
-                      className="min-h-11"
                       data-testid="live-qr-torch-toggle"
                       onClick={() => void toggleTorch()}
                     >
@@ -399,7 +396,6 @@ export function LiveQrCameraScanner({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     data-testid="live-qr-retry-camera"
                     onClick={() => void startCamera()}
                   >
@@ -417,7 +413,7 @@ export function LiveQrCameraScanner({
             <p className="m-0 text-[length:var(--exits-text-sm)]">{t("qr.permissionDenied")}</p>
             <Button
               type="button"
-              className="min-h-11 w-fit"
+              className="w-fit"
               data-testid="live-qr-try-again"
               onClick={() => void startCamera()}
             >

@@ -117,7 +117,12 @@ internal static class SaleEntityMapper
             record.CostStatus is null
                 ? ProductionCostStatus.Unavailable
                 : ProductionCostStatuses.Parse(record.CostStatus),
-            record.TotalCostSnapshot);
+            record.TotalCostSnapshot,
+            record.LinkedBusinessCreditEntryId is null
+                ? null
+                : BusinessCreditEntryId.From(record.LinkedBusinessCreditEntryId.Value),
+            SaleSellerDocumentIdentityJson.Deserialize(record.SellerDocumentIdentityJson),
+            record.SourceQuotationId);
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -145,6 +150,7 @@ internal static class SaleEntityMapper
             BuyerOrganizationId = sale.BuyerParty.BuyerOrganizationId,
             BuyerPublicOrganizationId = sale.BuyerParty.BuyerPublicOrganizationId,
             LinkedCreditEntryId = sale.LinkedCreditEntryId?.Value,
+            LinkedBusinessCreditEntryId = sale.LinkedBusinessCreditEntryId?.Value,
             CashierShiftId = sale.CashierShiftId?.Value,
             RegisterId = sale.RegisterId?.Value,
             BranchId = sale.BranchId?.Value,
@@ -156,7 +162,9 @@ internal static class SaleEntityMapper
             VoidReason = sale.VoidReason,
             UpdatedAtUtc = sale.UpdatedAtUtc,
             CostStatus = ProductionCostStatuses.ToCode(sale.CostStatus),
-            TotalCostSnapshot = sale.TotalCostSnapshot
+            TotalCostSnapshot = sale.TotalCostSnapshot,
+            SellerDocumentIdentityJson = SaleSellerDocumentIdentityJson.Serialize(sale.SellerDocumentIdentity),
+            SourceQuotationId = sale.SourceQuotationId
         };
 
     public static SaleLineRecord ToRecord(SaleLine line) =>

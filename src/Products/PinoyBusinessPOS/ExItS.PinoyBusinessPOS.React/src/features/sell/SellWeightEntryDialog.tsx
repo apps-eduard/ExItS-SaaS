@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import {
   formatQuantityDisplay,
+  formatStockUnavailableMessage,
   normalizeWeightToKilograms,
-  resolveSellUnitPrice,
   resolveSellCardStock,
+  resolveSellUnitPrice,
+  resolveStockHint,
   roundMoney,
   type WeightInputUnit,
 } from "@/cart/sell-cart-helpers";
+import { resolveBranchStockGuardQuantity } from "@/features/catalog/catalog-stock-display";
 import { sellStockCaption } from "@/features/sell/sell-stock-caption";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -27,10 +30,19 @@ type SellWeightEntryDialogProps = {
     isLowStock?: boolean | null;
   } | null;
   stockError?: string | null;
+  /** When set, weight above this (kg) cannot be confirmed. */
+  maxKilograms?: number | null;
+  maxAvailableLabel?: string | null;
+  /** Override "Add to cart" when reused outside Sell (e.g. Request stock). */
+  confirmAddLabel?: string;
   onConfirm: (kilograms: number) => void;
   onRemove?: () => void;
   onCancel: () => void;
 };
+
+function formatKgThreeDp(kilograms: number): string {
+  return kilograms.toFixed(3);
+}
 
 export function SellWeightEntryDialog({
   open,
@@ -39,6 +51,9 @@ export function SellWeightEntryDialog({
   initialKilograms = null,
   stockHint,
   stockError = null,
+  maxKilograms = null,
+  maxAvailableLabel = null,
+  confirmAddLabel,
   onConfirm,
   onRemove,
   onCancel,
@@ -52,6 +67,7 @@ export function SellWeightEntryDialog({
     if (open && !opened) {
       const kg = initialKilograms != null && initialKilograms > 0 ? initialKilograms : null;
       setUnitCode("kg");
+      // Start blank for new adds; prefill only when editing an existing cart weight.
       setRawValue(kg != null ? formatQuantityDisplay(kg) : "");
       setOpened(true);
     } else if (!open) {
@@ -63,6 +79,9 @@ export function SellWeightEntryDialog({
   const editing = initialKilograms != null && initialKilograms > 0;
 
   const parsed = useMemo(() => {
+    if (rawValue.trim() === "") {
+      return null;
+    }
     const raw = Number(rawValue);
     if (!Number.isFinite(raw)) {
       return null;
@@ -74,23 +93,59 @@ export function SellWeightEntryDialog({
   const errorCode = parsed && "error" in parsed ? parsed.error : null;
   const preview = kilograms != null ? roundMoney(unitPrice * kilograms) : null;
 
+  const tracked = stockHint?.isTracked ?? product?.isTracked;
+  const tracksExpiration = stockHint?.tracksExpiration ?? product?.tracksExpiration;
+  const sellableQuantity = stockHint?.sellableQuantity ?? product?.sellableQuantity;
+
+  const branchQty = product
+    ? resolveBranchStockGuardQuantity({
+        isTracked: tracked,
+        onHandQuantity: stockHint?.onHandQuantity ?? product.onHandQuantity,
+        branchAvailableQuantity: product.branchAvailableQuantity,
+        branchOnHandQuantity: product.branchOnHandQuantity,
+        organizationOnHandQuantity: product.organizationOnHandQuantity,
+        sellableQuantity,
+        tracksExpiration,
+      })
+    : null;
+
+  const stockQty = branchQty ?? stockHint?.onHandQuantity ?? product?.onHandQuantity ?? null;
+
   const stock = product
     ? resolveSellCardStock({
-        isTracked: stockHint?.isTracked ?? product.isTracked,
-        onHandQuantity: stockHint?.onHandQuantity ?? product.onHandQuantity,
-        unitOfMeasure: product.unitOfMeasure,
-        tracksExpiration: stockHint?.tracksExpiration ?? product.tracksExpiration,
-        sellableQuantity: stockHint?.sellableQuantity,
+        isTracked: tracked,
+        onHandQuantity: stockQty,
+        unitOfMeasure: "kg",
+        tracksExpiration,
+        sellableQuantity,
         stockStatus: stockHint?.stockStatus ?? product.stockStatus,
         isLowStock: stockHint?.isLowStock,
       })
     : null;
 
+  const stockCapKg = useMemo(() => {
+    if (maxKilograms != null && Number.isFinite(maxKilograms) && maxKilograms >= 0) {
+      return maxKilograms;
+    }
+    const hint = resolveStockHint({
+      isTracked: tracked,
+      onHandQuantity: stockQty,
+      unitOfMeasure: "kg",
+      tracksExpiration,
+      sellableQuantity,
+    });
+    return hint?.quantity ?? null;
+  }, [maxKilograms, sellableQuantity, stockQty, tracked, tracksExpiration]);
+
+  const overStock =
+    kilograms != null && stockCapKg != null && kilograms > stockCapKg + 1e-9;
+
   if (!open || !product) {
     return null;
   }
 
-  const errorMessage =
+  const hasEntry = rawValue.trim() !== "";
+  const parseErrorMessage =
     errorCode === "zero"
       ? t("sell.weightErrorZero")
       : errorCode === "precision"
@@ -98,6 +153,26 @@ export function SellWeightEntryDialog({
         : errorCode === "invalid" || errorCode === "unit"
           ? t("sell.weightErrorInvalid")
           : null;
+
+  const stockErrorMessage =
+    overStock && stockCapKg != null
+      ? formatStockUnavailableMessage({
+          ok: false,
+          available: stockCapKg,
+          unitOfMeasure: "kg",
+          includeUnit: true,
+        })
+      : null;
+
+  const errorMessage = parseErrorMessage ?? stockErrorMessage;
+  const canConfirm = kilograms != null && !overStock && errorCode == null;
+
+  const enteredQtyLabel =
+    unitCode === "g" && kilograms != null
+      ? String(Math.round(kilograms * 1000))
+      : kilograms != null
+        ? formatQuantityDisplay(kilograms)
+        : rawValue;
 
   return (
     <div
@@ -111,7 +186,7 @@ export function SellWeightEntryDialog({
         aria-modal="true"
         aria-labelledby="sell-weight-entry-title"
         data-testid="sell-weight-entry"
-        className="flex w-full max-w-md flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-lg"
+        className="sell-weight-entry flex w-full max-w-md flex-col gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-lg"
         onClick={(event) => event.stopPropagation()}
       >
         <h2
@@ -134,50 +209,73 @@ export function SellWeightEntryDialog({
             {sellStockCaption(t, stock)}
           </p>
         ) : null}
+        {maxAvailableLabel ? (
+          <p
+            data-testid="sell-weight-max-available"
+            className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+          >
+            {maxAvailableLabel}
+          </p>
+        ) : null}
 
-        <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-          {t("sell.weightQuantity")}
-          <input
-            data-testid="sell-weight-input"
-            type="number"
-            inputMode="decimal"
-            autoFocus
-            min={unitCode === "g" ? 1 : 0.001}
-            step={unitCode === "g" ? 1 : 0.001}
-            value={rawValue}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
-            onChange={(event) => setRawValue(event.target.value)}
-          />
-        </label>
-
-        <fieldset className="m-0 border-0 p-0">
-          <legend className="mb-1 text-[length:var(--exits-text-sm)]">
-            {t("sell.weightUnit")}
-          </legend>
-          <div className="flex gap-2" role="radiogroup" aria-label={t("sell.weightUnit")}>
-            {(["kg", "g"] as const).map((code) => (
-              <button
-                key={code}
-                type="button"
-                role="radio"
-                aria-checked={unitCode === code}
-                data-testid={`sell-weight-unit-${code}`}
-                className={`min-h-11 flex-1 rounded-[var(--exits-radius-md)] border px-3 ${
-                  unitCode === code
-                    ? "border-primary bg-[var(--exits-surface-muted)]"
-                    : "border-border"
-                }`}
-                onClick={() => setUnitCode(code)}
-              >
-                {code === "kg" ? t("sell.weightUnitKg") : t("sell.weightUnitG")}
-              </button>
-            ))}
+        <div className="flex flex-col gap-1">
+          <span className="text-[length:var(--exits-text-sm)]">{t("sell.weightQuantity")}</span>
+          <div className="sell-weight-entry__control">
+            <input
+              id="sell-weight-input"
+              data-testid="sell-weight-input"
+              type="number"
+              inputMode="decimal"
+              autoFocus
+              min={unitCode === "g" ? 1 : 0.001}
+              step={unitCode === "g" ? 1 : 0.001}
+              value={rawValue}
+              aria-label={t("sell.weightQuantity")}
+              className="sell-weight-entry__input exits-input exits-input--no-spin tabular-nums"
+              onChange={(event) => setRawValue(event.target.value)}
+            />
+            <div
+              className="sell-weight-entry__units"
+              role="radiogroup"
+              aria-label={t("sell.weightUnit")}
+            >
+              {(["kg", "g"] as const).map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  role="radio"
+                  aria-checked={unitCode === code}
+                  data-testid={`sell-weight-unit-${code}`}
+                  className={
+                    unitCode === code
+                      ? "sell-weight-entry__unit sell-weight-entry__unit--active"
+                      : "sell-weight-entry__unit"
+                  }
+                  onClick={() => setUnitCode(code)}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
           </div>
-        </fieldset>
+        </div>
 
-        {errorMessage && rawValue.trim() !== "" ? (
+        {unitCode === "g" && kilograms != null ? (
+          <p
+            data-testid="sell-weight-conversion"
+            className="m-0 text-[length:var(--exits-text-xs)] text-muted tabular-nums"
+            aria-live="polite"
+          >
+            {t("sell.weightGramsEqualsKg")
+              .replace("{grams}", String(Math.round(kilograms * 1000)))
+              .replace("{kg}", formatKgThreeDp(kilograms))}
+          </p>
+        ) : null}
+
+        {hasEntry && errorMessage ? (
           <p
             role="alert"
+            data-testid="sell-weight-inline-error"
             className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
           >
             {errorMessage}
@@ -194,21 +292,32 @@ export function SellWeightEntryDialog({
           </p>
         ) : null}
 
-        {preview != null && kilograms != null ? (
-          <p
+        {preview != null && kilograms != null && !overStock && errorCode == null ? (
+          <div
             data-testid="sell-weight-preview"
-            className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+            className="sell-weight-entry__summary"
             aria-live="polite"
           >
-            {t("sell.linePreview")
-              .replace("{qty}", formatQuantityDisplay(kilograms))
-              .replace("{unit}", "kg")
-              .replace("{price}", unitPrice.toFixed(2))
-              .replace("{amount}", preview.toFixed(2))}
-          </p>
+            <div className="sell-weight-entry__summary-row">
+              <span>{t("sell.weightSummaryPriceLabel")}</span>
+              <span className="tabular-nums">
+                <MoneyDisplay amount={unitPrice} className="font-normal" /> {t("sell.pricePerKg")}
+              </span>
+            </div>
+            <div className="sell-weight-entry__summary-row">
+              <span>{t("sell.weightSummaryWeightLabel")}</span>
+              <span className="tabular-nums">
+                {enteredQtyLabel} {unitCode}
+              </span>
+            </div>
+            <div className="sell-weight-entry__summary-row sell-weight-entry__summary-row--total">
+              <span>{t("sell.weightSummaryTotalLabel")}</span>
+              <MoneyDisplay amount={preview} />
+            </div>
+          </div>
         ) : null}
 
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="mt-1 flex flex-wrap justify-end gap-2">
           {editing && onRemove ? (
             <Button
               type="button"
@@ -225,14 +334,14 @@ export function SellWeightEntryDialog({
           <Button
             type="button"
             data-testid="sell-weight-confirm"
-            disabled={kilograms == null}
+            disabled={!canConfirm}
             onClick={() => {
-              if (kilograms != null) {
+              if (canConfirm && kilograms != null) {
                 onConfirm(kilograms);
               }
             }}
           >
-            {editing ? t("sell.weightUpdate") : t("sell.weightAdd")}
+            {editing ? t("sell.weightUpdate") : (confirmAddLabel ?? t("sell.weightAdd"))}
           </Button>
         </div>
       </div>

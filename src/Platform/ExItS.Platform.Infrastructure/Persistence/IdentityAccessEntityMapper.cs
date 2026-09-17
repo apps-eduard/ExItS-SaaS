@@ -94,7 +94,12 @@ internal static class IdentityAccessEntityMapper
             record.SuspendedAtUtc,
             record.RemovedAtUtc,
             record.Reason,
-            record.ActorReference);
+            record.ActorReference,
+            record.Department,
+            record.JobTitle,
+            record.WorkPhone,
+            record.WorkEmail,
+            record.IsBusinessContact);
 
     public static OrganizationMembershipRecord ToMembershipRecord(OrganizationMembership membership) =>
         new()
@@ -105,6 +110,11 @@ internal static class IdentityAccessEntityMapper
             Role = membership.Role.ToString(),
             Status = membership.Status.ToString(),
             BranchAccessScope = membership.BranchAccessScope.ToString(),
+            Department = membership.Department,
+            JobTitle = membership.JobTitle,
+            WorkPhone = membership.WorkPhone,
+            WorkEmail = membership.WorkEmail,
+            IsBusinessContact = membership.IsBusinessContact,
             CreatedAtUtc = membership.CreatedAtUtc,
             UpdatedAtUtc = membership.UpdatedAtUtc,
             SuspendedAtUtc = membership.SuspendedAtUtc,
@@ -118,6 +128,11 @@ internal static class IdentityAccessEntityMapper
         record.Role = membership.Role.ToString();
         record.Status = membership.Status.ToString();
         record.BranchAccessScope = membership.BranchAccessScope.ToString();
+        record.Department = membership.Department;
+        record.JobTitle = membership.JobTitle;
+        record.WorkPhone = membership.WorkPhone;
+        record.WorkEmail = membership.WorkEmail;
+        record.IsBusinessContact = membership.IsBusinessContact;
         record.UpdatedAtUtc = membership.UpdatedAtUtc;
         record.SuspendedAtUtc = membership.SuspendedAtUtc;
         record.RemovedAtUtc = membership.RemovedAtUtc;

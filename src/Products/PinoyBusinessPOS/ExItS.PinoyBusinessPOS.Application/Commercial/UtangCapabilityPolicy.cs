@@ -37,6 +37,9 @@ public static class PosFeatureCodes
     // Entitlement-ready; granted on BasicStore plans for V1 (future Pro-only downgrade possible).
     public const string StoreCustomerOrdering = "store-customer-ordering";
     public const string StoreDeliveryOrders = "store-delivery-orders";
+    public const string StoreBasicPayments = "store-basic-payments";
+    public const string StorePaymentManagement = "store-payment-management";
+    public const string StoreOnlinePayments = "store-online-payments";
 }
 
 /// <summary>Subscription status names mirrored from Platform (string-stable for headers/session).</summary>
@@ -122,7 +125,13 @@ public enum UtangCapability
     WriteOff = 44,
 
     /// <summary>Reverse a prior write-off with an explicit reason. Cashier DENY.</summary>
-    ReverseWriteOff = 45
+    ReverseWriteOff = 45,
+
+    /// <summary>Configure or update a customer credit policy (PendingApproval). Cashier DENY.</summary>
+    ManageCustomerCreditPolicy = 46,
+
+    /// <summary>Approve a pending customer credit policy. Cashier DENY.</summary>
+    ApproveCustomerCreditPolicy = 47
 }
 
 /// <summary>
@@ -194,7 +203,9 @@ public static class UtangCapabilityPolicy
             UtangCapability.CreateCustomer
                 or UtangCapability.EditCustomer
                 or UtangCapability.CreateCredit
-                or UtangCapability.MutateDueDate =>
+                or UtangCapability.MutateDueDate
+                or UtangCapability.ManageCustomerCreditPolicy
+                or UtangCapability.ApproveCustomerCreditPolicy =>
                 IsFullCommercialState(status)
                 && HasFeature(grants, PosFeatureCodes.CustomerCreditCreate),
 
@@ -358,7 +369,8 @@ public static class UtangCapabilityPolicy
                 || HasFeature(grants, PosFeatureCodes.StoreRegistersView)
                 || HasFeature(grants, PosFeatureCodes.StoreRegistersManage)
                 || HasFeature(grants, PosFeatureCodes.StoreCustomerOrdering)
-                || HasFeature(grants, PosFeatureCodes.StoreDeliveryOrders),
+                || HasFeature(grants, PosFeatureCodes.StoreDeliveryOrders)
+                || HasFeature(grants, PosFeatureCodes.StoreBasicPayments),
             _ => false
         };
     }
@@ -395,7 +407,10 @@ public static class UtangCapabilityPolicy
         PosFeatureCodes.StoreRegistersView,
         PosFeatureCodes.StoreRegistersManage,
         PosFeatureCodes.StoreCustomerOrdering,
-        PosFeatureCodes.StoreDeliveryOrders
+        PosFeatureCodes.StoreDeliveryOrders,
+        PosFeatureCodes.StoreBasicPayments,
+        PosFeatureCodes.StorePaymentManagement,
+        PosFeatureCodes.StoreOnlinePayments
     ];
 
     /// <summary>

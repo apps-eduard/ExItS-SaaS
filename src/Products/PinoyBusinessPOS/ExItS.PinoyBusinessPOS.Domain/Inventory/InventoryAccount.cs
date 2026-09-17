@@ -128,7 +128,7 @@ public sealed class InventoryAccount
         {
             throw new DomainException(
                 DomainErrorCodes.InventoryOpeningDuplicate,
-                "Opening stock has already been recorded for this product.");
+                "Opening stock has already been recorded for this product at this location.");
         }
 
         var opening = StockMovement.OpeningStock(
@@ -146,7 +146,9 @@ public sealed class InventoryAccount
     }
 
     /// <summary>
-    /// Records opening stock on an already tracked account with zero on-hand and no prior opening movement.
+    /// Records opening stock on an already tracked account when the caller has verified
+    /// that the current location has zero on-hand/reserved and no prior opening for that location.
+    /// Organization aggregate on-hand may already be greater than zero from other locations.
     /// </summary>
     public StockMovement RecordOpeningStock(
         decimal openingQuantity,
@@ -170,14 +172,7 @@ public sealed class InventoryAccount
         {
             throw new DomainException(
                 DomainErrorCodes.InventoryOpeningDuplicate,
-                "Opening stock has already been recorded for this product.");
-        }
-
-        if (OnHandQuantity != 0m || ReservedQuantity != 0m)
-        {
-            throw new DomainException(
-                DomainErrorCodes.InventoryOpeningRequiresZeroOnHand,
-                "Opening stock can only be added when on-hand and reserved quantities are zero.");
+                "Opening stock has already been recorded for this product at this location.");
         }
 
         if (openingQuantity <= 0m)
@@ -355,20 +350,20 @@ public sealed class InventoryAccount
     }
 
     public InventoryStockStatus StockStatus =>
-        InventoryStockStatuses.Derive(IsTracked, OnHandQuantity, ReorderLevel);
+        InventoryStockStatuses.Derive(IsTracked, AvailableQuantity, ReorderLevel);
 
     public bool IsLowStock =>
         IsTracked
         && ReorderLevel is not null
-        && OnHandQuantity > 0m
-        && OnHandQuantity <= ReorderLevel.Value;
+        && AvailableQuantity > 0m
+        && AvailableQuantity <= ReorderLevel.Value;
 
     public bool IsReorderSuggested =>
-        IsTracked && InventoryStockStatuses.IsReorderSuggested(OnHandQuantity, ReorderLevel);
+        IsTracked && InventoryStockStatuses.IsReorderSuggested(AvailableQuantity, ReorderLevel);
 
     public decimal? SuggestedOrderQuantity =>
         IsTracked
-            ? InventoryStockStatuses.SuggestedOrderQuantity(OnHandQuantity, ReorderLevel, ReorderQuantity)
+            ? InventoryStockStatuses.SuggestedOrderQuantity(AvailableQuantity, ReorderLevel, ReorderQuantity)
             : null;
 
     public static decimal? NormalizeReorderLevel(decimal? reorderLevel, UnitOfMeasure unitOfMeasure)

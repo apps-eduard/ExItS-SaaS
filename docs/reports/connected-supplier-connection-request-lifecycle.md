@@ -56,3 +56,9 @@ LocalStore schema version: unchanged (v9).
 Browser Verified: **NO**  
 Device Verified: **NO**  
 Production Ready: **NO**
+
+### Follow-up (2026-09-10)
+
+Seller-initiated Business Customer invitations and checkout consent gating were implemented later by
+**POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01** (`InitiatedByParty`, invite-buyer API, unified incoming inbox,
+`BusinessCustomerConnection*` notification types). This report remains accurate for the buyer-initiated path it delivered.

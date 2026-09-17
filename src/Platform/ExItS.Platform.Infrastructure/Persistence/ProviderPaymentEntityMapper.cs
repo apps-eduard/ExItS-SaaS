@@ -22,7 +22,13 @@ internal static class ProviderPaymentEntityMapper
             record.FailureMessage,
             record.IdempotencyKey,
             record.Purpose,
-            record.CreatedAtUtc);
+            record.CreatedAtUtc,
+            record.PlanKey,
+            record.BillingCycle,
+            record.BaseAmount,
+            record.DiscountAmount,
+            record.DiscountPercent,
+            record.FinalAmount);
 
     public static ProviderPaymentRecord ToRecord(ProviderPayment payment) =>
         new()
@@ -40,6 +46,12 @@ internal static class ProviderPaymentEntityMapper
             FailureMessage = payment.FailureMessage,
             IdempotencyKey = payment.IdempotencyKey,
             Purpose = payment.Purpose,
+            PlanKey = payment.PlanKey,
+            BillingCycle = payment.BillingCycle,
+            BaseAmount = payment.BaseAmount,
+            DiscountAmount = payment.DiscountAmount,
+            DiscountPercent = payment.DiscountPercent,
+            FinalAmount = payment.FinalAmount,
             CreatedAtUtc = payment.CreatedAtUtc
         };
 }

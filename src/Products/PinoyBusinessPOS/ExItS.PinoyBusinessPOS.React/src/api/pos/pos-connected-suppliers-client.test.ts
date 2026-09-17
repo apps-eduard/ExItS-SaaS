@@ -1,16 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  acceptIncomingOrder,
   applyBuyerProductPricing,
+  cancelConnectionRequest,
   approveConnection,
   assertNotInventoryMutationUrl,
   bulkMutateBuyerProductShares,
+  buildCreateBusinessRepaymentPayload,
   createBuyerProductAndLink,
   declineConnection,
+  declineIncomingOrder,
+  fulfillIncomingOrder,
   INVENTORY_MUTATION_PATH_MARKERS,
   isShareFilterSharedOnly,
   linkProduct,
   listLinks,
   listRelationships,
+  getBusinessCustomerStatement,
+  prepareIncomingOrder,
   queryBuyerProductShares,
   requestConnection,
   searchExposedCatalog,
@@ -67,6 +74,7 @@ describe("pos-connected-suppliers-client", () => {
   it("requests, approves, declines, and lists relationships", async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(jsonResponse(relationshipBody, 201))
+      .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Declined" }))
       .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Active" }))
       .mockResolvedValueOnce(jsonResponse({ ...relationshipBody, status: "Declined" }))
       .mockResolvedValueOnce(jsonResponse([relationshipBody]));
@@ -76,6 +84,10 @@ describe("pos-connected-suppliers-client", () => {
         supplierPublicOrganizationIdOrQrPayload: "ORG000099",
       }),
     ).resolves.toMatchObject({ relationshipId });
+
+    await expect(cancelConnectionRequest(workspace, relationshipId)).resolves.toMatchObject({
+      status: "Declined",
+    });
 
     await expect(approveConnection(workspace, relationshipId)).resolves.toMatchObject({
       status: "Active",
@@ -87,9 +99,10 @@ describe("pos-connected-suppliers-client", () => {
 
     const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
     expect(urls[0]).toContain("/connected-suppliers/relationships/request");
-    expect(urls[1]).toContain(`/relationships/${relationshipId}/approve`);
-    expect(urls[2]).toContain(`/relationships/${relationshipId}/decline`);
-    expect(urls[3]).toContain("view=supplier");
+    expect(urls[1]).toContain(`/relationships/${relationshipId}/cancel`);
+    expect(urls[2]).toContain(`/relationships/${relationshipId}/approve`);
+    expect(urls[3]).toContain(`/relationships/${relationshipId}/decline`);
+    expect(urls[4]).toContain("view=supplier");
     for (const url of urls) {
       assertNotInventoryMutationUrl(url);
     }
@@ -239,5 +252,128 @@ describe("pos-connected-suppliers-client", () => {
     for (const url of urls) {
       assertNotInventoryMutationUrl(url);
     }
+  });
+
+  it("incoming order accept/decline/prepare never hit inventory mutation paths", async () => {
+    const order = {
+      connectedPurchaseOrderId: relationshipId,
+      relationshipId,
+      buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
+      supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerPurchaseOrderId: "33333333-3333-4333-8333-333333333333",
+      buyerPoNumber: "PO-1",
+      orderDate: "2026-09-04",
+      status: "New",
+      totalAmount: 12,
+      createdAtUtc: "2026-09-04T00:00:00Z",
+      updatedAtUtc: "2026-09-04T00:00:00Z",
+      lines: [],
+      displayStatus: "New",
+    };
+    vi.mocked(fetch).mockImplementation(() => Promise.resolve(jsonResponse(order)));
+
+    await acceptIncomingOrder(workspace, relationshipId);
+    await declineIncomingOrder(workspace, relationshipId, { declineReason: "OutOfStock" });
+    await prepareIncomingOrder(workspace, relationshipId);
+
+    const urls = vi.mocked(fetch).mock.calls.map((call) => String(call[0]));
+    expect(urls.some((u) => u.includes("/incoming-orders/") && u.endsWith("/accept"))).toBe(true);
+    expect(urls.some((u) => u.includes("/incoming-orders/") && u.endsWith("/prepare"))).toBe(true);
+    for (const url of urls) {
+      assertNotInventoryMutationUrl(url);
+      for (const marker of INVENTORY_MUTATION_PATH_MARKERS) {
+        expect(url.toLowerCase()).not.toContain(marker.toLowerCase());
+      }
+    }
+  });
+
+  it("fulfillIncomingOrder posts without assertNotInventoryMutationUrl (may mutate supplier stock)", async () => {
+    const order = {
+      connectedPurchaseOrderId: relationshipId,
+      relationshipId,
+      buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
+      supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
+      buyerPurchaseOrderId: "33333333-3333-4333-8333-333333333333",
+      buyerPoNumber: "PO-1",
+      orderDate: "2026-09-04",
+      status: "Preparing",
+      totalAmount: 12,
+      createdAtUtc: "2026-09-04T00:00:00Z",
+      updatedAtUtc: "2026-09-04T00:00:00Z",
+      lines: [],
+      displayStatus: "Preparing",
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ ...order, status: "Fulfilled" }));
+
+    await expect(fulfillIncomingOrder(workspace, relationshipId)).resolves.toMatchObject({
+      status: "Fulfilled",
+    });
+
+    const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
+    expect(url).toContain(`/incoming-orders/${relationshipId}/fulfill`);
+    expect(vi.mocked(fetch).mock.calls[0]?.[1]?.method).toBe("POST");
+  });
+
+  it("getBusinessCustomerStatement GETs connection statement with period query", async () => {
+    const connectionId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        organizationId: workspace.organizationId,
+        organizationDisplayName: "Seller",
+        connectionId,
+        buyerOrganizationId: "22222222-2222-4222-8222-222222222222",
+        customerDisplayName: "Buyer Bakery",
+        periodStart: "2026-08-15",
+        periodEnd: "2026-09-14",
+        openingBalance: 0,
+        closingBalance: 542,
+        periodCreditTotal: 542,
+        periodRepaymentTotal: 0,
+        periodReversalCreditTotal: 0,
+        periodReversalRepaymentTotal: 0,
+        outstandingBalance: 542,
+        overdueAmount: 0,
+        overdueCreditCount: 0,
+        generatedAtUtc: "2026-09-14T12:00:00Z",
+        currencyCode: "PHP",
+        cultureName: "en-PH",
+        lines: [],
+      }),
+    );
+
+    const statement = await getBusinessCustomerStatement(workspace, connectionId, {
+      periodStart: "2026-08-15",
+      periodEnd: "2026-09-14",
+    });
+
+    expect(statement.outstandingBalance).toBe(542);
+    const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
+    expect(url).toContain(`/business-customers/${connectionId}/statement`);
+    expect(url).toContain("periodStart=2026-08-15");
+    expect(url).toContain("periodEnd=2026-09-14");
+  });
+
+  it("omits check fields from Cash business repayment payloads", () => {
+    const payload = buildCreateBusinessRepaymentPayload({
+      amount: 100,
+      paymentMethod: "Cash",
+      checkNumber: "CHK-1",
+      bankName: "BDO",
+      checkDate: "2026-09-17",
+      accountName: "Acme",
+      reference: "ref-1",
+      allocations: [
+        { creditEntryId: "11111111-1111-4111-8111-111111111111", amount: 100 },
+      ],
+    });
+
+    expect(payload.paymentMethod).toBe("Cash");
+    expect(payload).not.toHaveProperty("checkNumber");
+    expect(payload).not.toHaveProperty("bankName");
+    expect(payload).not.toHaveProperty("checkDate");
+    expect(payload).not.toHaveProperty("accountName");
+    expect(payload.allocations).toEqual([
+      { creditEntryId: "11111111-1111-4111-8111-111111111111", amount: 100 },
+    ]);
   });
 });

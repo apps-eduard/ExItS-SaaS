@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Registers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Registers;
 
 namespace ExItS.PinoyBusinessPOS.Api.Registers;
@@ -13,6 +14,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Registers;
 internal static class RegisterEndpoints
 {
     public const string CreateOperation = "pos.register.create";
+    public const string EnsurePwaRegisterOperation = "pos.register.ensure_available_for_pwa_shift";
     public const string ActivateOperation = "pos.register.activate";
     public const string DeactivateOperation = "pos.register.deactivate";
 
@@ -41,6 +43,36 @@ internal static class RegisterEndpoints
 
             var items = await queries.ListAvailableForShiftAsync(organizationId, ct).ConfigureAwait(false);
             return Results.Ok(items);
+        });
+
+        group.MapPost("/ensure-available-for-pwa-shift", async (
+            HttpRequest request,
+            EnsureAvailablePwaRegisterForShift useCase,
+            IPosIdempotencyService idempotency,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            // Narrow operational ensure: ManageShifts (cashiers) — not ManageRegisters.
+            if (!TryAuthorize(request, access, UtangCapability.ManageShifts, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                    request,
+                    organizationId,
+                    EnsurePwaRegisterOperation,
+                    idempotency,
+                    ct2 => useCase.ExecuteAsync(organizationId, actorId, ct2),
+                    dto => dto,
+                    dto => Results.Ok(dto),
+                    ct)
+                .ConfigureAwait(false);
         });
 
         group.MapGet("/", async (
@@ -73,6 +105,25 @@ internal static class RegisterEndpoints
                     pageSize,
                     ct)
                 .ConfigureAwait(false);
+
+            // Cashiers see only free Active registers plus their own open-shift register —
+            // not other cashiers' occupied stations or open-shift owner ids.
+            if (PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                && PosOrganizationScope.TryGetActorId(request, out var cashierActorId, out _))
+            {
+                var scopedItems = result.Items
+                    .Where(r =>
+                        !r.HasOpenShift
+                        || (r.OpenShiftActorId is Guid opener && opener == cashierActorId))
+                    .Select(r => r with { OpenShiftActorId = r.HasOpenShift ? r.OpenShiftActorId : null })
+                    .ToList();
+                return Results.Ok(new PagedResult<PosRegisterDto>(
+                    scopedItems,
+                    scopedItems.Count,
+                    result.Page,
+                    result.PageSize));
+            }
+
             return Results.Ok(result);
         });
 
@@ -119,12 +170,27 @@ internal static class RegisterEndpoints
             }
 
             var register = await queries.GetByIdAsync(organizationId, registerId, ct).ConfigureAwait(false);
-            return register is null
-                ? PosApiResults.Problem(
+            if (register is null)
+            {
+                return PosApiResults.Problem(
                     ApplicationErrorCodes.RegisterNotFound,
                     "Register was not found.",
-                    StatusCodes.Status404NotFound)
-                : Results.Ok(register);
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                && PosOrganizationScope.TryGetActorId(request, out var cashierActorId, out _)
+                && register.HasOpenShift
+                && register.OpenShiftActorId is Guid opener
+                && opener != cashierActorId)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(register);
         });
 
         group.MapGet("/{registerId:guid}/activity", async (
@@ -141,8 +207,38 @@ internal static class RegisterEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            // Cashiers may only see their own shift/sale activity on a register.
+            Guid? scopedActorId = PosRoleRequestContext.CurrentRole is PosRole.Cashier
+                ? actorId
+                : null;
+
+            var register = await queries.GetByIdAsync(organizationId, registerId, ct).ConfigureAwait(false);
+            if (register is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (scopedActorId is not null
+                && register.HasOpenShift
+                && register.OpenShiftActorId is Guid opener
+                && opener != scopedActorId.Value)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.RegisterNotFound,
+                    "Register was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
             var activity = await queries
-                .GetActivityAsync(organizationId, registerId, fromUtc, toUtc, ct)
+                .GetActivityAsync(organizationId, registerId, fromUtc, toUtc, scopedActorId, ct)
                 .ConfigureAwait(false);
             return activity is null
                 ? PosApiResults.Problem(

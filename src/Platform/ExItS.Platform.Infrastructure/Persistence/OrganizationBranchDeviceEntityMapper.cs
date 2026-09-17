@@ -36,7 +36,15 @@ internal static class OrganizationBranchDeviceEntityMapper
             record.SuspendedAtUtc,
             record.SuspendedByUserId is Guid suspendedBy ? PlatformUserId.From(suspendedBy) : null,
             record.SuspensionReason,
-            record.AreaId is Guid areaId ? OrganizationAreaId.From(areaId) : null);
+            record.AreaId is Guid areaId ? OrganizationAreaId.From(areaId) : null,
+            ParseBranchType(record.BranchType));
+
+    private static OrganizationBranchType ParseBranchType(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? OrganizationBranchType.Retail
+            : Enum.TryParse<OrganizationBranchType>(value, ignoreCase: true, out var parsed)
+                ? parsed
+                : OrganizationBranchType.Retail;
 
     public static OrganizationBranchRecord ToRecord(OrganizationBranch branch) => new()
     {
@@ -44,6 +52,7 @@ internal static class OrganizationBranchDeviceEntityMapper
         OrganizationId = branch.OrganizationId.Value,
         Code = branch.Code,
         Name = branch.Name,
+        BranchType = branch.BranchType.ToString(),
         AddressLine1 = branch.AddressLine1,
         AddressLine2 = branch.AddressLine2,
         City = branch.City,
@@ -72,6 +81,7 @@ internal static class OrganizationBranchDeviceEntityMapper
     public static void ApplyToRecord(OrganizationBranch branch, OrganizationBranchRecord record)
     {
         record.Name = branch.Name;
+        record.BranchType = branch.BranchType.ToString();
         record.AddressLine1 = branch.AddressLine1;
         record.AddressLine2 = branch.AddressLine2;
         record.City = branch.City;

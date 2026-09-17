@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Expenses;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Application.Expenses;
 
@@ -11,11 +12,16 @@ public sealed class ExpenseQueryService
 {
     private readonly IExpenseRepository _expenses;
     private readonly IExpenseCategoryRepository _categories;
+    private readonly ExpenseScopeAuthority _scopeAuthority;
 
-    public ExpenseQueryService(IExpenseRepository expenses, IExpenseCategoryRepository categories)
+    public ExpenseQueryService(
+        IExpenseRepository expenses,
+        IExpenseCategoryRepository categories,
+        ExpenseScopeAuthority scopeAuthority)
     {
         _expenses = expenses;
         _categories = categories;
+        _scopeAuthority = scopeAuthority;
     }
 
     public async Task<PosExpenseDto?> GetByIdAsync(
@@ -28,6 +34,14 @@ public sealed class ExpenseQueryService
             .GetByIdAsync(orgId, ExpenseId.From(expenseId), cancellationToken)
             .ConfigureAwait(false);
         if (expense is null)
+        {
+            return null;
+        }
+
+        var authorized = await _scopeAuthority
+            .GetAuthorizedScopeAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!ExpenseScopeAuthority.CanAccessExpense(expense, authorized))
         {
             return null;
         }
@@ -64,6 +78,7 @@ public sealed class ExpenseQueryService
         new(
             expense.Id.Value,
             expense.OrganizationId.Value,
+            expense.BranchId?.Value,
             expense.ExpenseNumber,
             expense.CategoryId.Value,
             categoryName,
@@ -115,15 +130,18 @@ public sealed class RecordExpense
     private readonly IExpenseRepository _expenses;
     private readonly IExpenseCategoryRepository _categories;
     private readonly IClock _clock;
+    private readonly ExpenseScopeAuthority _scopeAuthority;
 
     public RecordExpense(
         IExpenseRepository expenses,
         IExpenseCategoryRepository categories,
-        IClock clock)
+        IClock clock,
+        ExpenseScopeAuthority scopeAuthority)
     {
         _expenses = expenses;
         _categories = categories;
         _clock = clock;
+        _scopeAuthority = scopeAuthority;
     }
 
     public async Task<ApplicationResult<Expense>> ExecuteAsync(
@@ -137,6 +155,7 @@ public sealed class RecordExpense
         string? payee = null,
         string? gcashReference = null,
         Guid? clientExpenseId = null,
+        Guid? branchId = null,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
@@ -160,6 +179,16 @@ public sealed class RecordExpense
                     return ApplicationResult<Expense>.Success(existingById);
                 }
             }
+
+            var branchResult = await _scopeAuthority
+                .ResolveCreateBranchAsync(organizationId, branchId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!branchResult.IsSuccess)
+            {
+                return ApplicationResult<Expense>.Failure(branchResult);
+            }
+
+            PosBranchId? resolvedBranch = branchResult.Value;
 
             if (!ExpensePaymentMethods.TryParse(paymentMethod, out var method))
             {
@@ -202,7 +231,8 @@ public sealed class RecordExpense
                         utcNow,
                         payee,
                         gcashReference,
-                        clientExpenseId is null ? null : ExpenseId.From(clientExpenseId.Value)),
+                        clientExpenseId is null ? null : ExpenseId.From(clientExpenseId.Value),
+                        resolvedBranch),
                     cancellationToken)
                 .ConfigureAwait(false);
 
@@ -224,15 +254,18 @@ public sealed class VoidExpense
     private readonly IExpenseRepository _expenses;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ExpenseScopeAuthority _scopeAuthority;
 
     public VoidExpense(
         IExpenseRepository expenses,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ExpenseScopeAuthority scopeAuthority)
     {
         _expenses = expenses;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _scopeAuthority = scopeAuthority;
     }
 
     public async Task<ApplicationResult<Expense>> ExecuteAsync(
@@ -254,6 +287,16 @@ public sealed class VoidExpense
             .GetByIdAsync(orgId, ExpenseId.From(expenseId), cancellationToken)
             .ConfigureAwait(false);
         if (current is null)
+        {
+            return ApplicationResult<Expense>.Failure(
+                ApplicationErrorCodes.ExpenseNotFound,
+                "Expense was not found.");
+        }
+
+        var authorized = await _scopeAuthority
+            .GetAuthorizedScopeAsync(organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!ExpenseScopeAuthority.CanAccessExpense(current, authorized))
         {
             return ApplicationResult<Expense>.Failure(
                 ApplicationErrorCodes.ExpenseNotFound,
@@ -293,11 +336,13 @@ public sealed class ExpenseSummaryService
         Guid organizationId,
         DateOnly? fromDate,
         DateOnly? toDate,
+        ExpenseBranchScopeCriteria? branchScope = null,
         CancellationToken cancellationToken = default)
     {
         var orgId = PosOrganizationId.From(organizationId);
+        var filter = new ExpenseFilter(FromDate: fromDate, ToDate: toDate, BranchScope: branchScope);
         var items = await _expenses
-            .ListForSummaryAsync(orgId, fromDate, toDate, cancellationToken)
+            .ListForSummaryAsync(orgId, filter, cancellationToken)
             .ConfigureAwait(false);
 
         var recorded = items.Where(e => e.Status == ExpenseStatus.Recorded).ToList();

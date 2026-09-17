@@ -17,6 +17,7 @@ const workspace = {
 
 const saleId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const shiftId = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+const registerId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const productId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 
 function saleJson(extra: Record<string, unknown> = {}) {
@@ -398,9 +399,20 @@ describe("pos-sales-client", () => {
     const one = await getSale(workspace, saleId);
     expect(one.saleId).toBe(saleId);
 
-    const page = await listSales(workspace, { paymentMethod: "Cash" });
+    const page = await listSales(workspace, {
+      paymentMethod: "Cash",
+      registerId,
+      cashierShiftId: shiftId,
+      actorId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      branchId: workspace.branchId,
+    });
     expect(page.totalCount).toBe(1);
-    expect(String(vi.mocked(fetch).mock.calls[1][0])).toContain("paymentMethod=Cash");
+    const listUrl = String(vi.mocked(fetch).mock.calls[1][0]);
+    expect(listUrl).toContain("paymentMethod=Cash");
+    expect(listUrl).toContain(`registerId=${registerId}`);
+    expect(listUrl).toContain(`cashierShiftId=${shiftId}`);
+    expect(listUrl).toContain("actorId=dddddddd-dddd-dddd-dddd-dddddddddddd");
+    expect(listUrl).toContain(`branchId=${workspace.branchId}`);
   });
 
   it("preserves optional sale cost and line cost snapshots on parse", async () => {

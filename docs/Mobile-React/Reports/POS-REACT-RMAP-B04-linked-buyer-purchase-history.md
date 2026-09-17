@@ -55,9 +55,15 @@ Void/refund status represented via activity types (`PurchaseVoided`, reversals).
 
 ## Organization buyer
 
-**Not implemented — documented gap.**
+**Not implemented — documented gap.** *(historical finding at package close)*
 
 `SaleBuyerParty` domain groundwork exists, but **no approved Organization buyer purchase-history API contract**. UI does not expose Organization buyer history. No invented identity model.
+
+### Follow-up / supersession
+
+Organization buyer direct-sale history was implemented later by
+**POS-B2B-DIRECT-PURCHASE-HISTORY-01** (unified Direct Purchases Local + B2B projection).
+See [POS-B2B-DIRECT-PURCHASE-HISTORY-01.md](./POS-B2B-DIRECT-PURCHASE-HISTORY-01.md).
 
 ---
 

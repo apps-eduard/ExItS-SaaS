@@ -9,6 +9,7 @@ using ExItS.Platform.Domain.GlobalCatalog;
 using ExItS.Platform.Domain.Organizations;
 using ExItS.Platform.Domain.Products;
 using ExItS.Platform.Domain.Subscriptions;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Organizations;
 
@@ -205,7 +206,13 @@ public sealed class BusinessTypeCapacityAndDowngradeTests
                 Deactivate = new DeactivateOrganizationBusinessType(orgs, activations, new NoOpUnitOfWork()),
                 GetEntitlement = new GetOrganizationBusinessTypeEntitlement(resolver, plans, businessTypes),
                 Downgrade = new ScheduleOrganizationSubscriptionDowngrade(
-                    subs, plans, resolver, new NoOpUnitOfWork(), clock)
+                    subs,
+                    plans,
+                    resolver,
+                    new EmptyOrganizationBranchRepository(),
+                    new InMemoryOrganizationAreaRepository(),
+                    new NoOpUnitOfWork(),
+                    clock)
             };
         }
 

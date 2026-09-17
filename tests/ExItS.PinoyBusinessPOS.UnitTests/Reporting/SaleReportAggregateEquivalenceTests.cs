@@ -219,6 +219,24 @@ public sealed class SaleReportAggregateEquivalenceTests
                 SaleMoney.RoundMoney(voided.Sum(s => s.DiscountTotal)));
         }
 
+        public Task<SalePeriodAggregate> AggregateAsync(
+            PosOrganizationId organizationId,
+            SaleFilter filter,
+            CancellationToken cancellationToken = default)
+        {
+            var from = filter.FromDateUtc ?? DateOnly.MinValue;
+            var to = filter.ToDateUtc ?? DateOnly.MaxValue;
+            return AggregatePeriodAsync(
+                organizationId,
+                from,
+                to,
+                filter.Status,
+                filter.PaymentMethod,
+                null,
+                filter.BranchId,
+                cancellationToken);
+        }
+
         public Task<SaleCostPeriodAggregate> AggregateCostForProfitabilityAsync(
             PosOrganizationId organizationId,
             DateOnly fromDateUtc,

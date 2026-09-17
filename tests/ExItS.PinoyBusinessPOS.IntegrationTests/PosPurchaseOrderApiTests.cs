@@ -72,7 +72,8 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         var grnId = Guid.NewGuid();
         var partialBody = new ReceivePurchaseOrderRequest(
             [new ReceivePurchaseOrderLineRequest(product.ProductId, 4m)],
-            grnId);
+            grnId,
+            PaymentMethodAtReceipt: "Cash");
         using var partial = Scoped(HttpMethod.Post, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}/receive", org);
         partial.Content = JsonContent.Create(partialBody, options: JsonOptions);
         AddReceiveIdempotencyHeaders(partial, grnId, partialBody);
@@ -101,7 +102,8 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         complete.Content = JsonContent.Create(
             new ReceivePurchaseOrderRequest(
                 [new ReceivePurchaseOrderLineRequest(product.ProductId, 6m)],
-                grn2Id),
+                grn2Id,
+                PaymentMethodAtReceipt: "Cash"),
             options: JsonOptions);
         using var completeResponse = await client.SendAsync(complete);
         completeResponse.EnsureSuccessStatusCode();
@@ -151,6 +153,15 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         cancelResponse.EnsureSuccessStatusCode();
         var cancelled = await cancelResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
         Assert.Equal("Cancelled", cancelled!.Status);
+        Assert.NotNull(cancelled.CancelledAtUtc);
+        Assert.Equal(Actor, cancelled.CancelledByUserId);
+
+        using var getAfterCancel = Scoped(HttpMethod.Get, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}", org);
+        using var getAfterCancelResponse = await client.SendAsync(getAfterCancel);
+        getAfterCancelResponse.EnsureSuccessStatusCode();
+        var reloaded = await getAfterCancelResponse.Content.ReadFromJsonAsync<PosPurchaseOrderDto>(JsonOptions);
+        Assert.Equal(cancelled.CancelledAtUtc, reloaded!.CancelledAtUtc);
+        Assert.Equal(Actor, reloaded.CancelledByUserId);
     }
 
     [Fact]

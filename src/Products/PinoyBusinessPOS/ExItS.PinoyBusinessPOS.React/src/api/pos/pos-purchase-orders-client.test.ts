@@ -8,8 +8,10 @@ import {
 import {
   assertNotStockTouchingUrl,
   cancelPurchaseOrder,
+  connectedPurchaseOrderLineDtoSchema,
   createPurchaseOrder,
   listGoodsReceiptsForPurchaseOrder,
+  listPurchaseOrders,
   NON_STOCK_PURCHASE_ORDER_METHODS,
   receivePurchaseOrder,
   STOCK_TOUCHING_PURCHASE_ORDER_METHODS,
@@ -91,6 +93,38 @@ describe("RMAP-17 purchasing clients", () => {
   it("documents receive as the only stock-touching PO client method", () => {
     expect(STOCK_TOUCHING_PURCHASE_ORDER_METHODS).toEqual(["receivePurchaseOrder"]);
     expect(NON_STOCK_PURCHASE_ORDER_METHODS).not.toContain("receivePurchaseOrder");
+  });
+
+  it("accepts null orderedQty on connectedLines from list PO responses", async () => {
+    expect(
+      connectedPurchaseOrderLineDtoSchema.parse({
+        productId,
+        qty: 4,
+        orderedQty: null,
+        goodReceivedQty: null,
+        outstandingQty: null,
+      }).orderedQty,
+    ).toBeNull();
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        items: [
+          poDto({
+            status: "Ordered",
+            connectedLines: [
+              { productId, nameSnapshot: "Apple", qty: 4, orderedQty: null },
+              { productId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", qty: 2, orderedQty: null },
+            ],
+          }),
+        ],
+        totalCount: 1,
+        page: 1,
+        pageSize: 50,
+      }),
+    );
+
+    const result = await listPurchaseOrders(workspace, { page: 1, pageSize: 50 });
+    expect(result.items[0]?.connectedLines?.[0]?.orderedQty).toBeNull();
   });
 
   it("create/submit/cancel never call stock-touching URLs", async () => {
@@ -210,6 +244,97 @@ describe("RMAP-17 purchasing clients", () => {
     expect(body.lines[0]?.lotNumber).toBe("LOT-A123");
   });
 
+  it("includes enableTrackingIfNeeded in receive body when true", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(
+        {
+          goodsReceiptId: grnId,
+          organizationId: workspace.organizationId,
+          purchaseOrderId: poId,
+          supplierId,
+          grnNumber: "GRN-2",
+          receivedDate: "2026-08-21",
+          deliveryReference: null,
+          notes: null,
+          receivedAtUtc: "2026-08-21T01:00:00Z",
+          receivedBy: "99999999-9999-4999-8999-999999999999",
+          lines: [
+            {
+              lineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              purchaseOrderLineId: lineId,
+              productId,
+              lineNumber: 1,
+              nameSnapshot: "Rice",
+              uomSnapshot: "kg",
+              quantityReceived: 4,
+              unitPurchaseCostSnapshot: 50,
+              lineTotalSnapshot: 200,
+              inventoryTrackingEnabled: true,
+              previousTrackedStock: null,
+              newTrackedStock: 4,
+            },
+          ],
+        },
+        201,
+      ),
+    );
+
+    const receipt = await receivePurchaseOrder(workspace, poId, {
+      goodsReceiptId: grnId,
+      enableTrackingIfNeeded: true,
+      lines: [{ productId, receiveQty: 4 }],
+    });
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as {
+      enableTrackingIfNeeded?: boolean;
+    };
+    expect(body.enableTrackingIfNeeded).toBe(true);
+    expect(receipt.lines[0]?.inventoryTrackingEnabled).toBe(true);
+    expect(receipt.lines[0]?.newTrackedStock).toBe(4);
+  });
+
+  it("omits enableTrackingIfNeeded from receive body when false or unset", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse(
+        {
+          goodsReceiptId: grnId,
+          organizationId: workspace.organizationId,
+          purchaseOrderId: poId,
+          supplierId,
+          grnNumber: "GRN-3",
+          receivedDate: "2026-08-21",
+          receivedAtUtc: "2026-08-21T01:00:00Z",
+          receivedBy: "99999999-9999-4999-8999-999999999999",
+          lines: [
+            {
+              lineId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              purchaseOrderLineId: lineId,
+              productId,
+              lineNumber: 1,
+              nameSnapshot: "Rice",
+              uomSnapshot: "kg",
+              quantityReceived: 4,
+              unitPurchaseCostSnapshot: 50,
+              lineTotalSnapshot: 200,
+            },
+          ],
+        },
+        201,
+      ),
+    );
+
+    await receivePurchaseOrder(workspace, poId, {
+      goodsReceiptId: grnId,
+      enableTrackingIfNeeded: false,
+      lines: [{ productId, receiveQty: 4 }],
+    });
+
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    expect(body).not.toHaveProperty("enableTrackingIfNeeded");
+  });
+
   it("lists goods receipts for a purchase order", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       jsonResponse([
@@ -318,9 +443,10 @@ describe("partial receive math", () => {
       {
         productId,
         outstandingQty: 5,
-        goodQty: 4,
-        damagedQty: 2,
-        closeRemaining: false,
+        goodQty: 6,
+        damagedQty: 0,
+        notDeliveredQty: 0,
+        cancelRemaining: false,
       },
     ]);
     expect(over.ok).toBe(false);
@@ -334,15 +460,33 @@ describe("partial receive math", () => {
         outstandingQty: 10,
         goodQty: 4,
         damagedQty: 1,
-        closeRemaining: true,
+        notDeliveredQty: 5,
+        cancelRemaining: true,
       },
     ]);
     expect(ok.ok).toBe(true);
     if (ok.ok) {
       expect(ok.lines[0]?.receiveQty).toBe(4);
       expect(ok.lines[0]?.damagedQty).toBe(1);
-      expect(ok.lines[0]?.shortClosedQty).toBe(5);
-      expect(ok.lines[0]?.discrepancyKind).toBe("Damaged");
+      expect(ok.lines[0]?.rejectedQty).toBe(5);
+      expect(ok.lines[0]?.shortClosedQty).toBe(6);
+      expect(ok.lines[0]?.discrepancyKind).toBe("Other");
+    }
+
+    const deliverLater = buildReceivePlan([
+      {
+        productId,
+        outstandingQty: 10,
+        goodQty: 4,
+        damagedQty: 1,
+        notDeliveredQty: 5,
+        cancelRemaining: false,
+      },
+    ]);
+    expect(deliverLater.ok).toBe(true);
+    if (deliverLater.ok) {
+      expect(deliverLater.lines[0]?.shortClosedQty).toBe(0);
+      expect(deliverLater.lines[0]?.remainingAfter).toBe(6);
     }
   });
 });

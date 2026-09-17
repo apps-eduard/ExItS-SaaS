@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Loader2, RefreshCw } from "lucide-react";
+import { Ban, Loader2, RefreshCw, Users } from "lucide-react";
 import {
   listPersonalBlockedBusinesses,
   unblockPersonalBusiness,
@@ -112,6 +112,8 @@ export function PersonalBlockedBusinessesPage() {
 
       {items.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.blockedBusinesses.empty")}
           detail={t("personal.blockedBusinesses.lede")}
         />
@@ -138,7 +140,7 @@ export function PersonalBlockedBusinessesPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="mt-3 min-h-11"
+                      className="mt-3"
                       disabled={unblock.isPending}
                       data-testid={`unblock-business-${row.organizationId}`}
                       onClick={() => unblock.mutate(row.organizationId)}

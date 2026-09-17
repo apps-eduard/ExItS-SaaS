@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Package, Plus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listProductionDefinitions } from "@/api/pos/pos-production-client";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import {
-  formatProductionDate,
-  productionDefinitionStatusLabelKey,
-} from "@/features/inventory/production-labels";
+import { productionDefinitionStatusLabelKey } from "@/features/inventory/production-labels";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -24,6 +21,7 @@ const PAGE_SIZE = 20;
 
 export function ProductionDefinitionListPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
@@ -130,6 +128,9 @@ export function ProductionDefinitionListPage() {
       ) : null}
       {query.isSuccess && items.length === 0 ? (
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />}
           title={t("production.setups.empty")}
           detail={t("production.setups.emptyDetail")}
         />
@@ -147,7 +148,10 @@ export function ProductionDefinitionListPage() {
                 <span className="exits-list__name block truncate font-semibold">{item.name}</span>
                 <span className="mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
                   {[
-                    formatProductionDate(item.createdAtUtc),
+                    t("production.recipes.standardYieldLabel").replace(
+                      "{qty}",
+                      String(item.outputQuantityEntered),
+                    ),
                     t("production.setups.componentsCount").replace(
                       "{count}",
                       String(item.componentCount),
@@ -157,6 +161,23 @@ export function ProductionDefinitionListPage() {
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-2">
+                {item.isActive && allowManage ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0"
+                    data-testid={`production-setup-produce-${item.productionDefinitionId}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(
+                        `/inventory/production/produce?definitionId=${item.productionDefinitionId}`,
+                      );
+                    }}
+                  >
+                    {t("production.recipes.produceAction")}
+                  </Button>
+                ) : null}
                 <StatusChip tone={item.isActive ? "success" : "warning"}>
                   {t(productionDefinitionStatusLabelKey(item.status))}
                 </StatusChip>
@@ -172,7 +193,6 @@ export function ProductionDefinitionListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canPrev || query.isFetching}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -186,7 +206,6 @@ export function ProductionDefinitionListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canNext || query.isFetching}
             onClick={() => setPage((p) => p + 1)}
           >

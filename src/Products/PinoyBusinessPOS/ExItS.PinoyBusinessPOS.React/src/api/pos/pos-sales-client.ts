@@ -14,8 +14,18 @@ const guidSchema = z
   .string()
   .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/);
 
-/** Current checkout methods only — never Card or provider GCash in React UX (RMAP-12). */
-export const checkoutPaymentMethodSchema = z.enum(["Cash", "ManualGCash", "Utang"]);
+/**
+ * Checkout sale methods accepted by the API.
+ * Online/provider channels (Card, GCash provider, …) stay out of React checkout UX.
+ */
+export const checkoutPaymentMethodSchema = z.enum([
+  "Cash",
+  "ManualGCash",
+  "Utang",
+  "BankTransfer",
+  "Check",
+  "ManualMaya",
+]);
 export type CheckoutPaymentMethod = z.infer<typeof checkoutPaymentMethodSchema>;
 
 export const GCASH_REFERENCE_MAX_LENGTH = 64;
@@ -75,6 +85,23 @@ export const salePriceOverrideIntentRequestSchema = z.object({
   expectedBaselineUnitPrice: z.number().optional(),
 });
 
+export const checkoutSellerDocumentIdentityRequestSchema = z.object({
+  businessName: z.string().max(200).optional(),
+  publicOrganizationId: z.string().max(32).optional(),
+  logoUrl: z.string().max(2048).optional(),
+  address: z.string().max(512).optional(),
+  phone: z.string().max(64).optional(),
+  email: z.string().max(256).optional(),
+  branchName: z.string().max(200).optional(),
+  branchAddress: z.string().max(512).optional(),
+  showLogo: z.boolean().optional(),
+  showBusinessAddress: z.boolean().optional(),
+  showBusinessPhone: z.boolean().optional(),
+  showBusinessEmail: z.boolean().optional(),
+  showBranchName: z.boolean().optional(),
+  showBranchAddress: z.boolean().optional(),
+});
+
 export const checkoutSaleRequestSchema = z.object({
   lines: z.array(checkoutSaleLineRequestSchema).min(1),
   paymentMethod: checkoutPaymentMethodSchema,
@@ -88,8 +115,16 @@ export const checkoutSaleRequestSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  buyerPartyKind: z.enum(["WalkIn", "ExternalCustomer", "Personal", "Organization"]).optional(),
+  buyerDisplayNameSnapshot: z.string().max(128).optional(),
+  buyerPersonalPublicUserId: z.string().max(64).optional(),
+  buyerOrganizationId: guidSchema.optional(),
+  buyerPublicOrganizationId: z.string().max(9).optional(),
+  buyerConnectionId: guidSchema.optional(),
   discounts: z.array(commercialDiscountIntentRequestSchema).optional(),
   priceOverrides: z.array(salePriceOverrideIntentRequestSchema).optional(),
+  sellerDocumentIdentity: checkoutSellerDocumentIdentityRequestSchema.optional(),
+  quotationId: guidSchema.optional(),
 });
 
 /** Quote uses the same line/discount/override contract; tender/saleId/shift are not required. */
@@ -387,6 +422,24 @@ export function buildCheckoutSalePayload(body: CheckoutSaleRequest): Record<stri
   if (validated.paymentMethod === "Utang" && validated.dueDate) {
     payload.dueDate = validated.dueDate;
   }
+  if (validated.buyerPartyKind) {
+    payload.buyerPartyKind = validated.buyerPartyKind;
+  }
+  if (validated.buyerDisplayNameSnapshot) {
+    payload.buyerDisplayNameSnapshot = validated.buyerDisplayNameSnapshot;
+  }
+  if (validated.buyerPersonalPublicUserId) {
+    payload.buyerPersonalPublicUserId = validated.buyerPersonalPublicUserId;
+  }
+  if (validated.buyerOrganizationId) {
+    payload.buyerOrganizationId = validated.buyerOrganizationId;
+  }
+  if (validated.buyerPublicOrganizationId) {
+    payload.buyerPublicOrganizationId = validated.buyerPublicOrganizationId;
+  }
+  if (validated.buyerConnectionId) {
+    payload.buyerConnectionId = validated.buyerConnectionId;
+  }
 
   const discounts = serializeDiscounts(validated.discounts);
   if (discounts) {
@@ -496,6 +549,12 @@ export async function listSales(
     fromDate?: string;
     toDate?: string;
     saleNumber?: string;
+    registerId?: string;
+    cashierShiftId?: string;
+    shiftId?: string;
+    actorId?: string;
+    recordedBy?: string;
+    branchId?: string;
     page?: number;
     pageSize?: number;
   } = {},
@@ -511,6 +570,12 @@ export async function listSales(
       fromDate: options.fromDate,
       toDate: options.toDate,
       saleNumber: options.saleNumber,
+      registerId: options.registerId,
+      cashierShiftId: options.cashierShiftId,
+      shiftId: options.shiftId,
+      actorId: options.actorId,
+      recordedBy: options.recordedBy,
+      branchId: options.branchId,
       page: options.page ?? 1,
       pageSize: options.pageSize ?? 20,
     }),
@@ -536,10 +601,16 @@ export async function voidSale(
   return parseSale(raw);
 }
 
-/** User-facing payment label — never show ManualGCash to operators. */
+/** User-facing payment label — never show ManualGCash / ManualMaya to operators. */
 export function formatPaymentMethodLabel(paymentMethod: string): string {
   if (paymentMethod === "ManualGCash") {
     return "GCash";
+  }
+  if (paymentMethod === "ManualMaya") {
+    return "Maya";
+  }
+  if (paymentMethod === "BankTransfer") {
+    return "Bank transfer";
   }
   return paymentMethod;
 }

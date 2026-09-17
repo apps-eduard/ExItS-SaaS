@@ -67,3 +67,8 @@ Unchanged.
 Browser Verified: **NO**  
 Device Verified: **NO**  
 Production Ready: **NO**
+
+### Follow-up (2026-09-10)
+
+`BusinessCustomerConnectionRequested|Accepted|Declined|Cancelled` were added to the same Platform inbox allowlist by
+**POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01**. Seller-initiated invites do not overload `SupplierConnectionRequested`.

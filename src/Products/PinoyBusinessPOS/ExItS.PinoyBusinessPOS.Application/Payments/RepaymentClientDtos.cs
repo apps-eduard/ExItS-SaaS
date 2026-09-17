@@ -19,6 +19,7 @@ public sealed record PosCustomerUtangSummaryDto(
     decimal OutstandingAmount,
     decimal ActiveCreditTotal,
     decimal ActiveRepaymentTotal,
+    decimal PendingCheckAmount,
     int ActiveCreditCount,
     int ActiveRepaymentCount,
     int TotalLedgerEntryCount,

@@ -4,6 +4,10 @@ import { useDeferredVisible } from "@/components/exits/loading/useDeferredVisibl
 /**
  * Blocking overlay for workspace/account transitions.
  * Keeps the existing shell painted underneath; does not clear content.
+ *
+ * VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.
+ * When `active=false`, fade may remain mounted briefly, but root + every
+ * descendant must be pointer-events:none (and inert) until unmount.
  */
 export function WorkspaceTransitionOverlay({
   active,
@@ -30,9 +34,13 @@ export function WorkspaceTransitionOverlay({
     <div
       className="exits-workspace-transition"
       data-testid={testId}
+      data-active={active ? "true" : "false"}
       role="status"
       aria-live="polite"
-      aria-busy="true"
+      aria-busy={active ? "true" : "false"}
+      // Logical close must stop hit-testing immediately (fade may continue briefly).
+      style={active ? undefined : { pointerEvents: "none" }}
+      {...(!active ? { inert: true } : {})}
     >
       <div className="exits-workspace-transition__backdrop" aria-hidden="true" />
       <div className="exits-workspace-transition__panel">

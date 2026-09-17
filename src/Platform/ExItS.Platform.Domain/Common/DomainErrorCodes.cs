@@ -55,6 +55,9 @@ public static class DomainErrorCodes
         "platform.organization.business_type_activation.primary_forbidden";
     public const string InvalidOrganizationProfile = "platform.organization.profile.invalid";
     public const string InvalidOrganizationBranding = "platform.organization.branding.invalid";
+    public const string InvalidMembershipBusinessProfile = "platform.membership.business_profile.invalid";
+    public const string MembershipBusinessProfileSelfEditDenied =
+        "platform.membership.business_profile.self_edit_denied";
     public const string InvalidProductCode = "platform.product_code.invalid";
     public const string InvalidUtcTimestamp = "platform.timestamp.invalid";
 
@@ -64,6 +67,9 @@ public static class DomainErrorCodes
     public const string InvalidOrganizationStatusTransition = "platform.organization.status.invalid_transition";
     public const string InvalidOrganizationBranchId = "platform.organization_branch.id.invalid";
     public const string InvalidOrganizationBranchCode = "platform.organization_branch.code.invalid";
+    public const string InvalidOrganizationBranchType = "platform.organization_branch.type.invalid";
+    public const string OrganizationBranchWarehouseCustomerOrderingForbidden =
+        "platform.organization_branch.warehouse.customer_ordering_forbidden";
     public const string InvalidOrganizationBranchStatusTransition = "platform.organization_branch.status.invalid_transition";
     public const string OrganizationBranchNotActive = "platform.organization_branch.not_active";
     public const string InvalidOrganizationBranchCoordinates = "platform.organization_branch.coordinates.invalid";
@@ -152,6 +158,7 @@ public static class DomainErrorCodes
     public const string PaymentCurrencyInvalid = "platform.saas_payment.currency.invalid";
     public const string PaymentReferenceRequired = "platform.saas_payment.reference.required";
     public const string PaymentReasonRequired = "platform.saas_payment.reason.required";
+    public const string InvalidPaymentStatusTransition = "platform.subscription_payment.status.invalid_transition";
 
     public const string InvalidPlatformRoleAssignmentId = "platform.role_assignment.id.invalid";
     public const string InvalidPlatformSystemRole = "platform.role_assignment.role.invalid";

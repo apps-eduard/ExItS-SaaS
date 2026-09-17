@@ -14,6 +14,7 @@ public sealed class PurchaseOrderDomainTests
     private static readonly Guid ProductB = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     private static readonly Guid SupplierA = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly Guid ReceivingBranch = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+    private static readonly Guid Actor = Guid.Parse("11111111-1111-4111-8111-111111111111");
     private static readonly DateTimeOffset Now = new(2026, 7, 31, 0, 0, 0, TimeSpan.Zero);
 
     [Fact]
@@ -147,16 +148,20 @@ public sealed class PurchaseOrderDomainTests
             DateOnly.FromDateTime(Now.Date),
             [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), 1m, 1m)],
             Now);
-        draft.Cancel(Now);
+        draft.Cancel(Actor, Now);
         Assert.Equal(PurchaseOrderStatus.Cancelled, draft.Status);
+        Assert.Equal(Now, draft.CancelledAtUtc);
+        Assert.Equal(Actor, draft.CancelledByUserId);
 
         var ordered = BuildOrderedPo(org, 5m);
-        ordered.Cancel(Now);
+        ordered.Cancel(Actor, Now);
         Assert.Equal(PurchaseOrderStatus.Cancelled, ordered.Status);
+        Assert.Equal(Now, ordered.CancelledAtUtc);
+        Assert.Equal(Actor, ordered.CancelledByUserId);
 
         var partial = BuildOrderedPo(org, 5m);
         partial.ApplyReceiptLines([new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 1m)], Now);
-        var ex = Assert.Throws<DomainException>(() => partial.Cancel(Now));
+        var ex = Assert.Throws<DomainException>(() => partial.Cancel(Actor, Now));
         Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderStatusTransition, ex.ErrorCode);
     }
 

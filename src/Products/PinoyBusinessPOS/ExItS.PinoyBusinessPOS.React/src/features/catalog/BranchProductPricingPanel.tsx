@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Save } from "lucide-react";
+import { Loader2, RotateCcw, Save } from "lucide-react";
 import {
   getBranchProductPricing,
   removeBranchProductPriceOverride,
@@ -14,6 +14,7 @@ import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SettingsSelect } from "@/components/ui/settings-select";
 import { useToast } from "@/components/exits/ToastProvider";
 import {
   type BranchPriceMode,
@@ -78,8 +79,14 @@ function isDraftDirty(draft: PriceRowDraft, mode: BranchPriceMode): boolean {
   return saved == null || saved !== parsed.value;
 }
 
+export type OrganizationPriceEditorProps = {
+  value: string;
+  onChange: (value: string) => void;
+  warning?: string | null;
+};
+
 function BranchPricingRow(props: {
-  label: string;
+  label: string | null;
   branchLabel: string;
   draft: PriceRowDraft;
   mode: BranchPriceMode;
@@ -95,130 +102,111 @@ function BranchPricingRow(props: {
   useOrganizationDefaultLabel: string;
   removingLabel: string;
   organizationDefaultLabel: string;
-  organizationDefaultHint: string;
-  branchSellingPriceLabel: string;
+  priceSourceLabel: string;
   useOrganizationDefaultModeLabel: string;
   customBranchPriceModeLabel: string;
-  inheritModeLabel: string;
   effectivePriceLabel: string;
   customPriceInputLabel: string;
   invalidPriceLabel: string;
+  /** Compact branch column (inside Selling price card); omit branch heading when false for units. */
+  showBranchHeading?: boolean;
 }) {
   const parsed = parseBranchOverridePrice(props.draft.branchOverridePrice);
   const showCustomInput = props.mode === "custom";
   const canSaveCustom =
     props.mode === "custom" && isDraftDirty(props.draft, props.mode) && parsed.ok;
+  const rowId = props.draft.productUnitId ?? "base";
+  const showBranchHeading = props.showBranchHeading !== false;
 
   return (
     <div
-      className="branch-pricing-card flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-3"
+      className={cn(
+        "branch-pricing-row flex min-w-0 flex-col gap-2.5",
+        props.label && "border-t border-[color:var(--exits-border)] pt-3",
+      )}
       data-testid={
         props.draft.productUnitId
           ? `branch-pricing-unit-${props.draft.productUnitId}`
           : "branch-pricing-base"
       }
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold">{props.label}</span>
-      </div>
+      {props.label ? (
+        <span className="text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {props.label}
+        </span>
+      ) : null}
 
-      <div className="branch-pricing-card__org-default rounded-[var(--exits-radius-sm)] bg-surface px-3 py-2.5">
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+      {showBranchHeading ? (
+        <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {props.branchLabel}
+        </h3>
+      ) : null}
+
+      <fieldset className="m-0 min-w-0 border-0 p-0" disabled={props.disabled}>
+        <SettingsSelect<BranchPriceMode>
+          label={props.priceSourceLabel}
+          value={props.mode}
+          onChange={props.onModeChange}
+          variant="segmented"
+          testId={`${rowId}-price-source`}
+          options={[
+            {
+              value: "inherit",
+              label: props.useOrganizationDefaultModeLabel,
+              testId: `${rowId}-mode-inherit`,
+            },
+            {
+              value: "custom",
+              label: props.customBranchPriceModeLabel,
+              testId: `${rowId}-mode-custom`,
+            },
+          ]}
+        />
+      </fieldset>
+
+      <div
+        className="flex items-baseline justify-between gap-3"
+        data-testid={`${rowId}-organization-default-summary`}
+      >
+        <span className="text-[length:var(--exits-text-sm)] text-muted">
           {props.organizationDefaultLabel}
-        </p>
-        <p
-          className="m-0 mt-0.5 text-[length:var(--exits-text-lg)] font-semibold tabular-nums"
-          data-testid={`${props.draft.productUnitId ?? "base"}-organization-default`}
+        </span>
+        <span
+          className="text-[length:var(--exits-text-sm)] font-semibold tabular-nums text-foreground"
+          data-testid={`${rowId}-organization-default`}
         >
           {formatPeso(props.draft.organizationDefaultPrice)}
-        </p>
-        <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {props.organizationDefaultHint}
-        </p>
+        </span>
       </div>
 
-      <div className="branch-pricing-card__divider border-t border-[color:var(--exits-border)]" />
-
-      <div className="flex flex-col gap-2">
-        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {props.branchSellingPriceLabel.replace("{branch}", props.branchLabel)}
-        </p>
-
-        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0" disabled={props.disabled}>
-          <label
-            className={cn(
-              "flex cursor-pointer items-start gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5",
-              props.mode === "inherit"
-                ? "border-primary bg-primary/5"
-                : "border-[color:var(--exits-border)]",
-            )}
-          >
-            <input
-              type="radio"
-              name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
-              checked={props.mode === "inherit"}
-              onChange={() => props.onModeChange("inherit")}
-              className="mt-1 shrink-0"
-              data-testid={`${props.draft.productUnitId ?? "base"}-mode-inherit`}
-            />
-            <span className="min-w-0">
-              <span className="block text-[length:var(--exits-text-sm)] font-semibold">
-                {props.useOrganizationDefaultModeLabel}
-              </span>
-              {props.mode === "inherit" ? (
-                <span className="mt-1 flex items-center gap-1 text-[length:var(--exits-text-sm)] text-muted">
-                  <Check className="size-4 shrink-0 text-primary" aria-hidden />
-                  {props.inheritModeLabel}
-                </span>
-              ) : null}
-            </span>
-          </label>
-
-          <label
-            className={cn(
-              "flex cursor-pointer items-start gap-2.5 rounded-[var(--exits-radius-md)] border px-3 py-2.5",
-              props.mode === "custom"
-                ? "border-primary bg-primary/5"
-                : "border-[color:var(--exits-border)]",
-            )}
-          >
-            <input
-              type="radio"
-              name={`branch-price-mode-${props.draft.productUnitId ?? "base"}`}
-              checked={props.mode === "custom"}
-              onChange={() => props.onModeChange("custom")}
-              className="mt-1 shrink-0"
-              data-testid={`${props.draft.productUnitId ?? "base"}-mode-custom`}
-            />
-            <span className="block text-[length:var(--exits-text-sm)] font-semibold">
-              {props.customBranchPriceModeLabel}
-            </span>
-          </label>
-        </fieldset>
-
-        {showCustomInput ? (
+      {showCustomInput ? (
+        <div className="selling-price-field max-w-[17.5rem]">
           <Input
             label={props.customPriceInputLabel}
-            name={`branchOverride-${props.draft.productUnitId ?? "base"}`}
+            name={`branchOverride-${rowId}`}
             inputMode="decimal"
             value={props.draft.branchOverridePrice}
             disabled={props.disabled}
             onChange={(event) => props.onDraftChange(event.target.value)}
-            data-testid={`${props.draft.productUnitId ?? "base"}-custom-price-input`}
+            data-testid={`${rowId}-custom-price-input`}
           />
-        ) : null}
+        </div>
+      ) : null}
 
-        {!parsed.ok && showCustomInput && props.draft.branchOverridePrice.trim() ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">
-            {props.invalidPriceLabel}
-          </p>
-        ) : null}
+      {!parsed.ok && showCustomInput && props.draft.branchOverridePrice.trim() ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">
+          {props.invalidPriceLabel}
+        </p>
+      ) : null}
 
-        <p className="m-0 text-[length:var(--exits-text-sm)]">
-          <span className="text-muted">{props.effectivePriceLabel}: </span>
+      <div className="border-t border-[color:var(--exits-border)] pt-2.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-[length:var(--exits-text-sm)] text-muted">
+            {props.effectivePriceLabel}
+          </span>
           <span
-            className="font-semibold tabular-nums"
-            data-testid={`${props.draft.productUnitId ?? "base"}-effective-price`}
+            className="text-[length:var(--exits-text-lg)] font-semibold tabular-nums text-foreground"
+            data-testid={`${rowId}-effective-price`}
           >
             {formatPeso(
               props.mode === "custom" && parsed.ok
@@ -226,53 +214,60 @@ function BranchPricingRow(props: {
                 : props.draft.effectivePrice,
             )}
           </span>
-        </p>
-
-        <div className="flex flex-wrap gap-2">
-          {showCustomInput ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="min-h-11"
-              disabled={props.disabled || !canSaveCustom || props.saving || props.removing}
-              data-testid={`${props.draft.productUnitId ?? "base"}-save-override`}
-              onClick={props.onSaveCustom}
-            >
-              {props.saving ? (
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-              ) : (
-                <Save className="size-4 shrink-0" aria-hidden />
-              )}
-              {props.saving ? props.savingLabel : props.saveLabel}
-            </Button>
-          ) : null}
-          {props.draft.hasBranchPriceOverride || props.mode === "custom" ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="min-h-11"
-              disabled={props.disabled || props.saving || props.removing}
-              data-testid={`${props.draft.productUnitId ?? "base"}-use-organization-default`}
-              onClick={props.onUseOrganizationDefault}
-            >
-              {props.removing ? (
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-              ) : null}
-              {props.removing ? props.removingLabel : props.useOrganizationDefaultLabel}
-            </Button>
-          ) : null}
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {showCustomInput ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={props.disabled || !canSaveCustom || props.saving || props.removing}
+            data-testid={`${rowId}-save-override`}
+            onClick={props.onSaveCustom}
+          >
+            {props.saving ? (
+              <Loader2 className="size-4 shrink-0 animate-spin text-[var(--exits-primary)]" aria-hidden />
+            ) : (
+              <Save className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+            )}
+            {props.saving ? props.savingLabel : props.saveLabel}
+          </Button>
+        ) : null}
+        {props.draft.hasBranchPriceOverride || props.mode === "custom" ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={props.disabled || props.saving || props.removing}
+            data-testid={`${rowId}-use-organization-default`}
+            onClick={props.onUseOrganizationDefault}
+          >
+            {props.removing ? (
+              <Loader2 className="size-4 shrink-0 animate-spin text-[var(--exits-primary)]" aria-hidden />
+            ) : (
+              <RotateCcw className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+            )}
+            {props.removing ? props.removingLabel : props.useOrganizationDefaultLabel}
+          </Button>
+        ) : null}
       </div>
     </div>
   );
 }
 
+/**
+ * Combined Selling price card: organization default (optional) + branch price source.
+ * Persistence / effective-price logic unchanged.
+ */
 export function BranchProductPricingPanel(props: {
   workspace: PosWorkspaceScope;
   productId: string;
   product: Pick<PosCatalogProductDto, "scope" | "units"> | null | undefined;
   canGovern: boolean;
   branchName?: string | null;
+  /** When set, renders editable Organization default in the left column. */
+  organizationEditor?: OrganizationPriceEditorProps | null;
+  organizationEditorExtra?: ReactNode;
 }) {
   const { t } = useI18n();
   const { showToast } = useToast();
@@ -404,11 +399,9 @@ export function BranchProductPricingPanel(props: {
     useOrganizationDefaultLabel: t("catalog.branchPricing.useOrganizationDefault"),
     removingLabel: t("catalog.branchPricing.removing"),
     organizationDefaultLabel: t("catalog.branchPricing.organizationDefault"),
-    organizationDefaultHint: t("catalog.branchPricing.inheritedByBranches"),
-    branchSellingPriceLabel: t("catalog.branchPricing.branchSellingPrice"),
+    priceSourceLabel: t("catalog.branchPricing.priceSource"),
     useOrganizationDefaultModeLabel: t("catalog.branchPricing.useOrganizationDefaultMode"),
     customBranchPriceModeLabel: t("catalog.branchPricing.customBranchPriceMode"),
-    inheritModeLabel: t("catalog.branchPricing.inheritMode"),
     effectivePriceLabel: t("catalog.branchPricing.effectivePrice"),
     customPriceInputLabel: t("catalog.branchPricing.customPriceInput"),
     invalidPriceLabel: t("catalog.invalidPrice"),
@@ -419,16 +412,97 @@ export function BranchProductPricingPanel(props: {
   );
 
   const orderedKeys: RowKey[] = ["base", ...Object.keys(drafts).filter((key) => key !== "base")];
+  const hasOrgEditor = Boolean(props.organizationEditor);
+
+  const renderRow = (key: RowKey, options?: { showBranchHeading?: boolean }) => {
+    const draft = drafts[key];
+    const mode = modes[key] ?? "inherit";
+    if (!draft) {
+      return null;
+    }
+    const label =
+      key === "base"
+        ? null
+        : t("catalog.branchPricing.unitPrice").replace(
+            "{name}",
+            unitNameById.get(draft.productUnitId ?? "") ?? draft.productUnitId ?? "—",
+          );
+    const saving = pendingKey?.key === key && pendingKey.action === "save";
+    const removing = pendingKey?.key === key && pendingKey.action === "remove";
+    return (
+      <BranchPricingRow
+        key={key}
+        label={label}
+        branchLabel={branchLabel}
+        draft={draft}
+        mode={mode}
+        disabled={saveMutation.isPending || removeMutation.isPending}
+        saving={saving}
+        removing={removing}
+        showBranchHeading={options?.showBranchHeading}
+        onModeChange={(nextMode) => {
+          setModes((current) => ({ ...current, [key]: nextMode }));
+          if (nextMode === "custom" && !draft.branchOverridePrice.trim()) {
+            setDrafts((current) => {
+              const row = current[key];
+              if (!row) {
+                return current;
+              }
+              return {
+                ...current,
+                [key]: {
+                  ...row,
+                  branchOverridePrice: String(row.organizationDefaultPrice),
+                },
+              };
+            });
+          }
+        }}
+        onDraftChange={(value) =>
+          setDrafts((current) => {
+            const row = current[key];
+            if (!row) {
+              return current;
+            }
+            return {
+              ...current,
+              [key]: { ...row, branchOverridePrice: value },
+            };
+          })
+        }
+        onSaveCustom={() => saveMutation.mutate({ key, draft })}
+        onUseOrganizationDefault={() => {
+          if (draft.hasBranchPriceOverride) {
+            removeMutation.mutate({ key, draft });
+            return;
+          }
+          setModes((current) => ({ ...current, [key]: "inherit" }));
+          setDrafts((current) => {
+            const row = current[key];
+            if (!row) {
+              return current;
+            }
+            return {
+              ...current,
+              [key]: { ...row, branchOverridePrice: "" },
+            };
+          });
+        }}
+        {...rowLabels}
+      />
+    );
+  };
 
   return (
     <section
-      className="catalog-form-section exits-animate-panel"
-      data-testid="catalog-branch-pricing"
+      className="catalog-form-section exits-animate-panel selling-price-card"
+      data-testid="catalog-selling-price"
     >
-      <h2 className="catalog-form-section__title">{t("catalog.branchPricing.title")}</h2>
+      <h2 className="catalog-form-section__title">{t("catalog.sellingPrice.title")}</h2>
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("catalog.branchPricing.hint").replace("{branch}", branchLabel)}
+        {t("catalog.sellingPrice.hint")}
       </p>
+
       {!branchId ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("catalog.branchPricing.branchRequired")}
@@ -447,87 +521,55 @@ export function BranchProductPricingPanel(props: {
             : (pricingQuery.error as Error).message}
         </p>
       ) : null}
-      {branchId && !pricingQuery.isLoading && !pricingQuery.isError ? (
-        <div className="flex flex-col gap-3">
-          {orderedKeys.map((key) => {
-            const draft = drafts[key];
-            const mode = modes[key] ?? "inherit";
-            if (!draft) {
-              return null;
-            }
-            const label =
-              key === "base"
-                ? t("catalog.branchPricing.basePrice")
-                : t("catalog.branchPricing.unitPrice").replace(
-                    "{name}",
-                    unitNameById.get(draft.productUnitId ?? "") ?? draft.productUnitId ?? "—",
-                  );
-            const saving = pendingKey?.key === key && pendingKey.action === "save";
-            const removing = pendingKey?.key === key && pendingKey.action === "remove";
-            return (
-              <BranchPricingRow
-                key={key}
-                label={label}
-                branchLabel={branchLabel}
-                draft={draft}
-                mode={mode}
-                disabled={saveMutation.isPending || removeMutation.isPending}
-                saving={saving}
-                removing={removing}
-                onModeChange={(nextMode) => {
-                  setModes((current) => ({ ...current, [key]: nextMode }));
-                  if (nextMode === "custom" && !draft.branchOverridePrice.trim()) {
-                    setDrafts((current) => {
-                      const row = current[key];
-                      if (!row) {
-                        return current;
-                      }
-                      return {
-                        ...current,
-                        [key]: {
-                          ...row,
-                          branchOverridePrice: String(row.organizationDefaultPrice),
-                        },
-                      };
-                    });
-                  }
-                }}
-                onDraftChange={(value) =>
-                  setDrafts((current) => {
-                    const row = current[key];
-                    if (!row) {
-                      return current;
-                    }
-                    return {
-                      ...current,
-                      [key]: { ...row, branchOverridePrice: value },
-                    };
-                  })
-                }
-                onSaveCustom={() => saveMutation.mutate({ key, draft })}
-                onUseOrganizationDefault={() => {
-                  if (draft.hasBranchPriceOverride) {
-                    removeMutation.mutate({ key, draft });
-                    return;
-                  }
-                  setModes((current) => ({ ...current, [key]: "inherit" }));
-                  setDrafts((current) => {
-                    const row = current[key];
-                    if (!row) {
-                      return current;
-                    }
-                    return {
-                      ...current,
-                      [key]: { ...row, branchOverridePrice: "" },
-                    };
-                  });
-                }}
-                {...rowLabels}
+
+      <div
+        className={cn(
+          "selling-price-card__columns",
+          hasOrgEditor && "selling-price-card__columns--split",
+        )}
+      >
+        {props.organizationEditor ? (
+          <div
+            className="selling-price-card__org flex min-w-0 flex-col gap-2.5"
+            data-testid="catalog-organization-pricing"
+          >
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+              {t("catalog.branchPricing.organizationDefault")}
+            </h3>
+            <div className="selling-price-field max-w-[17.5rem]">
+              <Input
+                label={t("catalog.organizationPricing.defaultPrice")}
+                name="organizationDefaultSellingPrice"
+                inputMode="decimal"
+                value={props.organizationEditor.value}
+                onChange={(e) => props.organizationEditor?.onChange(e.target.value)}
+                data-testid="catalog-organization-default-price"
               />
-            );
-          })}
-        </div>
-      ) : null}
+            </div>
+            <p className="m-0 max-w-[17.5rem] text-[length:var(--exits-text-xs)] text-muted">
+              {t("catalog.organizationPricing.hint")}
+            </p>
+            {props.organizationEditor.warning ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                data-testid="catalog-organization-default-warning"
+              >
+                {props.organizationEditor.warning}
+              </p>
+            ) : null}
+            {props.organizationEditorExtra}
+          </div>
+        ) : null}
+
+        {branchId && !pricingQuery.isLoading && !pricingQuery.isError ? (
+          <div className="selling-price-card__branch flex min-w-0 flex-col gap-3">
+            {renderRow("base", { showBranchHeading: true })}
+            {orderedKeys
+              .filter((key) => key !== "base")
+              .map((key) => renderRow(key, { showBranchHeading: false }))}
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

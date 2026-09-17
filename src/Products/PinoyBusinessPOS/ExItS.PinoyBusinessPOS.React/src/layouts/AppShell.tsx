@@ -23,10 +23,10 @@ export function AppShell({
   return (
     <div
       className={cn(
-        "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
+        "app-shell mx-auto flex min-h-[100dvh] w-full max-w-5xl min-w-0 flex-col overflow-x-hidden px-[max(var(--exits-page-gutter-inline),env(safe-area-inset-left))] pr-[max(var(--exits-page-gutter-inline),env(safe-area-inset-right))] pt-[env(safe-area-inset-top)]",
         sellFloor && "app-shell--sell-floor",
         withOrgBottomNav
-          ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))]"
+          ? "pb-[max(5.5rem,calc(4.25rem+env(safe-area-inset-bottom)))] lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
           : "pb-[max(2rem,env(safe-area-inset-bottom))]",
       )}
     >
@@ -37,7 +37,14 @@ export function AppShell({
         {t("app.skipToContent")}
       </a>
       {header}
-      <main id="main-content" className="flex min-w-0 flex-1 flex-col gap-4 pt-6" tabIndex={-1}>
+      <main
+        id="main-content"
+        className={cn(
+          "flex min-w-0 flex-1 flex-col",
+          sellFloor ? "min-h-0 gap-0 pt-2" : "gap-4 pt-6",
+        )}
+        tabIndex={-1}
+      >
         {children}
       </main>
     </div>

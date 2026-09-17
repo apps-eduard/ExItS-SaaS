@@ -24,6 +24,7 @@ internal sealed class SaleRecord
     public Guid? BuyerOrganizationId { get; set; }
     public string? BuyerPublicOrganizationId { get; set; }
     public Guid? LinkedCreditEntryId { get; set; }
+    public Guid? LinkedBusinessCreditEntryId { get; set; }
     public Guid? CashierShiftId { get; set; }
     public Guid? RegisterId { get; set; }
     public Guid? BranchId { get; set; }
@@ -36,5 +37,9 @@ internal sealed class SaleRecord
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public string? CostStatus { get; set; }
     public decimal? TotalCostSnapshot { get; set; }
+    /// <summary>JSON snapshot of seller document identity for historical customer documents.</summary>
+    public string? SellerDocumentIdentityJson { get; set; }
+    /// <summary>Optional source quotation id when checkout converted a quotation.</summary>
+    public Guid? SourceQuotationId { get; set; }
     public uint Xmin { get; set; }
 }

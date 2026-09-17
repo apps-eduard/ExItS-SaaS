@@ -1,7 +1,12 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Application.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
+using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
 
@@ -20,7 +25,8 @@ public sealed record POSCustomerDto(
     DateTimeOffset UpdatedAtUtc,
     string? LinkedPersonalPublicUserId = null,
     Guid? LinkedBuyerOrganizationId = null,
-    string? LinkedBuyerPublicOrganizationId = null);
+    string? LinkedBuyerPublicOrganizationId = null,
+    string? PartyKind = null);
 
 public sealed record CustomerSyncPageDto(
     List<POSCustomerDto> Items,
@@ -34,15 +40,30 @@ public sealed class POSCustomerQueryService
     private readonly IPOSCustomerRepository _customers;
     private readonly PartyBranchAccessService _branchAccess;
     private readonly IPartyBranchAccessActorAccessor _actorAccessor;
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly ICustomerCreditPolicyRepository _creditPolicies;
+    private readonly IBusinessCustomerCreditPolicyRepository _businessCreditPolicies;
+    private readonly IBusinessCreditEntryRepository _businessCredits;
+    private readonly IOutstandingBalanceService _outstanding;
 
     public POSCustomerQueryService(
         IPOSCustomerRepository customers,
         PartyBranchAccessService branchAccess,
-        IPartyBranchAccessActorAccessor actorAccessor)
+        IPartyBranchAccessActorAccessor actorAccessor,
+        IConnectedSupplierRelationshipRepository relationships,
+        ICustomerCreditPolicyRepository creditPolicies,
+        IOutstandingBalanceService outstanding,
+        IBusinessCustomerCreditPolicyRepository businessCreditPolicies,
+        IBusinessCreditEntryRepository businessCredits)
     {
         _customers = customers;
         _branchAccess = branchAccess;
         _actorAccessor = actorAccessor;
+        _relationships = relationships;
+        _creditPolicies = creditPolicies;
+        _outstanding = outstanding;
+        _businessCreditPolicies = businessCreditPolicies;
+        _businessCredits = businessCredits;
     }
 
     private PartyBranchAccessActor Actor => _actorAccessor.GetActor();
@@ -142,10 +163,13 @@ public sealed class POSCustomerQueryService
         }
 
         return new CheckoutCustomerSearchItemDto(
-            customer.Id.Value,
+            CheckoutCustomerSearchItemDto.KindCustomer,
             customer.DisplayName,
+            customer.Status.ToString(),
+            customer.Id.Value,
             customer.MobileNumber,
-            customer.Status.ToString());
+            LinkedPersonalPublicUserId: customer.LinkedPersonalPublicUserId,
+            PlatformBusinessCustomerId: customer.PlatformBusinessCustomerId);
     }
 
     public async Task<PagedResult<POSCustomerDto>> ListAsync(
@@ -161,7 +185,15 @@ public sealed class POSCustomerQueryService
             .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
             .ConfigureAwait(false);
         var (items, total) = await _customers
-            .ListAsync(PosOrganizationId.From(organizationId), status, search, skip, take, restrict, cancellationToken)
+            .ListAsync(
+                PosOrganizationId.From(organizationId),
+                status,
+                search,
+                skip,
+                take,
+                restrict,
+                peopleOnly: false,
+                cancellationToken)
             .ConfigureAwait(false);
 
         return new PagedResult<POSCustomerDto>(
@@ -172,42 +204,357 @@ public sealed class POSCustomerQueryService
     }
 
     /// <summary>
-    /// Narrow Active-only customer search for checkout (CreateSale). pageSize capped at 20.
+    /// Narrow Active-only checkout counterparty search for CreateSale (pageSize capped at 20).
+    /// Includes POS people and Active B2B Organization relationships (no ViewSuppliers required).
+    /// <paramref name="kind"/>: All | Customer | Business (default All).
+    /// Blank search is allowed for All, Business (Cash/GCash), and Customer (Utang people idle browse)
+    /// so Active person/B2B discoverability does not diverge by payment method.
     /// </summary>
-    public async Task<CheckoutCustomerSearchResult> SearchForCheckoutAsync(
+    public async Task<ApplicationResult<CheckoutCustomerSearchResult>> SearchForCheckoutAsync(
         Guid organizationId,
-        string search,
+        string? search,
         int? page,
         int? pageSize,
+        string? kind = null,
         CancellationToken cancellationToken = default)
     {
         var take = Math.Clamp(pageSize ?? 20, 1, 20);
         var pageNumber = Math.Max(page ?? 1, 1);
         var skip = (pageNumber - 1) * take;
-        var restrict = await _branchAccess
-            .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
-            .ConfigureAwait(false);
-        var (items, total) = await _customers
-            .ListAsync(
+        var normalizedKind = NormalizeCheckoutSearchKind(kind);
+        var term = search?.Trim() ?? string.Empty;
+        var hasTerm = term.Length > 0;
+
+        var includePeople = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindCustomer;
+        var includeBusiness = normalizedKind is "All" or CheckoutCustomerSearchItemDto.KindBusiness;
+
+        var merged = new List<CheckoutCustomerSearchItemDto>();
+        var peopleTotal = 0;
+        var businessTotal = 0;
+
+        // Idle people browse for kind Customer and kind All (Cash/GCash idle All parity with Utang).
+        if (includePeople)
+        {
+            var restrict = await _branchAccess
+                .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+                .ConfigureAwait(false);
+            // People-only SQL filter so B2B/business party rows cannot fill the page and hide people.
+            var (items, total) = await _customers
+                .ListAsync(
+                    PosOrganizationId.From(organizationId),
+                    CustomerStatus.Active,
+                    hasTerm ? term : null,
+                    0,
+                    take,
+                    restrict,
+                    peopleOnly: true,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            peopleTotal = total;
+            merged.AddRange(items
+                .Select(c => new CheckoutCustomerSearchItemDto(
+                    CheckoutCustomerSearchItemDto.KindCustomer,
+                    c.DisplayName,
+                    c.Status.ToString(),
+                    c.Id.Value,
+                    c.MobileNumber,
+                    LinkedPersonalPublicUserId: c.LinkedPersonalPublicUserId,
+                    PlatformBusinessCustomerId: c.PlatformBusinessCustomerId)));
+        }
+
+        if (includeBusiness)
+        {
+            var supplier = PosOrganizationId.From(organizationId);
+            var rows = await _relationships
+                .ListAsync(supplier, supplierView: true, cancellationToken)
+                .ConfigureAwait(false);
+            var businesses = rows
+                .Where(r =>
+                    r.Status == ConnectedSupplierRelationshipStatus.Active
+                    || r.Status == ConnectedSupplierRelationshipStatus.Pending)
+                .Where(r => IsBusinessCustomerVisibleAtActingBranch(r))
+                .Where(r => !hasTerm || MatchesBusinessSearch(r, term))
+                .OrderBy(r => r.Status == ConnectedSupplierRelationshipStatus.Active ? 0 : 1)
+                .ThenBy(r => r.BuyerDisplayNameSnapshot ?? r.BuyerPublicOrganizationIdSnapshot ?? string.Empty,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var connectedBuyerIds = businesses
+                .Select(r => r.BuyerOrganizationId.Value)
+                .ToHashSet();
+            merged.AddRange(businesses.Select(MapBusinessCheckoutItem));
+
+            // Legacy ORG-linked POS Business party rows without an open B2B relationship.
+            // Do not treat them as Active B2B; keep for historical Cash attach only when no
+            // Active/Pending ConnectedSupplierRelationship exists for that buyer org.
+            var restrict = await _branchAccess
+                .FilterCustomerIdsAccessibleAsync(organizationId, Actor, cancellationToken)
+                .ConfigureAwait(false);
+            var (posItems, _) = await _customers
+                .ListAsync(
+                    supplier,
+                    CustomerStatus.Active,
+                    hasTerm ? term : null,
+                    0,
+                    200,
+                    restrict,
+                    peopleOnly: false,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var posBusiness = posItems
+                .Where(IsCheckoutBusinessParty)
+                .Where(c =>
+                    c.LinkedBuyerOrganizationId is null
+                    || !connectedBuyerIds.Contains(c.LinkedBuyerOrganizationId.Value))
+                .Where(c => !hasTerm || MatchesPosBusinessSearch(c, term))
+                .OrderBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            businessTotal = businesses.Count + posBusiness.Count;
+            merged.AddRange(posBusiness.Select(MapPosBusinessCheckoutItem));
+        }
+
+        var ordered = merged
+            .OrderBy(x =>
+                x.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+                && string.Equals(x.Status, "Active", StringComparison.OrdinalIgnoreCase)
+                    ? 0
+                    : x.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+                      && string.Equals(x.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                        ? 1
+                        : 2)
+            .ThenBy(x => x.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var pageItems = ordered.Skip(skip).Take(take).ToList();
+        pageItems = await ProjectCheckoutCreditAsync(
                 PosOrganizationId.From(organizationId),
-                CustomerStatus.Active,
-                search,
-                skip,
-                take,
-                restrict,
+                pageItems,
                 cancellationToken)
             .ConfigureAwait(false);
+        var totalCount = includePeople && includeBusiness
+            ? peopleTotal + businessTotal
+            : includePeople
+                ? peopleTotal
+                : businessTotal;
 
-        return new CheckoutCustomerSearchResult(
-            items.Select(c => new CheckoutCustomerSearchItemDto(
-                c.Id.Value,
-                c.DisplayName,
-                c.MobileNumber,
-                c.Status.ToString())).ToList(),
-            total,
-            pageNumber,
-            take);
+        return ApplicationResult<CheckoutCustomerSearchResult>.Success(
+            new CheckoutCustomerSearchResult(pageItems, totalCount, pageNumber, take));
     }
+
+    private async Task<List<CheckoutCustomerSearchItemDto>> ProjectCheckoutCreditAsync(
+        PosOrganizationId organizationId,
+        List<CheckoutCustomerSearchItemDto> pageItems,
+        CancellationToken cancellationToken)
+    {
+        var personCustomerIds = pageItems
+            .Where(IsCheckoutPersonCustomerRow)
+            .Select(i => i.CustomerId!.Value)
+            .Distinct()
+            .ToList();
+        var businessBuyerIds = pageItems
+            .Where(IsCheckoutBusinessConnectionRow)
+            .Select(i => i.BuyerOrganizationId!.Value)
+            .Distinct()
+            .ToList();
+
+        if (personCustomerIds.Count == 0 && businessBuyerIds.Count == 0)
+        {
+            return pageItems;
+        }
+
+        IReadOnlyDictionary<Guid, CustomerCreditPolicy> policyByCustomer =
+            new Dictionary<Guid, CustomerCreditPolicy>();
+        IReadOnlyDictionary<Guid, decimal> outstandingByCustomer =
+            new Dictionary<Guid, decimal>();
+        IReadOnlyDictionary<Guid, BusinessCustomerCreditPolicy> policyByBuyer =
+            new Dictionary<Guid, BusinessCustomerCreditPolicy>();
+        IReadOnlyDictionary<Guid, decimal> outstandingByBuyer =
+            new Dictionary<Guid, decimal>();
+
+        if (personCustomerIds.Count > 0)
+        {
+            var policies = await _creditPolicies
+                .ListByCustomerIdsAsync(organizationId, personCustomerIds, cancellationToken)
+                .ConfigureAwait(false);
+            policyByCustomer = policies.ToDictionary(p => p.CustomerId.Value);
+            outstandingByCustomer = await _outstanding
+                .GetOutstandingBatchAsync(organizationId, personCustomerIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (businessBuyerIds.Count > 0)
+        {
+            var businessPolicies = await _businessCreditPolicies
+                .ListBySellerAndBuyerIdsAsync(organizationId, businessBuyerIds, cancellationToken)
+                .ConfigureAwait(false);
+            policyByBuyer = businessPolicies.ToDictionary(p => p.BuyerOrganizationId.Value);
+            outstandingByBuyer = await _businessCredits
+                .SumActiveAmountsByBuyerIdsAsync(organizationId, businessBuyerIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return pageItems.Select(item =>
+        {
+            if (IsCheckoutPersonCustomerRow(item))
+            {
+                var customerId = item.CustomerId!.Value;
+                outstandingByCustomer.TryGetValue(customerId, out var outstanding);
+                if (!policyByCustomer.TryGetValue(customerId, out var policy))
+                {
+                    return item with
+                    {
+                        CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
+                        CreditLimit = null,
+                        OutstandingAmount = outstanding,
+                        AvailableCredit = 0m,
+                        DefaultTermDays = null
+                    };
+                }
+
+                return item with
+                {
+                    CreditStatus = policy.Status.ToString(),
+                    CreditLimit = policy.CreditLimit,
+                    OutstandingAmount = outstanding,
+                    AvailableCredit = CustomerCreditPolicy.AvailableCredit(
+                        policy.Status,
+                        policy.CreditLimit,
+                        outstanding),
+                    DefaultTermDays = policy.DefaultTermDays
+                };
+            }
+
+            if (IsCheckoutBusinessConnectionRow(item))
+            {
+                var buyerId = item.BuyerOrganizationId!.Value;
+                outstandingByBuyer.TryGetValue(buyerId, out var outstanding);
+                if (!policyByBuyer.TryGetValue(buyerId, out var businessPolicy))
+                {
+                    return item with
+                    {
+                        CreditStatus = nameof(CustomerCreditPolicyStatus.NotConfigured),
+                        CreditLimit = null,
+                        OutstandingAmount = outstanding,
+                        AvailableCredit = 0m,
+                        DefaultTermDays = null
+                    };
+                }
+
+                return item with
+                {
+                    CreditStatus = businessPolicy.Status.ToString(),
+                    CreditLimit = businessPolicy.CreditLimit,
+                    OutstandingAmount = outstanding,
+                    AvailableCredit = BusinessCustomerCreditPolicy.AvailableCredit(
+                        businessPolicy.Status,
+                        businessPolicy.CreditLimit,
+                        outstanding),
+                    DefaultTermDays = businessPolicy.DefaultTermDays
+                };
+            }
+
+            return item;
+        }).ToList();
+    }
+
+    private static bool IsCheckoutPersonCustomerRow(CheckoutCustomerSearchItemDto item) =>
+        item.Kind == CheckoutCustomerSearchItemDto.KindCustomer
+        && item.CustomerId is not null
+        && (item.PartyKind is null
+            || item.PartyKind.Equals(nameof(CustomerPartyKind.Person), StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsCheckoutBusinessConnectionRow(CheckoutCustomerSearchItemDto item) =>
+        item.Kind == CheckoutCustomerSearchItemDto.KindBusiness
+        && item.BuyerOrganizationId is not null;
+
+    private static string NormalizeCheckoutSearchKind(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind))
+        {
+            return "All";
+        }
+
+        var trimmed = kind.Trim();
+        if (trimmed.Equals(CheckoutCustomerSearchItemDto.KindCustomer, StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("People", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Person", StringComparison.OrdinalIgnoreCase))
+        {
+            return CheckoutCustomerSearchItemDto.KindCustomer;
+        }
+
+        if (trimmed.Equals(CheckoutCustomerSearchItemDto.KindBusiness, StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Businesses", StringComparison.OrdinalIgnoreCase))
+        {
+            return CheckoutCustomerSearchItemDto.KindBusiness;
+        }
+
+        return "All";
+    }
+
+    private bool IsBusinessCustomerVisibleAtActingBranch(ConnectedSupplierRelationship r)
+    {
+        var actor = Actor;
+        var organizationWide =
+            actor.IsOrganizationGovernance
+            && (actor.ActingBranchId is null || actor.ActingBranchId == Guid.Empty);
+        return SupplierConnectionBranchRouting.IsVisibleAtSupplierBranch(
+            r.SupplierBranchId,
+            r.SharedSupplierBranchIds,
+            actor.ActingBranchId,
+            organizationWide);
+    }
+
+    private static bool MatchesBusinessSearch(ConnectedSupplierRelationship r, string term)
+    {
+        var haystack = string.Join(
+            ' ',
+            r.BuyerDisplayNameSnapshot ?? string.Empty,
+            r.BuyerPublicOrganizationIdSnapshot ?? string.Empty);
+        return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsCheckoutBusinessParty(POSCustomer customer) =>
+        customer.PartyKind == CustomerPartyKind.Business
+        || customer.LinkedBuyerOrganizationId is not null;
+
+    private static bool MatchesPosBusinessSearch(POSCustomer customer, string term)
+    {
+        var haystack = string.Join(
+            ' ',
+            customer.DisplayName,
+            customer.LinkedBuyerPublicOrganizationId ?? string.Empty,
+            customer.MobileNumber ?? string.Empty);
+        return haystack.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static CheckoutCustomerSearchItemDto MapBusinessCheckoutItem(ConnectedSupplierRelationship r) =>
+        new(
+            CheckoutCustomerSearchItemDto.KindBusiness,
+            string.IsNullOrWhiteSpace(r.BuyerDisplayNameSnapshot)
+                ? (r.BuyerPublicOrganizationIdSnapshot ?? "Business")
+                : r.BuyerDisplayNameSnapshot!,
+            r.Status.ToString(),
+            CustomerId: null,
+            MobileNumber: null,
+            ConnectionId: r.Id.Value,
+            BuyerOrganizationId: r.BuyerOrganizationId.Value,
+            BuyerPublicOrganizationId: r.BuyerPublicOrganizationIdSnapshot,
+            PartyKind: null,
+            InitiatedByParty: r.InitiatedByParty.ToString());
+
+    /// <summary>
+    /// POS Business party for checkout attach (Cash/GCash via customerId). Not Direct B2B Organization
+    /// party — that requires <see cref="MapBusinessCheckoutItem"/> (Active connection).
+    /// </summary>
+    private static CheckoutCustomerSearchItemDto MapPosBusinessCheckoutItem(POSCustomer customer) =>
+        new(
+            CheckoutCustomerSearchItemDto.KindCustomer,
+            customer.DisplayName,
+            customer.Status.ToString(),
+            customer.Id.Value,
+            customer.MobileNumber,
+            ConnectionId: null,
+            BuyerOrganizationId: customer.LinkedBuyerOrganizationId,
+            BuyerPublicOrganizationId: customer.LinkedBuyerPublicOrganizationId,
+            PartyKind: CustomerPartyKind.Business.ToString());
 
     public async Task<CustomerSyncPageDto> ListForSyncAsync(
         Guid organizationId,
@@ -243,7 +590,8 @@ public sealed class POSCustomerQueryService
             customer.UpdatedAtUtc,
             customer.LinkedPersonalPublicUserId,
             customer.LinkedBuyerOrganizationId,
-            customer.LinkedBuyerPublicOrganizationId);
+            customer.LinkedBuyerPublicOrganizationId,
+            customer.PartyKind.ToString());
 }
 
 public sealed class CreatePOSCustomer
@@ -277,6 +625,9 @@ public sealed class CreatePOSCustomer
         Guid? clientCustomerId = null,
         Guid? platformBusinessCustomerId = null,
         string? linkedPersonalPublicUserId = null,
+        string? partyKind = null,
+        Guid? linkedBuyerOrganizationId = null,
+        string? linkedBuyerPublicOrganizationId = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -294,6 +645,35 @@ public sealed class CreatePOSCustomer
                 }
             }
 
+            if (linkedBuyerOrganizationId is Guid buyerOrgId && buyerOrgId != Guid.Empty)
+            {
+                var existingBuyer = await _customers
+                    .FindByLinkedBuyerOrganizationIdAsync(orgId, buyerOrgId, cancellationToken)
+                    .ConfigureAwait(false);
+                if (existingBuyer is not null)
+                {
+                    return ApplicationResult<POSCustomer>.Success(existingBuyer);
+                }
+            }
+
+            CustomerPartyKind resolvedPartyKind = CustomerPartyKind.Person;
+            if (!string.IsNullOrWhiteSpace(partyKind))
+            {
+                if (!Enum.TryParse(partyKind.Trim(), ignoreCase: true, out resolvedPartyKind)
+                    || !Enum.IsDefined(resolvedPartyKind))
+                {
+                    return ApplicationResult<POSCustomer>.Failure(
+                        DomainErrorCodes.InvalidCustomerPartyKind,
+                        "Party kind must be Person or Business.");
+                }
+            }
+
+            if (linkedBuyerOrganizationId is not null
+                || !string.IsNullOrWhiteSpace(linkedBuyerPublicOrganizationId))
+            {
+                resolvedPartyKind = CustomerPartyKind.Business;
+            }
+
             var customer = clientCustomerId is null
                 ? POSCustomer.Create(
                     orgId,
@@ -303,7 +683,10 @@ public sealed class CreatePOSCustomer
                     address,
                     notes,
                     platformBusinessCustomerId: platformBusinessCustomerId,
-                    linkedPersonalPublicUserId: linkedPersonalPublicUserId)
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId,
+                    linkedBuyerOrganizationId: linkedBuyerOrganizationId,
+                    linkedBuyerPublicOrganizationId: linkedBuyerPublicOrganizationId,
+                    partyKind: resolvedPartyKind)
                 : POSCustomer.Create(
                     orgId,
                     displayName,
@@ -313,7 +696,10 @@ public sealed class CreatePOSCustomer
                     notes,
                     id: POSCustomerId.From(clientCustomerId.Value),
                     platformBusinessCustomerId: platformBusinessCustomerId,
-                    linkedPersonalPublicUserId: linkedPersonalPublicUserId);
+                    linkedPersonalPublicUserId: linkedPersonalPublicUserId,
+                    linkedBuyerOrganizationId: linkedBuyerOrganizationId,
+                    linkedBuyerPublicOrganizationId: linkedBuyerPublicOrganizationId,
+                    partyKind: resolvedPartyKind);
 
             if (customer.PlatformBusinessCustomerId is not null)
             {
@@ -348,7 +734,15 @@ public sealed class CreatePOSCustomer
 
                 var notesTag = "exits-id:" + customer.LinkedPersonalPublicUserId;
                 var (searchHits, _) = await _customers
-                    .ListAsync(orgId, CustomerStatus.Active, customer.LinkedPersonalPublicUserId, 0, 20, null, cancellationToken)
+                    .ListAsync(
+                        orgId,
+                        CustomerStatus.Active,
+                        customer.LinkedPersonalPublicUserId,
+                        0,
+                        20,
+                        null,
+                        peopleOnly: false,
+                        cancellationToken)
                     .ConfigureAwait(false);
                 if (searchHits.Any(c =>
                     string.Equals(

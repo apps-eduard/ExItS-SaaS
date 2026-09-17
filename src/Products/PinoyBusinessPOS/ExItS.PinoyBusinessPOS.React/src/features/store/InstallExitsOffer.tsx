@@ -49,7 +49,6 @@ export function InstallExitsOffer() {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          className="min-h-11"
           data-testid="install-exits-accept"
           disabled={busy}
           onClick={() => {
@@ -70,7 +69,6 @@ export function InstallExitsOffer() {
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11"
           data-testid="install-exits-dismiss"
           disabled={busy}
           onClick={() => setDismissed(true)}

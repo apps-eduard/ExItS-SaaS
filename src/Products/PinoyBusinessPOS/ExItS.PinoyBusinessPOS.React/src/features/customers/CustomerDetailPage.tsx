@@ -1,7 +1,24 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { canEditCustomer, canRecordRepayment, canViewStatement } from "@/access/pos-capabilities";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Ban,
+  Link2,
+  MapPin,
+  NotebookPen,
+  Pencil,
+  Phone,
+  RotateCcw,
+  UserRound,
+} from "lucide-react";
+import {
+  canApproveCustomerCreditPolicy,
+  canEditCustomer,
+  canManageCustomerBranchAccess,
+  canManageCustomerCreditPolicy,
+  canRecordRepayment,
+  canViewStatement,
+} from "@/access/pos-capabilities";
 import {
   createCustomerLinkRequestForCustomer,
   getCustomerLinkStatus,
@@ -9,30 +26,29 @@ import {
   remindCustomerLinkRequest,
   revokeCustomerLinkRequest,
 } from "@/api/platform/customer-link-status-client";
-import { useMutation } from "@tanstack/react-query";
 import {
   getOrganizationBusinessCustomer,
   updateBusinessCustomerDeliveryPreferences,
 } from "@/api/platform/business-customer-delivery-client";
+import { resolvePublicUserId } from "@/api/platform/public-identity-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import {
   deactivateCustomer,
   getCustomer,
   getCustomerCreditSummary,
-  listCustomerCreditEntries,
-  listCustomerRepayments,
   reactivateCustomer,
   type PosCustomerListItem,
 } from "@/api/pos/pos-customers-client";
 import { CustomerDeliveryExceptionSection } from "@/features/customers/CustomerDeliveryExceptionSection";
+import { CustomerStoreDetailsEditDrawer } from "@/features/customers/CustomerStoreDetailsEditDrawer";
+import { extractDeliveryInstructions } from "@/features/customers/customer-store-details";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
@@ -43,18 +59,16 @@ import {
   type CustomerLinkUiStatus,
 } from "@/features/customers/customer-link-status";
 import { ConnectionStatusChip } from "@/features/customer-connection/ConnectionStatusChip";
-import {
-  mapOrgLinkStatusToRelationship,
-} from "@/features/customer-connection/connection-state";
+import { mapOrgLinkStatusToRelationship } from "@/features/customer-connection/connection-state";
 import { CustomerPersonalLinkSection } from "@/features/customers/CustomerPersonalLinkSection";
-import { ActorAttribution } from "@/features/actors/ActorAttribution";
-import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { CreditPolicySection } from "@/features/customers/CreditPolicySection";
+import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
+import { PaymentHistorySection } from "@/features/customers/PaymentHistorySection";
+import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
   cacheCustomer,
-  cacheCustomerCreditSummary,
   getCachedCustomer,
-  getCachedCustomerCreditSummary,
 } from "@/offline/customer-cache";
 import { onlineRequiredDetailKey, ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
@@ -64,24 +78,53 @@ import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 export function CustomerDetailPage() {
   const { t } = useI18n();
   const { customerId } = useParams<{ customerId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const pendingLinkHint = searchParams.get("pendingLink") === "1";
   const { sessionGrant } = useWorkspace();
   const workspace = usePosWorkspaceScope();
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
+  const smartBack = usePageSmartBack({
+    fallback: "customers",
+    backLabel: t(pageBackNav.customers.labelKey),
+    backTestId: "page-header-back-customers",
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [afterCreateHintDismissed, setAfterCreateHintDismissed] = useState(false);
   const [cachedCustomer, setCachedCustomer] = useState<PosCustomerListItem | null>(null);
-  const [cachedOwed, setCachedOwed] = useState<number | null>(null);
 
   const allowEdit = canEditCustomer(sessionGrant);
   const allowRepay = canRecordRepayment(sessionGrant);
   const allowStatement = canViewStatement(sessionGrant);
+  const allowManageCreditPolicy = canManageCustomerCreditPolicy(sessionGrant);
+  const allowApproveCreditPolicy = canApproveCustomerCreditPolicy(sessionGrant);
+  const allowManageBranchAccess = canManageCustomerBranchAccess(sessionGrant);
 
   const enabledOnline = Boolean(workspace) && Boolean(customerId) && online;
+
+  useEffect(() => {
+    if (searchParams.get("edit") !== "1") {
+      return;
+    }
+    setEditOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("edit");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("recordPayment") !== "1") {
+      return;
+    }
+    setRecordPaymentOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("recordPayment");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const customerQuery = useQuery({
     queryKey: ["customers", "detail", workspace?.organizationId, customerId],
@@ -89,7 +132,7 @@ export function CustomerDetailPage() {
     queryFn: ({ signal }) => getCustomer(workspace!, customerId!, signal),
   });
 
-  const summaryQuery = useQuery({
+  const creditSummaryQuery = useQuery({
     queryKey: ["customers", "credit-summary", workspace?.organizationId, customerId],
     enabled: enabledOnline,
     queryFn: ({ signal }) => getCustomerCreditSummary(workspace!, customerId!, signal),
@@ -131,6 +174,23 @@ export function CustomerDetailPage() {
     enabled: enabledOnline && Boolean(platformCustomerId),
     queryFn: ({ signal }) =>
       getOrganizationBusinessCustomer(workspace!.organizationId, platformCustomerId!, signal),
+  });
+
+  const personalExItsIdForProfile = customerQuery.data
+    ? resolveDisplayedPersonalExItsId({
+        linkedPersonalPublicUserId: customerQuery.data.linkedPersonalPublicUserId,
+        notes: customerQuery.data.notes,
+      })
+    : null;
+  const platformLinkIsLinked =
+    linkStatusQuery.data != null &&
+    mapPlatformCustomerLinkStatus(linkStatusQuery.data.status) === "Linked";
+
+  const personalProfileQuery = useQuery({
+    queryKey: ["customers", "personal-profile", personalExItsIdForProfile],
+    enabled: enabledOnline && platformLinkIsLinked && Boolean(personalExItsIdForProfile),
+    queryFn: ({ signal }) =>
+      resolvePublicUserId(personalExItsIdForProfile!, "SaleCustomer", signal),
   });
 
   const deliveryExceptionMutation = useMutation({
@@ -237,26 +297,6 @@ export function CustomerDetailPage() {
     },
   });
 
-  const creditsQuery = useQuery({
-    queryKey: ["customers", "credits", workspace?.organizationId, customerId],
-    enabled: enabledOnline,
-    queryFn: ({ signal }) =>
-      listCustomerCreditEntries(workspace!, customerId!, { pageSize: 20 }, signal),
-  });
-
-  const repaymentsQuery = useQuery({
-    queryKey: ["customers", "repayments", workspace?.organizationId, customerId],
-    enabled: enabledOnline,
-    queryFn: ({ signal }) =>
-      listCustomerRepayments(workspace!, customerId!, { pageSize: 20 }, signal),
-  });
-
-  const repaymentActorIds = (repaymentsQuery.data?.items ?? []).flatMap((payment) => [
-    payment.recordedBy,
-    payment.reversedBy,
-  ]);
-  const actors = useActorDirectory(workspace?.organizationId, repaymentActorIds);
-
   useEffect(() => {
     if (!offlineContext || !online) {
       return;
@@ -266,30 +306,21 @@ export function CustomerDetailPage() {
         () => {},
       );
     }
-    if (summaryQuery.data) {
-      void cacheCustomerCreditSummary(
-        offlineContext.db,
-        offlineContext.scopeBinding,
-        summaryQuery.data,
-      ).catch(() => {});
-    }
-  }, [customerQuery.data, offlineContext, online, summaryQuery.data]);
+  }, [customerQuery.data, offlineContext, online]);
 
   useEffect(() => {
     if (!offlineContext || online || !customerId) {
       return;
     }
     let cancelled = false;
-    void Promise.all([
-      getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId),
-      getCachedCustomerCreditSummary(offlineContext.db, offlineContext.scopeBinding, customerId),
-    ]).then(([cachedRow, summary]) => {
-      if (cancelled) {
-        return;
-      }
-      setCachedCustomer(cachedRow);
-      setCachedOwed(summary?.outstandingAmount ?? null);
-    });
+    void getCachedCustomer(offlineContext.db, offlineContext.scopeBinding, customerId).then(
+      (cachedRow) => {
+        if (cancelled) {
+          return;
+        }
+        setCachedCustomer(cachedRow);
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -319,7 +350,6 @@ export function CustomerDetailPage() {
   }
 
   const usingCachedCustomer = !customerQuery.data;
-  const amountOwed = summaryQuery.data?.outstandingAmount ?? cachedOwed ?? 0;
   const isActive = customer.status.toLowerCase() === "active";
 
   const linkUiStatus: CustomerLinkUiStatus = (() => {
@@ -339,6 +369,8 @@ export function CustomerDetailPage() {
     return "Unavailable";
   })();
 
+  const isLinked = linkUiStatus === "Linked";
+
   const showAfterCreateHint =
     pendingLinkHint &&
     !afterCreateHintDismissed &&
@@ -355,12 +387,20 @@ export function CustomerDetailPage() {
     new Date(linkMeta!.nextReminderEligibleAtUtc!).getTime() > Date.now();
 
   const linkHistoryItems = (linkHistoryQuery.data ?? []).slice(0, 8);
+  const linkedAtUtc =
+    linkHistoryItems.find((item) => mapOrgLinkStatusToRelationship(item.status) === "Linked")
+      ?.createdAtUtc ??
+    linkHistoryItems[0]?.createdAtUtc ??
+    linkMeta?.invitationSentAtUtc ??
+    null;
 
   const personalExItsId = resolveDisplayedPersonalExItsId({
     linkedPersonalPublicUserId: customer.linkedPersonalPublicUserId,
     notes: customer.notes,
   });
-  const notesDisplay = extractPersonalExItsIdFromNotes(customer.notes).notesWithoutExItsTag;
+  const storeNotes = extractDeliveryInstructions(customer.notes);
+  const headerTitle =
+    (isLinked ? personalProfileQuery.data?.displayName?.trim() : null) || customer.displayName;
 
   async function toggleStatus() {
     if (!allowEdit || acting || !workspace || !customerId) {
@@ -386,30 +426,64 @@ export function CustomerDetailPage() {
     }
   }
 
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
-      <PageHeader
-        title={customer.displayName}
-        description={t("customers.detailLede")}
-        backTo={pageBackNav.customers.to}
-        backLabel={t(pageBackNav.customers.labelKey)}
-        backTestId="page-header-back-customers"
+  const editStoreDetailsButton = allowEdit ? (
+    <Button
+      type="button"
+      variant="default"
+      data-testid="customer-edit-store-details"
+      onClick={() => setEditOpen(true)}
+    >
+      <Pencil className="size-4 shrink-0" aria-hidden />
+      {t("customers.storeDetails.edit")}
+    </Button>
+  ) : null;
+
+  const statusToggleButton = allowEdit ? (
+    <Button
+      type="button"
+      variant={isActive ? "destructive" : "success"}
+      data-testid="customer-toggle-status"
+      disabled={acting}
+      onClick={() => void toggleStatus()}
+    >
+      {isActive ? (
+        <Ban className="size-4 shrink-0" aria-hidden />
+      ) : (
+        <RotateCcw className="size-4 shrink-0" aria-hidden />
+      )}
+      {isActive ? t("customers.deactivate") : t("customers.reactivate")}
+    </Button>
+  ) : null;
+
+  const deliveryCard =
+    platformCustomerId && online ? (
+      <CustomerDeliveryExceptionSection
+        allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
+        canEdit={allowEdit}
+        pending={deliveryExceptionMutation.isPending}
+        t={t}
+        onToggle={(next) => deliveryExceptionMutation.mutate(next)}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusChip tone={isActive ? "success" : "warning"}>{customer.status}</StatusChip>
-        <span data-testid="customer-link-status">
-          <ConnectionStatusChip
-            state={mapOrgLinkStatusToRelationship(linkUiStatus)}
-            audience="organization"
-            testId="customer-connection-status-chip"
-          />
-        </span>
-      </div>
+    ) : null;
+
+  return (
+    <div className="exits-page flex min-w-0 flex-col gap-4" data-testid="customer-detail-page">
+      <PageHeader
+        title={headerTitle}
+        description={t("customers.detailLede")}
+        {...smartBack}
+      />
+      {!isActive ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span data-testid="customer-account-status">
+            <StatusChip tone="warning">{customer.status}</StatusChip>
+          </span>
+        </div>
+      ) : null}
 
       {linkUiStatus !== "NotLinked" ? (
         <CustomerPersonalLinkSection
           linkUiStatus={linkUiStatus}
-          personalExItsId={personalExItsId}
           customerDisplayName={customer.displayName}
           linkMeta={linkMeta}
           linkHistoryItems={linkHistoryItems}
@@ -456,16 +530,6 @@ export function CustomerDetailPage() {
         </Card>
       ) : null}
 
-      {platformCustomerId && online ? (
-        <CustomerDeliveryExceptionSection
-          allowBeyond={deliveryPrefsQuery.data?.allowDeliveryBeyondNormalDistance ?? false}
-          canEdit={allowEdit && !deliveryPrefsQuery.isLoading}
-          pending={deliveryExceptionMutation.isPending}
-          t={t}
-          onToggle={(next) => deliveryExceptionMutation.mutate(next)}
-        />
-      ) : null}
-
       {usingCachedCustomer ? (
         <Card data-testid="customer-detail-cached-notice">
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -490,174 +554,296 @@ export function CustomerDetailPage() {
         </Card>
       ) : null}
 
-      <Card data-testid="customer-amount-owed">
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {t("customers.amountOwed")}
-        </p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-lg)] font-semibold">
-          <MoneyDisplay amount={amountOwed} testId="customer-amount-owed-value" />
-        </p>
-      </Card>
-
-      <Card>
-        <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-          <div>
-            <dt className="text-muted">{t("customers.exItsIdLabel")}</dt>
-            <dd className="m-0 break-all" data-testid={linkUiStatus === "Pending" ? undefined : "customer-exits-id"}>
-              {personalExItsId ?? t("customers.exItsIdNone")}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("customers.linkStatusLabel")}</dt>
-            <dd className="m-0" data-testid="customer-link-status-label">
-              {online && !customer.platformBusinessCustomerId?.trim()
-                ? t("customers.linkStatus.notLinked")
-                : !online && customer.platformBusinessCustomerId?.trim()
-                  ? t("customers.linkStatus.unavailableOffline")
-                  : t(customerLinkStatusLabelKey(linkUiStatus))}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("customers.mobile")}</dt>
-            <dd className="m-0">{customer.mobileNumber?.trim() || "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("customers.address")}</dt>
-            <dd className="m-0">{customer.address?.trim() || "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("customers.notes")}</dt>
-            <dd className="m-0 whitespace-pre-wrap" data-testid="customer-notes-display">
-              {notesDisplay || "—"}
-            </dd>
-          </div>
-        </dl>
-      </Card>
-
-      <div className="flex flex-wrap gap-2">
-        {allowEdit ? (
-          <Button asChild className="min-h-11" data-testid="customer-edit">
-            <Link to={`/customers/${customerId}/edit`}>{t("customers.edit")}</Link>
-          </Button>
-        ) : null}
-        {allowRepay ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="customer-repay">
-            <Link to={`/customers/${customerId}/repay`}>{t("customers.recordPayment")}</Link>
-          </Button>
-        ) : null}
-        {allowStatement && online ? (
-          <Button asChild variant="ghost" className="min-h-11" data-testid="customer-statement">
-            <Link to={`/customers/${customerId}/statement`}>{t("customers.viewStatement")}</Link>
-          </Button>
-        ) : null}
-        {allowEdit ? (
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11"
-            data-testid="customer-toggle-status"
-            disabled={acting}
-            onClick={() => void toggleStatus()}
-          >
-            {isActive ? t("customers.deactivate") : t("customers.reactivate")}
-          </Button>
-        ) : null}
-      </div>
-
-      <section data-testid="customer-credits-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.creditsTitle")}
-        </h2>
-        {creditsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        {creditsQuery.isSuccess && creditsQuery.data.items.length === 0 ? (
-          <EmptyState
-            title={t("customers.creditsEmpty")}
-            detail={t("customers.creditsEmptyDetail")}
-          />
-        ) : null}
-        <ul className="mt-2 flex list-none flex-col gap-2 p-0">
-          {creditsQuery.data?.items.map((entry) => (
-            <li key={entry.creditEntryId}>
-              <Card className="p-3" data-testid={`customer-credit-${entry.creditEntryId}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="m-0 font-semibold">
-                      <MoneyDisplay amount={entry.amount} />
-                    </p>
-                    <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {entry.remarks || entry.status}
-                    </p>
-                  </div>
-                  <span className="text-[length:var(--exits-text-xs)] text-muted">
-                    {entry.status}
-                  </span>
+      {isLinked ? (
+        <>
+          <Card className="flex flex-col gap-3 p-4" data-testid="customer-personal-profile">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="m-0 flex min-w-0 items-center gap-2 text-[length:var(--exits-text-md)] font-semibold">
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary size-4"
+                  aria-hidden
+                />
+                {t("customers.personalProfile.title")}
+              </h2>
+              {statusToggleButton}
+            </div>
+            {!online ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("customers.personalProfile.unavailable")}
+              </p>
+            ) : (
+              <dl className="customer-ownership-dl">
+                <div>
+                  <dt>{t("customers.personalProfile.name")}</dt>
+                  <dd data-testid="customer-personal-profile-name">
+                    {personalProfileQuery.data?.displayName?.trim() ||
+                      customer.displayName ||
+                      "—"}
+                  </dd>
                 </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section data-testid="customer-payments-section">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-          {t("customers.paymentsTitle")}
-        </h2>
-        {repaymentsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        {repaymentsQuery.isSuccess && repaymentsQuery.data.items.length === 0 ? (
-          <EmptyState
-            title={t("customers.paymentsEmpty")}
-            detail={t("customers.paymentsEmptyDetail")}
-          />
-        ) : null}
-        <ul className="mt-2 flex list-none flex-col gap-2 p-0">
-          {repaymentsQuery.data?.items.map((payment) => (
-            <li key={payment.repaymentId}>
-              <Card className="p-3" data-testid={`customer-payment-${payment.repaymentId}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="m-0 font-semibold">
-                      <MoneyDisplay amount={payment.amount} />
-                    </p>
-                    <p className="mb-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted">
-                      {payment.remarks?.trim() || payment.status}
-                    </p>
+                {personalExItsId ? (
+                  <div>
+                    <dt>{t("customers.exItsIdLabel")}</dt>
+                    <dd data-testid="customer-personal-profile-exits-id">{personalExItsId}</dd>
                   </div>
-                  <span className="text-[length:var(--exits-text-xs)] text-muted">
-                    {payment.status}
-                  </span>
+                ) : null}
+                {personalProfileQuery.data?.maskedEmail?.trim() ? (
+                  <div>
+                    <dt>{t("customers.personalProfile.email")}</dt>
+                    <dd data-testid="customer-personal-profile-email">
+                      {personalProfileQuery.data.maskedEmail}
+                    </dd>
+                  </div>
+                ) : personalProfileQuery.isLoading ? (
+                  <div>
+                    <dt>{t("customers.personalProfile.email")}</dt>
+                    <dd data-testid="customer-personal-profile-email">…</dd>
+                  </div>
+                ) : null}
+                <div data-testid="customer-personal-profile-link-row">
+                  <dt>
+                    <ConnectionStatusChip
+                      state={mapOrgLinkStatusToRelationship(linkUiStatus)}
+                      audience="organization"
+                      testId="customer-personal-profile-link-status"
+                    />
+                  </dt>
+                  <dd className="!font-normal text-muted tabular-nums">
+                    {linkedAtUtc ? new Date(linkedAtUtc).toLocaleString() : "—"}
+                  </dd>
                 </div>
-                <div className="mt-2 flex flex-col gap-2">
-                  <ActorAttribution
-                    labelKey="common.recordedBy"
-                    actorId={payment.recordedBy}
-                    occurredAtUtc={payment.recordedAtUtc}
-                    resolved={actors.resolve(payment.recordedBy)}
-                    isLoading={actors.isResolving}
-                    testId={`customer-payment-recorded-by-${payment.repaymentId}`}
+              </dl>
+            )}
+          </Card>
+
+          <Card className="flex flex-col gap-3 p-4" data-testid="customer-store-details">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                {t("customers.storeDetails.title")}
+              </h2>
+              {editStoreDetailsButton}
+            </div>
+            <dl className="branch-mgmt-overview__grid">
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <UserRound
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
                   />
-                  {payment.reversedAtUtc || payment.reversedBy ? (
-                    <>
-                      <ActorAttribution
-                        labelKey="common.reversedBy"
-                        actorId={payment.reversedBy}
-                        occurredAtUtc={payment.reversedAtUtc}
-                        resolved={actors.resolve(payment.reversedBy)}
-                        isLoading={actors.isResolving}
-                        testId={`customer-payment-reversed-by-${payment.repaymentId}`}
-                      />
-                      {payment.reversalReason ? (
-                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                          {t("common.reason")}: {payment.reversalReason}
-                        </p>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      </section>
+                  {t("customers.storeDetails.preferredName")}
+                </dt>
+                <dd data-testid="customer-store-preferred-name">{customer.displayName}</dd>
+              </div>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <Phone
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
+                  {t("customers.storeDetails.contactPhone")}
+                </dt>
+                <dd>{customer.mobileNumber?.trim() || "—"}</dd>
+              </div>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <MapPin
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
+                  {t("customers.storeDetails.deliveryAddress")}
+                </dt>
+                <dd>{customer.address?.trim() || "—"}</dd>
+              </div>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <NotebookPen
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
+                  {t("customers.storeDetails.deliveryInstructions")}
+                </dt>
+                <dd className="whitespace-pre-wrap" data-testid="customer-delivery-instructions">
+                  {storeNotes.deliveryInstructions || "—"}
+                </dd>
+              </div>
+              <div className="branch-mgmt-overview__item">
+                <dt>
+                  <NotebookPen
+                    className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                    aria-hidden
+                  />
+                  {t("customers.storeDetails.internalNotes")}
+                </dt>
+                <dd className="whitespace-pre-wrap" data-testid="customer-notes-display">
+                  {storeNotes.internalNotes || "—"}
+                </dd>
+              </div>
+              {deliveryCard}
+            </dl>
+          </Card>
+        </>
+      ) : (
+        <Card className="flex flex-col gap-3 p-4" data-testid="customer-store-details">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+              {t("customers.storeDetails.title")}
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {editStoreDetailsButton}
+              {statusToggleButton}
+            </div>
+          </div>
+          <dl className="branch-mgmt-overview__grid">
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.displayName")}
+              </dt>
+              <dd>{customer.displayName}</dd>
+            </div>
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <Phone
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.storeDetails.contactPhone")}
+              </dt>
+              <dd>{customer.mobileNumber?.trim() || "—"}</dd>
+            </div>
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <MapPin
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.storeDetails.deliveryAddress")}
+              </dt>
+              <dd>{customer.address?.trim() || "—"}</dd>
+            </div>
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <NotebookPen
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.storeDetails.deliveryInstructions")}
+              </dt>
+              <dd className="whitespace-pre-wrap" data-testid="customer-delivery-instructions">
+                {storeNotes.deliveryInstructions || "—"}
+              </dd>
+            </div>
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <NotebookPen
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.storeDetails.internalNotes")}
+              </dt>
+              <dd className="whitespace-pre-wrap" data-testid="customer-notes-display">
+                {storeNotes.internalNotes || "—"}
+              </dd>
+            </div>
+            {deliveryCard}
+          </dl>
+          <dl className="branch-mgmt-overview__grid">
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <UserRound
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.exItsIdLabel")}
+              </dt>
+              <dd data-testid="customer-exits-id">
+                {personalExItsId ?? t("customers.exItsIdNone")}
+              </dd>
+            </div>
+            <div className="branch-mgmt-overview__item">
+              <dt>
+                <Link2
+                  className="branch-mgmt-overview__icon branch-mgmt-overview__icon--primary"
+                  aria-hidden
+                />
+                {t("customers.linkStatusLabel")}
+              </dt>
+              <dd className="branch-mgmt-overview__value--status" data-testid="customer-link-status-label">
+                {online && !customer.platformBusinessCustomerId?.trim()
+                  ? t("customers.linkStatus.notLinked")
+                  : !online && customer.platformBusinessCustomerId?.trim()
+                    ? t("customers.linkStatus.unavailableOffline")
+                    : t(customerLinkStatusLabelKey(linkUiStatus))}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+      )}
+
+      {workspace && customerId ? (
+        <CreditPolicySection
+          workspace={workspace}
+          customerId={customerId}
+          online={online}
+          canManage={allowManageCreditPolicy}
+          canApprove={allowApproveCreditPolicy}
+          canRecordPayment={allowRepay}
+          canViewStatement={allowStatement}
+          subjectIdentity={[headerTitle, personalExItsId]
+            .filter((part): part is string => Boolean(part))
+            .join(" · ")}
+          onRecordPayment={() => setRecordPaymentOpen(true)}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <PaymentHistorySection
+          customerKind="personal"
+          customerId={customerId}
+          online={online}
+          canManageChecks={allowRepay}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <CustomerBranchVisibilitySection
+          workspace={workspace}
+          organizationId={workspace.organizationId}
+          customerId={customerId}
+          online={online}
+          canManage={allowManageBranchAccess}
+        />
+      ) : null}
+
+      {customerQuery.data ? (
+        <CustomerStoreDetailsEditDrawer
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          workspace={workspace}
+          customer={customerQuery.data}
+          isLinked={isLinked}
+          contextLabel={headerTitle}
+        />
+      ) : null}
+
+      {workspace && customerId ? (
+        <RecordPaymentModal
+          open={recordPaymentOpen}
+          onOpenChange={setRecordPaymentOpen}
+          customerKind="personal"
+          customerId={customerId}
+          displayName={headerTitle}
+          outstandingBalance={creditSummaryQuery.data?.outstandingAmount ?? 0}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ["customers", "credit-summary", workspace.organizationId, customerId],
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

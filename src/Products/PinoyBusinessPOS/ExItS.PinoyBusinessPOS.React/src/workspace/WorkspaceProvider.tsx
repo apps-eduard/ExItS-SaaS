@@ -15,11 +15,12 @@ import {
   AUTH_TOKEN_PATH,
   type BrowserSessionSnapshot,
 } from "@/api/platform/browser-session";
-import { clearPosAccessToken } from "@/api/platform/pos-access-token";
-import { clearPosSessionGrant, getPosSessionGrant } from "@/api/platform/pos-session-grant";
+import { clearPosAccessToken, setPosAccessToken } from "@/api/platform/pos-access-token";
+import { clearPosSessionGrant, getPosSessionGrant, setPosSessionGrant } from "@/api/platform/pos-session-grant";
 import {
   bindOrganizationManagementGrant,
   bindWorkspaceWithSessionGrant,
+  issueSessionGrant,
   listEligibleOrganizations,
   listOrganizationBranches,
   probeOrganizationSessionGrant,
@@ -109,6 +110,8 @@ type WorkspaceContextValue = {
   bindDestination: (destination: WorkspaceDestination) => Promise<boolean>;
   ensureOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
   retryOrganizationGrantHint: (organizationId: string) => Promise<SessionGrantResponse | null>;
+  /** Re-issue org session grant so commercial feature codes stay current after plan changes. */
+  refreshSessionGrant: () => Promise<SessionGrantResponse | null>;
   refreshWorkspaces: () => Promise<void>;
   clearBoundWorkspace: () => void;
 };
@@ -152,7 +155,13 @@ function findBranchLabel(
   workspaces: AccessibleOrganizationWorkspace[],
   organizationId: string,
   branchId: string,
-): { organizationDisplayName: string; branchName: string } | null {
+): {
+  organizationDisplayName: string;
+  branchName: string;
+  branchType: import("@/features/branches/branch-type").OrganizationBranchType;
+  areaId: string | null;
+  areaName: string | null;
+} | null {
   const organization = workspaces.find((item) => item.organizationId === organizationId);
   const branch = organization?.branches.find((item) => item.branchId === branchId);
   if (!organization || !branch) {
@@ -161,6 +170,9 @@ function findBranchLabel(
   return {
     organizationDisplayName: organization.displayName,
     branchName: branch.name,
+    branchType: branch.branchType ?? "Retail",
+    areaId: branch.areaId ?? null,
+    areaName: branch.areaName ?? null,
   };
 }
 
@@ -174,6 +186,7 @@ function findOrganizationLabel(
 function boundFromDestination(
   destination: WorkspaceDestination,
   workspaces: AccessibleOrganizationWorkspace[],
+  branchTypeOverride?: import("@/features/branches/branch-type").OrganizationBranchType | null,
 ): BoundWorkspace {
   const orgName =
     findOrganizationLabel(workspaces, destination.organizationId) ??
@@ -185,6 +198,9 @@ function boundFromDestination(
       organizationDisplayName: labels?.organizationDisplayName ?? orgName,
       branchId: destination.branchId,
       branchName: labels?.branchName ?? destination.branchName ?? destination.branchId,
+      branchType: branchTypeOverride ?? labels?.branchType ?? "Retail",
+      areaId: labels?.areaId ?? null,
+      areaName: labels?.areaName ?? null,
       experience: destination.experience,
     };
   }
@@ -193,6 +209,9 @@ function boundFromDestination(
     organizationDisplayName: orgName,
     branchId: null,
     branchName: null,
+    branchType: null,
+    areaId: null,
+    areaName: null,
     experience: destination.experience,
   };
 }
@@ -642,6 +661,26 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [ensureOrganizationGrantHint],
   );
 
+  const refreshSessionGrant = useCallback(async () => {
+    const organizationId = boundWorkspace?.organizationId;
+    if (!organizationId) {
+      return null;
+    }
+    const result = await issueSessionGrant(organizationId);
+    if (!result.ok) {
+      return null;
+    }
+    setPosAccessToken(result.grant.accessToken);
+    setPosSessionGrant(result.grant);
+    setSessionGrantState(result.grant);
+    setGrantByOrganizationId((prev) => {
+      const next = new Map(prev);
+      next.set(organizationId, result.grant);
+      return next;
+    });
+    return result.grant;
+  }, [boundWorkspace?.organizationId]);
+
   const bindDestination = useCallback(
     async (destination: WorkspaceDestination) => {
       if (isOrganizationContextLocked(session)) {
@@ -671,9 +710,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail(null);
       setFailureDiagnostic(null);
 
+      let settled = false;
+      const finish = (ok: boolean) => {
+        settled = true;
+        return ok;
+      };
+      try {
       const activeSession = await ensureOrganizationSession();
       if (!activeSession) {
-        return false;
+        // ensureOrganizationSession already moved status off "binding".
+        return finish(false);
       }
 
       const previousBranchId = boundWorkspace?.branchId ?? null;
@@ -705,7 +751,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           );
           setBoundWorkspace(null);
           setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-          return false;
+          return finish(false);
         }
         setBoundWorkspace(boundFromDestination(destination, workspaces));
         setSessionGrantState(result.grant);
@@ -717,13 +763,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setBindFailureKind(null);
         setAccessDeniedDetail(null);
         setStatus("bound");
-        return true;
+        return finish(true);
       }
 
       if (!destination.branchId) {
         denyBind("branch_not_accessible", null, "accessDenied.branchNotAccessible");
         setStatus("access_denied");
-        return false;
+        return finish(false);
       }
 
       const result = await bindWorkspaceWithSessionGrant(
@@ -757,7 +803,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         );
         setBoundWorkspace(null);
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-        return false;
+        return finish(false);
       }
 
       const operational = await selectOperationalBranch({
@@ -780,7 +826,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           clearPosSessionGrant();
           setSessionGrantState(null);
         }
-        setBoundWorkspace(null);
+        // Keep the current bound location when an open shift blocks switching —
+        // clearing would orphan the user with no workspace while a shift is still open.
+        if (classified.kind !== "open_shift_blocks_branch_switch") {
+          setBoundWorkspace(null);
+        }
         denyBind(
           classified.kind,
           classified.technicalDetail,
@@ -807,14 +857,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             status: operational.status,
             errorCode: operational.errorCode,
             traceId: operational.traceId,
+            friendlyMessage:
+              classified.kind === "open_shift_blocks_branch_switch"
+                ? (operational.detail ??
+                  "Close or cancel your open cashier shift before switching to another branch.")
+                : operational.detail ?? undefined,
           }),
         );
         setStatus(classified.kind === "product_access_denied" ? "access_denied" : "ready");
-        return false;
+        return finish(false);
       }
 
-      setBoundWorkspace(boundFromDestination(destination, workspaces));
+      // Keep React sessionGrant in lockstep with persisted POS grant/token before
+      // status becomes "bound" so RequireManagerRoleHome never evaluates a stale grant.
       setSessionGrantState(result.grant);
+      setBoundWorkspace(
+        boundFromDestination(
+          destination,
+          workspaces,
+          operational.ok ? operational.context.branchType : undefined,
+        ),
+      );
       setGrantByOrganizationId((prev) => {
         const next = new Map(prev);
         next.set(destination.organizationId, result.grant);
@@ -824,6 +887,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setAccessDeniedDetail(null);
       setFailureDiagnostic(null);
       setStatus("bound");
+      // Clear binding overlay before optional device hydrate (must not leave clicks blocked).
+      settled = true;
 
       if (previousBranchId && previousBranchId !== destination.branchId) {
         void queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -872,6 +937,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       return true;
+      } catch (error: unknown) {
+        console.error("[workspace-bind] unexpected failure while binding", error);
+        denyBind(
+          "generic",
+          error instanceof Error ? error.message : String(error),
+          "accessDenied.generic",
+        );
+        // Never leave status at "binding" — that paints a full-screen click blocker.
+        setStatus(boundWorkspaceRef.current ? "bound" : "ready");
+        settled = true;
+        return false;
+      } finally {
+        if (!settled) {
+          setStatus(boundWorkspaceRef.current ? "bound" : "ready");
+        }
+      }
     },
     [boundWorkspace?.branchId, denyBind, ensureOrganizationSession, session, workspaces],
   );
@@ -1016,6 +1097,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       bindDestination,
       ensureOrganizationGrantHint,
       retryOrganizationGrantHint,
+      refreshSessionGrant,
       refreshWorkspaces,
       clearBoundWorkspace,
     }),
@@ -1033,6 +1115,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       grantProbeFailureByOrganizationId,
       posDevice,
       refreshPosDevice,
+      refreshSessionGrant,
       refreshWorkspaces,
       retryOrganizationGrantHint,
       routingPlan,

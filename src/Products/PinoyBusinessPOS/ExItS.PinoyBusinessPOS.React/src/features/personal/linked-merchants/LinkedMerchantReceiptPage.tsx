@@ -1,24 +1,31 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { FileDown, Printer } from "lucide-react";
 import {
   getLinkedCustomerSaleReceipt,
   isExtendedHistoryRequiredError,
   type LinkedCustomerSaleReceipt,
 } from "@/api/pos/pos-linked-customers-client";
 import { PosApiError } from "@/api/pos/pos-http";
+import type { OrganizationB2bPublicProfile } from "@/api/platform/organization-b2b-public-profile-client";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { customerPurchaseSummaryFromLinkedReceipt } from "@/features/documents/customer-purchase-summary-view";
+import { DEFAULT_DOCUMENT_SETTINGS } from "@/features/documents/document-settings";
 import {
-  personalStoreDisplayName,
-  stripPersonalRunStamp,
-} from "@/features/customer-ordering/format-personal-store-label";
+  exportBusinessDocumentPdf,
+  printBusinessDocument,
+} from "@/features/documents/print-business-document";
+import { useLinkedMerchantShopContext } from "@/features/customer-ordering/useLinkedMerchantShopContext";
+import {
+  getOrganizationDocumentPublicIdentity,
+  resolveCustomerSellerIdentityParts,
+} from "@/features/documents/resolve-customer-seller-identity";
+import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 
 type ReceiptState =
   | { kind: "loading" }
@@ -27,7 +34,11 @@ type ReceiptState =
   | { kind: "notFound"; detail: string }
   | { kind: "entitlement"; detail: string }
   | { kind: "error"; detail: string }
-  | { kind: "ready"; receipt: LinkedCustomerSaleReceipt };
+  | {
+      kind: "ready";
+      receipt: LinkedCustomerSaleReceipt;
+      publicProfile: OrganizationB2bPublicProfile | null;
+    };
 
 export function LinkedMerchantReceiptPage() {
   const { t } = useI18n();
@@ -42,7 +53,11 @@ export function LinkedMerchantReceiptPage() {
     saleId: string;
   }>();
   const [state, setState] = useState<ReceiptState>({ kind: "loading" });
-  const [disclaimerOpen, setDisclaimerOpen] = useState(true);
+  // Same merchant name source as statement page — survives when document-public-identity is unavailable.
+  const merchantContextQuery = useLinkedMerchantShopContext(
+    organizationId,
+    Boolean(organizationId),
+  );
 
   const backHref = `/personal/linked-merchants/${organizationId}/${businessCustomerId}`;
   const pageShell =
@@ -66,7 +81,9 @@ export function LinkedMerchantReceiptPage() {
           businessCustomerId,
           saleId,
         );
-        setState({ kind: "ready", receipt });
+        // Public profile fills logo/email/address gaps for legacy receipts; never fails the page.
+        const publicProfile = await getOrganizationDocumentPublicIdentity(organizationId);
+        setState({ kind: "ready", receipt, publicProfile });
       } catch (err) {
         if (isExtendedHistoryRequiredError(err)) {
           setState({
@@ -139,7 +156,7 @@ export function LinkedMerchantReceiptPage() {
           title={t("personal.merchantStatement.historyLockedTitle")}
           detail={state.detail}
         />
-        <Button asChild className="min-h-11 w-fit">
+        <Button asChild className="w-fit">
           <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
         </Button>
       </div>
@@ -160,118 +177,93 @@ export function LinkedMerchantReceiptPage() {
     );
   }
 
-  const { receipt } = state;
-  const subtotal = receipt.subtotal;
+  const { receipt, publicProfile } = state;
+  const view = customerPurchaseSummaryFromLinkedReceipt(receipt);
+  const { identity, headerVisibility } = resolveCustomerSellerIdentityParts({
+    sellerDocumentIdentity: receipt.sellerDocumentIdentity,
+    merchantDisplayName:
+      receipt.merchantDisplayName ||
+      merchantContextQuery.data?.organizationDisplayName ||
+      null,
+    branchDisplayName: receipt.branchDisplayName,
+    publicProfile,
+  });
+
+  const customerDocumentSettings = {
+    ...DEFAULT_DOCUMENT_SETTINGS,
+    sales: {
+      ...DEFAULT_DOCUMENT_SETTINGS.sales,
+      showCashier: false,
+      showSku: false,
+      showCustomerName: Boolean(view.customerDisplayName),
+    },
+    footer: {
+      ...DEFAULT_DOCUMENT_SETTINGS.footer,
+      showDocumentDisclaimer: true,
+    },
+    header: {
+      ...DEFAULT_DOCUMENT_SETTINGS.header,
+      showLogo: headerVisibility.showLogo,
+      showBusinessAddress: headerVisibility.showBusinessAddress,
+      showBusinessPhone: headerVisibility.showBusinessPhone,
+      showBusinessEmail: headerVisibility.showBusinessEmail,
+      showBranchName: headerVisibility.showBranchName,
+      showBranchAddress: headerVisibility.showBranchAddress,
+    },
+  };
+
+  const headerActions = (
+    <div
+      className="flex min-w-0 flex-wrap items-center gap-2 print:hidden"
+      data-testid="linked-merchant-receipt-actions"
+    >
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="linked-merchant-receipt-print"
+        onClick={() => printBusinessDocument()}
+      >
+        <Printer className="size-4 shrink-0" aria-hidden />
+        {t("summary.print")}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-9 min-h-9 shrink-0 gap-1.5 px-2.5"
+        data-testid="linked-merchant-receipt-pdf"
+        onClick={() => exportBusinessDocumentPdf()}
+      >
+        <FileDown className="size-4 shrink-0" aria-hidden />
+        {t("summary.exportPdf")}
+      </Button>
+    </div>
+  );
 
   return (
     <div className={pageShell} data-testid="linked-merchant-receipt-page">
       <PageHeader
-        title={receipt.receiptNumber}
-        description={t("personal.merchantReceipt.lede")}
+        title={t("personal.merchantReceipt.title")}
+        description={receipt.receiptNumber}
         backTo={backHref}
         backLabel={t("personal.merchantReceipt.backToStatement")}
         backTestId="page-header-back-merchant-receipt"
+        trailing={headerActions}
       />
 
-      <section
-        className="pc-receipt-disclaimer exits-animate-panel"
-        data-testid="linked-merchant-receipt-disclaimer"
+      <div
+        className="linked-merchant-receipt-document mx-auto w-full min-w-0 max-w-[52rem] overflow-x-hidden"
+        data-testid="linked-merchant-receipt-document"
       >
-        <button
-          type="button"
-          className="pc-receipt-disclaimer__toggle"
-          aria-expanded={disclaimerOpen}
-          data-testid="linked-merchant-receipt-disclaimer-toggle"
-          onClick={() => setDisclaimerOpen((open) => !open)}
-        >
-          <span>{t("summary.disclaimerTitle")}</span>
-          <ChevronDown
-            className={cn(
-              "pc-receipt-disclaimer__chevron size-4 shrink-0",
-              disclaimerOpen && "pc-receipt-disclaimer__chevron--open",
-            )}
-            aria-hidden
-          />
-        </button>
-        {disclaimerOpen ? (
-          <p
-            className="pc-receipt-disclaimer__body"
-            data-testid="linked-merchant-receipt-disclaimer-body"
-          >
-            {t("summary.disclaimerBody")}
-          </p>
-        ) : null}
-      </section>
-
-      <section
-        className="pc-receipt-card exits-animate-panel"
-        data-testid="linked-merchant-receipt-summary"
-      >
-        <dl className="pc-receipt-card__meta-list m-0">
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.saleNumber")}</dt>
-            <dd className="font-semibold" data-testid="linked-merchant-receipt-number">
-              {receipt.receiptNumber}
-            </dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.dateTime")}</dt>
-            <dd data-testid="linked-merchant-receipt-datetime">
-              {new Date(receipt.occurredAtUtc).toLocaleString()}
-            </dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.paymentMethod")}</dt>
-            <dd data-testid="linked-merchant-receipt-payment">{receipt.paymentMethod}</dd>
-          </div>
-          <div className="pc-receipt-card__meta-row">
-            <dt>{t("summary.status")}</dt>
-            <dd data-testid="linked-merchant-receipt-status">{receipt.status}</dd>
-          </div>
-          {personalStoreDisplayName(receipt.merchantDisplayName) ? (
-            <div className="pc-receipt-card__meta-row">
-              <dt>{t("personal.merchantReceipt.store")}</dt>
-              <dd data-testid="linked-merchant-receipt-store">
-                {personalStoreDisplayName(receipt.merchantDisplayName)}
-              </dd>
-            </div>
-          ) : null}
-          {stripPersonalRunStamp(receipt.customerDisplayName ?? "") ? (
-            <div className="pc-receipt-card__meta-row">
-              <dt>{t("summary.customer")}</dt>
-              <dd data-testid="linked-merchant-receipt-customer">
-                {stripPersonalRunStamp(receipt.customerDisplayName ?? "")}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-
-        <ul className="pc-receipt-card__line-list m-0 list-none p-0">
-          {receipt.lines.map((line) => (
-            <li
-              key={line.lineNumber}
-              className="pc-receipt-card__line"
-              data-testid={`linked-merchant-receipt-line-${line.lineNumber}`}
-            >
-              <span className="min-w-0 truncate text-[length:var(--exits-text-sm)]">
-                {line.productNameSnapshot} × {line.quantity} {line.unitOfMeasure}
-              </span>
-              <MoneyDisplay amount={line.lineTotal} className="pc-receipt-line__total" />
-            </li>
-          ))}
-        </ul>
-
-        <div className="pc-receipt-card__totals">
-          <p className="pc-receipt-card__total-row">
-            <span className="text-muted">{t("summary.subtotal")}</span>
-            <MoneyDisplay amount={subtotal} />
-          </p>
-          <p className="pc-receipt-card__total-row pc-receipt-card__total-row--emphasis">
-            <span>{t("summary.total")}</span>
-            <MoneyDisplay amount={receipt.total} testId="linked-merchant-receipt-total" />
-          </p>
-        </div>
-      </section>
+        <CustomerPurchaseSummaryDocument
+          view={view}
+          settings={customerDocumentSettings}
+          identity={identity}
+          headerVisibility={headerVisibility}
+          audience="Customer"
+          preview
+        />
+      </div>
     </div>
   );
 }

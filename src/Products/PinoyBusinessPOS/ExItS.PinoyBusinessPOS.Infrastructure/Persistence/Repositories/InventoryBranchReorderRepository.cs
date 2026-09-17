@@ -74,4 +74,47 @@ internal sealed class InventoryBranchReorderRepository : IInventoryBranchReorder
         record.UpdatedAtUtc = setting.UpdatedAtUtc;
         record.UpdatedBy = setting.UpdatedBy;
     }
+
+    public async Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.InventoryBranchReorderSettings
+            .FirstOrDefaultAsync(
+                r => r.OrganizationId == organizationId.Value
+                    && r.BranchId == branchId.Value
+                    && r.ProductId == productId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (record is not null)
+        {
+            _db.InventoryBranchReorderSettings.Remove(record);
+        }
+    }
+
+    public async Task DeleteManyAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return;
+        }
+
+        var ids = productIds.Select(p => p.Value).ToList();
+        var records = await _db.InventoryBranchReorderSettings
+            .Where(r => r.OrganizationId == organizationId.Value
+                && r.BranchId == branchId.Value
+                && ids.Contains(r.ProductId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count > 0)
+        {
+            _db.InventoryBranchReorderSettings.RemoveRange(records);
+        }
+    }
 }

@@ -1,12 +1,14 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import {
-  applyDensity,
-  applyLocale,
-  applyTheme,
+  applyUiPreferences,
   readUiPreferences,
   writeUiPreferences,
+  type ControlShapePreference,
   type DensityPreference,
   type LocalePreference,
+  type MotionPreference,
+  type NavigationModePreference,
+  type PrimaryColorPreference,
   type ThemePreference,
   type UiPreferences,
 } from "@/lib/preferences/ui-preferences";
@@ -16,23 +18,25 @@ type PreferencesContextValue = {
   setTheme: (theme: ThemePreference) => void;
   setLocale: (locale: LocalePreference) => void;
   setDensity: (density: DensityPreference) => void;
+  setPrimaryColor: (primaryColor: PrimaryColorPreference) => void;
+  setControlShape: (controlShape: ControlShapePreference) => void;
+  setMotion: (motion: MotionPreference) => void;
+  setNavigationMode: (navigationMode: NavigationModePreference) => void;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
+export { PreferencesContext };
+
 function persist(next: UiPreferences) {
   writeUiPreferences(next);
-  applyTheme(next.theme);
-  applyLocale(next.locale);
-  applyDensity(next.density);
+  applyUiPreferences(next);
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<UiPreferences>(() => {
     const initial = readUiPreferences();
-    applyTheme(initial.theme);
-    applyLocale(initial.locale);
-    applyDensity(initial.density);
+    applyUiPreferences(initial);
     return initial;
   });
 
@@ -60,9 +64,59 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setPrimaryColor = useCallback((primaryColor: PrimaryColorPreference) => {
+    setPreferences((current) => {
+      const next = { ...current, primaryColor };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const setControlShape = useCallback((controlShape: ControlShapePreference) => {
+    setPreferences((current) => {
+      const next = { ...current, controlShape };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const setMotion = useCallback((motion: MotionPreference) => {
+    setPreferences((current) => {
+      const next = { ...current, motion };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const setNavigationMode = useCallback((navigationMode: NavigationModePreference) => {
+    setPreferences((current) => {
+      const next = { ...current, navigationMode };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo(
-    () => ({ preferences, setTheme, setLocale, setDensity }),
-    [preferences, setTheme, setLocale, setDensity],
+    () => ({
+      preferences,
+      setTheme,
+      setLocale,
+      setDensity,
+      setPrimaryColor,
+      setControlShape,
+      setMotion,
+      setNavigationMode,
+    }),
+    [
+      preferences,
+      setTheme,
+      setLocale,
+      setDensity,
+      setPrimaryColor,
+      setControlShape,
+      setMotion,
+      setNavigationMode,
+    ],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

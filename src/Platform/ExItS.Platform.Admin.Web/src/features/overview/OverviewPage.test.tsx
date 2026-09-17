@@ -227,4 +227,19 @@ describe("platform health client", () => {
     expect(snapshot.readiness.reportedStatus).toBe("Unhealthy");
     expect(snapshot.readiness.httpStatus).toBe(503);
   });
+
+  it("rejects SPA HTML fallbacks instead of rendering them as readiness text", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.endsWith("/health/ready")) {
+          return textResponse(200, "<!doctype html><html lang=\"en\"><body>Admin SPA</body></html>");
+        }
+        return textResponse(200, "Healthy");
+      }),
+    );
+    const { getPlatformHealth } = await import("@/api/ops/health-client");
+    await expect(getPlatformHealth("http://localhost:8091")).rejects.toThrow(/unusable body/i);
+  });
 });

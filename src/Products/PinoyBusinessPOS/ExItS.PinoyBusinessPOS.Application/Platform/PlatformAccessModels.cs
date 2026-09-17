@@ -93,7 +93,9 @@ public sealed record OrganizationBranchDto(
     IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
     /// <summary>Grouping area the branch belongs to. Areas carry no operational authority.</summary>
     Guid? AreaId = null,
-    string? AreaName = null);
+    string? AreaName = null,
+    /// <summary>Retail (default) or Warehouse. Controls retail-sale eligibility.</summary>
+    string BranchType = "Retail");
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,

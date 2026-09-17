@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Notice } from "@/components/exits/Notice";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, ChevronDown } from "lucide-react";
+import { ChevronDown, MapPin, Store, Warehouse } from "lucide-react";
 import { listOrganizationNotifications } from "@/api/platform/organization-notifications-client";
 import { AccountMenu } from "@/components/exits/AccountMenu";
 import { ShellConnectionButton } from "@/components/exits/ShellConnectionButton";
+import { ShellNeedsAttentionButton } from "@/components/exits/ShellNeedsAttentionButton";
 import { ShellNotificationButton } from "@/components/exits/ShellNotificationButton";
+import { ShellPreferencesButton } from "@/components/exits/ShellPreferencesButton";
+import { ShellUiStandardsButton } from "@/components/exits/ShellUiStandardsButton";
 import {
   countUnreadOrganizationNotifications,
   formatUnreadNotificationBadge,
@@ -14,6 +18,10 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import { isOrganizationContextLocked, sessionAccountClass } from "@/session/account-class";
 import { useSession } from "@/session/SessionProvider";
+import {
+  isWorkspaceChooserPath,
+  resolveWorkspaceLocationIndicator,
+} from "@/workspace/workspace-location-indicator";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { cn } from "@/lib/cn";
 
@@ -21,7 +29,15 @@ type OrgNotificationsLinkState = {
   returnTo: string;
 };
 
-export function AppTopBar() {
+type AppTopBarProps = {
+  /**
+   * Desktop admin/ops shells own branding in the sidebar.
+   * Hide the duplicate logo/name at lg+ while keeping mobile brand chrome.
+   */
+  hideDesktopBrand?: boolean;
+};
+
+export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,6 +70,37 @@ export function AppTopBar() {
   const unreadCount = countUnreadOrganizationNotifications(notificationsQuery.data);
   const badge = formatUnreadNotificationBadge(unreadCount);
 
+  const indicator = useMemo(
+    () =>
+      resolveWorkspaceLocationIndicator({
+        boundWorkspace,
+        workspaces,
+        chooseWorkspaceLabel: t("workspace.title"),
+        retailLabel: t("branches.type.retail"),
+        warehouseLabel: t("branches.type.warehouse"),
+      }),
+    [boundWorkspace, t, workspaces],
+  );
+
+  const LocationIcon =
+    indicator.typeLabel === "Warehouse"
+      ? Warehouse
+      : indicator.typeLabel === "Retail"
+        ? Store
+        : MapPin;
+
+  const typeChipLabel =
+    indicator.typeLabel === "Warehouse"
+      ? t("branches.type.warehouse")
+      : indicator.typeLabel === "Retail"
+        ? t("branches.type.retail")
+        : null;
+
+  const showWorkspaceControl = Boolean(boundWorkspace) || canSwitchWorkspace;
+  const ariaLabel = canSwitchWorkspace
+    ? t("workspace.changeLocationAria").replace("{details}", indicator.detailsForAria)
+    : indicator.detailsForAria;
+
   async function handleSignOut() {
     if (signingOut) {
       return;
@@ -74,101 +121,114 @@ export function AppTopBar() {
     navigate(result.nextRoute, { replace: true });
   }
 
-  const workspaceLabel = boundWorkspace
-    ? boundWorkspace.branchName
-      ? `${boundWorkspace.organizationDisplayName} · ${boundWorkspace.branchName}`
-      : boundWorkspace.organizationDisplayName
-    : null;
-
   function openWorkspaceSwitcher() {
-    if (canSwitchWorkspace) {
-      navigate("/workspace");
-    }
+    if (!canSwitchWorkspace) return;
+    if (isWorkspaceChooserPath(location.pathname)) return;
+    navigate("/workspace");
+  }
+
+  function renderWorkspaceButton(testId: string, stacked: boolean) {
+    const areaOnly = indicator.areaName?.trim() || null;
+    const showSplitSecondary = Boolean(areaOnly && typeChipLabel);
+
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        data-has-location={indicator.hasBoundLocation ? "true" : "false"}
+        data-location-type={indicator.typeLabel ?? "none"}
+        className={cn(
+          "app-top-bar__workspace",
+          stacked && "app-top-bar__workspace--stacked",
+          canSwitchWorkspace
+            ? "app-top-bar__workspace--interactive"
+            : "app-top-bar__workspace--static",
+          indicator.typeLabel === "Warehouse" && "app-top-bar__workspace--warehouse",
+          indicator.typeLabel === "Retail" && "app-top-bar__workspace--retail",
+        )}
+        title={indicator.title}
+        aria-label={ariaLabel}
+        onClick={openWorkspaceSwitcher}
+        disabled={!canSwitchWorkspace}
+      >
+        <span className="app-top-bar__workspace-icon-wrap" aria-hidden="true">
+          <LocationIcon className="app-top-bar__workspace-icon" strokeWidth={2.25} />
+        </span>
+        <span className="app-top-bar__workspace-text">
+          <span className="app-top-bar__workspace-primary" data-testid={`${testId}-primary`}>
+            {indicator.primary}
+          </span>
+          {indicator.secondary ? (
+            <>
+              <span className="app-top-bar__workspace-sep" aria-hidden>
+                ·
+              </span>
+              <span
+                className="app-top-bar__workspace-secondary"
+                data-testid={`${testId}-secondary`}
+              >
+                {showSplitSecondary ? (
+                  <>
+                    <span className="app-top-bar__workspace-area">{areaOnly}</span>
+                    <span className="app-top-bar__workspace-sep" aria-hidden>
+                      {" "}
+                      ·{" "}
+                    </span>
+                    <span className="app-top-bar__workspace-type">{typeChipLabel}</span>
+                  </>
+                ) : typeChipLabel && indicator.secondary === typeChipLabel ? (
+                  <span className="app-top-bar__workspace-type">{typeChipLabel}</span>
+                ) : (
+                  indicator.secondary
+                )}
+              </span>
+            </>
+          ) : null}
+        </span>
+        {canSwitchWorkspace ? (
+          <span className="app-top-bar__workspace-chevron-wrap" aria-hidden="true">
+            <ChevronDown className="app-top-bar__workspace-chevron" strokeWidth={2.25} />
+          </span>
+        ) : null}
+      </button>
+    );
   }
 
   return (
-    <header className="app-top-bar" data-testid="app-top-bar">
-      <div className="app-top-bar__row">
-        <div className="app-top-bar__brand">
+    <header
+      className={cn("app-top-bar", hideDesktopBrand && "app-top-bar--shell-desktop")}
+      data-testid="app-top-bar"
+      data-hide-desktop-brand={hideDesktopBrand ? "true" : "false"}
+    >
+      <div
+        className={cn(
+          "app-top-bar__row",
+          hideDesktopBrand && "app-top-bar__row--shell-desktop",
+        )}
+      >
+        <div
+          className={cn(
+            "app-top-bar__brand",
+            hideDesktopBrand && "app-top-bar__brand--shell-mobile",
+          )}
+        >
           <span className="app-top-bar__mark" aria-hidden="true">
-            E
+            <span className="app-top-bar__mark-glyph">E</span>
           </span>
-          <div className="app-top-bar__brand-copy md:hidden">
-            {boundWorkspace ? (
-              <button
-                type="button"
-                data-testid="workspace-context-mobile"
-                className={cn(
-                  "app-top-bar__workspace app-top-bar__workspace--stacked",
-                  canSwitchWorkspace
-                    ? "app-top-bar__workspace--interactive"
-                    : "app-top-bar__workspace--static",
-                )}
-                title={workspaceLabel ?? undefined}
-                aria-label={
-                  canSwitchWorkspace
-                    ? `${t("workspace.switch")}: ${workspaceLabel}`
-                    : (workspaceLabel ?? undefined)
-                }
-                onClick={openWorkspaceSwitcher}
-                disabled={!canSwitchWorkspace}
-              >
-                <span className="app-top-bar__workspace-org">
-                  {boundWorkspace.organizationDisplayName}
-                </span>
-                <span className="app-top-bar__workspace-branch">
-                  {boundWorkspace.branchName ?? t("experience.manageBusiness")}
-                </span>
-              </button>
-            ) : (
-              <p className="app-top-bar__app-name">{t("app.name")}</p>
-            )}
-          </div>
-          <div className="app-top-bar__brand-copy hidden md:block">
+          <div className="app-top-bar__brand-copy">
+            {/* Mobile topbar: no branch selector — switch via Account menu → Workspace. */}
             <p className="app-top-bar__app-name">{t("app.name")}</p>
           </div>
         </div>
 
-        <div className="app-top-bar__center hidden md:flex">
-          {boundWorkspace ? (
-            <button
-              type="button"
-              data-testid="workspace-context"
-              className={cn(
-                "app-top-bar__workspace",
-                canSwitchWorkspace
-                  ? "app-top-bar__workspace--interactive"
-                  : "app-top-bar__workspace--static",
-              )}
-              title={workspaceLabel ?? undefined}
-              aria-label={
-                canSwitchWorkspace
-                  ? `${t("workspace.switch")}: ${workspaceLabel}`
-                  : (workspaceLabel ?? undefined)
-              }
-              onClick={openWorkspaceSwitcher}
-              disabled={!canSwitchWorkspace}
-            >
-              <Building2 className="app-top-bar__workspace-icon" aria-hidden />
-              <span className="app-top-bar__workspace-text">
-                <span className="app-top-bar__workspace-org">
-                  {boundWorkspace.organizationDisplayName}
-                </span>
-                {boundWorkspace.branchName ? (
-                  <>
-                    <span className="app-top-bar__workspace-sep" aria-hidden>
-                      ·
-                    </span>
-                    <span className="app-top-bar__workspace-branch">
-                      {boundWorkspace.branchName}
-                    </span>
-                  </>
-                ) : null}
-              </span>
-              {canSwitchWorkspace ? (
-                <ChevronDown className="app-top-bar__workspace-chevron" aria-hidden />
-              ) : null}
-            </button>
+        <div
+          className={cn(
+            "app-top-bar__center hidden lg:flex",
+            hideDesktopBrand && "app-top-bar__center--shell-desktop",
+          )}
+        >
+          {showWorkspaceControl ? (
+            renderWorkspaceButton("workspace-context", false)
           ) : (
             <span className="sr-only">{t("topbar.workspacePending")}</span>
           )}
@@ -179,6 +239,12 @@ export function AppTopBar() {
             testId="org-shell-connection-button"
             className="app-top-bar__action"
           />
+          {boundWorkspace ? (
+            <ShellNeedsAttentionButton
+              testId="org-needs-attention"
+              className="app-top-bar__action"
+            />
+          ) : null}
           {canOpenOrgNotifications ? (
             <ShellNotificationButton
               to="/org/notifications"
@@ -199,6 +265,15 @@ export function AppTopBar() {
               }
             />
           ) : null}
+          <ShellUiStandardsButton
+            label={t("uiStandards.topbar")}
+            className="app-top-bar__action"
+          />
+          <ShellPreferencesButton
+            label={t("topbar.preferences")}
+            className="app-top-bar__action"
+          />
+          <span className="app-top-bar__actions-divider" aria-hidden="true" />
           <AccountMenu
             compact
             signingOut={signingOut}
@@ -210,9 +285,7 @@ export function AppTopBar() {
       </div>
 
       {signOutError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{signOutError}</p>
-        </div>
+        <Notice tone="danger">{signOutError}</Notice>
       ) : null}
     </header>
   );

@@ -162,6 +162,48 @@ New ──→ Accepted ──→ Preparing ──→ Fulfilled
 
 ## Connection-request lifecycle (authoritative)
 
+**Updated by POS-B2B-BUSINESS-CONNECTION-CONSENT-LIFECYCLE-01.**
+
+```text
+B2B_RELATIONSHIP_MODEL = ConnectedSupplierRelationship
+  BuyerOrganizationId + SupplierOrganizationId (directional roles are fixed)
+  InitiatedByParty = Buyer | Supplier
+CONSENT_REQUIRED = YES
+PENDING_CHECKOUT_VISIBLE = YES
+PENDING_CHECKOUT_SELECTABLE = NO
+ACTIVE_CHECKOUT_SELECTABLE = YES
+B2B_DUPLICATE_POSCUSTOMER = NO
+SELLER_ADD_BUSINESS_CREATES_ACTIVE = NO
+NOTIFICATION_INBOX = PLATFORM_ORGANIZATION_IN_APP_NOTIFICATION
+REQUEST_READ_DOES_NOT_ACCEPT = YES
+
+Path A — Buyer initiated (classic):
+  KIZY Suppliers → Connect MICA
+  → Relationship Buyer=KIZY Supplier=MICA InitiatedByParty=Buyer Status=Pending
+  → Buyer-side Supplier master created at request time
+  → Notify MICA: SupplierConnectionRequested
+  → MICA Accept (catalog sharing) / Decline
+  → Only recipient (supplier) may Accept/Decline; initiator (buyer) may Cancel
+
+Path B — Seller initiated (Business Customer invite):
+  MICA Customers → Businesses → Add business → ORG / Business QR
+  → POST …/relationships/invite-buyer
+  → Same directional Relationship Buyer=KIZY Supplier=MICA InitiatedByParty=Supplier Status=Pending
+  → NO POSCustomer; NO buyer Supplier master until Accept
+  → Notify KIZY: BusinessCustomerConnectionRequested
+  → KIZY simple Accept / Decline (buyer does not configure seller catalog)
+  → On Accept: Active + exactly one KIZY Supplier master for MICA
+  → Only recipient (buyer) may Accept/Decline; initiator (supplier) may Cancel
+
+Both paths converge on one open (Buyer,Supplier) row (unique index status IN Pending/Active).
+Incoming inbox: GET …/relationships/incoming (current org is recipient).
+Customers → Businesses lists Active + Pending; Checkout Businesses same (Pending toast, not select).
+Sale Organization buyer requires Active relationship (server fail-closed).
+Notification publish is best-effort after Persist; Pending remains discoverable in Connection requests.
+```
+
+### Historical buyer-only flow (still valid as Path A)
+
 ```text
 Buyer sends request
   → ConnectedSupplierRelationship Status=Pending (persisted)
@@ -187,6 +229,10 @@ Connected supplier lifecycle publishes into the same inbox as customer-link resp
 | Buyer sends request | `SupplierConnectionRequested` | Supplier (Owners + Administrators) |
 | Supplier accepts | `SupplierConnectionAccepted` | Buyer |
 | Supplier declines | `SupplierConnectionDeclined` | Buyer |
+| Seller invites buyer | `BusinessCustomerConnectionRequested` | Buyer |
+| Buyer accepts invite | `BusinessCustomerConnectionAccepted` | Supplier |
+| Buyer declines invite | `BusinessCustomerConnectionDeclined` | Supplier |
+| Seller cancels invite | `BusinessCustomerConnectionCancelled` | Buyer |
 
 - MAUI: header bell → `/org/notifications` (Unread / All; Accept/Decline when Pending + `ManageSuppliers`)
 - Org Web: header bell → `/notifications` (same semantics; Owner + Manager)

@@ -91,6 +91,21 @@ describe("organization workspace overview", () => {
     expect(crumb).toHaveTextContent("Northwind Market");
   });
 
+  it("labels the Roles workspace section in breadcrumbs", async () => {
+    stubDesktop();
+    mockAuthenticatedFetch({ organizationItems: [sampleOrg] });
+    window.history.replaceState(
+      {},
+      "",
+      "/admin/organizations/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/roles",
+    );
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Organization roles" })).toBeInTheDocument();
+    const crumb = screen.getByRole("navigation", { name: "Breadcrumb" });
+    expect(within(crumb).getByText("Roles")).toBeInTheDocument();
+    expect(within(crumb).queryByText("Page not found")).not.toBeInTheDocument();
+  });
+
   it("keeps the organization page usable when commercial summary fails and retries", async () => {
     stubDesktop();
     let failCommercial = true;

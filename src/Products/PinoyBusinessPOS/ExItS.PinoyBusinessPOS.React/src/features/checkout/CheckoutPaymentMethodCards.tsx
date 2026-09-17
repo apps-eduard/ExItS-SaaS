@@ -1,8 +1,21 @@
 import type { LucideIcon } from "lucide-react";
-import { Banknote, NotebookPen, Smartphone } from "lucide-react";
+import {
+  Banknote,
+  Building2,
+  FileText,
+  NotebookPen,
+  Smartphone,
+  Wallet,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
-export type CheckoutUiPaymentChoice = "Cash" | "GCash" | "Utang";
+export type CheckoutUiPaymentChoice =
+  | "Cash"
+  | "GCash"
+  | "Utang"
+  | "BankTransfer"
+  | "Check"
+  | "ManualMaya";
 
 export type CheckoutPaymentOption = {
   value: CheckoutUiPaymentChoice;
@@ -21,8 +34,9 @@ type CheckoutPaymentMethodCardsProps = {
 };
 
 /**
- * Visual payment-method selector. Only methods the domain already supports
- * (Cash / ManualGCash / Utang) — Debit is intentionally omitted (BACKEND_API_GAP).
+ * Visual payment-method selector. Options are filtered by plan entitlement,
+ * org settings, and branch availability before reaching this component.
+ * Online/provider channels are never offered here.
  */
 export function CheckoutPaymentMethodCards({
   value,
@@ -75,4 +89,7 @@ export const CHECKOUT_PAYMENT_ICONS = {
   Cash: Banknote,
   GCash: Smartphone,
   Utang: NotebookPen,
+  BankTransfer: Building2,
+  Check: FileText,
+  ManualMaya: Wallet,
 } as const;

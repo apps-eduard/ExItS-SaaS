@@ -126,7 +126,7 @@ export function SellCartPanel({
 
   return (
     <div className="sell-cart-panel flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2">
+      <div className="sell-cart-panel__header flex shrink-0 items-start justify-between gap-2" data-testid="sell-cart-header">
         <div className="sell-cart-panel__title min-w-0">
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{t("sell.cartLabel")}</h2>
           {lines.length > 0 ? (
@@ -171,7 +171,10 @@ export function SellCartPanel({
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("sell.payAddItems")}</p>
         </div>
       ) : (
-        <ul className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0">
+        <ul
+          className="sell-cart-lines m-0 min-h-0 flex-1 list-none overflow-y-auto p-0"
+          data-testid="sell-cart-lines"
+        >
           {lines.map((line) => {
             const byWeight = isByWeightSellingMode(line.sellingMode);
             const customMeasured = line.allowsCustomQuantity && !byWeight;
@@ -322,7 +325,7 @@ export function SellCartPanel({
         </ul>
       )}
 
-      <div className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-2">
+      <div className="sell-cart-footer mt-auto flex shrink-0 flex-col gap-2" data-testid="sell-cart-footer">
         {showMidSessionWarning ? (
           <div
             data-testid="sell-mid-session-warning"

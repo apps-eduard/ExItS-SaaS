@@ -204,7 +204,7 @@ public sealed class StatementAndReceiptServiceTests
             CustomerStatus? status,
             string? search,
             int skip,
-            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, bool peopleOnly = false, CancellationToken cancellationToken = default)
         {
             var q = _items.Values.Where(c => c.OrganizationId == organizationId);
             if (status is not null)
@@ -222,7 +222,7 @@ public sealed class StatementAndReceiptServiceTests
             int skip,
             int take,
             CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, false, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId,
@@ -291,6 +291,8 @@ public sealed class StatementAndReceiptServiceTests
         }
     }
 
+
+
     private sealed class InMemoryRepayments : IRepaymentRepository
     {
         private readonly List<Repayment> _items = [];
@@ -344,7 +346,13 @@ public sealed class StatementAndReceiptServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult((IReadOnlyList<Repayment>)Array.Empty<Repayment>());
 
-        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active).Sum(r => r.Amount));
+        public Task<decimal> SumActiveAmountAsync(PosOrganizationId organizationId, POSCustomerId customerId, CancellationToken cancellationToken = default) => Task.FromResult(_items.Where(r => r.OrganizationId == organizationId && r.CustomerId == customerId && r.ReducesOutstanding).Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,

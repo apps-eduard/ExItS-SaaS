@@ -98,6 +98,20 @@ internal sealed class CustomerBranchAccessRepository : ICustomerBranchAccessRepo
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<CustomerBranchAccess>> ListByCustomerAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await _db.CustomerBranchAccess.AsNoTracking()
+            .Where(a => a.OrganizationId == organizationId.Value && a.CustomerId == customerId.Value)
+            .OrderBy(a => a.GrantedAtUtc)
+            .ThenBy(a => a.BranchId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return rows.Select(PartyBranchAccessEntityMapper.ToDomain).ToList();
+    }
 }
 
 internal sealed class SupplierBranchAccessRepository : ISupplierBranchAccessRepository

@@ -104,6 +104,25 @@ internal sealed class InMemoryCustomerBranchAccessRepository : ICustomerBranchAc
         _rows.Remove((organizationId.Value, branchId.Value, customerId.Value, grantSource));
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<CustomerBranchAccess>> ListByCustomerAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default)
+    {
+        var grantedAt = DateTimeOffset.Parse("2026-09-01T08:00:00Z");
+        IReadOnlyList<CustomerBranchAccess> items = _rows
+            .Where(r => r.Org == organizationId.Value && r.Customer == customerId.Value)
+            .OrderBy(r => r.Branch)
+            .Select(r => CustomerBranchAccess.Rehydrate(
+                organizationId,
+                PosBranchId.From(r.Branch),
+                customerId,
+                r.Source,
+                grantedAt))
+            .ToList();
+        return Task.FromResult(items);
+    }
 }
 
 internal sealed class InMemorySupplierBranchAccessRepository : ISupplierBranchAccessRepository

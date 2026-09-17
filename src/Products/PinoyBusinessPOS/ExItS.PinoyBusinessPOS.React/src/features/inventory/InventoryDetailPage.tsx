@@ -1,7 +1,7 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
+import { CalendarClock, ChevronDown, ChevronRight, PackageMinus, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useToast } from "@/components/exits/ToastProvider";
 import { cn } from "@/lib/cn";
 import {
   canAddOpeningStock,
@@ -43,21 +44,26 @@ import {
 } from "@/features/inventory/inventory-branch-labels";
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
+import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
+import {
+  formatInventoryQty,
+  InventoryReservedBadge,
+  resolveAvailableQuantity,
+  resolveReservedQuantity,
+} from "@/features/inventory/inventory-reservation-display";
+import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
 import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
+  hasMissingExpiry,
+  hasValidExpiryDateInput,
 } from "@/features/inventory/inventory-lot-status";
-import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
-import {
-  inventoryMovementTypeLabelKey,
-  resolveMovementStockValue,
-} from "@/features/purchasing/purchase-cost-display";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -83,9 +89,15 @@ function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>[
 
 export function InventoryDetailPage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const { productId } = useParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
+  const smartBack = usePageSmartBack({
+    fallback: pageBackNav.inventory.to,
+    backLabel: t(pageBackNav.inventory.labelKey),
+    backTestId: "page-header-back-inventory",
+  });
   const allowManageInventory = canManageInventory(sessionGrant);
   const [openingQty, setOpeningQty] = useState("0");
   const [openingUnitCost, setOpeningUnitCost] = useState("");
@@ -102,6 +114,7 @@ export function InventoryDetailPage() {
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
   const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
+  const [reservationsOpen, setReservationsOpen] = useState(false);
   const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
@@ -132,7 +145,8 @@ export function InventoryDetailPage() {
     enabled:
       Boolean(workspace) &&
       Boolean(productId) &&
-      accountQuery.data?.isTracked === false,
+      Boolean(accountQuery.data) &&
+      (accountQuery.data.isTracked === false || canAddOpeningStock(accountQuery.data)),
     queryFn: ({ signal }) => getCatalogProduct(workspace!, productId!, signal),
   });
 
@@ -308,6 +322,15 @@ export function InventoryDetailPage() {
       await invalidateInventory();
     },
     onError: (err) => {
+      const problem = err instanceof PosApiError ? err.problem : null;
+      if (problem?.errorCode === "pos.catalog.connected_share_blocks_disable_tracking") {
+        toast.error(
+          t("catalog.connectedShare.sharedBlocksDisableTitle"),
+          problem.detail ?? t("catalog.connectedShare.sharedBlocksDisableMessage"),
+        );
+        setError(null);
+        return;
+      }
       setError(
         err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
       );
@@ -428,6 +451,17 @@ export function InventoryDetailPage() {
     return <LoadingState label={t("loading.label")} />;
   }
 
+  if (accountQuery.isError) {
+    return (
+      <ErrorState
+        title={t("error.title")}
+        detail={describePosApiError(accountQuery.error, t, "inventory.notFound")}
+        error={accountQuery.error}
+        operation="load inventory product"
+      />
+    );
+  }
+
   const account = accountQuery.data;
   if (!account) {
     return <ErrorState title={t("error.title")} detail={t("inventory.notFound")} />;
@@ -447,98 +481,185 @@ export function InventoryDetailPage() {
     openingUnitCost,
     effectiveSelling?.amount,
   );
+  const sellingPriceAwareness = effectiveSelling ? (
+    <div
+      className="inventory-detail-selling-price flex flex-col gap-0.5"
+      data-testid="inventory-current-selling-price"
+    >
+      <span className="text-[length:var(--exits-text-sm)] font-semibold">
+        {t("inventory.currentSellingPrice")}
+      </span>
+      <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
+        {formatPeso(effectiveSelling.amount)} / {account.unitOfMeasure}
+      </p>
+      <span
+        className="text-[length:var(--exits-text-xs)] text-muted"
+        data-testid="inventory-selling-price-source"
+      >
+        {effectiveSelling.source === "branch"
+          ? t("inventory.sellingPriceBranch")
+          : t("inventory.sellingPriceOrganization")}
+      </span>
+      <Button asChild type="button" variant="ghost" className="mt-1 w-fit px-0">
+        <Link
+          to={`/catalog/products/${account.productId}/edit`}
+          data-testid="inventory-review-selling-price"
+        >
+          {t("inventory.reviewSellingPrice")}
+        </Link>
+      </Button>
+    </div>
+  ) : null;
+  const purchaseCostAwareness =
+    purchaseCostFeedback.kind === "zeroMargin" ? (
+      <p
+        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+        data-testid="inventory-purchase-cost-zero-margin"
+      >
+        {t("inventory.purchaseCostZeroMargin")}
+      </p>
+    ) : purchaseCostFeedback.kind === "higherCost" ? (
+      <p
+        className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,#b45309)]"
+        role="status"
+        data-testid="inventory-purchase-cost-high-warning"
+      >
+        {t("inventory.purchaseCostHigherThanSelling")}{" "}
+        {t("inventory.purchaseCostHigherBy").replace(
+          "{amount}",
+          formatPeso(purchaseCostFeedback.difference),
+        )}
+      </p>
+    ) : null;
   const formatStatus = (lot: PosInventoryLotDto) => formatLotStatus(lot, t);
   const lotTotal = lots.reduce((sum, lot) => sum + (lot.quantityOnHand ?? 0), 0);
-  const needsExpirationSetup =
+  const needsExpirationSetup = hasMissingExpiry(
+    tracksExpiration,
+    account.onHandQuantity,
+    lotsQuery.isLoading ? null : lotTotal,
+  );
+  const openingQuantityValue = Number(openingQty);
+  const openingRequiresExpiry = requiresOpeningExpirationDate(
+    tracksExpiration,
+    openingQuantityValue,
+  );
+  const openingExpiryReady =
+    !openingRequiresExpiry || hasValidExpiryDateInput(openingExpiry);
+  const adjustQuantityValue = Number(adjustQty);
+  const adjustInRequiresExpiry =
     tracksExpiration &&
-    account.onHandQuantity > 0 &&
-    !lotsQuery.isLoading &&
-    lotTotal === 0;
+    adjustDirection === "In" &&
+    Number.isFinite(adjustQuantityValue) &&
+    adjustQuantityValue > 0;
+  const adjustExpiryReady =
+    !adjustInRequiresExpiry || hasValidExpiryDateInput(adjustExpiry);
 
-  const lotsSection =
-    tracksExpiration && !showAddOpeningStock ? (
-      needsExpirationSetup ? (
-        <Card
-          className="flex flex-col gap-3 p-3"
-          data-testid="inventory-expiration-pending"
-        >
-          <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-            {t("inventory.expirationInventory")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("inventory.expirationPendingSummary")
-              .replace("{qty}", String(account.onHandQuantity))
-              .replace("{uom}", account.unitOfMeasure)}
-          </p>
-        </Card>
-      ) : (
-        <>
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-expiration-summary">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.expirationInventory")}
-            </h2>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
-            </p>
-            <div
-              className="inventory-expiry-counts flex min-w-0 flex-wrap gap-2"
-              data-testid="inventory-expiry-totals"
-            >
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--good">
-                {t("inventory.statusGood")}: {goodQuantity}
-              </span>
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
-                {t("inventory.nearExpiryQty")}: {account.nearExpiryQuantity ?? 0}
-              </span>
-              <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
-                {t("inventory.expiredQty")}: {account.expiredQuantity ?? 0}
-              </span>
-            </div>
-          </Card>
-
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-lots">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.stockLots")}
-            </h2>
-            {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-            {lots.length === 0 && !lotsQuery.isLoading ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("inventory.lotsEmptyHint")}
-              </p>
-            ) : (
-              <InventoryLotList
-                lots={lots}
-                unitOfMeasure={account.unitOfMeasure}
-                formatStatus={formatStatus}
-              />
-            )}
-            {lotsQuery.hasNextPage ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="min-h-11 w-fit"
-                disabled={lotsQuery.isFetchingNextPage}
-                onClick={() => void lotsQuery.fetchNextPage()}
-                data-testid="inventory-lots-load-more"
-              >
-                {lotsQuery.isFetchingNextPage
-                  ? t("inventory.loadingMore")
-                  : t("inventory.loadMore")}
-              </Button>
-            ) : null}
-          </Card>
-        </>
-      )
+  const expirationPendingCard =
+    tracksExpiration && !showAddOpeningStock && needsExpirationSetup ? (
+      <Card
+        className="flex flex-col gap-3 p-3"
+        data-testid="inventory-expiration-pending"
+      >
+        <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+          {t("inventory.missingExpirationShort")}
+        </h2>
+        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+          {t("inventory.expirationPendingSummary")
+            .replace("{qty}", String(account.onHandQuantity))
+            .replace("{uom}", account.unitOfMeasure)}
+        </p>
+      </Card>
     ) : null;
 
+  const expirationSummaryStrip =
+    tracksExpiration && !showAddOpeningStock && !needsExpirationSetup ? (
+      <div
+        className="inventory-expiration-summary-strip"
+        data-testid="inventory-expiration-summary"
+      >
+        <span className="inventory-expiration-summary-strip__title">
+          {t("inventory.expirationInventory")}
+        </span>
+        <span className="inventory-expiration-summary-strip__onhand">
+          {account.onHandQuantity} {account.unitOfMeasure} {t("inventory.onHandSummary")}
+        </span>
+        <div
+          className="inventory-expiry-counts inventory-expiration-summary-strip__counts"
+          data-testid="inventory-expiry-totals"
+        >
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--good">
+            {t("inventory.statusGood")} {goodQuantity}
+          </span>
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--near">
+            {t("inventory.nearExpiryQty")} {account.nearExpiryQuantity ?? 0}
+          </span>
+          <span className="inventory-expiry-counts__stat inventory-expiry-counts__stat--expired">
+            {t("inventory.expiredQty")} {account.expiredQuantity ?? 0}
+          </span>
+        </div>
+      </div>
+    ) : null;
+
+  const actionLinkContent = (icon: ReactNode, label: string) => (
+    <>
+      <span className="inventory-detail-action-btn__icon" aria-hidden>
+        {icon}
+      </span>
+      <span className="inventory-detail-action-btn__label">{label}</span>
+      <ChevronRight className="inventory-detail-action-btn__caret size-4 shrink-0" aria-hidden />
+    </>
+  );
+
+  const lotsPanel =
+    tracksExpiration && !showAddOpeningStock && !needsExpirationSetup ? (
+      <Card className="inventory-lots-panel flex flex-col gap-2 p-3" data-testid="inventory-lots">
+        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          {t("inventory.stockLots")}
+        </h2>
+        {lotsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        {lots.length === 0 && !lotsQuery.isLoading ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("inventory.lotsEmptyHint")}
+          </p>
+        ) : (
+          <InventoryLotList
+            lots={lots}
+            unitOfMeasure={account.unitOfMeasure}
+            formatStatus={formatStatus}
+          />
+        )}
+        {lotsQuery.hasNextPage ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-fit"
+            disabled={lotsQuery.isFetchingNextPage}
+            onClick={() => void lotsQuery.fetchNextPage()}
+            data-testid="inventory-lots-load-more"
+          >
+            {lotsQuery.isFetchingNextPage
+              ? t("inventory.loadingMore")
+              : t("inventory.loadMore")}
+          </Button>
+        ) : null}
+      </Card>
+    ) : null;
+
+  const adjustApplyLabel = adjusting
+    ? t("checkout.confirmingTransaction")
+    : adjustDirection === "In"
+      ? t("inventory.applyIncrease")
+      : t("inventory.applyDecrease");
+
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="inventory-detail-page">
+    <div
+      className="inventory-detail-page flex min-w-0 flex-col gap-3"
+      data-testid="inventory-detail-page"
+    >
       <PageHeader
         title={account.name}
         description={t("inventory.detailLede")}
-        backTo={pageBackNav.inventory.to}
-        backLabel={t(pageBackNav.inventory.labelKey)}
-        backTestId="page-header-back-inventory"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
@@ -546,28 +667,44 @@ export function InventoryDetailPage() {
       <Card className="overflow-hidden p-0" data-testid="inventory-status">
         {account.isTracked ? (
           <>
-            <button
-              type="button"
-              className="flex w-full min-h-12 items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-              aria-expanded={statusDetailsOpen}
-              aria-controls={statusDetailsId}
-              onClick={() => setStatusDetailsOpen((open) => !open)}
-              data-testid="inventory-status-toggle"
-            >
-              <span className="min-w-0 font-semibold leading-snug" data-testid="inventory-on-hand">
-                {t("inventory.onHandAtBranch")
-                  .replace("{branch}", branchLabel)
-                  .replace("{qty}", String(account.onHandQuantity))
-                  .replace("{uom}", account.unitOfMeasure)}
-              </span>
-              <ChevronDown
-                aria-hidden
-                className={cn(
-                  "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-                  statusDetailsOpen && "rotate-180",
-                )}
-              />
-            </button>
+            <div className="flex w-full items-start justify-between gap-3 px-3 py-3">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                aria-expanded={statusDetailsOpen}
+                aria-controls={statusDetailsId}
+                onClick={() => setStatusDetailsOpen((open) => !open)}
+                data-testid="inventory-status-toggle"
+              >
+                <span className="flex flex-col gap-1">
+                  <span className="font-semibold leading-snug" data-testid="inventory-available">
+                    {t("inventory.availableQty")
+                      .replace("{qty}", formatInventoryQty(resolveAvailableQuantity(account)))
+                      .replace("{uom}", account.unitOfMeasure)}
+                  </span>
+                  <span className="text-[length:var(--exits-text-sm)] text-muted" data-testid="inventory-on-hand">
+                    {t("inventory.onHandAtBranch")
+                      .replace("{branch}", branchLabel)
+                      .replace("{qty}", formatInventoryQty(account.onHandQuantity))
+                      .replace("{uom}", account.unitOfMeasure)}
+                  </span>
+                </span>
+              </button>
+              <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+                <InventoryReservedBadge
+                  reservedQuantity={resolveReservedQuantity(account)}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-reserved-badge"
+                />
+                <ChevronDown
+                  aria-hidden
+                  className={cn(
+                    "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                    statusDetailsOpen && "rotate-180",
+                  )}
+                />
+              </div>
+            </div>
 
             {statusDetailsOpen ? (
               <div
@@ -575,6 +712,33 @@ export function InventoryDetailPage() {
                 className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-3"
                 data-testid="inventory-status-details"
               >
+                <dl
+                  className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
+                  data-testid="inventory-stock-breakdown"
+                >
+                  <dt className="text-muted">{t("inventory.onHand")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                    {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
+                  </dd>
+                  <dt className="text-muted">{t("inventory.reserved")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                    {formatInventoryQty(resolveReservedQuantity(account))} {account.unitOfMeasure}
+                  </dd>
+                  <dt className="font-semibold">{t("inventory.available")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-semibold">
+                    {formatInventoryQty(resolveAvailableQuantity(account))} {account.unitOfMeasure}
+                  </dd>
+                </dl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setReservationsOpen(true)}
+                  data-testid="inventory-view-reservations"
+                >
+                  {t("inventory.viewReservations")}
+                </Button>
                 {rollup?.isTracked ? (
                   <div
                     className="flex flex-col gap-2"
@@ -684,7 +848,7 @@ export function InventoryDetailPage() {
                               >
                                 <button
                                   type="button"
-                                  className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                                   aria-expanded={expanded}
                                   onClick={() => toggleArea(key, expanded)}
                                   data-testid={`inventory-area-toggle-${key}`}
@@ -744,8 +908,11 @@ export function InventoryDetailPage() {
                     className="flex flex-col gap-2"
                     data-testid="inventory-expiration-setup-required"
                   >
-                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                      {t("inventory.expirationSetupRequired")}
+                    <p
+                      className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                      data-testid="inventory-missing-expiry-badge"
+                    >
+                      {t("inventory.missingExpirationShort")}
                     </p>
                     <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                       {t("inventory.expirationSetupRequiredDetail")}
@@ -766,64 +933,108 @@ export function InventoryDetailPage() {
       </Card>
 
       {account.isTracked && allowManageInventory ? (
-        <div className="flex flex-col gap-2" data-testid="inventory-quick-actions">
-          {needsExpirationSetup ? (
-            <>
-              <Button asChild type="button" className="min-h-12 w-full">
-                <Link
-                  to={expirationSettingsPath(productId!, "assign")}
-                  data-testid="inventory-expiration-setup-assign"
+        <Card
+          className="inventory-detail-actions-card flex flex-col gap-2.5 p-3"
+          data-testid="inventory-quick-actions"
+        >
+          {expirationSummaryStrip}
+          <div className="inventory-detail-quick-actions">
+            {needsExpirationSetup ? (
+              <>
+                <Button asChild type="button" className="inventory-detail-action-btn inventory-detail-action-btn--solid w-full">
+                  <Link
+                    to={expirationSettingsPath(productId!, "assign")}
+                    data-testid="inventory-expiration-setup-assign"
+                  >
+                    {actionLinkContent(
+                      <CalendarClock className="size-4 shrink-0" />,
+                      t("inventory.assignExpirationDates"),
+                    )}
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="inventory-detail-action-btn w-full"
                 >
-                  {t("inventory.assignExpirationDates")}
-                </Link>
-              </Button>
-              <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+                  <Link
+                    to={expirationSettingsPath(productId!, "warning")}
+                    data-testid="inventory-manage-expiration"
+                  >
+                    {actionLinkContent(
+                      <CalendarClock className="size-4 shrink-0" />,
+                      t("inventory.manageExpirationSettings"),
+                    )}
+                  </Link>
+                </Button>
+              </>
+            ) : tracksExpiration ? (
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="inventory-detail-action-btn w-full"
+              >
                 <Link
                   to={expirationSettingsPath(productId!, "warning")}
                   data-testid="inventory-manage-expiration"
                 >
-                  {t("inventory.manageExpirationSettings")}
+                  {actionLinkContent(
+                    <CalendarClock className="size-4 shrink-0" />,
+                    t("inventory.manageExpirationSettings"),
+                  )}
                 </Link>
               </Button>
-            </>
-          ) : tracksExpiration ? (
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
-              <Link
-                to={expirationSettingsPath(productId!, "warning")}
-                data-testid="inventory-manage-expiration"
-              >
-                {t("inventory.manageExpirationSettings")}
-              </Link>
-            </Button>
-          ) : (
-            <Button asChild type="button" className="min-h-12 w-full">
-              <Link
-                to={expirationSettingsPath(productId!)}
-                data-testid="inventory-enable-expiration"
-              >
-                {t("inventory.enableExpirationTracking")}
-              </Link>
-            </Button>
-          )}
-          <div className="grid grid-cols-2 gap-2">
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+            ) : (
+              <Button asChild type="button" className="inventory-detail-action-btn inventory-detail-action-btn--solid w-full">
+                <Link
+                  to={expirationSettingsPath(productId!)}
+                  data-testid="inventory-enable-expiration"
+                >
+                  {actionLinkContent(
+                    <CalendarClock className="size-4 shrink-0" />,
+                    t("inventory.enableExpirationTracking"),
+                  )}
+                </Link>
+              </Button>
+            )}
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="inventory-detail-action-btn w-full"
+            >
               <Link
                 to={`/inventory/stock-use/new?productId=${encodeURIComponent(account.productId)}`}
                 data-testid="inventory-record-stock-use"
               >
-                {t("inventory.recordStockUse")}
+                {actionLinkContent(
+                  <PackageMinus className="size-4 shrink-0" />,
+                  t("inventory.recordStockUse"),
+                )}
               </Link>
             </Button>
-            <Button asChild type="button" variant="outline" className="min-h-12 w-full">
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="inventory-detail-action-btn w-full"
+            >
               <Link
                 to={`/inventory/waste-loss/new?productId=${encodeURIComponent(account.productId)}`}
                 data-testid="inventory-record-waste-loss"
               >
-                {t("inventory.recordWasteLoss")}
+                {actionLinkContent(
+                  <Trash2 className="size-4 shrink-0" />,
+                  t("inventory.recordWasteLoss"),
+                )}
               </Link>
             </Button>
           </div>
-        </div>
+        </Card>
+      ) : account.isTracked ? (
+        expirationSummaryStrip
       ) : null}
 
       {!account.isTracked ? (
@@ -832,47 +1043,15 @@ export function InventoryDetailPage() {
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.enableTracking")}
           </h2>
-          <Input
-            label={t("inventory.openingQuantityOptional")}
-            name="openingQuantity"
-            inputMode="decimal"
-            value={openingQty}
-            onChange={(e) => setOpeningQty(e.target.value)}
-          />
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("inventory.openingHint")}
-          </p>
-          {effectiveSelling ? (
-            <div
-              className="flex flex-col gap-0.5"
-              data-testid="inventory-current-selling-price"
-            >
-              <span className="text-[length:var(--exits-text-sm)] font-semibold">
-                {t("inventory.currentSellingPrice")}
-              </span>
-              <p className="m-0 text-[length:var(--exits-text-md)] font-medium">
-                {formatPeso(effectiveSelling.amount)} / {account.unitOfMeasure}
-              </p>
-              <span
-                className="text-[length:var(--exits-text-xs)] text-muted"
-                data-testid="inventory-selling-price-source"
-              >
-                {effectiveSelling.source === "branch"
-                  ? t("inventory.sellingPriceBranch")
-                  : t("inventory.sellingPriceOrganization")}
-              </span>
-              <Button asChild type="button" variant="ghost" className="mt-1 min-h-11 w-fit px-0">
-                <Link
-                  to={`/catalog/products/${account.productId}/edit`}
-                  data-testid="inventory-review-selling-price"
-                >
-                  {t("inventory.reviewSellingPrice")}
-                </Link>
-              </Button>
-            </div>
-          ) : null}
-          {Number(openingQty) > 0 ? (
-            <>
+          <div className="inventory-detail-opening-fields">
+            <Input
+              label={t("inventory.openingQuantityOptional")}
+              name="openingQuantity"
+              inputMode="decimal"
+              value={openingQty}
+              onChange={(e) => setOpeningQty(e.target.value)}
+            />
+            {Number(openingQty) > 0 ? (
               <Input
                 label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
                 name="openingUnitCost"
@@ -881,30 +1060,18 @@ export function InventoryDetailPage() {
                 onChange={(e) => setOpeningUnitCost(e.target.value)}
                 data-testid="inventory-enable-unit-cost"
               />
+            ) : null}
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("inventory.openingHint")}
+          </p>
+          {sellingPriceAwareness}
+          {Number(openingQty) > 0 ? (
+            <>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("openingStock.unitCostHelper")}
               </p>
-              {purchaseCostFeedback.kind === "zeroMargin" ? (
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="inventory-purchase-cost-zero-margin"
-                >
-                  {t("inventory.purchaseCostZeroMargin")}
-                </p>
-              ) : null}
-              {purchaseCostFeedback.kind === "higherCost" ? (
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-[var(--exits-warning,#b45309)]"
-                  role="status"
-                  data-testid="inventory-purchase-cost-high-warning"
-                >
-                  {t("inventory.purchaseCostHigherThanSelling")}{" "}
-                  {t("inventory.purchaseCostHigherBy").replace(
-                    "{amount}",
-                    formatPeso(purchaseCostFeedback.difference),
-                  )}
-                </p>
-              ) : null}
+              {purchaseCostAwareness}
               {openingStockValue !== null ? (
                 <p
                   className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
@@ -917,71 +1084,7 @@ export function InventoryDetailPage() {
           ) : null}
           {tracksExpiration && Number(openingQty) > 0 ? (
             <>
-              <Input
-                label={t("inventory.expirationDate")}
-                name="openingExpirationDate"
-                type="date"
-                value={openingExpiry}
-                onChange={(e) => setOpeningExpiry(e.target.value)}
-                data-testid="inventory-opening-expiry"
-              />
-              <Input
-                label={t("inventory.batchLotNumber")}
-                name="openingLotNumber"
-                value={openingLotNumber}
-                onChange={(e) => setOpeningLotNumber(e.target.value)}
-              />
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("inventory.openingExpiryHint")}
-              </p>
-            </>
-          ) : null}
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={enableMutation.isPending}
-            onClick={() => enableMutation.mutate()}
-            data-testid="inventory-enable"
-          >
-            {t("inventory.enable")}
-          </Button>
-        </Card>
-        ) : null
-      ) : showAddOpeningStock && allowManageInventory ? (
-        <>
-          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-add-opening-stock">
-            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-              {t("inventory.addOpeningStock")}
-            </h2>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("inventory.addOpeningStockHint")}
-            </p>
-            <Input
-              label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
-              name="openingQuantity"
-              inputMode="decimal"
-              value={openingQty}
-              onChange={(e) => setOpeningQty(e.target.value)}
-              data-testid="inventory-opening-quantity"
-            />
-            <Input
-              label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
-              name="openingUnitCost"
-              inputMode="decimal"
-              value={openingUnitCost}
-              onChange={(e) => setOpeningUnitCost(e.target.value)}
-              data-testid="inventory-opening-unit-cost"
-            />
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("openingStock.unitCostHelper")}
-            </p>
-            {openingStockValue !== null ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
-              </p>
-            ) : null}
-            {tracksExpiration ? (
-              <>
+              <div className="inventory-detail-opening-fields">
                 <Input
                   label={t("inventory.expirationDate")}
                   name="openingExpirationDate"
@@ -996,6 +1099,93 @@ export function InventoryDetailPage() {
                   value={openingLotNumber}
                   onChange={(e) => setOpeningLotNumber(e.target.value)}
                 />
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("inventory.openingExpiryHint")}
+              </p>
+            </>
+          ) : null}
+          <Button
+            type="button"
+            disabled={
+              enableMutation.isPending ||
+              (Number(openingQty) > 0 &&
+                (!openingUnitCost.trim() ||
+                  !Number.isFinite(Number(openingUnitCost)) ||
+                  Number(openingUnitCost) <= 0)) ||
+              !openingExpiryReady
+            }
+            onClick={() => enableMutation.mutate()}
+            data-testid="inventory-enable"
+          >
+            {t("inventory.enable")}
+          </Button>
+        </Card>
+        ) : null
+      ) : showAddOpeningStock && allowManageInventory ? (
+        <>
+          <Card className="flex flex-col gap-3 p-3" data-testid="inventory-add-opening-stock">
+            <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
+              {t("inventory.addOpeningStockTitle").replace("{location}", branchLabel)}
+            </h2>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("inventory.addOpeningStockHint")}
+            </p>
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="inventory-opening-vs-purchase-hint"
+            >
+              {t("inventory.openingVsPurchaseHint")}
+            </p>
+            {sellingPriceAwareness}
+            <div className="inventory-detail-opening-fields">
+              <Input
+                label={`${t("openingStock.quantity")} (${account.unitOfMeasure})`}
+                name="openingQuantity"
+                inputMode="decimal"
+                value={openingQty}
+                onChange={(e) => setOpeningQty(e.target.value)}
+                data-testid="inventory-opening-quantity"
+              />
+              <Input
+                label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
+                name="openingUnitCost"
+                inputMode="decimal"
+                value={openingUnitCost}
+                onChange={(e) => setOpeningUnitCost(e.target.value)}
+                data-testid="inventory-opening-unit-cost"
+              />
+            </div>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("openingStock.unitCostHelper")}
+            </p>
+            {purchaseCostAwareness}
+            {openingStockValue !== null ? (
+              <p
+                className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                data-testid="inventory-opening-stock-value"
+              >
+                {t("inventory.stockValue")}: ₱{openingStockValue.toFixed(2)}
+              </p>
+            ) : null}
+            {tracksExpiration && Number(openingQty) > 0 ? (
+              <>
+                <div className="inventory-detail-opening-fields">
+                  <Input
+                    label={t("inventory.expirationDate")}
+                    name="openingExpirationDate"
+                    type="date"
+                    value={openingExpiry}
+                    onChange={(e) => setOpeningExpiry(e.target.value)}
+                    data-testid="inventory-opening-expiry"
+                  />
+                  <Input
+                    label={t("inventory.batchLotNumber")}
+                    name="openingLotNumber"
+                    value={openingLotNumber}
+                    onChange={(e) => setOpeningLotNumber(e.target.value)}
+                  />
+                </div>
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                   {t("inventory.openingExpiryHint")}
                 </p>
@@ -1003,8 +1193,15 @@ export function InventoryDetailPage() {
             ) : null}
             <Button
               type="button"
-              className="min-h-11"
-              disabled={addOpeningStockMutation.isPending}
+              className="w-fit"
+              disabled={
+                addOpeningStockMutation.isPending ||
+                !(openingQuantityValue > 0) ||
+                !openingUnitCost.trim() ||
+                !Number.isFinite(Number(openingUnitCost)) ||
+                Number(openingUnitCost) <= 0 ||
+                !openingExpiryReady
+              }
               onClick={() => addOpeningStockMutation.mutate()}
               data-testid="inventory-add-opening-stock-submit"
             >
@@ -1014,7 +1211,7 @@ export function InventoryDetailPage() {
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11 w-fit"
+            className="w-fit"
             disabled={disableMutation.isPending || !canDisableInventory}
             onClick={() => disableMutation.mutate()}
             data-testid="inventory-disable"
@@ -1024,175 +1221,212 @@ export function InventoryDetailPage() {
         </>
       ) : (
         <>
-          {lotsSection}
+          {expirationPendingCard}
 
-          {allowManageInventory ? (
-            <>
-              <Card className="flex flex-col gap-3 p-3" data-testid="inventory-adjust-form">
-                <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-                  {t("inventory.stockAdjustment")}
-                </h2>
-                <p
-                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="inventory-adjust-branch"
-                >
-                  {t("inventory.adjustingAtBranch").replace("{name}", branchLabel)}
-                </p>
-
-            <fieldset className="m-0 border-0 p-0">
-              <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("inventory.direction")}
-              </legend>
-              <div className="flex flex-wrap gap-2" data-testid="inventory-adjust-direction">
-                <label className="inventory-direction-option">
-                  <input
-                    type="radio"
-                    name="adjustDirection"
-                    value="In"
-                    checked={adjustDirection === "In"}
-                    onChange={() => {
-                      setAdjustDirection("In");
-                      setSelectedLotId("");
-                    }}
-                  />
-                  <span>{t("inventory.adjustIn")}</span>
-                </label>
-                <label className="inventory-direction-option">
-                  <input
-                    type="radio"
-                    name="adjustDirection"
-                    value="Out"
-                    checked={adjustDirection === "Out"}
-                    onChange={() => setAdjustDirection("Out")}
-                  />
-                  <span>{t("inventory.adjustOut")}</span>
-                </label>
-              </div>
-            </fieldset>
-
-            <Input
-              label={t("inventory.adjustQuantityRequired")}
-              name="adjustQuantity"
-              inputMode="decimal"
-              value={adjustQty}
-              onChange={(e) => setAdjustQty(e.target.value)}
-            />
-
-            {tracksExpiration && adjustDirection === "In" ? (
-              <div className="flex flex-col gap-3" data-testid="inventory-stock-details">
-                <h3 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-                  {t("inventory.stockDetails")}
-                </h3>
-                <Input
-                  label={t("inventory.expirationDateRequiredLabel")}
-                  name="adjustExpirationDate"
-                  type="date"
-                  value={adjustExpiry}
-                  onChange={(e) => setAdjustExpiry(e.target.value)}
-                  data-testid="inventory-adjust-expiry"
-                />
-                <Input
-                  label={t("inventory.batchLotNumber")}
-                  name="adjustLotNumber"
-                  value={adjustLotNumber}
-                  onChange={(e) => setAdjustLotNumber(e.target.value)}
-                />
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.stockInExpiryHint")}
-                </p>
-              </div>
-            ) : null}
-
-            {tracksExpiration && adjustDirection === "Out" ? (
-              <fieldset className="m-0 border-0 p-0" data-testid="inventory-deduct-mode">
-                <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("inventory.deductFrom")}
-                </legend>
-                <div className="flex flex-col gap-2">
-                  <label className="inventory-direction-option">
-                    <input
-                      type="radio"
-                      name="deductMode"
-                      value="auto"
-                      checked={deductMode === "auto"}
-                      onChange={() => {
-                        setDeductMode("auto");
-                        setSelectedLotId("");
-                      }}
-                      data-testid="inventory-deduct-auto"
-                    />
-                    <span>{t("inventory.deductAutoFefo")}</span>
-                  </label>
-                  <label className="inventory-direction-option">
-                    <input
-                      type="radio"
-                      name="deductMode"
-                      value="manual"
-                      checked={deductMode === "manual"}
-                      onChange={() => setDeductMode("manual")}
-                      data-testid="inventory-deduct-manual"
-                    />
-                    <span>{t("inventory.deductChooseLot")}</span>
-                  </label>
-                </div>
-                <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("inventory.deductAutoHint")}
-                </p>
-                {deductMode === "manual" && lots.length > 0 ? (
-                  <div className="mt-3">
-                    <InventoryLotList
-                      lots={lots}
-                      unitOfMeasure={account.unitOfMeasure}
-                      formatStatus={formatStatus}
-                      selectable
-                      selectedLotId={selectedLotId}
-                      onSelectLot={setSelectedLotId}
-                      namePrefix="inventory-adjust-lot"
-                    />
-                  </div>
-                ) : null}
-                {deductMode === "manual" && lots.length === 0 ? (
-                  <p className="mt-2 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.lotsEmpty")}
-                  </p>
-                ) : null}
-              </fieldset>
-            ) : null}
-
-            <Input
-              label={t("inventory.reason")}
-              name="adjustReason"
-              value={adjustReason}
-              onChange={(e) => setAdjustReason(e.target.value)}
-              placeholder={t("inventory.reasonStockCountPlaceholder")}
-            />
-
-            <Button
-              type="button"
-              className="min-h-11"
-              disabled={adjusting || statusLocked || !adjustQty.trim()}
-              onClick={() => void onAdjust()}
-              data-testid="inventory-adjust"
+          {allowManageInventory || lotsPanel ? (
+            <div
+              className={cn(
+                "inventory-detail-workspace",
+                Boolean(lotsPanel && allowManageInventory) && "inventory-detail-workspace--split",
+              )}
+              data-testid="inventory-detail-workspace"
             >
-              {adjusting
-                ? t("checkout.confirmingTransaction")
-                : tracksExpiration && adjustDirection === "In"
-                  ? t("inventory.addStock")
-                  : t("inventory.applyAdjustment")}
-            </Button>
-          </Card>
+              {allowManageInventory ? (
+                <div className="inventory-detail-workspace__adjust flex min-w-0 flex-col gap-2">
+                  <Card
+                    className="inventory-adjust-form flex flex-col gap-2.5 p-3"
+                    data-testid="inventory-adjust-form"
+                  >
+                    <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+                      {t("inventory.stockAdjustment")}
+                    </h2>
 
-          <Button
-            type="button"
-            variant="ghost"
-            className="min-h-11 w-fit"
-            disabled={disableMutation.isPending || !canDisableInventory}
-            onClick={() => disableMutation.mutate()}
-            data-testid="inventory-disable"
-          >
-            {t("inventory.disable")}
-          </Button>
-            </>
+                    <div className="inventory-adjust-direction-qty">
+                      <fieldset className="inventory-adjust-direction-qty__direction m-0 border-0 p-0">
+                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-medium text-muted">
+                          {t("inventory.direction")}
+                        </legend>
+                        <div
+                          className="inventory-adjust-direction flex flex-wrap gap-1.5"
+                          data-testid="inventory-adjust-direction"
+                        >
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="adjustDirection"
+                              value="In"
+                              checked={adjustDirection === "In"}
+                              onChange={() => {
+                                setAdjustDirection("In");
+                                setSelectedLotId("");
+                              }}
+                            />
+                            <span>{t("inventory.adjustIn")}</span>
+                          </label>
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="adjustDirection"
+                              value="Out"
+                              checked={adjustDirection === "Out"}
+                              onChange={() => setAdjustDirection("Out")}
+                            />
+                            <span>{t("inventory.adjustOut")}</span>
+                          </label>
+                        </div>
+                      </fieldset>
+
+                      <div className="inventory-adjust-qty">
+                        <Input
+                          label={t("inventory.adjustQuantityRequired")}
+                          name="adjustQuantity"
+                          inputMode="decimal"
+                          value={adjustQty}
+                          onChange={(e) => setAdjustQty(e.target.value)}
+                        />
+                        <span
+                          className="inventory-adjust-qty__uom-chip"
+                          aria-hidden="true"
+                          data-testid="inventory-adjust-uom"
+                        >
+                          {account.unitOfMeasure}
+                        </span>
+                      </div>
+                    </div>
+
+                    {tracksExpiration && adjustDirection === "In" ? (
+                      <div className="flex flex-col gap-2" data-testid="inventory-stock-details">
+                        <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.stockDetails")}
+                        </h3>
+                        <div className="inventory-detail-opening-fields">
+                          <Input
+                            label={t("inventory.expirationDateRequiredLabel")}
+                            name="adjustExpirationDate"
+                            type="date"
+                            value={adjustExpiry}
+                            onChange={(e) => setAdjustExpiry(e.target.value)}
+                            data-testid="inventory-adjust-expiry"
+                          />
+                          <Input
+                            label={t("inventory.batchLotNumber")}
+                            name="adjustLotNumber"
+                            value={adjustLotNumber}
+                            onChange={(e) => setAdjustLotNumber(e.target.value)}
+                          />
+                        </div>
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("inventory.stockInExpiryHint")}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {tracksExpiration && adjustDirection === "Out" ? (
+                      <fieldset className="m-0 border-0 p-0" data-testid="inventory-deduct-mode">
+                        <legend className="mb-1 text-[length:var(--exits-text-sm)] font-semibold">
+                          {t("inventory.deductFrom")}
+                        </legend>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="deductMode"
+                              value="auto"
+                              checked={deductMode === "auto"}
+                              onChange={() => {
+                                setDeductMode("auto");
+                                setSelectedLotId("");
+                              }}
+                              data-testid="inventory-deduct-auto"
+                            />
+                            <span>{t("inventory.deductAutoFefo")}</span>
+                          </label>
+                          <label className="inventory-direction-option">
+                            <input
+                              type="radio"
+                              name="deductMode"
+                              value="manual"
+                              checked={deductMode === "manual"}
+                              onChange={() => setDeductMode("manual")}
+                              data-testid="inventory-deduct-manual"
+                            />
+                            <span>{t("inventory.deductChooseLot")}</span>
+                          </label>
+                        </div>
+                        <p className="mt-1.5 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {t("inventory.deductAutoHint")}
+                        </p>
+                        {deductMode === "manual" && lots.length > 0 ? (
+                          <div className="mt-2">
+                            <InventoryLotList
+                              lots={lots}
+                              unitOfMeasure={account.unitOfMeasure}
+                              formatStatus={formatStatus}
+                              selectable
+                              selectedLotId={selectedLotId}
+                              onSelectLot={setSelectedLotId}
+                              namePrefix="inventory-adjust-lot"
+                            />
+                          </div>
+                        ) : null}
+                        {deductMode === "manual" && lots.length === 0 ? (
+                          <p className="mt-1.5 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                            {t("inventory.lotsEmpty")}
+                          </p>
+                        ) : null}
+                      </fieldset>
+                    ) : null}
+
+                    <Input
+                      label={t("inventory.reason")}
+                      name="adjustReason"
+                      value={adjustReason}
+                      onChange={(e) => setAdjustReason(e.target.value)}
+                      placeholder={t("inventory.reasonStockCountPlaceholder")}
+                      list="inventory-adjust-reason-suggestions"
+                    />
+                    <datalist id="inventory-adjust-reason-suggestions">
+                      <option value={t("inventory.reasonStockCountPlaceholder")} />
+                    </datalist>
+
+                    <div className="inventory-adjust-form__actions">
+                      <Button
+                        type="button"
+                        className="inventory-adjust-form__submit shrink-0"
+                        disabled={
+                          adjusting ||
+                          statusLocked ||
+                          !adjustQty.trim() ||
+                          !adjustExpiryReady ||
+                          (tracksExpiration &&
+                            adjustDirection === "Out" &&
+                            deductMode === "manual" &&
+                            !selectedLotId)
+                        }
+                        onClick={() => void onAdjust()}
+                        data-testid="inventory-adjust"
+                      >
+                        {adjustApplyLabel}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="inventory-adjust-form__disable h-auto min-h-0 max-w-[min(100%,14rem)] flex-1 justify-end whitespace-normal px-1 py-1 text-right text-[length:var(--exits-text-xs)] font-normal leading-snug text-muted"
+                        disabled={disableMutation.isPending || !canDisableInventory}
+                        onClick={() => disableMutation.mutate()}
+                        data-testid="inventory-disable"
+                      >
+                        {t("inventory.disable")}
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
+              ) : null}
+
+              {lotsPanel ? (
+                <div className="inventory-detail-workspace__lots">{lotsPanel}</div>
+              ) : null}
+            </div>
           ) : null}
         </>
       )}
@@ -1202,62 +1436,23 @@ export function InventoryDetailPage() {
           {t("inventory.movements")}
         </h2>
         {movementsQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
-        <ul className="mt-2 mb-0 flex list-none flex-col gap-2 p-0">
-          {movementsQuery.data?.items.map((movement) => (
-            <li key={movement.movementId}>
-              <Card className="p-3">
-                <p className="m-0 font-semibold">
-                  {movement.quantityEffect > 0 ? "+" : ""}
-                  {movement.quantityEffect} {account.unitOfMeasure}
-                </p>
-                <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t(inventoryMovementTypeLabelKey(movement.movementType))}
-                </p>
-                {movement.unitCost != null ? (
-                  <dl
-                    className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]"
-                    data-testid={`inventory-movement-cost-${movement.movementId}`}
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("inventory.unitPurchaseCost")}</dt>
-                      <dd className="m-0">
-                        <MoneyDisplay amount={movement.unitCost} />
-                        <span className="text-muted"> / {account.unitOfMeasure}</span>
-                      </dd>
-                    </div>
-                    {resolveMovementStockValue(movement) != null ? (
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <dt className="text-muted">{t("inventory.stockValue")}</dt>
-                        <dd className="m-0">
-                          <MoneyDisplay amount={resolveMovementStockValue(movement)!} />
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                ) : null}
-                {movement.expirationDate ? (
-                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.movementExpiry")}: {movement.expirationDate}
-                    {movement.lotNumber
-                      ? ` · ${t("inventory.movementLot")}: ${movement.lotNumber}`
-                      : ""}
-                  </p>
-                ) : null}
-                <div className="mt-2">
-                  <ActorAttribution
-                    labelKey="common.recordedBy"
-                    actorId={movement.recordedBy}
-                    occurredAtUtc={movement.recordedAtUtc}
-                    resolved={actors.resolve(movement.recordedBy)}
-                    isLoading={actors.isResolving}
-                    testId={`inventory-movement-actor-${movement.movementId}`}
-                  />
-                </div>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <InventoryMovementsResponsiveList
+          movements={movementsQuery.data?.items ?? []}
+          unitOfMeasure={account.unitOfMeasure}
+          resolveActor={(actorId) => actors.resolve(actorId)}
+          actorsLoading={actors.isResolving}
+        />
       </div>
+
+      {workspace && productId ? (
+        <InventoryReservationsDrawer
+          open={reservationsOpen}
+          onOpenChange={setReservationsOpen}
+          workspace={workspace}
+          productId={productId}
+          productNameFallback={account.name}
+        />
+      ) : null}
     </div>
   );
 }

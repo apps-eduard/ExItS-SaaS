@@ -5,85 +5,151 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 
+export type PageHeaderVariant = "default" | "compact";
+
 export type PageHeaderProps = {
   title: string;
   /** Optional icon shown before the page title. */
   titleIcon?: LucideIcon;
-  /** Muted line under the title (e.g. record name on edit screens). */
+  /** Muted line under the title (e.g. branch name or record name). */
   subtitle?: string;
   description?: string;
   /**
-   * When a description is set, it stays collapsed behind the info icon by default.
-   * Pass `false` only for rare always-visible lede cases.
+   * When true, description stays behind the info control until revealed.
+   * Default false — major pages show a one-line lede under the title.
+   * Ignored for `variant="compact"` (no description chrome).
    */
   descriptionCollapsible?: boolean;
   /** Accessible name for the info icon control. */
   infoToggleLabel?: string;
-  /** Optional trailing control on the title row (e.g. status chip). */
+  /**
+   * Optional trailing / right-slot content (badge, primary action, etc.).
+   * Prefer `actions` for new call sites; `trailing` remains as an alias.
+   */
+  actions?: ReactNode;
+  /** @deprecated Prefer `actions`. */
   trailing?: ReactNode;
   /** Canonical parent route for child pages. Omit on root bottom-nav destinations. */
   backTo?: string;
   /** Accessible name for the back control (also used as aria-label). */
   backLabel?: string;
   backTestId?: string;
+  /**
+   * When set (e.g. from useSmartBack.goBack), left-click runs this instead of
+   * a plain Link navigation so returnTo storage can be cleared. Href still
+   * supports middle-click / open-in-new-tab via `backTo`.
+   */
+  onBack?: () => void;
+  /**
+   * `default` — application pages (Reports, Shifts, …).
+   * `compact` — operational POS workspaces (Sell) — single dense row, no lede.
+   */
+  variant?: PageHeaderVariant;
 };
 
 /**
- * Standard page title row: optional back, title, and info icon (hover or tap reveals lede).
+ * Canonical ExItS page header: optional back, title, description, badge/actions.
+ * Structural surface — not a heavy Card; not Control Shape / Primary-tinted.
  */
 export function PageHeader({
   title,
   titleIcon: TitleIcon,
   subtitle,
   description,
-  descriptionCollapsible = true,
+  descriptionCollapsible = false,
   infoToggleLabel,
+  actions,
   trailing,
   backTo,
   backLabel,
   backTestId = "page-header-back",
+  onBack,
+  variant = "default",
 }: PageHeaderProps) {
   const { t } = useI18n();
   const [infoPinned, setInfoPinned] = useState(false);
   const [infoHovered, setInfoHovered] = useState(false);
   const descriptionId = useId();
+  const compact = variant === "compact";
   const showBack = Boolean(backTo && backLabel);
-  const hasDescription = Boolean(description?.trim());
+  const hasDescription = Boolean(description?.trim()) && !compact;
   const collapsible = hasDescription && descriptionCollapsible;
   const alwaysVisible = hasDescription && !descriptionCollapsible;
   const infoVisible = infoPinned || infoHovered;
   const toggleLabel = infoToggleLabel ?? t("pageHeader.infoToggle");
+  const rightSlot = actions ?? trailing;
 
   return (
-    <header className="page-header flex min-w-0 flex-col gap-1">
-      <div className="flex min-w-0 gap-1.5">
+    <header
+      className={cn("page-header flex min-w-0 flex-col", compact ? "page-header--compact gap-0" : "gap-1")}
+      data-testid="page-header"
+      data-variant={variant}
+    >
+      <div className={cn("flex min-w-0", compact ? "items-center gap-1" : "gap-1.5")}>
         {showBack ? (
-          <div className="flex h-11 shrink-0 items-center">
+          <div
+            className={cn(
+              "flex shrink-0 items-center",
+              compact ? "h-[var(--exits-control-height-sm,2rem)]" : "h-[var(--exits-control-height)]",
+            )}
+          >
             <Link
               to={backTo!}
               data-testid={backTestId}
               aria-label={backLabel}
               className={cn(
-                "-ml-2 inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "inline-flex shrink-0 items-center justify-center rounded-[var(--exits-radius-md)] text-foreground no-underline transition-colors hover:bg-[var(--exits-surface-muted)] hover:text-[var(--exits-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                compact
+                  ? "-ms-0.5 size-8 min-h-8 min-w-8"
+                  : "-ms-1 size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
               )}
+              onClick={
+                onBack
+                  ? (event) => {
+                      if (
+                        event.button === 0 &&
+                        !event.metaKey &&
+                        !event.ctrlKey &&
+                        !event.shiftKey &&
+                        !event.altKey
+                      ) {
+                        event.preventDefault();
+                        onBack();
+                      }
+                    }
+                  : undefined
+              }
             >
-              <ArrowLeft className="size-5 shrink-0" aria-hidden />
+              <ArrowLeft className={cn("shrink-0 rtl:rotate-180", compact ? "size-4" : "size-5")} aria-hidden />
             </Link>
           </div>
         ) : null}
 
         <div
-          className="page-header__main flex min-w-0 flex-1 flex-col gap-1"
+          className={cn(
+            "page-header__main flex min-w-0 flex-1",
+            compact ? "flex-row items-center gap-1.5" : "flex-col gap-1",
+          )}
           onMouseLeave={() => setInfoHovered(false)}
         >
-          <div className="page-header__head">
-            <div className="page-header__title-row flex min-h-11 min-w-0 items-center gap-1.5">
+          <div className={cn("page-header__head", compact && "page-header__head--compact")}>
+            <div
+              className={cn(
+                "page-header__title-row flex min-w-0 items-center gap-1.5",
+                compact ? "min-h-8" : "min-h-[var(--exits-control-height)]",
+              )}
+            >
               {TitleIcon ? (
                 <span className="page-header__title-icon shrink-0" aria-hidden>
-                  <TitleIcon className="size-5" />
+                  <TitleIcon className={cn(compact ? "size-4" : "size-5")} />
                 </span>
               ) : null}
-              <h1 className="page-header__title m-0 min-w-0 flex-1 truncate text-[length:var(--exits-text-xl)] font-bold leading-tight tracking-tight">
+              <h1
+                className={cn(
+                  "page-header__title exits-type-page-title m-0 min-w-0 flex-1 truncate",
+                  compact && "page-header__title--compact",
+                )}
+              >
                 {title}
               </h1>
               {collapsible ? (
@@ -111,10 +177,17 @@ export function PageHeader({
                 </button>
               ) : null}
             </div>
-            {trailing ? <div className="page-header__trailing">{trailing}</div> : null}
+            {rightSlot ? (
+              <div
+                className={cn("page-header__trailing", compact && "page-header__trailing--compact")}
+                data-testid="page-header-actions"
+              >
+                {rightSlot}
+              </div>
+            ) : null}
           </div>
 
-          {subtitle ? (
+          {!compact && subtitle ? (
             <p
               data-testid="page-header-subtitle"
               className="page-header__subtitle m-0 truncate text-[length:var(--exits-text-sm)] font-medium text-muted"
@@ -151,8 +224,8 @@ export function PageHeader({
         <p
           data-testid="page-header-description"
           className={cn(
-            "page-header__description m-0 text-[length:var(--exits-text-sm)] leading-relaxed text-muted",
-            showBack && "pl-11",
+            "page-header__description m-0 text-[length:var(--exits-text-sm)] leading-snug text-muted",
+            showBack && "ps-10",
           )}
         >
           {description}

@@ -19,6 +19,8 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
 
     private readonly IReadOnlyDictionary<string, PhilippineLocality> _byCode;
     private readonly IReadOnlyList<PhilippineLocality> _all;
+    private readonly IReadOnlyList<PhilippineRegion> _regions;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<PhilippineLocality>> _byRegion;
 
     public PhilippineLocalityDirectoryMetadata Metadata { get; }
 
@@ -73,6 +75,40 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
         localities.Sort(static (a, b) => string.CompareOrdinal(a.PsgcCode, b.PsgcCode));
         _all = localities;
         _byCode = byCode;
+
+        var regionMap = new Dictionary<string, PhilippineRegion>(StringComparer.Ordinal);
+        var byRegionBuckets = new Dictionary<string, List<PhilippineLocality>>(StringComparer.Ordinal);
+        foreach (var locality in localities)
+        {
+            regionMap.TryAdd(locality.RegionCode, new PhilippineRegion(locality.RegionCode, locality.RegionName));
+            if (!byRegionBuckets.TryGetValue(locality.RegionCode, out var bucket))
+            {
+                bucket = [];
+                byRegionBuckets[locality.RegionCode] = bucket;
+            }
+
+            bucket.Add(locality);
+        }
+
+        var regions = regionMap.Values.ToList();
+        regions.Sort(static (a, b) => string.Compare(a.RegionName, b.RegionName, StringComparison.OrdinalIgnoreCase));
+        _regions = regions;
+
+        var byRegion = new Dictionary<string, IReadOnlyList<PhilippineLocality>>(StringComparer.Ordinal);
+        foreach (var (code, bucket) in byRegionBuckets)
+        {
+            bucket.Sort(static (a, b) =>
+            {
+                var nameCmp = string.Compare(
+                    PhilippineLocality.FriendlyName(a.Name),
+                    PhilippineLocality.FriendlyName(b.Name),
+                    StringComparison.OrdinalIgnoreCase);
+                return nameCmp != 0 ? nameCmp : string.CompareOrdinal(a.PsgcCode, b.PsgcCode);
+            });
+            byRegion[code] = bucket;
+        }
+
+        _byRegion = byRegion;
         Metadata = new PhilippineLocalityDirectoryMetadata(
             document.Metadata.Source,
             document.Metadata.Dataset,
@@ -94,6 +130,20 @@ public sealed class PhilippineLocalityDirectory : IPhilippineLocalityDirectory
     }
 
     public bool Contains(string psgcCode) => GetByPsgcCode(psgcCode) is not null;
+
+    public IReadOnlyList<PhilippineRegion> ListRegions() => _regions;
+
+    public IReadOnlyList<PhilippineLocality> ListByRegionCode(string regionCode)
+    {
+        if (string.IsNullOrWhiteSpace(regionCode))
+        {
+            return Array.Empty<PhilippineLocality>();
+        }
+
+        return _byRegion.TryGetValue(regionCode.Trim(), out var list)
+            ? list
+            : Array.Empty<PhilippineLocality>();
+    }
 
     public IReadOnlyList<PhilippineLocality> Search(string query, int limit = DefaultSearchLimit)
     {

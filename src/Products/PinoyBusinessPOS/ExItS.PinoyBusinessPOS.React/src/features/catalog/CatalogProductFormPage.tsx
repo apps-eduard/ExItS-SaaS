@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Ban, Loader2, Plus, RotateCcw, Save } from "lucide-react";
+import { Ban, CalendarClock, Loader2, Plus, RotateCcw, Save, Settings2 } from "lucide-react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,6 +25,9 @@ import type {
   CatalogProductScopeCode,
   PosCatalogProductDto,
   PosProductBrandDto,
+  PosProductBrandPagedResult,
+  PosProductCategoryDto,
+  PosProductCategoryPagedResult,
 } from "@/api/pos/pos-catalog-types";
 
 import {
@@ -47,15 +50,20 @@ import { ErrorState } from "@/components/exits/ErrorState";
 
 import { LoadingState } from "@/components/exits/LoadingState";
 
+import { Notice } from "@/components/exits/Notice";
+
 import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 
 import { PageHeader } from "@/components/exits/PageHeader";
 
 import { StatusChip } from "@/components/exits/StatusChip";
+import { TagChip } from "@/components/exits/TagChip";
+import { useToast } from "@/components/exits/ToastProvider";
 
 import { useBrowserOnline } from "@/connectivity/browser-online";
 
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 
@@ -68,13 +76,12 @@ import {
 } from "@/features/catalog/product-unit-drafts";
 
 import {
-  businessUsageLabelKey,
-  isSellFloorBusinessUsage,
-  resolveBusinessUsage,
-  type ProductBusinessUsage,
+  capabilitiesFromProduct,
+  isSellFloorCapable,
+  type ProductCapabilityFlags,
 } from "@/features/catalog/product-business-usage";
 
-import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
+import { ProductCapabilitySelector } from "@/features/catalog/ProductCapabilitySelector";
 import {
   CatalogBranchAvailabilitySection,
   CatalogCreateScopeFields,
@@ -160,6 +167,50 @@ function FormSelect({
   );
 }
 
+function isCategoryNameConflictError(err: unknown): boolean {
+  return (
+    err instanceof PosApiError &&
+    (err.errorCode === "pos.category.name.conflict" ||
+      /category.*already exists/i.test(err.problem.detail ?? err.message))
+  );
+}
+
+function findCategoryByName(
+  items: ReadonlyArray<PosProductCategoryDto>,
+  name: string,
+): PosProductCategoryDto | undefined {
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+  return items.find((category) => category.name.trim().toLowerCase() === normalized);
+}
+
+function upsertCategoryInPagedCache(
+  previous: PosProductCategoryPagedResult | undefined,
+  category: PosProductCategoryDto,
+): PosProductCategoryPagedResult {
+  if (!previous) {
+    return {
+      items: [category],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    };
+  }
+  if (previous.items.some((item) => item.categoryId === category.categoryId)) {
+    return previous;
+  }
+  const items = [...previous.items, category].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
+  return {
+    ...previous,
+    items,
+    totalCount: previous.totalCount + 1,
+  };
+}
+
 function FormCheck({
   label,
 
@@ -233,16 +284,14 @@ function CatalogProductNameConflictPanel({
 
   if (!conflict.canRevealExisting || !conflict.existingProduct) {
     return (
-      <div
-        className="exits-alert catalog-form-field--full"
-        data-testid="catalog-name-conflict"
-        role="status"
+      <Notice
+        tone="warning"
+        className="catalog-form-field--full"
+        testId="catalog-name-conflict"
+        title={t("catalog.duplicate.title")}
       >
-        <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.hiddenForeign")}
-        </p>
-      </div>
+        <p className="text-muted">{t("catalog.duplicate.hiddenForeign")}</p>
+      </Notice>
     );
   }
 
@@ -254,39 +303,32 @@ function CatalogProductNameConflictPanel({
   const notOffered = existing.isOfferedAtBranch === false;
 
   return (
-    <div
-      className="exits-alert catalog-form-field--full"
-      data-testid="catalog-name-conflict"
-      role="status"
+    <Notice
+      tone="warning"
+      className="catalog-form-field--full"
+      testId="catalog-name-conflict"
+      title={t("catalog.duplicate.title")}
+      action={
+        <Link
+          to={`/catalog/products/${existing.productId}/edit`}
+          className="inline-flex items-center text-[length:var(--exits-text-sm)] font-semibold underline"
+          data-testid="catalog-name-conflict-use-existing"
+        >
+          {t("catalog.duplicate.useExisting")}
+        </Link>
+      }
     >
-      <p className="m-0 font-semibold">{t("catalog.duplicate.title")}</p>
-      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]" data-testid="catalog-name-conflict-name">
-        {existing.name}
-      </p>
-      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">{scopeLabel}</p>
-      {inactive ? (
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.inactive")}
-        </p>
-      ) : null}
-      {notOffered ? (
-        <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-          {t("catalog.duplicate.notOffered")}
-        </p>
-      ) : null}
-      <Link
-        to={`/catalog/products/${existing.productId}/edit`}
-        className="mt-2 inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline"
-        data-testid="catalog-name-conflict-use-existing"
-      >
-        {t("catalog.duplicate.useExisting")}
-      </Link>
-    </div>
+      <p data-testid="catalog-name-conflict-name">{existing.name}</p>
+      <p className="text-muted">{scopeLabel}</p>
+      {inactive ? <p className="text-muted">{t("catalog.duplicate.inactive")}</p> : null}
+      {notOffered ? <p className="text-muted">{t("catalog.duplicate.notOffered")}</p> : null}
+    </Notice>
   );
 }
 
 export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const { t } = useI18n();
+  const { toast } = useToast();
 
   const navigate = useNavigate();
 
@@ -298,6 +340,11 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const workspace = usePosWorkspaceScope();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canGovern = canGovernOrganizationCatalog(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "catalog",
+    backLabel: t(pageBackNav.catalog.labelKey),
+    backTestId: "page-header-back-catalog",
+  });
 
   const [createScope, setCreateScope] = useState<CatalogProductScopeCode>(
     canGovern ? "OrganizationStandard" : "BranchLocal",
@@ -315,14 +362,21 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const [brandId, setBrandId] = useState("");
 
-  const [businessUsage, setBusinessUsage] = useState<ProductBusinessUsage>("Resale");
+  const [capabilities, setCapabilities] = useState<ProductCapabilityFlags>({
+    canBeSold: true,
+    canBeUsedAsIngredient: false,
+    isProduced: false,
+  });
 
-  const [initialBusinessUsage, setInitialBusinessUsage] =
-    useState<ProductBusinessUsage | null>(null);
+  const [initialCapabilities, setInitialCapabilities] =
+    useState<ProductCapabilityFlags | null>(null);
 
   const [tracksExpiration, setTracksExpiration] = useState(false);
 
   const [trackStockQuantity, setTrackStockQuantity] = useState(mode === "create");
+
+  /** Default share-when-tracked policy; always false while untracked. */
+  const [canExposeToConnectedBuyers, setCanExposeToConnectedBuyers] = useState(mode === "create");
 
   const [addOpeningStock, setAddOpeningStock] = useState(false);
 
@@ -357,6 +411,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const [newBrandName, setNewBrandName] = useState("");
+
+  /** Keeps a just-created category visible in the select before list refetch settles. */
+  const [pendingCategoryOption, setPendingCategoryOption] =
+    useState<PosProductCategoryDto | null>(null);
 
   const categoriesQuery = useQuery({
     queryKey: ["catalog", "categories", workspace?.organizationId, workspace?.branchId],
@@ -476,13 +534,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
     setBrandId(product.brandId ?? "");
 
-    const usage = resolveBusinessUsage(product);
-    setBusinessUsage(usage);
-    setInitialBusinessUsage(usage);
+    const caps = capabilitiesFromProduct(product);
+    setCapabilities(caps);
+    setInitialCapabilities(caps);
 
     setTracksExpiration(product.tracksExpiration === true);
 
     setTrackStockQuantity(product.isTracked !== false);
+
+    setCanExposeToConnectedBuyers(product.canExposeToConnectedBuyers === true);
 
     setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
 
@@ -521,6 +581,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       setTracksExpiration(false);
     }
   }, [trackStockQuantity, tracksExpiration]);
+
+  useEffect(() => {
+    if (capabilities.canBeUsedAsIngredient && !trackStockQuantity) {
+      setTrackStockQuantity(true);
+    }
+  }, [capabilities.canBeUsedAsIngredient, trackStockQuantity]);
 
   const openingStockState = {
     trackStockQuantity,
@@ -573,6 +639,111 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         throw new Error(t("catalog.duplicate.title"));
       }
 
+      const categoriesKey = [
+        "catalog",
+        "categories",
+        workspace.organizationId,
+        workspace.branchId,
+      ] as const;
+
+      let resolvedCategoryId = categoryId;
+      const pendingCategory = newCategoryName.trim();
+      if (pendingCategory) {
+        const known =
+          findCategoryByName(categoriesQuery.data?.items ?? [], pendingCategory) ??
+          (pendingCategoryOption &&
+          pendingCategoryOption.name.trim().toLowerCase() === pendingCategory.toLowerCase()
+            ? pendingCategoryOption
+            : undefined);
+        if (known) {
+          resolvedCategoryId = known.categoryId;
+        } else {
+          try {
+            const created = await createCatalogCategory(workspace, { name: pendingCategory });
+            queryClient.setQueryData<PosProductCategoryPagedResult>(categoriesKey, (previous) =>
+              upsertCategoryInPagedCache(previous, created),
+            );
+            setPendingCategoryOption(created);
+            resolvedCategoryId = created.categoryId;
+          } catch (err) {
+            if (!isCategoryNameConflictError(err)) {
+              throw err;
+            }
+            await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+            const refreshed = await listCatalogCategories(workspace, { status: "Active" });
+            queryClient.setQueryData(categoriesKey, refreshed);
+            const match = findCategoryByName(refreshed.items, pendingCategory);
+            if (!match) {
+              throw err;
+            }
+            setPendingCategoryOption(match);
+            resolvedCategoryId = match.categoryId;
+          }
+        }
+        setCategoryId(resolvedCategoryId);
+        setNewCategoryName("");
+      }
+
+      let resolvedBrandId = brandId;
+      const pendingBrand = newBrandName.trim();
+      if (pendingBrand) {
+        const brandsKey = [
+          "catalog",
+          "brands",
+          workspace.organizationId,
+          workspace.branchId,
+        ] as const;
+        const knownBrand = (brandsQuery.data?.items ?? []).find(
+          (brand) => brand.name.trim().toLowerCase() === pendingBrand.toLowerCase(),
+        );
+        if (knownBrand) {
+          resolvedBrandId = knownBrand.brandId;
+        } else {
+          try {
+            const created = await createCatalogBrand(workspace, { name: pendingBrand });
+            queryClient.setQueryData<PosProductBrandPagedResult>(brandsKey, (previous) => {
+              if (!previous) {
+                return {
+                  items: [created],
+                  totalCount: 1,
+                  page: 1,
+                  pageSize: 50,
+                };
+              }
+              if (previous.items.some((item) => item.brandId === created.brandId)) {
+                return previous;
+              }
+              return {
+                ...previous,
+                items: [...previous.items, created],
+                totalCount: previous.totalCount + 1,
+              };
+            });
+            resolvedBrandId = created.brandId;
+          } catch (err) {
+            const isConflict =
+              err instanceof PosApiError &&
+              (err.errorCode?.includes("brand.name.conflict") ||
+                /brand.*already exists/i.test(err.problem.detail ?? err.message));
+            if (!isConflict) {
+              throw err;
+            }
+            await queryClient.invalidateQueries({ queryKey: ["catalog", "brands"] });
+            const refreshed = await listCatalogBrands(workspace, { status: "Active" });
+            queryClient.setQueryData(brandsKey, refreshed);
+            const match = refreshed.items.find(
+              (brand) => brand.name.trim().toLowerCase() === pendingBrand.toLowerCase(),
+            );
+            if (!match) {
+              throw err;
+            }
+            resolvedBrandId = match.brandId;
+          }
+        }
+        setBrandId(resolvedBrandId);
+        setNewBrandName("");
+      }
+
       const price = Number(sellingPrice);
 
       if (Number.isNaN(price) || price < 0) {
@@ -581,6 +752,10 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
       if (sellingMode === "ByWeight" && unitOfMeasure !== "Kilogram") {
         throw new Error(t("catalog.byWeightRequiresKg"));
+      }
+
+      if (capabilities.canBeUsedAsIngredient && !trackStockQuantity) {
+        throw new Error(t("catalog.ingredientRequiresTrackedInventory"));
       }
 
       if (mode === "create") {
@@ -620,12 +795,14 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           description: description.trim() || null,
           sku: sku.trim() || null,
           barcode: barcode.trim() || null,
-          categoryId: categoryId || null,
-          brandId: brandId || null,
+          categoryId: resolvedCategoryId || null,
+          brandId: resolvedBrandId || null,
           unitOfMeasure,
           sellingPrice: price,
           sellingMode,
-          businessUsage,
+          canBeSold: capabilities.canBeSold,
+          canBeUsedAsIngredient: capabilities.canBeUsedAsIngredient,
+          isProduced: capabilities.isProduced,
           units: unitsPayload,
           tracksExpiration: trackStockQuantity && tracksExpiration,
           expirationWarningDays: resolvedWarningDays,
@@ -634,12 +811,37 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         const product = await createCatalogProduct(workspace, body);
 
-        if (trackStockQuantity) {
+        if (trackStockQuantity || capabilities.canBeUsedAsIngredient) {
           await enableInventoryTracking(
             workspace,
             product.productId,
-            buildEnableInventoryBody(openingStockState),
+            buildEnableInventoryBody({
+              ...openingStockState,
+              trackStockQuantity: true,
+            }),
           );
+          // Preserve default share-when-tracked policy after inventory is enabled.
+          if (canExposeToConnectedBuyers) {
+            await updateCatalogProduct(workspace, product.productId, {
+              name: product.name,
+              unitOfMeasure: product.unitOfMeasure,
+              sellingPrice: product.sellingPrice,
+              description: product.description ?? null,
+              sku: product.sku ?? null,
+              barcode: product.barcode ?? null,
+              categoryId: product.categoryId ?? null,
+              brandId: product.brandId ?? null,
+              expectedUpdatedAtUtc: product.updatedAtUtc,
+              sellingMode: product.sellingMode,
+              canBeSold: product.canBeSold ?? capabilities.canBeSold,
+              canBeUsedAsIngredient:
+                product.canBeUsedAsIngredient ?? capabilities.canBeUsedAsIngredient,
+              isProduced: product.isProduced ?? capabilities.isProduced,
+              tracksExpiration: product.tracksExpiration ?? false,
+              expirationWarningDays: product.expirationWarningDays ?? null,
+              canExposeToConnectedBuyers: true,
+            });
+          }
         }
 
         return { kind: "saved", product };
@@ -651,17 +853,26 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         description: description.trim() || null,
         sku: sku.trim() || null,
         barcode: barcode.trim() || null,
-        categoryId: categoryId || null,
-        brandId: brandId || null,
+        categoryId: resolvedCategoryId || null,
+        brandId: resolvedBrandId || null,
         unitOfMeasure,
         sellingPrice: price,
         sellingMode,
-        businessUsage,
+        canBeSold: capabilities.canBeSold,
+        canBeUsedAsIngredient: capabilities.canBeUsedAsIngredient,
+        isProduced: capabilities.isProduced,
         expectedUpdatedAtUtc,
         units: configurePackages ? unitsPayload : undefined,
         tracksExpiration: existing?.tracksExpiration === true,
         expirationWarningDays: existing?.expirationWarningDays ?? null,
+        canExposeToConnectedBuyers: trackStockQuantity ? canExposeToConnectedBuyers : false,
       });
+
+      if (capabilities.canBeUsedAsIngredient && product.isTracked !== true) {
+        await enableInventoryTracking(workspace, product.productId, {
+          openingQuantity: 0,
+        });
+      }
 
       return { kind: "saved", product };
     },
@@ -695,6 +906,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       }
 
       if (err instanceof PosApiError) {
+        if (err.problem.errorCode === "pos.catalog.connected_share_requires_tracked") {
+          toast.error(
+            t("catalog.connectedShare.cantShareTitle"),
+            err.problem.detail ?? t("catalog.connectedShare.cantShareMessage"),
+          );
+          setError(null);
+          return;
+        }
+
         if (err.status === 409) {
           setError(err.problem.detail ?? t("catalog.conflict"));
 
@@ -741,15 +961,43 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
       if (!workspace || !newCategoryName.trim()) {
         throw new Error("Category name required");
       }
-      return createCatalogCategory(workspace, { name: newCategoryName.trim() });
+      const pendingCategory = newCategoryName.trim();
+      const existing = findCategoryByName(categoriesQuery.data?.items ?? [], pendingCategory);
+      if (existing) {
+        return existing;
+      }
+      return createCatalogCategory(workspace, { name: pendingCategory });
     },
     onSuccess: async (created) => {
-      await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
+      const categoriesKey = [
+        "catalog",
+        "categories",
+        workspace?.organizationId,
+        workspace?.branchId,
+      ] as const;
+      queryClient.setQueryData<PosProductCategoryPagedResult>(categoriesKey, (previous) =>
+        upsertCategoryInPagedCache(previous, created),
+      );
+      setPendingCategoryOption(created);
       setCategoryId(created.categoryId);
       setNewCategoryName("");
       setError(null);
+      await queryClient.invalidateQueries({ queryKey: ["catalog", "categories"] });
     },
     onError: (err) => {
+      if (isCategoryNameConflictError(err)) {
+        const match = findCategoryByName(
+          categoriesQuery.data?.items ?? [],
+          newCategoryName,
+        );
+        if (match) {
+          setPendingCategoryOption(match);
+          setCategoryId(match.categoryId);
+          setNewCategoryName("");
+        }
+        setError(t("catalog.categoryAlreadyExists"));
+        return;
+      }
       setError(
         err instanceof PosApiError ? (err.problem.detail ?? err.message) : (err as Error).message,
       );
@@ -806,12 +1054,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   const isActive = productStatus?.toLowerCase() === "active";
 
-  const isOnSellFloor = isSellFloorBusinessUsage(businessUsage);
+  const isOnSellFloor = isSellFloorCapable({
+    canBeSold: capabilities.canBeSold,
+    isProduced: capabilities.isProduced,
+  });
 
   const showLeaveSellFloorNote =
     mode === "edit" &&
-    initialBusinessUsage != null &&
-    isSellFloorBusinessUsage(initialBusinessUsage) &&
+    initialCapabilities != null &&
+    isSellFloorCapable(initialCapabilities) &&
     !isOnSellFloor;
 
   const brandOptions: PosProductBrandDto[] = (() => {
@@ -837,6 +1088,35 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     ];
   })();
 
+  const categoryOptions: PosProductCategoryDto[] = (() => {
+    const active = categoriesQuery.data?.items ?? [];
+    const byId = new Map(active.map((category) => [category.categoryId, category] as const));
+    if (
+      pendingCategoryOption &&
+      !byId.has(pendingCategoryOption.categoryId)
+    ) {
+      byId.set(pendingCategoryOption.categoryId, pendingCategoryOption);
+    }
+    const currentCategoryId = categoryId || productQuery.data?.categoryId || "";
+    const currentCategoryName = productQuery.data?.categoryName;
+    if (
+      currentCategoryId &&
+      !byId.has(currentCategoryId)
+    ) {
+      byId.set(currentCategoryId, {
+        categoryId: currentCategoryId,
+        organizationId: productQuery.data?.organizationId ?? workspace.organizationId,
+        name: currentCategoryName?.trim() || currentCategoryId,
+        status: "Active",
+        createdAtUtc: productQuery.data?.createdAtUtc ?? "",
+        updatedAtUtc: productQuery.data?.updatedAtUtc ?? "",
+      });
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+  })();
+
   return (
     <div
       className="catalog-form-page exits-page flex min-w-0 flex-col gap-3"
@@ -849,11 +1129,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         description={t("catalog.productFormLede")}
 
-        backTo={pageBackNav.catalog.to}
-
-        backLabel={t(pageBackNav.catalog.labelKey)}
-
-        backTestId="page-header-back-catalog"
+        {...smartBack}
 
         trailing={
           mode === "edit" && productStatus ? (
@@ -862,7 +1138,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               data-testid="catalog-product-form-header-meta"
             >
               <StatusChip tone={isActive ? "success" : "warning"}>{productStatus}</StatusChip>
-              <StatusChip tone="info">{t(businessUsageLabelKey(businessUsage))}</StatusChip>
+              {capabilities.canBeSold ? (
+                <StatusChip tone="info">{t("catalog.capability.canBeSold")}</StatusChip>
+              ) : null}
+              {capabilities.canBeUsedAsIngredient ? (
+                <StatusChip tone="info">{t("catalog.capability.canBeIngredient")}</StatusChip>
+              ) : null}
+              {capabilities.isProduced ? (
+                <StatusChip tone="info">{t("catalog.capability.isProduced")}</StatusChip>
+              ) : null}
             </div>
           ) : undefined
         }
@@ -900,78 +1184,54 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           <h2 className="catalog-form-section__title">{t("catalog.sectionBasics")}</h2>
 
           <div className="catalog-form-section__grid">
-            <div className="catalog-form-field--full">
-              <Input
-                label={t("catalog.name")}
+            <Input
+              label={t("catalog.name")}
+              name="productName"
+              required
+              value={name}
+              disabled={readOnly}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-                name="productName"
-
-                required
-
-                value={name}
-
-                disabled={readOnly}
-
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+            <Input
+              label={t("catalog.description")}
+              name="productDescription"
+              value={description}
+              disabled={readOnly}
+              onChange={(e) => setDescription(e.target.value)}
+            />
 
             {nameConflictQuery.data?.isDuplicate ? (
-              <CatalogProductNameConflictPanel conflict={nameConflictQuery.data} />
+              <div className="catalog-form-field--full">
+                <CatalogProductNameConflictPanel conflict={nameConflictQuery.data} />
+              </div>
             ) : null}
-
-            <div className="catalog-form-field--full">
-              <Input
-                label={t("catalog.description")}
-
-                name="productDescription"
-
-                value={description}
-
-                disabled={readOnly}
-
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
 
             <Input
               label={t("catalog.sku")}
-
               name="productSku"
-
               value={sku}
-
               disabled={readOnly}
-
               onChange={(e) => setSku(e.target.value)}
             />
 
             <Input
               label={t("catalog.barcode")}
-
               name="productBarcode"
-
               value={barcode}
-
               disabled={readOnly}
-
               onChange={(e) => setBarcode(e.target.value)}
             />
 
             <FormSelect
               label={t("catalog.category")}
-
               name="productCategory"
-
               value={categoryId}
-
               disabled={readOnly}
-
               onChange={setCategoryId}
             >
               <option value="">{t("catalog.noCategory")}</option>
-
-              {categoriesQuery.data?.items.map((category) => (
+              {categoryOptions.map((category) => (
                 <option key={category.categoryId} value={category.categoryId}>
                   {category.name}
                 </option>
@@ -980,19 +1240,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
             <FormSelect
               label={t("catalog.brand")}
-
               name="productBrand"
-
               testId="catalog-product-brand"
-
               value={brandId}
-
               disabled={readOnly}
-
               onChange={setBrandId}
             >
               <option value="">{t("catalog.noBrand")}</option>
-
               {brandOptions.map((brand) => (
                 <option key={brand.brandId} value={brand.brandId}>
                   {brand.name}
@@ -1023,88 +1277,96 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           ) : null}
 
           {!readOnly ? (
-            <>
-          <div className="catalog-form-quick-add">
-            <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
-            <div className="catalog-form-quick-add__row">
-              <div className="catalog-form-quick-add__field">
-                <Input
-                  label={t("catalog.newCategoryPlaceholder")}
-                  name="inlineCategoryName"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder={t("catalog.newCategoryPlaceholder")}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") {
-                      return;
+            <div className="catalog-form-quick-add-grid">
+              <div className="catalog-form-quick-add">
+                <p className="catalog-form-quick-add__label">{t("catalog.sectionCategoryQuickAdd")}</p>
+                <div className="catalog-form-quick-add__row">
+                  <div className="catalog-form-quick-add__field">
+                    <Input
+                      label={t("catalog.newCategoryPlaceholder")}
+                      name="inlineCategoryName"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder={t("catalog.newCategoryPlaceholder")}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") {
+                          return;
+                        }
+                        event.preventDefault();
+                        if (newCategoryName.trim() && !createCategoryMutation.isPending) {
+                          createCategoryMutation.mutate();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="catalog-form-quick-add__button catalog-form-quick-add__button--icon"
+                    data-testid="catalog-add-category"
+                    disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
+                    aria-label={
+                      createCategoryMutation.isPending
+                        ? t("catalog.addingCategory")
+                        : t("catalog.addCategory")
                     }
-                    event.preventDefault();
-                    if (newCategoryName.trim() && !createCategoryMutation.isPending) {
-                      createCategoryMutation.mutate();
-                    }
-                  }}
-                />
+                    onClick={() => createCategoryMutation.mutate()}
+                  >
+                    {createCategoryMutation.isPending ? (
+                      <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    ) : (
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="catalog-form-quick-add__button"
-                data-testid="catalog-add-category"
-                disabled={!newCategoryName.trim() || createCategoryMutation.isPending}
-                onClick={() => createCategoryMutation.mutate()}
-              >
-                {createCategoryMutation.isPending ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                ) : (
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                )}
-                {createCategoryMutation.isPending
-                  ? t("catalog.addingCategory")
-                  : t("catalog.addCategory")}
-              </Button>
-            </div>
-          </div>
 
-          <div className="catalog-form-quick-add">
-            <p className="catalog-form-quick-add__label">{t("catalog.sectionBrandQuickAdd")}</p>
-            <div className="catalog-form-quick-add__row">
-              <div className="catalog-form-quick-add__field">
-                <Input
-                  label={t("catalog.newBrandPlaceholder")}
-                  name="inlineBrandName"
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  placeholder={t("catalog.newBrandPlaceholder")}
-                  data-testid="catalog-inline-brand-name"
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") {
-                      return;
+              <div className="catalog-form-quick-add">
+                <p className="catalog-form-quick-add__label">{t("catalog.sectionBrandQuickAdd")}</p>
+                <div className="catalog-form-quick-add__row">
+                  <div className="catalog-form-quick-add__field">
+                    <Input
+                      label={t("catalog.newBrandPlaceholder")}
+                      name="inlineBrandName"
+                      value={newBrandName}
+                      onChange={(e) => setNewBrandName(e.target.value)}
+                      placeholder={t("catalog.newBrandPlaceholder")}
+                      data-testid="catalog-inline-brand-name"
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") {
+                          return;
+                        }
+                        event.preventDefault();
+                        if (newBrandName.trim() && !createBrandMutation.isPending) {
+                          createBrandMutation.mutate();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="catalog-form-quick-add__button catalog-form-quick-add__button--icon"
+                    data-testid="catalog-add-brand"
+                    disabled={!newBrandName.trim() || createBrandMutation.isPending}
+                    aria-label={
+                      createBrandMutation.isPending
+                        ? t("catalog.addingBrand")
+                        : t("catalog.addBrand")
                     }
-                    event.preventDefault();
-                    if (newBrandName.trim() && !createBrandMutation.isPending) {
-                      createBrandMutation.mutate();
-                    }
-                  }}
-                />
+                    onClick={() => createBrandMutation.mutate()}
+                  >
+                    {createBrandMutation.isPending ? (
+                      <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    ) : (
+                      <Plus className="size-4 shrink-0" aria-hidden />
+                    )}
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="catalog-form-quick-add__button"
-                data-testid="catalog-add-brand"
-                disabled={!newBrandName.trim() || createBrandMutation.isPending}
-                onClick={() => createBrandMutation.mutate()}
-              >
-                {createBrandMutation.isPending ? (
-                  <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                ) : (
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                )}
-                {createBrandMutation.isPending ? t("catalog.addingBrand") : t("catalog.addBrand")}
-              </Button>
             </div>
-          </div>
-            </>
           ) : null}
         </section>
 
@@ -1113,9 +1375,15 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
           <div className="catalog-form-section__grid">
             <div className="catalog-form-field--full">
-              <ProductBusinessUsageSelector
-                value={businessUsage}
-                onChange={setBusinessUsage}
+              <ProductCapabilitySelector
+                value={capabilities}
+                onChange={(next) => {
+                  setCapabilities(next);
+                  if (next.canBeUsedAsIngredient) {
+                    setTrackStockQuantity(true);
+                    setError(null);
+                  }
+                }}
                 disabled={readOnly}
               />
             </div>
@@ -1221,63 +1489,60 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           </div>
         </section>
 
-        {showOrganizationPricingSection ? (
-          <section
-            className="catalog-form-section exits-animate-panel"
-            data-testid="catalog-organization-pricing"
-          >
-            <h2 className="catalog-form-section__title">
-              {t("catalog.organizationPricing.title")}
-            </h2>
-            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("catalog.organizationPricing.hint")}
-            </p>
-            <div className="catalog-form-section__grid">
-              <Input
-                label={t("catalog.organizationPricing.defaultPrice")}
-                name="organizationDefaultSellingPrice"
-                inputMode="decimal"
-                value={sellingPrice}
-                onChange={(e) => setSellingPrice(e.target.value)}
-                data-testid="catalog-organization-default-price"
-              />
-              {orgDefaultChanged ? (
-                <p
-                  className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted"
-                  data-testid="catalog-organization-default-warning"
-                >
-                  {t("catalog.organizationPricing.changeWarning")}
-                </p>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
-
         {mode === "edit" && productId && workspace && productQuery.data ? (
           <BranchProductPricingPanel
             workspace={workspace}
             productId={productId}
             product={productQuery.data}
             canGovern={canGovern}
-            branchName={boundWorkspace?.branchName ?? branchNameById.get(workspace.branchId ?? "") ?? null}
+            branchName={
+              boundWorkspace?.branchName ??
+              branchNameById.get(workspace.branchId ?? "") ??
+              null
+            }
+            organizationEditor={
+              showOrganizationPricingSection
+                ? {
+                    value: sellingPrice,
+                    onChange: setSellingPrice,
+                    warning: orgDefaultChanged
+                      ? t("catalog.organizationPricing.changeWarning")
+                      : null,
+                  }
+                : null
+            }
           />
         ) : null}
 
+        <div className="catalog-form-section-row" data-testid="catalog-inventory-expiration-row">
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionInventory")}</h2>
 
           <div className="catalog-form-section__grid">
             <FormCheck
-              label={t("catalog.trackStockQuantity")}
+              label={
+                capabilities.canBeUsedAsIngredient
+                  ? t("catalog.trackStockQuantityRequiredForIngredient")
+                  : t("catalog.trackStockQuantity")
+              }
               checked={trackStockQuantity}
               testId="catalog-track-stock-quantity"
               onChange={(next) => {
+                if (!next && capabilities.canBeUsedAsIngredient) {
+                  setError(t("catalog.ingredientRequiresTrackedInventory"));
+                  return;
+                }
                 setTrackStockQuantity(next);
+                setError(null);
                 if (!next) {
                   setAddOpeningStock(false);
+                  setCanExposeToConnectedBuyers(false);
+                } else if (mode === "create") {
+                  // Preserve default share-when-tracked policy on create.
+                  setCanExposeToConnectedBuyers(true);
                 }
               }}
-              disabled={mode === "edit"}
+              disabled={mode === "edit" || capabilities.canBeUsedAsIngredient || readOnly}
             />
 
             {trackStockQuantity && mode === "create" ? (
@@ -1372,6 +1637,33 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           </div>
         </section>
 
+        <section className="catalog-form-section exits-animate-panel" data-testid="catalog-connected-share-section">
+          <h2 className="catalog-form-section__title">{t("catalog.connectedShare.section")}</h2>
+          <div className="catalog-form-section__grid">
+            <FormCheck
+              label={t("catalog.connectedShare.shareProduct")}
+              checked={canExposeToConnectedBuyers && trackStockQuantity}
+              testId="catalog-can-expose-connected-buyers"
+              disabled={!trackStockQuantity || readOnly}
+              onChange={(next) => {
+                if (next && !trackStockQuantity) {
+                  toast.error(
+                    t("catalog.connectedShare.cantShareTitle"),
+                    t("catalog.connectedShare.cantShareMessage"),
+                  );
+                  return;
+                }
+                setCanExposeToConnectedBuyers(next);
+              }}
+            />
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {trackStockQuantity
+                ? t("catalog.connectedShare.trackedHelp")
+                : t("catalog.connectedShare.cantShareMessage")}
+            </p>
+          </div>
+        </section>
+
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionExpiration")}</h2>
 
@@ -1381,25 +1673,39 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                 className="catalog-form-field--full flex flex-col gap-2"
                 data-testid="catalog-expiration-settings-summary"
               >
-                <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {productQuery.data?.tracksExpiration
-                    ? t("inventory.expirationTrackingOnWithWarning").replace(
-                        "{days}",
-                        String(productQuery.data.expirationWarningDays ?? 7),
-                      )
-                    : t("inventory.expirationTrackingOff")}
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {productQuery.data?.tracksExpiration ? (
+                  <TagChip
+                    tone="success"
+                    shape="soft"
+                    icon={<CalendarClock aria-hidden />}
+                    title={t("inventory.expirationTrackingOnWithWarning").replace(
+                      "{days}",
+                      String(productQuery.data.expirationWarningDays ?? 7),
+                    )}
+                  >
+                    {t("inventory.expirationTrackingOnWithWarning").replace(
+                      "{days}",
+                      String(productQuery.data.expirationWarningDays ?? 7),
+                    )}
+                  </TagChip>
+                ) : (
+                  <TagChip tone="neutral" shape="soft" icon={<Ban aria-hidden />}>
+                    {t("inventory.expirationTrackingOff")}
+                  </TagChip>
+                )}
+                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                   {t("catalog.expirationManagedInSettings")}
                 </p>
                 {productId ? (
-                  <Link
-                    to={`/inventory/${productId}/expiration`}
-                    className="inline-flex min-h-11 items-center text-[length:var(--exits-text-sm)] font-semibold underline-offset-2 hover:underline"
-                    data-testid="catalog-manage-expiration-settings"
-                  >
-                    {t("inventory.manageExpirationSettings")}
-                  </Link>
+                  <Button asChild variant="outline" className="w-fit">
+                    <Link
+                      to={`/inventory/${productId}/expiration`}
+                      data-testid="catalog-manage-expiration-settings"
+                    >
+                      <Settings2 className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
+                      {t("inventory.manageExpirationSettings")}
+                    </Link>
+                  </Button>
                 ) : null}
               </div>
             ) : (
@@ -1442,6 +1748,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
             )}
           </div>
         </section>
+        </div>
 
         <section className="catalog-form-section exits-animate-panel">
           <h2 className="catalog-form-section__title">{t("catalog.sectionPackages")}</h2>
@@ -1470,11 +1777,12 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               data-testid="catalog-unit-editor"
               aria-disabled={readOnly || undefined}
             >
-              <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
+              <fieldset disabled={readOnly} className="catalog-form-unit-editor m-0 min-w-0 border-0 p-0">
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("catalog.packagesLede")}
               </p>
 
+              <div className="catalog-form-unit-card-list">
               {unitDrafts.map((draft) => (
                 <div key={draft.key} className="catalog-form-unit-card">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1485,8 +1793,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                       variant="ghost"
 
-                      className="min-h-11"
-
                       onClick={() =>
                         setUnitDrafts((current) => current.filter((row) => row.key !== draft.key))
                       }
@@ -1495,48 +1801,40 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                     </Button>
                   </div>
 
-                  <Input
-                    label={t("catalog.unitDisplayName")}
-
-                    name={`${draft.key}-name`}
-
-                    value={draft.displayName}
-
-                    onChange={(e) => updateDraft(draft.key, { displayName: e.target.value })}
-                  />
-
-                  <Input
-                    label={t("catalog.unitShortLabel")}
-
-                    name={`${draft.key}-short`}
-
-                    value={draft.shortLabel}
-
-                    onChange={(e) => updateDraft(draft.key, { shortLabel: e.target.value })}
-                  />
-
-                  <Input
-                    label={t("catalog.multiplierToBase")}
-
-                    name={`${draft.key}-mult`}
-
-                    inputMode="decimal"
-
-                    value={draft.multiplierToBase}
-
-                    onChange={(e) => updateDraft(draft.key, { multiplierToBase: e.target.value })}
-                  />
-
-                  {draft.kind === "Sell" ? (
+                  <div className="catalog-form-unit-card__fields">
                     <Input
-                      label={t("catalog.unitSellingPrice")}
-                      name={`${draft.key}-price`}
-                      inputMode="decimal"
-                      value={draft.sellingPrice}
-                      disabled={packagePricesReadOnly}
-                      onChange={(e) => updateDraft(draft.key, { sellingPrice: e.target.value })}
+                      label={t("catalog.unitDisplayName")}
+                      name={`${draft.key}-name`}
+                      value={draft.displayName}
+                      onChange={(e) => updateDraft(draft.key, { displayName: e.target.value })}
                     />
-                  ) : null}
+
+                    <Input
+                      label={t("catalog.unitShortLabel")}
+                      name={`${draft.key}-short`}
+                      value={draft.shortLabel}
+                      onChange={(e) => updateDraft(draft.key, { shortLabel: e.target.value })}
+                    />
+
+                    <Input
+                      label={t("catalog.multiplierToBase")}
+                      name={`${draft.key}-mult`}
+                      inputMode="decimal"
+                      value={draft.multiplierToBase}
+                      onChange={(e) => updateDraft(draft.key, { multiplierToBase: e.target.value })}
+                    />
+
+                    {draft.kind === "Sell" ? (
+                      <Input
+                        label={t("catalog.unitSellingPrice")}
+                        name={`${draft.key}-price`}
+                        inputMode="decimal"
+                        value={draft.sellingPrice}
+                        disabled={packagePricesReadOnly}
+                        onChange={(e) => updateDraft(draft.key, { sellingPrice: e.target.value })}
+                      />
+                    ) : null}
+                  </div>
 
                   {draft.kind === "Sell" ? (
                     <>
@@ -1557,14 +1855,13 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   ) : null}
                 </div>
               ))}
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
 
                   variant="ghost"
-
-                  className="min-h-11"
 
                   onClick={() =>
                     setUnitDrafts((current) => [...current, createEmptyUnitDraft("Purchase")])
@@ -1578,8 +1875,6 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
                   variant="ghost"
 
-                  className="min-h-11"
-
                   onClick={() =>
                     setUnitDrafts((current) => [...current, createEmptyUnitDraft("Sell")])
                   }
@@ -1592,82 +1887,50 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           ) : null}
         </section>
 
-        {mode === "edit" && productId && workspace ? (
-          <CatalogBranchAvailabilitySection
-            workspace={workspace}
-            productId={productId}
-            product={productQuery.data}
-            canGovern={canGovern}
-          />
-        ) : null}
+        {mode === "edit" && productId ? (
+          <div className="catalog-form-section-row">
+            {workspace ? (
+              <CatalogBranchAvailabilitySection
+                workspace={workspace}
+                productId={productId}
+                product={productQuery.data}
+                canGovern={canGovern}
+              />
+            ) : null}
 
-        {mode === "edit" && productId && !readOnly ? (
-          <section className="catalog-form-section exits-animate-panel">
-            <h2 className="catalog-form-section__title">{t("catalog.sectionImage")}</h2>
+            {!readOnly ? (
+              <section className="catalog-form-section exits-animate-panel">
+                <h2 className="catalog-form-section__title">{t("catalog.sectionImage")}</h2>
 
-            <Input
-              label={t("catalog.image")}
+                <Input
+                  label={t("catalog.image")}
+                  name="productImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
 
-              name="productImage"
+                    if (!file || !workspace) {
+                      return;
+                    }
 
-              type="file"
-
-              accept="image/jpeg,image/png,image/webp"
-
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-
-                if (!file || !workspace) {
-                  return;
-                }
-
-                void uploadCatalogProductImage(workspace, productId, file)
-                  .then(() => queryClient.invalidateQueries({ queryKey: ["catalog"] }))
-
-                  .catch((err) =>
-                    setError(
-                      err instanceof PosApiError
-                        ? (err.problem.detail ?? err.message)
-                        : (err as Error).message,
-                    ),
-                  );
-              }}
-            />
-          </section>
+                    void uploadCatalogProductImage(workspace, productId, file)
+                      .then(() => queryClient.invalidateQueries({ queryKey: ["catalog"] }))
+                      .catch((err) =>
+                        setError(
+                          err instanceof PosApiError
+                            ? (err.problem.detail ?? err.message)
+                            : (err as Error).message,
+                        ),
+                      );
+                  }}
+                />
+              </section>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="catalog-form-actions" data-testid="catalog-form-actions">
-          {!readOnly ? (
-            <div className="catalog-form-actions__primary">
-              <Button
-                type="submit"
-                className="catalog-form-actions__save"
-                data-testid="catalog-save"
-                disabled={
-                  saveMutation.isPending ||
-                  statusMutation.isPending ||
-                  blockedOffline ||
-                  isNameDuplicate ||
-                  (mode === "create" &&
-                    (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
-                    !workspace.branchId)
-                }
-              >
-                {saveMutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                    {t("catalog.saving")}
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4 shrink-0" aria-hidden />
-                    {t("catalog.save")}
-                  </>
-                )}
-              </Button>
-            </div>
-          ) : null}
-
           {mode === "edit" &&
           canGovern &&
           productQuery.data &&
@@ -1718,6 +1981,37 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
                   <RotateCcw className="size-4 shrink-0" aria-hidden />
                 )}
                 {t("catalog.reactivate")}
+              </Button>
+            </div>
+          ) : null}
+
+          {!readOnly ? (
+            <div className="catalog-form-actions__primary">
+              <Button
+                type="submit"
+                className="catalog-form-actions__save"
+                data-testid="catalog-save"
+                disabled={
+                  saveMutation.isPending ||
+                  statusMutation.isPending ||
+                  blockedOffline ||
+                  isNameDuplicate ||
+                  (mode === "create" &&
+                    (canGovern ? createScope : "BranchLocal") === "BranchLocal" &&
+                    !workspace.branchId)
+                }
+              >
+                {saveMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+                    {t("catalog.saving")}
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4 shrink-0" aria-hidden />
+                    {t("catalog.save")}
+                  </>
+                )}
               </Button>
             </div>
           ) : null}

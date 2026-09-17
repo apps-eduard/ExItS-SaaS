@@ -98,12 +98,31 @@ public sealed class InventoryTransferDomainTests
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 10m, "Coke")], Actor, Utc);
         transfer.Dispatch("TR-20260813-000001", Actor, Utc.AddMinutes(1));
-        transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 0m)], Actor, Utc.AddMinutes(2));
+        transfer.Receive(
+            [new InventoryTransferReceiveLineDraft(Coke, 0m, InventoryTransferDiscrepancyReason.LostInTransit)],
+            Actor,
+            Utc.AddMinutes(2));
 
         Assert.Equal(InventoryTransferStatus.PartiallyReceived, transfer.Status);
         Assert.Equal(0m, transfer.Lines[0].ReceivedQty);
         Assert.Equal(10m, transfer.Lines[0].DifferenceQty);
         Assert.Equal("Missing", transfer.Lines[0].LineStatus);
+        Assert.Equal(InventoryTransferDiscrepancyReason.LostInTransit, transfer.Lines[0].DiscrepancyReason);
+    }
+
+    [Fact]
+    public void Short_or_missing_receive_requires_discrepancy_reason()
+    {
+        var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
+        transfer.Dispatch("TR-20260813-000004", Actor, Utc.AddMinutes(1));
+
+        var shortMissing = Assert.Throws<DomainException>(() =>
+            transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 4m)], Actor, Utc.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.InvalidInventoryTransferDiscrepancyReason, shortMissing.ErrorCode);
+
+        var zeroMissing = Assert.Throws<DomainException>(() =>
+            transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 0m)], Actor, Utc.AddMinutes(2)));
+        Assert.Equal(DomainErrorCodes.InvalidInventoryTransferDiscrepancyReason, zeroMissing.ErrorCode);
     }
 
     [Fact]

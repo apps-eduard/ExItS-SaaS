@@ -31,6 +31,8 @@ public static class PosRoleMatrix
         UtangCapability.ReverseRepayment,
         UtangCapability.WriteOff,
         UtangCapability.ReverseWriteOff,
+        UtangCapability.ManageCustomerCreditPolicy,
+        UtangCapability.ApproveCustomerCreditPolicy,
         UtangCapability.MutateDueDate,
         UtangCapability.ViewGenerateStatement,
         UtangCapability.ViewGenerateReceipt,

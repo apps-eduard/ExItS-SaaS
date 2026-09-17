@@ -1,0 +1,44 @@
+---
+description: POS React overlays must never hit-test when visually hidden or logically closed
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**/*.{tsx,ts,css}
+alwaysApply: false
+---
+
+# POS Overlay Pointer-Events Safety
+
+**VISUALLY HIDDEN OR LOGICALLY CLOSED OVERLAYS MUST NEVER HIT-TEST.**
+
+## Canonical invariant
+
+When an overlay is logically inactive (`open=false`, `active=false`, `data-interactive=false`, exit fade, or pre-position), **neither the root nor ANY descendant** may receive pointer events — even while exit animation remains mounted.
+
+Parent `pointer-events: none` alone is **not** enough: descendants with `pointer-events: auto` still intercept clicks (Case B).
+
+## Required closed-state behavior
+
+Satisfy at least one:
+
+1. **Unmount** from the DOM when closed (preferred), or
+2. **`pointer-events: none`** on wrapper **and** backdrop **and** panel/descendants (use `!important` on a closed-state selector when children may set `auto`)
+
+Also prefer `inert` on the inactive root while mounted for exit animation.
+
+## Never allow
+
+- `opacity: 0` + `pointer-events: auto`
+- `visibility: hidden` + `pointer-events: auto`
+- `data-open=false` / `data-active=false` / `data-interactive=false` with an interactive fullscreen child
+
+During exit animation: visual fade/transform may continue, but **pointer-events must become none immediately** when logical open/active is false.
+
+## Known surfaces
+
+- `SideDrawer` / `FormDrawer` — `data-interactive` + closed `* { pointer-events: none !important }`
+- `WorkspaceTransitionOverlay` — `data-active` + inactive descendant PE none + inert + eventual unmount
+- `DropdownMenu` portal — `coords == null` ⇒ `visibility: hidden` **and** `pointer-events: none`
+- `BottomSheet` / `ConfirmationDialog` / `ExitsModal` — unmount when closed
+- `GlobalRuntimeErrorHost` — only mount while an error is shown
+
+## Regression
+
+Keep: Vitest for SideDrawer exit + WorkspaceTransition inactive fade; DropdownMenu hidden-before-position; Playwright overlay PE invariant + real-click stress (`desktop-freeze-audit.spec.ts`).

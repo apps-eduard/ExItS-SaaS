@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowLeftRight,
   BarChart3,
   Boxes,
   ClipboardList,
@@ -33,9 +34,17 @@ import {
   canUseAdminExperience,
   hasOrganizationManagementAuthority,
   canInviteOrganizationStaff,
+  canManageInventory,
 } from "@/access/pos-capabilities";
+import {
+  isWarehouseBranch,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 import type { WorkingExperience } from "@/workspace/working-experience";
-import { workingExperienceRoute } from "@/workspace/working-experience";
+import {
+  resolveOperationsNavWorkspace,
+  workingExperienceRoute,
+} from "@/workspace/working-experience";
 
 export type OrgNavTabId = "home" | "sell" | "catalog" | "orders" | "more";
 
@@ -43,7 +52,15 @@ export type OrgNavTab = {
   id: OrgNavTabId;
   to: string;
   end: boolean;
-  labelKey: "org.nav.home" | "org.nav.sell" | "org.nav.catalog" | "org.nav.orders" | "org.nav.more";
+  labelKey:
+    | "org.nav.home"
+    | "org.nav.sell"
+    | "org.nav.catalog"
+    | "org.nav.orders"
+    | "org.nav.more"
+    | "org.nav.inventory"
+    | "org.nav.transfers"
+    | "org.nav.purchasing";
   testId: string;
   /** Stronger treatment for the primary POS action. */
   primary?: boolean;
@@ -54,11 +71,17 @@ export type OrgNavTab = {
  * Sell is always placed in the center when present (primary POS action).
  * Catalog prefers catalog manage; falls back to inventory view.
  * Orders prefers customer orders; falls back to customers when orders unavailable.
+ * Warehouse branches hide retail sell/customers and prioritize inventory ops.
  */
 export function buildOrgBottomNavTabs(input: {
   grant: PosSessionGrantFacts | null | undefined;
   experience: WorkingExperience;
+  branchType?: OrganizationBranchType | string | null;
 }): OrgNavTab[] {
+  if (isWarehouseBranch(input.branchType)) {
+    return buildWarehouseBottomNavTabs(input.grant);
+  }
+
   const homeTo =
     input.experience === "start_selling"
       ? "/role/cashier"
@@ -77,36 +100,10 @@ export function buildOrgBottomNavTabs(input: {
   const left: OrgNavTab[] = [home];
   const right: OrgNavTab[] = [];
 
-  if (canManageCatalog(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/catalog",
-      end: false,
-      labelKey: "org.nav.catalog",
-      testId: "org-nav-catalog",
-    });
-  } else if (canViewInventory(input.grant)) {
-    left.push({
-      id: "catalog",
-      to: "/inventory",
-      end: false,
-      labelKey: "org.nav.catalog",
-      testId: "org-nav-catalog",
-    });
-  }
-
   if (canViewCustomerOrders(input.grant)) {
     right.push({
       id: "orders",
       to: "/orders",
-      end: false,
-      labelKey: "org.nav.orders",
-      testId: "org-nav-orders",
-    });
-  } else if (canViewCustomers(input.grant)) {
-    right.push({
-      id: "orders",
-      to: "/customers",
       end: false,
       labelKey: "org.nav.orders",
       testId: "org-nav-orders",
@@ -121,7 +118,29 @@ export function buildOrgBottomNavTabs(input: {
     testId: "org-nav-more",
   });
 
-  const sell: OrgNavTab | null = canCreateSale(input.grant)
+  // Prefer Inventory over Catalog for the stock slot (Manager IA only).
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience);
+  if (navWorkspace === "manager") {
+    if (canViewInventory(input.grant)) {
+      left.push({
+        id: "catalog",
+        to: "/inventory",
+        end: false,
+        labelKey: "org.nav.inventory",
+        testId: "org-nav-catalog",
+      });
+    } else if (canManageCatalog(input.grant)) {
+      left.push({
+        id: "catalog",
+        to: "/catalog",
+        end: false,
+        labelKey: "org.nav.catalog",
+        testId: "org-nav-catalog",
+      });
+    }
+  }
+
+  const sell: OrgNavTab | null = canCreateSale(input.grant, input.branchType)
     ? {
         id: "sell",
         to: "/sell",
@@ -138,6 +157,55 @@ export function buildOrgBottomNavTabs(input: {
   }
 
   return [...left, ...right].slice(0, 5);
+}
+
+function buildWarehouseBottomNavTabs(
+  grant: PosSessionGrantFacts | null | undefined,
+): OrgNavTab[] {
+  const tabs: OrgNavTab[] = [
+    {
+      id: "home",
+      to: "/warehouse",
+      end: true,
+      labelKey: "org.nav.home",
+      testId: "org-nav-home",
+    },
+  ];
+
+  if (canViewInventory(grant)) {
+    tabs.push({
+      id: "catalog",
+      to: "/inventory",
+      end: false,
+      labelKey: "org.nav.inventory",
+      testId: "org-nav-catalog",
+    });
+    tabs.push({
+      id: "orders",
+      to: "/inventory/transfers",
+      end: false,
+      labelKey: "org.nav.transfers",
+      testId: "org-nav-orders",
+    });
+  } else if (canViewPurchasing(grant)) {
+    tabs.push({
+      id: "orders",
+      to: "/purchasing",
+      end: false,
+      labelKey: "org.nav.purchasing",
+      testId: "org-nav-orders",
+    });
+  }
+
+  tabs.push({
+    id: "more",
+    to: "/more",
+    end: false,
+    labelKey: "org.nav.more",
+    testId: "org-nav-more",
+  });
+
+  return tabs.slice(0, 5);
 }
 
 export type OrgMoreLink = {
@@ -158,7 +226,11 @@ export type OrgMoreLink = {
     | "org.more.staff"
     | "org.more.roles"
     | "org.more.preferences"
-    | "org.more.finishSetup";
+    | "org.more.finishSetup"
+    | "org.more.receiveStock"
+    | "org.more.transfers"
+    | "org.more.expiringLots"
+    | "org.more.stockMovements";
   testId: string;
   icon: LucideIcon;
 };
@@ -177,78 +249,152 @@ export type OrgMoreSection = {
 };
 
 /** Secondary destinations for the More hub — permission-filtered, flat list. */
-export function buildOrgMoreLinks(grant: PosSessionGrantFacts | null | undefined): OrgMoreLink[] {
-  return buildOrgMoreSections(grant).flatMap((section) => section.links);
+export function buildOrgMoreLinks(
+  grant: PosSessionGrantFacts | null | undefined,
+  options?: {
+    showFinishSetup?: boolean;
+    branchType?: OrganizationBranchType | string | null;
+    excludeAdminDestinations?: boolean;
+    experience?: WorkingExperience | null;
+  },
+): OrgMoreLink[] {
+  return buildOrgMoreSections(grant, options).flatMap((section) => section.links);
 }
 
 /** Grouped More hub sections for scannable UX (Manager-home style panels). */
 export function buildOrgMoreSections(
   grant: PosSessionGrantFacts | null | undefined,
-  options?: { showFinishSetup?: boolean },
+  options?: {
+    showFinishSetup?: boolean;
+    branchType?: OrganizationBranchType | string | null;
+    /** When true (Manager More), omit Admin configuration destinations. */
+    excludeAdminDestinations?: boolean;
+    /** Presentation workspace — never grants beyond permission. */
+    experience?: WorkingExperience | null;
+  },
 ): OrgMoreSection[] {
+  const warehouse = isWarehouseBranch(options?.branchType);
+  const excludeAdmin = options?.excludeAdminDestinations === true;
+  const cashierWorkspace =
+    resolveOperationsNavWorkspace(options?.experience ?? "operations") === "cashier";
   const operations: OrgMoreLink[] = [];
   const insights: OrgMoreLink[] = [];
   const organization: OrgMoreLink[] = [];
   const settings: OrgMoreLink[] = [];
 
-  if (canViewInventory(grant)) {
-    operations.push({
-      to: "/inventory",
-      labelKey: "org.more.inventory",
-      testId: "org-more-inventory",
-      icon: Boxes,
-    });
-  }
-  if (canViewCustomers(grant)) {
-    operations.push({
-      to: "/customers",
-      labelKey: "org.more.customers",
-      testId: "org-more-customers",
-      icon: Users,
-    });
-  }
-  if (canViewShifts(grant)) {
-    operations.push({
-      to: "/shifts",
-      labelKey: "org.more.shifts",
-      testId: "org-more-shifts",
-      icon: RefreshCw,
-    });
-  }
-  if (canViewReturns(grant)) {
-    operations.push({
-      to: "/returns",
-      labelKey: "org.more.returns",
-      testId: "org-more-returns",
-      icon: Receipt,
-    });
-  }
-  if (canViewPurchasing(grant)) {
-    operations.push({
-      to: "/purchasing",
-      labelKey: "org.more.purchasing",
-      testId: "org-more-purchasing",
-      icon: PackagePlus,
-    });
-  }
-  if (canViewSuppliers(grant)) {
-    operations.push({
-      to: "/suppliers",
-      labelKey: "org.more.suppliers",
-      testId: "org-more-suppliers",
-      icon: Truck,
-    });
-  }
-  if (canViewExpenses(grant)) {
-    operations.push({
-      to: "/expenses",
-      labelKey: "org.more.expenses",
-      testId: "org-more-expenses",
-      icon: Wallet,
-    });
+  if (warehouse) {
+    if (!cashierWorkspace) {
+      if (canManageInventory(grant)) {
+        operations.push({
+          to: "/purchasing/receive-stock",
+          labelKey: "org.more.receiveStock",
+          testId: "org-more-receive-stock",
+          icon: PackagePlus,
+        });
+      }
+      if (canViewInventory(grant)) {
+        operations.push({
+          to: "/inventory/transfers",
+          labelKey: "org.more.transfers",
+          testId: "org-more-transfers",
+          icon: ArrowLeftRight,
+        });
+        operations.push({
+          to: "/inventory",
+          labelKey: "org.more.inventory",
+          testId: "org-more-inventory",
+          icon: Boxes,
+        });
+        operations.push({
+          to: "/inventory/expiration",
+          labelKey: "org.more.expiringLots",
+          testId: "org-more-expiring-lots",
+          icon: ClipboardList,
+        });
+        operations.push({
+          to: "/inventory/stock-use",
+          labelKey: "org.more.stockMovements",
+          testId: "org-more-stock-movements",
+          icon: RefreshCw,
+        });
+      }
+      if (canViewPurchasing(grant)) {
+        operations.push({
+          to: "/purchasing",
+          labelKey: "org.more.purchasing",
+          testId: "org-more-purchasing",
+          icon: PackagePlus,
+        });
+      }
+      if (canViewSuppliers(grant)) {
+        operations.push({
+          to: "/suppliers",
+          labelKey: "org.more.suppliers",
+          testId: "org-more-suppliers",
+          icon: Truck,
+        });
+      }
+    }
+  } else {
+    if (!cashierWorkspace && canViewInventory(grant)) {
+      operations.push({
+        to: "/inventory",
+        labelKey: "org.more.inventory",
+        testId: "org-more-inventory",
+        icon: Boxes,
+      });
+    }
+    if (!cashierWorkspace && canViewCustomers(grant)) {
+      operations.push({
+        to: "/customers",
+        labelKey: "org.more.customers",
+        testId: "org-more-customers",
+        icon: Users,
+      });
+    }
+    if (canViewShifts(grant)) {
+      operations.push({
+        to: "/shifts",
+        labelKey: "org.more.shifts",
+        testId: "org-more-shifts",
+        icon: RefreshCw,
+      });
+    }
+    if (canViewReturns(grant)) {
+      operations.push({
+        to: "/returns",
+        labelKey: "org.more.returns",
+        testId: "org-more-returns",
+        icon: Receipt,
+      });
+    }
+    if (!cashierWorkspace && canViewPurchasing(grant)) {
+      operations.push({
+        to: "/purchasing",
+        labelKey: "org.more.purchasing",
+        testId: "org-more-purchasing",
+        icon: PackagePlus,
+      });
+    }
+    if (!cashierWorkspace && canViewSuppliers(grant)) {
+      operations.push({
+        to: "/suppliers",
+        labelKey: "org.more.suppliers",
+        testId: "org-more-suppliers",
+        icon: Truck,
+      });
+    }
+    if (!cashierWorkspace && canViewExpenses(grant)) {
+      operations.push({
+        to: "/expenses",
+        labelKey: "org.more.expenses",
+        testId: "org-more-expenses",
+        icon: Wallet,
+      });
+    }
   }
 
-  if (canViewDashboard(grant)) {
+  if (!cashierWorkspace && !warehouse && canViewDashboard(grant)) {
     insights.push({
       to: "/dashboard",
       labelKey: "org.more.dashboard",
@@ -256,7 +402,7 @@ export function buildOrgMoreSections(
       icon: LayoutDashboard,
     });
   }
-  if (canAccessReportsHub(grant)) {
+  if (!cashierWorkspace && canAccessReportsHub(grant)) {
     insights.push({
       to: "/reports",
       labelKey: "org.more.reports",
@@ -265,49 +411,51 @@ export function buildOrgMoreSections(
     });
   }
 
-  if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
-    organization.push({
-      to: "/org",
-      labelKey: "org.more.organization",
-      testId: "org-more-org",
-      icon: ClipboardList,
-    });
-  }
-  if (options?.showFinishSetup && hasOrganizationManagementAuthority(grant)) {
-    organization.unshift({
-      to: "/onboarding",
-      labelKey: "org.more.finishSetup",
-      testId: "org-more-finish-setup",
-      icon: ListChecks,
-    });
-  }
-  if (hasOrganizationManagementAuthority(grant)) {
-    organization.push({
-      to: "/org/devices",
-      labelKey: "org.more.devices",
-      testId: "org-more-devices",
-      icon: MonitorSmartphone,
-    });
-  }
-  if (canInviteOrganizationStaff(grant)) {
-    organization.push({
-      to: "/org/branches",
-      labelKey: "org.more.branches",
-      testId: "org-more-branches",
-      icon: MapPin,
-    });
-    organization.push({
-      to: "/org/staff",
-      labelKey: "org.more.staff",
-      testId: "org-more-staff",
-      icon: Users,
-    });
-    organization.push({
-      to: "/org/roles",
-      labelKey: "org.more.roles",
-      testId: "org-more-roles",
-      icon: ShieldCheck,
-    });
+  if (!excludeAdmin && !cashierWorkspace) {
+    if (canUseAdminExperience(grant) || hasOrganizationManagementAuthority(grant)) {
+      organization.push({
+        to: "/org",
+        labelKey: "org.more.organization",
+        testId: "org-more-org",
+        icon: ClipboardList,
+      });
+    }
+    if (options?.showFinishSetup && hasOrganizationManagementAuthority(grant)) {
+      organization.unshift({
+        to: "/onboarding",
+        labelKey: "org.more.finishSetup",
+        testId: "org-more-finish-setup",
+        icon: ListChecks,
+      });
+    }
+    if (hasOrganizationManagementAuthority(grant)) {
+      organization.push({
+        to: "/org/devices",
+        labelKey: "org.more.devices",
+        testId: "org-more-devices",
+        icon: MonitorSmartphone,
+      });
+    }
+    if (canInviteOrganizationStaff(grant)) {
+      organization.push({
+        to: "/org/branches",
+        labelKey: "org.more.branches",
+        testId: "org-more-branches",
+        icon: MapPin,
+      });
+      organization.push({
+        to: "/org/staff",
+        labelKey: "org.more.staff",
+        testId: "org-more-staff",
+        icon: Users,
+      });
+      organization.push({
+        to: "/org/roles",
+        labelKey: "org.more.roles",
+        testId: "org-more-roles",
+        icon: ShieldCheck,
+      });
+    }
   }
 
   settings.push({

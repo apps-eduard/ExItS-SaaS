@@ -9,6 +9,8 @@ namespace ExItS.PinoyBusinessPOS.Api.Common;
 /// <summary>
 /// Resolves the active POS role for the request actor.
 /// WP09: Platform-mapped product-local roles sync into the POS DB when present on bearer introspection.
+/// When an active POS assignment already exists but differs from the live Platform mapped role
+/// (e.g. Cashier → Manager), revoke and reassign so dashboard/report capability matches Platform.
 /// Development/Testing Owner auto-bootstrap remains when no Platform mapped role is available (R-091).
 /// Organization management authority (Owner/Administrator without POS checkout role) is preserved
 /// without inventing a product-local Owner assignment.
@@ -51,11 +53,44 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
 
             var org = PosOrganizationId.From(organizationId);
             var active = await roles.GetActiveForActorAsync(org, actorId, context.RequestAborted).ConfigureAwait(false);
-            if (active is not null)
+            var hasMappedPlatformRole = TryGetMappedPlatformRole(context, out var platformRole);
+
+            if (active is not null
+                && hasMappedPlatformRole
+                && active.Role != platformRole
+                && await CanRealignToPlatformRoleAsync(roles, org, active, platformRole, context.RequestAborted)
+                    .ConfigureAwait(false))
+            {
+                try
+                {
+                    active.Revoke(
+                        actorId,
+                        clock.UtcNow,
+                        "Aligned to Platform product-local role");
+                    await roles.UpdateAsync(active, context.RequestAborted).ConfigureAwait(false);
+
+                    var replacement = PosRoleAssignment.Assign(
+                        org,
+                        actorId,
+                        platformRole,
+                        actorId,
+                        clock.UtcNow);
+                    await roles.AddAsync(replacement, context.RequestAborted).ConfigureAwait(false);
+                    await unitOfWork.SaveChangesAsync(context.RequestAborted).ConfigureAwait(false);
+                    PosRoleRequestContext.CurrentRole = platformRole;
+                }
+                catch
+                {
+                    active = await roles.GetActiveForActorAsync(org, actorId, context.RequestAborted)
+                        .ConfigureAwait(false);
+                    PosRoleRequestContext.CurrentRole = active?.Role ?? platformRole;
+                }
+            }
+            else if (active is not null)
             {
                 PosRoleRequestContext.CurrentRole = active.Role;
             }
-            else if (TryGetMappedPlatformRole(context, out var platformRole))
+            else if (hasMappedPlatformRole)
             {
                 try
                 {
@@ -116,6 +151,25 @@ internal sealed class PosRoleResolutionMiddleware(RequestDelegate next)
         {
             PosRoleRequestContext.Clear();
         }
+    }
+
+    /// <summary>
+    /// Do not auto-demote the last active Owner via Platform mapping realignment.
+    /// </summary>
+    private static async Task<bool> CanRealignToPlatformRoleAsync(
+        IPosRoleAssignmentRepository roles,
+        PosOrganizationId organizationId,
+        PosRoleAssignment active,
+        PosRole platformRole,
+        CancellationToken ct)
+    {
+        if (active.Role != PosRole.Owner || platformRole == PosRole.Owner)
+        {
+            return true;
+        }
+
+        var ownerCount = await roles.CountActiveOwnersAsync(organizationId, ct).ConfigureAwait(false);
+        return ownerCount > 1;
     }
 
     private static void LogDenialIfNeeded(

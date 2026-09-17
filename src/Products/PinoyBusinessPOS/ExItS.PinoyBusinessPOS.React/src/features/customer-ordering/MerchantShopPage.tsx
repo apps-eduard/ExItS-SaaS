@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { RefreshCw, WifiOff } from "lucide-react";
+import { RefreshCw, Users, WifiOff } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import {
   getCustomerStorefront,
@@ -224,6 +224,9 @@ export function MerchantShopPage() {
             <WifiOff className="pc-commerce-status__icon" />
           </span>
           <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("offline.internetRequiredTitle")}
             detail={t("offline.internetRequiredDetail")}
           />
@@ -321,7 +324,9 @@ export function MerchantShopPage() {
       />
       {products.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel">
-          <EmptyState title={t("orders.noProductsTitle")} detail={t("orders.noProductsDetail")} />
+          <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.noProductsTitle")} detail={t("orders.noProductsDetail")} />
         </div>
       ) : (
         <ul className="pc-product-grid">

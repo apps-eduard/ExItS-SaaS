@@ -57,7 +57,10 @@ internal static class PosApiResults
         ApplicationErrorCodes.CustomerNotFound
             or ApplicationErrorCodes.LinkedCustomerNotFound
             or ApplicationErrorCodes.CreditEntryNotFound
+            or ApplicationErrorCodes.CustomerCreditPolicyNotFound
+            or ApplicationErrorCodes.BusinessCustomerCreditPolicyNotFound
             or ApplicationErrorCodes.RepaymentNotFound
+            or ApplicationErrorCodes.BusinessRepaymentNotFound
             or ApplicationErrorCodes.CategoryNotFound
             or ApplicationErrorCodes.ProductNotFound
             or ApplicationErrorCodes.SaleNotFound
@@ -77,6 +80,16 @@ internal static class PosApiResults
             or DomainErrorCodes.InvalidPlatformBusinessCustomerId
             or ApplicationErrorCodes.ConcurrencyConflict
             or ApplicationErrorCodes.CustomerConcurrencyConflict
+            or ApplicationErrorCodes.CustomerCreditPolicyConcurrencyConflict
+            or ApplicationErrorCodes.BusinessCustomerCreditPolicyConcurrencyConflict
+            or ApplicationErrorCodes.CustomerCreditNotApproved
+            or ApplicationErrorCodes.CustomerCreditLimitExceeded
+            or ApplicationErrorCodes.CustomerCreditDueDateOverrideDenied
+            or DomainErrorCodes.CustomerCreditNotApproved
+            or DomainErrorCodes.CustomerCreditLimitExceeded
+            or DomainErrorCodes.CustomerCreditDueDateOverrideDenied
+            or DomainErrorCodes.InvalidCustomerCreditPolicyStatusTransition
+            or DomainErrorCodes.CustomerCreditPolicyUnchanged
             or DomainErrorCodes.InvalidCustomerStatusTransition
             or DomainErrorCodes.CustomerNotActive
             or DomainErrorCodes.InvalidCreditEntryStatusTransition
@@ -108,6 +121,12 @@ internal static class PosApiResults
             or ApplicationErrorCodes.SaleVoidBlockedByReturns
             or ApplicationErrorCodes.SaleReturnNumberConflict
             or ApplicationErrorCodes.InsufficientStock
+            or ConnectedSupplierErrorCodes.OutOfStockSupplierProduct
+            or ConnectedSupplierErrorCodes.InsufficientSupplierStock
+            or ConnectedSupplierErrorCodes.RemainingAlreadyClosed
+            or ConnectedSupplierErrorCodes.FulfillmentBlockedAfterShortClose
+            or ApplicationErrorCodes.PurchaseOrderNothingToCloseRemaining
+            or ApplicationErrorCodes.PurchaseOrderCloseRemainingReasonRequired
             or ApplicationErrorCodes.InventoryConcurrencyConflict
             or ApplicationErrorCodes.InventoryTransferAlreadyReceived
             or ApplicationErrorCodes.InventoryTransferNumberConflict
@@ -128,6 +147,9 @@ internal static class PosApiResults
             or DomainErrorCodes.InventoryUomChangeBlocked
             or DomainErrorCodes.InventoryAlreadyTracked
             or DomainErrorCodes.InventoryNotTracked
+            or DomainErrorCodes.IngredientRequiresTrackedInventory
+            or DomainErrorCodes.ConnectedShareRequiresTrackedInventory
+            or DomainErrorCodes.ConnectedShareBlocksDisableTracking
             or ApplicationErrorCodes.ExpenseCategoryNameConflict
             or ApplicationErrorCodes.ExpenseNumberConflict
             or ApplicationErrorCodes.ExpenseConcurrencyConflict
@@ -156,6 +178,7 @@ internal static class PosApiResults
             or ApplicationErrorCodes.RegisterNameConflict
             or ApplicationErrorCodes.RegisterCodeConflict
             or ApplicationErrorCodes.RegisterConcurrencyConflict
+            or ApplicationErrorCodes.PwaRegisterEnsureExhausted
             or DomainErrorCodes.RegisterDeactivateBlockedByOpenShift
             or DomainErrorCodes.RegisterNotActive
             or DomainErrorCodes.CashierShiftRegisterConflict
@@ -190,7 +213,9 @@ internal static class PosApiResults
             or ApplicationErrorCodes.ProductAvailabilityForbidden
             or ApplicationErrorCodes.CustomerBranchAccessForbidden
             or ApplicationErrorCodes.SupplierBranchAccessForbidden
-            or ConnectedSupplierErrorCodes.BranchResponseForbidden => StatusCodes.Status403Forbidden,
+            or ApplicationErrorCodes.PwaRegisterEnsureDeviceEnforcementEnabled
+            or ConnectedSupplierErrorCodes.BranchResponseForbidden
+            or ConnectedSupplierErrorCodes.BranchReadForbidden => StatusCodes.Status403Forbidden,
 
         ApplicationErrorCodes.PlatformAuthUnavailable
             or ApplicationErrorCodes.CatalogImportPlatformUnavailable => StatusCodes.Status503ServiceUnavailable,

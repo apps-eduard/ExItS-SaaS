@@ -32,8 +32,9 @@ test.describe("shell account UX evidence", () => {
       path: path.join(screenshotDir, "02-desktop-account-menu-1440x900-en-light.png"),
       fullPage: true,
     });
+    await page.keyboard.press("Escape");
 
-    await page.getByRole("menuitem", { name: "Preferences" }).click();
+    await page.getByTestId("shell-preferences-button").click();
     await expect(page.getByRole("heading", { name: "Preferences" })).toBeVisible();
     await assertNoHorizontalOverflow(page);
     await page.screenshot({
@@ -46,9 +47,7 @@ test.describe("shell account UX evidence", () => {
     await mockBoundCashierSession(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await signInAndBindCashier(page);
-    await page.getByTestId("account-menu-trigger").click();
-    await page.getByRole("menuitem", { name: "Preferences" }).click();
-
+    await page.getByTestId("shell-preferences-button").click();
     await page.getByRole("radio", { name: "Theme: Dark" }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.screenshot({

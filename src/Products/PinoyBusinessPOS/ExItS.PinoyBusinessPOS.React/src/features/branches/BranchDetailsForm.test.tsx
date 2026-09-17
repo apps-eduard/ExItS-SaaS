@@ -13,6 +13,7 @@ describe("BranchDetailsForm", () => {
         city=""
         region=""
         postalCode=""
+        branchType="Retail"
         t={(key) => key}
         onChange={() => undefined}
       />,
@@ -22,5 +23,24 @@ describe("BranchDetailsForm", () => {
     expect(screen.getByTestId("branch-timezone")).toHaveValue("Asia/Manila");
     expect(screen.getByTestId("branch-country")).toHaveAttribute("readonly");
     expect(screen.getByTestId("branch-country")).toHaveValue("PH");
+  });
+
+  it("defaults branch type select to Retail", () => {
+    render(
+      <BranchDetailsForm
+        name="Main Branch"
+        contactPhone=""
+        addressLine1=""
+        addressLine2=""
+        city=""
+        region=""
+        postalCode=""
+        branchType="Retail"
+        t={(key) => key}
+        onChange={() => undefined}
+      />,
+    );
+
+    expect(screen.getByTestId("branch-type")).toHaveValue("Retail");
   });
 });

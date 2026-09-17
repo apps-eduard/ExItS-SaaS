@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CalendarClock, Check, Loader2, X } from "lucide-react";
+import { Building2, CalendarClock, Check, Loader2, Users, X } from "lucide-react";
 import {
   acceptOwnershipTransfer,
   declineOwnershipTransfer,
@@ -286,6 +286,8 @@ export function PersonalOwnershipTransfersPage() {
       {!pendingQuery.isLoading && !pendingQuery.isError && (pendingQuery.data?.length ?? 0) === 0 ? (
         <div data-testid="ownership-transfer-empty">
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.ownershipTransfers.emptyTitle")}
             detail={t("personal.ownershipTransfers.emptyDetail")}
           />

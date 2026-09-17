@@ -189,6 +189,7 @@ export function workspaceBindFailureTitleKey(
   | "accessDenied.sessionTitle"
   | "accessDenied.serviceTitle"
   | "accessDenied.branchTitle"
+  | "accessDenied.openShiftTitle"
   | "accessDenied.antiforgeryTitle"
   | "commercial.subscriptionSuspended" {
   switch (kind) {
@@ -201,7 +202,7 @@ export function workspaceBindFailureTitleKey(
     case "branch_not_accessible":
       return "accessDenied.branchTitle";
     case "open_shift_blocks_branch_switch":
-      return "accessDenied.branchTitle";
+      return "accessDenied.openShiftTitle";
     case "antiforgery":
       return "accessDenied.antiforgeryTitle";
     default:

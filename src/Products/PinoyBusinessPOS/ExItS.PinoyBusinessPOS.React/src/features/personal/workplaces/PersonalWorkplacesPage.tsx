@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BriefcaseBusiness, Building2, Copy, Loader2 } from "lucide-react";
+import { BriefcaseBusiness, Building2, Copy, Loader2, Users } from "lucide-react";
 import {
   acceptStaffInvitationById,
   declineStaffInvitationById,
@@ -233,7 +233,7 @@ export function PersonalWorkplacesPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-workplaces-accepted-open"
             onClick={() => void openWorkplace(accepted.staffLogin)}
           >
@@ -242,7 +242,7 @@ export function PersonalWorkplacesPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-workplaces-accepted-view"
             onClick={() => setAccepted(null)}
           >
@@ -340,7 +340,7 @@ export function PersonalWorkplacesPage() {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      className="min-h-11 flex-1"
+                      className="flex-1"
                       disabled={acceptMutation.isPending || !online}
                       data-testid={`personal-workplaces-accept-${invitation.id}`}
                       onClick={() => void onAccept(invitation)}
@@ -353,7 +353,6 @@ export function PersonalWorkplacesPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11"
                       onClick={() => {
                         setAcceptForId(null);
                         setPassword("");
@@ -367,7 +366,7 @@ export function PersonalWorkplacesPage() {
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    className="min-h-11 flex-1"
+                    className="flex-1"
                     disabled={!online}
                     data-testid={`personal-workplaces-start-accept-${invitation.id}`}
                     onClick={() => {
@@ -380,7 +379,6 @@ export function PersonalWorkplacesPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11"
                     disabled={declineMutation.isPending || !online}
                     data-testid={`personal-workplaces-decline-${invitation.id}`}
                     onClick={() => void onDecline(invitation.id)}
@@ -420,6 +418,8 @@ export function PersonalWorkplacesPage() {
         ) : null}
         {workplacesQuery.isSuccess && workplaces.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.workplaces.emptyTitle")}
             detail={t("personal.workplaces.emptyDetail")}
           />
@@ -466,7 +466,7 @@ export function PersonalWorkplacesPage() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                className="min-h-11 flex-1"
+                className="flex-1"
                 disabled={!isActiveMembershipStatus(workplace.membershipStatus)}
                 data-testid={`personal-workplace-open-${workplace.membershipId}`}
                 onClick={() => void openWorkplace(workplace.staffLogin)}
@@ -476,7 +476,6 @@ export function PersonalWorkplacesPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 data-testid={`personal-workplace-copy-${workplace.membershipId}`}
                 onClick={() => void copyLogin(workplace.staffLogin, workplace.membershipId)}
               >

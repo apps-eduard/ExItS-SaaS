@@ -41,7 +41,7 @@ describe("POS React foundation", () => {
     renderAuthenticatedAt("/settings/preferences");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
-      expect(screen.getByRole("radio", { name: "Language: English" })).toBeInTheDocument();
+      expect(screen.getByTestId("preferences-section-appearance")).toBeInTheDocument();
       expect(screen.getByRole("radio", { name: "Theme: System" })).toBeInTheDocument();
     });
     expect(document.documentElement.lang).toBe("en");
@@ -53,6 +53,10 @@ describe("POS React foundation", () => {
     renderAuthenticatedAt("/settings/preferences");
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("preferences-nav-language-region"));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: "Language: English" })).toBeInTheDocument();
     });
     await user.click(screen.getByRole("radio", { name: "Language: Filipino" }));
     await waitFor(() => {

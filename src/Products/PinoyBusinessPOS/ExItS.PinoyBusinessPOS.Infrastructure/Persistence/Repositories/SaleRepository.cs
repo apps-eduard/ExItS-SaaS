@@ -121,6 +121,26 @@ internal sealed class SaleRepository : ISaleRepository
             query = query.Where(s => s.SaleNumber.Contains(term));
         }
 
+        if (filter.RegisterId is not null)
+        {
+            query = query.Where(s => s.RegisterId == filter.RegisterId.Value);
+        }
+
+        if (filter.CashierShiftId is not null)
+        {
+            query = query.Where(s => s.CashierShiftId == filter.CashierShiftId.Value);
+        }
+
+        if (filter.RecordedBy is not null)
+        {
+            query = query.Where(s => s.RecordedBy == filter.RecordedBy.Value);
+        }
+
+        if (filter.BranchId is not null)
+        {
+            query = query.Where(s => s.BranchId == filter.BranchId.Value);
+        }
+
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
         var records = await query
             .OrderByDescending(s => s.RecordedAtUtc)
@@ -270,6 +290,122 @@ internal sealed class SaleRepository : ISaleRepository
             paymentMethod,
             customerId,
             branchId);
+        const string completed = nameof(SaleStatus.Completed);
+        const string voided = nameof(SaleStatus.Voided);
+        var cash = SalePaymentMethods.ToCode(SalePaymentMethod.Cash);
+        var gcash = SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash);
+        var utang = SalePaymentMethods.ToCode(SalePaymentMethod.Utang);
+
+        var rows = await query
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                CompletedTotal = g.Where(s => s.Status == completed).Sum(s => (decimal?)s.Total) ?? 0m,
+                CompletedCount = g.Count(s => s.Status == completed),
+                VoidedTotal = g.Where(s => s.Status == voided).Sum(s => (decimal?)s.Total) ?? 0m,
+                VoidedCount = g.Count(s => s.Status == voided),
+                CashTotal = g.Where(s => s.Status == completed && s.PaymentMethod == cash)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                ManualGCashTotal = g.Where(s => s.Status == completed && s.PaymentMethod == gcash)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                UtangTotal = g.Where(s => s.Status == completed && s.PaymentMethod == utang)
+                    .Sum(s => (decimal?)s.Total) ?? 0m,
+                UtangCount = g.Count(s => s.Status == completed && s.PaymentMethod == utang),
+                CompletedGrossSubtotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.GrossSubtotal) ?? 0m,
+                CompletedDiscountTotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.DiscountTotal) ?? 0m,
+                CompletedNetSubtotal = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.Subtotal) ?? 0m,
+                CompletedTaxAmount = g.Where(s => s.Status == completed)
+                    .Sum(s => (decimal?)s.TaxAmount) ?? 0m,
+                VoidedDiscountTotal = g.Where(s => s.Status == voided)
+                    .Sum(s => (decimal?)s.DiscountTotal) ?? 0m
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (rows is null)
+        {
+            return new SalePeriodAggregate(0m, 0, 0m, 0, 0m, 0m, 0m, 0);
+        }
+
+        return new SalePeriodAggregate(
+            SaleMoney.RoundMoney(rows.CompletedTotal),
+            rows.CompletedCount,
+            SaleMoney.RoundMoney(rows.VoidedTotal),
+            rows.VoidedCount,
+            SaleMoney.RoundMoney(rows.CashTotal),
+            SaleMoney.RoundMoney(rows.ManualGCashTotal),
+            SaleMoney.RoundMoney(rows.UtangTotal),
+            rows.UtangCount,
+            SaleMoney.RoundMoney(rows.CompletedGrossSubtotal),
+            SaleMoney.RoundMoney(rows.CompletedDiscountTotal),
+            SaleMoney.RoundMoney(rows.CompletedNetSubtotal),
+            SaleMoney.RoundMoney(rows.CompletedTaxAmount),
+            SaleMoney.RoundMoney(rows.VoidedDiscountTotal));
+    }
+
+    public async Task<SalePeriodAggregate> AggregateAsync(
+        PosOrganizationId organizationId,
+        SaleFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value);
+
+        if (filter.Status is not null)
+        {
+            var statusName = filter.Status.Value.ToString();
+            query = query.Where(s => s.Status == statusName);
+        }
+
+        if (filter.PaymentMethod is not null)
+        {
+            var methodCode = SalePaymentMethods.ToCode(filter.PaymentMethod.Value);
+            query = query.Where(s => s.PaymentMethod == methodCode);
+        }
+
+        if (filter.FromDateUtc is not null)
+        {
+            var from = new DateTimeOffset(filter.FromDateUtc.Value.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            query = query.Where(s => s.RecordedAtUtc >= from);
+        }
+
+        if (filter.ToDateUtc is not null)
+        {
+            var exclusiveTo = new DateTimeOffset(
+                filter.ToDateUtc.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
+                TimeSpan.Zero);
+            query = query.Where(s => s.RecordedAtUtc < exclusiveTo);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.SaleNumber))
+        {
+            var term = filter.SaleNumber.Trim().ToUpperInvariant();
+            query = query.Where(s => s.SaleNumber.Contains(term));
+        }
+
+        if (filter.RegisterId is not null)
+        {
+            query = query.Where(s => s.RegisterId == filter.RegisterId.Value);
+        }
+
+        if (filter.CashierShiftId is not null)
+        {
+            query = query.Where(s => s.CashierShiftId == filter.CashierShiftId.Value);
+        }
+
+        if (filter.RecordedBy is not null)
+        {
+            query = query.Where(s => s.RecordedBy == filter.RecordedBy.Value);
+        }
+
+        if (filter.BranchId is not null)
+        {
+            query = query.Where(s => s.BranchId == filter.BranchId.Value);
+        }
+
         const string completed = nameof(SaleStatus.Completed);
         const string voided = nameof(SaleStatus.Voided);
         var cash = SalePaymentMethods.ToCode(SalePaymentMethod.Cash);

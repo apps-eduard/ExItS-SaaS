@@ -31,6 +31,7 @@ public sealed record CustomerUtangSummaryDto(
     decimal OutstandingAmount,
     decimal ActiveCreditTotal,
     decimal ActiveRepaymentTotal,
+    decimal PendingCheckAmount,
     int ActiveCreditCount,
     int ActiveRepaymentCount,
     int TotalLedgerEntryCount,
@@ -67,6 +68,15 @@ public interface IOutstandingBalanceService
     Task<decimal> GetOutstandingAsync(
         PosOrganizationId organizationId,
         POSCustomerId customerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Batch outstanding (credits − repayments − write-offs) keyed by customer id.
+    /// Empty ids → empty dictionary. Missing ledger activity yields 0 for that id.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, decimal>> GetOutstandingBatchAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> customerIds,
         CancellationToken cancellationToken = default);
 
     Task<CustomerUtangSummaryDto> GetSummaryAsync(

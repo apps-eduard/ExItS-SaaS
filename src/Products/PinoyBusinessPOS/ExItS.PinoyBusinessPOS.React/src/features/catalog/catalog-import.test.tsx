@@ -367,6 +367,23 @@ describe("CatalogGlobalBrowsePage", () => {
     renderApp("/catalog/global-catalog");
     expect(await screen.findByText("search failed")).toBeInTheDocument();
   });
+
+  it("keeps category filters on one horizontal scroll row", async () => {
+    listActiveGlobalCategories.mockResolvedValue({
+      items: [
+        { id: "cat-1", name: "Staples", sortOrder: 1, status: "Active", createdAtUtc: "", updatedAtUtc: "" },
+        { id: "cat-2", name: "Beverages", sortOrder: 2, status: "Active", createdAtUtc: "", updatedAtUtc: "" },
+      ],
+      totalCount: 2,
+      page: 1,
+      pageSize: 100,
+    });
+    renderApp("/catalog/global-catalog");
+    const filters = await screen.findByTestId("catalog-global-category-filters");
+    expect(filters).toHaveClass("exits-chip-bar--scroll");
+    expect(screen.getByTestId("catalog-global-category-all")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("catalog-global-category-cat-2")).toBeInTheDocument();
+  });
 });
 
 describe("catalog import responsive basics", () => {

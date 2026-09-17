@@ -34,6 +34,11 @@ internal static class PosProductionSecurityGuard
 
         if (PosDevelopmentEnvironment.IsApprovedDevelopmentEnvironment(env) || localValidationEnabled)
         {
+            if (localValidationEnabled)
+            {
+                AssertLocalValidationDatabasePortOrThrow(builder.Configuration.GetConnectionString("PosDatabase"));
+            }
+
             return;
         }
 
@@ -119,6 +124,36 @@ internal static class PosProductionSecurityGuard
         {
             throw new InvalidOperationException(
                 "POS device authorization cannot be disabled in Production. Set PosDeviceAuthorization:EnforcementEnabled=true.");
+        }
+    }
+
+    /// <summary>
+    /// Local Validation host mode must use the canonical POS DB host port (15534), never the
+    /// plain Development docker-compose port 5434 from appsettings.Development.json.
+    /// Docker apps profile (Host=pos-db;Port=5432) remains valid.
+    /// </summary>
+    internal static void AssertLocalValidationDatabasePortOrThrow(string? connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "LocalValidation requires ConnectionStrings:PosDatabase (Start-LocalValidation sets Host=127.0.0.1;Port=15534).");
+        }
+
+        if (connectionString.Contains("Port=5434", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "LocalValidation must not use Development POS DB port 5434. "
+                + "Use Start-LocalValidation / dashboard Start so ConnectionStrings__PosDatabase targets 127.0.0.1:15534.");
+        }
+
+        var isHostLoopback =
+            connectionString.Contains("Host=127.0.0.1", StringComparison.OrdinalIgnoreCase)
+            || connectionString.Contains("Host=localhost", StringComparison.OrdinalIgnoreCase);
+        if (isHostLoopback && !connectionString.Contains("Port=15534", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "LocalValidation host-mode POS DB must use 127.0.0.1:15534 (ConnectionStrings__PosDatabase from Start-LocalValidation).");
         }
     }
 }

@@ -125,7 +125,7 @@ export function OrgStaffInvitePage() {
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("staffInvite.sentDetail")}
           </p>
-          <Button asChild className="min-h-11 w-full sm:w-auto">
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/org/staff">{t("staffInvite.backToStaff")}</Link>
           </Button>
         </section>
@@ -218,7 +218,7 @@ export function OrgStaffInvitePage() {
               {roleOptions.map((option) => (
                 <label
                   key={option.code}
-                  className="flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]"
+                  className="flex items-start gap-2 text-[length:var(--exits-text-sm)]"
                   data-testid={`staff-invite-role-${option.code.toLowerCase()}`}
                 >
                   <input

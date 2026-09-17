@@ -66,6 +66,10 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<SubscriptionRecord> Subscriptions => Set<SubscriptionRecord>();
     internal DbSet<SaaSPaymentRecord> SaaSPayments => Set<SaaSPaymentRecord>();
     internal DbSet<ProviderPaymentRecord> ProviderPayments => Set<ProviderPaymentRecord>();
+    internal DbSet<SubscriptionPaymentTransactionRecord> SubscriptionPaymentTransactions =>
+        Set<SubscriptionPaymentTransactionRecord>();
+    internal DbSet<SubscriptionPaymentActivityRecord> SubscriptionPaymentActivities =>
+        Set<SubscriptionPaymentActivityRecord>();
     internal DbSet<FeatureOverrideRecord> FeatureOverrides => Set<FeatureOverrideRecord>();
     internal DbSet<EntitlementSnapshotRecord> EntitlementSnapshots => Set<EntitlementSnapshotRecord>();
     internal DbSet<EntitlementSnapshotGrantRecord> EntitlementSnapshotGrants => Set<EntitlementSnapshotGrantRecord>();
@@ -108,6 +112,8 @@ public sealed class PlatformDbContext : DbContext
     internal DbSet<AuditRecordRecord> AuditRecords => Set<AuditRecordRecord>();
     internal DbSet<OrganizationSalesDocumentCapabilityRecord> OrganizationSalesDocumentCapabilities =>
         Set<OrganizationSalesDocumentCapabilityRecord>();
+    internal DbSet<OrganizationOnlineSupplierPaymentsCapabilityRecord> OrganizationOnlineSupplierPaymentsCapabilities =>
+        Set<OrganizationOnlineSupplierPaymentsCapabilityRecord>();
     internal DbSet<OrganizationComplianceProfileRecord> OrganizationComplianceProfiles =>
         Set<OrganizationComplianceProfileRecord>();
     internal DbSet<BranchComplianceProfileRecord> BranchComplianceProfiles =>
@@ -359,6 +365,29 @@ public sealed class PlatformDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<OrganizationOnlineSupplierPaymentsCapabilityRecord>(entity =>
+        {
+            entity.ToTable("organization_online_supplier_payments_capabilities");
+            entity.HasKey(e => e.OrganizationId);
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(64)
+                .HasDefaultValue("Disabled")
+                .IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.UpdatedByActorReference)
+                .HasColumnName("updated_by_actor_reference")
+                .HasMaxLength(256);
+            entity.Property(e => e.Reason)
+                .HasColumnName("reason")
+                .HasMaxLength(1000);
+            entity.HasOne<PlatformOrganizationRecord>()
+                .WithOne()
+                .HasForeignKey<OrganizationOnlineSupplierPaymentsCapabilityRecord>(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<OrganizationComplianceProfileRecord>(entity =>
         {
             entity.ToTable("organization_compliance_profiles");
@@ -532,12 +561,20 @@ public sealed class PlatformDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_organization_branches_lat_long_pair",
                     "(latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)");
+                tb.HasCheckConstraint(
+                    "ck_organization_branches_branch_type",
+                    "branch_type IN ('Retail', 'Warehouse')");
             });
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
             entity.Property(e => e.Code).HasColumnName("code").HasMaxLength(32).IsRequired();
             entity.Property(e => e.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            entity.Property(e => e.BranchType)
+                .HasColumnName("branch_type")
+                .HasMaxLength(16)
+                .IsRequired()
+                .HasDefaultValue("Retail");
             entity.Property(e => e.AddressLine1).HasColumnName("address_line1").HasMaxLength(200);
             entity.Property(e => e.AddressLine2).HasColumnName("address_line2").HasMaxLength(200);
             entity.Property(e => e.City).HasColumnName("city").HasMaxLength(100);
@@ -880,12 +917,77 @@ public sealed class PlatformDbContext : DbContext
             entity.Property(e => e.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(128).IsRequired();
             entity.HasIndex(e => e.IdempotencyKey).IsUnique();
             entity.Property(e => e.Purpose).HasColumnName("purpose").HasMaxLength(128);
+            entity.Property(e => e.PlanKey).HasColumnName("plan_key").HasMaxLength(64);
+            entity.Property(e => e.BillingCycle).HasColumnName("billing_cycle").HasMaxLength(32);
+            entity.Property(e => e.BaseAmount).HasColumnName("base_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountAmount).HasColumnName("discount_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountPercent).HasColumnName("discount_percent").HasColumnType("numeric(8,2)");
+            entity.Property(e => e.FinalAmount).HasColumnName("final_amount").HasColumnType("numeric(18,2)");
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
 
             entity.HasOne<Subscriptions.SubscriptionRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.SubscriptionId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SubscriptionPaymentTransactionRecord>(entity =>
+        {
+            entity.ToTable("subscription_payment_transactions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReferenceNumber).HasColumnName("reference_number").HasMaxLength(32).IsRequired();
+            entity.HasIndex(e => e.ReferenceNumber).IsUnique();
+            entity.Property(e => e.InitiatedByUserId).HasColumnName("initiated_by_user_id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.SubscriptionId).HasColumnName("subscription_id");
+            entity.Property(e => e.PlanKey).HasColumnName("plan_key").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.BillingCycle).HasColumnName("billing_cycle").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.BaseAmount).HasColumnName("base_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountAmount).HasColumnName("discount_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.DiscountPercent).HasColumnName("discount_percent").HasColumnType("numeric(8,2)");
+            entity.Property(e => e.FinalAmount).HasColumnName("final_amount").HasColumnType("numeric(18,2)");
+            entity.Property(e => e.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsRequired();
+            entity.Property(e => e.Channel).HasColumnName("channel").HasMaxLength(32);
+            entity.Property(e => e.Provider).HasColumnName("provider").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Environment).HasColumnName("environment").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
+            entity.Property(e => e.ProviderReference).HasColumnName("provider_reference").HasMaxLength(64);
+            entity.HasIndex(e => e.ProviderReference)
+                .IsUnique()
+                .HasFilter("provider_reference IS NOT NULL");
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.ProcessingAtUtc).HasColumnName("processing_at_utc");
+            entity.Property(e => e.PaidAtUtc).HasColumnName("paid_at_utc");
+            entity.Property(e => e.FailedAtUtc).HasColumnName("failed_at_utc");
+            entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
+            entity.Property(e => e.ExpiredAtUtc).HasColumnName("expired_at_utc");
+            entity.Property(e => e.PeriodStartUtc).HasColumnName("period_start_utc");
+            entity.Property(e => e.PeriodEndUtc).HasColumnName("period_end_utc");
+            entity.Property(e => e.FailureCode).HasColumnName("failure_code").HasMaxLength(64);
+            entity.Property(e => e.FailureReason).HasColumnName("failure_reason").HasMaxLength(512);
+            entity.Property(e => e.CardBrand).HasColumnName("card_brand").HasMaxLength(32);
+            entity.Property(e => e.CardLast4).HasColumnName("card_last4").HasMaxLength(4);
+            entity.Property(e => e.SubscriptionActivated).HasColumnName("subscription_activated");
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasIndex(e => e.CreatedAtUtc);
+
+            entity.HasMany(e => e.Activities)
+                .WithOne()
+                .HasForeignKey(a => a.PaymentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SubscriptionPaymentActivityRecord>(entity =>
+        {
+            entity.ToTable("subscription_payment_activities");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PaymentId).HasColumnName("payment_id");
+            entity.Property(e => e.EventType).HasColumnName("event_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.Message).HasColumnName("message").HasMaxLength(512).IsRequired();
+            entity.Property(e => e.OccurredAtUtc).HasColumnName("occurred_at_utc");
+            entity.HasIndex(e => new { e.PaymentId, e.OccurredAtUtc });
         });
 
         modelBuilder.Entity<FeatureOverrideRecord>(entity =>
@@ -1332,6 +1434,11 @@ public sealed class PlatformDbContext : DbContext
                 .HasColumnName("branch_access_scope")
                 .HasMaxLength(32)
                 .IsRequired();
+            entity.Property(e => e.Department).HasColumnName("department").HasMaxLength(100);
+            entity.Property(e => e.JobTitle).HasColumnName("job_title").HasMaxLength(100);
+            entity.Property(e => e.WorkPhone).HasColumnName("work_phone").HasMaxLength(40);
+            entity.Property(e => e.WorkEmail).HasColumnName("work_email").HasMaxLength(320);
+            entity.Property(e => e.IsBusinessContact).HasColumnName("is_business_contact").IsRequired();
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.SuspendedAtUtc).HasColumnName("suspended_at_utc");

@@ -84,7 +84,7 @@ export function SellReadinessGate() {
             </p>
           </div>
           {sellReadiness.online ? (
-            <Button asChild className="min-h-11" data-testid="sell-readiness-register">
+            <Button asChild data-testid="sell-readiness-register">
               <Link to="/devices/register?from=sell">{t("sell.readiness.registerDevice")}</Link>
             </Button>
           ) : (
@@ -97,7 +97,6 @@ export function SellReadinessGate() {
             <Button
               asChild
               variant="ghost"
-              className="min-h-11"
               data-testid="sell-readiness-manage-devices"
             >
               <Link to="/org/devices">{t("sell.readiness.manageDevices")}</Link>
@@ -122,7 +121,7 @@ export function SellReadinessGate() {
               {t("sell.readiness.shiftHelp")}
             </p>
           </div>
-          <Button asChild className="min-h-11" data-testid="sell-readiness-open-shift">
+          <Button asChild data-testid="sell-readiness-open-shift">
             <Link to="/shifts/open">{t("sell.readiness.openShift")}</Link>
           </Button>
         </Card>

@@ -377,7 +377,9 @@ public sealed class SaleDomainTests
     [Fact]
     public void Payment_method_codes_are_stable_and_parseable()
     {
-        Assert.Equal(new[] { "Cash", "ManualGCash", "Utang", "Card", "GCash" }, SalePaymentMethods.Codes.ToArray());
+        Assert.Equal(
+            new[] { "Cash", "ManualGCash", "Utang", "Card", "GCash", "BankTransfer", "Check", "ManualMaya" },
+            SalePaymentMethods.Codes.ToArray());
         Assert.Equal("Cash", SalePaymentMethods.ToCode(SalePaymentMethod.Cash));
         Assert.Equal("ManualGCash", SalePaymentMethods.ToCode(SalePaymentMethod.ManualGCash));
         Assert.Equal("Utang", SalePaymentMethods.ToCode(SalePaymentMethod.Utang));
@@ -387,6 +389,11 @@ public sealed class SaleDomainTests
         Assert.Equal(SalePaymentMethod.Utang, SalePaymentMethods.Parse("utang"));
         Assert.Equal(SalePaymentMethod.Card, SalePaymentMethods.Parse("card"));
         Assert.Equal(SalePaymentMethod.GCash, SalePaymentMethods.Parse("gcash"));
+        Assert.True(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Utang));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Cash));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.ManualGCash));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.Check));
+        Assert.False(SalePaymentMethods.CreatesReceivable(SalePaymentMethod.BankTransfer));
 
         var error = Assert.Throws<DomainException>(() => SalePaymentMethods.Parse("SplitTender"));
         Assert.Equal(DomainErrorCodes.InvalidSalePaymentMethod, error.ErrorCode);
@@ -522,6 +529,35 @@ public sealed class SaleDomainTests
     }
 
     [Fact]
+    public void Utang_checkout_allows_organization_buyer_with_business_credit()
+    {
+        var buyer = SaleBuyerParty.Organization(
+            Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+            "ORG123456",
+            "ABC Trading");
+        var businessCreditId = BusinessCreditEntryId.New();
+
+        var sale = Sale.Checkout(
+            Org,
+            SaleNumbers.Format(new DateOnly(2026, 7, 30), 1),
+            SalePaymentMethod.Utang,
+            [Draft(50m, 2m)],
+            Actor,
+            Now,
+            amountTendered: null,
+            buyerParty: buyer,
+            linkedBusinessCreditEntryId: businessCreditId,
+            cashierShiftId: Shift,
+            registerId: Register);
+
+        Assert.Equal(SalePaymentMethod.Utang, sale.PaymentMethod);
+        Assert.Null(sale.CustomerId);
+        Assert.Null(sale.LinkedCreditEntryId);
+        Assert.Equal(businessCreditId, sale.LinkedBusinessCreditEntryId);
+        Assert.Equal(SaleBuyerPartyKind.Organization, sale.BuyerParty.Kind);
+    }
+
+    [Fact]
     public void Utang_checkout_rejects_a_tendered_amount()
     {
         var error = Assert.Throws<DomainException>(() => Sale.Checkout(
@@ -547,6 +583,7 @@ public sealed class SaleDomainTests
 
         Assert.Contains("CustomerId", names);
         Assert.Contains("LinkedCreditEntryId", names);
+        Assert.Contains("LinkedBusinessCreditEntryId", names);
         Assert.Contains("TaxAmount", names);
 
         // RMAP-B03 commercial discount: gross is kept alongside the net amounts the totals use.

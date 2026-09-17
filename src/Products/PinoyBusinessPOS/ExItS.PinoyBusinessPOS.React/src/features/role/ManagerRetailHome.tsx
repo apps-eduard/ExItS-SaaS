@@ -1,0 +1,680 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  BarChart3,
+  Boxes,
+  CircleDollarSign,
+  ClipboardList,
+  Clock3,
+  FileBarChart,
+  PackagePlus,
+  Receipt,
+  ShoppingCart,
+  Store,
+  Users,
+  Warehouse,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  canAccessReportsHub,
+  canCreateSale,
+  canInviteOrganizationStaff,
+  canManageExpenses,
+  canManageInventory,
+  canManagePurchasing,
+  canManageShifts,
+  canViewCustomerOrders,
+  canViewCustomers,
+  canViewDashboard,
+  canViewInventory,
+  canViewPurchasing,
+  canViewShifts,
+  hasOrganizationManagementAuthority,
+} from "@/access/pos-capabilities";
+import { listSellerCustomerOrders, sellerWorkspace } from "@/api/pos/pos-customer-orders-client";
+import { listInventory } from "@/api/pos/pos-inventory-client";
+import { listInventoryTransfers } from "@/api/pos/pos-inventory-transfer-client";
+import {
+  isReceivablePurchaseOrderStatus,
+  listPurchaseOrders,
+} from "@/api/pos/pos-purchase-orders-client";
+import {
+  getDashboard,
+  getManagementOverview,
+} from "@/api/pos/pos-reporting-client";
+import { getOutgoingStockRequestSummary } from "@/api/pos/pos-stock-requests-client";
+import { listSupplyRoutesByDestination } from "@/api/pos/pos-supply-routes-client";
+import { ErrorState } from "@/components/exits/ErrorState";
+import { LoadingState } from "@/components/exits/LoadingState";
+import { PageHeader } from "@/components/exits/PageHeader";
+import { RoleIdentityChip } from "@/components/exits/RoleIdentityChip";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
+import {
+  buildManagerAttentionItems,
+  buildRetailSnapshotModules,
+  type ManagerAttentionItem,
+} from "@/features/role/manager-home-data";
+import {
+  ManagerActionCard,
+  ManagerActionGrid,
+  ManagerAttentionLink,
+  ManagerHealthyAttention,
+  ManagerHomeSection,
+  ManagerInsightCard,
+  ManagerMetricCard,
+  ManagerMetricStrip,
+  ManagerSnapshotLink,
+  ManagerSnapshotTable,
+} from "@/features/role/ManagerHomeShared";
+import { resolveReportDatePreset } from "@/features/reports/report-date-range";
+import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
+import { resolveRetailWarehouseNavigation } from "@/features/warehouse/retail-warehouse-gate";
+import { resolveRetailWarehouseSupply } from "@/features/warehouse/retail-warehouse-resolve";
+import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
+import { formatPeso } from "@/lib/format-money";
+import { useSellingMode } from "@/selling/SellingModeProvider";
+import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function attentionTitle(item: ManagerAttentionItem, t: (key: MessageKey) => string): string {
+  switch (item.kind) {
+    case "lowStock":
+      return t("managerHome.attention.lowStock");
+    case "expiry":
+      return t("managerHome.attention.expiry");
+    case "orders":
+      return t("managerHome.attention.orders");
+    case "purchasing":
+      return t("managerHome.attention.purchasing");
+    case "transfers":
+      return t("managerHome.attention.transfers");
+    case "utang":
+      return t("managerHome.attention.utang");
+    case "shift":
+      return t("managerHome.attention.shift");
+    default:
+      return t("managerHome.attention.generic");
+  }
+}
+
+function attentionDetail(item: ManagerAttentionItem, t: (key: MessageKey) => string): string {
+  switch (item.kind) {
+    case "lowStock":
+      return t("managerHome.attention.lowStockDetail").replace("{count}", String(item.count));
+    case "expiry":
+      return t("managerHome.attention.expiryDetail").replace("{count}", String(item.count));
+    case "orders":
+      return t("managerHome.attention.ordersDetail").replace("{count}", String(item.count));
+    case "purchasing":
+      return t("managerHome.attention.purchasingDetail").replace("{count}", String(item.count));
+    case "transfers":
+      return t("managerHome.attention.transfersDetail").replace("{count}", String(item.count));
+    case "utang":
+      return t("managerHome.attention.utangDetail").replace(
+        "{amount}",
+        formatPeso(item.amount ?? 0),
+      );
+    case "shift":
+      return t("managerHome.attention.shiftDetail");
+    default:
+      return "";
+  }
+}
+
+type QuickAction = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  testId: string;
+  to?: string;
+  onClick?: () => void;
+  badge?: number;
+};
+
+export function ManagerRetailHome() {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { enter } = useSellingMode();
+  const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
+  const { currentShift, hasOpenShift } = useShiftContext();
+
+  const workspace = useMemo(
+    () =>
+      boundWorkspace?.branchId
+        ? {
+            organizationId: boundWorkspace.organizationId,
+            branchId: boundWorkspace.branchId,
+          }
+        : null,
+    [boundWorkspace],
+  );
+
+  const branchId = boundWorkspace?.branchId ?? null;
+  const todayRange = useMemo(() => resolveReportDatePreset("today"), []);
+
+  const orgBranches = useMemo(() => {
+    const org = workspaces.find((w) => w.organizationId === boundWorkspace?.organizationId);
+    return org?.branches ?? [];
+  }, [workspaces, boundWorkspace?.organizationId]);
+
+  const canSell = canCreateSale(sessionGrant, boundWorkspace?.branchType);
+  const canInventory = canViewInventory(sessionGrant);
+  const canManageInv = canManageInventory(sessionGrant);
+  const canPurchasing = canViewPurchasing(sessionGrant);
+  const canCreatePo = canManagePurchasing(sessionGrant);
+  const canOrders = canViewCustomerOrders(sessionGrant);
+  const canCustomers = canViewCustomers(sessionGrant);
+  const canShifts = canViewShifts(sessionGrant);
+  const canOpenShift = canManageShifts(sessionGrant);
+  const canExpenses = canManageExpenses(sessionGrant);
+  const canDashboard = canViewDashboard(sessionGrant);
+  const canReports = canAccessReportsHub(sessionGrant);
+  const canManageOrg = hasOrganizationManagementAuthority(sessionGrant);
+  const canInvite = canInviteOrganizationStaff(sessionGrant);
+
+  const supplyRoutesQuery = useQuery({
+    queryKey: ["supply-routes-dest", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace?.branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listSupplyRoutesByDestination(workspace!, workspace!.branchId!, signal),
+  });
+
+  const outgoingSummaryQuery = useQuery({
+    queryKey: ["stock-requests-outgoing-summary", workspace?.organizationId, workspace?.branchId],
+    enabled: Boolean(workspace?.branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => getOutgoingStockRequestSummary(workspace!, signal),
+  });
+
+  const warehouseResolve = useMemo(() => {
+    if (!workspace?.branchId || supplyRoutesQuery.isPending) return null;
+    return resolveRetailWarehouseSupply(
+      orgBranches,
+      supplyRoutesQuery.data ?? [],
+      workspace.branchId,
+    );
+  }, [workspace?.branchId, orgBranches, supplyRoutesQuery.data, supplyRoutesQuery.isPending]);
+
+  const inTransitBadge = outgoingSummaryQuery.data?.inTransitCount ?? 0;
+
+  const dashboardQuery = useQuery({
+    queryKey: [
+      "manager-home",
+      "dashboard",
+      workspace?.organizationId,
+      branchId,
+      todayRange.fromDate,
+      todayRange.toDate,
+    ],
+    enabled: Boolean(workspace && branchId),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => getDashboard(workspace!, todayRange, signal, branchId),
+  });
+
+  const overviewQuery = useQuery({
+    queryKey: ["manager-home", "overview", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && (canInventory || canPurchasing)),
+    staleTime: 30_000,
+    queryFn: ({ signal }) => getManagementOverview(workspace!, signal),
+  });
+
+  /** Branch-scoped monitored low stock (same engine as Inventory / Low stock settings). */
+  const lowStockQuery = useQuery({
+    queryKey: ["manager-home", "low-stock", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && branchId && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listInventory(
+        workspace!,
+        { tracked: true, lowStock: true, page: 1, pageSize: 1 },
+        signal,
+      ),
+  });
+
+  const ordersQuery = useQuery({
+    queryKey: ["manager-home", "orders-submitted", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && branchId && canOrders),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listSellerCustomerOrders(
+        sellerWorkspace(workspace!.organizationId, branchId),
+        { status: "Submitted", branchId: branchId!, page: 1, pageSize: 1 },
+        signal,
+      ),
+  });
+
+  const purchaseOrdersQuery = useQuery({
+    queryKey: ["manager-home", "purchase-orders", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && canPurchasing),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listPurchaseOrders(workspace!, { page: 1, pageSize: 40 }, signal),
+  });
+
+  const transfersQuery = useQuery({
+    queryKey: ["manager-home", "incoming-transfers", workspace?.organizationId, branchId],
+    enabled: Boolean(workspace && canInventory),
+    staleTime: 30_000,
+    queryFn: ({ signal }) =>
+      listInventoryTransfers(
+        workspace!,
+        { direction: "incoming", page: 1, pageSize: 40 },
+        signal,
+      ),
+  });
+
+  const dashboard = dashboardQuery.data;
+  const overview = overviewQuery.data;
+  const receivableCount = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
+    isReceivablePurchaseOrderStatus(po.status),
+  ).length;
+  const pendingTransfers = (transfersQuery.data?.items ?? []).filter(
+    (item) => item.status === "InTransit" || item.status === "PartiallyReceived",
+  ).length;
+  const submittedOrders = ordersQuery.data?.totalCount ?? 0;
+  const lowStock = lowStockQuery.data?.totalCount ?? 0;
+  const expiry =
+    (overview?.expiredLotCount ?? 0) + (overview?.nearExpiryLotCount ?? 0);
+  const overdueUtang = dashboard?.overdueUtangAmount ?? 0;
+  const outstandingUtang = dashboard?.activeCustomerUtangOutstanding ?? 0;
+
+  const attentionItems = buildManagerAttentionItems(
+    {
+      lowStockProductCount: canInventory ? lowStock : 0,
+      expiredLotCount: canInventory ? (overview?.expiredLotCount ?? 0) : 0,
+      nearExpiryLotCount: canInventory ? (overview?.nearExpiryLotCount ?? 0) : 0,
+      submittedOrderCount: canOrders ? submittedOrders : 0,
+      receivablePoCount: canPurchasing ? receivableCount : 0,
+      pendingIncomingTransferCount: canInventory ? pendingTransfers : 0,
+      overdueUtangAmount: canCustomers ? overdueUtang : 0,
+      shiftNeedsOpen: false,
+    },
+    { includeOrders: canOrders, includeShift: false },
+  );
+
+  const snapshotModules = buildRetailSnapshotModules({
+    canInventory,
+    canOrders,
+    canPurchasing,
+    canCustomers,
+    lowStock,
+    expiry,
+    orderCount: submittedOrders,
+    receivableCount,
+    overdueAmount: overdueUtang,
+    outstandingAmount: outstandingUtang,
+  });
+
+  function startSelling() {
+    enter("/role/manager");
+    navigate("/sell");
+  }
+
+  const quickActions: QuickAction[] = [];
+  if (canSell) {
+    quickActions.push({
+      key: "sell",
+      label: t("role.startSelling"),
+      icon: ShoppingCart,
+      testId: "manager-action-sell",
+      onClick: startSelling,
+    });
+  }
+  if (canManageInv) {
+    quickActions.push({
+      key: "receive",
+      label: t("purchasing.receiveStock"),
+      icon: PackagePlus,
+      testId: "manager-action-receive",
+      to: "/purchasing/receive-stock",
+    });
+  }
+  if (canCreatePo) {
+    quickActions.push({
+      key: "create-po",
+      label: t("managerHome.action.createPo"),
+      icon: ClipboardList,
+      testId: "manager-action-create-po",
+      to: "/purchasing/new",
+    });
+  }
+  if (canInventory) {
+    quickActions.push({
+      key: "transfer",
+      label: t("warehouse.action.transferStock"),
+      icon: ArrowLeftRight,
+      testId: "manager-action-transfer",
+      to: "/inventory/transfers",
+    });
+    quickActions.push({
+      key: "warehouse",
+      label: t("retailWarehouse.title"),
+      icon: Warehouse,
+      testId: "manager-action-warehouse",
+      badge: inTransitBadge > 0 ? inTransitBadge : undefined,
+      onClick: () => {
+        if (!warehouseResolve) return;
+        const gate = resolveRetailWarehouseNavigation(
+          warehouseResolve,
+          {
+            canManageOrganization: canManageOrg,
+            canInvite,
+            canManageInventory: canManageInv,
+          },
+          t,
+          { branchName: boundWorkspace?.branchName ?? undefined },
+        );
+        if (gate.kind === "navigate") {
+          navigate(gate.to);
+          return;
+        }
+        showToast(gate.toast);
+      },
+    });
+  }
+  if (canExpenses) {
+    quickActions.push({
+      key: "expense",
+      label: t("managerHome.action.recordExpense"),
+      icon: Receipt,
+      testId: "manager-action-expense",
+      to: "/expenses/new",
+    });
+  }
+
+  const shiftQuickActionAvailable =
+    canShifts &&
+    ((hasOpenShift && Boolean(currentShift?.shiftId)) || (!hasOpenShift && canOpenShift));
+
+  if (shiftQuickActionAvailable) {
+    if (hasOpenShift && currentShift?.shiftId) {
+      quickActions.push({
+        key: "shift",
+        label: t("managerHome.shift.view"),
+        icon: Clock3,
+        testId: "manager-action-shift",
+        to: `/shifts/${currentShift.shiftId}`,
+      });
+    } else if (!hasOpenShift && canOpenShift) {
+      quickActions.push({
+        key: "shift",
+        label: t("managerHome.shift.openAction"),
+        icon: Clock3,
+        testId: "manager-action-shift",
+        to: "/shifts/open",
+      });
+    }
+  }
+
+  // Prefer shift over trailing expense when capping quick actions at 6.
+  const expenseIdx = quickActions.findIndex((a) => a.key === "expense");
+  const shiftIdx = quickActions.findIndex((a) => a.key === "shift");
+  if (expenseIdx >= 0 && shiftIdx > expenseIdx) {
+    const [expense] = quickActions.splice(expenseIdx, 1);
+    quickActions.push(expense!);
+  }
+
+  const salesTotal = dashboard?.completedSalesTotal ?? 0;
+  const saleCount = dashboard?.completedSaleCount ?? 0;
+  const loading =
+    dashboardQuery.isLoading ||
+    (canInventory && overviewQuery.isLoading) ||
+    (canOrders && ordersQuery.isLoading);
+
+  const loadError =
+    dashboardQuery.error ??
+    overviewQuery.error ??
+    ordersQuery.error ??
+    purchaseOrdersQuery.error ??
+    transfersQuery.error;
+
+  const registerName = currentShift?.registerName?.trim() || undefined;
+  const registerCode = currentShift?.registerCode?.trim() || undefined;
+  const registerId = currentShift?.registerId?.trim() || undefined;
+  const shiftNumber = currentShift?.shiftNumber?.trim() || undefined;
+  const registerLabel =
+    registerCode && registerName
+      ? `${registerCode} — ${registerName}`
+      : registerCode || registerName || t("managerHome.register.none");
+  const shiftMetricTo = hasOpenShift && currentShift?.shiftId
+    ? `/shifts/${currentShift.shiftId}`
+    : canOpenShift
+      ? "/shifts/open"
+      : "/shifts";
+  const registerMetricTo = registerId ? `/registers/${registerId}/history` : undefined;
+
+  return (
+    <div
+      className="manager-ops-home manager-home-page exits-page mx-auto flex w-full max-w-[80rem] min-w-0 flex-col gap-2.5"
+      data-testid="manager-home"
+      data-home-variant="retail"
+    >
+      <PageHeader
+        title={t("role.managerTitle")}
+        subtitle={boundWorkspace?.branchName?.trim() || undefined}
+        description={t("managerHome.lede")}
+        actions={<RoleIdentityChip testId="manager-home-badge" />}
+      />
+
+      {loading ? <LoadingState label={t("managerHome.loading")} /> : null}
+
+      {loadError && !loading ? (
+        <ErrorState
+          title={t("managerHome.loadError")}
+          detail={loadError instanceof Error ? loadError.message : t("managerHome.loadError")}
+        />
+      ) : null}
+
+      {!loading ? (
+        <>
+          <ManagerHomeSection title={t("managerHome.section.today")} testId="manager-home-today">
+            <ManagerMetricStrip>
+              <ManagerMetricCard
+                label={t("managerHome.today.sales")}
+                value={formatPeso(salesTotal)}
+                hint={salesTotal <= 0 ? t("managerHome.today.noSales") : undefined}
+                icon={CircleDollarSign}
+                tone="primary"
+                testId="manager-today-sales"
+              />
+              <ManagerMetricCard
+                label={t("managerHome.today.transactions")}
+                value={saleCount}
+                icon={Receipt}
+                tone="primary"
+                testId="manager-today-transactions"
+              />
+              {canShifts ? (
+                <ManagerMetricCard
+                  label={t("managerHome.today.shift")}
+                  icon={Clock3}
+                  tone={hasOpenShift ? "success" : "warning"}
+                  badge={
+                    hasOpenShift ? (
+                      <StatusChip tone="success">{t("managerHome.shift.open")}</StatusChip>
+                    ) : undefined
+                  }
+                  value={
+                    hasOpenShift
+                      ? (shiftNumber ?? t("managerHome.shift.open"))
+                      : t("managerHome.shift.closed")
+                  }
+                  valueScale="restrained"
+                  testId="manager-today-shift"
+                  to={shiftMetricTo}
+                />
+              ) : null}
+              {canShifts && hasOpenShift ? (
+                <ManagerMetricCard
+                  label={t("managerHome.today.register")}
+                  value={registerLabel}
+                  icon={Store}
+                  tone="primary"
+                  valueScale="restrained"
+                  testId="manager-today-register"
+                  to={registerMetricTo}
+                />
+              ) : null}
+            </ManagerMetricStrip>
+          </ManagerHomeSection>
+
+          <ManagerHomeSection
+            title={t("managerHome.section.needsAttention")}
+            testId="manager-home-attention"
+          >
+            {attentionItems.length === 0 ? (
+              <ManagerHealthyAttention
+                title={t("managerHome.attention.healthy")}
+                detail={t("managerHome.attention.healthyDetail")}
+              />
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {attentionItems.map((item) => (
+                  <li key={item.kind}>
+                    <ManagerAttentionLink
+                      title={attentionTitle(item, t)}
+                      detail={attentionDetail(item, t)}
+                      href={item.href}
+                      testId={item.testId}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ManagerHomeSection>
+
+          {quickActions.length > 0 ? (
+            <ManagerHomeSection
+              title={t("managerHome.section.quickActions")}
+              testId="manager-home-quick-actions"
+            >
+              <ManagerActionGrid>
+                {quickActions.slice(0, 6).map((action) =>
+                  action.to ? (
+                    <ManagerActionCard
+                      key={action.key}
+                      label={action.label}
+                      icon={action.icon}
+                      testId={action.testId}
+                      to={action.to}
+                      badge={action.badge}
+                    />
+                  ) : (
+                    <ManagerActionCard
+                      key={action.key}
+                      label={action.label}
+                      icon={action.icon}
+                      testId={action.testId}
+                      onClick={action.onClick!}
+                      badge={action.badge}
+                    />
+                  ),
+                )}
+              </ManagerActionGrid>
+            </ManagerHomeSection>
+          ) : null}
+
+          {snapshotModules.length > 0 ? (
+            <ManagerHomeSection
+              title={t("managerHome.section.snapshot")}
+              testId="manager-home-snapshot"
+            >
+              <ManagerSnapshotTable>
+                {snapshotModules.map((mod) => {
+                  let detail = "";
+                  let attention = false;
+                  if (mod.summaryKind === "inventory") {
+                    attention = (mod.lowStock ?? 0) > 0 || (mod.expiry ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.inventoryDetail")
+                          .replace("{low}", String(mod.lowStock ?? 0))
+                          .replace("{expiry}", String(mod.expiry ?? 0))
+                      : t("managerHome.snapshot.inventoryClear");
+                  } else if (mod.summaryKind === "orders") {
+                    attention = (mod.orderCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.ordersDetail").replace(
+                          "{count}",
+                          String(mod.orderCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.ordersClear");
+                  } else if (mod.summaryKind === "purchasing") {
+                    attention = (mod.receivableCount ?? 0) > 0;
+                    detail = attention
+                      ? t("managerHome.snapshot.purchasingDetail").replace(
+                          "{count}",
+                          String(mod.receivableCount ?? 0),
+                        )
+                      : t("managerHome.snapshot.purchasingClear");
+                  } else if (mod.summaryKind === "utang") {
+                    attention = true;
+                    detail = t("managerHome.snapshot.utangDetail")
+                      .replace("{outstanding}", formatPeso(mod.outstandingAmount ?? 0))
+                      .replace("{overdue}", formatPeso(mod.overdueAmount ?? 0));
+                  }
+                  const titleKey =
+                    mod.key === "inventory"
+                      ? "managerHome.snapshot.inventory"
+                      : mod.key === "orders"
+                        ? "managerHome.snapshot.orders"
+                        : mod.key === "purchasing"
+                          ? "managerHome.snapshot.purchasing"
+                          : "managerHome.snapshot.utang";
+                  const icon =
+                    mod.key === "inventory"
+                      ? Boxes
+                      : mod.key === "orders"
+                        ? ClipboardList
+                        : mod.key === "purchasing"
+                          ? PackagePlus
+                          : Users;
+                  return (
+                    <ManagerSnapshotLink
+                      key={mod.key}
+                      title={t(titleKey)}
+                      detail={detail}
+                      href={mod.href}
+                      testId={mod.testId}
+                      icon={icon}
+                      tone={attention ? "attention" : "default"}
+                    />
+                  );
+                })}
+              </ManagerSnapshotTable>
+            </ManagerHomeSection>
+          ) : null}
+
+          {canDashboard || canReports ? (
+            <ManagerHomeSection
+              title={t("managerHome.section.insights")}
+              testId="manager-home-insights"
+            >
+              <ManagerActionGrid>
+                {canDashboard ? (
+                  <ManagerInsightCard
+                    label={t("dashboard.open")}
+                    href="/dashboard"
+                    icon={BarChart3}
+                    testId="manager-insight-dashboard"
+                  />
+                ) : null}
+                {canReports ? (
+                  <ManagerInsightCard
+                    label={t("reports.open")}
+                    href="/reports"
+                    icon={FileBarChart}
+                    testId="manager-insight-reports"
+                  />
+                ) : null}
+              </ManagerActionGrid>
+            </ManagerHomeSection>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}

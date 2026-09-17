@@ -1,29 +1,58 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { canInviteOrganizationStaff, canManageBranchFulfillment } from "@/access/pos-capabilities";
+import { LockKeyhole, Plus, RotateCcw, X } from "lucide-react";
+import {
+  canInviteOrganizationStaff,
+  canManageBranchFulfillment,
+  canUseWarehouseBranches,
+} from "@/access/pos-capabilities";
 import { createOrganizationBranch } from "@/api/platform/organization-branches-client";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Notice } from "@/components/exits/Notice";
 import { suggestBranchCode } from "@/features/branches/branch-code";
 import {
   BRANCH_DEFAULT_COUNTRY_CODE,
   BRANCH_DEFAULT_TIME_ZONE,
 } from "@/features/branches/branch-defaults";
+import {
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function resolveInitialBranchType(
+  typeParam: string | null,
+  warehouseAllowed: boolean,
+): OrganizationBranchType {
+  const normalized = (typeParam ?? "").trim().toLowerCase();
+  if (normalized === "warehouse") {
+    return warehouseAllowed ? "Warehouse" : "Retail";
+  }
+  return "Retail";
+}
 
 export function BranchCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
+  const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const typeParam = searchParams.get("type");
+
+  const initialType = useMemo(
+    () => resolveInitialBranchType(typeParam, warehouseAllowed),
+    [typeParam, warehouseAllowed],
+  );
 
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [codeTouched, setCodeTouched] = useState(false);
+  const [branchType, setBranchType] = useState<OrganizationBranchType>(initialType);
   const [contactPhone, setContactPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -33,10 +62,28 @@ export function BranchCreatePage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
+    setBranchType(resolveInitialBranchType(typeParam, warehouseAllowed));
+  }, [typeParam, warehouseAllowed]);
+
+  useEffect(() => {
     if (!codeTouched) {
       setCode(suggestBranchCode(name));
     }
   }, [name, codeTouched]);
+
+  function resetForm() {
+    setName("");
+    setCode("");
+    setCodeTouched(false);
+    setBranchType(resolveInitialBranchType(typeParam, warehouseAllowed));
+    setContactPhone("");
+    setAddressLine1("");
+    setAddressLine2("");
+    setCity("");
+    setRegion("");
+    setPostalCode("");
+    setFormError(null);
+  }
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -54,6 +101,7 @@ export function BranchCreatePage() {
       const result = await createOrganizationBranch(organizationId, {
         name: trimmedName,
         code: trimmedCode,
+        branchType,
         contactPhone: contactPhone.trim() || null,
         addressLine1: addressLine1.trim() || null,
         addressLine2: addressLine2.trim() || null,
@@ -74,6 +122,9 @@ export function BranchCreatePage() {
         if (codeHint.includes("capacity_exceeded")) {
           throw new Error(t("branches.create.capacityExceeded"));
         }
+        if (codeHint.includes("warehouse_entitlement")) {
+          throw new Error(t("branches.create.warehouseEntitlement"));
+        }
         throw new Error(result.body?.detail ?? t("branches.create.failed"));
       }
       return result.value;
@@ -86,11 +137,27 @@ export function BranchCreatePage() {
     },
   });
 
+  const pageTitle =
+    branchType === "Warehouse"
+      ? t("branches.create.title.warehouse")
+      : t("branches.create.title.retail");
+  const detailsTitle =
+    branchType === "Warehouse"
+      ? t("branches.create.details.warehouse")
+      : t("branches.create.details.retail");
+  const submitLabel =
+    branchType === "Warehouse"
+      ? t("branches.create.submit.warehouse")
+      : t("branches.create.submit.retail");
+
   if (!canManage || !canCreate) {
     return (
-      <div className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3" data-testid="branch-create-denied">
+      <div
+        className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3"
+        data-testid="branch-create-denied"
+      >
         <PageHeader
-          title={t("branches.create.title")}
+          title={pageTitle}
           description={t("branches.mgmt.denied")}
           backTo="/org/branches"
           backLabel={t("branches.backList")}
@@ -101,9 +168,13 @@ export function BranchCreatePage() {
   }
 
   return (
-    <div className="branch-mgmt-page exits-page flex min-w-0 flex-col gap-3" data-testid="branch-create-page">
+    <div
+      className="branch-mgmt-page branch-create-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="branch-create-page"
+      data-branch-type={branchType}
+    >
       <PageHeader
-        title={t("branches.create.title")}
+        title={pageTitle}
         description={t("branches.create.lede")}
         backTo="/org/branches"
         backLabel={t("branches.backList")}
@@ -111,30 +182,39 @@ export function BranchCreatePage() {
       />
 
       <form
-        className="flex flex-col gap-3"
+        className="branch-create-form flex flex-col gap-3"
         onSubmit={(event) => {
           event.preventDefault();
           setFormError(null);
           createMutation.mutate();
         }}
       >
-        <section className="catalog-form-section exits-animate-panel gap-3">
-          <h2 className="catalog-form-section__title">{t("branches.create.title")}</h2>
+        <section
+          className="catalog-form-section exits-animate-panel gap-3"
+          data-testid="branch-create-details"
+        >
+          <h2 className="catalog-form-section__title exits-type-section-title">
+            {detailsTitle}
+          </h2>
           <div className="catalog-form-section__grid">
-            <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("branches.create.name")}
+            <label className="exits-type-label flex flex-col gap-1.5">
+              {branchType === "Warehouse"
+                ? t("branches.create.name.warehouse")
+                : t("branches.create.name")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 data-testid="branch-create-name"
                 required
               />
             </label>
-            <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("branches.create.code")}
+            <label className="exits-type-label flex flex-col gap-1.5">
+              {branchType === "Warehouse"
+                ? t("branches.create.code.warehouse")
+                : t("branches.create.code")}
               <input
-                className="catalog-form-select font-normal uppercase"
+                className="exits-input uppercase"
                 value={code}
                 onChange={(e) => {
                   setCodeTouched(true);
@@ -143,82 +223,124 @@ export function BranchCreatePage() {
                 data-testid="branch-create-code"
                 required
               />
-              <span className="font-normal text-muted">{t("branches.create.codeHelper")}</span>
             </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("branches.contactPhone")}
-              <input
-                className="catalog-form-select font-normal"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                data-testid="branch-create-phone"
-              />
-            </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <fieldset className="exits-type-label flex flex-col gap-1.5" data-testid="branch-create-type">
+              <legend className="px-0">{t("branches.type")}</legend>
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t("branches.type")}>
+                <Button
+                  type="button"
+                  variant={branchType === "Retail" ? "default" : "secondary"}
+                  onClick={() => setBranchType("Retail")}
+                  data-testid="branch-create-type-retail"
+                >
+                  {t("branches.type.retail")}
+                </Button>
+                {warehouseAllowed ? (
+                  <Button
+                    type="button"
+                    variant={branchType === "Warehouse" ? "default" : "secondary"}
+                    onClick={() => setBranchType("Warehouse")}
+                    data-testid="branch-create-type-warehouse"
+                  >
+                    {t("branches.type.warehouse")}
+                  </Button>
+                ) : null}
+              </div>
+              {warehouseAllowed ? (
+                <span className="branch-create-field-helper">
+                  {branchType === "Warehouse"
+                    ? t("branches.type.warehouseHelp")
+                    : t("branches.type.retailHelp")}
+                </span>
+              ) : (
+                <p
+                  className="branch-create-entitlement m-0"
+                  data-testid="branch-create-warehouse-locked"
+                >
+                  <LockKeyhole className="size-3.5 shrink-0" aria-hidden />
+                  <span>{t("branches.type.warehouseLocked")}</span>
+                </p>
+              )}
+            </fieldset>
+            <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.timeZone")}
               <input
-                className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+                className="exits-input"
                 value={BRANCH_DEFAULT_TIME_ZONE}
                 readOnly
                 aria-readonly="true"
                 data-testid="branch-create-timezone"
               />
             </label>
+            <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
+              {t("branches.contactPhone")}
+              <input
+                className="exits-input"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                data-testid="branch-create-phone"
+              />
+            </label>
           </div>
         </section>
 
-        <section className="catalog-form-section exits-animate-panel gap-3" data-testid="branch-create-address">
-          <h2 className="catalog-form-section__title">{t("branches.addressTitle")}</h2>
+        <section
+          className="catalog-form-section exits-animate-panel gap-3"
+          data-testid="branch-create-address"
+        >
+          <h2 className="catalog-form-section__title exits-type-section-title">
+            {t("branches.addressTitle")}
+          </h2>
           <div className="catalog-form-section__grid">
-            <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
               {t("branches.addressLine1")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={addressLine1}
                 onChange={(e) => setAddressLine1(e.target.value)}
                 data-testid="branch-create-address1"
               />
             </label>
-            <label className="catalog-form-field--full flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="catalog-form-field--full exits-type-label flex flex-col gap-1.5">
               {t("branches.addressLine2")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value)}
                 data-testid="branch-create-address2"
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.city")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 data-testid="branch-create-city"
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.region")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 data-testid="branch-create-region"
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.postalCode")}
               <input
-                className="catalog-form-select font-normal"
+                className="exits-input"
                 value={postalCode}
                 onChange={(e) => setPostalCode(e.target.value)}
                 data-testid="branch-create-postal"
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
+            <label className="exits-type-label flex flex-col gap-1.5">
               {t("branches.countryCode")}
               <input
-                className="catalog-form-select bg-[var(--exits-surface-muted)] font-normal"
+                className="exits-input"
                 value={BRANCH_DEFAULT_COUNTRY_CODE}
                 readOnly
                 aria-readonly="true"
@@ -229,27 +351,36 @@ export function BranchCreatePage() {
         </section>
 
         {formError ? (
-          <div className="exits-alert exits-alert--error" role="alert" data-testid="branch-create-error">
-            <p className="m-0 text-[length:var(--exits-text-sm)]">{formError}</p>
-          </div>
+          <Notice tone="danger" testId="branch-create-error">{formError}</Notice>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            onClick={() => navigate("/org/branches")}
-          >
-            {t("branches.cancel")}
-          </Button>
+        <div className="branch-create-actions gap-3">
           <Button
             type="submit"
-            className="min-h-11"
             disabled={createMutation.isPending}
             data-testid="branch-create-submit"
           >
-            {createMutation.isPending ? t("branches.create.creating") : t("branches.create.submit")}
+            <Plus className="size-4 shrink-0" aria-hidden />
+            {createMutation.isPending ? t("branches.create.creating") : submitLabel}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="branch-create-cancel"
+            onClick={() => navigate("/org/branches")}
+          >
+            <X className="size-4 shrink-0" aria-hidden />
+            {t("branches.cancel")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            data-testid="branch-create-reset"
+            disabled={createMutation.isPending}
+            onClick={resetForm}
+          >
+            <RotateCcw className="size-4 shrink-0" aria-hidden />
+            {t("branches.create.reset")}
           </Button>
         </div>
       </form>

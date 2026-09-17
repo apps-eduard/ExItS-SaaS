@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Plus, ShieldCheck, UserRound } from "lucide-react";
+import { Inbox, MoreHorizontal, Plus, ShieldCheck, UserRound } from "lucide-react";
 import {
   listMembershipBranchAssignments,
   type BranchAccessScopeDto,
@@ -35,6 +35,7 @@ import {
 } from "@/features/staff/staff-branch-access";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
@@ -447,9 +448,7 @@ export function OrgStaffPage() {
       />
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
       {staffQuery.isLoading ? <LoadingSkeleton count={4} label={t("loading.label")} /> : null}
@@ -467,7 +466,7 @@ export function OrgStaffPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => void staffQuery.refetch()}
           >
             {t("staffManage.retry")}
@@ -477,7 +476,9 @@ export function OrgStaffPage() {
 
       {staffQuery.isSuccess && rows.length === 0 ? (
         <section className="catalog-form-section exits-animate-panel" data-testid="org-staff-empty">
-          <EmptyState title={t("staffManage.emptyTitle")} detail={t("staffManage.emptyMessage")} />
+          <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("staffManage.emptyTitle")} detail={t("staffManage.emptyMessage")} />
         </section>
       ) : null}
 
@@ -626,6 +627,11 @@ function StaffMemberRow({
     unknownLabel: t("staffManage.branchAccessUnknown"),
     areaNames: row.assignedAreaNames,
     areasLabel: t("staffAssign.areasSummary"),
+    formatLocationCount: (count) =>
+      count === 1
+        ? t("workspace.locationCountOne")
+        : t("workspace.locationCountMany").replace("{count}", String(count)),
+    formatSingleAreaName: (name) => t("staffAssign.areaNameLabel").replace("{name}", name),
   });
 
   return (
@@ -707,6 +713,16 @@ function StaffMemberRow({
             </p>
           ) : (
             <div className="staff-row__actions">
+              {showPosRoleAction ? (
+                <Button asChild variant="outline" className="staff-row__action">
+                  <Link
+                    to={`/org/staff/${encodeURIComponent(row.membershipId)}`}
+                    data-testid={`org-staff-detail-${row.membershipId}`}
+                  >
+                    {t("staffBusinessProfile.viewProfile")}
+                  </Link>
+                </Button>
+              ) : null}
               {showPosRoleAction ? (
                 <Button asChild variant="outline" className="staff-row__action">
                   <Link

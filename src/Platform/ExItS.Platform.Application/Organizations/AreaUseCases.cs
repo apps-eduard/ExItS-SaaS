@@ -95,6 +95,13 @@ public sealed class CreateOrganizationArea(
         }
 
         var activeCount = await areas.CountActiveAsync(organizationId, cancellationToken).ConfigureAwait(false);
+        if (limit.Value.MaxAreas <= 0)
+        {
+            return ApplicationResult<OrganizationAreaDto>.Failure(
+                ApplicationErrorCodes.AreaManagementEntitlementRequired,
+                "Area management requires a Pro or Pro+ plan.");
+        }
+
         if (activeCount >= limit.Value.MaxAreas)
         {
             return ApplicationResult<OrganizationAreaDto>.Failure(

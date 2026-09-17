@@ -137,6 +137,9 @@ async function throwIfNotOk(
     errorCode: problem.errorCode,
     path,
   });
+  if (import.meta.env.DEV) {
+    console.warn("[pos-api]", response.status, path, problem.errorCode ?? problem.detail ?? "");
+  }
   throw new PosApiError(response.status, problem, requestCorrelationId);
 }
 

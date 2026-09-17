@@ -151,10 +151,17 @@ internal static class RepaymentEndpoints
                     ct2 => useCase.ExecuteAsync(
                         organizationId,
                         customerId,
-                        body.Amount,
-                        body.Remarks,
+                        new CreateUtangRepaymentCommand(
+                            body.Amount,
+                            body.Remarks,
+                            body.PaymentMethod,
+                            body.CheckNumber,
+                            body.BankName,
+                            body.CheckDate,
+                            body.AccountName,
+                            body.Reference,
+                            body.RepaymentId),
                         actorId,
-                        body.RepaymentId,
                         ct2),
                     RepaymentQueryService.Map,
                     dto => Results.Created(
@@ -190,6 +197,90 @@ internal static class RepaymentEndpoints
                     "Repayment was not found.",
                     StatusCodes.Status404NotFound)
                 : Results.Ok(repayment);
+        });
+
+        repaymentGroup.MapPost("/{repaymentId:guid}/clear-check", async (
+            HttpRequest request,
+            Guid repaymentId,
+            ClearCheckRepayment useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.RecordRepayment, out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase.ExecuteAsync(organizationId, repaymentId, actorId, ct).ConfigureAwait(false);
+            return PosApiResults.FromResult(result, r => Results.Ok(RepaymentQueryService.Map(r)));
+        });
+
+        repaymentGroup.MapPost("/{repaymentId:guid}/bounce-check", async (
+            HttpRequest request,
+            Guid repaymentId,
+            CheckDispositionRequest body,
+            BounceCheckRepayment useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.RecordRepayment, out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, repaymentId, actorId, body.Reason, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, r => Results.Ok(RepaymentQueryService.Map(r)));
+        });
+
+        repaymentGroup.MapPost("/{repaymentId:guid}/cancel-check", async (
+            HttpRequest request,
+            Guid repaymentId,
+            CheckDispositionRequest body,
+            CancelCheckRepayment useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.RecordRepayment, out problem))
+            {
+                return problem!;
+            }
+
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, repaymentId, actorId, body.Reason, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, r => Results.Ok(RepaymentQueryService.Map(r)));
         });
 
         repaymentGroup.MapPost("/{repaymentId:guid}/reverse", async (
@@ -232,6 +323,20 @@ internal static class RepaymentEndpoints
     }
 }
 
-public sealed record CreateRepaymentRequest(decimal Amount, string? Remarks, Guid? RepaymentId = null);
+public sealed record CreateRepaymentRequest(
+    decimal Amount,
+    string? Remarks,
+    Guid? RepaymentId = null,
+    string? PaymentMethod = null,
+    string? CheckNumber = null,
+    string? BankName = null,
+    DateOnly? CheckDate = null,
+    string? AccountName = null,
+    string? Reference = null,
+    IReadOnlyList<RepaymentAllocationRequest>? Allocations = null);
+
+public sealed record RepaymentAllocationRequest(Guid CreditEntryId, decimal Amount);
 
 public sealed record ReverseRepaymentRequest(string Reason);
+
+public sealed record CheckDispositionRequest(string? Reason = null);

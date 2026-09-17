@@ -87,11 +87,15 @@ export function OrganizationRolesPage() {
   const params = useParams();
   const authorization = useAuthorization();
   const organizationId = parseOrganizationId(params.organizationId);
-  const canAccess = authorization.hasPermission(PLATFORM_PERMISSIONS.manageMemberships);
-  const canManage = canAccess;
+  const canView = authorization.hasAnyPermission([
+    PLATFORM_PERMISSIONS.viewPortfolio,
+    PLATFORM_PERMISSIONS.manageOrganizations,
+    PLATFORM_PERMISSIONS.manageMemberships,
+  ]);
+  const canManage = authorization.hasPermission(PLATFORM_PERMISSIONS.manageMemberships);
   const [searchParams, setSearchParams] = useSearchParams();
   const state = useMemo(() => parseRolesSearchParams(searchParams), [searchParams]);
-  const query = useOrganizationRolesQuery(organizationId, state);
+  const query = useOrganizationRolesQuery(canView ? organizationId : null, state);
   const catalogQuery = useOrganizationPermissionCatalogQuery(canManage);
   const createMutation = useCreateOrganizationRoleMutation();
   const activateMutation = useActivateOrganizationRoleMutation();
@@ -112,7 +116,7 @@ export function OrganizationRolesPage() {
     return null;
   }
 
-  if (!canAccess) {
+  if (!canView) {
     return (
       <section className="grid max-w-3xl gap-4">
         <PageHeader title={t("organization.roles.title")} description={t("organization.roles.description")} />

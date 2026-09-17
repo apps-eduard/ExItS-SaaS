@@ -45,7 +45,9 @@ public enum StockMovementType
     /// <summary>Compensating reversal when a PO goods receipt is voided.</summary>
     PurchaseReceiptReversal = 22,
     /// <summary>Compensating reversal when a direct purchase receipt is voided.</summary>
-    DirectPurchaseReceiptReversal = 23
+    DirectPurchaseReceiptReversal = 23,
+    /// <summary>Supplier stock decrease when a connected purchase order is fulfilled/delivered.</summary>
+    ConnectedPurchaseFulfillment = 24
 }
 
 public static class StockMovementTypes
@@ -77,7 +79,8 @@ public static class StockMovementTypes
         nameof(StockMovementType.WasteLoss),
         nameof(StockMovementType.WasteLossVoidRestoration),
         nameof(StockMovementType.PurchaseReceiptReversal),
-        nameof(StockMovementType.DirectPurchaseReceiptReversal)
+        nameof(StockMovementType.DirectPurchaseReceiptReversal),
+        nameof(StockMovementType.ConnectedPurchaseFulfillment)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

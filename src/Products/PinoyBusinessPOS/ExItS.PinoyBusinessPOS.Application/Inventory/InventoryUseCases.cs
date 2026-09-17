@@ -59,7 +59,14 @@ public sealed class InventoryQueryService
             .GetMovementSummaryAsync(orgId, catalogProductId, cancellationToken)
             .ConfigureAwait(false);
         var hasOpeningStock = await _inventory
-            .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+            .HasOpeningStockForBranchAsync(
+                orgId,
+                catalogProductId,
+                PosBranchId.From(context.BranchId),
+                context.PrimaryBranchId is Guid primary
+                    ? PosBranchId.From(primary)
+                    : null,
+                cancellationToken)
             .ConfigureAwait(false);
 
         decimal? sellable = null;
@@ -131,7 +138,10 @@ public sealed class InventoryQueryService
             filter.TrackedOnly,
             filter.LowStockOnly,
             filter.ReorderSuggestedOnly,
-            filter.ProductStatus);
+            filter.ProductStatus,
+            filter.StockStatus,
+            filter.MonitoringMode,
+            filter.CategoryId);
         var (rows, total) = await _branchInventory
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
@@ -309,10 +319,16 @@ public sealed class InventoryQueryService
 
     private static PosInventoryAccountDto MapFromBranchRow(BranchInventoryListRow row)
     {
-        var stockStatus = row.IsTracked
-            ? InventoryStockStatuses.ToCode(
-                InventoryStockStatuses.Derive(row.IsTracked, row.BranchOnHand, row.ReorderLevel))
-            : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
+        var available = row.BranchAvailable;
+        var stockStatus = string.Equals(
+                row.MonitoringMode,
+                InventoryReorderMonitoringModes.NotMonitored,
+                StringComparison.Ordinal)
+            ? "—"
+            : row.IsTracked
+                ? InventoryStockStatuses.ToCode(
+                    InventoryStockStatuses.Derive(row.IsTracked, available, row.ReorderLevel))
+                : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
             row.ProductId,
@@ -338,7 +354,14 @@ public sealed class InventoryQueryService
             null,
             null,
             row.HasOpeningStock,
-            row.OrganizationOnHand);
+            row.OrganizationOnHand,
+            row.Sku,
+            row.Barcode,
+            row.CategoryId,
+            row.CategoryName,
+            row.MonitoringMode,
+            row.BranchReserved,
+            available);
     }
 
     public static PosInventoryAccountDto Map(
@@ -354,13 +377,20 @@ public sealed class InventoryQueryService
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = branchRead?.BranchOnHand ?? account?.OnHandQuantity ?? 0m;
+        var reserved = branchRead?.BranchReserved ?? account?.ReservedQuantity ?? 0m;
+        var available = branchRead?.BranchAvailable ?? account?.AvailableQuantity ?? onHand - reserved;
+        if (available < 0m)
+        {
+            available = 0m;
+        }
+
         var reorder = branchRead?.ReorderLevel ?? account?.ReorderLevel;
         var reorderQty = branchRead?.ReorderQuantity ?? account?.ReorderQuantity;
         var isLow = branchRead?.IsLowStock ?? account?.IsLowStock ?? false;
         var isReorderSuggested = branchRead?.IsReorderSuggested ?? account?.IsReorderSuggested ?? false;
         var suggestedQty = branchRead?.SuggestedOrderQuantity ?? account?.SuggestedOrderQuantity;
         var stockStatus = isTracked
-            ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, onHand, reorder))
+            ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, available, reorder))
             : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
@@ -387,7 +417,14 @@ public sealed class InventoryQueryService
             expiredQuantity,
             nearExpiryQuantity,
             hasOpeningStock,
-            branchRead?.OrganizationOnHand ?? account?.OnHandQuantity);
+            branchRead?.OrganizationOnHand ?? account?.OnHandQuantity,
+            product.Sku,
+            product.Barcode,
+            product.CategoryId?.Value,
+            null,
+            "BranchDefault",
+            reserved,
+            available);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)
@@ -503,8 +540,19 @@ public sealed class EnableInventoryTracking
                 created = true;
             }
 
+            var primaryBranchGuid = _branches is null
+                ? (Guid?)null
+                : await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            var primaryBranch = primaryBranchGuid is Guid primary
+                ? PosBranchId.From(primary)
+                : null;
             var hadOpening = await _inventory
-                .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+                .HasOpeningStockForBranchAsync(
+                    orgId,
+                    catalogProductId,
+                    actingBranch,
+                    primaryBranch,
+                    cancellationToken)
                 .ConfigureAwait(false);
             var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.Enable(
@@ -683,9 +731,48 @@ public sealed class AddOpeningStock
                     "Inventory is not tracked for this product.");
             }
 
+            var primaryBranchGuid = _branches is null
+                ? (Guid?)null
+                : await _branches.GetPrimaryBranchIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
+            var primaryBranch = primaryBranchGuid is Guid primary
+                ? PosBranchId.From(primary)
+                : null;
+
             var hadOpening = await _inventory
-                .HasOpeningStockAsync(orgId, catalogProductId, cancellationToken)
+                .HasOpeningStockForBranchAsync(
+                    orgId,
+                    catalogProductId,
+                    actingBranch,
+                    primaryBranch,
+                    cancellationToken)
                 .ConfigureAwait(false);
+            if (hadOpening)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryOpeningDuplicate,
+                    "Opening stock has already been recorded for this product at this location.");
+            }
+
+            var productBalances = await _branchBalances
+                .ListByProductIdsAsync(orgId, [catalogProductId], cancellationToken)
+                .ConfigureAwait(false);
+            var branchOnHand = BranchStockResolver.ResolveOnHand(
+                actingBranch,
+                primaryBranchGuid,
+                account.OnHandQuantity,
+                productBalances,
+                catalogProductId);
+            var branchReserved = BranchStockResolver.ResolveReserved(
+                actingBranch,
+                productBalances,
+                catalogProductId);
+            if (branchOnHand != 0m || branchReserved != 0m)
+            {
+                return ApplicationResult<InventoryAccount>.Failure(
+                    DomainErrorCodes.InventoryOpeningRequiresZeroOnHand,
+                    "Opening stock can only be added when this location's on-hand and reserved quantities are zero.");
+            }
+
             var utcNow = _clock.UtcNow;
             var orgOnHandBefore = account.OnHandQuantity;
             var opening = account.RecordOpeningStock(
@@ -693,7 +780,7 @@ public sealed class AddOpeningStock
                 product.UnitOfMeasure,
                 actorId,
                 utcNow,
-                hadOpening,
+                hasOpeningStockAlready: false,
                 product.SellingMode,
                 unitCost);
             opening = opening.WithBranch(actingBranch.Value);
@@ -796,6 +883,22 @@ public sealed class DisableInventoryTracking
             return ApplicationResult<InventoryAccount>.Failure(
                 ApplicationErrorCodes.InventoryAccountNotFound,
                 "Inventory account was not found.");
+        }
+
+        if (product.CanBeUsedAsIngredient)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                DomainErrorCodes.IngredientRequiresTrackedInventory,
+                IngredientInventoryTracking.RequiresTrackedMessage);
+        }
+
+        var shareGate = ConnectedBuyerSharingRules.ValidateCanDisableTracking(
+            product.CanExposeToConnectedBuyers);
+        if (!shareGate.IsSuccess)
+        {
+            return ApplicationResult<InventoryAccount>.Failure(
+                shareGate.ErrorCode!,
+                shareGate.ErrorMessage!);
         }
 
         try

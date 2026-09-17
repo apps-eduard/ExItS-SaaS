@@ -60,7 +60,12 @@ public sealed class RequestConnectionBusinessQrTests
             return Task.CompletedTask;
         }
 
-        public Task<string> AllocateNextSupplierCodeAsync(
+                public Task<Supplier?> FindByConnectedRelationshipIdAsync(
+            PosOrganizationId organizationId,
+            ConnectedSupplierRelationshipId relationshipId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Supplier?>(null);
+public Task<string> AllocateNextSupplierCodeAsync(
             PosOrganizationId organizationId,
             CancellationToken cancellationToken = default)
         {

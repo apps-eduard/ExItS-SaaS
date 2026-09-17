@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
@@ -117,6 +118,42 @@ public interface IConnectedPurchaseOrderRepository
     Task<ConnectedPurchaseOrder?> GetAsync(ConnectedPurchaseOrderId id, CancellationToken ct = default);
     Task<ConnectedPurchaseOrder?> GetByBuyerPurchaseOrderAsync(PurchaseOrderId id, CancellationToken ct = default);
     Task<IReadOnlyList<ConnectedPurchaseOrder>> ListIncomingAsync(PosOrganizationId supplier, CancellationToken ct = default);
+    /// <summary>Buyer↔seller connected POs used for Utang reservation totals.</summary>
+    Task<IReadOnlyList<ConnectedPurchaseOrder>> ListBetweenOrganizationsAsync(
+        PosOrganizationId supplierOrganizationId,
+        PosOrganizationId buyerOrganizationId,
+        CancellationToken ct = default);
     Task AddAsync(ConnectedPurchaseOrder order, CancellationToken ct = default);
     Task UpdateAsync(ConnectedPurchaseOrder order, CancellationToken ct = default);
+}
+
+public interface IConnectedPoInventoryReservationRepository
+{
+    Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListActiveByOrderAsync(
+        ConnectedPurchaseOrderId orderId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListByOrderAsync(
+        ConnectedPurchaseOrderId orderId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListByProductBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Remaining qty on Active rows whose ExpiresAtUtc has passed (before status cleanup).
+    /// Keyed by product id.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, decimal>> SumExpiredStillActiveRemainingByProductAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        DateTimeOffset utcNow,
+        CancellationToken ct = default);
+
+    Task AddAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
+    Task UpdateAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
 }

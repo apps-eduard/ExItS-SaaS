@@ -1,0 +1,70 @@
+---
+description: ExItS POS React reuse - share same-domain interactions; Personal vs Business keep/share rules; search before inventing
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# ExItS POS UI Reuse & Interactions
+
+Authoritative overview: `src/Products/PinoyBusinessPOS/Docs/UI/EXITS_UI_STANDARD.md`  
+When uncertain: inspect `/ui-standards` then production components.
+
+## Core rule
+
+**Same domain behavior + same interaction → share the component.**  
+**Different identity/domain semantics → specialized adapters around a shared core.**
+
+Prefer: shared component/core + thin domain adapters.
+
+## Before implementing a new component
+
+1. Search existing shared components (`components/ui/`, `components/exits/`)
+2. Search Personal equivalent
+3. Search Business equivalent
+4. Search Supplier / Sales / Inventory equivalents when relevant
+5. Inspect `/ui-standards`
+
+If equivalent behavior exists → reuse or extract shared.  
+Do **not** duplicate only because routes, Personal vs Business pages, labels, or API client names differ.
+
+## Personal vs Business
+
+### Share when domain behavior matches
+
+- Credit & payment terms / edit credit terms
+- Branch access
+- Statement
+- Record payment / payment history / pending checks
+- Balance / credit presentation
+- Responsive data patterns
+
+### Keep specialized
+
+**Personal:** canonical Personal profile · ExItS identity · Store customer details  
+
+**Business:** Organization Information · Relationship Contact · Organization staff/custom contact · B2B relationship state  
+
+Do **not** force identity/profile components together merely because they visually resemble each other.
+
+## Interaction shells (reuse, do not fork)
+
+| Need | Canonical |
+|------|-----------|
+| Entity create/edit | `FormDrawer` |
+| Short contextual action | `ExitsModal` |
+| Confirm destructive/status | `ConfirmActionDialog` |
+| Toast feedback | `useExitsToast()` |
+| Status display | `StatusChip` |
+| Collections | `ExitsResponsiveDataView` |
+
+## Preferences & a11y
+
+Shared interactions must respect Theme, Control Shape, Density, Motion, Primary Palette. Prefer Auto shape. Preserve keyboard, focus, `aria-label` / tooltips on compact actions.
+
+## Auto-infer
+
+User asks for a feature similar to an existing one → search and reuse (or extract shared core) before building another copy.
+
+## Exceptions
+
+Do not damage domain UX for reuse theater. If specialization is required, keep adapters thin and document why a shared component was insufficient.

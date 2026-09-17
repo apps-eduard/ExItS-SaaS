@@ -13,7 +13,8 @@ public sealed record PosCustomerStatementLineDto(
     string? DueStatus,
     bool IsOverdue,
     bool IsReversed,
-    decimal RunningBalance);
+    decimal RunningBalance,
+    Guid? SourceSaleId = null);
 
 public sealed record PosCustomerStatementDto(
     Guid OrganizationId,

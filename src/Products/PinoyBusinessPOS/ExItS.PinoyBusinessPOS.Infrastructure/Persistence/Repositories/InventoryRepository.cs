@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -189,11 +190,15 @@ internal sealed class InventoryRepository : IInventoryRepository
 
     public async Task UpdateAccountAsync(InventoryAccount account, CancellationToken cancellationToken = default)
     {
-        var record = await _db.InventoryAccounts
-            .FirstOrDefaultAsync(
-                a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value,
-                cancellationToken)
-            .ConfigureAwait(false);
+        // Prefer Local so same-UoW AddAccountAsync + UpdateAccountAsync works
+        // (e.g. PO receive enableTrackingIfNeeded creating a new account then posting stock).
+        var record = _db.InventoryAccounts.Local.FirstOrDefault(
+                a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value)
+            ?? await _db.InventoryAccounts
+                .FirstOrDefaultAsync(
+                    a => a.Id == account.Id.Value && a.OrganizationId == account.OrganizationId.Value,
+                    cancellationToken)
+                .ConfigureAwait(false);
         if (record is null)
         {
             throw new PersistenceConflictException(
@@ -336,6 +341,23 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.ProductId == productId.Value
                 && m.MovementType == nameof(StockMovementType.OpeningStock),
             cancellationToken);
+
+    public Task<bool> HasOpeningStockForBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        PosBranchId? primaryBranchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var targetBranch = branchId.Value;
+        var isPrimary = primaryBranchId is not null && primaryBranchId.Value == targetBranch;
+        return _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.MovementType == nameof(StockMovementType.OpeningStock)
+                && (m.BranchId == targetBranch || (isPrimary && m.BranchId == null)),
+            cancellationToken);
+    }
 
     public async Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListReorderSuggestionsAsync(
         PosOrganizationId organizationId,
@@ -677,6 +699,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.DirectPurchase)
                 && m.MovementType == nameof(StockMovementType.DirectPurchaseReceiptReversal),
+            cancellationToken);
+
+    public Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == connectedPurchaseOrderId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.ConnectedPurchaseOrder)
+                && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillment),
             cancellationToken);
 
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(

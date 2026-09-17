@@ -1,0 +1,116 @@
+---
+description: ExItS POS React UI architecture - reuse global components; FormDrawer/Modal/Confirm decisions; button semantics; preferences
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# ExItS POS UI Architecture
+
+Authoritative docs: `src/Products/PinoyBusinessPOS/Docs/UI/EXITS_UI_STANDARD.md`  
+Visual source of truth: `/ui-standards` (production components win over demo text)
+
+When implementing or modifying PinoyBusinessPOS React UI, follow these defaults unless the user explicitly overrides.
+
+## Audit before creating
+
+Before any new UI primitive:
+
+1. Search shared components (`components/ui/`, `components/exits/`)
+2. Inspect `/ui-standards` and `Docs/UI/`
+3. Search equivalent feature patterns (Personal / Business / Supplier / Sales / Inventory)
+4. Reuse or extend the canonical component when semantics match
+
+Do **not** create a new Button system, modal/drawer shell, confirmation dialog, toast system, status badge, table system, or empty/loading/error state when a canonical ExItS component exists.
+
+## Canonical components
+
+| Concern | Use |
+|--------|-----|
+| Actions | `Button`, `EXITS_ACTIONS` / action-icons, `TableActionButton` |
+| Status | `StatusChip` |
+| Overlays | `ExitsModal`, `FormDrawer`, `ConfirmActionDialog` |
+| Feedback | `useExitsToast()` |
+| Data | `ExitsTable`, `ExitsResponsiveDataView`, `ExitsDataRecordCard` |
+| Tabs | `ExitsTabs` / `UnderlineTabBar` |
+| States | `EmptyState`, `LoadingState`, `ErrorState` |
+| Forms | existing canonical form / select / search / upload controls |
+
+## Button semantics
+
+- **Intent/Tone:** Primary · Neutral · Success · Info · Warning · Danger
+- **Appearance:** Solid · Outline · Ghost · Elevated · Gradient
+- **Shape:** Auto · Standard · Soft · Pill · Round (where supported)
+
+Intent = meaning. Appearance = treatment. Shape = geometry.  
+Do **not** treat Outline / Ghost / Elevated / Gradient as semantic intents.  
+Prefer `shape="auto"` so global Control Shape applies.
+
+### Action hierarchy
+
+Prefer **one Primary** per action group (hierarchy, not verb):
+
+| Action | Default |
+|--------|---------|
+| Save / Create-as-main | Primary + Solid |
+| Add (secondary) / Edit / Preview / Print / Download / Retry | Neutral + Outline |
+| Cancel | Neutral + Ghost |
+| Activate | Success |
+| Deactivate | Warning |
+| Delete | Danger |
+
+Do not make two sibling actions both Primary merely because both verbs feel important.
+
+### Icons
+
+Use canonical action-icon mapping. Do not pick random Lucide alternatives for the same semantic action.  
+Table icon-only actions: canonical icon + `aria-label` + tooltip + preserved intent.
+
+## Create / edit / modal decision
+
+| Pattern | Shell | Examples |
+|---------|-------|----------|
+| Normal entity create/edit | **FormDrawer** (default) | Edit customer, supplier, staff, org profile, relationship contact, credit terms |
+| Short contextual action | **ExitsModal** | Record payment, small input/decision |
+| Confirmation | **ConfirmActionDialog** | Delete, deactivate, cancel, void, status/financial transitions |
+| Large / multi-step | **Page** | Checkout, quotation editor, wizards |
+
+Do not force everything into a drawer.  
+Feature owns fields, validation, API, domain rules.  
+Shell owns responsive behavior, a11y, header/footer, mobile layout, spacing.
+
+## Global feedback
+
+- Toast → `useExitsToast()` with `success` / `info` / `warning` / `error` — no feature-colored toast markup
+- Confirm → `ConfirmActionDialog` (`default` / `info` / `warning` / `danger`) — no custom confirm overlays
+- Status → `StatusChip`; prefer `shape="auto"` unless fixed shape is required
+
+## Global preferences
+
+Respect Theme (System/Light/Dark), Control Shape (Standard/Soft/Pill), Density (Compact/Balance/Comfort), Motion (System/Reduced), Primary Palette.  
+No feature-local alternatives. Prefer Auto shape for eligible controls.
+
+## Responsive / mobile
+
+Review Desktop · Tablet · Mobile. Avoid horizontal page overflow, fixed desktop widths, giant mobile cards, desktop-only action rows, modal/drawer keyboard clipping.  
+Use canonical FormDrawer / ExitsModal responsive behavior — do not recreate per feature.
+
+## Auto-infer when user omits presentation
+
+| Ask | Infer |
+|-----|--------|
+| customer list | `ExitsResponsiveDataView` (table desktop → cards compact) |
+| edit customer | `FormDrawer` |
+| record payment | `ExitsModal` |
+| delete quotation | `ConfirmActionDialog` + Danger |
+| add button | global `Button` + canonical icon/semantic + Primary hierarchy |
+| similar to existing feature | search/reuse first |
+
+## Exceptions
+
+Strong defaults — do not damage domain UX. If another presentation is required: inspect existing architecture, preserve correctness, document why the standard does not fit. Do not silently invent a new pattern. When uncertain → reuse + established standard.
+
+## Do / Don't
+
+**Do:** reuse globals · one Primary per group · Auto shape · ResponsiveDataView · share same-domain UI · semantic tokens · canonical icons · preserve a11y  
+
+**Don't:** random button styles · hardcode semantic colors · force desktop tables on mobile · duplicate Personal/Business financial UI · custom modal/confirm/toast systems · cards-inside-cards without hierarchy need

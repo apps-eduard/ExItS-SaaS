@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -45,6 +46,11 @@ public interface ISupplierRepository
     Task<Supplier?> FindActiveByNormalizedTaxAsync(
         PosOrganizationId organizationId,
         string normalizedTax,
+        CancellationToken cancellationToken = default);
+
+    Task<Supplier?> FindByConnectedRelationshipIdAsync(
+        PosOrganizationId organizationId,
+        ConnectedSupplierRelationshipId relationshipId,
         CancellationToken cancellationToken = default);
 
     Task<string> AllocateNextSupplierCodeAsync(

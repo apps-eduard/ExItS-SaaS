@@ -1,3 +1,4 @@
+import { Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -289,6 +291,8 @@ export function ProcessReturnPage() {
           {...headerBack}
         />
         <EmptyState
+              align="center"
+              icon={<Undo2 className="size-5" strokeWidth={1.75} />}
           title={t("returns.alreadyReturned")}
           detail={t("returns.alreadyReturnedDetail")}
         />
@@ -328,7 +332,7 @@ export function ProcessReturnPage() {
           </p>
         </Card>
         <div className="flex flex-wrap gap-2">
-          <Button asChild className="min-h-11" data-testid="returns-view-detail">
+          <Button asChild data-testid="returns-view-detail">
             <Link to={`/returns/${completedReturnId}`}>{t("returns.viewDetail")}</Link>
           </Button>
         </div>
@@ -398,7 +402,7 @@ export function ProcessReturnPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-full sm:w-auto"
+              className="w-full sm:w-auto"
               disabled={submitting}
               data-testid="returns-confirm-back"
               onClick={() => {
@@ -435,13 +439,7 @@ export function ProcessReturnPage() {
       </section>
 
       {staleNotice ? (
-        <div
-          data-testid="returns-stale-banner"
-          className="exits-alert exits-alert--error"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("returns.errorStale")}</p>
-        </div>
+        <Notice tone="danger" testId="returns-stale-banner">{t("returns.errorStale")}</Notice>
       ) : null}
 
       <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="returns-lines">
@@ -493,7 +491,7 @@ export function ProcessReturnPage() {
                         step={decimals > 0 ? 0.001 : 1}
                         value={draft.quantity || ""}
                         data-testid={`returns-qty-input-${line.saleLineId}`}
-                        className="min-h-11 w-28 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                        className="w-28 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                         onChange={(event) => {
                           const parsed = Number(event.target.value);
                           setLineQuantity(line, Number.isFinite(parsed) ? parsed : 0);
@@ -513,7 +511,6 @@ export function ProcessReturnPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     data-testid={`returns-return-all-${line.saleLineId}`}
                     disabled={draft.quantity >= line.refundableQuantity}
                     onClick={() => setLineQuantity(line, line.refundableQuantity)}
@@ -530,7 +527,6 @@ export function ProcessReturnPage() {
                     <Button
                       type="button"
                       variant={draft.disposition === "ReturnToStock" ? "default" : "ghost"}
-                      className="min-h-11"
                       data-testid={`returns-restock-${line.saleLineId}`}
                       onClick={() => setDisposition(line.saleLineId, "ReturnToStock")}
                     >
@@ -539,7 +535,6 @@ export function ProcessReturnPage() {
                     <Button
                       type="button"
                       variant={draft.disposition === "DoNotRestock" ? "default" : "ghost"}
-                      className="min-h-11"
                       data-testid={`returns-no-restock-${line.saleLineId}`}
                       onClick={() => setDisposition(line.saleLineId, "DoNotRestock")}
                     >
@@ -577,7 +572,7 @@ export function ProcessReturnPage() {
             type="text"
             required
             value={reason}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             onChange={(event) => setReason(event.target.value)}
           />
         </label>
@@ -591,7 +586,7 @@ export function ProcessReturnPage() {
             data-testid="returns-notes"
             type="text"
             value={notes}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             onChange={(event) => setNotes(event.target.value)}
           />
         </label>

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRight, Ban, PackageCheck, Truck } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -16,8 +17,12 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ConfirmationDialog } from "@/components/exits/SheetDialog";
+import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
   branchDisplayName,
@@ -26,27 +31,54 @@ import {
   inventoryTransferDiscrepancyLabelKey,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
+  isReceiveLineReady,
   parseReceivedQuantity,
 } from "@/features/inventory/inventory-transfer-labels";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Mode = "detail" | "receive";
+type ConfirmKind = "dispatch" | "cancel" | "receive" | null;
+type LocalError = { title: string; detail: string };
+
+function resolveTransferActionError(err: unknown, fallback: string): string {
+  if (err instanceof PosApiError) {
+    const detail = err.problem.detail?.trim();
+    if (detail) {
+      return detail;
+    }
+    const title = err.problem.title?.trim();
+    if (title) {
+      return title;
+    }
+    if (err.message.trim()) {
+      return err.message.trim();
+    }
+  }
+  return fallback;
+}
 
 export function InventoryTransferDetailPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const { transferId = "" } = useParams();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "transfers",
+    backLabel: t("transfer.backList"),
+    backTestId: "page-header-back-transfers",
+  });
 
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<LocalError | null>(null);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [mode, setMode] = useState<Mode>("detail");
+  const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [receivedByLine, setReceivedByLine] = useState<Record<string, string>>({});
   const [reasonByLine, setReasonByLine] = useState<Record<string, string>>({});
   const [noteByLine, setNoteByLine] = useState<Record<string, string>>({});
@@ -72,10 +104,10 @@ export function InventoryTransferDetailPage() {
   useEffect(() => {
     const flash = (location.state as { flash?: string } | null)?.flash;
     if (flash === "created") {
-      setSuccess(t("transfer.createdSuccess"));
+      showToast(t("transfer.createdSuccess"), "success");
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.pathname, location.state, navigate, t]);
+  }, [location.pathname, location.state, navigate, showToast, t]);
 
   useEffect(() => {
     if (!transfer || transfer.status !== "InTransit") {
@@ -94,10 +126,12 @@ export function InventoryTransferDetailPage() {
   async function refreshAfter(
     mutation: () => Promise<InventoryTransferDto>,
     successMessage: string,
+    failureTitle: string,
   ) {
-    if (!workspace || busy) {
+    if (!workspace || busyRef.current) {
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     setLocalError(null);
     try {
@@ -108,50 +142,34 @@ export function InventoryTransferDetailPage() {
       );
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
-      setSuccess(successMessage);
+      showToast(successMessage, "success");
       setMode("detail");
     } catch (err) {
-      setLocalError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("transfer.actionFailed"))
-          : t("transfer.actionFailed"),
-      );
+      const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
+      setLocalError({ title: failureTitle, detail });
+      showToast(detail, "error");
     } finally {
+      busyRef.current = false;
       setBusy(false);
+      setConfirmKind(null);
     }
   }
 
   async function onDispatch() {
-    if (!workspace || !transfer) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
-    const source = branchDisplayName(transfer.sourceBranchName, transfer.sourceBranchId);
-    const dest = branchDisplayName(transfer.destinationBranchName, transfer.destinationBranchId);
-    if (
-      !window.confirm(
-        t("transfer.dispatchConfirm")
-          .replace("{source}", source)
-          .replace("{destination}", dest)
-          .replace("{count}", String(transfer.lines.length)),
-      )
-    ) {
-      return;
-    }
+    const { transferId: id, destinationBranchName, destinationBranchId } = transfer;
+    const dest = branchDisplayName(destinationBranchName, destinationBranchId);
     await refreshAfter(
-      () => dispatchInventoryTransfer(workspace, transfer.transferId),
+      () => dispatchInventoryTransfer(workspace, id),
       t("transfer.dispatchedSuccess").replace("{destination}", dest),
+      t("transfer.dispatchFailedTitle"),
     );
   }
 
   async function onCancel() {
-    if (!workspace || !transfer) {
-      return;
-    }
-    const message =
-      transfer.status === "InTransit"
-        ? t("transfer.cancelInTransitConfirm")
-        : t("transfer.cancelDraftConfirm");
-    if (!window.confirm(message)) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
     const successMessage =
@@ -161,14 +179,15 @@ export function InventoryTransferDetailPage() {
             branchDisplayName(transfer.sourceBranchName, transfer.sourceBranchId),
           )
         : t("transfer.cancelledSuccess");
-    await refreshAfter(() => cancelInventoryTransfer(workspace, transfer.transferId), successMessage);
+    await refreshAfter(
+      () => cancelInventoryTransfer(workspace, transfer.transferId),
+      successMessage,
+      t("transfer.cancelFailedTitle"),
+    );
   }
 
   async function onReceive() {
-    if (!workspace || !transfer) {
-      return;
-    }
-    if (!window.confirm(t("transfer.receiveFinalConfirm"))) {
+    if (!workspace || !transfer || busyRef.current) {
       return;
     }
     const lines: Array<{
@@ -181,7 +200,22 @@ export function InventoryTransferDetailPage() {
     for (const line of transfer.lines) {
       const parsed = parseReceivedQuantity(receivedByLine[line.lineId] ?? "", line.sentQty);
       if (parsed === "empty" || parsed === "invalid") {
-        setLocalError(t("transfer.invalidReceivedQuantity"));
+        setLocalError({
+          title: t("transfer.receiveFailedTitle"),
+          detail: t("transfer.invalidReceivedQuantity"),
+        });
+        setConfirmKind(null);
+        return;
+      }
+      if (parsed === "exceeds") {
+        setLocalError({
+          title: t("transfer.receiveFailedTitle"),
+          detail: t("transfer.receivedExceedsSent").replace(
+            "{sent}",
+            formatTransferQty(line.sentQty),
+          ),
+        });
+        setConfirmKind(null);
         return;
       }
       const entry: (typeof lines)[number] = {
@@ -191,9 +225,15 @@ export function InventoryTransferDetailPage() {
       };
       if (parsed < line.sentQty) {
         const reason = reasonByLine[line.lineId]?.trim();
-        if (reason) {
-          entry.discrepancyReason = reason;
+        if (!reason) {
+          setLocalError({
+            title: t("transfer.receiveFailedTitle"),
+            detail: t("transfer.discrepancyReasonRequired"),
+          });
+          setConfirmKind(null);
+          return;
         }
+        entry.discrepancyReason = reason;
         const note = noteByLine[line.lineId]?.trim();
         if (note) {
           entry.discrepancyNote = note;
@@ -202,6 +242,7 @@ export function InventoryTransferDetailPage() {
       lines.push(entry);
     }
 
+    busyRef.current = true;
     setBusy(true);
     setLocalError(null);
     try {
@@ -213,20 +254,21 @@ export function InventoryTransferDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       const dest = branchDisplayName(updated.destinationBranchName, updated.destinationBranchId);
-      setSuccess(
+      showToast(
         updated.status === "PartiallyReceived"
           ? t("transfer.partiallyReceivedSuccess")
           : t("transfer.receivedSuccess").replace("{destination}", dest),
+        "success",
       );
       setMode("detail");
     } catch (err) {
-      setLocalError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? t("transfer.actionFailed"))
-          : t("transfer.actionFailed"),
-      );
+      const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
+      setLocalError({ title: t("transfer.receiveFailedTitle"), detail });
+      showToast(detail, "error");
     } finally {
+      busyRef.current = false;
       setBusy(false);
+      setConfirmKind(null);
     }
   }
 
@@ -243,9 +285,7 @@ export function InventoryTransferDetailPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-detail-missing">
         <PageHeader
           title={t("transfer.title")}
-          backTo="/inventory/transfers"
-          backLabel={t("transfer.backList")}
-          backTestId="page-header-back-transfers"
+          {...smartBack}
         />
         <ErrorState title={t("transfer.errorTitle")} detail={t("transfer.notFound")} />
       </div>
@@ -266,6 +306,108 @@ export function InventoryTransferDetailPage() {
   const canDispatch = canMutate && isSource && isDraft;
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
   const canReceive = canMutate && isDestination && isInTransit;
+  const receiveFormReady = transfer.lines.every((line) =>
+    isReceiveLineReady(
+      receivedByLine[line.lineId] ?? "",
+      line.sentQty,
+      reasonByLine[line.lineId],
+    ),
+  );
+  const canSubmitReceive = canReceive && receiveFormReady;
+
+  const dialogCancelIcon = <Ban className="size-4 shrink-0" aria-hidden />;
+
+  const localErrorAlert = localError ? (
+    <Notice
+      tone="danger"
+      testId="transfer-local-error"
+      title={localError.title}
+      action={
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto min-h-0 shrink-0 px-1 py-0 text-[length:var(--exits-text-xs)] text-muted"
+          onClick={() => setLocalError(null)}
+          data-testid="transfer-local-error-dismiss"
+        >
+          {t("transfer.dialogCancel")}
+        </Button>
+      }
+    >
+      <p className="text-[length:var(--exits-text-xs)] text-muted wrap-break-word">{localError.detail}</p>
+    </Notice>
+  ) : null;
+
+  const confirmDialog =
+    confirmKind === "dispatch" ? (
+      <ConfirmationDialog
+        open
+        title={t("transfer.dispatchConfirmTitle")}
+        detail={t("transfer.dispatchConfirmDetail")
+          .replace("{source}", sourceName)
+          .replace("{destination}", destName)
+          .replace("{count}", String(transfer.lines.length))}
+        confirmLabel={t("transfer.dispatch")}
+        confirmPendingLabel={t("transfer.dispatching")}
+        confirmIcon={<Truck className="size-4 shrink-0" aria-hidden />}
+        cancelLabel={t("transfer.dialogCancel")}
+        cancelIcon={dialogCancelIcon}
+        cancelTone="danger-outline"
+        busy={busy}
+        testId="transfer-dispatch-confirm"
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
+        onConfirm={() => void onDispatch()}
+      />
+    ) : confirmKind === "cancel" ? (
+      <ConfirmationDialog
+        open
+        title={t("transfer.cancelConfirmTitle")}
+        detail={
+          transfer.status === "InTransit"
+            ? t("transfer.cancelInTransitConfirmDetail")
+            : t("transfer.cancelDraftConfirmDetail")
+        }
+        confirmLabel={t("transfer.cancel")}
+        confirmPendingLabel={t("transfer.cancelling")}
+        confirmIcon={<Ban className="size-4 shrink-0" aria-hidden />}
+        cancelLabel={t("transfer.dialogCancel")}
+        cancelIcon={dialogCancelIcon}
+        cancelTone="danger-outline"
+        confirmTone="danger"
+        busy={busy}
+        testId="transfer-cancel-confirm"
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
+        onConfirm={() => void onCancel()}
+      />
+    ) : confirmKind === "receive" ? (
+      <ConfirmationDialog
+        open
+        title={t("transfer.receiveConfirmTitle")}
+        detail={t("transfer.receiveFinalConfirmDetail")}
+        confirmLabel={t("transfer.receive")}
+        confirmPendingLabel={t("transfer.receiving")}
+        confirmIcon={<PackageCheck className="size-4 shrink-0" aria-hidden />}
+        cancelLabel={t("transfer.dialogCancel")}
+        cancelIcon={dialogCancelIcon}
+        cancelTone="danger-outline"
+        busy={busy}
+        testId="transfer-receive-confirm"
+        onCancel={() => {
+          if (!busy) {
+            setConfirmKind(null);
+          }
+        }}
+        onConfirm={() => void onReceive()}
+      />
+    ) : null;
 
   if (mode === "receive" && isInTransit) {
     return (
@@ -281,11 +423,7 @@ export function InventoryTransferDetailPage() {
           backTestId="page-header-back-transfer"
         />
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.receiveFinalHint")}</p>
-        {localError ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert">
-            {localError}
-          </p>
-        ) : null}
+        {localErrorAlert}
 
         {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto" data-testid="transfer-receive-table">
@@ -303,8 +441,19 @@ export function InventoryTransferDetailPage() {
               {transfer.lines.map((line) => {
                 const text = receivedByLine[line.lineId] ?? "";
                 const parsed = parseReceivedQuantity(text, line.sentQty);
-                const diff =
-                  parsed === "empty" || parsed === "invalid" ? null : line.sentQty - parsed;
+                const qtyReady = parsed !== "empty" && parsed !== "invalid" && parsed !== "exceeds";
+                const diff = qtyReady ? line.sentQty - parsed : null;
+                const needsDiscrepancy = diff != null && diff > 0;
+                const reasonMissing = needsDiscrepancy && !(reasonByLine[line.lineId]?.trim());
+                const qtyError =
+                  parsed === "exceeds"
+                    ? t("transfer.receivedExceedsSent").replace(
+                        "{sent}",
+                        formatTransferQty(line.sentQty),
+                      )
+                    : parsed === "invalid"
+                      ? t("transfer.invalidReceivedQuantity")
+                      : null;
                 return (
                   <tr key={line.lineId} className="border-b border-border align-top">
                     <td className="px-2 py-2">
@@ -319,22 +468,37 @@ export function InventoryTransferDetailPage() {
                     <td className="px-2 py-2">{formatTransferQty(line.sentQty)}</td>
                     <td className="px-2 py-2">
                       <input
-                        className="exits-input min-h-11 w-28"
+                        className={`exits-input w-28${qtyError ? " border-destructive" : ""}`}
                         inputMode="decimal"
                         value={text}
+                        aria-invalid={qtyError ? true : undefined}
+                        aria-describedby={
+                          qtyError ? `transfer-receive-qty-error-${line.lineId}` : undefined
+                        }
                         onChange={(e) =>
                           setReceivedByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                         }
                         data-testid={`transfer-receive-qty-${line.lineId}`}
                       />
+                      {qtyError ? (
+                        <p
+                          id={`transfer-receive-qty-error-${line.lineId}`}
+                          className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-destructive"
+                          data-testid={`transfer-receive-qty-error-${line.lineId}`}
+                        >
+                          {qtyError}
+                        </p>
+                      ) : null}
                     </td>
                     <td className="px-2 py-2">{diff == null ? "—" : formatTransferQty(diff)}</td>
                     <td className="px-2 py-2">
-                      {diff != null && diff > 0 ? (
+                      {needsDiscrepancy ? (
                         <div className="flex flex-col gap-1">
                           <select
-                            className="exits-input min-h-11"
+                            className={`exits-select${reasonMissing ? " border-destructive" : ""}`}
                             value={reasonByLine[line.lineId] ?? ""}
+                            required
+                            aria-invalid={reasonMissing ? true : undefined}
                             onChange={(e) =>
                               setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                             }
@@ -347,8 +511,13 @@ export function InventoryTransferDetailPage() {
                               </option>
                             ))}
                           </select>
+                          {reasonMissing ? (
+                            <p className="m-0 text-[length:var(--exits-text-xs)] text-destructive">
+                              {t("transfer.discrepancyReasonRequired")}
+                            </p>
+                          ) : null}
                           <input
-                            className="exits-input min-h-11"
+                            className="exits-input"
                             placeholder={t("transfer.discrepancyNote")}
                             value={noteByLine[line.lineId] ?? ""}
                             onChange={(e) =>
@@ -373,8 +542,19 @@ export function InventoryTransferDetailPage() {
           {transfer.lines.map((line) => {
             const text = receivedByLine[line.lineId] ?? "";
             const parsed = parseReceivedQuantity(text, line.sentQty);
-            const diff =
-              parsed === "empty" || parsed === "invalid" ? null : line.sentQty - parsed;
+            const qtyReady = parsed !== "empty" && parsed !== "invalid" && parsed !== "exceeds";
+            const diff = qtyReady ? line.sentQty - parsed : null;
+            const needsDiscrepancy = diff != null && diff > 0;
+            const reasonMissing = needsDiscrepancy && !(reasonByLine[line.lineId]?.trim());
+            const qtyError =
+              parsed === "exceeds"
+                ? t("transfer.receivedExceedsSent").replace(
+                    "{sent}",
+                    formatTransferQty(line.sentQty),
+                  )
+                : parsed === "invalid"
+                  ? t("transfer.invalidReceivedQuantity")
+                  : null;
             return (
               <li key={line.lineId}>
                 <Card className="flex flex-col gap-2 p-3" data-testid={`transfer-receive-card-${line.lineId}`}>
@@ -387,26 +567,38 @@ export function InventoryTransferDetailPage() {
                       {t("transfer.received")}
                     </span>
                     <input
-                      className="exits-input min-h-12 text-[length:var(--exits-text-lg)]"
+                      className={`exits-input text-[length:var(--exits-text-lg)]${qtyError ? " border-destructive" : ""}`}
                       inputMode="decimal"
                       value={text}
+                      aria-invalid={qtyError ? true : undefined}
                       onChange={(e) =>
                         setReceivedByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                       }
                       data-testid={`transfer-receive-qty-mobile-${line.lineId}`}
                     />
+                    {qtyError ? (
+                      <span
+                        className="text-[length:var(--exits-text-xs)] text-destructive"
+                        data-testid={`transfer-receive-qty-error-mobile-${line.lineId}`}
+                      >
+                        {qtyError}
+                      </span>
+                    ) : null}
                   </label>
                   <p className="m-0 text-[length:var(--exits-text-sm)]">
                     {t("transfer.difference")}: {diff == null ? "—" : formatTransferQty(diff)}
                   </p>
-                  {diff != null && diff > 0 ? (
+                  {needsDiscrepancy ? (
                     <>
                       <select
-                        className="exits-input min-h-11"
+                        className={`exits-select${reasonMissing ? " border-destructive" : ""}`}
                         value={reasonByLine[line.lineId] ?? ""}
+                        required
+                        aria-invalid={reasonMissing ? true : undefined}
                         onChange={(e) =>
                           setReasonByLine((prev) => ({ ...prev, [line.lineId]: e.target.value }))
                         }
+                        data-testid={`transfer-discrepancy-mobile-${line.lineId}`}
                       >
                         <option value="">{t("transfer.selectDiscrepancy")}</option>
                         {INVENTORY_TRANSFER_DISCREPANCY_REASONS.map((code) => (
@@ -415,8 +607,13 @@ export function InventoryTransferDetailPage() {
                           </option>
                         ))}
                       </select>
+                      {reasonMissing ? (
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-destructive">
+                          {t("transfer.discrepancyReasonRequired")}
+                        </p>
+                      ) : null}
                       <input
-                        className="exits-input min-h-11"
+                        className="exits-input"
                         placeholder={t("transfer.discrepancyNote")}
                         value={noteByLine[line.lineId] ?? ""}
                         onChange={(e) =>
@@ -436,7 +633,7 @@ export function InventoryTransferDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={busy}
               onClick={() => setMode("detail")}
             >
@@ -444,15 +641,19 @@ export function InventoryTransferDetailPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11 flex-1"
-              disabled={!canReceive}
-              onClick={() => void onReceive()}
+              className="flex-1"
+              disabled={!canSubmitReceive}
+              onClick={() => {
+                setLocalError(null);
+                setConfirmKind("receive");
+              }}
               data-testid="transfer-receive-submit"
             >
               {busy ? t("transfer.receiving") : t("transfer.receive")}
             </Button>
           </div>
         </StickyActionBar>
+        {confirmDialog}
       </div>
     );
   }
@@ -464,157 +665,201 @@ export function InventoryTransferDetailPage() {
       data-status={transfer.status}
     >
       <PageHeader
-        title={transfer.transferNumber?.trim() || t("transfer.draftNumber")}
-        description={`${sourceName} → ${destName}`}
-        backTo="/inventory/transfers"
-        backLabel={t("transfer.backList")}
-        backTestId="page-header-back-transfers"
+        title={t("transfer.summaryTitle")}
+        subtitle={transfer.transferNumber?.trim() || undefined}
+        trailing={
+          <StatusChip tone={inventoryTransferStatusTone(transfer.status)}>
+            {t(inventoryTransferStatusLabelKey(transfer.status))}
+          </StatusChip>
+        }
+        {...smartBack}
       />
 
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
-      {success ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-success" data-testid="transfer-success">
-          {success}
-        </p>
-      ) : null}
-      {localError ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-danger" role="alert" data-testid="transfer-local-error">
-          {localError}
-        </p>
-      ) : null}
+      {localErrorAlert}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusChip tone={inventoryTransferStatusTone(transfer.status)}>
-          {t(inventoryTransferStatusLabelKey(transfer.status))}
-        </StatusChip>
-        <span className="text-[length:var(--exits-text-sm)] text-muted">
-          {t("transfer.currentBranch")}: {boundWorkspace?.branchName}
+      <div
+        className="flex min-w-0 flex-wrap items-center justify-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3 sm:justify-start sm:gap-3"
+        data-testid="transfer-route-summary"
+      >
+        <span className="truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+          {sourceName}
+        </span>
+        <ArrowRight className="size-4 shrink-0 text-muted" aria-hidden />
+        <span className="truncate text-[length:var(--exits-text-md)] font-semibold text-foreground">
+          {destName}
         </span>
       </div>
 
-      <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-        <div>
-          <dt className="text-muted">{t("transfer.fromBranch")}</dt>
-          <dd className="m-0 font-medium">{sourceName}</dd>
+      {transfer.stockRequestId ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-stock-request-link">
+          <span className="text-muted">{t("transfer.requestedBy")}: {destName}. </span>
+          <Link className="underline" to={`/inventory/stock-requests/${transfer.stockRequestId}`}>
+            {t("transfer.stockRequest")}
+          </Link>
+        </p>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2" data-testid="transfer-qty-summary">
+        <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.sent")}</p>
+          <p className="m-0 mt-0.5 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+            {formatTransferQty(transfer.totalSentQty)}
+          </p>
         </div>
-        <div>
-          <dt className="text-muted">{t("transfer.toBranch")}</dt>
-          <dd className="m-0 font-medium">{destName}</dd>
+        <div className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5">
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.received")}</p>
+          <p className="m-0 mt-0.5 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
+            {formatTransferQty(transfer.totalReceivedQty)}
+          </p>
         </div>
-        <div>
-          <dt className="text-muted">{t("transfer.sent")}</dt>
-          <dd className="m-0">{formatTransferQty(transfer.totalSentQty)}</dd>
-        </div>
-        <div>
-          <dt className="text-muted">{t("transfer.received")}</dt>
-          <dd className="m-0">{formatTransferQty(transfer.totalReceivedQty)}</dd>
-        </div>
-        {transfer.dispatchedAtUtc ? (
-          <div>
-            <dt className="text-muted">{t("transfer.dispatched")}</dt>
-            <dd className="m-0">{formatTransferTimestamp(transfer.dispatchedAtUtc)}</dd>
-          </div>
-        ) : null}
-        {transfer.receivedAtUtc ? (
-          <div>
-            <dt className="text-muted">{t("transfer.receivedAt")}</dt>
-            <dd className="m-0">{formatTransferTimestamp(transfer.receivedAtUtc)}</dd>
-          </div>
-        ) : null}
-        {transfer.cancelledAtUtc ? (
-          <div>
-            <dt className="text-muted">{t("transfer.cancelledAt")}</dt>
-            <dd className="m-0">{formatTransferTimestamp(transfer.cancelledAtUtc)}</dd>
-          </div>
-        ) : null}
-      </dl>
+      </div>
+
+      {(transfer.dispatchedAtUtc || transfer.receivedAtUtc || transfer.cancelledAtUtc) && (
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+          {transfer.dispatchedAtUtc
+            ? `${t("transfer.dispatched")}: ${formatTransferTimestamp(transfer.dispatchedAtUtc)}`
+            : null}
+          {transfer.dispatchedAtUtc && transfer.receivedAtUtc ? " · " : null}
+          {transfer.receivedAtUtc
+            ? `${t("transfer.receivedAt")}: ${formatTransferTimestamp(transfer.receivedAtUtc)}`
+            : null}
+          {(transfer.dispatchedAtUtc || transfer.receivedAtUtc) && transfer.cancelledAtUtc
+            ? " · "
+            : null}
+          {transfer.cancelledAtUtc
+            ? `${t("transfer.cancelledAt")}: ${formatTransferTimestamp(transfer.cancelledAtUtc)}`
+            : null}
+        </p>
+      )}
 
       {transfer.notes ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-notes-display">
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid="transfer-notes-display"
+        >
           {transfer.notes}
         </p>
       ) : null}
 
-      {isDraft ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.draftNoEdit")}</p>
-      ) : null}
-
-      <section>
-        <h2 className="m-0 mb-2 text-[length:var(--exits-text-base)] font-semibold">{t("transfer.items")}</h2>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="transfer-lines">
-          {transfer.lines.map((line) => (
-            <li key={line.lineId}>
-              <Card className="flex flex-col gap-1 p-3" data-testid={`transfer-line-${line.lineId}`}>
-                <p className="m-0 font-medium">{line.productName}</p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("transfer.sent")}: {formatTransferQty(line.sentQty)} {line.unitOfMeasure}
-                  {isFinal || isInTransit
-                    ? ` · ${t("transfer.received")}: ${formatTransferQty(line.receivedQty)}`
-                    : ""}
-                  {line.differenceQty !== 0
-                    ? ` · ${t("transfer.difference")}: ${formatTransferQty(line.differenceQty)}`
-                    : ""}
-                </p>
-                {line.lotNumber || line.expirationDate ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("transfer.lot")}: {line.lotNumber ?? "—"} · {t("transfer.expiry")}:{" "}
-                    {line.expirationDate ?? "—"}
+      <section className="flex flex-col gap-1.5">
+        <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+          {t("transfer.items")}
+        </h2>
+        <ul
+          className="m-0 flex list-none flex-col divide-y divide-border overflow-hidden rounded-[var(--exits-radius-md)] border border-border p-0"
+          data-testid="transfer-lines"
+        >
+          {transfer.lines.map((line) => {
+            const showReceived = isFinal || isInTransit;
+            const showDiff = line.differenceQty !== 0;
+            return (
+              <li
+                key={line.lineId}
+                className="flex min-w-0 items-start gap-3 bg-surface px-3 py-2.5"
+                data-testid={`transfer-line-${line.lineId}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                    {line.productName}
                   </p>
-                ) : null}
-                {line.discrepancyReason ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)]">
-                    {t("transfer.discrepancy")}:{" "}
-                    {t(inventoryTransferDiscrepancyLabelKey(line.discrepancyReason))}
-                    {line.discrepancyNote ? ` — ${line.discrepancyNote}` : ""}
+                  {line.lotNumber || line.expirationDate ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("transfer.lot")}: {line.lotNumber ?? "—"} · {t("transfer.expiry")}:{" "}
+                      {line.expirationDate ?? "—"}
+                    </p>
+                  ) : null}
+                  {line.discrepancyReason ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("transfer.discrepancy")}:{" "}
+                      {t(inventoryTransferDiscrepancyLabelKey(line.discrepancyReason))}
+                      {line.discrepancyNote ? ` — ${line.discrepancyNote}` : ""}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="m-0 text-[length:var(--exits-text-sm)] font-medium tabular-nums text-foreground">
+                    {formatTransferQty(line.sentQty)} {line.unitOfMeasure}
                   </p>
-                ) : null}
-              </Card>
-            </li>
-          ))}
+                  {showReceived ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted tabular-nums">
+                      {t("transfer.received")}: {formatTransferQty(line.receivedQty)}
+                    </p>
+                  ) : null}
+                  {showDiff ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted tabular-nums">
+                      {t("transfer.difference")} {formatTransferQty(line.differenceQty)}
+                    </p>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
-      <div className="flex flex-wrap gap-2">
-        {canDispatch ? (
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={!canMutate}
-            onClick={() => void onDispatch()}
-            data-testid="transfer-dispatch"
-          >
-            {t("transfer.dispatch")}
-          </Button>
-        ) : null}
-        {canReceive ? (
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={!canMutate}
-            onClick={() => {
-              setLocalError(null);
-              setMode("receive");
-            }}
-            data-testid="transfer-receive"
-          >
-            {t("transfer.receive")}
-          </Button>
-        ) : null}
-        {canCancel ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11"
-            disabled={!canMutate}
-            onClick={() => void onCancel()}
-            data-testid="transfer-cancel"
-          >
-            {t("transfer.cancel")}
-          </Button>
-        ) : null}
-      </div>
+      {canCancel || canDispatch || canReceive ? (
+        <StickyActionBar className="flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
+          {isDraft ? (
+            <p className="m-0 flex-1 text-[length:var(--exits-text-xs)] text-muted sm:mr-auto">
+              {t("transfer.draftNoEdit")}
+            </p>
+          ) : (
+            <span className="hidden flex-1 sm:block" aria-hidden />
+          )}
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:justify-end">
+            {canCancel ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
+                disabled={!canMutate}
+                onClick={() => {
+                  setLocalError(null);
+                  setConfirmKind("cancel");
+                }}
+                data-testid="transfer-cancel"
+              >
+                <Ban className="size-4 shrink-0" aria-hidden />
+                {t("transfer.cancel")}
+              </Button>
+            ) : null}
+            {canReceive ? (
+              <Button
+                type="button"
+                disabled={!canMutate}
+                onClick={() => {
+                  setLocalError(null);
+                  setMode("receive");
+                }}
+                data-testid="transfer-receive"
+              >
+                <PackageCheck className="size-4 shrink-0" aria-hidden />
+                {t("transfer.receive")}
+              </Button>
+            ) : null}
+            {canDispatch ? (
+              <Button
+                type="button"
+                disabled={!canMutate}
+                onClick={() => {
+                  setLocalError(null);
+                  setConfirmKind("dispatch");
+                }}
+                data-testid="transfer-dispatch"
+              >
+                <Truck className="size-4 shrink-0" aria-hidden />
+                {t("transfer.dispatch")}
+              </Button>
+            ) : null}
+          </div>
+        </StickyActionBar>
+      ) : isDraft ? (
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.draftNoEdit")}</p>
+      ) : null}
+      {confirmDialog}
     </div>
   );
 }

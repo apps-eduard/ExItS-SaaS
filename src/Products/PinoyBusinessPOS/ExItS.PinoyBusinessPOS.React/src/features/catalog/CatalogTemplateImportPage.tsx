@@ -1,15 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  ChevronRight,
-  Loader2,
-  RotateCcw,
-  Upload,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Loader2, RotateCcw, Tags, Upload } from "lucide-react";
 import {
   getPublishedTemplate,
   listPublishedTemplates,
@@ -299,7 +291,7 @@ export function CatalogTemplateImportPage() {
             <Button
               type="button"
               variant="outline"
-              className="catalog-import-toolbar__refresh min-h-11 shrink-0"
+              className="catalog-import-toolbar__refresh shrink-0"
               onClick={() => void templatesQuery.refetch()}
               disabled={templatesQuery.isFetching}
             >
@@ -317,6 +309,8 @@ export function CatalogTemplateImportPage() {
           ) : null}
           {templatesQuery.isSuccess && templatesQuery.data.items.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />}
               title={t("catalogImport.emptyTemplates")}
               detail={t("catalogImport.emptyTemplatesDetail")}
             />
@@ -348,7 +342,7 @@ export function CatalogTemplateImportPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="catalog-import-template-card__select min-h-11 shrink-0"
+                      className="catalog-import-template-card__select shrink-0"
                       data-testid={`catalog-template-select-${item.id}`}
                       onClick={() => selectTemplate(item)}
                     >
@@ -410,6 +404,8 @@ export function CatalogTemplateImportPage() {
 
           {detailQuery.isSuccess && previewProducts.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Tags className="size-5" strokeWidth={1.75} />}
               title={t("catalogImport.emptyPreview")}
               detail={t("catalogImport.emptyPreviewDetail")}
             />
@@ -461,7 +457,7 @@ export function CatalogTemplateImportPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+                className="catalog-form-actions__restore w-full sm:w-auto"
                 onClick={() => setStep("choose")}
               >
                 <ArrowLeft className="size-4 shrink-0" aria-hidden />
@@ -471,7 +467,7 @@ export function CatalogTemplateImportPage() {
             <div className="catalog-form-actions__secondary">
               <Button
                 type="button"
-                className="catalog-form-actions__save min-h-11"
+                className="catalog-form-actions__save"
                 data-testid="catalog-template-continue-confirm"
                 onClick={() => setStep("confirm")}
               >
@@ -530,7 +526,7 @@ export function CatalogTemplateImportPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+                className="catalog-form-actions__restore w-full sm:w-auto"
                 onClick={() => setStep("preview")}
               >
                 <ArrowLeft className="size-4 shrink-0" aria-hidden />
@@ -540,7 +536,7 @@ export function CatalogTemplateImportPage() {
             <div className="catalog-form-actions__secondary">
               <Button
                 type="button"
-                className="catalog-form-actions__save min-h-11"
+                className="catalog-form-actions__save"
                 data-testid="catalog-template-start-import"
                 disabled={!canGovern || !confirmed || startMutation.isPending}
                 onClick={() => {

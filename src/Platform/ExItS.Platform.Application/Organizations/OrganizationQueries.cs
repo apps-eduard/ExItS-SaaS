@@ -29,6 +29,7 @@ public sealed record PlatformOrganizationDto(
     string DisplayName,
     string Slug,
     string Status,
+    string? PublicOrganizationId,
     OrganizationProfileDto Profile,
     OrganizationBrandingDto Branding,
     DateTimeOffset CreatedAtUtc,
@@ -106,6 +107,7 @@ public sealed class OrganizationQueryService
             organization.DisplayName,
             organization.Slug,
             organization.Status.ToString(),
+            organization.PublicOrganizationId,
             new OrganizationProfileDto(
                 organization.Profile.LegalName,
                 organization.Profile.ContactEmail,

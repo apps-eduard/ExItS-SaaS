@@ -14,4 +14,9 @@ public static class ProductBasedUtangRemarks
         $"Online purchase Order {CustomerOrderNumbers.Normalize(orderNumber)}";
 
     public const string InitialDueDateReason = "Set during Product-Based Utang checkout";
+
+    public const string InitialDueDateFromPolicyReason =
+        "Initial due date from approved customer credit term.";
+
+    public const string ManualDueDateOverrideReason = "Manual due date override.";
 }

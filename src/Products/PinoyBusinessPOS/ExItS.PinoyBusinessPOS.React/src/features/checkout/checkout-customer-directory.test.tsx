@@ -10,6 +10,7 @@ import type { CheckoutCustomerOption } from "@/features/checkout/checkout-custom
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
 
 const walkIn: CheckoutCustomerOption = {
+  kind: "Customer",
   customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   displayName: "Local Walkin 20260826230002",
   mobileNumber: "09171110001",
@@ -17,6 +18,7 @@ const walkIn: CheckoutCustomerOption = {
 };
 
 const named: CheckoutCustomerOption = {
+  kind: "Customer",
   customerId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
   displayName: "Juan Dela Cruz",
   mobileNumber: "09171234567",
@@ -31,6 +33,7 @@ function renderDirectory(
     overlay?: CustomerListConnectionOverlay | null;
     onSelect?: (customer: CheckoutCustomerOption) => void;
     onSearchChange?: (value: string) => void;
+    includeWalkInsWhenIdle?: boolean;
   } = {},
 ) {
   const onSelect = options.onSelect ?? vi.fn();
@@ -48,6 +51,7 @@ function renderDirectory(
         selectedCustomer={options.selected ?? null}
         overlay={options.overlay ?? null}
         onSelect={onSelect}
+        includeWalkInsWhenIdle={options.includeWalkInsWhenIdle}
       />
     </AppProviders>,
   );
@@ -58,37 +62,63 @@ describe("CheckoutCustomerDirectory", () => {
   it("hides Local Validation walk-in seeds until the cashier searches", () => {
     renderDirectory([walkIn, named]);
 
+    expect(screen.getByTestId("checkout-credit-directory")).toHaveClass(
+      "checkout-credit-directory--simple",
+    );
     expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toHaveTextContent(
       "Juan Dela Cruz",
     );
     expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toHaveTextContent(
-      "09171234567",
+      "Person",
     );
     expect(screen.queryByTestId(`checkout-customer-${walkIn.customerId}`)).not.toBeInTheDocument();
   });
 
-  it("shows walk-ins as Walk-in plus phone when searching", () => {
-    renderDirectory([walkIn, named], { search: "0917" });
+  it("shows walk-in seeds when idle browse is required for Utang", () => {
+    renderDirectory([walkIn, named], { includeWalkInsWhenIdle: true });
 
     expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).toHaveTextContent(
       "Walk-in",
     );
+    expect(screen.getByTestId(`checkout-customer-${named.customerId}`)).toBeInTheDocument();
+  });
+
+  it("shows walk-ins as Walk-in when searching", () => {
+    renderDirectory([walkIn, named], { search: "0917" });
+
     expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).toHaveTextContent(
-      "09171110001",
+      "Walk-in",
     );
     expect(screen.getByTestId(`checkout-customer-${walkIn.customerId}`)).not.toHaveTextContent(
       "20260826230002",
     );
   });
 
-  it("shows No ExItS ID versus ExItS ID, and Connected only from the overlay", () => {
+  it("shows ExItS ID# column for people and ORG ids for B2B", () => {
     const platformId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
     const linked: CheckoutCustomerOption = {
+      kind: "Customer",
       customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
       displayName: "Rosa Santos",
       status: "Active",
       linkedPersonalPublicUserId: "EX-4827-1936",
       platformBusinessCustomerId: platformId,
+    };
+    const business: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222222",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+      buyerPublicOrganizationId: "ORG436352",
+      displayName: "Kizy Bakery",
+      status: "Active",
+    };
+    const pendingBusiness: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222229",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333339",
+      buyerPublicOrganizationId: "ORG436359",
+      displayName: "Pending Cafe",
+      status: "Pending",
     };
     const overlay: CustomerListConnectionOverlay = {
       connectedBusinessCustomerIds: new Set([platformId]),
@@ -96,33 +126,50 @@ describe("CheckoutCustomerDirectory", () => {
       loaded: true,
     };
 
-    renderDirectory([named, linked], { overlay });
+    renderDirectory([named, linked, business, pendingBusiness], { overlay });
 
+    expect(screen.getByText("ExItS ID#")).toBeInTheDocument();
+    expect(screen.getByText("Connection")).toBeInTheDocument();
+
+    const linkedRow = screen.getByTestId(`checkout-customer-${linked.customerId}`);
+    expect(linkedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "EX-4827-1936",
+    );
+    expect(linkedRow.querySelector("[data-testid='customer-list-badge-exits-id']")).not.toBeInTheDocument();
     expect(
-      screen.getByTestId(`checkout-customer-${named.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-no-exits']",
-      ),
-    ).toHaveTextContent("No ExItS ID");
-    expect(
-      screen.getByTestId(`checkout-customer-${linked.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-exits-id']",
-      ),
-    ).toHaveTextContent("ExItS ID");
-    expect(
-      screen.getByTestId(`checkout-customer-${linked.customerId}`).querySelector(
-        "[data-testid='customer-list-badge-connected']",
-      ),
+      linkedRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
     ).toHaveTextContent("Connected");
+
+    const businessRow = screen.getByTestId(`checkout-business-${business.connectionId}`);
+    expect(businessRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "ORG436352",
+    );
+    expect(businessRow.querySelector("[data-testid='checkout-credit-directory-type']")).toHaveTextContent(
+      "B2B",
+    );
     expect(
-      screen.queryByTestId(`checkout-customer-${named.customerId}`)?.querySelector(
-        "[data-testid='customer-list-badge-connected']",
-      ),
-    ).not.toBeInTheDocument();
+      businessRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("Connected");
+
+    const pendingRow = screen.getByTestId(`checkout-business-${pendingBusiness.connectionId}`);
+    expect(
+      pendingRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("Pending");
+    expect(pendingRow).not.toHaveClass("checkout-credit-directory__row--blocked");
+
+    const namedRow = screen.getByTestId(`checkout-customer-${named.customerId}`);
+    expect(namedRow.querySelector("[data-testid='checkout-credit-directory-secondary']")).toHaveTextContent(
+      "—",
+    );
+    expect(
+      namedRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("—");
   });
 
-  it("shows Pending when the overlay lists a pending request", () => {
+  it("keeps connection badges on the selected customer card only", () => {
     const platformId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
     const linked: CheckoutCustomerOption = {
+      kind: "Customer",
       customerId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
       displayName: "Pending Person",
       status: "Active",
@@ -130,16 +177,221 @@ describe("CheckoutCustomerDirectory", () => {
       platformBusinessCustomerId: platformId,
     };
 
-    renderDirectory([linked], {
-      overlay: {
-        connectedBusinessCustomerIds: new Set(),
-        pendingBusinessCustomerIds: new Set([platformId]),
-        loaded: true,
-      },
-    });
+    render(
+      <AppProviders>
+        <CheckoutCustomerSelectedCard
+          customer={linked}
+          overlay={{
+            connectedBusinessCustomerIds: new Set(),
+            pendingBusinessCustomerIds: new Set([platformId]),
+            loaded: true,
+          }}
+          onClear={vi.fn()}
+        />
+      </AppProviders>,
+    );
 
     expect(screen.getByTestId("customer-list-badge-pending")).toHaveTextContent("Pending");
     expect(screen.queryByTestId("customer-list-badge-connected")).not.toBeInTheDocument();
+  });
+
+  it("shows Utang credit overlay without hiding ineligible people", () => {
+    const pending: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      displayName: "Maria Santos",
+      status: "Active",
+      creditStatus: "PendingApproval",
+    };
+    const approved: CheckoutCustomerOption = {
+      ...named,
+      creditStatus: "Approved",
+      availableCredit: 12500,
+    };
+    const paused: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+      displayName: "Ana Cruz",
+      status: "Active",
+      creditStatus: "Disabled",
+    };
+    const notEnabled: CheckoutCustomerOption = {
+      kind: "Customer",
+      customerId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      displayName: "Pedro Reyes",
+      status: "Active",
+      creditStatus: "NotConfigured",
+    };
+
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[approved, pending, paused, notEnabled]}
+          customersLoading={false}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+          includeWalkInsWhenIdle
+          showCreditStatus
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("checkout-credit-directory")).toBeInTheDocument();
+    expect(screen.getByTestId(`checkout-customer-${approved.customerId}`)).toHaveTextContent(
+      "Approved",
+    );
+    expect(screen.getByTestId(`checkout-customer-${pending.customerId}`)).toHaveTextContent(
+      "Pending approval",
+    );
+    expect(screen.getByTestId(`checkout-customer-${paused.customerId}`)).toHaveTextContent(
+      "Paused",
+    );
+    expect(screen.getByTestId(`checkout-customer-${notEnabled.customerId}`)).toHaveTextContent(
+      "Credit not enabled",
+    );
+    expect(screen.getAllByTestId("checkout-customer-credit-line")).toHaveLength(4);
+  });
+
+  it("shows B2B credit status and available from projected BusinessCustomerCreditPolicy", () => {
+    const approved: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222222",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333333",
+      buyerPublicOrganizationId: "ORG436352",
+      displayName: "Kizy Bakery",
+      status: "Active",
+      creditStatus: "Approved",
+      availableCredit: 50000,
+      creditLimit: 50000,
+    };
+    const pendingConnection: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222226",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333337",
+      buyerPublicOrganizationId: "ORG436356",
+      displayName: "Pending Connection Bakery",
+      status: "Pending",
+      creditStatus: "Approved",
+      availableCredit: 50000,
+    };
+    const pending: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222223",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333334",
+      buyerPublicOrganizationId: "ORG436353",
+      displayName: "Pending Bakery",
+      status: "Active",
+      creditStatus: "PendingApproval",
+    };
+    const paused: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222224",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333335",
+      buyerPublicOrganizationId: "ORG436354",
+      displayName: "Paused Bakery",
+      status: "Active",
+      creditStatus: "Disabled",
+    };
+    const notEnabled: CheckoutCustomerOption = {
+      kind: "Business",
+      connectionId: "22222222-2222-2222-2222-222222222225",
+      buyerOrganizationId: "33333333-3333-3333-3333-333333333336",
+      buyerPublicOrganizationId: "ORG436355",
+      displayName: "Plain Bakery",
+      status: "Active",
+      creditStatus: "NotConfigured",
+    };
+    const person: CheckoutCustomerOption = {
+      ...named,
+      creditStatus: "Approved",
+      availableCredit: 12500,
+      linkedPersonalPublicUserId: "EX-4827-1936",
+    };
+
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[approved, pendingConnection, pending, paused, notEnabled, person]}
+          customersLoading={false}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+          includeWalkInsWhenIdle
+          showCreditStatus
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByText("Connection")).toBeInTheDocument();
+    expect(screen.queryByText("ExItS ID#")).not.toBeInTheDocument();
+
+    const bakery = screen.getByTestId(`checkout-business-${approved.connectionId}`);
+    expect(bakery).toHaveTextContent("Approved");
+    expect(bakery).toHaveTextContent("Connected");
+    expect(bakery.querySelector("[data-testid='checkout-credit-directory-available']")).toHaveTextContent(
+      "₱",
+    );
+    expect(bakery.querySelector("[data-testid='checkout-credit-directory-connection']")).toHaveTextContent(
+      "Connected",
+    );
+
+    const pendingConnRow = screen.getByTestId(`checkout-business-${pendingConnection.connectionId}`);
+    expect(pendingConnRow).toHaveTextContent("Pending");
+    expect(pendingConnRow).toHaveTextContent("Approved");
+    expect(pendingConnRow).toHaveClass("checkout-credit-directory__row--blocked");
+    expect(pendingConnRow).toHaveAttribute(
+      "title",
+      "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
+    );
+    expect(
+      pendingConnRow.querySelector("[data-testid='checkout-credit-directory-connection'] .exits-status-chip"),
+    ).toHaveAttribute("data-tone", "warning");
+
+    expect(screen.getByTestId(`checkout-business-${pending.connectionId}`)).toHaveTextContent(
+      "Pending approval",
+    );
+    expect(screen.getByTestId(`checkout-business-${paused.connectionId}`)).toHaveTextContent("Paused");
+    expect(screen.getByTestId(`checkout-business-${notEnabled.connectionId}`)).toHaveTextContent(
+      "Credit not enabled",
+    );
+    const personRow = screen.getByTestId(`checkout-customer-${person.customerId}`);
+    expect(personRow).toHaveTextContent("Approved");
+    expect(
+      personRow.querySelector("[data-testid='checkout-credit-directory-connection']"),
+    ).toHaveTextContent("—");
+  });
+
+  it("shows load error instead of empty when the directory request failed", () => {
+    render(
+      <AppProviders>
+        <CheckoutCustomerDirectory
+          searchId="checkout-customer-search"
+          searchTestId="checkout-customer-search"
+          searchLabel="Search customers"
+          searchValue=""
+          onSearchChange={vi.fn()}
+          customers={[]}
+          customersLoading={false}
+          customersError
+          onRetryLoad={vi.fn()}
+          selectedCustomer={null}
+          onSelect={vi.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByTestId("checkout-customer-load-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("checkout-customer-empty")).not.toBeInTheDocument();
+    expect(screen.getByTestId("checkout-customer-retry")).toBeInTheDocument();
   });
 });
 

@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -70,6 +71,7 @@ public sealed class InventoryTransferQueryService
         new(
             transfer.Id.Value,
             transfer.OrganizationId.Value,
+            transfer.StockRequestId?.Value,
             transfer.TransferNumber,
             transfer.SourceBranchId.Value,
             names.GetValueOrDefault(transfer.SourceBranchId.Value),
@@ -103,13 +105,15 @@ public sealed class InventoryTransferQueryService
                 l.DiscrepancyNote,
                 l.SourceLotId?.Value,
                 l.LotNumber,
-                l.ExpirationDate)).ToList());
+                l.ExpirationDate,
+                l.UnitCostSnapshot)).ToList());
 
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,
         IReadOnlyDictionary<Guid, string> names) =>
         new(
             transfer.Id.Value,
+            transfer.StockRequestId?.Value,
             transfer.TransferNumber,
             transfer.SourceBranchId.Value,
             names.GetValueOrDefault(transfer.SourceBranchId.Value),
@@ -120,30 +124,43 @@ public sealed class InventoryTransferQueryService
             transfer.TotalSentQty,
             transfer.TotalReceivedQty,
             transfer.TotalDifferenceQty,
-            transfer.UpdatedAtUtc);
+            transfer.UpdatedAtUtc,
+            transfer.CreatedBy,
+            transfer.DispatchedBy,
+            transfer.ReceivedBy,
+            transfer.CancelledBy);
 }
 
 public sealed class CreateInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryRepository _inventory;
+    private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
     private readonly IInventoryLotRepository _lots;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateInventoryTransfer(
         IInventoryTransferRepository transfers,
+        IInventoryRepository inventory,
+        IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
         IInventoryLotRepository lots,
         IOrganizationBranchDirectory branches,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
+        _inventory = inventory;
+        _balances = balances;
         _products = products;
         _lots = lots;
         _branches = branches;
+        _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -179,16 +196,73 @@ public sealed class CreateInventoryTransfer
             return ApplicationResult<InventoryTransfer>.Failure(drafts.ErrorCode!, drafts.ErrorMessage!);
         }
 
+        var costByProduct = await _costs
+            .ResolveUnitCostsAsync(orgId, drafts.Value!.Select(d => d.ProductId), cancellationToken)
+            .ConfigureAwait(false);
+        var draftsWithCosts = drafts.Value!
+            .Select(d => d with { UnitCostSnapshot = costByProduct.GetValueOrDefault(d.ProductId.Value) })
+            .ToList();
+
         try
         {
             var transfer = InventoryTransfer.CreateDraft(
                 orgId,
                 PosBranchId.From(request.SourceBranchId),
                 PosBranchId.From(request.DestinationBranchId),
-                drafts.Value!,
+                draftsWithCosts,
                 actorId,
                 _clock.UtcNow,
-                request.Notes);
+                request.Notes,
+                stockRequestId: request.StockRequestId is Guid requestId && requestId != Guid.Empty
+                    ? StockRequestId.From(requestId)
+                    : null);
+
+            var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
+            var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
+                .ToDictionary(a => a.ProductId.Value);
+            var balances = (await _balances.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
+                .ToList();
+            var lotIds = transfer.Lines
+                .Where(l => l.SourceLotId is not null)
+                .Select(l => l.SourceLotId!)
+                .Distinct()
+                .ToList();
+            var lotsById = new Dictionary<Guid, InventoryLot>();
+            foreach (var lotId in lotIds)
+            {
+                var lot = await _lots.GetByIdAsync(orgId, lotId, cancellationToken).ConfigureAwait(false);
+                if (lot is not null)
+                {
+                    lotsById[lot.Id.Value] = lot;
+                }
+            }
+
+            var branchNames = await _branches
+                .GetNamesAsync(organizationId, [request.SourceBranchId], cancellationToken)
+                .ConfigureAwait(false);
+            var sourceBranchName = branchNames.TryGetValue(request.SourceBranchId, out var name) && !string.IsNullOrWhiteSpace(name)
+                ? name
+                : "source branch";
+
+            var stockGuard = InventoryTransferStock.ValidateSourceAvailability(
+                orgId,
+                transfer.SourceBranchId,
+                sourceBranchName,
+                transfer.Lines.Select(l => new InventoryTransferStockDemand(
+                    l.ProductId,
+                    l.SentQty,
+                    l.NameSnapshot,
+                    l.UnitOfMeasure,
+                    l.SourceLotId)).ToList(),
+                accounts,
+                balances,
+                lotsById,
+                _clock.UtcNow);
+            if (stockGuard is not null)
+            {
+                return stockGuard;
+            }
+
             await _transfers.AddAsync(transfer, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -210,6 +284,7 @@ public sealed class DispatchInventoryTransfer
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
+    private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -223,7 +298,8 @@ public sealed class DispatchInventoryTransfer
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        InventoryCostResolver? costs = null)
     {
         _transfers = transfers;
         _inventory = inventory;
@@ -233,6 +309,7 @@ public sealed class DispatchInventoryTransfer
         _lots = lots;
         _branches = branches;
         _alerts = alerts;
+        _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -290,33 +367,57 @@ public sealed class DispatchInventoryTransfer
         try
         {
             var utcNow = _clock.UtcNow;
-            foreach (var line in transfer.Lines)
+            var lotIds = transfer.Lines
+                .Where(l => l.SourceLotId is not null)
+                .Select(l => l.SourceLotId!)
+                .Distinct()
+                .ToList();
+            var lotsById = new Dictionary<Guid, InventoryLot>();
+            foreach (var lotId in lotIds)
             {
-                if (!accounts.TryGetValue(line.ProductId.Value, out var account) || !account.IsTracked)
+                var lot = await _lotRepository.GetByIdAsync(orgId, lotId, ct).ConfigureAwait(false);
+                if (lot is not null)
                 {
-                    return ApplicationResult<InventoryTransfer>.Failure(
-                        ApplicationErrorCodes.InventoryTransferProductNotTracked,
-                        $"Inventory is not tracked for '{line.NameSnapshot}'.");
+                    lotsById[lot.Id.Value] = lot;
                 }
+            }
 
-                var sourceBalance = InventoryTransferStock.EnsureSourceBalance(
-                    orgId,
-                    transfer.SourceBranchId,
-                    line.ProductId,
-                    account.OnHandQuantity,
-                    balances,
-                    utcNow);
-                if (sourceBalance.OnHandQuantity < line.SentQty || account.OnHandQuantity < line.SentQty)
-                {
-                    return ApplicationResult<InventoryTransfer>.Failure(
-                        ApplicationErrorCodes.InsufficientStock,
-                        $"Insufficient available stock to dispatch '{line.NameSnapshot}'.");
-                }
+            var branchNames = await _branches
+                .GetNamesAsync(organizationId, [transfer.SourceBranchId.Value], ct)
+                .ConfigureAwait(false);
+            var sourceBranchName = branchNames.TryGetValue(transfer.SourceBranchId.Value, out var name)
+                && !string.IsNullOrWhiteSpace(name)
+                    ? name
+                    : "source branch";
+
+            var stockGuard = InventoryTransferStock.ValidateSourceAvailability(
+                orgId,
+                transfer.SourceBranchId,
+                sourceBranchName,
+                transfer.Lines.Select(l => new InventoryTransferStockDemand(
+                    l.ProductId,
+                    l.SentQty,
+                    l.NameSnapshot,
+                    l.UnitOfMeasure,
+                    l.SourceLotId)).ToList(),
+                accounts,
+                balances,
+                lotsById,
+                utcNow);
+            if (stockGuard is not null)
+            {
+                return stockGuard;
             }
 
             var number = await _transfers
                 .AllocateNextNumberAsync(orgId, InventoryTransferNumbers.BusinessDateOf(utcNow), ct)
                 .ConfigureAwait(false);
+
+            // Dispatch-time acquisition costs are authoritative (draft may have sat).
+            var dispatchCosts = await _costs
+                .ResolveUnitCostsAsync(orgId, productIds, ct)
+                .ConfigureAwait(false);
+            transfer.RefreshLineUnitCosts(dispatchCosts);
 
             foreach (var line in transfer.Lines)
             {
@@ -350,7 +451,8 @@ public sealed class DispatchInventoryTransfer
                     number,
                     actorId,
                     utcNow,
-                    sellingMode: sellingMode);
+                    sellingMode: sellingMode,
+                    unitCost: line.UnitCostSnapshot);
                 if (line.SourceLotId is not null)
                 {
                     var lot = await _lotRepository
@@ -397,7 +499,8 @@ public sealed class DispatchInventoryTransfer
                         transfer.DestinationBranchId.Value,
                         transfer.Id.Value,
                         transfer.TransferNumber!,
-                        $"Inventory transfer {transfer.TransferNumber} is on the way."),
+                        $"Inventory transfer {transfer.TransferNumber} is on the way.",
+                        transfer.StockRequestId?.Value),
                     ct)
                 .ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -439,6 +542,8 @@ public sealed class ReceiveInventoryTransfer
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
+    private readonly IStockRequestRepository _stockRequests;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -451,6 +556,8 @@ public sealed class ReceiveInventoryTransfer
         InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
+        IStockRequestRepository stockRequests,
+        IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -462,6 +569,8 @@ public sealed class ReceiveInventoryTransfer
         _lots = lots;
         _branches = branches;
         _alerts = alerts;
+        _stockRequests = stockRequests;
+        _notifications = notifications;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -601,7 +710,8 @@ public sealed class ReceiveInventoryTransfer
                     transfer.TransferNumber!,
                     actorId,
                     utcNow,
-                    sellingMode: product.SellingMode);
+                    sellingMode: product.SellingMode,
+                    unitCost: line.UnitCostSnapshot);
                 DateOnly? expiry = line.ExpirationDate;
                 var lotNumber = line.LotNumber;
                 if (line.SourceLotId is not null && expiry is null)
@@ -648,6 +758,56 @@ public sealed class ReceiveInventoryTransfer
                 await _balances.UpsertAsync(destBalance, ct).ConfigureAwait(false);
             }
 
+            if (transfer.StockRequestId is StockRequestId stockRequestId)
+            {
+                var stockRequest = await _stockRequests
+                    .GetByIdAsync(orgId, stockRequestId, ct)
+                    .ConfigureAwait(false);
+                if (stockRequest is not null)
+                {
+                    var linkedTransfers = await _transfers
+                        .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
+                        .ConfigureAwait(false);
+                    var receivedByProduct = linkedTransfers
+                        .Where(t => t.Id != transfer.Id)
+                        .SelectMany(t => t.Lines)
+                        .GroupBy(t => t.ProductId.Value)
+                        .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
+                    foreach (var line in transfer.Lines)
+                    {
+                        receivedByProduct[line.ProductId.Value] =
+                            receivedByProduct.GetValueOrDefault(line.ProductId.Value) + line.ReceivedQty;
+                    }
+
+                    stockRequest.RecalculateStatusFromReceivedQuantities(receivedByProduct, utcNow);
+                    await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
+
+                    if (stockRequest.Status is StockRequestStatus.Fulfilled or StockRequestStatus.PartiallyFulfilled)
+                    {
+                        var relatedType = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? StockRequestNotificationTypes.Received
+                            : StockRequestNotificationTypes.PartiallyReceived;
+                        var title = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? "Stock request received"
+                            : "Stock request partially received";
+                        var preview = stockRequest.Status == StockRequestStatus.Fulfilled
+                            ? $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} was fully received."
+                            : $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} was partially received.";
+                        await _notifications
+                            .PublishAsync(
+                                organizationId,
+                                organizationId,
+                                relatedType,
+                                stockRequest.Id.Value.ToString("D"),
+                                title,
+                                preview,
+                                ct,
+                                stockRequest.RequestedSourceLocationId.Value)
+                            .ConfigureAwait(false);
+                    }
+                }
+            }
+
             await _transfers.UpdateAsync(transfer, ct).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
@@ -661,7 +821,8 @@ public sealed class ReceiveInventoryTransfer
                         transfer.SourceBranchId.Value,
                         transfer.Id.Value,
                         transfer.TransferNumber!,
-                        message),
+                        message,
+                        transfer.StockRequestId?.Value),
                     ct)
                 .ConfigureAwait(false);
             return ApplicationResult<InventoryTransfer>.Success(transfer);
@@ -973,8 +1134,100 @@ internal static class InventoryTransferLineFactory
     }
 }
 
+internal readonly record struct InventoryTransferStockDemand(
+    CatalogProductId ProductId,
+    decimal SentQty,
+    string NameSnapshot,
+    UnitOfMeasure UnitOfMeasure,
+    InventoryLotId? SourceLotId);
+
 internal static class InventoryTransferStock
 {
+    public static ApplicationResult<InventoryTransfer>? ValidateSourceAvailability(
+        PosOrganizationId organizationId,
+        PosBranchId sourceBranchId,
+        string sourceBranchName,
+        IReadOnlyList<InventoryTransferStockDemand> lines,
+        IReadOnlyDictionary<Guid, InventoryAccount> accounts,
+        List<InventoryBranchBalance> balances,
+        IReadOnlyDictionary<Guid, InventoryLot> lotsById,
+        DateTimeOffset utcNow)
+    {
+        foreach (var productGroup in lines.GroupBy(l => l.ProductId.Value))
+        {
+            var sample = productGroup.First();
+            if (!accounts.TryGetValue(productGroup.Key, out var account) || !account.IsTracked)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InventoryTransferProductNotTracked,
+                    $"Inventory is not tracked for '{sample.NameSnapshot}'.");
+            }
+
+            var requested = productGroup.Sum(l => l.SentQty);
+            var sourceBalance = EnsureSourceBalance(
+                organizationId,
+                sourceBranchId,
+                sample.ProductId,
+                account.OnHandQuantity,
+                balances,
+                utcNow);
+            var available = Math.Min(sourceBalance.OnHandQuantity, account.OnHandQuantity);
+            var unit = UnitOfMeasures.ToCode(sample.UnitOfMeasure);
+            if (available <= 0m)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} is out of stock at {sourceBranchName}.");
+            }
+
+            if (available < requested)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} has only {available:0.####} {unit} available at {sourceBranchName}. Requested: {requested:0.####}.");
+            }
+        }
+
+        foreach (var lotGroup in lines
+                     .Where(l => l.SourceLotId is not null)
+                     .GroupBy(l => l.SourceLotId!.Value))
+        {
+            var sample = lotGroup.First();
+            var requested = lotGroup.Sum(l => l.SentQty);
+            if (!lotsById.TryGetValue(lotGroup.Key, out var lot))
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InventoryLotMismatch,
+                    $"Lot was not found for '{sample.NameSnapshot}'.");
+            }
+
+            if (lot.BranchId is not null && lot.BranchId != sourceBranchId)
+            {
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    DomainErrorCodes.InventoryLotMismatch,
+                    $"Lot for '{sample.NameSnapshot}' does not belong to {sourceBranchName}.");
+            }
+
+            if (lot.QuantityOnHand < requested)
+            {
+                var unit = UnitOfMeasures.ToCode(sample.UnitOfMeasure);
+                var lotLabel = string.IsNullOrWhiteSpace(lot.LotNumber) ? "selected lot" : lot.LotNumber;
+                if (lot.QuantityOnHand <= 0m)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InsufficientStock,
+                        $"{sample.NameSnapshot} lot '{lotLabel}' is out of stock at {sourceBranchName}.");
+                }
+
+                return ApplicationResult<InventoryTransfer>.Failure(
+                    ApplicationErrorCodes.InsufficientStock,
+                    $"{sample.NameSnapshot} lot '{lotLabel}' has only {lot.QuantityOnHand:0.####} {unit} available at {sourceBranchName}. Requested: {requested:0.####}.");
+            }
+        }
+
+        return null;
+    }
+
     public static InventoryBranchBalance EnsureSourceBalance(
         PosOrganizationId organizationId,
         PosBranchId sourceBranchId,
@@ -1022,4 +1275,49 @@ public sealed class NoOpInventoryTransferAlertSink : IInventoryTransferAlertSink
 {
     public Task PublishAsync(InventoryTransferAlert alert, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
+}
+
+/// <summary>
+/// Publishes non-stock-request transfer alerts into the organization inbox.
+/// Stock-request-linked transfers skip here; those use <see cref="StockRequestNotificationTypes"/> instead.
+/// </summary>
+public sealed class OrganizationBusinessInventoryTransferAlertSink : IInventoryTransferAlertSink
+{
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+
+    public OrganizationBusinessInventoryTransferAlertSink(IOrganizationBusinessNotificationPublisher notifications) =>
+        _notifications = notifications;
+
+    public async Task PublishAsync(InventoryTransferAlert alert, CancellationToken cancellationToken = default)
+    {
+        if (alert.StockRequestId is not null)
+        {
+            return;
+        }
+
+        var relatedType = alert.Kind switch
+        {
+            "dispatched" => InventoryTransferNotificationTypes.Dispatched,
+            "partially-received" => InventoryTransferNotificationTypes.PartiallyReceived,
+            _ => InventoryTransferNotificationTypes.Received
+        };
+        var title = alert.Kind switch
+        {
+            "dispatched" => "Inventory transfer dispatched",
+            "partially-received" => "Inventory transfer partially received",
+            _ => "Inventory transfer received"
+        };
+
+        await _notifications
+            .PublishAsync(
+                alert.OrganizationId,
+                alert.OrganizationId,
+                relatedType,
+                alert.TransferId.ToString("D"),
+                title,
+                alert.Message,
+                cancellationToken,
+                alert.TargetBranchId)
+            .ConfigureAwait(false);
+    }
 }

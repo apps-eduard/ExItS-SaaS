@@ -29,11 +29,21 @@ internal sealed class PurchaseOrderRecord
     public string? Notes { get; set; }
     public DateTimeOffset? OrderedAtUtc { get; set; }
     public Guid? OrderedBy { get; set; }
+    public DateTimeOffset? CancelledAtUtc { get; set; }
+    public Guid? CancelledByUserId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int PaymentTerm { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
+    public Guid? IntendedReceivingBranchId { get; set; }
+    public DateTimeOffset? RemainingClosedAtUtc { get; set; }
+    public Guid? RemainingClosedByUserId { get; set; }
+    public string? RemainingClosedReason { get; set; }
+    public decimal? FinalAcceptedValue { get; set; }
+    public decimal? CancelledRemainingValue { get; set; }
+    public decimal RefundDueAmount { get; set; }
+    public decimal? AmountPaidSnapshot { get; set; }
     public uint Xmin { get; set; }
 }
 
@@ -76,6 +86,14 @@ internal sealed class GoodsReceiptRecord
     public DateTimeOffset? VoidedAtUtc { get; set; }
     public Guid? VoidedByUserId { get; set; }
     public string? VoidReason { get; set; }
+    public string? GCashReference { get; set; }
+    public string? BankName { get; set; }
+    public string? TransferOrDepositReference { get; set; }
+    public DateOnly? SettlementDate { get; set; }
+    public string? CheckNumber { get; set; }
+    public DateOnly? CheckDate { get; set; }
+    public string? SettlementNotes { get; set; }
+    public string? CheckClearingStatus { get; set; }
 }
 
 internal sealed class GoodsReceiptLineRecord

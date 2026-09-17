@@ -1,9 +1,17 @@
 import { posRequest, PosApiError } from "@/api/pos/pos-http";
+import {
+  normalizeBranchType,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }
 
 export type OperationalBranchContext = {
@@ -13,7 +21,29 @@ export type OperationalBranchContext = {
   deviceMatchesSelectedBranch: boolean;
   deviceBoundBranchId?: string | null;
   openCashierShiftPresent: boolean;
+  /** Retail (default) or Warehouse. */
+  branchType: OrganizationBranchType;
 };
+
+export function normalizeOperationalBranchContext(raw: unknown): OperationalBranchContext {
+  const r = asRecord(raw);
+  return {
+    organizationId: String(r.organizationId ?? r.OrganizationId ?? ""),
+    branchId: String(r.branchId ?? r.BranchId ?? ""),
+    name: String(r.name ?? r.Name ?? ""),
+    deviceMatchesSelectedBranch: Boolean(
+      r.deviceMatchesSelectedBranch ?? r.DeviceMatchesSelectedBranch ?? false,
+    ),
+    deviceBoundBranchId:
+      r.deviceBoundBranchId != null || r.DeviceBoundBranchId != null
+        ? String(r.deviceBoundBranchId ?? r.DeviceBoundBranchId)
+        : null,
+    openCashierShiftPresent: Boolean(
+      r.openCashierShiftPresent ?? r.OpenCashierShiftPresent ?? false,
+    ),
+    branchType: normalizeBranchType(r.branchType ?? r.BranchType),
+  };
+}
 
 /**
  * POS operational branch switch (MAUI parity).
@@ -31,7 +61,7 @@ export async function selectOperationalBranch(input: {
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
-      const context = await posRequest<OperationalBranchContext>({
+      const payload = await posRequest<unknown>({
         method: "PUT",
         path: "/api/v1/pos/operational-branch",
         workspace: {
@@ -44,7 +74,7 @@ export async function selectOperationalBranch(input: {
           deviceBoundBranchId: null,
         },
       });
-      return { ok: true, context };
+      return { ok: true, context: normalizeOperationalBranchContext(payload) };
     } catch (error) {
       if (error instanceof PosApiError) {
         const isRateLimited =

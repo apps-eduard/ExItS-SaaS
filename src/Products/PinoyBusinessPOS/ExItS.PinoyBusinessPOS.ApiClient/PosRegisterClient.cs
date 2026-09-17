@@ -102,6 +102,9 @@ public sealed class PosRegisterClient(HttpClient httpClient, IConnectivityServic
     public Task<ApiResult<PosRegisterDto>> CreateAsync(CreateRegisterRequest request, CancellationToken ct = default) =>
         SendAsync<PosRegisterDto>(HttpMethod.Post, Path, request, ct);
 
+    public Task<ApiResult<PosRegisterDto>> EnsureAvailableForPwaShiftAsync(CancellationToken ct = default) =>
+        SendAsync<PosRegisterDto>(HttpMethod.Post, $"{Path}/ensure-available-for-pwa-shift", new { }, ct);
+
     public Task<ApiResult<PosRegisterDto>> UpdateAsync(
         Guid registerId,
         UpdateRegisterRequest request,

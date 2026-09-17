@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Link2, RefreshCw } from "lucide-react";
+import { Link2, RefreshCw, Users } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { listLinkedMerchants } from "@/api/platform/linked-merchants-client";
 import { Button } from "@/components/ui/button";
@@ -134,10 +134,12 @@ export function LinkedMerchantsPage() {
       {items.length === 0 ? (
         <div className="pc-empty-panel exits-animate-panel flex flex-col gap-3">
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.merchantsEmptyTitle")}
             detail={t("personal.merchantsEmptyDetail")}
           />
-          <Button asChild className="min-h-11 w-full gap-2" data-testid="open-customer-links-empty">
+          <Button asChild className="w-full gap-2" data-testid="open-customer-links-empty">
             <Link to="/personal/customer-links">
               <Link2 className="size-4 shrink-0" aria-hidden />
               {t("personal.customerLinks.title")}

@@ -1,0 +1,23 @@
+---
+description: PinoyBusinessPOS React ExItS Card standard — reuse Card foundation; follow Docs/UI/exits-card-standard.md
+globs: src/Products/PinoyBusinessPOS/ExItS.PinoyBusinessPOS.React/**,src/Products/PinoyBusinessPOS/Docs/UI/**
+alwaysApply: false
+---
+
+# PinoyBusinessPOS React Card Standard
+
+For PinoyBusinessPOS React card / container presentation work:
+
+1. Follow `src/Products/PinoyBusinessPOS/Docs/UI/exits-card-standard.md` (authoritative contract).
+2. Reuse `components/ui/card.tsx` + `components/exits/card-variants.ts`. Do **not** invent page-local visual Card systems when the shared foundation can express the need.
+3. Keep **type/purpose**, **treatment**, and **motion** independent. Locked types: BASIC · SUMMARY · KPI · ACTION · ENTITY · PRODUCT · SELECTABLE · STATUS · COMPACT · FEATURED. Treatments: SURFACE · BORDERED · ELEVATED · INTERACTIVE · SELECTED · ACCENT · FEATURED. Layouts: VERTICAL · HORIZONTAL. Motion: STATIC · LIFT · EXPAND · ACCENT · MEDIA ZOOM · HOVER REVEAL.
+4. Defaults: information → BORDERED/SURFACE + STATIC; clickable entity → LIFT; prominent clickable → EXPAND (`expandScale` standard ≈ 1.02, transform only); selectable → selection feedback (no strong expand); KPI → STATIC unless clickable; featured → Featured/Accent + EXPAND.
+5. Style selected / accent / featured through ExItS Primary tokens — **PRIMARY is not hardcoded green**. SUCCESS/WARNING/DANGER/INFO accents stay semantic.
+6. Reuse locked Button, Chip, Tabs, and ExitsTable inside Cards — do not invent Card-local button/chip/tab/table styling.
+7. Preserve Preferences theme (light / dark / system) and density (compact / balance / comfort). Respect `prefers-reduced-motion`. Prefer logical properties for RTL accents and indicators.
+8. Static Cards must not imitate interactive Cards. Hover must not hide required business functionality. Selectable ≠ Interactive.
+9. Not everything needs a Card — avoid nested Cards and decorative boxes with no grouping purpose.
+10. Explicit task overrides take precedence over standard defaults. Domain correctness and accessibility remain mandatory.
+
+Keep detailed rules in the markdown standard. Visual reference: `/ui-standards` → Cards.
+Do not modify the locked Table, Button, Chip, or Tabs standards.

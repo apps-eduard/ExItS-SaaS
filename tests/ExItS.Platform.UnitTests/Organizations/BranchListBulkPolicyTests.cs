@@ -105,6 +105,29 @@ public sealed class BranchListBulkPolicyTests
         Assert.DoesNotContain(result, dto => dto.Id == iloilo.Id.Value);
     }
 
+    /// <summary>
+    /// Platform Admin portfolio readers are not org members. Staff branch-access resolves to an
+    /// empty set for them; the organization-directory path must still return every org branch.
+    /// </summary>
+    [Fact]
+    public async Task ListBranches_organization_directory_returns_all_when_staff_access_is_empty()
+    {
+        var main = OrganizationBranch.Create(Org, "BR-MAIN", "Main", T0);
+        var north = OrganizationBranch.Create(Org, "BR-N", "North", T0.AddMinutes(1));
+        var useCase = BuildUseCase(
+            [main, north],
+            new InMemoryOrganizationAreaRepository(),
+            new ExplicitBranchAccess());
+
+        var filtered = await useCase.ExecuteAsync(Org, PlatformUserId.New());
+        Assert.Empty(filtered);
+
+        var directory = await useCase.ExecuteForOrganizationDirectoryAsync(Org);
+        Assert.Equal(2, directory.Count);
+        Assert.Contains(directory, dto => dto.Id == main.Id.Value);
+        Assert.Contains(directory, dto => dto.Id == north.Id.Value);
+    }
+
     private static ListBranches BuildUseCase(
         IReadOnlyList<OrganizationBranch> branches,
         InMemoryOrganizationAreaRepository areaRepository,

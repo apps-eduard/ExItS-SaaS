@@ -11,6 +11,11 @@ export type PhilippineLocalityDto = {
   displayLabel: string;
 };
 
+export type PhilippineRegionDto = {
+  regionCode: string;
+  regionName: string;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 }
@@ -37,6 +42,14 @@ export function normalizePhilippineLocality(raw: unknown): PhilippineLocalityDto
   };
 }
 
+export function normalizePhilippineRegion(raw: unknown): PhilippineRegionDto {
+  const r = asRecord(raw);
+  return {
+    regionCode: String(r.regionCode ?? r.RegionCode ?? ""),
+    regionName: String(r.regionName ?? r.RegionName ?? ""),
+  };
+}
+
 export async function searchPhilippineLocalities(
   query: string,
   limit = 20,
@@ -47,6 +60,28 @@ export async function searchPhilippineLocalities(
   params.set("limit", String(limit));
   const body = await platformRequest<unknown>({
     path: `/api/v1/platform/reference/ph/localities?${params.toString()}`,
+    signal,
+  });
+  const items = Array.isArray(body) ? body : [];
+  return items.map(normalizePhilippineLocality).filter((x) => x.psgcCode.length > 0);
+}
+
+export async function listPhilippineRegions(signal?: AbortSignal): Promise<PhilippineRegionDto[]> {
+  const body = await platformRequest<unknown>({
+    path: "/api/v1/platform/reference/ph/regions",
+    signal,
+  });
+  const items = Array.isArray(body) ? body : [];
+  return items.map(normalizePhilippineRegion).filter((x) => x.regionCode.length > 0);
+}
+
+export async function listPhilippineLocalitiesByRegion(
+  regionCode: string,
+  signal?: AbortSignal,
+): Promise<PhilippineLocalityDto[]> {
+  const encoded = encodeURIComponent(regionCode);
+  const body = await platformRequest<unknown>({
+    path: `/api/v1/platform/reference/ph/regions/${encoded}/localities`,
     signal,
   });
   const items = Array.isArray(body) ? body : [];

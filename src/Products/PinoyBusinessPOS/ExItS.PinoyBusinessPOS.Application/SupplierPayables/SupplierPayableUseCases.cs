@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Suppliers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
@@ -14,15 +15,18 @@ public sealed class SupplierPayableQueryService
 {
     private readonly ISupplierPayableRepository _payables;
     private readonly ISupplierRepository _suppliers;
+    private readonly SupplierPayableSourceReferenceResolver _sourceReferences;
     private readonly IClock _clock;
 
     public SupplierPayableQueryService(
         ISupplierPayableRepository payables,
         ISupplierRepository suppliers,
+        SupplierPayableSourceReferenceResolver sourceReferences,
         IClock clock)
     {
         _payables = payables;
         _suppliers = suppliers;
+        _sourceReferences = sourceReferences;
         _clock = clock;
     }
 
@@ -43,7 +47,10 @@ public sealed class SupplierPayableQueryService
         var supplier = await _suppliers
             .GetByIdAsync(org, payable.SupplierId, cancellationToken)
             .ConfigureAwait(false);
-        return SupplierPayableMapper.Map(payable, supplier?.Name, AsOfDate());
+        var sourceReference = await _sourceReferences
+            .ResolveOneAsync(org, payable, cancellationToken)
+            .ConfigureAwait(false);
+        return SupplierPayableMapper.Map(payable, supplier?.Name, AsOfDate(), sourceReference);
     }
 
     public async Task<PagedResult<PosSupplierPayableDto>> ListAsync(
@@ -80,9 +87,17 @@ public sealed class SupplierPayableQueryService
         var names = await LoadSupplierNamesAsync(org, items.Select(i => i.SupplierId).Distinct(), cancellationToken)
             .ConfigureAwait(false);
         var asOf = AsOfDate();
+        var sourceRefs = await _sourceReferences
+            .ResolveAsync(org, items, cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosSupplierPayableDto>(
-            items.Select(p => SupplierPayableMapper.Map(p, names.GetValueOrDefault(p.SupplierId.Value), asOf)).ToList(),
+            items.Select(p => SupplierPayableMapper.Map(
+                    p,
+                    names.GetValueOrDefault(p.SupplierId.Value),
+                    asOf,
+                    sourceRefs.GetValueOrDefault(p.Id.Value)))
+                .ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -154,8 +169,16 @@ public sealed class SupplierPayableQueryService
         var names = await LoadSupplierNamesAsync(org, items.Select(i => i.SupplierId).Distinct(), cancellationToken)
             .ConfigureAwait(false);
 
+        var sourceRefs = await _sourceReferences
+            .ResolveAsync(org, items, cancellationToken)
+            .ConfigureAwait(false);
+
         var payables = items
-            .Select(p => SupplierPayableMapper.MapReportRow(p, names.GetValueOrDefault(p.SupplierId.Value), asOf))
+            .Select(p => SupplierPayableMapper.MapReportRow(
+                p,
+                names.GetValueOrDefault(p.SupplierId.Value),
+                asOf,
+                sourceRefs.GetValueOrDefault(p.Id.Value)))
             .ToList();
 
         var summary = BuildReportSummary(items, asOf);
@@ -271,18 +294,20 @@ public sealed class SupplierPayableQueryService
 
 public sealed class RecordSupplierPayablePayment
 {
-    private readonly ISupplierPayableRepository _payables;
     private readonly IPosCommercialAccessAccessor _access;
-    private readonly IClock _clock;
 
     public RecordSupplierPayablePayment(
         ISupplierPayableRepository payables,
         IPosCommercialAccessAccessor access,
-        IClock clock)
+        IClock clock,
+        ConnectedB2bPaymentMirror? b2bMirror = null)
     {
-        _payables = payables;
+        // Constructor shape preserved for DI; payables/clock/mirror unused while buyer
+        // manual settle is rejected. Seller→buyer mirror uses ApplyPayment directly.
+        _ = payables;
+        _ = clock;
+        _ = b2bMirror;
         _access = access;
-        _clock = clock;
     }
 
     public async Task<ApplicationResult<PosSupplierPayablePaymentDto>> ExecuteAsync(
@@ -292,55 +317,19 @@ public sealed class RecordSupplierPayablePayment
         Guid actorId,
         CancellationToken cancellationToken = default)
     {
+        await Task.CompletedTask.ConfigureAwait(false);
+
         var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
         if (!gate.IsSuccess)
         {
             return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
         }
 
-        if (actorId == Guid.Empty)
-        {
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                ApplicationErrorCodes.ActorRequired,
-                "An actor identifier is required to record a supplier payment.");
-        }
-
-        try
-        {
-            if (!SupplierPayablePaymentMethods.TryParse(request.PaymentMethod, out var method))
-            {
-                return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                    DomainErrorCodes.InvalidSupplierPayablePaymentMethod,
-                    $"Payment method must be one of: {string.Join(", ", SupplierPayablePaymentMethods.Codes)}.");
-            }
-
-            var org = PosOrganizationId.From(organizationId);
-            var id = SupplierPayableId.From(payableId);
-            var payable = await _payables.GetByIdAsync(org, id, cancellationToken).ConfigureAwait(false);
-            if (payable is null)
-            {
-                return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
-                    ApplicationErrorCodes.SupplierPayableNotFound,
-                    "Supplier payable was not found.");
-            }
-
-            var utcNow = _clock.UtcNow;
-            var payment = payable.ApplyPayment(
-                request.Amount,
-                method,
-                actorId,
-                utcNow,
-                request.PaidAtUtc,
-                request.Reference,
-                request.Notes);
-
-            await _payables.UpdateAsync(payable, cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Success(
-                SupplierPayableMapper.MapPayment(payment));
-        }
-        catch (DomainException ex)
-        {
-            return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(ex.ErrorCode, ex.Message);
-        }
+        // Buyer free manual settle is forbidden. Seller→buyer mirror applies
+        // SupplierPayable.ApplyPayment directly and must not use this use case.
+        _ = (organizationId, payableId, request, actorId, cancellationToken);
+        return ApplicationResult<PosSupplierPayablePaymentDto>.Failure(
+            DomainErrorCodes.SupplierPayableBuyerManualSettlementForbidden,
+            "Buyer manual settlement of supplier payables is not allowed. Use online payment when Platform makes it available, or wait for the supplier to record payment.");
     }
 }

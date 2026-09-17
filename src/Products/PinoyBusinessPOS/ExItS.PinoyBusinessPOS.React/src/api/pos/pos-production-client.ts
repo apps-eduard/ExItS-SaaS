@@ -177,6 +177,12 @@ export type CreateProductionRunMaterialOverrideRequest = {
   productUnitId?: string | null;
 };
 
+export type CreateProductionRunExtraMaterialRequest = {
+  materialProductId: string;
+  actualQuantity: number;
+  productUnitId?: string | null;
+};
+
 export type CreateProductionRunRequest = {
   productionDefinitionId: string;
   outputQuantity: number;
@@ -188,6 +194,7 @@ export type CreateProductionRunRequest = {
   outputExpirationDate?: string | null;
   outputLotNumber?: string | null;
   materialOverrides?: CreateProductionRunMaterialOverrideRequest[] | null;
+  extraMaterials?: CreateProductionRunExtraMaterialRequest[] | null;
   productionRunId?: string | null;
 };
 
@@ -439,6 +446,18 @@ export async function createProductionRun(
       };
       if (ov.productUnitId) {
         entry.productUnitId = ov.productUnitId;
+      }
+      return entry;
+    });
+  }
+  if (body.extraMaterials && body.extraMaterials.length > 0) {
+    payload.extraMaterials = body.extraMaterials.map((extra) => {
+      const entry: Record<string, unknown> = {
+        materialProductId: extra.materialProductId,
+        actualQuantity: extra.actualQuantity,
+      };
+      if (extra.productUnitId) {
+        entry.productUnitId = extra.productUnitId;
       }
       return entry;
     });

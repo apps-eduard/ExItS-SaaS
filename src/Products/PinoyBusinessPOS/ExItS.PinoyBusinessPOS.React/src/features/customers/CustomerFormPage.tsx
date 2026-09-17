@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, Contact, IdCard, Loader2, Save, UserRound, Users } from "lucide-react";
+import { CircleCheck, Contact, IdCard, Loader2, ArrowLeft, Save, UserRound, Users } from "lucide-react";
 import {
   createBusinessCustomerWithPersonalLink,
   evaluateCustomerLinkEligibility,
@@ -20,6 +20,7 @@ import { findExistingCheckoutCustomerForPersonalId } from "@/features/checkout/f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -32,18 +33,37 @@ import { useI18n } from "@/i18n/I18nProvider";
 import { getCachedCustomer } from "@/offline/customer-cache";
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
-import { cn } from "@/lib/cn";
 
 type Mode = "create" | "edit";
 /** Create path: walk-in (no ExItS ID) vs Personal ExItS link. */
 type CreateKind = "walkin" | "exits";
 
+function composeCustomerAddress(parts: {
+  addressLine1: string;
+  cityMunicipality: string;
+  province: string;
+  postalCode: string;
+}): string | null {
+  const composed = [
+    parts.addressLine1.trim(),
+    parts.cityMunicipality.trim(),
+    parts.province.trim(),
+    parts.postalCode.trim(),
+  ].filter(Boolean);
+  return composed.length > 0 ? composed.join(", ") : null;
+}
+
 export function CustomerCreatePage() {
   return <CustomerFormPage mode="create" />;
 }
 
+/** Legacy edit route → detail page with store-details drawer open. */
 export function CustomerEditPage() {
-  return <CustomerFormPage mode="edit" />;
+  const { customerId } = useParams<{ customerId: string }>();
+  if (!customerId) {
+    return <Navigate to="/customers" replace />;
+  }
+  return <Navigate to={`/customers/${customerId}?edit=1`} replace />;
 }
 
 function CustomerFormPage({ mode }: { mode: Mode }) {
@@ -60,7 +80,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
 
   const [displayName, setDisplayName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
-  const [address, setAddress] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [cityMunicipality, setCityMunicipality] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
   const [notes, setNotes] = useState("");
   const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -88,7 +111,11 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     }
     setDisplayName(existing.data.displayName);
     setMobileNumber(existing.data.mobileNumber ?? "");
-    setAddress(existing.data.address ?? "");
+    // Backend stores a single address string; keep prior text in street line on edit.
+    setAddressLine1(existing.data.address ?? "");
+    setCityMunicipality("");
+    setProvince("");
+    setPostalCode("");
     setNotes(existing.data.notes ?? "");
     setExpectedUpdatedAtUtc(existing.data.updatedAtUtc);
   }, [existing.data]);
@@ -109,7 +136,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
         }
         setDisplayName(cachedCustomer.displayName);
         setMobileNumber(cachedCustomer.mobileNumber ?? "");
-        setAddress(cachedCustomer.address ?? "");
+        setAddressLine1(cachedCustomer.address ?? "");
+        setCityMunicipality("");
+        setProvince("");
+        setPostalCode("");
         setNotes(cachedCustomer.notes ?? "");
         setExpectedUpdatedAtUtc(cachedCustomer.updatedAtUtc);
       },
@@ -150,7 +180,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     const created = await createCustomer(workspace!, {
       displayName: name,
       mobileNumber,
-      address,
+      address: composeCustomerAddress({
+        addressLine1,
+        cityMunicipality,
+        province,
+        postalCode,
+      }),
       notes,
       platformBusinessCustomerId: null,
     });
@@ -185,7 +220,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
     const created = await createCustomer(workspace!, {
       displayName: name,
       mobileNumber,
-      address,
+      address: composeCustomerAddress({
+        addressLine1,
+        cityMunicipality,
+        province,
+        postalCode,
+      }),
       notes: taggedNotes,
       platformBusinessCustomerId: linkResult.customerId,
       linkedPersonalPublicUserId: identity.publicUserId,
@@ -232,7 +272,12 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       const updated = await updateCustomer(workspace, customerId!, {
         displayName: name,
         mobileNumber,
-        address,
+        address: composeCustomerAddress({
+          addressLine1,
+          cityMunicipality,
+          province,
+          postalCode,
+        }),
         notes,
         expectedUpdatedAtUtc,
       });
@@ -334,30 +379,24 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             : t("customers.formLede")
         }
         backTo={
-          mode === "edit" && customerId ? `/customers/${customerId}` : pageBackNav.customers.to
+          mode === "edit" && customerId ? `/customers/${customerId}` : "/customers/new"
         }
         backLabel={
           mode === "edit" && customerId
             ? t("customers.backDetail")
-            : t(pageBackNav.customers.labelKey)
+            : t("customers.add")
         }
         backTestId="page-header-back-customers"
       />
       {!online ? (
-        <div className="exits-alert" data-testid="customer-form-offline-notice" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.customerWillQueue")}
-          </p>
-        </div>
+        <Notice tone="info" testId="customer-form-offline-notice">
+          {t("offline.customerWillQueue")}
+        </Notice>
       ) : null}
       {error ? (
-        <div
-          className="exits-alert exits-alert--error"
-          data-testid="customer-form-error"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{error}</p>
-        </div>
+        <Notice tone="danger" testId="customer-form-error">
+          {error}
+        </Notice>
       ) : null}
 
       {mode === "create" ? (
@@ -405,7 +444,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
                   resetExitsLookup();
                   setDisplayName("");
                   setMobileNumber("");
-                  setAddress("");
+                  setAddressLine1("");
+                  setCityMunicipality("");
+                  setProvince("");
+                  setPostalCode("");
                   setNotes("");
                 }
                 setCreateKind("exits");
@@ -493,7 +535,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             resetExitsLookup();
             setDisplayName("");
             setMobileNumber("");
-            setAddress("");
+            setAddressLine1("");
+            setCityMunicipality("");
+            setProvince("");
+            setPostalCode("");
             setNotes("");
           }}
         />
@@ -504,7 +549,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       (eligibilityLoading || checkingExisting) &&
       !existingContact ? (
         <p
-          className="m-0 inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
+          className="m-0 inline-flex items-center gap-2 text-[length:var(--exits-text-sm)] text-muted"
           data-testid="customer-link-eligibility-loading"
         >
           <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
@@ -513,13 +558,7 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       ) : null}
 
       {mode === "create" && createKind === "exits" && eligibilityFailed ? (
-        <div
-          className="exits-alert exits-alert--error"
-          data-testid="customer-link-eligibility-failed"
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{t("customers.linkElig.failed")}</p>
-        </div>
+        <Notice tone="danger" testId="customer-link-eligibility-failed">{t("customers.linkElig.failed")}</Notice>
       ) : null}
 
       {mode === "create" &&
@@ -527,25 +566,23 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
       linkEligibility &&
       linkEligibility.status !== "Eligible" &&
       !eligibilityLoading ? (
-        <div
-          className="exits-alert exits-alert--warning"
-          data-testid={`customer-link-eligibility-${linkEligibility.status}`}
-          role="alert"
-        >
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {eligibilityMessage(linkEligibility.status)}
-          </p>
-          {existingContact ? (
-            <Button asChild className="mt-2 min-h-11 w-full sm:w-auto">
-              <Link
-                to={`/customers/${existingContact.customerId}`}
-                data-testid="customer-link-view-existing"
-              >
-                {t("customers.openExisting")}
-              </Link>
-            </Button>
-          ) : null}
-        </div>
+        <Notice
+          tone="warning"
+          testId={`customer-link-eligibility-${linkEligibility.status}`}
+          title={eligibilityMessage(linkEligibility.status)}
+          action={
+            existingContact ? (
+              <Button asChild className="w-full sm:w-auto">
+                <Link
+                  to={`/customers/${existingContact.customerId}`}
+                  data-testid="customer-link-view-existing"
+                >
+                  {t("customers.openExisting")}
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       ) : null}
 
       {mode === "create" && !online ? (
@@ -577,19 +614,10 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
           {t("customers.sectionInfo")}
         </h2>
         {createKind === "exits" && foundIdentity ? (
-          <div
-            className="exits-alert exits-alert--success"
-            data-testid="customer-exits-invite-hint"
-            role="status"
-          >
-            <CircleCheck className="exits-alert__icon size-5 shrink-0 text-[var(--exits-success)]" aria-hidden />
-            <p className="exits-alert__content m-0 text-[length:var(--exits-text-sm)]">
-              {t("customers.personalLink.confirmHint").replace(
+          <Notice tone="success" testId="customer-exits-invite-hint">{t("customers.personalLink.confirmHint").replace(
                 "{name}",
                 displayName.trim() || foundIdentity.displayName,
-              )}
-            </p>
-          </div>
+              )}</Notice>
         ) : null}
         <div className="catalog-form-section__grid">
           <Input
@@ -635,20 +663,23 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
             disabled={saving}
             onChange={(event) => setMobileNumber(event.target.value)}
           />
-          <Input
-            label={t("customers.address")}
-            id="customer-address"
-            name="customerAddress"
-            data-testid="customer-address"
-            autoComplete="street-address"
-            value={address}
-            disabled={saving}
-            onChange={(event) => setAddress(event.target.value)}
-          />
-          <label
-            className="catalog-form-field--full flex min-w-0 flex-col gap-1.5"
-            htmlFor="customer-notes"
-          >
+          <label className="flex min-w-0 flex-col gap-1.5" htmlFor="customer-address">
+            <span className="text-[length:var(--exits-text-sm)] font-semibold">
+              {t("suppliers.addressLine1")}
+            </span>
+            <textarea
+              id="customer-address"
+              name="customerAddress"
+              data-testid="customer-address"
+              className="customer-form-notes min-h-[4.25rem] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+              rows={2}
+              autoComplete="street-address"
+              value={addressLine1}
+              disabled={saving}
+              onChange={(event) => setAddressLine1(event.target.value)}
+            />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1.5" htmlFor="customer-notes">
             <span className="text-[length:var(--exits-text-sm)] font-semibold">
               {t("customers.notes")}
             </span>
@@ -656,38 +687,82 @@ function CustomerFormPage({ mode }: { mode: Mode }) {
               id="customer-notes"
               name="customerNotes"
               data-testid="customer-notes"
-              className="customer-form-notes min-h-24 w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+              className="customer-form-notes min-h-[4.25rem] w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-[length:var(--exits-text-md)] text-foreground"
+              rows={2}
               value={notes}
               disabled={saving}
               onChange={(event) => setNotes(event.target.value)}
             />
           </label>
+          <div className="catalog-form-field--full grid gap-3 sm:grid-cols-3">
+            <Input
+              label={t("suppliers.city")}
+              id="customer-city"
+              name="customerCity"
+              data-testid="customer-city"
+              autoComplete="address-level2"
+              value={cityMunicipality}
+              disabled={saving}
+              onChange={(event) => setCityMunicipality(event.target.value)}
+            />
+            <Input
+              label={t("suppliers.province")}
+              id="customer-province"
+              name="customerProvince"
+              data-testid="customer-province"
+              autoComplete="address-level1"
+              value={province}
+              disabled={saving}
+              onChange={(event) => setProvince(event.target.value)}
+            />
+            <Input
+              label={t("suppliers.postalCode")}
+              id="customer-postal"
+              name="customerPostal"
+              data-testid="customer-postal"
+              autoComplete="postal-code"
+              value={postalCode}
+              disabled={saving}
+              onChange={(event) => setPostalCode(event.target.value)}
+            />
+          </div>
         </div>
       </section>
       ) : null}
 
       {showSave ? (
-      <div className={cn("catalog-form-actions", "customer-form-actions")}>
-        <div className="catalog-form-actions__primary flex flex-col gap-2 sm:flex-row">
+      <div className="supplier-form-actions flex flex-wrap items-center justify-end gap-2 border-t border-border px-3 py-3 sm:px-4">
+        {mode === "create" ? (
           <Button
-            type="submit"
-            className="catalog-form-actions__save"
-            data-testid="customer-save"
-            disabled={saving || Boolean(existingContact)}
+            asChild
+            variant="outline"
+            className="supplier-form-cancel-btn w-fit"
+            disabled={saving}
           >
-            {saving ? (
-              <>
-                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-                {t("customers.saving")}
-              </>
-            ) : (
-              <>
-                <Save className="size-4 shrink-0" aria-hidden />
-                {primarySaveLabel}
-              </>
-            )}
+            <Link to="/customers/new" data-testid="customer-back-options">
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              {t("customers.backCustomerChooser")}
+            </Link>
           </Button>
-        </div>
+        ) : null}
+        <Button
+          type="submit"
+          className="supplier-form-save-btn w-fit"
+          data-testid="customer-save"
+          disabled={saving || Boolean(existingContact)}
+        >
+          {saving ? (
+            <>
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              {t("customers.saving")}
+            </>
+          ) : (
+            <>
+              <Save className="size-4 shrink-0" aria-hidden />
+              {primarySaveLabel}
+            </>
+          )}
+        </Button>
       </div>
       ) : null}
     </form>

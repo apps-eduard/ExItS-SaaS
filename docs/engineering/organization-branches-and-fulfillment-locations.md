@@ -44,7 +44,7 @@ New branch inventory starts zero/unallocated to the primary. Stock arrives only 
 
 Staff are not auto-assigned to a new branch. Devices stay bound to the registration branch. Main readiness never satisfies Branch B.
 
-Owner/Administrator may select any Active organization branch as **management context** (`SelectedBranchId`) without rebinding the POS device and without gaining `CreateSale` / `EnterPos`. Enter POS on another branch requires a device registered for that branch. An open cashier shift blocks switching the selected operational branch.
+Owner/Administrator may select any Active organization branch as **management context** (`SelectedBranchId`) without rebinding the POS device and without gaining `CreateSale` / `EnterPos`. Enter POS on another branch requires a device registered for that branch. An open cashier shift blocks **cashier** (non-owner) switching of the selected operational branch; Organization Owner/Administrator and POS Owner/Admin roles may switch with an open shift still present.
 
 **Workspace selection (P28-WP14):** one `/workspace-select` flow chooses Organization + Branch together via `SelectWorkspaceAsync`. Burger menu **Switch workspace** is the only switch entry point; the topbar shows org + branch display-only. See [P28-WP14](../reports/P28-WP14-unified-organization-branch-workspace-selection.md).
 

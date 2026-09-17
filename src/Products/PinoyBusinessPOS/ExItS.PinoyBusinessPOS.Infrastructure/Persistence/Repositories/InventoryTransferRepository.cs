@@ -131,6 +131,28 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         return (items, total);
     }
 
+    public async Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdAsync(
+        PosOrganizationId organizationId,
+        StockRequestId stockRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.InventoryTransfers.AsNoTracking()
+            .Where(t => t.OrganizationId == organizationId.Value && t.StockRequestId == stockRequestId.Value)
+            .OrderBy(t => t.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count == 0)
+        {
+            return [];
+        }
+
+        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return records
+            .Select(r => InventoryTransferEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .ToList();
+    }
+
     public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
     {
         _db.InventoryTransfers.Add(InventoryTransferEntityMapper.ToRecord(transfer));

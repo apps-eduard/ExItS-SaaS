@@ -8,6 +8,29 @@ internal static class PartyBranchAccessEndpoints
 {
     public static IEndpointRouteBuilder MapPartyBranchAccessEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/api/v1/pos/parties/customers/{customerId:guid}/branch-access", async (
+            HttpRequest request,
+            Guid customerId,
+            PartyBranchExplicitAssignService service,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!PosOrganizationScope.TryGetOrganizationId(request, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            if (!PosCommercialScope.TryAuthorize(access, UtangCapability.ViewCustomersAndHistory, out problem))
+            {
+                return problem!;
+            }
+
+            var result = await service
+                .ListCustomerAccessAsync(organizationId, customerId, ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         app.MapPost("/api/v1/pos/parties/customers/{customerId:guid}/branch-access", async (
             HttpRequest request,
             Guid customerId,

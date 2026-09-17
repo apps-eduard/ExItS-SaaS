@@ -89,7 +89,7 @@ export function ShellConnectionButton({
           onClick={onClick}
           onKeyDown={onKeyDown}
           className={cn(
-            "shell-connection-trigger inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "shell-connection-trigger inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             online ? "shell-connection-trigger--online" : "shell-connection-trigger--offline",
             className,
           )}
@@ -197,7 +197,7 @@ export function ShellConnectionButton({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="shell-connection-panel__action min-h-11 w-full justify-start gap-2"
+                  className="shell-connection-panel__action w-full justify-start gap-2"
                   data-testid={`${testId}-refresh`}
                   onClick={() => {
                     void queryClient.invalidateQueries();
@@ -213,7 +213,7 @@ export function ShellConnectionButton({
                 <Button
                   type="button"
                   variant="ghost"
-                  className="shell-connection-panel__action min-h-11 w-full justify-start gap-2"
+                  className="shell-connection-panel__action w-full justify-start gap-2"
                   data-testid={`${testId}-retry-sync`}
                   onClick={() => {
                     void retrySync();

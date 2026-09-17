@@ -48,6 +48,7 @@ export const expenseCategoryPagedResultSchema = z.object({
 export const expenseDtoSchema = z.object({
   expenseId: guidSchema,
   organizationId: guidSchema,
+  branchId: guidSchema.nullable().optional(),
   expenseNumber: z.string(),
   categoryId: guidSchema,
   categoryName: z.string().nullable().optional(),
@@ -98,11 +99,26 @@ export const expenseSummaryDtoSchema = z.object({
   byPaymentMethod: z.array(expensePaymentSummaryDtoSchema),
 });
 
+export const expenseScopeBranchDtoSchema = z.object({
+  branchId: guidSchema,
+  name: z.string(),
+});
+
+export const expenseScopeOptionsDtoSchema = z.object({
+  canViewOrganization: z.boolean(),
+  canCreateOrganizationWide: z.boolean(),
+  canViewAllBranches: z.boolean(),
+  canViewAllExpenses: z.boolean(),
+  branches: z.array(expenseScopeBranchDtoSchema),
+});
+
 export type PosExpenseCategoryDto = z.infer<typeof expenseCategoryDtoSchema>;
 export type PosExpenseCategoryPagedResult = z.infer<typeof expenseCategoryPagedResultSchema>;
 export type PosExpenseDto = z.infer<typeof expenseDtoSchema>;
 export type PosExpensePagedResult = z.infer<typeof expensePagedResultSchema>;
 export type PosExpenseSummaryDto = z.infer<typeof expenseSummaryDtoSchema>;
+export type PosExpenseScopeBranchDto = z.infer<typeof expenseScopeBranchDtoSchema>;
+export type PosExpenseScopeOptionsDto = z.infer<typeof expenseScopeOptionsDtoSchema>;
 
 export type ListExpenseCategoriesOptions = {
   status?: string;
@@ -120,6 +136,8 @@ export type ListExpensesOptions = {
   expenseNumber?: string;
   page?: number;
   pageSize?: number;
+  scope?: string;
+  branchId?: string;
 };
 
 export type RecordExpenseRequest = {
@@ -131,6 +149,7 @@ export type RecordExpenseRequest = {
   payee?: string | null;
   gCashReference?: string | null;
   expenseId?: string | null;
+  branchId?: string | null;
 };
 
 export type CreateExpenseCategoryRequest = {
@@ -162,9 +181,15 @@ function trimOrUndef(value: string | null | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-/** Organization-scoped workspace — expenses have no BranchId. */
-export function expenseWorkspaceScope(organizationId: string): PosWorkspaceScope {
-  return { organizationId };
+/** Expenses workspace — include bound branch so API can default preferred scope. */
+export function expenseWorkspaceScope(
+  organizationId: string,
+  branchId?: string | null,
+): PosWorkspaceScope {
+  const trimmedBranch = branchId?.trim();
+  return trimmedBranch
+    ? { organizationId, branchId: trimmedBranch }
+    : { organizationId };
 }
 
 export async function listExpenseCategories(
@@ -267,6 +292,19 @@ export async function reactivateExpenseCategory(
   return expenseCategoryDtoSchema.parse(raw);
 }
 
+export async function getExpenseScopeOptions(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosExpenseScopeOptionsDto> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${EXPENSES_PATH}/scope-options`,
+  });
+  return expenseScopeOptionsDtoSchema.parse(raw);
+}
+
 export async function listExpenses(
   workspace: PosWorkspaceScope,
   options: ListExpensesOptions = {},
@@ -285,6 +323,8 @@ export async function listExpenses(
       fromDate: options.fromDate,
       toDate: options.toDate,
       expenseNumber: options.expenseNumber,
+      scope: options.scope,
+      branchId: options.branchId,
     }),
   });
   return expensePagedResultSchema.parse(raw);
@@ -323,6 +363,11 @@ export async function recordExpense(
     expenseDate: body.expenseDate,
     expenseId,
   };
+  if (body.branchId?.trim()) {
+    payload.branchId = body.branchId.trim();
+  } else if (body.branchId === null) {
+    payload.branchId = null;
+  }
   const payee = trimOrUndef(body.payee);
   if (payee) {
     payload.payee = payee;
@@ -369,7 +414,7 @@ export async function voidExpense(
 
 export async function getExpenseSummary(
   workspace: PosWorkspaceScope,
-  options: { fromDate?: string; toDate?: string } = {},
+  options: { fromDate?: string; toDate?: string; scope?: string; branchId?: string } = {},
   signal?: AbortSignal,
 ): Promise<PosExpenseSummaryDto> {
   const raw = await posRequest<unknown>({
@@ -379,6 +424,8 @@ export async function getExpenseSummary(
     path: appendQuery(`${EXPENSES_PATH}/summary`, {
       fromDate: options.fromDate,
       toDate: options.toDate,
+      scope: options.scope,
+      branchId: options.branchId,
     }),
   });
   return expenseSummaryDtoSchema.parse(raw);

@@ -41,6 +41,36 @@ export function resolveOrganizationNotificationHref(
     return "/suppliers/connected/requests";
   }
 
+  if (type === "BusinessCustomerConnectionRequested") {
+    return "/suppliers/connected/requests";
+  }
+  if (type === "BusinessCustomerConnectionAccepted") {
+    return relatedId ? `/customers/business/${relatedId}` : "/customers?kind=businesses";
+  }
+  if (
+    type === "BusinessCustomerConnectionDeclined" ||
+    type === "BusinessCustomerConnectionCancelled"
+  ) {
+    return type === "BusinessCustomerConnectionCancelled"
+      ? "/suppliers"
+      : "/customers?kind=businesses";
+  }
+
+  if (type === "ConnectedPurchaseOrderSubmitted" && relatedId) {
+    return `/purchasing/incoming-orders/${relatedId}`;
+  }
+  if (
+    (type === "ConnectedPurchaseOrderWithdrawn" ||
+      type === "ConnectedPurchaseOrderReceived" ||
+      type === "ConnectedPurchaseOrderPartiallyReceived" ||
+      type === "ConnectedPurchaseOrderReceivingIssue" ||
+      type === "ConnectedPurchaseOrderChangesAccepted" ||
+      type === "ConnectedPurchaseOrderChangesRejected") &&
+    relatedId
+  ) {
+    return `/purchasing/incoming-orders/${relatedId}`;
+  }
+
   const buyerFacing =
     type === "ConnectedPurchaseOrderAccepted" ||
     type === "ConnectedPurchaseOrderDeclined" ||
@@ -60,6 +90,20 @@ export function resolveOrganizationNotificationHref(
   }
   if (type.startsWith("CustomerOrder")) {
     return "/orders";
+  }
+
+  if (type.startsWith("StockRequest") && relatedId) {
+    return `/warehouse/requests/${relatedId}`;
+  }
+  if (type.startsWith("StockRequest")) {
+    return "/warehouse/my-requests";
+  }
+
+  if (type.startsWith("InventoryTransfer") && relatedId) {
+    return `/inventory/transfers/${relatedId}`;
+  }
+  if (type.startsWith("InventoryTransfer")) {
+    return "/inventory/transfers";
   }
 
   return null;

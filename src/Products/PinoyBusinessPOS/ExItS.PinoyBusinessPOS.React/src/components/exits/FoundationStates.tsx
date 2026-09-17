@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 
 export function LoadingSkeleton({
   count = 3,
@@ -26,11 +27,19 @@ export function LoadingSkeleton({
 }
 
 export function AccessDeniedState({ title, detail }: { title: string; detail: string }) {
-  return <EmptyState title={title} detail={detail} />;
+  return (
+    <Notice tone="danger" title={title}>
+      {detail}
+    </Notice>
+  );
 }
 
 export function ConflictState({ title, detail }: { title: string; detail: string }) {
-  return <EmptyState title={title} detail={detail} />;
+  return (
+    <Notice tone="warning" title={title}>
+      {detail}
+    </Notice>
+  );
 }
 
 export function OfflineBanner({
@@ -54,8 +63,8 @@ export function OfflineBanner({
       data-testid="offline-banner"
     >
       <div className="pointer-events-auto max-w-sm min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-center shadow-sm">
-        <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{title}</p>
-        <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">{detail}</p>
+        <p className="exits-type-label m-0">{title}</p>
+        <p className="exits-type-muted m-0 mt-1">{detail}</p>
       </div>
     </div>
   );
@@ -80,9 +89,9 @@ export function FormSection({
       )}
     >
       <header className="min-w-0">
-        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
+        <h2 className="exits-type-section-title m-0">{title}</h2>
         {description ? (
-          <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">{description}</p>
+          <p className="exits-type-muted m-0 mt-1">{description}</p>
         ) : null}
       </header>
       <div className="flex min-w-0 flex-col gap-3">{children}</div>

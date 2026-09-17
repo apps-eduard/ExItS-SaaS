@@ -283,6 +283,7 @@ internal static class CatalogEndpoints
             string? unitOfMeasure,
             string? search,
             bool? canBeSold,
+            bool? canBeUsedAsIngredient,
             bool? commerciallyOffered,
             string? scope,
             Guid? originBranchId,
@@ -406,7 +407,8 @@ internal static class CatalogEndpoints
                 ActingBranchId: commercial || restrictLocal ? actingBranchId : null,
                 RestrictBranchLocalToActingBranch: restrictLocal,
                 Scope: parsedScope,
-                OriginBranchId: originBranchId);
+                OriginBranchId: originBranchId,
+                CanBeUsedAsIngredient: canBeUsedAsIngredient);
 
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             if (commercial)

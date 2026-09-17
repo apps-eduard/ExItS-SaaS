@@ -37,6 +37,7 @@ import {
   loadPostSubscriptionOnboardingProgress,
   readPendingPostSubscriptionOnboarding,
 } from "@/features/onboarding/post-subscription-onboarding";
+import { pendingSubscriptionCheckoutForOrganization } from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
@@ -126,6 +127,16 @@ export function PostSubscriptionOnboardingPage() {
     requestOnboardingGrant();
   }, [canWriteOnboarding, organizationId, requestOnboardingGrant, workspaceStatus]);
 
+  // Org-scoped unpaid checkout must win over Choose Template / onboarding.
+  // Pre-org Explore markers intentionally do not match here (see pending-subscription-checkout).
+  useEffect(() => {
+    const pendingCheckout = pendingSubscriptionCheckoutForOrganization(organizationId);
+    if (!pendingCheckout) {
+      return;
+    }
+    navigate(`/subscription-checkout/${pendingCheckout.paymentId}`, { replace: true });
+  }, [navigate, organizationId]);
+
   const progressQuery = useQuery({
     queryKey: ["pos", "onboarding", "progress", organizationId],
     enabled: Boolean(workspaceScope && canWriteOnboarding),
@@ -173,7 +184,7 @@ export function PostSubscriptionOnboardingPage() {
         />
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           onClick={() => {
             bindAttemptedRef.current = null;
             requestOnboardingGrant();
@@ -202,7 +213,7 @@ export function PostSubscriptionOnboardingPage() {
         />
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           onClick={() => {
             bindAttemptedRef.current = null;
             requestOnboardingGrant();
@@ -224,7 +235,7 @@ export function PostSubscriptionOnboardingPage() {
         />
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={startSetupMutation.isPending}
           data-testid="onboarding-start-setup"
           onClick={() => void startSetupMutation.mutateAsync()}
@@ -232,7 +243,7 @@ export function PostSubscriptionOnboardingPage() {
           {startSetupMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
           {t("onboarding.startSetup")}
         </Button>
-        <Button type="button" variant="ghost" className="min-h-11 w-full" onClick={() => navigate("/org", { replace: true })}>
+        <Button type="button" variant="ghost" className="w-full" onClick={() => navigate("/org", { replace: true })}>
           {t("onboarding.ready.finishLater")}
         </Button>
         {startSetupMutation.isError ? (
@@ -448,7 +459,7 @@ function OrganizationSetupStep({
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("onboarding.org.displayName")}
         <input
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           data-testid="onboarding-org-display-name"
@@ -457,7 +468,7 @@ function OrganizationSetupStep({
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("onboarding.org.contactPhone")}
         <input
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={contactPhone}
           onChange={(e) => setContactPhone(e.target.value)}
           data-testid="onboarding-org-phone"
@@ -466,7 +477,7 @@ function OrganizationSetupStep({
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("onboarding.org.contactEmail")}
         <input
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={contactEmail}
           onChange={(e) => setContactEmail(e.target.value)}
           data-testid="onboarding-org-email"
@@ -475,7 +486,7 @@ function OrganizationSetupStep({
       <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
         {t("onboarding.org.address")}
         <input
-          className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
           value={addressLine1}
           onChange={(e) => setAddressLine1(e.target.value)}
           data-testid="onboarding-org-address"
@@ -485,7 +496,7 @@ function OrganizationSetupStep({
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("onboarding.org.city")}
           <input
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={city}
             onChange={(e) => setCity(e.target.value)}
           />
@@ -493,7 +504,7 @@ function OrganizationSetupStep({
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("onboarding.org.region")}
           <input
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={region}
             onChange={(e) => setRegion(e.target.value)}
           />
@@ -503,7 +514,7 @@ function OrganizationSetupStep({
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("onboarding.org.postalCode")}
           <input
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
           />
@@ -511,7 +522,7 @@ function OrganizationSetupStep({
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
           {t("onboarding.org.country")}
           <input
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
           />
@@ -526,7 +537,7 @@ function OrganizationSetupStep({
 
       <Button
         type="button"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={saveMutation.isPending}
         data-testid="onboarding-org-save"
         onClick={() => void saveMutation.mutateAsync()}
@@ -537,7 +548,7 @@ function OrganizationSetupStep({
       <Button
         type="button"
         variant="ghost"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={skipMutation.isPending}
         data-testid="onboarding-org-skip"
         onClick={() => void skipMutation.mutateAsync()}
@@ -640,7 +651,7 @@ function BusinessSetupStep({
 
       <Button
         type="button"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={applyMutation.isPending}
         data-testid="onboarding-business-apply"
         onClick={() => void applyMutation.mutateAsync()}
@@ -650,7 +661,7 @@ function BusinessSetupStep({
       <Button
         type="button"
         variant="ghost"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={skipMutation.isPending}
         data-testid="onboarding-business-skip"
         onClick={() => void skipMutation.mutateAsync()}
@@ -747,7 +758,7 @@ function ProductTemplateStep({
                 <button
                   type="button"
                   className={cn(
-                    "flex w-full min-h-11 items-start justify-between gap-3 rounded-[var(--exits-radius-md)] border bg-surface p-3 text-left",
+                    "flex w-full items-start justify-between gap-3 rounded-[var(--exits-radius-md)] border bg-surface p-3 text-left",
                     selected ? "border-[var(--exits-primary)]" : "border-border",
                   )}
                   aria-selected={selected}
@@ -801,7 +812,7 @@ function ProductTemplateStep({
 
       <Button
         type="button"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={!selectedId || importMutation.isPending}
         data-testid="onboarding-products-import"
         onClick={() => void importMutation.mutateAsync()}
@@ -812,7 +823,7 @@ function ProductTemplateStep({
       <Button
         type="button"
         variant="ghost"
-        className="min-h-11 w-full"
+        className="w-full"
         disabled={skipMutation.isPending}
         data-testid="onboarding-products-empty"
         onClick={() => void skipMutation.mutateAsync()}
@@ -1018,7 +1029,7 @@ function ReadyStep({
       >
         <Button
           type="button"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={busy}
           data-testid={hasBranch ? "onboarding-start-selling" : "onboarding-open-branches"}
           onClick={() => void startSelling()}
@@ -1030,7 +1041,7 @@ function ReadyStep({
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11 w-full"
+          className="w-full"
           disabled={busy}
           data-testid="onboarding-finish-later"
           onClick={() => void finishLater()}
@@ -1040,7 +1051,7 @@ function ReadyStep({
         {hasBranch ? (
           <Link
             to="/catalog/products/new"
-            className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+            className="inline-flex items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
             data-testid="onboarding-add-products"
           >
             {t("onboarding.ready.addProducts")}

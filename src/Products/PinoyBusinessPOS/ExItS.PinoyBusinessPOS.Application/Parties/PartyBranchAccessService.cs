@@ -31,6 +31,14 @@ public sealed class PartyBranchAccessService
         _clock = clock;
     }
 
+    /// <summary>
+    /// Owner/Admin unscoped management view only when no acting branch is selected.
+    /// When an acting branch is set, Main/Primary does not auto-share — grants win.
+    /// </summary>
+    private bool IsUnscopedOrganizationView(PartyBranchAccessActor actor) =>
+        _governance.CanBypassBranchFilter(actor)
+        && (actor.ActingBranchId is null || actor.ActingBranchId == Guid.Empty);
+
     public async Task<bool> CanViewCustomerAsync(
         Guid organizationId,
         Guid branchId,
@@ -38,7 +46,7 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        if (IsUnscopedOrganizationView(actor))
         {
             return true;
         }
@@ -64,7 +72,7 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        if (IsUnscopedOrganizationView(actor))
         {
             return true;
         }
@@ -182,6 +190,24 @@ public sealed class PartyBranchAccessService
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyList<CustomerBranchAccess>> ListCustomerAccessAsync(
+        Guid organizationId,
+        Guid customerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (customerId == Guid.Empty)
+        {
+            return [];
+        }
+
+        return await _customerAccess
+            .ListByCustomerAsync(
+                PosOrganizationId.From(organizationId),
+                POSCustomerId.From(customerId),
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task GrantSupplierExplicitAssignAsync(
         Guid organizationId,
         Guid branchId,
@@ -208,7 +234,9 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        // Null = unscoped org management (Owner/Admin with no acting branch).
+        // With an acting branch, even Owner/Admin only sees granted customers (home or shared).
+        if (IsUnscopedOrganizationView(actor))
         {
             return null;
         }
@@ -237,7 +265,7 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        if (IsUnscopedOrganizationView(actor))
         {
             return null;
         }
@@ -263,7 +291,7 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        if (IsUnscopedOrganizationView(actor))
         {
             return true;
         }
@@ -288,7 +316,7 @@ public sealed class PartyBranchAccessService
         PartyBranchAccessActor actor,
         CancellationToken cancellationToken = default)
     {
-        if (_governance.CanBypassBranchFilter(actor))
+        if (IsUnscopedOrganizationView(actor))
         {
             return true;
         }

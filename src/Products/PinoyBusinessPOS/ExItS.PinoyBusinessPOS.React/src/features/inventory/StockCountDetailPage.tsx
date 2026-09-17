@@ -1,3 +1,4 @@
+import { Package } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -53,6 +55,11 @@ function countedMapFromServer(count: StockCountDto): Record<string, string> {
 
 export function StockCountDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "stockCounts",
+    backLabel: t("stockCount.backList"),
+    backTestId: "page-header-back-stock-counts",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { stockCountId = "" } = useParams();
@@ -297,9 +304,7 @@ export function StockCountDetailPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="stock-count-detail-missing">
         <PageHeader
           title={t("stockCount.title")}
-          backTo="/inventory/stock-counts"
-          backLabel={t("stockCount.backList")}
-          backTestId="page-header-back-stock-counts"
+          {...smartBack}
         />
         <ErrorState title={t("stockCount.errorTitle")} detail={t("stockCount.notFound")} />
       </div>
@@ -393,7 +398,7 @@ export function StockCountDetailPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={busy}
               onClick={() => setMode("detail")}
               data-testid="stock-count-back-to-count"
@@ -402,7 +407,7 @@ export function StockCountDetailPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11 flex-1"
+              className="flex-1"
               disabled={!canMutate || (summary?.remaining ?? 1) > 0}
               onClick={() => void onComplete()}
               data-testid="stock-count-complete"
@@ -428,9 +433,7 @@ export function StockCountDetailPage() {
             ? `${t("stockCount.countNumber")}: ${count.countNumber}`
             : t("stockCount.draftNumber")
         }
-        backTo="/inventory/stock-counts"
-        backLabel={t("stockCount.backList")}
-        backTestId="page-header-back-stock-counts"
+        {...smartBack}
       />
 
       {!online ? (
@@ -502,7 +505,7 @@ export function StockCountDetailPage() {
               <label className="flex flex-col gap-1">
                 <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.fieldTitle")}</span>
                 <input
-                  className="exits-input min-h-11"
+                  className="exits-input"
                   value={draftTitle}
                   onChange={(e) => setDraftTitle(e.target.value)}
                   maxLength={80}
@@ -513,7 +516,7 @@ export function StockCountDetailPage() {
                 <span className="text-[length:var(--exits-text-sm)] font-medium">{t("stockCount.countDate")}</span>
                 <input
                   type="date"
-                  className="exits-input min-h-11"
+                  className="exits-input"
                   value={draftDate}
                   onChange={(e) => setDraftDate(e.target.value)}
                   data-testid="stock-count-edit-date"
@@ -532,7 +535,6 @@ export function StockCountDetailPage() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  className="min-h-11"
                   disabled={!canMutate}
                   onClick={() => void onSaveDraftMeta()}
                   data-testid="stock-count-save-draft-meta"
@@ -542,7 +544,6 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
                   onClick={() => setDraftEditing(false)}
                 >
                   {t("stockCount.backToCount")}
@@ -554,7 +555,7 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11 w-full sm:w-auto"
+                className="w-full sm:w-auto"
                 onClick={() => navigate("/inventory/stock-counts/new")}
                 data-testid="stock-count-recreate-hint"
               >
@@ -566,7 +567,6 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={!canMutate}
                 onClick={() => setDraftEditing(true)}
                 data-testid="stock-count-edit"
@@ -575,7 +575,6 @@ export function StockCountDetailPage() {
               </Button>
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={!canMutate || count.lines.length === 0}
                 onClick={() => void onStart()}
                 data-testid="stock-count-start"
@@ -585,7 +584,6 @@ export function StockCountDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={!canMutate}
                 onClick={() => void onCancel()}
                 data-testid="stock-count-cancel"
@@ -688,7 +686,7 @@ export function StockCountDetailPage() {
                           ref={(el) => {
                             inputRefs.current[line.productId] = el;
                           }}
-                          className="exits-input min-h-11 w-28"
+                          className="exits-input w-28"
                           inputMode="decimal"
                           value={text}
                           disabled={readOnly || !allowManage || !online || busy}
@@ -745,7 +743,7 @@ export function StockCountDetailPage() {
                         ref={(el) => {
                           inputRefs.current[line.productId] = el;
                         }}
-                        className="exits-input min-h-12 text-[length:var(--exits-text-lg)]"
+                        className="exits-input text-[length:var(--exits-text-lg)]"
                         inputMode="decimal"
                         value={text}
                         disabled={readOnly || !allowManage || !online || busy}
@@ -780,7 +778,10 @@ export function StockCountDetailPage() {
           </ul>
 
           {visibleLines.length === 0 ? (
-            <EmptyState title={t("stockCount.noMatchingLines")} detail={t("stockCount.noMatchingLinesDetail")} />
+            <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockCount.noMatchingLines")} detail={t("stockCount.noMatchingLinesDetail")} />
           ) : null}
 
           {allowManage ? (
@@ -789,7 +790,7 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => void onSaveProgress()}
                   data-testid="stock-count-save-progress"
@@ -798,7 +799,7 @@ export function StockCountDetailPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => {
                     setLocalError(null);
@@ -811,7 +812,7 @@ export function StockCountDetailPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11 flex-1"
+                  className="flex-1"
                   disabled={!canMutate}
                   onClick={() => void onCancel()}
                   data-testid="stock-count-cancel-in-progress"
@@ -861,7 +862,6 @@ export function StockCountDetailPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11"
                         disabled={!canMutate}
                         onClick={() => {
                           void refreshAfter(

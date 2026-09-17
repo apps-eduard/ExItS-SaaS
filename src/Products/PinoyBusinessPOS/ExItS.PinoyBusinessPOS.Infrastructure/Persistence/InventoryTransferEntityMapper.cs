@@ -13,6 +13,7 @@ internal static class InventoryTransferEntityMapper
         InventoryTransfer.Rehydrate(
             InventoryTransferId.From(record.Id),
             PosOrganizationId.From(record.OrganizationId),
+            record.StockRequestId is null ? null : StockRequestId.From(record.StockRequestId.Value),
             record.TransferNumber,
             PosBranchId.From(record.SourceBranchId),
             PosBranchId.From(record.DestinationBranchId),
@@ -46,13 +47,15 @@ internal static class InventoryTransferEntityMapper
             record.DiscrepancyNote,
             record.SourceLotId is null ? null : InventoryLotId.From(record.SourceLotId.Value),
             record.LotNumber,
-            record.ExpirationDate);
+            record.ExpirationDate,
+            record.UnitCostSnapshot);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
         {
             Id = transfer.Id.Value,
             OrganizationId = transfer.OrganizationId.Value,
+            StockRequestId = transfer.StockRequestId?.Value,
             TransferNumber = transfer.TransferNumber,
             SourceBranchId = transfer.SourceBranchId.Value,
             DestinationBranchId = transfer.DestinationBranchId.Value,
@@ -72,6 +75,7 @@ internal static class InventoryTransferEntityMapper
     public static void ApplyToRecord(InventoryTransfer transfer, InventoryTransferRecord record)
     {
         record.TransferNumber = transfer.TransferNumber;
+        record.StockRequestId = transfer.StockRequestId?.Value;
         record.Status = InventoryTransferStatuses.ToCode(transfer.Status);
         record.Notes = transfer.Notes;
         record.UpdatedAtUtc = transfer.UpdatedAtUtc;
@@ -101,7 +105,8 @@ internal static class InventoryTransferEntityMapper
             DiscrepancyNote = line.DiscrepancyNote,
             SourceLotId = line.SourceLotId?.Value,
             LotNumber = line.LotNumber,
-            ExpirationDate = line.ExpirationDate
+            ExpirationDate = line.ExpirationDate,
+            UnitCostSnapshot = line.UnitCostSnapshot
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>
@@ -147,6 +152,26 @@ internal static class InventoryTransferEntityMapper
             OrganizationId = setting.OrganizationId.Value,
             BranchId = setting.BranchId.Value,
             ProductId = setting.ProductId.Value,
+            ReorderLevel = setting.ReorderLevel,
+            ReorderQuantity = setting.ReorderQuantity,
+            UpdatedAtUtc = setting.UpdatedAtUtc,
+            UpdatedBy = setting.UpdatedBy
+        };
+
+    public static InventoryBranchReorderDefault ToDomain(InventoryBranchReorderDefaultRecord record) =>
+        InventoryBranchReorderDefault.Rehydrate(
+            PosOrganizationId.From(record.OrganizationId),
+            PosBranchId.From(record.BranchId),
+            record.ReorderLevel,
+            record.ReorderQuantity,
+            record.UpdatedAtUtc,
+            record.UpdatedBy);
+
+    public static InventoryBranchReorderDefaultRecord ToRecord(InventoryBranchReorderDefault setting) =>
+        new()
+        {
+            OrganizationId = setting.OrganizationId.Value,
+            BranchId = setting.BranchId.Value,
             ReorderLevel = setting.ReorderLevel,
             ReorderQuantity = setting.ReorderQuantity,
             UpdatedAtUtc = setting.UpdatedAtUtc,

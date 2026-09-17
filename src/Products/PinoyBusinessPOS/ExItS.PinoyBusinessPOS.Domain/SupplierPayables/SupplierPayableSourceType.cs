@@ -3,13 +3,15 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 
 /// <summary>
-/// Posted-receipt origin for a supplier payable. Obligation arises on goods/direct receipt post,
-/// not on PO create/submit (PAYABLE_ORIGIN=POSTED_RECEIPT).
+/// Posted-receipt / connected-sale origin for a supplier payable. Obligation arises on goods/direct
+/// receipt post or connected B2B Sell Utang — not on PO create/submit (PAYABLE_ORIGIN=POSTED_RECEIPT).
 /// </summary>
 public enum SupplierPayableSourceType
 {
     GoodsReceipt = 0,
-    DirectPurchaseReceipt = 1
+    DirectPurchaseReceipt = 1,
+    /// <summary>Seller-originated connected B2B Sell Utang (source id = sale id).</summary>
+    Sale = 2
 }
 
 public static class SupplierPayableSourceTypes
@@ -19,7 +21,8 @@ public static class SupplierPayableSourceTypes
     public static IReadOnlyList<string> Codes { get; } =
     [
         nameof(SupplierPayableSourceType.GoodsReceipt),
-        nameof(SupplierPayableSourceType.DirectPurchaseReceipt)
+        nameof(SupplierPayableSourceType.DirectPurchaseReceipt),
+        nameof(SupplierPayableSourceType.Sale)
     ];
 
     public static string ToCode(SupplierPayableSourceType sourceType) => sourceType.ToString();

@@ -1,16 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Ban,
-  CalendarClock,
-  ChevronDown,
-  Loader2,
-  Package,
-  Receipt,
-  ShoppingBag,
-  Truck,
-} from "lucide-react";
+import { Ban, CalendarClock, ChevronDown, Loader2, Package, Receipt, ShoppingBag, Truck, Users } from "lucide-react";
 import type { LinkedMerchantDto } from "@/api/platform/linked-merchants-client";
 import {
   disconnectAndBlockLinkedMerchant,
@@ -18,6 +9,7 @@ import {
 } from "@/api/platform/customer-link-requests-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { Button } from "@/components/ui/button";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { SearchField } from "@/components/exits/SearchField";
@@ -323,7 +315,7 @@ export function LinkedMerchantsListSection({
           </p>
         </div>
         {rows.length > 0 ? (
-          <span className="pc-store-list-section__count">{rows.length}</span>
+          <CountBadge count={rows.length} tone="neutral" className="pc-store-list-section__count" />
         ) : null}
       </div>
 
@@ -344,7 +336,8 @@ export function LinkedMerchantsListSection({
         className="exits-animate-toolbar"
         items={FILTERS.map((item) => ({
           key: item.key,
-          label: `${t(item.labelKey)}${filterCounts[item.key] > 0 ? ` (${filterCounts[item.key]})` : ""}`,
+          label: t(item.labelKey),
+          count: filterCounts[item.key],
           state: filter === item.key ? "active" : "idle",
           testId: `linked-merchants-filter-${item.key}`,
           onSelect: () => setFilter(item.key),
@@ -353,11 +346,16 @@ export function LinkedMerchantsListSection({
 
       {rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.merchantsEmptyTitle")}
           detail={t("personal.merchantsEmptyDetail")}
         />
       ) : filteredRows.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.merchants.noResultsTitle")}
           detail={t("personal.merchants.noResultsBody")}
         />

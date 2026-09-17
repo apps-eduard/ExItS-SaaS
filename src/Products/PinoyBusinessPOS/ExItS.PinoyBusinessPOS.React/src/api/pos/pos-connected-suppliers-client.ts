@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { posRequest } from "@/api/pos/pos-http";
+import {
+  buildPosMutationIdempotencyHeaders,
+  OFFLINE_OPERATION_TYPES,
+} from "@/api/pos/pos-mutation-idempotency";
+import { createSecureMutationId } from "@/lib/secure-mutation-id";
 
 /**
  * Connected-supplier API client for `/api/v1/pos/connected-suppliers/*`.
@@ -45,6 +50,7 @@ export const connectedSupplierRelationshipSchema = z.object({
   customerDiscountPercent: z.number().nullable().optional().default(null),
   supplierBranchId: guidSchema.nullable().optional(),
   supplierBranchName: z.string().nullable().optional(),
+  initiatedByParty: z.string().optional().default("Buyer"),
 });
 
 export const connectionCatalogSettingsSchema = z.object({
@@ -161,6 +167,13 @@ export const buyerSupplierProductLinkSchema = z.object({
   packageLabel: z.string().nullable().optional(),
 });
 
+export const catalogReadinessCandidateSchema = z.object({
+  productId: guidSchema,
+  name: z.string(),
+  sku: z.string().nullable().optional(),
+  unitOfMeasureCode: z.string(),
+});
+
 export const catalogProductReadinessItemSchema = z.object({
   exposureId: guidSchema,
   supplierProductId: guidSchema,
@@ -179,6 +192,7 @@ export const catalogProductReadinessItemSchema = z.object({
   unitCompatible: z.boolean(),
   matchDetails: z.string(),
   linkedBuyerProductId: guidSchema.nullable().optional(),
+  conflictCandidates: z.array(catalogReadinessCandidateSchema).default([]),
 });
 
 export const catalogReadinessResultSchema = z.object({
@@ -188,6 +202,16 @@ export const catalogReadinessResultSchema = z.object({
   review: z.number(),
   conflict: z.number(),
   items: z.array(catalogProductReadinessItemSchema),
+});
+
+export const autoLinkExactMatchesResultSchema = z.object({
+  relationshipId: guidSchema,
+  linkedNow: z.number(),
+  alreadyReady: z.number(),
+  review: z.number(),
+  new: z.number(),
+  conflict: z.number(),
+  linkedExposureIds: z.array(guidSchema),
 });
 
 export const buyerProductMatchCandidateSchema = z.object({
@@ -236,6 +260,8 @@ export type BulkBuyerPricingPreview = z.infer<typeof bulkBuyerPricingPreviewSche
 export type BuyerSupplierProductLink = z.infer<typeof buyerSupplierProductLinkSchema>;
 export type CatalogReadinessResult = z.infer<typeof catalogReadinessResultSchema>;
 export type CatalogProductReadinessItem = z.infer<typeof catalogProductReadinessItemSchema>;
+export type CatalogReadinessCandidate = z.infer<typeof catalogReadinessCandidateSchema>;
+export type AutoLinkExactMatchesResult = z.infer<typeof autoLinkExactMatchesResultSchema>;
 export type SuggestBuyerProductMatchesResult = z.infer<
   typeof suggestBuyerProductMatchesResultSchema
 >;
@@ -262,7 +288,7 @@ export type BulkShareMutationInput = {
 };
 
 export type BulkPricingInput = {
-  mode: "UseDefault" | "DiscountPercent" | "AdjustAmount" | "FixedPrice" | string;
+  mode: "UseDefault" | "DiscountPercent" | "AdjustAmount" | "FixedPrice" | "MarkupPercent" | string;
   productIds?: string[] | null;
   selectAllMatching?: boolean;
   query?: string | null;
@@ -385,6 +411,44 @@ export async function requestConnection(
   return connectedSupplierRelationshipSchema.parse(raw);
 }
 
+/** Seller invites a buyer Organization (Pending). Does not create a POSCustomer. */
+export async function inviteBusinessCustomerConnection(
+  workspace: PosWorkspaceScope,
+  input: {
+    buyerPublicOrganizationIdOrQrPayload: string;
+    buyerOrganizationId?: string | null;
+    supplierBranchId?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/relationships/invite-buyer`,
+    body: {
+      buyerPublicOrganizationIdOrQrPayload: input.buyerPublicOrganizationIdOrQrPayload.trim(),
+      buyerOrganizationId: input.buyerOrganizationId ?? null,
+      supplierBranchId: input.supplierBranchId ?? null,
+    },
+  });
+  return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+/** Pending requests where the current organization is the recipient. */
+export async function listIncomingConnectionRequests(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/relationships/incoming`,
+  });
+  return z.array(connectedSupplierRelationshipSchema).parse(raw);
+}
+
 export async function updateSupplierLocation(
   workspace: PosWorkspaceScope,
   relationshipId: string,
@@ -473,6 +537,21 @@ export async function declineConnection(
     workspace,
     signal,
     path: `${relPath(relationshipId, "/decline")}`,
+    body: {},
+  });
+  return connectedSupplierRelationshipSchema.parse(raw);
+}
+
+export async function cancelConnectionRequest(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierRelationship> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${relPath(relationshipId, "/cancel")}`,
     body: {},
   });
   return connectedSupplierRelationshipSchema.parse(raw);
@@ -754,6 +833,76 @@ export async function classifyCatalogReadiness(
   return catalogReadinessResultSchema.parse(raw);
 }
 
+const commerceReadinessRequirementSchema = z.object({
+  code: z.string(),
+  status: z.string(),
+  title: z.string(),
+  detail: z.string().nullable().optional(),
+  actionPath: z.string().nullable().optional(),
+});
+
+export const connectedSupplierCommerceReadinessSchema = z.object({
+  relationshipId: guidSchema,
+  isReady: z.boolean(),
+  supportedFulfillmentMethods: z.array(z.string()).default([]),
+  requirements: z.array(commerceReadinessRequirementSchema).nullable().optional(),
+  /** Buyer-safe categories only; empty when ready. Never internal checklist details. */
+  blockerCategories: z.array(z.string()).nullable().optional().default([]),
+});
+
+export type ConnectedSupplierCommerceReadiness = z.infer<
+  typeof connectedSupplierCommerceReadinessSchema
+>;
+export type ConnectedSupplierCommerceReadinessRequirement = z.infer<
+  typeof commerceReadinessRequirementSchema
+>;
+
+/** Buyer projection — never includes internal missing-setup details. */
+export async function getBuyerConnectedSupplierCommerceReadiness(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierCommerceReadiness> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: relPath(relationshipId, "/commerce-readiness"),
+  });
+  return connectedSupplierCommerceReadinessSchema.parse(raw);
+}
+
+/** Supplier projection — includes detailed checklist. */
+export async function getSupplierConnectedSupplierCommerceReadiness(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedSupplierCommerceReadiness> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/commerce-readiness`,
+  });
+  return connectedSupplierCommerceReadinessSchema.parse(raw);
+}
+
+export async function autoLinkExactMatches(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  signal?: AbortSignal,
+): Promise<AutoLinkExactMatchesResult> {
+  const path = relPath(relationshipId, "/catalog/auto-link-exact");
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return autoLinkExactMatchesResultSchema.parse(raw);
+}
+
 export async function suggestBuyerProductMatches(
   workspace: PosWorkspaceScope,
   relationshipId: string,
@@ -783,6 +932,39 @@ export async function listLinks(
     path: relPath(relationshipId, "/links"),
   });
   return z.array(buyerSupplierProductLinkSchema).parse(raw);
+}
+
+export const connectedOrderStockItemSchema = z.object({
+  supplierProductId: guidSchema,
+  isTracked: z.boolean(),
+  availableBaseQuantity: z.number(),
+});
+
+export const connectedOrderStockSchema = z.object({
+  relationshipId: guidSchema,
+  supplierBranchId: guidSchema.nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
+  items: z.array(connectedOrderStockItemSchema),
+});
+
+export type ConnectedOrderStock = z.infer<typeof connectedOrderStockSchema>;
+export type ConnectedOrderStockItem = z.infer<typeof connectedOrderStockItemSchema>;
+
+/** Buyer-safe supplier-branch availability for connected PO picking (read-only). */
+export async function getConnectedOrderStock(
+  workspace: PosWorkspaceScope,
+  relationshipId: string,
+  supplierProductIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<ConnectedOrderStock> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: relPath(relationshipId, "/order-stock"),
+    body: { supplierProductIds: [...supplierProductIds] },
+  });
+  return connectedOrderStockSchema.parse(raw);
 }
 
 export async function linkProduct(
@@ -869,9 +1051,170 @@ export const businessCustomerSchema = z.object({
   createdAtUtc: isoDateSchema,
   updatedAtUtc: isoDateSchema,
   displayNameIsLive: z.boolean().optional().default(false),
+  initiatedByParty: z.string().optional().default("Buyer"),
+  actionRequired: z.boolean().optional().default(false),
+  supplierBranchId: guidSchema.nullable().optional().default(null),
+  supplierBranchName: z.string().nullable().optional().default(null),
+  contactSource: z.string().optional().default("Custom"),
+  organizationMemberId: guidSchema.nullable().optional().default(null),
+  organizationMemberAvailable: z.boolean().nullable().optional().default(null),
+  contactPersonName: z.string().nullable().optional().default(null),
+  contactDepartment: z.string().nullable().optional().default(null),
+  contactRole: z.string().nullable().optional().default(null),
+  contactPhone: z.string().nullable().optional().default(null),
+  contactEmail: z.string().nullable().optional().default(null),
+  preferredContactMethod: z.string().nullable().optional().default(null),
+  deliveryInstructions: z.string().nullable().optional().default(null),
+  billingContactNotes: z.string().nullable().optional().default(null),
+  internalNotes: z.string().nullable().optional().default(null),
+  customerDeliveryOverride: z.enum(["inherit", "allow", "block"]).optional().default("inherit"),
+  orgOfferDelivery: z.boolean().optional().default(false),
+  effectiveDeliveryAllowed: z.boolean().optional().default(false),
 });
 
 export type BusinessCustomer = z.infer<typeof businessCustomerSchema>;
+
+export const businessUtangSummarySchema = z.object({
+  connectionId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  outstandingAmount: z.number(),
+  activeCreditTotal: z.number(),
+  activeRepaymentTotal: z.number(),
+  pendingCheckAmount: z.number().optional().default(0),
+  overdueAmount: z.number().optional().default(0),
+  openReceivableCount: z.number().optional().default(0),
+  openReceivableTotal: z.number().optional().default(0),
+});
+
+export const businessReceivableSchema = z.object({
+  creditEntryId: guidSchema,
+  sourceType: z.string(),
+  sourceReference: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
+  outstandingBalance: z.number(),
+  originalAmount: z.number(),
+  createdAtUtc: isoDateSchema,
+  remarks: z.string().nullable().optional(),
+  status: z.string().optional().default("Open"),
+  isOverdue: z.boolean().optional().default(false),
+  paidAtSourceAmount: z.number().optional().default(0),
+  laterPaymentsAmount: z.number().optional(),
+  sourceId: guidSchema.nullable().optional(),
+});
+
+export type BusinessReceivable = z.infer<typeof businessReceivableSchema>;
+
+export const businessRepaymentSchema = z.object({
+  repaymentId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  connectionId: guidSchema,
+  amount: z.number(),
+  remarks: z.string().nullable().optional(),
+  paymentMethod: z.string().optional().default("Cash"),
+  checkNumber: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  checkDate: z.string().nullable().optional(),
+  accountName: z.string().nullable().optional(),
+  reference: z.string().nullable().optional(),
+  checkClearingStatus: z.string().optional().default("None"),
+  status: z.string(),
+  recordedAtUtc: isoDateSchema,
+  recordedBy: guidSchema,
+  clearedAtUtc: isoDateSchema.nullable().optional(),
+  clearedBy: guidSchema.nullable().optional(),
+  bouncedAtUtc: isoDateSchema.nullable().optional(),
+  bouncedBy: guidSchema.nullable().optional(),
+  bounceReason: z.string().nullable().optional(),
+  cancelledAtUtc: isoDateSchema.nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
+  cancelReason: z.string().nullable().optional(),
+  reversedAtUtc: isoDateSchema.nullable().optional(),
+  reversalReason: z.string().nullable().optional(),
+  reversedBy: guidSchema.nullable().optional(),
+});
+
+export const businessRepaymentPagedResultSchema = z.object({
+  items: z.array(businessRepaymentSchema),
+  totalCount: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+});
+
+export type BusinessUtangSummary = z.infer<typeof businessUtangSummarySchema>;
+export type BusinessRepayment = z.infer<typeof businessRepaymentSchema>;
+export type BusinessRepaymentPagedResult = z.infer<typeof businessRepaymentPagedResultSchema>;
+
+export type CreateBusinessRepaymentInput = {
+  amount: number;
+  remarks?: string | null;
+  repaymentId?: string;
+  paymentMethod?: "Cash" | "ManualGCash" | "Check";
+  checkNumber?: string | null;
+  bankName?: string | null;
+  checkDate?: string | null;
+  accountName?: string | null;
+  reference?: string | null;
+  allocations?: { creditEntryId: string; amount: number }[] | null;
+};
+
+export function buildCreateBusinessRepaymentPayload(input: CreateBusinessRepaymentInput) {
+  const method = input.paymentMethod ?? "Cash";
+  const payload: Record<string, unknown> = {
+    amount: input.amount,
+    remarks: input.remarks?.trim() || null,
+    paymentMethod: method,
+    reference: input.reference?.trim() || null,
+  };
+  if (input.repaymentId) {
+    payload.repaymentId = input.repaymentId;
+  }
+  if (method === "Check") {
+    payload.checkNumber = input.checkNumber?.trim() || null;
+    payload.bankName = input.bankName?.trim() || null;
+    payload.checkDate = input.checkDate?.trim() || null;
+    payload.accountName = input.accountName?.trim() || null;
+  }
+  if (input.allocations && input.allocations.length > 0) {
+    payload.allocations = input.allocations.map((a) => ({
+      creditEntryId: a.creditEntryId,
+      amount: a.amount,
+    }));
+  }
+  return payload;
+}
+
+const buyerOrganizationBusinessContactSchema = z.object({
+  organizationMemberId: guidSchema,
+  userId: guidSchema,
+  displayName: z.string(),
+  roleTitle: z.string(),
+  isOwner: z.boolean(),
+  department: z.string().nullable().optional().default(null),
+  phone: z.string().nullable().optional().default(null),
+  email: z.string().nullable().optional().default(null),
+  employeeCode: z.string().nullable().optional().default(null),
+});
+
+export type BuyerOrganizationBusinessContact = z.infer<
+  typeof buyerOrganizationBusinessContactSchema
+>;
+
+export type UpdateBusinessCustomerRelationshipContactInput = {
+  contactSource: "Custom" | "OrganizationMember";
+  organizationMemberId?: string | null;
+  contactPersonName?: string | null;
+  contactDepartment?: string | null;
+  contactRole?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  preferredContactMethod?: string | null;
+  deliveryInstructions?: string | null;
+  billingContactNotes?: string | null;
+  internalNotes?: string | null;
+  expectedUpdatedAtUtc: string;
+};
 
 export async function listBusinessCustomers(
   workspace: PosWorkspaceScope,
@@ -902,4 +1245,575 @@ export async function getBusinessCustomer(
     path: `${PATH}/business-customers/${connectionId}`,
   });
   return businessCustomerSchema.parse(raw);
+}
+
+export async function getBusinessCustomerUtangSummary(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<BusinessUtangSummary> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/utang-summary`,
+  });
+  return businessUtangSummarySchema.parse(raw);
+}
+
+export async function listBusinessCustomerReceivables(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  signal?: AbortSignal,
+): Promise<BusinessReceivable[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/receivables`,
+  });
+  return z.array(businessReceivableSchema).parse(raw);
+}
+
+export async function listBusinessCustomerRepayments(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options: { page?: number; pageSize?: number } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepaymentPagedResult> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/repayments`, {
+      page: options.page ?? 1,
+      pageSize: options.pageSize ?? 20,
+    }),
+  });
+  return businessRepaymentPagedResultSchema.parse(raw);
+}
+
+export async function createBusinessCustomerRepayment(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: CreateBusinessRepaymentInput,
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const repaymentId = input.repaymentId?.trim() || createSecureMutationId();
+  const body = buildCreateBusinessRepaymentPayload({ ...input, repaymentId });
+  const headers = await buildPosMutationIdempotencyHeaders(
+    repaymentId,
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.BusinessRepaymentCreate,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/repayments`,
+    body,
+    headers,
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function clearBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/clear-check`,
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function bounceBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/bounce-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+export async function cancelBusinessRepaymentCheck(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<BusinessRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/business-repayments/${repaymentId}/cancel-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return businessRepaymentSchema.parse(raw);
+}
+
+const businessCustomerStatementLineSchema = z.object({
+  entryId: guidSchema,
+  entryType: z.string(),
+  recordedAtUtc: isoDateSchema,
+  amount: z.number(),
+  signedEffect: z.number(),
+  status: z.string(),
+  remarks: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
+  dueStatus: z.string().nullable().optional(),
+  isOverdue: z.boolean(),
+  isReversed: z.boolean(),
+  runningBalance: z.number(),
+  sourceSaleId: guidSchema.nullable().optional(),
+});
+
+export const businessCustomerStatementSchema = z.object({
+  organizationId: guidSchema,
+  organizationDisplayName: z.string().nullable().optional(),
+  connectionId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  customerDisplayName: z.string(),
+  periodStart: z.string(),
+  periodEnd: z.string(),
+  openingBalance: z.number(),
+  closingBalance: z.number(),
+  periodCreditTotal: z.number(),
+  periodRepaymentTotal: z.number(),
+  periodReversalCreditTotal: z.number(),
+  periodReversalRepaymentTotal: z.number(),
+  outstandingBalance: z.number(),
+  overdueAmount: z.number(),
+  overdueCreditCount: z.number(),
+  generatedAtUtc: isoDateSchema,
+  currencyCode: z.string(),
+  cultureName: z.string(),
+  lines: z.array(businessCustomerStatementLineSchema),
+});
+
+export type BusinessCustomerStatement = z.infer<typeof businessCustomerStatementSchema>;
+
+export async function getBusinessCustomerStatement(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options: {
+    periodStart: string;
+    periodEnd: string;
+    organizationDisplayName?: string;
+    currencyCode?: string;
+    culture?: string;
+  },
+  signal?: AbortSignal,
+): Promise<BusinessCustomerStatement> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/statement`, {
+      periodStart: options.periodStart,
+      periodEnd: options.periodEnd,
+      organizationDisplayName: options.organizationDisplayName,
+      currencyCode: options.currencyCode,
+      culture: options.culture,
+    }),
+  });
+  return businessCustomerStatementSchema.parse(raw);
+}
+
+/** Seller-owned relationship contact only — never mutates buyer Organization identity. */
+export async function updateBusinessCustomerRelationshipContact(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: UpdateBusinessCustomerRelationshipContactInput,
+  signal?: AbortSignal,
+): Promise<BusinessCustomer> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/relationship-contact`,
+    body: {
+      contactSource: input.contactSource,
+      organizationMemberId: input.organizationMemberId ?? null,
+      contactPersonName: input.contactPersonName ?? null,
+      contactDepartment: input.contactDepartment ?? null,
+      contactRole: input.contactRole ?? null,
+      contactPhone: input.contactPhone ?? null,
+      contactEmail: input.contactEmail ?? null,
+      preferredContactMethod: input.preferredContactMethod ?? null,
+      deliveryInstructions: input.deliveryInstructions ?? null,
+      billingContactNotes: input.billingContactNotes ?? null,
+      internalNotes: input.internalNotes ?? null,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc,
+    },
+  });
+  return businessCustomerSchema.parse(raw);
+}
+
+export async function updateBusinessCustomerDeliveryAllowance(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  input: { allowDelivery: boolean; expectedUpdatedAtUtc?: string | null },
+  signal?: AbortSignal,
+): Promise<BusinessCustomer> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/business-customers/${connectionId}/delivery-allowance`,
+    body: {
+      allowDelivery: input.allowDelivery,
+      expectedUpdatedAtUtc: input.expectedUpdatedAtUtc ?? null,
+    },
+  });
+  return businessCustomerSchema.parse(raw);
+}
+
+export const organizationFulfillmentSettingsSchema = z.object({
+  organizationId: guidSchema,
+  offerDelivery: z.boolean(),
+});
+
+export type OrganizationFulfillmentSettings = z.infer<
+  typeof organizationFulfillmentSettingsSchema
+>;
+
+export async function getOrganizationFulfillmentSettings(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings`,
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
+}
+
+export async function updateOrganizationOfferDelivery(
+  workspace: PosWorkspaceScope,
+  offerDelivery: boolean,
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
+    body: { offerDelivery },
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
+}
+
+/** Connected relationships only — privacy-safe buyer Owner/staff contacts. */
+export async function listBusinessCustomerOrganizationContacts(
+  workspace: PosWorkspaceScope,
+  connectionId: string,
+  options?: { search?: string },
+  signal?: AbortSignal,
+): Promise<BuyerOrganizationBusinessContact[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/business-customers/${connectionId}/organization-contacts`, {
+      search: options?.search,
+    }),
+  });
+  return z.array(buyerOrganizationBusinessContactSchema).parse(raw);
+}
+
+// --- Supplier incoming purchase orders (not connection requests) ---
+
+export const connectedPurchaseOrderLineSchema = z.object({
+  productId: guidSchema,
+  nameSnapshot: z.string(),
+  skuSnapshot: z.string().nullable().optional(),
+  qty: z.number(),
+  unitPriceSnapshot: z.number(),
+  lineTotal: z.number(),
+  unitOfMeasureCode: z.string(),
+  proposedQty: z.number().nullable().optional(),
+  confirmedQty: z.number().nullable().optional(),
+  availability: z.string().optional().default("Pending"),
+  proposedLineTotal: z.number().optional().default(0),
+  confirmedLineTotal: z.number().optional().default(0),
+  proposedUnitPrice: z.number().nullable().optional(),
+  confirmedUnitPrice: z.number().nullable().optional(),
+  onHandQuantity: z.number().nullable().optional(),
+  reservedQuantity: z.number().nullable().optional(),
+  availableToPromise: z.number().nullable().optional(),
+  confirmQty: z.number().nullable().optional(),
+  shortageWarning: z.boolean().nullable().optional(),
+  orderedQty: z.number().nullable().optional(),
+  goodReceivedQty: z.number().nullable().optional(),
+  damagedQty: z.number().nullable().optional(),
+  missingQty: z.number().nullable().optional(),
+  cancelledRemainingQty: z.number().nullable().optional(),
+  outstandingQty: z.number().nullable().optional(),
+  remainingValue: z.number().nullable().optional(),
+});
+
+export const incomingOrderBuyerReceiptLineSchema = z.object({
+  productId: guidSchema,
+  nameSnapshot: z.string(),
+  uomSnapshot: z.string(),
+  goodQty: z.number(),
+  damagedQty: z.number(),
+  missingQty: z.number(),
+  cancelledRemainingQty: z.number(),
+  discrepancyKind: z.string().nullable().optional(),
+  discrepancyNote: z.string().nullable().optional(),
+  remainingAction: z.string().nullable().optional(),
+});
+
+export const incomingOrderBuyerReceiptSchema = z.object({
+  goodsReceiptId: guidSchema,
+  grnNumber: z.string(),
+  receivedDate: z.string(),
+  receivedAtUtc: isoDateSchema,
+  deliveryReference: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  status: z.string(),
+  goodQtyTotal: z.number(),
+  damagedQtyTotal: z.number(),
+  missingQtyTotal: z.number(),
+  cancelledRemainingTotal: z.number(),
+  lines: z.array(incomingOrderBuyerReceiptLineSchema),
+});
+
+export const connectedPurchaseOrderSchema = z.object({
+  connectedPurchaseOrderId: guidSchema,
+  relationshipId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  supplierOrganizationId: guidSchema,
+  buyerPurchaseOrderId: guidSchema,
+  buyerPoNumber: z.string().nullable().optional(),
+  orderDate: z.string(),
+  notes: z.string().nullable().optional(),
+  status: z.string(),
+  totalAmount: z.number(),
+  createdAtUtc: isoDateSchema,
+  updatedAtUtc: isoDateSchema,
+  acceptedAtUtc: isoDateSchema.nullable().optional(),
+  declinedAtUtc: isoDateSchema.nullable().optional(),
+  lines: z.array(connectedPurchaseOrderLineSchema),
+  preparingAtUtc: isoDateSchema.nullable().optional(),
+  fulfilledAtUtc: isoDateSchema.nullable().optional(),
+  withdrawnAtUtc: isoDateSchema.nullable().optional(),
+  declineReason: z.string().nullable().optional(),
+  declineNote: z.string().nullable().optional(),
+  displayStatus: z.string().optional().default(""),
+  buyerDisplayName: z.string().nullable().optional(),
+  buyerReceivingStatus: z.string().nullable().optional(),
+  paymentTerm: z.string().optional().default("Cash"),
+  paymentTermLabel: z.string().optional().default("Cash"),
+  proposedTotalAmount: z.number().optional().default(0),
+  confirmedTotalAmount: z.number().optional().default(0),
+  changesProposedAtUtc: isoDateSchema.nullable().optional(),
+  buyerRespondedAtUtc: isoDateSchema.nullable().optional(),
+  supplierBranchId: guidSchema.nullable().optional(),
+  supplierBranchName: z.string().nullable().optional(),
+  inventoryReservationState: z.string().optional().default("None"),
+  inventoryReservationExpiresAtUtc: isoDateSchema.nullable().optional(),
+  buyerOutstandingQty: z.number().nullable().optional(),
+  buyerReceipts: z.array(incomingOrderBuyerReceiptSchema).nullable().optional(),
+  remainingClosedAtUtc: isoDateSchema.nullable().optional(),
+  remainingClosedByUserId: guidSchema.nullable().optional(),
+  remainingClosedReason: z.string().nullable().optional(),
+  finalAcceptedValue: z.number().nullable().optional(),
+  cancelledRemainingValue: z.number().nullable().optional(),
+  refundDueAmount: z.number().optional().default(0),
+  amountPaid: z.number().optional().default(0),
+  balanceDue: z.number().optional().default(0),
+});
+
+export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
+export type IncomingOrderBuyerReceipt = z.infer<typeof incomingOrderBuyerReceiptSchema>;
+export type IncomingOrderBuyerReceiptLine = z.infer<typeof incomingOrderBuyerReceiptLineSchema>;
+export type ConnectedPurchaseOrder = z.infer<typeof connectedPurchaseOrderSchema>;
+
+export type IncomingOrderStatusFilter =
+  | "All"
+  | "New"
+  | "Accepted"
+  | "Preparing"
+  | "Fulfilled"
+  | "Declined"
+  | "Withdrawn"
+  | "ActionNeeded"
+  | "ChangesProposed";
+
+export async function listIncomingOrders(
+  workspace: PosWorkspaceScope,
+  options: { status?: IncomingOrderStatusFilter | string } = {},
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${PATH}/incoming-orders`, {
+      status: options.status && options.status !== "All" ? options.status : undefined,
+    }),
+  });
+  return z.array(connectedPurchaseOrderSchema).parse(raw);
+}
+
+export async function getIncomingOrder(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/incoming-orders/${connectedPurchaseOrderId}`,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function acceptIncomingOrder(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/accept`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function declineIncomingOrder(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: { declineReason?: string | null; declineNote?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/decline`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      declineReason: input.declineReason ?? null,
+      declineNote: input.declineNote ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function prepareIncomingOrder(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/prepare`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function fulfillIncomingOrder(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  // Fulfill mutates supplier stock — do not assertNotInventoryMutationUrl here.
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/fulfill`;
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function closeIncomingOrderRemaining(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: { reason: string },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/close-remaining`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: { reason: input.reason },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function proposeIncomingOrderChanges(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    lines: Array<{
+      productId: string;
+      proposedQty: number;
+      unavailable?: boolean;
+      proposedUnitPrice?: number | null;
+    }>;
+    proposedPaymentTerm?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/propose-changes`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      lines: input.lines,
+      proposedPaymentTerm: input.proposedPaymentTerm ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function withdrawIncomingOrderProposal(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/withdraw-proposal`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
 }

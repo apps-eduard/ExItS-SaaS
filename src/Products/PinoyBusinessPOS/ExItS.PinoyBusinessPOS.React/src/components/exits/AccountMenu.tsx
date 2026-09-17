@@ -1,4 +1,4 @@
-import { Building2, ChevronDown, Home, LogOut, RefreshCw, Settings, User, UserPen } from "lucide-react";
+import { Building2, ChevronDown, Home, LogOut, RefreshCw, User, UserPen } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, MenuHeader, MenuItem, MenuSeparator } from "@/components/ui/dropdown-menu";
@@ -8,16 +8,8 @@ import { sessionAccountClass, isOrganizationContextLocked } from "@/session/acco
 import { ensurePersonalSessionProfile } from "@/session/ensure-personal-profile";
 import { ACCOUNT_CONTEXT_SWITCH_PATH, useSwitchToBusiness } from "@/workspace/use-switch-to-business";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import {
-  isOrganizationAdministratorMembership,
-  isOrganizationOwnerMembership,
-  resolveEffectivePosRoleCode,
-} from "@/access/pos-capabilities";
-import {
-  deriveUserInitials,
-  resolveFriendlyPosRole,
-  resolveUserDisplayName,
-} from "@/lib/user-display";
+import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
+import { deriveUserInitials, resolveUserDisplayName } from "@/lib/user-display";
 import { cn } from "@/lib/cn";
 
 type AccountMenuProps = {
@@ -44,27 +36,6 @@ function experienceLabel(
   return null;
 }
 
-function resolveMenuRoleLabel(
-  session: Parameters<typeof sessionAccountClass>[0],
-  sessionGrant: Parameters<typeof resolveEffectivePosRoleCode>[0],
-  t: (key: "personal.badge" | "account.role.owner" | "account.role.admin" | "account.role.manager" | "account.role.cashier") => string,
-): string | null {
-  if (sessionAccountClass(session) === "Personal") {
-    return t("personal.badge");
-  }
-  if (isOrganizationOwnerMembership(sessionGrant)) {
-    return t("account.role.owner");
-  }
-  if (isOrganizationAdministratorMembership(sessionGrant)) {
-    return t("account.role.admin");
-  }
-  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(sessionGrant));
-  if (friendlyRole === "owner") return t("account.role.owner");
-  if (friendlyRole === "manager") return t("account.role.manager");
-  if (friendlyRole === "cashier") return t("account.role.cashier");
-  return null;
-}
-
 export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountMenuProps) {
   const { t } = useI18n();
   const navigate = useNavigate();
@@ -81,7 +52,8 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
 
   const displayName = resolveUserDisplayName(session) || t("account.signedIn");
   const initials = deriveUserInitials(session);
-  const roleLabel = resolveMenuRoleLabel(session, sessionGrant, t);
+  const roleLabelKey = resolveAuthenticatedRoleLabelKey(session, sessionGrant);
+  const roleLabel = roleLabelKey ? t(roleLabelKey) : null;
   const currentExperience = experienceLabel(boundWorkspace?.experience, t);
   const canReturnToPersonal =
     sessionAccountClass(session) === "Organization" && !isOrganizationContextLocked(session);
@@ -120,7 +92,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           data-testid="account-menu-trigger"
           className={cn(
             compact
-              ? "app-top-bar__avatar inline-flex size-11 min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              ? "app-top-bar__avatar inline-flex size-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               : "inline-flex min-h-[var(--exits-touch-target-min)] items-center gap-2 rounded-full border border-border bg-surface px-1.5 py-1 text-foreground transition-colors duration-[var(--exits-motion-fast)] hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:pr-2.5",
             expanded && "bg-[var(--exits-surface-muted)]",
           )}
@@ -253,16 +225,7 @@ export function AccountMenu({ signingOut, onSignOut, compact = false }: AccountM
           {t("topbar.editProfile")}
         </MenuItem>
       ) : null}
-      <MenuItem
-        onSelect={() => {
-          setOpen(false);
-          navigate("/settings/preferences");
-        }}
-      >
-        <Settings className="size-4 shrink-0" aria-hidden="true" />
-        {t("topbar.preferences")}
-      </MenuItem>
-      <MenuSeparator />
+      {isPersonal ? <MenuSeparator /> : null}
       <MenuItem
         destructive
         disabled={signingOut}

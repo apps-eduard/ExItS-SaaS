@@ -13,6 +13,7 @@ export function ThemeControl() {
       label={t("theme.label")}
       value={preferences.theme}
       onChange={setTheme}
+      variant="segmented"
       options={[
         {
           value: "system",

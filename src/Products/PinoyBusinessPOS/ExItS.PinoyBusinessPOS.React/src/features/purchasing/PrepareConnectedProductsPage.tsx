@@ -1,3 +1,4 @@
+import { Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -233,6 +234,8 @@ export function PrepareConnectedProductsPage() {
       ) : null}
       {needs.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("purchasing.prepareAllReady")}
           detail={t("purchasing.prepareAllReadyHelp")}
         />
@@ -265,7 +268,6 @@ export function PrepareConnectedProductsPage() {
                 {item.candidateBuyerProductId && allowManage ? (
                   <Button
                     type="button"
-                    className="min-h-11"
                     disabled={busyKey != null}
                     onClick={() => void doLink(item.supplierProductId, item.candidateBuyerProductId!)}
                   >
@@ -276,7 +278,6 @@ export function PrepareConnectedProductsPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     disabled={busyKey != null}
                     onClick={() => {
                       setPickerFor(item.supplierProductId);
@@ -289,7 +290,6 @@ export function PrepareConnectedProductsPage() {
                 {allowCreate ? (
                   <Button
                     type="button"
-                    className="min-h-11"
                     disabled={busyKey != null}
                     onClick={() => {
                       setCreateFor({
@@ -326,7 +326,7 @@ export function PrepareConnectedProductsPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11 w-full justify-start"
+                  className="w-full justify-start"
                   disabled={busyKey != null}
                   onClick={() => void doLink(pickerFor, product.productId)}
                 >
@@ -365,7 +365,7 @@ export function PrepareConnectedProductsPage() {
             <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span>{t("purchasing.prepareYourSellingPrice")}</span>
               <input
-                className="min-h-11 rounded-md border border-border px-3"
+                className="rounded-md border border-border px-3"
                 inputMode="decimal"
                 value={sellingPriceText}
                 onChange={(event) => setSellingPriceText(event.target.value)}
@@ -379,7 +379,6 @@ export function PrepareConnectedProductsPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={busyKey != null || businessUsage === null}
               onClick={() => void doCreate()}
               data-testid="prepare-create-link"
@@ -394,7 +393,7 @@ export function PrepareConnectedProductsPage() {
         {readiness.canReceive ? (
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="prepare-continue-receive"
             onClick={() => navigate(`/purchasing/${purchaseOrderId}/receive`)}
           >

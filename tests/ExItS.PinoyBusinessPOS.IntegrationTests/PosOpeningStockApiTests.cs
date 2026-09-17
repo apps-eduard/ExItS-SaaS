@@ -184,6 +184,63 @@ public sealed class PosOpeningStockApiTests(PosPostgreSqlFixture fixture)
     }
 
     [Fact]
+    public async Task Secondary_branch_can_add_opening_while_primary_already_has_opening()
+    {
+        await using var factory = new PosApiFactory(fixture.ConnectionString);
+        var client = factory.CreateClient();
+        var org = Guid.NewGuid();
+        var secondaryBranch = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var product = await CreateProductAsync(client, org, "Multi Branch Apple", tracksExpiration: false);
+
+        using var enablePrimary = Scoped(HttpMethod.Post, $"{Inventory}/{product.ProductId:D}/enable", org, PrimaryBranch);
+        enablePrimary.Content = JsonContent.Create(
+            new EnableInventoryTrackingRequest(OpeningQuantity: 10m, UnitCost: 50m),
+            options: JsonOptions);
+        (await client.SendAsync(enablePrimary)).EnsureSuccessStatusCode();
+
+        using var getSecondary = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}", org, secondaryBranch);
+        using var getSecondaryResponse = await client.SendAsync(getSecondary);
+        getSecondaryResponse.EnsureSuccessStatusCode();
+        var secondaryBefore = await getSecondaryResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.True(secondaryBefore!.IsTracked);
+        Assert.Equal(0m, secondaryBefore.OnHandQuantity);
+        Assert.False(secondaryBefore.HasOpeningStock);
+
+        using var addSecondary = Scoped(
+            HttpMethod.Post,
+            $"{Inventory}/{product.ProductId:D}/opening-stock",
+            org,
+            secondaryBranch);
+        addSecondary.Content = JsonContent.Create(
+            new AddOpeningStockRequest(OpeningQuantity: 5m, UnitCost: 55m),
+            options: JsonOptions);
+        using var addSecondaryResponse = await client.SendAsync(addSecondary);
+        Assert.Equal(HttpStatusCode.OK, addSecondaryResponse.StatusCode);
+        var secondaryAfter = await addSecondaryResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.True(secondaryAfter!.HasOpeningStock);
+        Assert.Equal(5m, secondaryAfter.OnHandQuantity);
+
+        using var getPrimary = Scoped(HttpMethod.Get, $"{Inventory}/{product.ProductId:D}", org, PrimaryBranch);
+        using var getPrimaryResponse = await client.SendAsync(getPrimary);
+        getPrimaryResponse.EnsureSuccessStatusCode();
+        var primaryAfter = await getPrimaryResponse.Content.ReadFromJsonAsync<PosInventoryAccountDto>(JsonOptions);
+        Assert.Equal(10m, primaryAfter!.OnHandQuantity);
+        Assert.True(primaryAfter.HasOpeningStock);
+        Assert.Equal(15m, primaryAfter.OrganizationOnHandQuantity);
+
+        using var duplicateSecondary = Scoped(
+            HttpMethod.Post,
+            $"{Inventory}/{product.ProductId:D}/opening-stock",
+            org,
+            secondaryBranch);
+        duplicateSecondary.Content = JsonContent.Create(
+            new AddOpeningStockRequest(OpeningQuantity: 1m, UnitCost: 55m),
+            options: JsonOptions);
+        using var duplicateResponse = await client.SendAsync(duplicateSecondary);
+        Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task Update_product_does_not_add_opening_stock_movement()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);

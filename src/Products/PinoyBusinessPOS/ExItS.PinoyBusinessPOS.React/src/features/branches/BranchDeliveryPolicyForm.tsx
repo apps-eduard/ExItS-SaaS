@@ -33,7 +33,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={minimumOrder}
             onChange={(e) => onChange("minimumOrder", e.target.value)}
             data-testid="policy-minimum"
@@ -44,7 +44,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={baseFee}
             onChange={(e) => onChange("baseFee", e.target.value)}
             data-testid="policy-base-fee"
@@ -55,7 +55,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={includedKm}
             onChange={(e) => onChange("includedKm", e.target.value)}
             data-testid="policy-included-km"
@@ -66,7 +66,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={additionalPerKm}
             onChange={(e) => onChange("additionalPerKm", e.target.value)}
             data-testid="policy-additional-km"
@@ -77,7 +77,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={maximumKm}
             onChange={(e) => onChange("maximumKm", e.target.value)}
             data-testid="policy-maximum-km"
@@ -88,7 +88,7 @@ export function BranchDeliveryPolicyForm({
           <input
             type="number"
             step="any"
-            className="catalog-form-select font-normal"
+            className="exits-input exits-input--no-spin font-normal"
             value={freeThreshold}
             onChange={(e) => onChange("freeThreshold", e.target.value)}
             data-testid="policy-free-threshold"

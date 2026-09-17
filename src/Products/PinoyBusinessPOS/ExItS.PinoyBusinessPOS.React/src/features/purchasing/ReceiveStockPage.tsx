@@ -1,21 +1,62 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, ClipboardList } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
-import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
+import {
+  listCatalogCategories,
+  listCatalogProducts,
+} from "@/api/pos/pos-catalog-client";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
 import { createDirectPurchaseReceipt } from "@/api/pos/pos-direct-purchase-receipts-client";
+import {
+  listDirectPurchases,
+  type DirectPurchaseHistoryItem,
+} from "@/api/pos/pos-direct-purchases-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { listSuppliers } from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
+import { FilterChip } from "@/components/exits/FilterChip";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { useToast } from "@/components/exits/ToastProvider";
+import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { SearchField } from "@/components/exits/SearchField";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
+import {
+  ProductFinderPanel,
+  SelectedItemsPanel,
+} from "@/components/exits/ProductSelectionWorkspace";
+import { ReceiveCategoryMultiSelect } from "@/features/purchasing/ReceiveCategoryMultiSelect";
+import { ReceiveStockFindProductsView } from "@/features/purchasing/ReceiveStockFindProductsView";
+import { ReceiveStockReceiptItemsView } from "@/features/purchasing/ReceiveStockReceiptItemsView";
+import {
+  RECEIVE_STOCK_FIND_PRODUCTS_TABLE_MIN_PX,
+  RECEIVE_STOCK_RECEIPT_TABLE_MIN_PX,
+} from "@/features/purchasing/receive-stock-responsive";
+import {
+  hasReceiveCostMarginWarning,
+  resolveReceiveEffectiveSellingPrice,
+  type ReceiveMarginWarningFlash,
+} from "@/features/purchasing/receive-cost-margin";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
   directPurchaseCreditValidationKey,
@@ -28,18 +69,35 @@ import {
   type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
+import {
+  clampQuantityToPrecision,
+  isValidQuantity,
+  maxQuantityDecimals,
+  quantityInputMinimum,
+} from "@/lib/quantity-rules";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const OTHER_SOURCE = "__other__";
+const RECENT_COMPLETED_PAGE_SIZE = 8;
+const PRODUCT_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
 type DraftLine = {
   productId: string;
   name: string;
+  sku: string | null;
   uom: string;
+  sellingMode: string;
   tracksExpiration: boolean;
   quantity: number;
   unitCost: number;
-  expiryDate: string | null;
-  lotNumber: string | null;
+  /** Branch-effective catalog selling price at add time (margin comparison source). */
+  effectiveSellingPrice: number;
+  sellingPrice: number;
+  costInput: string;
+  expiryDate: string;
+  lotNumber: string;
 };
 
 function todayIsoDate(): string {
@@ -47,26 +105,64 @@ function todayIsoDate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function historyRowHref(item: DirectPurchaseHistoryItem): string {
+  return item.sourceType === "B2B"
+    ? `/purchasing/direct-purchases/b2b/${item.sourceId}`
+    : `/purchasing/direct-purchases/${item.sourceId}`;
+}
+
+function formatHistoryDate(item: DirectPurchaseHistoryItem): string {
+  if (item.purchaseDate) return item.purchaseDate;
+  return new Date(item.occurredAtUtc).toISOString().slice(0, 10);
+}
+
+function lineIsComplete(line: DraftLine): boolean {
+  if (!(line.quantity > 0 && line.unitCost > 0)) return false;
+  if (line.tracksExpiration && !line.expiryDate.trim()) return false;
+  return true;
+}
+
+function lineHasCostMarginWarning(line: DraftLine): boolean {
+  return hasReceiveCostMarginWarning(line.unitCost, line.effectiveSellingPrice);
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 export function ReceiveStockPage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const { layout: receiptLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: RECEIVE_STOCK_RECEIPT_TABLE_MIN_PX,
+  });
+  const { layout: findProductsLayout } = useResponsiveDataLayout({
+    tableMinWidthPx: RECEIVE_STOCK_FIND_PRODUCTS_TABLE_MIN_PX,
+  });
 
   const [purchaseDate, setPurchaseDate] = useState(todayIsoDate);
-  const [supplierId, setSupplierId] = useState("");
+  const [supplierChoice, setSupplierChoice] = useState("");
   const [sourceName, setSourceName] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lines, setLines] = useState<DraftLine[]>([]);
-  const [sheetProduct, setSheetProduct] = useState<PosCatalogProductDto | null>(null);
-  const [qtyText, setQtyText] = useState("1");
-  const [costText, setCostText] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [lot, setLot] = useState("");
+  const [finderOpen, setFinderOpen] = useState(false);
+  const [highlightProductId, setHighlightProductId] = useState<string | null>(null);
+  const [focusCostProductId, setFocusCostProductId] = useState<string | null>(null);
+  const [trackedOnly, setTrackedOnly] = useState(false);
+  const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState<number>(PRODUCT_PAGE_SIZE_OPTIONS[0]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reviewing, setReviewing] = useState(false);
@@ -78,6 +174,13 @@ export function ReceiveStockPage() {
   const [paidNowTouched, setPaidNowTouched] = useState(false);
   const idempotencyKeyRef = useRef<string | null>(null);
   const draftBranchIdRef = useRef<string | null>(null);
+  const finderPanelId = "direct-find-products-panel";
+  const productSearchInputId = "direct-product-search-input";
+
+  const supplierId =
+    supplierChoice && supplierChoice !== OTHER_SOURCE ? supplierChoice : "";
+  const useOtherSource = supplierChoice === OTHER_SOURCE;
+  const allowSupplierCredit = Boolean(supplierId.trim());
 
   useEffect(() => {
     const currentBranchId = boundWorkspace?.branchId ?? null;
@@ -93,18 +196,19 @@ export function ReceiveStockPage() {
     }
     const hadDraft =
       lines.length > 0 ||
-      supplierId.trim().length > 0 ||
+      supplierChoice.trim().length > 0 ||
       sourceName.trim().length > 0 ||
       referenceNumber.trim().length > 0 ||
       notes.trim().length > 0;
     draftBranchIdRef.current = currentBranchId;
     idempotencyKeyRef.current = null;
     setLines([]);
-    setSupplierId("");
+    setFinderOpen(false);
+    setHighlightProductId(null);
+    setSupplierChoice("");
     setSourceName("");
     setReferenceNumber("");
     setNotes("");
-    setSheetProduct(null);
     setReviewing(false);
     setStatusLocked(false);
     if (hadDraft) {
@@ -116,7 +220,7 @@ export function ReceiveStockPage() {
     notes,
     referenceNumber,
     sourceName,
-    supplierId,
+    supplierChoice,
     t,
   ]);
 
@@ -125,12 +229,64 @@ export function ReceiveStockPage() {
     return () => window.clearTimeout(handle);
   }, [search]);
 
+  useEffect(() => {
+    if (!finderOpen) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      const input = document.getElementById(productSearchInputId);
+      if (input instanceof HTMLInputElement) {
+        input.focus();
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [finderOpen]);
+
+  useEffect(() => {
+    if (!highlightProductId) {
+      return;
+    }
+    const reduceMotion = prefersReducedMotion();
+    if (reduceMotion) {
+      setHighlightProductId(null);
+      return;
+    }
+    const handle = window.setTimeout(() => setHighlightProductId(null), 1200);
+    return () => window.clearTimeout(handle);
+  }, [highlightProductId]);
+
+  useEffect(() => {
+    if (!focusCostProductId) {
+      return;
+    }
+    const productId = focusCostProductId;
+    const frame = window.requestAnimationFrame(() => {
+      const costInput = document.querySelector(
+        `[data-testid="direct-line-cost-${productId}"]`,
+      );
+      if (costInput instanceof HTMLInputElement) {
+        costInput.focus();
+        costInput.select();
+      }
+      setFocusCostProductId(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusCostProductId]);
+
   const estimatedTotal = useMemo(
     () => roundMoney(lines.reduce((sum, line) => sum + line.quantity * line.unitCost, 0)),
     [lines],
   );
 
-  const allowSupplierCredit = Boolean(supplierId.trim());
+  const linesValid = useMemo(
+    () => lines.length > 0 && lines.every(lineIsComplete),
+    [lines],
+  );
+
+  const marginWarningLines = useMemo(
+    () => lines.filter(lineHasCostMarginWarning),
+    [lines],
+  );
 
   useEffect(() => {
     if (!allowSupplierCredit && paymentMode === "supplierCredit") {
@@ -147,7 +303,7 @@ export function ReceiveStockPage() {
       return;
     }
     if (!paidNowTouched) {
-      setPaidNowText(formatMoneyInput(estimatedTotal));
+      setPaidNowText(formatMoneyInput(0));
     }
   }, [estimatedTotal, paidNowTouched, paymentMode]);
 
@@ -164,6 +320,8 @@ export function ReceiveStockPage() {
     if (mode === "paidInFull") {
       setPaidNowText(formatMoneyInput(estimatedTotal));
       setDueDate("");
+    } else {
+      setPaidNowText(formatMoneyInput(0));
     }
   }
 
@@ -205,70 +363,237 @@ export function ReceiveStockPage() {
     queryFn: ({ signal }) => listSuppliers(workspace!, { status: "Active", pageSize: 100 }, signal),
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog-categories", "direct-buy", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) =>
+      listCatalogCategories(workspace!, { status: "Active", pageSize: 50 }, signal),
+  });
+
+  // Category filter is applied client-side so every category can show a stable count (incl. 0).
   const productsQuery = useQuery({
-    queryKey: ["catalog-products", "direct-buy", workspace?.organizationId, debounced],
-    enabled: Boolean(workspace) && online && allowManage && debounced.length > 0,
+    queryKey: [
+      "catalog-products",
+      "direct-buy",
+      workspace?.organizationId,
+      debounced,
+    ],
+    enabled: Boolean(workspace) && online && allowManage,
     queryFn: ({ signal }) =>
       listCatalogProducts(
         workspace!,
-        { search: debounced, status: "Active", pageSize: 20 },
+        {
+          search: debounced || undefined,
+          status: "Active",
+          pageSize: 100,
+        },
         signal,
       ),
   });
+
+  const recentCompletedQuery = useQuery({
+    queryKey: ["direct-purchases", "receive-stock-recent", workspace?.organizationId],
+    enabled: Boolean(workspace) && online,
+    queryFn: ({ signal }) =>
+      listDirectPurchases(
+        workspace!,
+        {
+          status: "Completed",
+          page: 1,
+          pageSize: RECENT_COMPLETED_PAGE_SIZE,
+        },
+        signal,
+      ),
+  });
+
+  const categories = categoriesQuery.data?.items ?? [];
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const category of categories) {
+      map.set(category.categoryId, category.name);
+    }
+    return map;
+  }, [categories]);
+  const rawProductItems = productsQuery.data?.items ?? [];
+  const categoriesWithCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const category of categories) {
+      counts.set(category.categoryId, 0);
+    }
+    for (const product of rawProductItems) {
+      if (product.categoryId == null || !counts.has(product.categoryId)) {
+        continue;
+      }
+      counts.set(product.categoryId, (counts.get(product.categoryId) ?? 0) + 1);
+    }
+    return categories.map((category) => ({
+      categoryId: category.categoryId,
+      name: category.name,
+      count: counts.get(category.categoryId) ?? 0,
+    }));
+  }, [categories, rawProductItems]);
+  const addedProductIds = useMemo(
+    () => new Set(lines.map((line) => line.productId)),
+    [lines],
+  );
+  const productItems = useMemo(() => {
+    const categoryFiltered =
+      categoryIds.length === 0
+        ? rawProductItems
+        : rawProductItems.filter(
+            (product) => product.categoryId != null && categoryIds.includes(product.categoryId),
+          );
+    const available = categoryFiltered.filter(
+      (product) => !addedProductIds.has(product.productId),
+    );
+    if (trackedOnly) {
+      return available.filter((product) => product.isTracked !== false);
+    }
+    return available;
+  }, [addedProductIds, categoryIds, rawProductItems, trackedOnly]);
+
+  const productTotal = productItems.length;
+  const productPageCount = Math.max(1, Math.ceil(productTotal / productPageSize) || 1);
+  const safeProductPage = Math.min(Math.max(productPage, 1), productPageCount);
+  const pagedProductItems = useMemo(() => {
+    const start = (safeProductPage - 1) * productPageSize;
+    return productItems.slice(start, start + productPageSize);
+  }, [productItems, productPageSize, safeProductPage]);
+
+  useEffect(() => {
+    setProductPage(1);
+  }, [debounced, categoryIds, trackedOnly, addedProductIds]);
+
+  useEffect(() => {
+    if (productPage !== safeProductPage) {
+      setProductPage(safeProductPage);
+    }
+  }, [productPage, safeProductPage]);
+
+  const recentItems = recentCompletedQuery.data?.items ?? [];
+  const recentTotal = recentCompletedQuery.data?.totalCount ?? 0;
+  const reviewDisabled = !linesValid || !allowManage || !online;
+  const hasActiveFilters =
+    categoryIds.length > 0 || debounced.length > 0 || trackedOnly;
+
+  function openFinder() {
+    setFinderOpen(true);
+  }
+
+  function closeFinder() {
+    setFinderOpen(false);
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  function beginAdd(product: PosCatalogProductDto) {
+  function addProductRow(product: PosCatalogProductDto) {
     if (product.isTracked === false) {
-      setError(t("purchasing.receiveStockNotTracked"));
+      showToast({
+        title: t("purchasing.inventoryTrackingRequired"),
+        description: t("purchasing.inventoryTrackingRequiredDetail").replace(
+          "{name}",
+          product.name,
+        ),
+        tone: "error",
+        action: {
+          label: t("inventory.enable"),
+          href: `/inventory/${product.productId}`,
+        },
+      });
       return;
     }
+    if (lines.some((line) => line.productId === product.productId)) {
+      return;
+    }
+    const tracksExpiration = product.tracksExpiration === true;
+    const effectiveSelling = resolveReceiveEffectiveSellingPrice(product);
+    const catalogSelling = effectiveSelling > 0 ? effectiveSelling : 0;
+    const line: DraftLine = {
+      productId: product.productId,
+      name: product.name,
+      sku: product.sku ?? null,
+      uom: product.unitOfMeasure,
+      sellingMode: product.sellingMode ?? "PerItem",
+      tracksExpiration,
+      quantity: 1,
+      unitCost: 0,
+      effectiveSellingPrice: catalogSelling,
+      sellingPrice: catalogSelling,
+      costInput: "",
+      expiryDate: "",
+      lotNumber: "",
+    };
+    setLines((prev) => [...prev, line]);
     setError(null);
-    setSheetProduct(product);
-    const existing = lines.find((l) => l.productId === product.productId);
-    setQtyText(existing ? String(existing.quantity) : "1");
-    setCostText(existing ? String(existing.unitCost) : "");
-    setExpiry(existing?.expiryDate ?? "");
-    setLot(existing?.lotNumber ?? "");
+    setFocusCostProductId(product.productId);
+    if (!prefersReducedMotion()) {
+      setHighlightProductId(product.productId);
+    }
   }
 
-  function saveSheet() {
-    if (!sheetProduct) {
-      return;
+  function patchLine(
+    productId: string,
+    patch: Partial<Pick<DraftLine, "costInput" | "expiryDate" | "lotNumber" | "quantity">>,
+  ) {
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.productId !== productId) return line;
+        const next = { ...line, ...patch };
+        if (patch.quantity !== undefined) {
+          const precision = maxQuantityDecimals(line.uom, line.sellingMode);
+          const minQty = quantityInputMinimum(line.uom, line.sellingMode);
+          if (
+            Number.isFinite(patch.quantity) &&
+            patch.quantity >= minQty &&
+            isValidQuantity(patch.quantity, line.uom, line.sellingMode)
+          ) {
+            next.quantity = clampQuantityToPrecision(patch.quantity, precision);
+          }
+        }
+        if (patch.costInput !== undefined) {
+          const cost = parseMoneyInput(patch.costInput);
+          next.unitCost = cost !== null && cost > 0 ? cost : 0;
+        }
+        return next;
+      }),
+    );
+  }
+
+  function removeLine(productId: string) {
+    setLines((prev) => prev.filter((l) => l.productId !== productId));
+  }
+
+  function marginWarningFlash(affected: DraftLine[]): ReceiveMarginWarningFlash | null {
+    if (affected.length === 0) {
+      return null;
     }
-    const qty = Number(qtyText);
-    const cost = Number(costText);
-    if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(cost) || cost <= 0) {
-      setError(t("purchasing.invalidLine"));
-      return;
-    }
-    const tracksExpiration = sheetProduct.tracksExpiration === true;
-    if (tracksExpiration && !expiry.trim()) {
-      setError(t("purchasing.expiryRequired"));
-      return;
-    }
-    const draft: DraftLine = {
-      productId: sheetProduct.productId,
-      name: sheetProduct.name,
-      uom: sheetProduct.unitOfMeasure,
-      tracksExpiration,
-      quantity: qty,
-      unitCost: cost,
-      expiryDate: tracksExpiration ? expiry.trim() : null,
-      lotNumber: tracksExpiration && lot.trim() ? lot.trim() : null,
+    return {
+      count: affected.length,
+      productId: affected.length === 1 ? affected[0].productId : null,
     };
-    setLines((prev) => {
-      const without = prev.filter((l) => l.productId !== draft.productId);
-      return [...without, draft];
-    });
-    setSheetProduct(null);
+  }
+
+  function startReview() {
+    if (!linesValid) {
+      const incomplete = lines.find((line) => !lineIsComplete(line));
+      if (incomplete?.tracksExpiration && !incomplete.expiryDate.trim()) {
+        setError(t("purchasing.expiryRequired"));
+      } else {
+        setError(t("purchasing.invalidLine"));
+      }
+      return;
+    }
+    if (validatePayment() === null) {
+      return;
+    }
     setError(null);
+    setReviewing(true);
   }
 
   async function confirm() {
-    if (!workspace || !allowManage || !online || saving || statusLocked || lines.length === 0) {
+    if (!workspace || !allowManage || !online || saving || statusLocked || !linesValid) {
       return;
     }
     const paidNow = validatePayment();
@@ -284,6 +609,13 @@ export function ReceiveStockPage() {
       idempotencyKeyRef.current = generated.id;
     }
     const idempotencyKey = idempotencyKeyRef.current;
+    const resolvedSupplierId = supplierId.trim() || null;
+    const resolvedSourceName = useOtherSource
+      ? sourceName.trim() || null
+      : resolvedSupplierId
+        ? (suppliersQuery.data?.items.find((s) => s.supplierId === resolvedSupplierId)?.name ??
+          null)
+        : sourceName.trim() || null;
     const paymentFields = {
       paidNow,
       dueDate:
@@ -292,28 +624,33 @@ export function ReceiveStockPage() {
           : null,
       paymentMethodAtReceipt: paidNow > 0 ? paymentMethod : null,
     };
+    const payload = {
+      purchaseDate,
+      supplierId: resolvedSupplierId,
+      sourceName: resolvedSourceName,
+      referenceNumber: referenceNumber.trim() || null,
+      notes: notes.trim() || null,
+      idempotencyKey,
+      lines: lines.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+        unitCost: line.unitCost,
+        expiryDate: line.tracksExpiration ? line.expiryDate.trim() : null,
+        lotNumber:
+          line.tracksExpiration && line.lotNumber.trim() ? line.lotNumber.trim() : null,
+      })),
+      ...paymentFields,
+    };
     setSaving(true);
     setError(null);
+    const marginAffected = lines.filter(lineHasCostMarginWarning);
     try {
-      const receipt = await createDirectPurchaseReceipt(workspace, {
-        purchaseDate,
-        supplierId: supplierId || null,
-        sourceName: sourceName.trim() || null,
-        referenceNumber: referenceNumber.trim() || null,
-        notes: notes.trim() || null,
-        idempotencyKey,
-        lines: lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          unitCost: line.unitCost,
-          expiryDate: line.expiryDate,
-          lotNumber: line.lotNumber,
-        })),
-        ...paymentFields,
-      });
+      const receipt = await createDirectPurchaseReceipt(workspace, payload);
       idempotencyKeyRef.current = null;
+      const flash = marginWarningFlash(marginAffected);
       navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
         replace: true,
+        state: flash ? { receiveMarginWarning: flash } : undefined,
       });
     } catch (err) {
       // No GET-by-idempotency-key API. Sticky key makes a same-payload retry safe;
@@ -321,25 +658,12 @@ export function ReceiveStockPage() {
       if (isLikelyNetworkFailure(err)) {
         setError(t("checkout.confirmingTransaction"));
         try {
-          const receipt = await createDirectPurchaseReceipt(workspace, {
-            purchaseDate,
-            supplierId: supplierId || null,
-            sourceName: sourceName.trim() || null,
-            referenceNumber: referenceNumber.trim() || null,
-            notes: notes.trim() || null,
-            idempotencyKey,
-            lines: lines.map((line) => ({
-              productId: line.productId,
-              quantity: line.quantity,
-              unitCost: line.unitCost,
-              expiryDate: line.expiryDate,
-              lotNumber: line.lotNumber,
-            })),
-            ...paymentFields,
-          });
+          const receipt = await createDirectPurchaseReceipt(workspace, payload);
           idempotencyKeyRef.current = null;
+          const flash = marginWarningFlash(marginAffected);
           navigate(`/purchasing/direct-purchases/${receipt.directPurchaseReceiptId}`, {
             replace: true,
+            state: flash ? { receiveMarginWarning: flash } : undefined,
           });
           return;
         } catch (retryErr) {
@@ -367,265 +691,490 @@ export function ReceiveStockPage() {
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="receive-stock-page">
+    <div
+      className="receive-stock-page exits-page flex min-w-0 flex-col gap-3"
+      data-testid="receive-stock-page"
+    >
       <PageHeader
         title={t("purchasing.receiveStock")}
-        description={t("purchasing.receiveStockLede")}
+        subtitle={boundWorkspace?.branchName || undefined}
+        description={t("purchasing.receiveStockHelper")}
         backTo={pageBackNav.purchasing.to}
         backLabel={t(pageBackNav.purchasing.labelKey)}
         backTestId="page-header-back-purchasing"
       />
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-        {t("purchasing.receiveStockHelper")}
-      </p>
       {boundWorkspace?.branchName ? (
-        <p
-          className="m-0 text-[length:var(--exits-text-sm)] font-medium"
-          data-testid="direct-purchase-receiving-branch"
-        >
+        <span className="sr-only" data-testid="direct-purchase-receiving-branch">
           {t("purchasing.receivingIntoBranch").replace("{name}", boundWorkspace.branchName)}
-        </p>
+        </span>
       ) : null}
       {!online ? (
-        <Card>
-          <p className="m-0">{t("purchasing.offline")}</p>
-        </Card>
+        <Notice tone="warning" testId="direct-offline">
+          {t("purchasing.offline")}
+        </Notice>
       ) : null}
       {!allowManage ? (
-        <Card>
-          <p className="m-0">{t("purchasing.inventoryManageDenied")}</p>
-        </Card>
+        <Notice tone="danger" testId="direct-manage-denied">
+          {t("purchasing.inventoryManageDenied")}
+        </Notice>
+      ) : null}
+      {error ? (
+        <Notice tone="danger" testId="direct-error">
+          {error}
+        </Notice>
       ) : null}
 
       {!reviewing ? (
         <>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("purchasing.purchaseDate")}
-            <input
-              type="date"
-              className="min-h-11 rounded-md border border-border bg-background px-3"
-              value={purchaseDate}
-              onChange={(e) => setPurchaseDate(e.target.value)}
-              data-testid="direct-purchase-date"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("purchasing.boughtFrom")}
-            <select
-              className="min-h-11 rounded-md border border-border bg-background px-3"
-              value={supplierId}
-              onChange={(e) => {
-                setSupplierId(e.target.value);
-                const match = suppliersQuery.data?.items.find(
-                  (s) => s.supplierId === e.target.value,
-                );
-                if (match) {
-                  setSourceName(match.name);
-                }
-              }}
-              data-testid="direct-supplier"
+          <Card
+            as="section"
+            padding="compact"
+            className="receive-stock-section receive-stock-details"
+            data-testid="direct-purchase-details"
+            aria-labelledby="direct-purchase-details-heading"
+          >
+            <h2
+              id="direct-purchase-details-heading"
+              className="receive-stock-section__title m-0"
             >
-              <option value="">{t("purchasing.useAnotherSource")}</option>
-              {(suppliersQuery.data?.items ?? []).map((s) => (
-                <option key={s.supplierId} value={s.supplierId}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!supplierId ? (
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              {t("purchasing.sourceName")}
-              <input
-                className="min-h-11 rounded-md border border-border bg-background px-3"
-                value={sourceName}
-                onChange={(e) => setSourceName(e.target.value)}
-                placeholder={t("purchasing.sourcePlaceholder")}
-                data-testid="direct-source-name"
+              {t("purchasing.purchaseDetails")}
+            </h2>
+            <div className="receive-stock-details__grid">
+              <label className="receive-stock-field">
+                <span className="receive-stock-field__label">{t("purchasing.purchaseDate")}</span>
+                <input
+                  type="date"
+                  className="exits-input"
+                  value={purchaseDate}
+                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  data-testid="direct-purchase-date"
+                  aria-label={t("purchasing.purchaseDate")}
+                />
+              </label>
+              <label className="receive-stock-field">
+                <span className="receive-stock-field__label">{t("purchasing.boughtFrom")}</span>
+                <select
+                  className="exits-select catalog-form-select"
+                  value={supplierChoice}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setSupplierChoice(next);
+                    if (next && next !== OTHER_SOURCE) {
+                      const match = suppliersQuery.data?.items.find(
+                        (s) => s.supplierId === next,
+                      );
+                      if (match) {
+                        setSourceName(match.name);
+                      }
+                    } else if (next !== OTHER_SOURCE) {
+                      setSourceName("");
+                    }
+                  }}
+                  data-testid="direct-supplier"
+                  aria-label={t("purchasing.boughtFrom")}
+                >
+                  <option value="">{t("purchasing.boughtFrom")}</option>
+                  {(suppliersQuery.data?.items ?? []).map((s) => (
+                    <option key={s.supplierId} value={s.supplierId}>
+                      {s.name}
+                    </option>
+                  ))}
+                  <option value={OTHER_SOURCE}>{t("purchasing.useAnotherSource")}</option>
+                </select>
+              </label>
+              <label className="receive-stock-field">
+                <span className="receive-stock-field__label">{t("purchasing.reference")}</span>
+                <input
+                  className="exits-input"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  placeholder={t("purchasing.reference")}
+                  data-testid="direct-reference"
+                  aria-label={t("purchasing.reference")}
+                />
+              </label>
+            </div>
+            {useOtherSource ? (
+              <label className="receive-stock-field">
+                <span className="receive-stock-field__label">{t("purchasing.sourceName")}</span>
+                <input
+                  className="exits-input"
+                  value={sourceName}
+                  onChange={(e) => setSourceName(e.target.value)}
+                  placeholder={t("purchasing.sourcePlaceholder")}
+                  data-testid="direct-source-name"
+                />
+              </label>
+            ) : null}
+            <label className="receive-stock-field">
+              <span className="receive-stock-field__label">{t("purchasing.notesOptional")}</span>
+              <textarea
+                className="exits-input receive-stock-notes"
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                data-testid="direct-notes"
+                aria-label={t("purchasing.notesOptional")}
               />
             </label>
-          ) : null}
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("purchasing.reference")}
-            <input
-              className="min-h-11 rounded-md border border-border bg-background px-3"
-              value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            {t("purchasing.notes")}
-            <textarea
-              className="min-h-20 rounded-md border border-border bg-background px-3 py-2"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </label>
+          </Card>
 
-          <SearchField
-            label={t("purchasing.productSearch")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("purchasing.productSearch")}
-            data-testid="direct-product-search"
-          />
-          {(productsQuery.data?.items ?? []).length === 0 && debounced ? (
-            <EmptyState
-              title={t("purchasing.noProducts")}
-              detail={t("purchasing.noProductsDetail")}
-            />
-          ) : null}
-          <ul className="m-0 flex list-none flex-col gap-1 p-0">
-            {(productsQuery.data?.items ?? []).map((p) => (
-              <li key={p.productId}>
-                <button
-                  type="button"
-                  className="min-h-11 w-full rounded-md border border-border bg-background px-3 text-left"
-                  onClick={() => beginAdd(p)}
-                  data-testid={`direct-product-${p.productId}`}
-                >
-                  {p.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-
-          {sheetProduct ? (
-            <Card data-testid="direct-add-sheet">
-              <p className="mt-0 font-medium">{sheetProduct.name}</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  {t("purchasing.qty")}
-                  <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
-                    value={qtyText}
-                    onChange={(e) => setQtyText(e.target.value)}
-                    data-testid="direct-line-qty"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                  {t("purchasing.unitCost")}
-                  <input
-                    className="min-h-11 rounded-md border border-border bg-background px-3"
-                    value={costText}
-                    onChange={(e) => setCostText(e.target.value)}
-                    data-testid="direct-line-cost"
-                  />
-                </label>
-                {sheetProduct.tracksExpiration ? (
-                  <>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      {t("purchasing.expiryDate")}
-                      <input
-                        type="date"
-                        className="min-h-11 rounded-md border border-border bg-background px-3"
-                        value={expiry}
-                        onChange={(e) => setExpiry(e.target.value)}
-                        data-testid="direct-line-expiry"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                      {t("purchasing.lotNumber")}
-                      <input
-                        className="min-h-11 rounded-md border border-border bg-background px-3"
-                        value={lot}
-                        onChange={(e) => setLot(e.target.value)}
-                        data-testid="direct-line-lot"
-                      />
-                    </label>
-                  </>
-                ) : null}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  className="min-h-11"
-                  onClick={saveSheet}
-                  data-testid="direct-save-line"
-                >
-                  {t("purchasing.addLine")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="min-h-11"
-                  onClick={() => setSheetProduct(null)}
-                >
-                  {t("purchasing.cancel")}
-                </Button>
-              </div>
-            </Card>
-          ) : null}
-
-          <section>
-            <h2 className="m-0 mb-2 text-[length:var(--exits-text-md)] font-medium">
-              {t("purchasing.draft")}
-            </h2>
-            {lines.length === 0 ? (
-              <p className="m-0 text-muted">{t("purchasing.draftEmpty")}</p>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                {lines.map((line) => (
-                  <li key={line.productId} className="rounded-md border border-border p-3">
-                    <div className="font-medium">{line.name}</div>
-                    <div className="text-[length:var(--exits-text-sm)] text-muted">
-                      {line.quantity} {line.uom} · {line.unitCost}
-                      {line.expiryDate ? ` · ${line.expiryDate}` : ""}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {lines.length > 0 ? (
-            <ReceivePaymentSection
-              estimatedTotal={estimatedTotal}
-              mode={paymentMode}
-              onModeChange={onPaymentModeChange}
-              paidNowText={paidNowText}
-              onPaidNowChange={(value) => {
-                setPaidNowTouched(true);
-                setPaidNowText(value);
-              }}
-              paymentMethod={paymentMethod}
-              onPaymentMethodChange={setPaymentMethod}
-              dueDate={dueDate}
-              onDueDateChange={setDueDate}
-              paidNowValue={effectivePaidNow}
-              allowSupplierCredit={allowSupplierCredit}
-              disabled={!allowManage || !online}
-            />
-          ) : null}
-
-          <Button
-            type="button"
-            className="min-h-11"
-            disabled={lines.length === 0 || !allowManage || !online}
-            onClick={() => {
-              if (validatePayment() === null) {
-                return;
+          <div className="receive-stock-workspace product-selection-workspace">
+            <SelectedItemsPanel
+              title={t("purchasing.receiptItems")}
+              count={lines.length}
+              headingId="direct-receipt-items-heading"
+              addLabel={t("purchasing.addProducts")}
+              onAddClick={openFinder}
+              finderOpen={finderOpen}
+              finderPanelId={finderPanelId}
+              emptyTitle={t("purchasing.draftEmpty")}
+              emptyDetail={t("purchasing.draftEmptyDetailLeft")}
+              emptyTestId="direct-receipt-empty"
+              addTestId="direct-add-products-trigger"
+              testId="direct-receipt-items"
+              className="receive-stock-receipt"
+              summary={
+                <div className="receive-stock-receipt__summary">
+                  <div className="receive-stock-receipt__summary-row">
+                    <span className="text-[length:var(--exits-text-sm)] text-muted">
+                      {t("purchasing.receiptItems")}
+                    </span>
+                    <span className="text-[length:var(--exits-text-sm)] tabular-nums">
+                      {lines.length}
+                    </span>
+                  </div>
+                  <div className="receive-stock-receipt__summary-row">
+                    <span className="text-[length:var(--exits-text-sm)] text-muted">
+                      {t("purchasing.receiptTotal")}
+                    </span>
+                    <span
+                      className="text-[length:var(--exits-text-md)] font-semibold tabular-nums"
+                      data-testid="direct-receipt-total"
+                    >
+                      {formatPeso(estimatedTotal)}
+                    </span>
+                  </div>
+                </div>
               }
-              setError(null);
-              setReviewing(true);
-            }}
-            data-testid="direct-review"
+            >
+              <ReceiveStockReceiptItemsView
+                layout={receiptLayout}
+                lines={lines}
+                highlightProductId={highlightProductId}
+                onPatchLine={patchLine}
+                onRemoveLine={removeLine}
+                t={t}
+              />
+            </SelectedItemsPanel>
+
+            {finderOpen ? (
+              <ProductFinderPanel
+                title={t("purchasing.findProducts")}
+                headingId="direct-add-products-heading"
+                panelId={finderPanelId}
+                closeLabel={t("purchasing.closeFindProducts")}
+                onClose={closeFinder}
+                closeTestId="direct-close-finder"
+                testId="direct-add-products"
+              >
+                <ProductSelectionToolbar
+                  className="receive-stock-finder__filters"
+                  testId="direct-finder-toolbar"
+                >
+                  {categories.length > 0 ? (
+                    <ReceiveCategoryMultiSelect
+                      categories={categoriesWithCounts}
+                      selectedIds={categoryIds}
+                      onChange={setCategoryIds}
+                      label={t("purchasing.categories")}
+                      placeholder={t("purchasing.categoriesPlaceholder")}
+                      selectedCountLabel={(count) =>
+                        t("purchasing.categoriesSelected").replace("{count}", String(count))
+                      }
+                      selectAllLabel={t("purchasing.selectAllCategories")}
+                      deselectAllLabel={t("purchasing.deselectAllCategories")}
+                      searchPlaceholder={t("catalog.searchCategories")}
+                    />
+                  ) : null}
+                  <div className="receive-stock-finder__search-row">
+                    <SearchField
+                      id={productSearchInputId}
+                      label={t("purchasing.productSearch")}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onClear={() => setSearch("")}
+                      placeholder={t("purchasing.productSearch")}
+                      testId="direct-product-search"
+                      containerClassName="receive-stock-finder__search"
+                    />
+                    <FilterChip
+                      selected={trackedOnly}
+                      onClick={() => setTrackedOnly((prev) => !prev)}
+                      data-testid="direct-tracking-filter-chip"
+                      aria-label={t("purchasing.trackedOnly")}
+                    >
+                      {t("purchasing.trackedOnly")}
+                    </FilterChip>
+                  </div>
+                </ProductSelectionToolbar>
+
+                {productsQuery.isFetching ? <LoadingState label={t("loading.label")} /> : null}
+
+                {!productsQuery.isFetching && productItems.length === 0 ? (
+                  <EmptyState
+                    align="center"
+                    size="compact"
+                    variant={hasActiveFilters ? "filtered" : "default"}
+                    icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+                    title={
+                      hasActiveFilters
+                        ? t("purchasing.noMatchingProducts")
+                        : t("purchasing.noProducts")
+                    }
+                    detail={
+                      hasActiveFilters
+                        ? t("purchasing.noMatchingProductsDetail")
+                        : t("purchasing.noProductsDetail")
+                    }
+                    action={
+                      hasActiveFilters ? undefined : (
+                        <Button asChild variant="secondary" data-testid="direct-add-new-product">
+                          <Link to="/catalog/products/new">{t("purchasing.addNewProduct")}</Link>
+                        </Button>
+                      )
+                    }
+                    testId="direct-product-empty"
+                  />
+                ) : null}
+
+                {!productsQuery.isFetching && productItems.length > 0 ? (
+                  <ReceiveStockFindProductsView
+                    layout={findProductsLayout}
+                    products={pagedProductItems}
+                    categoryNameById={categoryNameById}
+                    page={safeProductPage}
+                    pageSize={productPageSize}
+                    total={productTotal}
+                    pageSizeOptions={PRODUCT_PAGE_SIZE_OPTIONS}
+                    onPageChange={setProductPage}
+                    onPageSizeChange={(size) => {
+                      setProductPageSize(size);
+                      setProductPage(1);
+                    }}
+                    onAddProduct={addProductRow}
+                    t={t}
+                  />
+                ) : null}
+              </ProductFinderPanel>
+            ) : null}
+          </div>
+
+          <div className="receive-stock-actions">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => navigate(pageBackNav.purchasing.to)}
+              data-testid="direct-cancel"
+            >
+              {t("purchasing.cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={reviewDisabled}
+              onClick={startReview}
+              data-testid="direct-review"
+            >
+              {t("purchasing.reviewDirect")}
+              <ArrowRight className="size-4" aria-hidden />
+            </Button>
+          </div>
+
+          <Card
+            as="section"
+            padding="compact"
+            className="receive-stock-section receive-stock-history"
+            data-testid="direct-recent-completed"
+            aria-labelledby="direct-recent-completed-heading"
           >
-            {t("purchasing.reviewDirect")}
-          </Button>
+            <div className="receive-stock-history__header">
+              <h2
+                id="direct-recent-completed-heading"
+                className="receive-stock-section__title m-0 flex items-center gap-2"
+              >
+                <span>{t("purchasing.recentCompletedReceipts")}</span>
+                {recentTotal > 0 ? <CountBadge count={recentTotal} tone="neutral" /> : null}
+              </h2>
+              <Button asChild variant="ghost" data-testid="direct-view-all-purchases">
+                <Link to="/purchasing/direct-purchases">
+                  {t("purchasing.viewAllDirectPurchases")}
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              </Button>
+            </div>
+
+            {recentCompletedQuery.isFetching ? (
+              <LoadingState label={t("loading.label")} />
+            ) : null}
+
+            {!recentCompletedQuery.isFetching && recentItems.length === 0 ? (
+              <EmptyState
+                align="center"
+                size="compact"
+                icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+                title={t("purchasing.completedReceiptsEmpty")}
+                detail={t("purchasing.completedReceiptsEmptyDetail")}
+                testId="direct-recent-empty"
+              />
+            ) : null}
+
+            {!recentCompletedQuery.isFetching && recentItems.length > 0 ? (
+              <ExitsTableContainer data-testid="direct-recent-table">
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColReference")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColDate")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColSeller")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">
+                        {t("purchasing.directColItems")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">
+                        {t("purchasing.directColTotal")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text">{t("purchasing.view")}</ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    {recentItems.map((item) => (
+                      <ExitsTableRow
+                        key={`${item.sourceType}-${item.sourceId}`}
+                        interactive
+                        data-testid={`direct-recent-row-${item.sourceId}`}
+                        onClick={() => navigate(historyRowHref(item))}
+                      >
+                        <ExitsTableCell cellAlign="text" className="font-medium">
+                          {item.referenceNumber}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">{formatHistoryDate(item)}</ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">{item.sellerDisplayName}</ExitsTableCell>
+                        <ExitsTableCell cellAlign="text" className="tabular-nums">
+                          {item.lineCount}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                          {formatPeso(item.totalAmount)}
+                        </ExitsTableCell>
+                        <ExitsTableCell cellAlign="text">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                            data-testid={`direct-recent-view-${item.sourceId}`}
+                          >
+                            <Link to={historyRowHref(item)} aria-label={t("purchasing.view")}>
+                              <ArrowRight className="size-4" aria-hidden />
+                            </Link>
+                          </Button>
+                        </ExitsTableCell>
+                      </ExitsTableRow>
+                    ))}
+                  </ExitsTableBody>
+                </ExitsTable>
+                <ExitsTableMobile>
+                  {recentItems.map((item) => (
+                    <ExitsTableMobileRow
+                      key={`m-${item.sourceType}-${item.sourceId}`}
+                      data-testid={`direct-recent-mobile-${item.sourceId}`}
+                      onClick={() => navigate(historyRowHref(item))}
+                    >
+                      <div className="exits-table-mobile__title-row">
+                        <p className="exits-table-mobile__title">{item.referenceNumber}</p>
+                        <span className="tabular-nums font-semibold">
+                          {formatPeso(item.totalAmount)}
+                        </span>
+                      </div>
+                      <p className="exits-table-mobile__meta">
+                        {formatHistoryDate(item)} · {item.sellerDisplayName}
+                      </p>
+                      <p className="exits-table-mobile__math">
+                        {t("purchasing.directColItems")}: {item.lineCount}
+                      </p>
+                    </ExitsTableMobileRow>
+                  ))}
+                </ExitsTableMobile>
+              </ExitsTableContainer>
+            ) : null}
+          </Card>
         </>
       ) : (
-        <Card data-testid="direct-review-sheet">
-          <p className="mt-0">{t("purchasing.willIncreaseStock")}</p>
+        <Card data-testid="direct-review-sheet" className="receive-stock-review" padding="compact">
+          <Notice tone="info" testId="direct-review-notice">
+            {t("purchasing.willIncreaseStock")}
+          </Notice>
+          {marginWarningLines.length > 0 ? (
+            <Notice
+              tone="warning"
+              title={t("purchasing.sellingPriceNeedsReview")}
+              testId="direct-review-margin-warning"
+            >
+              {marginWarningLines.length === 1
+                ? t("purchasing.sellingPriceNeedsReviewDetail")
+                : t("purchasing.sellingPriceNeedsReviewDetailMany").replace(
+                    "{count}",
+                    String(marginWarningLines.length),
+                  )}
+            </Notice>
+          ) : null}
+          <div className="receive-stock-review__meta">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.purchaseDate")}: {purchaseDate}
+            </p>
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.boughtFrom")}:{" "}
+              {useOtherSource
+                ? sourceName.trim() || t("purchasing.sourceEmpty")
+                : suppliersQuery.data?.items.find((s) => s.supplierId === supplierId)?.name ||
+                  t("purchasing.sourceEmpty")}
+            </p>
+            {referenceNumber.trim() ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.reference")}: {referenceNumber.trim()}
+              </p>
+            ) : null}
+            {notes.trim() ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.notesOptional")}: {notes.trim()}
+              </p>
+            ) : null}
+          </div>
+          <h3 className="receive-stock-section__title m-0 flex items-center gap-2">
+            <span>{t("purchasing.receiptItems")}</span>
+            <CountBadge count={lines.length} tone="primary" />
+          </h3>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {lines.map((line) => (
-              <li key={line.productId}>
-                {line.name}: {line.quantity} @ {line.unitCost}
-                {line.expiryDate ? ` · exp ${line.expiryDate}` : ""}
+              <li key={line.productId} className="receive-stock-review__line">
+                <span className="font-medium">{line.name}</span>
+                <span className="tabular-nums text-muted">
+                  {line.quantity} {line.uom} × {formatPeso(line.unitCost)}
+                  {` · ${t("purchasing.sellingPriceShort")} ${formatPeso(line.sellingPrice)}`}
+                </span>
+                <span className="tabular-nums font-semibold">
+                  {formatPeso(roundMoney(line.quantity * line.unitCost))}
+                </span>
               </li>
             ))}
           </ul>
+          <p className="mb-0 mt-2 text-right font-semibold tabular-nums">
+            {t("purchasing.receiptTotal")} {formatPeso(estimatedTotal)}
+          </p>
           <ReceivePaymentSection
             estimatedTotal={estimatedTotal}
             mode={paymentMode}
@@ -643,33 +1192,27 @@ export function ReceiveStockPage() {
             allowSupplierCredit={allowSupplierCredit}
             disabled={saving || statusLocked}
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="receive-stock-actions receive-stock-actions--review">
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
+              disabled={saving || statusLocked}
               onClick={() => setReviewing(false)}
+              data-testid="direct-back-edit"
             >
-              {t("purchasing.backToReceipt")}
+              {t("returns.backToEdit")}
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={saving || statusLocked}
               onClick={() => void confirm()}
               data-testid="direct-confirm"
             >
-              {saving ? t("purchasing.saving") : t("purchasing.confirmDirect")}
+              {saving ? t("purchasing.saving") : t("purchasing.receiveStockConfirm")}
             </Button>
           </div>
         </Card>
       )}
-
-      {error ? (
-        <Card data-testid="direct-error">
-          <p className="m-0 text-destructive">{error}</p>
-        </Card>
-      ) : null}
     </div>
   );
 }
