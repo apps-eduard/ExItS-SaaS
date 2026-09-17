@@ -81,6 +81,12 @@ export default defineConfig({
           });
         },
       },
+      // Platform readiness widget uses same-origin /health and /health/ready (not under /api).
+      "/health": {
+        target: resolveDevApiProxyTarget(),
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   preview: {

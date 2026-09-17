@@ -237,13 +237,23 @@ public sealed class ListBranches(
     }
 
     /// <summary>
+    /// Full organization branch directory without staff branch-access filtering.
+    /// Used by Platform Admin portfolio reads (ViewPortfolio / ManageOrganizations) and by
+    /// linked Personal customers who need seller branch snapshots without org membership.
+    /// Still returns only branches owned by <paramref name="organizationId"/>.
+    /// </summary>
+    public Task<IReadOnlyList<OrganizationBranchDto>> ExecuteForOrganizationDirectoryAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default) =>
+        MapListFromOrganizationAsync(organizationId, cancellationToken);
+
+    /// <summary>
     /// Linked Personal customers need Active branch fulfillment snapshots without organization membership.
-    /// Skips staff branch-access filtering; still returns only org-owned branches for the seller.
     /// </summary>
     public Task<IReadOnlyList<OrganizationBranchDto>> ExecuteForLinkedCustomerAsync(
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default) =>
-        MapListFromOrganizationAsync(organizationId, cancellationToken);
+        ExecuteForOrganizationDirectoryAsync(organizationId, cancellationToken);
 
     private async Task<IReadOnlyList<OrganizationBranchDto>> MapListFromOrganizationAsync(
         PlatformOrganizationId organizationId,

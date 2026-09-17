@@ -102,6 +102,21 @@ public sealed class OrganizationBranchAccessServiceTests
     }
 
     [Fact]
+    public async Task Non_member_resolves_empty_accessible_set()
+    {
+        var org = PlatformOrganizationId.New();
+        var outsider = PlatformUserId.New();
+        var main = OrganizationBranch.CreateMainBranch(org, T0);
+        var sut = CreateSut(new InMemoryOrganizationMembershipRepository(), [main], []);
+
+        var accessible = await sut.ResolveAccessibleActiveBranchIdsAsync(outsider, org);
+
+        Assert.NotNull(accessible);
+        Assert.Empty(accessible!);
+        Assert.False(await sut.CanAccessBranchAsync(outsider, org, main.Id));
+    }
+
+    [Fact]
     public async Task Foreign_organization_branch_is_denied()
     {
         var orgA = PlatformOrganizationId.New();

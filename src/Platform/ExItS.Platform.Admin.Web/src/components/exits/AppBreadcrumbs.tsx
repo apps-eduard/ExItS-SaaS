@@ -23,6 +23,9 @@ import {
 const SECTION_LABELS: Record<string, MessageKey> = {
   branches: "organization.workspace.nav.branches",
   people: "organization.workspace.nav.people",
+  roles: "organization.workspace.nav.roles",
+  "product-access": "organization.workspace.nav.productAccess",
+  "enabled-products": "organization.workspace.nav.enabledProducts",
   products: "organization.workspace.nav.products",
   subscription: "organization.workspace.nav.subscription",
   entitlements: "organization.workspace.nav.entitlements",

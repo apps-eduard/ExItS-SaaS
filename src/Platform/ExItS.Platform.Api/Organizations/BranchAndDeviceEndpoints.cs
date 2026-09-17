@@ -27,6 +27,16 @@ internal static class BranchAndDeviceEndpoints
                 return denied;
             }
 
+            var orgId = PlatformOrganizationId.From(organizationId);
+            // Platform Admin portfolio viewers are not org members; staff branch-access filtering
+            // would resolve to an empty set and hide every branch from Admin.Web.
+            if (await authz.HasPlatformOrganizationDirectoryAccessAsync(organizationId, ct).ConfigureAwait(false))
+            {
+                return Results.Ok(await useCase
+                    .ExecuteForOrganizationDirectoryAsync(orgId, ct)
+                    .ConfigureAwait(false));
+            }
+
             var actor = platformAuthz.CurrentActor.PlatformUserId;
             if (actor is null)
             {
@@ -36,10 +46,7 @@ internal static class BranchAndDeviceEndpoints
                     StatusCodes.Status401Unauthorized);
             }
 
-            return Results.Ok(await useCase.ExecuteAsync(
-                PlatformOrganizationId.From(organizationId),
-                actor,
-                ct).ConfigureAwait(false));
+            return Results.Ok(await useCase.ExecuteAsync(orgId, actor, ct).ConfigureAwait(false));
         });
         root.MapGet("/primary-branch", async (
             Guid organizationId,

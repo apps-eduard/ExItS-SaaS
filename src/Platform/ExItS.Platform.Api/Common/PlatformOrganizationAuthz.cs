@@ -44,9 +44,7 @@ internal sealed class PlatformOrganizationAuthz(
         // session's SelectedOrganizationId to already match — Mobile binds product context via
         // Bearer first, and Org Summary then loads details with PlatformSession. Requiring a
         // pre-selected org context made membership-only sessions see "Could not load organization".
-        if (await HasPlatformPermissionAsync(PlatformPermission.ViewPortfolio, organizationId, cancellationToken)
-                .ConfigureAwait(false)
-            || await HasPlatformPermissionAsync(PlatformPermission.ManageOrganizations, organizationId, cancellationToken)
+        if (await HasPlatformOrganizationDirectoryAccessAsync(organizationId, cancellationToken)
                 .ConfigureAwait(false)
             || await HasTrustedActiveMembershipAsync(
                     organizationId,
@@ -66,6 +64,23 @@ internal sealed class PlatformOrganizationAuthz(
             organizationId,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Platform Admin portfolio authority (not organization membership). Callers with this access
+    /// should receive the full organization branch directory — staff branch-access scopes do not apply.
+    /// </summary>
+    public Task<bool> HasPlatformOrganizationDirectoryAccessAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken = default) =>
+        HasPlatformPortfolioOrManageOrganizationsAsync(organizationId, cancellationToken);
+
+    private async Task<bool> HasPlatformPortfolioOrManageOrganizationsAsync(
+        Guid? organizationId,
+        CancellationToken cancellationToken) =>
+        await HasPlatformPermissionAsync(PlatformPermission.ViewPortfolio, organizationId, cancellationToken)
+            .ConfigureAwait(false)
+        || await HasPlatformPermissionAsync(PlatformPermission.ManageOrganizations, organizationId, cancellationToken)
+            .ConfigureAwait(false);
 
     public async Task<(IResult? Denied, bool IsPlatformManager)> EnsureCanEditOrganizationProfileAsync(
         Guid organizationId,

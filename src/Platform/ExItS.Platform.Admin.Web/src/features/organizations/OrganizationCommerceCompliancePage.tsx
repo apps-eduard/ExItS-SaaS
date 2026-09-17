@@ -284,7 +284,7 @@ export function OrganizationCommerceCompliancePage() {
             <ErrorState
               diagnostic={paymentsDiagnostic}
               title={t("organization.commerceCompliance.payments.error")}
-              headingLevel="h3"
+              headingLevel="h2"
               onRetry={() => void paymentsQuery.refetch()}
             />
           </div>
@@ -389,7 +389,7 @@ export function OrganizationCommerceCompliancePage() {
             <ErrorState
               diagnostic={complianceDiagnostic}
               title={t("organization.commerceCompliance.bir.error")}
-              headingLevel="h3"
+              headingLevel="h2"
               onRetry={() => void complianceQuery.refetch()}
             />
           </div>
