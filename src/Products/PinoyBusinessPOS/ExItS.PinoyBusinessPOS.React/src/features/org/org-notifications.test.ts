@@ -26,6 +26,15 @@ describe("resolveOrganizationNotificationHref", () => {
     ).toBe("/purchasing/22222222-2222-2222-2222-222222222222");
   });
 
+  it("routes supplier-facing connected PO submitted notifications to incoming orders", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "ConnectedPurchaseOrderSubmitted",
+        relatedId: "44444444-4444-4444-4444-444444444444",
+      }),
+    ).toBe("/purchasing/incoming-orders/44444444-4444-4444-4444-444444444444");
+  });
+
   it("routes customer-order notifications to seller order detail", () => {
     expect(
       resolveOrganizationNotificationHref({
@@ -33,6 +42,51 @@ describe("resolveOrganizationNotificationHref", () => {
         relatedId: "33333333-3333-3333-3333-333333333333",
       }),
     ).toBe("/orders/33333333-3333-3333-3333-333333333333");
+  });
+
+  it("routes stock-request notifications to warehouse request detail", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "StockRequestApproved",
+        relatedId: "55555555-5555-5555-5555-555555555555",
+      }),
+    ).toBe("/warehouse/requests/55555555-5555-5555-5555-555555555555");
+  });
+
+  it("routes inventory-transfer notifications to transfer detail", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "InventoryTransferDispatched",
+        relatedId: "66666666-6666-6666-6666-666666666666",
+      }),
+    ).toBe("/inventory/transfers/66666666-6666-6666-6666-666666666666");
+  });
+
+  it("routes business customer connection notifications", () => {
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionRequested",
+        relatedId: "77777777-7777-7777-7777-777777777777",
+      }),
+    ).toBe("/suppliers/connected/requests");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionAccepted",
+        relatedId: "77777777-7777-7777-7777-777777777777",
+      }),
+    ).toBe("/customers/business/77777777-7777-7777-7777-777777777777");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionDeclined",
+        relatedId: null,
+      }),
+    ).toBe("/customers?kind=businesses");
+    expect(
+      resolveOrganizationNotificationHref({
+        relatedType: "BusinessCustomerConnectionCancelled",
+        relatedId: null,
+      }),
+    ).toBe("/suppliers");
   });
 
   it("returns null for unknown types", () => {

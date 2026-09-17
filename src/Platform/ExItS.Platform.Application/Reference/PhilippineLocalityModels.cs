@@ -51,6 +51,10 @@ public sealed record PhilippineLocality(
     }
 }
 
+public sealed record PhilippineRegion(
+    string RegionCode,
+    string RegionName);
+
 public sealed record PhilippineLocalityDirectoryMetadata(
     string Source,
     string Dataset,

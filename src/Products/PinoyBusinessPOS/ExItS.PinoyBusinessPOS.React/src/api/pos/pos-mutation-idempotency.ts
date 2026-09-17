@@ -31,6 +31,13 @@ export const OFFLINE_OPERATION_TYPES = {
   InventoryTransferDispatch: "inventory_transfer.dispatch",
   InventoryTransferReceive: "inventory_transfer.receive",
   InventoryTransferCancel: "inventory_transfer.cancel",
+  StockRequestCreate: "stock_request.create",
+  StockRequestApprove: "stock_request.approve",
+  StockRequestPrepare: "stock_request.prepare",
+  StockRequestDispatch: "stock_request.dispatch",
+  StockRequestReject: "stock_request.reject",
+  StockRequestCancel: "stock_request.cancel",
+  StockRequestFulfillTransfer: "stock_request.fulfill_transfer",
   CustomerOrderPlace: "customer_order.place",
   CustomerOrderAccept: "customer_order.accept",
   CustomerOrderReject: "customer_order.reject",
@@ -39,6 +46,16 @@ export const OFFLINE_OPERATION_TYPES = {
   ExpenseCreate: "expense.create",
   /** Online-only supplier payable payment — mirrors OfflineOperationTypes.SupplierPayablePayment. */
   SupplierPayablePayment: "supplier_payable.payment",
+  /** Online-only customer credit policy mutations — mirrors OfflineOperationTypes.CustomerCreditPolicy*. */
+  CustomerCreditPolicyUpsert: "customer_credit_policy.upsert",
+  CustomerCreditPolicyApprove: "customer_credit_policy.approve",
+  CustomerCreditPolicyDisable: "customer_credit_policy.disable",
+  /** Online-only B2B business-customer credit policy — mirrors OfflineOperationTypes.BusinessCustomerCreditPolicy*. */
+  BusinessCustomerCreditPolicyUpsert: "business_customer_credit_policy.upsert",
+  BusinessCustomerCreditPolicyApprove: "business_customer_credit_policy.approve",
+  BusinessCustomerCreditPolicyDisable: "business_customer_credit_policy.disable",
+  /** Online-only B2B business repayment create — mirrors OfflineOperationTypes.BusinessRepaymentCreate. */
+  BusinessRepaymentCreate: "business_repayment.create",
 } as const;
 
 function guidToN(guid: string): string {

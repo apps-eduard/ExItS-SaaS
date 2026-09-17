@@ -112,4 +112,163 @@ public sealed class ConnectedSupplierDomainTests
         share.Unshare(Now.AddMinutes(3));
         Assert.False(ConnectedPoPricing.TryResolveEffectivePrice(exposure,share,out _));
     }
+
+    [Fact]
+    public void Update_relationship_contact_updates_fields_without_changing_status()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+        var statusBefore = relationship.Status;
+        var snapshotBefore = relationship.BuyerDisplayNameSnapshot;
+        var publicIdBefore = relationship.BuyerPublicOrganizationIdSnapshot;
+        var updatedAt = Now.AddMinutes(2);
+
+        relationship.UpdateRelationshipContact(
+            RelationshipContactSource.Custom,
+            organizationMemberId: null,
+            contactPersonName: " Ana Reyes ",
+            contactDepartment: " Operations ",
+            contactRole: "Purchasing",
+            contactPhone: "+639171234567",
+            contactEmail: "ana@example.com",
+            preferredContactMethod: "Phone",
+            deliveryInstructions: "Gate 2",
+            billingContactNotes: "Net 15",
+            internalNotes: "VIP buyer",
+            utcNow: updatedAt);
+
+        Assert.Equal(statusBefore, relationship.Status);
+        Assert.Equal(ConnectedSupplierRelationshipStatus.Active, relationship.Status);
+        Assert.Equal(snapshotBefore, relationship.BuyerDisplayNameSnapshot);
+        Assert.Equal(publicIdBefore, relationship.BuyerPublicOrganizationIdSnapshot);
+        Assert.Equal("Ana Reyes", relationship.ContactPersonName);
+        Assert.Equal("Operations", relationship.ContactDepartment);
+        Assert.Equal("Purchasing", relationship.ContactRole);
+        Assert.Equal("+639171234567", relationship.ContactPhone);
+        Assert.Equal("ana@example.com", relationship.ContactEmail);
+        Assert.Equal("Phone", relationship.PreferredContactMethod);
+        Assert.Equal("Gate 2", relationship.DeliveryInstructions);
+        Assert.Equal("Net 15", relationship.BillingContactNotes);
+        Assert.Equal("VIP buyer", relationship.InternalNotes);
+        Assert.Equal(updatedAt, relationship.UpdatedAtUtc);
+    }
+
+    [Fact]
+    public void Organization_member_contact_is_denied_while_pending()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        var memberId = Guid.NewGuid();
+
+        var ex = Assert.Throws<DomainException>(() => relationship.UpdateRelationshipContact(
+            RelationshipContactSource.OrganizationMember,
+            memberId,
+            "Maria Santos",
+            "Purchasing",
+            "Purchasing Manager",
+            "09171234567",
+            "maria@example.com",
+            null,
+            null,
+            null,
+            null,
+            Now.AddMinutes(1)));
+
+        Assert.Equal(ConnectedSupplierDomainErrorCodes.InvalidTransition, ex.ErrorCode);
+        Assert.Equal(RelationshipContactSource.Custom, relationship.ContactSource);
+        Assert.Null(relationship.OrganizationMemberId);
+    }
+
+    [Fact]
+    public void Organization_member_contact_stores_reference_and_snapshots_when_connected()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+        var memberId = Guid.NewGuid();
+        var updatedAt = Now.AddMinutes(2);
+
+        relationship.UpdateRelationshipContact(
+            RelationshipContactSource.OrganizationMember,
+            memberId,
+            "Maria Santos",
+            null,
+            "Purchasing Manager",
+            "09171234567",
+            "maria@example.com",
+            "WhatsApp",
+            "Gate 2",
+            null,
+            "VIP",
+            updatedAt);
+
+        Assert.Equal(RelationshipContactSource.OrganizationMember, relationship.ContactSource);
+        Assert.Equal(memberId, relationship.OrganizationMemberId);
+        Assert.Equal("Maria Santos", relationship.ContactPersonName);
+        Assert.Equal("Purchasing Manager", relationship.ContactRole);
+        Assert.Equal(ConnectedSupplierRelationshipStatus.Active, relationship.Status);
+    }
+
+    [Fact]
+    public void Switching_to_custom_clears_organization_member_id()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+        var memberId = Guid.NewGuid();
+        relationship.UpdateRelationshipContact(
+            RelationshipContactSource.OrganizationMember,
+            memberId,
+            "Maria",
+            null,
+            "Staff",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Now.AddMinutes(2));
+
+        relationship.UpdateRelationshipContact(
+            RelationshipContactSource.Custom,
+            null,
+            "External AP",
+            "Accounting",
+            "AP Clerk",
+            "09170001111",
+            "ap@example.com",
+            null,
+            null,
+            null,
+            null,
+            Now.AddMinutes(3));
+
+        Assert.Equal(RelationshipContactSource.Custom, relationship.ContactSource);
+        Assert.Null(relationship.OrganizationMemberId);
+        Assert.Equal("External AP", relationship.ContactPersonName);
+    }
+
+    [Fact]
+    public void Update_relationship_contact_is_denied_when_disconnected()
+    {
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+        relationship.Disconnect(Now.AddMinutes(2));
+
+        var ex = Assert.Throws<DomainException>(() => relationship.UpdateRelationshipContact(
+            RelationshipContactSource.Custom,
+            null,
+            "Ana",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Now.AddMinutes(3)));
+
+        Assert.Equal(ConnectedSupplierDomainErrorCodes.InvalidTransition, ex.ErrorCode);
+        Assert.Null(relationship.ContactPersonName);
+        Assert.Equal(ConnectedSupplierRelationshipStatus.Disconnected, relationship.Status);
+    }
 }

@@ -3,15 +3,18 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { shouldResumeOnboarding } from "@/features/onboarding/onboarding-steps";
+import {
+  shouldBlockOnboardingForPendingCheckout,
+  shouldSkipOnboardingResume,
+} from "@/features/subscription-checkout/pending-subscription-checkout";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-function shouldSkipOnboardingResume(pathname: string): boolean {
-  return pathname.startsWith("/onboarding") || pathname.startsWith("/personal");
-}
+export { shouldSkipOnboardingResume };
 
 /**
  * Resumes post-subscription onboarding when server progress is InProgress.
  * Runs once per bound organization — never on bottom-nav path changes.
+ * Never overrides an active unpaid subscription checkout (TASK-51).
  */
 export function OnboardingResumeGate() {
   const navigate = useNavigate();
@@ -47,6 +50,9 @@ export function OnboardingResumeGate() {
     if (shouldSkipOnboardingResume(pathnameRef.current)) {
       return;
     }
+    if (shouldBlockOnboardingForPendingCheckout(organizationId)) {
+      return;
+    }
     if (checkedOrgIdRef.current === organizationId) {
       return;
     }
@@ -64,6 +70,9 @@ export function OnboardingResumeGate() {
           return;
         }
         if (shouldSkipOnboardingResume(pathnameRef.current)) {
+          return;
+        }
+        if (shouldBlockOnboardingForPendingCheckout(orgIdAtStart)) {
           return;
         }
         checkedOrgIdRef.current = orgIdAtStart;

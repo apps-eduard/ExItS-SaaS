@@ -1,9 +1,11 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { BranchDeliveryServiceAreaDto } from "@/api/platform/branch-fulfillment-client";
 import {
-  searchPhilippineLocalities,
+  listPhilippineLocalitiesByRegion,
+  listPhilippineRegions,
   type PhilippineLocalityDto,
+  type PhilippineRegionDto,
 } from "@/api/platform/ph-locality-client";
 import type { MessageKey } from "@/i18n/messages";
 
@@ -39,6 +41,27 @@ function localityTypeLabel(
   return localityType ?? "";
 }
 
+function matchesCityFilter(item: PhilippineLocalityDto, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    item.name,
+    friendlyName(item.name),
+    item.displayLabel,
+    item.provinceName ?? "",
+    item.localityType,
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+function matchesRegionFilter(region: PhilippineRegionDto, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return region.regionName.toLowerCase().includes(q) || region.regionCode.includes(q);
+}
+
 export function BranchDeliveryAreasPanel({
   areas,
   busy,
@@ -47,128 +70,169 @@ export function BranchDeliveryAreasPanel({
   onRemove,
   onReplace,
 }: BranchDeliveryAreasPanelProps) {
-  const listboxId = useId();
-  const inputId = useId();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<PhilippineLocalityDto[]>([]);
-  const [open, setOpen] = useState(false);
-  const [highlight, setHighlight] = useState(-1);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const regionSearchId = useId();
+  const citySearchId = useId();
+  const cityListId = useId();
+  const [regions, setRegions] = useState<PhilippineRegionDto[]>([]);
+  const [regionsLoading, setRegionsLoading] = useState(true);
+  const [regionsError, setRegionsError] = useState<string | null>(null);
+  const [regionCode, setRegionCode] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [regionPickerOpen, setRegionPickerOpen] = useState(true);
+  const [cities, setCities] = useState<PhilippineLocalityDto[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [citiesError, setCitiesError] = useState<string | null>(null);
+  const [cityFilter, setCityFilter] = useState("");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [replaceAreaId, setReplaceAreaId] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<number | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const [pendingCodes, setPendingCodes] = useState<string[]>([]);
+  const [regionsReloadKey, setRegionsReloadKey] = useState(0);
+  const regionsAbortRef = useRef<AbortController | null>(null);
+  const citiesAbortRef = useRef<AbortController | null>(null);
+  const cityPanelRef = useRef<HTMLDivElement>(null);
+  const cityBlurTimerRef = useRef<number | null>(null);
 
-  const selectedCodes = new Set(
-    areas.filter((a) => a.psgcCode).map((a) => a.psgcCode as string),
-  );
+  const selectedByCode = new Map<string, BranchDeliveryServiceAreaDto>();
+  for (const area of areas) {
+    if (area.psgcCode) {
+      selectedByCode.set(area.psgcCode, area);
+    }
+  }
+
+  const selectedCodes = new Set([...selectedByCode.keys(), ...pendingCodes]);
+  const filteredRegions = regions.filter((region) => matchesRegionFilter(region, regionFilter));
+  const filteredCities = cities.filter((item) => matchesCityFilter(item, cityFilter));
+  const selectedRegion = regions.find((r) => r.regionCode === regionCode) ?? null;
 
   useEffect(() => {
-    if (debounceRef.current != null) {
-      window.clearTimeout(debounceRef.current);
-    }
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setResults([]);
-      setSearching(false);
-      setSearchError(null);
-      setHighlight(-1);
+    setPendingCodes((prev) => {
+      const stillPending = prev.filter(
+        (code) => !areas.some((area) => area.psgcCode === code),
+      );
+      return stillPending.length === prev.length ? prev : stillPending;
+    });
+  }, [areas]);
+
+  useEffect(() => {
+    regionsAbortRef.current?.abort();
+    const controller = new AbortController();
+    regionsAbortRef.current = controller;
+    setRegionsLoading(true);
+    setRegionsError(null);
+    void listPhilippineRegions(controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        setRegions(items);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setRegions([]);
+        setRegionsError(t("branches.deliveryAreas.regionsFailed"));
+        void err;
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setRegionsLoading(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [t, regionsReloadKey]);
+
+  useEffect(() => {
+    citiesAbortRef.current?.abort();
+    setCityFilter("");
+    setCityPickerOpen(false);
+    if (!regionCode) {
+      setCities([]);
+      setCitiesLoading(false);
+      setCitiesError(null);
       return;
     }
 
-    debounceRef.current = window.setTimeout(() => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setSearching(true);
-      setSearchError(null);
-      void searchPhilippineLocalities(trimmed, 20, controller.signal)
-        .then((items) => {
-          if (controller.signal.aborted) return;
-          setResults(items);
-          setOpen(true);
-          setHighlight(items.length > 0 ? 0 : -1);
-        })
-        .catch((err: unknown) => {
-          if (controller.signal.aborted) return;
-          setResults([]);
-          setSearchError(t("branches.deliveryAreas.searchFailed"));
-          setHighlight(-1);
-          void err;
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setSearching(false);
-          }
-        });
-    }, 220);
+    const controller = new AbortController();
+    citiesAbortRef.current = controller;
+    setCitiesLoading(true);
+    setCitiesError(null);
+    void listPhilippineLocalitiesByRegion(regionCode, controller.signal)
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        setCities(items);
+        setCityPickerOpen(true);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+        setCities([]);
+        setCitiesError(t("branches.deliveryAreas.citiesFailed"));
+        void err;
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setCitiesLoading(false);
+        }
+      });
 
     return () => {
-      if (debounceRef.current != null) {
-        window.clearTimeout(debounceRef.current);
-      }
+      controller.abort();
     };
-  }, [query, t]);
+  }, [regionCode, t]);
 
   useEffect(
     () => () => {
-      abortRef.current?.abort();
+      regionsAbortRef.current?.abort();
+      citiesAbortRef.current?.abort();
+      if (cityBlurTimerRef.current != null) {
+        window.clearTimeout(cityBlurTimerRef.current);
+      }
     },
     [],
   );
 
-  async function selectLocality(locality: PhilippineLocalityDto) {
-    if (busy || selectedCodes.has(locality.psgcCode)) {
-      return;
-    }
-    setOpen(false);
-    setQuery("");
-    setResults([]);
-    setHighlight(-1);
+  function closeCityPicker() {
+    setCityPickerOpen(false);
+    setCityFilter("");
+  }
+
+  function openCityPicker() {
+    if (!regionCode || citiesLoading || Boolean(citiesError) || cities.length === 0) return;
+    setCityPickerOpen(true);
+  }
+
+  async function toggleCity(locality: PhilippineLocalityDto, nextChecked: boolean) {
     if (replaceAreaId && onReplace) {
+      if (busy || !nextChecked || selectedCodes.has(locality.psgcCode)) return;
       const legacyId = replaceAreaId;
       setReplaceAreaId(null);
+      closeCityPicker();
       await onReplace(legacyId, locality.psgcCode);
-    } else {
-      await onAdd(locality.psgcCode);
+      return;
     }
-    inputRef.current?.focus();
-  }
 
-  function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp") && results.length > 0) {
-      setOpen(true);
-      return;
-    }
-    if (e.key === "Escape") {
-      setOpen(false);
-      setHighlight(-1);
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (results.length === 0) return;
-      setOpen(true);
-      setHighlight((h) => (h + 1) % results.length);
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (results.length === 0) return;
-      setOpen(true);
-      setHighlight((h) => (h <= 0 ? results.length - 1 : h - 1));
-      return;
-    }
-    if (e.key === "Enter") {
-      if (open && highlight >= 0 && highlight < results.length) {
-        e.preventDefault();
-        void selectLocality(results[highlight]!);
+    if (nextChecked) {
+      if (selectedCodes.has(locality.psgcCode)) return;
+      setPendingCodes((prev) =>
+        prev.includes(locality.psgcCode) ? prev : [...prev, locality.psgcCode],
+      );
+      closeCityPicker();
+      try {
+        await onAdd(locality.psgcCode);
+      } catch {
+        setPendingCodes((prev) => prev.filter((code) => code !== locality.psgcCode));
       }
+      return;
     }
+
+    const existing = selectedByCode.get(locality.psgcCode);
+    if (!existing) {
+      setPendingCodes((prev) => prev.filter((code) => code !== locality.psgcCode));
+      return;
+    }
+    await onRemove(existing.id);
   }
 
-  const showHint = query.trim().length < 2;
+  const controlsBusy = busy;
 
   return (
     <section
@@ -190,40 +254,111 @@ export function BranchDeliveryAreasPanel({
         </span>
       </div>
 
-      <div className="branch-locality-search">
-        <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold" htmlFor={inputId}>
-          {t("branches.deliveryAreas.search")}
-          <input
-            id={inputId}
-            ref={inputRef}
-            className="catalog-form-select font-normal"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-            }}
-            onKeyDown={onKeyDown}
-            onFocus={() => {
-              if (results.length > 0 || query.trim().length >= 2) {
-                setOpen(true);
-              }
-            }}
-            onBlur={() => {
-              window.setTimeout(() => setOpen(false), 150);
-            }}
-            role="combobox"
-            aria-expanded={open}
-            aria-controls={listboxId}
-            aria-autocomplete="list"
-            aria-activedescendant={
-              open && highlight >= 0 ? `${listboxId}-opt-${highlight}` : undefined
-            }
-            autoComplete="off"
-            placeholder={t("branches.deliveryAreas.searchPlaceholder")}
-            data-testid="delivery-area-search"
-            disabled={busy}
-          />
-        </label>
+      <div className="branch-locality-picker">
+        <div className="branch-locality-region-panel" data-testid="delivery-area-region-panel">
+          <span className="text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.deliveryAreas.regionSelect")}
+          </span>
+
+          {selectedRegion && !regionPickerOpen ? (
+            <div className="branch-locality-region-chosen" data-testid="delivery-area-region-selected">
+              <span className="branch-locality-region-chosen__name">{selectedRegion.regionName}</span>
+              <button
+                type="button"
+                className="branch-locality-region-chosen__change"
+                data-testid="delivery-area-region-change"
+                onClick={() => {
+                  setRegionFilter("");
+                  setRegionPickerOpen(true);
+                }}
+              >
+                {t("branches.deliveryAreas.changeRegion")}
+              </button>
+            </div>
+          ) : (
+            <>
+              <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold" htmlFor={regionSearchId}>
+                <span className="sr-only">{t("branches.deliveryAreas.regionSearchPlaceholder")}</span>
+                <input
+                  id={regionSearchId}
+                  type="search"
+                  className="exits-input font-normal"
+                  value={regionFilter}
+                  disabled={regionsLoading || Boolean(regionsError)}
+                  onChange={(e) => setRegionFilter(e.target.value)}
+                  placeholder={
+                    regionsLoading
+                      ? t("branches.deliveryAreas.regionsLoading")
+                      : t("branches.deliveryAreas.regionSearchPlaceholder")
+                  }
+                  data-testid="delivery-area-region-search"
+                  autoComplete="off"
+                />
+              </label>
+
+              {regionsLoading ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("branches.deliveryAreas.regionsLoading")}
+                </p>
+              ) : regionsError ? null : regions.length === 0 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("branches.deliveryAreas.regionsFailed")}
+                </p>
+              ) : filteredRegions.length === 0 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="delivery-area-region-no-match">
+                  {t("branches.deliveryAreas.noRegionMatch")}
+                </p>
+              ) : (
+                <ul
+                  className="branch-locality-region-list m-0 list-none p-0"
+                  role="listbox"
+                  aria-label={t("branches.deliveryAreas.regionSelect")}
+                  data-testid="delivery-area-region-list"
+                >
+                  {filteredRegions.map((region) => {
+                    const selected = region.regionCode === regionCode;
+                    return (
+                      <li key={region.regionCode} role="presentation">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={selected}
+                          className={
+                            selected
+                              ? "branch-locality-region-option is-selected"
+                              : "branch-locality-region-option"
+                          }
+                          data-testid={`delivery-area-region-${region.regionCode}`}
+                          onClick={() => {
+                            setRegionCode(region.regionCode);
+                            setRegionFilter("");
+                            setRegionPickerOpen(false);
+                          }}
+                        >
+                          {region.regionName}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+
+        {regionsError ? (
+          <p className="m-0 flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)] text-muted" role="alert">
+            <span>{regionsError}</span>
+            <button
+              type="button"
+              className="font-semibold text-[var(--exits-primary)] underline"
+              data-testid="delivery-area-regions-retry"
+              onClick={() => setRegionsReloadKey((k) => k + 1)}
+            >
+              {t("orders.retry")}
+            </button>
+          </p>
+        ) : null}
 
         {replaceAreaId ? (
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="delivery-area-replace-hint">
@@ -231,65 +366,131 @@ export function BranchDeliveryAreasPanel({
           </p>
         ) : null}
 
-        {open ? (
-          <div className="branch-locality-results" data-testid="delivery-area-results">
-            {showHint ? (
-              <p className="branch-locality-results__hint m-0">{t("branches.deliveryAreas.typeToSearch")}</p>
-            ) : searching ? (
-              <p className="branch-locality-results__hint m-0">{t("branches.deliveryAreas.searching")}</p>
-            ) : searchError ? (
-              <p className="branch-locality-results__hint m-0" role="alert">
-                {searchError}
+        {!regionCode ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="delivery-area-pick-region">
+            {t("branches.deliveryAreas.pickRegionFirst")}
+          </p>
+        ) : (
+          <div
+            className="branch-locality-city-panel"
+            data-testid="delivery-area-city-panel"
+            ref={cityPanelRef}
+            onBlur={(e) => {
+              const next = e.relatedTarget as Node | null;
+              if (next && cityPanelRef.current?.contains(next)) return;
+              if (cityBlurTimerRef.current != null) {
+                window.clearTimeout(cityBlurTimerRef.current);
+              }
+              cityBlurTimerRef.current = window.setTimeout(() => {
+                setCityPickerOpen(false);
+              }, 120);
+            }}
+            onFocus={() => {
+              if (cityBlurTimerRef.current != null) {
+                window.clearTimeout(cityBlurTimerRef.current);
+                cityBlurTimerRef.current = null;
+              }
+            }}
+          >
+            <label
+              className="flex min-w-0 flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold"
+              htmlFor={citySearchId}
+            >
+              {t("branches.deliveryAreas.citySelect")}
+              <input
+                id={citySearchId}
+                type="search"
+                className="exits-input font-normal"
+                value={cityFilter}
+                disabled={citiesLoading || Boolean(citiesError)}
+                onChange={(e) => {
+                  setCityFilter(e.target.value);
+                  openCityPicker();
+                }}
+                onFocus={openCityPicker}
+                onClick={openCityPicker}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    closeCityPicker();
+                  }
+                }}
+                placeholder={t("branches.deliveryAreas.searchPlaceholder")}
+                data-testid="delivery-area-city-search"
+                autoComplete="off"
+                aria-expanded={cityPickerOpen}
+                aria-controls={cityListId}
+              />
+            </label>
+
+            {citiesLoading ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("branches.deliveryAreas.citiesLoading")}
               </p>
-            ) : results.length === 0 ? (
-              <p className="branch-locality-results__hint m-0">{t("branches.deliveryAreas.noMatch")}</p>
-            ) : (
-              <ul
-                id={listboxId}
-                role="listbox"
-                className="branch-locality-results__list m-0 list-none p-0"
-              >
-                {results.map((item, index) => {
-                  const already = selectedCodes.has(item.psgcCode);
-                  const typeLabel = localityTypeLabel(item.localityType, t);
-                  const geo = item.provinceName ?? item.regionName;
-                  const secondary = [typeLabel, geo].filter(Boolean).join(" · ");
-                  return (
-                    <li key={item.psgcCode} role="presentation">
-                      <button
-                        type="button"
-                        id={`${listboxId}-opt-${index}`}
-                        role="option"
-                        aria-selected={highlight === index}
-                        aria-disabled={already || undefined}
-                        disabled={already || busy}
-                        className={
-                          highlight === index
-                            ? "branch-locality-results__option is-active"
-                            : "branch-locality-results__option"
-                        }
-                        data-testid={`delivery-area-result-${item.psgcCode}`}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => void selectLocality(item)}
-                      >
-                        <span className="branch-locality-results__name">
-                          {friendlyName(item.name)}
-                        </span>
-                        <span className="branch-locality-results__meta">{secondary}</span>
-                        <span className="branch-locality-results__region">{item.regionName}</span>
-                        {already ? (
-                          <span className="branch-locality-results__badge">
-                            {t("branches.deliveryAreas.alreadyAdded")}
+            ) : citiesError ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" role="alert">
+                {citiesError}
+              </p>
+            ) : cities.length === 0 ? (
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("branches.deliveryAreas.noCitiesInRegion")}
+              </p>
+            ) : cityPickerOpen ? (
+              filteredCities.length === 0 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="delivery-area-city-no-match">
+                  {t("branches.deliveryAreas.noMatch")}
+                </p>
+              ) : (
+                <ul
+                  id={cityListId}
+                  className="branch-locality-city-list m-0 list-none p-0"
+                  role="listbox"
+                  aria-label={t("branches.deliveryAreas.citiesInRegion")}
+                  data-testid="delivery-area-city-list"
+                >
+                  {filteredCities.map((item) => {
+                    const checked = selectedCodes.has(item.psgcCode);
+                    const typeLabel = localityTypeLabel(item.localityType, t);
+                    const geo = item.provinceName;
+                    const secondary = [typeLabel, geo].filter(Boolean).join(" · ");
+                    const replaceBlocked = Boolean(replaceAreaId) && checked;
+                    return (
+                      <li key={item.psgcCode} role="presentation">
+                        <label
+                          className={
+                            checked
+                              ? "branch-locality-city-option is-selected catalog-form-check"
+                              : "branch-locality-city-option catalog-form-check"
+                          }
+                          data-testid={`delivery-area-city-${item.psgcCode}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={controlsBusy || replaceBlocked}
+                            onMouseDown={(e) => {
+                              // Keep focus in panel so blur does not close before click.
+                              e.preventDefault();
+                            }}
+                            onChange={(e) => void toggleCity(item, e.target.checked)}
+                          />
+                          <span className="branch-locality-city-option__text">
+                            <span className="branch-locality-city-option__name">
+                              {friendlyName(item.name)}
+                            </span>
+                            {secondary ? (
+                              <span className="branch-locality-city-option__meta">{secondary}</span>
+                            ) : null}
                           </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )
+            ) : null}
           </div>
-        ) : null}
+        )}
       </div>
 
       <div>
@@ -328,13 +529,9 @@ export function BranchDeliveryAreasPanel({
                     <button
                       type="button"
                       className="branch-area-chip__replace"
-                      disabled={busy}
+                      disabled={controlsBusy}
                       data-testid={`replace-delivery-area-${area.id}`}
-                      onClick={() => {
-                        setReplaceAreaId(area.id);
-                        inputRef.current?.focus();
-                        setOpen(true);
-                      }}
+                      onClick={() => setReplaceAreaId(area.id)}
                     >
                       {t("branches.deliveryAreas.replace")}
                     </button>
@@ -342,7 +539,7 @@ export function BranchDeliveryAreasPanel({
                   <button
                     type="button"
                     className="branch-area-chip__remove"
-                    disabled={busy}
+                    disabled={controlsBusy}
                     aria-label={`${t("branches.deliveryAreas.remove")}: ${chipTitle}`}
                     data-testid={`remove-delivery-area-${area.id}`}
                     onClick={() => void onRemove(area.id)}

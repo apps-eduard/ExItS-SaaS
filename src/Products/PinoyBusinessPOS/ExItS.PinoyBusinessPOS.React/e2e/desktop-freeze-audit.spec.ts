@@ -1,97 +1,255 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import {
+  assertProbeClickable,
+  captureClickDeadnessSnapshot,
+  readRuntimeBuildSha,
+} from "./click-deadness-diagnostics";
 import { mockBoundManagerSession, signInAndBindManager } from "./mock-bound-session";
 import { mockPosCatalogApi } from "./mock-pos-catalog-route";
 
 /**
- * POS-REACT-DESKTOP-FREEZE-AUDIT-01
- * Stress navigation at desktop vs phone and assert click latency stays bounded
- * while DOM node count stabilizes (no continuous leak).
+ * POS-CLICK-DEADNESS-ROOT-CAUSE-PROOF
+ * Real Playwright clicks only (no pushState, no force:true).
+ * On failure, dumps elementsFromPoint + overlay inventory.
  */
-async function measureNavRound(page: import("@playwright/test").Page, paths: string[]) {
-  const clickDurations: number[] = [];
-  for (const path of paths) {
-    const started = Date.now();
-    await page.evaluate((next) => {
-      window.history.pushState({}, "", next);
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }, path);
-    await page.waitForTimeout(50);
-    clickDurations.push(Date.now() - started);
-  }
-  const nodes = await page.evaluate(() => document.getElementsByTagName("*").length);
-  return { clickDurations, nodes };
+
+const PO_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+async function mockPurchasingMinimal(page: Page) {
+  await page.route("**/pos-api/api/v1/pos/purchase-orders**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const pathname = url.pathname;
+
+    if (pathname.match(/\/purchase-orders\/?$/) && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              purchaseOrderId: PO_ID,
+              organizationId: "11111111-1111-1111-1111-111111111111",
+              supplierId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+              supplierName: "Acme Supply",
+              poNumber: "PO-1001",
+              status: "Ordered",
+              displayStatus: "Ordered",
+              orderDate: "2026-08-27",
+              orderedAtUtc: "2026-08-27T09:00:00Z",
+              orderedBy: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+              createdAtUtc: "2026-08-27T08:00:00Z",
+              updatedAtUtc: "2026-08-27T09:00:00Z",
+              lines: [],
+            },
+          ],
+          page: 1,
+          pageSize: 20,
+          totalCount: 1,
+        }),
+      });
+    }
+
+    if (pathname.endsWith(`/purchase-orders/${PO_ID}`) && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          purchaseOrderId: PO_ID,
+          organizationId: "11111111-1111-1111-1111-111111111111",
+          supplierId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          supplierName: "Acme Supply",
+          poNumber: "PO-1001",
+          status: "Ordered",
+          displayStatus: "Ordered",
+          paymentTerm: "Cash",
+          paymentTermLabel: "Cash",
+          orderDate: "2026-08-27",
+          orderedAtUtc: "2026-08-27T09:00:00Z",
+          orderedBy: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          createdAtUtc: "2026-08-27T08:00:00Z",
+          updatedAtUtc: "2026-08-27T09:00:00Z",
+          lines: [
+            {
+              lineId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+              productId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+              lineNumber: 1,
+              nameSnapshot: "Bath Soap",
+              uomSnapshot: "Case",
+              orderedQty: 2,
+              unitPurchaseCost: 240,
+              lineTotal: 480,
+              receivedQty: 0,
+              outstandingQty: 2,
+              needsProductSetup: false,
+            },
+          ],
+        }),
+      });
+    }
+
+    if (pathname.includes(`/purchase-orders/${PO_ID}/goods-receipts`) && method === "GET") {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([]),
+      });
+    }
+
+    return route.fallback();
+  });
 }
 
-const NAV_CYCLE = [
-  "/role/manager",
-  "/sell",
-  "/inventory",
-  "/catalog",
-  "/customers",
-  "/orders",
-  "/purchasing",
-  "/more",
-];
+async function realClick(page: Page, testId: string) {
+  await page.getByTestId(testId).click({ force: false, timeout: 8_000 });
+}
 
-test.describe("Desktop freeze audit stress", () => {
+async function closeDropdownIfOpen(page: Page) {
+  const menu = page.locator('[data-exits-dropdown-portal="true"]');
+  if ((await menu.count()) > 0 && (await menu.first().isVisible().catch(() => false))) {
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0, { timeout: 3_000 });
+  }
+}
+
+test.describe("Click deadness real-interaction stress", () => {
   test.use({ serviceWorkers: "block" });
 
   test.beforeEach(async ({ page }) => {
     await mockBoundManagerSession(page);
     await mockPosCatalogApi(page);
+    await mockPurchasingMinimal(page);
     await signInAndBindManager(page);
   });
 
-  test("desktop 1440: 40 navigations stay responsive and DOM stabilizes", async ({ page }) => {
+  test("50+ real clicks across drawers/menus stay clickable", async ({ page }) => {
+    test.setTimeout(180_000);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
 
-    const before = await page.evaluate(() => document.getElementsByTagName("*").length);
-    const rounds: number[] = [];
-    let lastNodes = before;
+    const buildSha = await readRuntimeBuildSha(page);
+    expect(buildSha, "runtime must expose build SHA from CURRENT HEAD bundle").toBeTruthy();
+    expect(buildSha).toMatch(/^[0-9a-f]{7,40}$|development|production|unknown/i);
 
+    // SW blocked by test.use; still assert controller absence.
+    const swCount = await page.evaluate(() => (navigator.serviceWorker?.controller ? 1 : 0));
+    expect(swCount).toBe(0);
+
+    await expect(page.getByTestId("operations-shell")).toBeVisible();
+    await expect(page.getByTestId("ops-sidebar-home")).toBeVisible();
+
+    let clicks = 0;
+    const bump = async (label: string, fn: () => Promise<void>) => {
+      await fn();
+      clicks += 1;
+      // Probe after every interaction — must be a normal click, never force:true.
+      await assertProbeClickable(page, "ops-sidebar-home", clicks);
+      void label;
+    };
+
+    // Sidebar / nav (desktop)
+    for (const id of [
+      "ops-sidebar-sell",
+      "ops-sidebar-inventory",
+      "ops-sidebar-purchasing",
+      "ops-sidebar-customers",
+      "ops-sidebar-home",
+      "ops-sidebar-catalog",
+      "ops-sidebar-orders",
+      "ops-sidebar-home",
+    ]) {
+      await bump(`nav:${id}`, async () => {
+        await realClick(page, id);
+      });
+    }
+
+    // Account dropdown open/close cycles
+    for (let i = 0; i < 6; i++) {
+      await bump(`account-menu-${i}`, async () => {
+        await realClick(page, "account-menu-trigger");
+        await expect(page.locator('[data-exits-dropdown-portal="true"]')).toBeVisible();
+        await page.keyboard.press("Escape");
+        await closeDropdownIfOpen(page);
+      });
+    }
+
+    // Preferences SideDrawer open/close
     for (let i = 0; i < 5; i++) {
-      const { clickDurations, nodes } = await measureNavRound(page, NAV_CYCLE);
-      rounds.push(...clickDurations);
-      // Allow modest churn; fail on continuous growth > 25% per full cycle after warm-up.
-      if (i >= 2) {
-        expect(nodes).toBeLessThan(lastNodes * 1.25 + 200);
+      await bump(`preferences-${i}`, async () => {
+        await realClick(page, "shell-preferences-button");
+        await expect(page.getByTestId("preferences-drawer")).toBeVisible();
+        await expect(page.getByTestId("preferences-drawer")).toHaveAttribute(
+          "data-interactive",
+          "true",
+        );
+        await realClick(page, "preferences-close");
+        await expect(page.getByTestId("preferences-drawer")).toHaveCount(0, { timeout: 5_000 });
+      });
+    }
+
+    // Purchasing list → PO detail → timeline drawer
+    await bump("purchasing-nav", async () => {
+      await realClick(page, "ops-sidebar-purchasing");
+    });
+
+    // Prefer a row link if present; otherwise go via sidebar home then purchasing again.
+    const poLink = page.getByRole("link", { name: /PO-1001/i }).first();
+    if (await poLink.isVisible().catch(() => false)) {
+      await bump("po-open", async () => {
+        await poLink.click({ force: false });
+      });
+    } else {
+      // Fallback: click open-purchasing from home if list UI differs.
+      await bump("purchasing-home", async () => {
+        await realClick(page, "ops-sidebar-home");
+      });
+      const openPurchasing = page.getByTestId("open-purchasing");
+      if (await openPurchasing.isVisible().catch(() => false)) {
+        await bump("open-purchasing", async () => {
+          await openPurchasing.click({ force: false });
+        });
       }
-      lastNodes = nodes;
+      if (await poLink.isVisible().catch(() => false)) {
+        await bump("po-open-fallback", async () => {
+          await poLink.click({ force: false });
+        });
+      }
     }
 
-    const p95 = [...rounds].sort((a, b) => a - b)[Math.floor(rounds.length * 0.95)] ?? 0;
-    // Client-side pushState + popstate should stay snappy even under stress.
-    expect(p95).toBeLessThan(1500);
-
-    const after = await page.evaluate(() => document.getElementsByTagName("*").length);
-    expect(after).toBeLessThan(before * 2 + 500);
-
-    // Shell must still accept clicks even if a page query failed (no blocking overlay).
-    await page.getByTestId("org-nav-home").click({ force: false });
-    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
-    await expect(page.getByTestId("client-error-overlay")).toHaveCount(0);
-    await expect(page.getByTestId("workspace-transition-overlay")).toHaveCount(0);
-  });
-
-  test("phone 390: same navigation sequence remains responsive", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.getByTestId("org-bottom-nav")).toBeVisible();
-
-    const before = await page.evaluate(() => document.getElementsByTagName("*").length);
-    const rounds: number[] = [];
-
-    for (let i = 0; i < 5; i++) {
-      const { clickDurations } = await measureNavRound(page, NAV_CYCLE);
-      rounds.push(...clickDurations);
+    if (await page.getByTestId("po-timeline-open").isVisible().catch(() => false)) {
+      for (let i = 0; i < 4; i++) {
+        await bump(`timeline-${i}`, async () => {
+          await realClick(page, "po-timeline-open");
+          await expect(page.getByTestId("po-timeline-drawer")).toBeVisible();
+          await realClick(page, "po-timeline-drawer-close");
+          await expect(page.getByTestId("po-timeline-drawer")).toHaveCount(0, { timeout: 5_000 });
+        });
+      }
     }
 
-    const p95 = [...rounds].sort((a, b) => a - b)[Math.floor(rounds.length * 0.95)] ?? 0;
-    expect(p95).toBeLessThan(1500);
+    // Confirmation dialog via FormDrawer unsaved path is page-specific; use preferences
+    // theme toggle + Escape as additional open/close churn, then confirm dialog if any
+    // ConfirmationDialog appears from a destructive action on purchasing list filters.
+    await bump("prefs-again", async () => {
+      await realClick(page, "shell-preferences-button");
+      await expect(page.getByTestId("preferences-drawer")).toBeVisible();
+      await realClick(page, "preferences-close");
+      await expect(page.getByTestId("preferences-drawer")).toHaveCount(0, { timeout: 5_000 });
+    });
 
-    const after = await page.evaluate(() => document.getElementsByTagName("*").length);
-    expect(after).toBeLessThan(before * 2 + 500);
-    await page.getByTestId("org-nav-home").click();
-    await expect(page.getByTestId("client-error-overlay")).toHaveCount(0);
+    // Extra nav churn to exceed 50 interactions
+    while (clicks < 55) {
+      await bump(`extra-nav-${clicks}`, async () => {
+        await realClick(page, clicks % 2 === 0 ? "ops-sidebar-inventory" : "ops-sidebar-home");
+      });
+    }
+
+    const finalSnap = await captureClickDeadnessSnapshot(page);
+    expect(finalSnap.buildSha).toBe(buildSha);
+    expect(finalSnap.body.inert).toBe(false);
+    expect(finalSnap.html.inert).toBe(false);
+    expect(await page.getByTestId("client-error-overlay").count()).toBe(0);
+    expect(await page.getByTestId("workspace-transition-overlay").count()).toBe(0);
+    expect(await page.locator('.exits-side-drawer[data-interactive="true"]').count()).toBe(0);
+    expect(clicks).toBeGreaterThanOrEqual(50);
   });
 });

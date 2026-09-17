@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Credit;
 
@@ -157,17 +158,20 @@ public sealed class CreateCreditEntry
 {
     private readonly IPOSCustomerRepository _customers;
     private readonly ICreditEntryRepository _entries;
+    private readonly CustomerCreditAuthorizationService _authorization;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateCreditEntry(
         IPOSCustomerRepository customers,
         ICreditEntryRepository entries,
+        CustomerCreditAuthorizationService authorization,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
         _customers = customers;
         _entries = entries;
+        _authorization = authorization;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -210,18 +214,37 @@ public sealed class CreateCreditEntry
 
         try
         {
-            var entry = clientCreditEntryId is null
-                ? CreditEntry.Create(orgId, custId, amount, remarks, _clock.UtcNow)
-                : CreditEntry.Create(
-                    orgId,
-                    custId,
-                    amount,
-                    remarks,
-                    _clock.UtcNow,
-                    id: CreditEntryId.From(clientCreditEntryId.Value));
-            await _entries.AddAsync(entry, cancellationToken).ConfigureAwait(false);
-            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CreditEntry>.Success(entry);
+            return await _unitOfWork
+                .ExecuteInSerializableTransactionAsync(async ct =>
+                {
+                    var utcNow = _clock.UtcNow;
+                    var auth = await _authorization
+                        .AuthorizeNewCreditAsync(
+                            orgId,
+                            custId,
+                            amount,
+                            SaleNumbers.BusinessDateOf(utcNow),
+                            ct)
+                        .ConfigureAwait(false);
+                    if (!auth.IsSuccess)
+                    {
+                        return ApplicationResult<CreditEntry>.Failure(auth.ErrorCode!, auth.ErrorMessage!);
+                    }
+
+                    var entry = clientCreditEntryId is null
+                        ? CreditEntry.Create(orgId, custId, amount, remarks, utcNow)
+                        : CreditEntry.Create(
+                            orgId,
+                            custId,
+                            amount,
+                            remarks,
+                            utcNow,
+                            id: CreditEntryId.From(clientCreditEntryId.Value));
+                    await _entries.AddAsync(entry, ct).ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    return ApplicationResult<CreditEntry>.Success(entry);
+                }, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (DomainException ex)
         {

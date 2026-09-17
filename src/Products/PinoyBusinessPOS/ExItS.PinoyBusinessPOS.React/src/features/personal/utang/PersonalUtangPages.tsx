@@ -1,19 +1,7 @@
-﻿import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  CircleAlert,
-  HandCoins,
-  Loader2,
-  PenLine,
-  Send,
-  UserPlus,
-  Wallet,
-} from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, ChevronDown, CircleAlert, HandCoins, Loader2, PenLine, Send, UserPlus, Users, Wallet } from "lucide-react";
 import {
   cancelPersonalUtangEntry,
   closePersonalDebtRelationship,
@@ -285,7 +273,7 @@ function PendingOutgoingHint({
         >
           {t("personal.utang.pendingLimitReached").replace("{name}", name)}
         </p>
-        <Button asChild variant="ghost" className="min-h-11 w-fit px-0">
+        <Button asChild variant="ghost" className="w-fit px-0">
           <Link to={viewPendingTo} data-testid="utang-view-pending">
             {t("personal.utang.viewPending")}
           </Link>
@@ -680,7 +668,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
       >
         <button
           type="button"
-          className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-left font-semibold transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
+          className="flex w-full items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2 text-left font-semibold transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
           aria-expanded={recordFormOpen}
           aria-controls="utang-record-panel"
           data-testid="utang-record-toggle"
@@ -707,7 +695,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           {t("personal.utang.person")}
           <select
             data-testid="utang-rel-contact"
-            className="min-h-11 w-full min-w-0 max-w-full rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="exits-select"
             value={contactId}
             onChange={(e) => setContactId(e.target.value)}
             required
@@ -725,7 +713,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           <input
             data-testid="utang-rel-amount"
             inputMode="decimal"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
@@ -753,7 +741,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           <input
             data-testid="utang-rel-due"
             type="date"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
@@ -808,7 +796,6 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
         ) : null}
         <Button
           type="submit"
-          className="min-h-11"
           disabled={
             createMutation.isPending ||
             statusLocked ||
@@ -828,7 +815,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
           {submitLabel}
         </Button>
         {contacts.length === 0 ? (
-          <Button asChild variant="ghost" className="min-h-11">
+          <Button asChild variant="ghost">
             <Link to="/personal/people">
               <UserPlus className="size-4 shrink-0" aria-hidden />
               {t("personal.utang.addPersonFirst")}
@@ -841,6 +828,8 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
 
       {rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.utang.listEmptyTitle")}
           detail={
             mode === "lent"
@@ -862,7 +851,7 @@ function RelationshipListPage({ mode }: { mode: "lent" | "owe" }) {
               <li key={row.id}>
                 <Link
                   to={`/personal/utang/relationships/${row.id}`}
-                  className="exits-list__card flex min-h-11 items-center justify-between gap-3 text-foreground no-underline"
+                  className="exits-list__card flex items-center justify-between gap-3 text-foreground no-underline"
                   data-testid={`utang-rel-row-${row.id}`}
                 >
                   <PersonAvatar name={name} size="sm" />
@@ -1367,7 +1356,7 @@ export function PersonalRelationshipDetailPage() {
           ) : null}
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={settleBlockedOffline || settleMutation.isPending}
             data-testid="utang-settle"
             onClick={() => {
@@ -1399,7 +1388,6 @@ export function PersonalRelationshipDetailPage() {
               <div className="flex min-w-0 flex-wrap gap-2">
                 <Button
                   type="button"
-                  className="min-h-11"
                   disabled={settleBlockedOffline || settleMutation.isPending}
                   data-testid="utang-settle-confirm"
                   onClick={() => settleMutation.mutate()}
@@ -1409,7 +1397,6 @@ export function PersonalRelationshipDetailPage() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="min-h-11"
                   disabled={settleMutation.isPending}
                   onClick={() => setSettleOpen(false)}
                 >
@@ -1433,7 +1420,7 @@ export function PersonalRelationshipDetailPage() {
           </p>
           <Button
             type="button"
-            className="min-h-11 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             disabled={settleBlockedOffline || closeMutation.isPending}
             data-testid="utang-mark-settled"
             onClick={() => closeMutation.mutate()}
@@ -1481,7 +1468,7 @@ export function PersonalRelationshipDetailPage() {
           <span className="sr-only">{t("personal.utang.entryType")}</span>
           <select
             data-testid="utang-entry-type"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="exits-select"
             value={entryType}
             onChange={(e) => setEntryType(e.target.value as typeof entryType)}
           >
@@ -1495,7 +1482,7 @@ export function PersonalRelationshipDetailPage() {
           <input
             data-testid="utang-entry-amount"
             inputMode="decimal"
-            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
@@ -1507,7 +1494,7 @@ export function PersonalRelationshipDetailPage() {
             <input
               data-testid="utang-entry-delta"
               inputMode="decimal"
-              className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+              className="w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
               value={adjustmentDelta}
               onChange={(e) => setAdjustmentDelta(e.target.value)}
               required
@@ -1569,7 +1556,7 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         <Button
           type="submit"
-          className="min-h-11 w-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={
             recordMutation.isPending ||
             statusLocked ||
@@ -1618,6 +1605,8 @@ export function PersonalRelationshipDetailPage() {
         ) : null}
         {history.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.utang.historyEmptyTitle")}
             detail={t("personal.utang.historyEmptyDetail")}
           />
@@ -1740,7 +1729,7 @@ export function PersonalRelationshipDetailPage() {
                         {canConfirm ? (
                           <Button
                             type="button"
-                            className="min-h-11 flex-1 sm:flex-none"
+                            className="flex-1 sm:flex-none"
                             disabled={resolveMutation.isPending}
                             data-testid={`utang-confirm-${entry.id}`}
                             onClick={() =>
@@ -1755,7 +1744,7 @@ export function PersonalRelationshipDetailPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            className="min-h-11 flex-1 sm:flex-none"
+                            className="flex-1 sm:flex-none"
                             disabled={resolveMutation.isPending}
                             data-testid={`utang-dispute-${entry.id}`}
                             onClick={() => {
@@ -1774,7 +1763,7 @@ export function PersonalRelationshipDetailPage() {
                       <Button
                         type="button"
                         variant="ghost"
-                        className="min-h-11 w-fit"
+                        className="w-fit"
                         disabled={resolveMutation.isPending}
                         data-testid={`utang-cancel-${entry.id}`}
                         onClick={() =>
@@ -1793,7 +1782,7 @@ export function PersonalRelationshipDetailPage() {
                         <label className="flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
                           {t("personal.utang.disputeReason")}
                           <select
-                            className="min-h-11 w-full min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                            className="exits-select"
                             value={disputeReasonKey}
                             data-testid={`utang-dispute-reason-${entry.id}`}
                             onChange={(e) =>
@@ -1817,7 +1806,6 @@ export function PersonalRelationshipDetailPage() {
                         <div className="flex min-w-0 flex-wrap gap-2">
                           <Button
                             type="button"
-                            className="min-h-11"
                             disabled={resolveMutation.isPending}
                             data-testid={`utang-dispute-submit-${entry.id}`}
                             onClick={() =>
@@ -1833,7 +1821,6 @@ export function PersonalRelationshipDetailPage() {
                           <Button
                             type="button"
                             variant="ghost"
-                            className="min-h-11"
                             disabled={resolveMutation.isPending}
                             onClick={() => {
                               setDisputeEntryId(null);
@@ -1853,7 +1840,7 @@ export function PersonalRelationshipDetailPage() {
         )}
       </section>
 
-      <Button asChild variant="ghost" className="min-h-11 w-full sm:w-fit">
+      <Button asChild variant="ghost" className="w-full sm:w-fit">
         <Link to="/personal/utang">
           <ArrowLeft className="size-4 shrink-0" aria-hidden="true" />
           {t("personal.utang.back")}

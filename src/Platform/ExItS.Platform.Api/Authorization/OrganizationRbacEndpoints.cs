@@ -20,10 +20,12 @@ internal static class OrganizationRbacEndpoints
             int? page,
             int? pageSize,
             OrganizationRoleDefinitionQueryService queries,
-            PlatformMembershipAuthz membershipAuthz,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
-            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(PlatformAuditActions.PlatformAccessChecked, nameof(OrganizationRoleDefinition), organizationId.ToString("D"), organizationId, cancellationToken: ct).ConfigureAwait(false);
+            // Portfolio reads (ViewPortfolio / ManageOrganizations) and trusted org members —
+            // same directory-style gate as org identity / branches. Mutations stay ManageMemberships.
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;
@@ -44,10 +46,10 @@ internal static class OrganizationRbacEndpoints
             Guid organizationId,
             Guid roleId,
             OrganizationRoleDefinitionQueryService queries,
-            PlatformMembershipAuthz membershipAuthz,
+            PlatformOrganizationAuthz orgAuthz,
             CancellationToken ct) =>
         {
-            var denied = await membershipAuthz.EnsureCanManageMembershipsAsync(PlatformAuditActions.PlatformAccessChecked, nameof(OrganizationRoleDefinition), organizationId.ToString("D"), organizationId, cancellationToken: ct).ConfigureAwait(false);
+            var denied = await orgAuthz.EnsureCanViewOrganizationAsync(organizationId, ct).ConfigureAwait(false);
             if (denied is not null)
             {
                 return denied;

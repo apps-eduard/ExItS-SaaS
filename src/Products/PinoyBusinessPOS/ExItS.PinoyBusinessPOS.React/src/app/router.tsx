@@ -20,8 +20,21 @@ import { PersonalExplorePosPage } from "@/features/personal/start-business/Perso
 import { PersonalStartBusinessPage } from "@/features/personal/start-business/PersonalStartBusinessPage";
 import { PersonalShell } from "@/features/personal/PersonalShell";
 import { PostSubscriptionOnboardingPage } from "@/features/onboarding/PostSubscriptionOnboardingPage";
+import { SubscriptionCheckoutPage } from "@/features/subscription-checkout/SubscriptionCheckoutPage";
+import { SubscriptionPaymentSimulatorPage } from "@/features/subscription-checkout/SubscriptionPaymentSimulatorPage";
+import { PaymentResultPage } from "@/features/subscription-checkout/PaymentResultPage";
+import { PreOrgCheckoutShell } from "@/features/subscription-checkout/PreOrgCheckoutShell";
 import { AccountContextSwitchPage } from "@/features/account/AccountContextSwitchPage";
 import { OrgMorePage } from "@/features/shell/OrgMorePage";
+import { WarehouseIndexPage } from "@/features/warehouse/WarehouseIndexPage";
+import { RetailWarehouseShell } from "@/features/warehouse/RetailWarehouseShell";
+import { RetailWarehouseRequestStockPage } from "@/features/warehouse/RetailWarehouseRequestStockPage";
+import {
+  RetailWarehouseHistoryPage,
+  RetailWarehouseIncomingPage,
+  RetailWarehouseRequestsPage,
+} from "@/features/warehouse/RetailWarehouseRequestsPages";
+
 import { ExpenseCategoriesPage } from "@/features/expenses/ExpenseCategoriesPage";
 import { ExpenseCreatePage } from "@/features/expenses/ExpenseCreatePage";
 import { ExpenseDetailPage } from "@/features/expenses/ExpenseDetailPage";
@@ -61,22 +74,34 @@ import { MyOrderDetailPage } from "@/features/customer-ordering/MyOrderDetailPag
 import { SellerOrdersPage } from "@/features/customer-ordering/SellerOrdersPage";
 import { SellerOrderDetailPage } from "@/features/customer-ordering/SellerOrderDetailPage";
 import { ClassicReportPage } from "@/features/reports/ClassicReportPage";
-import { ManagementDashboardPage } from "@/features/reports/ManagementDashboardPage";
+import { DashboardRoutePage } from "@/features/reports/DashboardRoutePage";
 import { OperationalReportPage } from "@/features/reports/OperationalReportPage";
 import { ReportsHubPage } from "@/features/reports/ReportsHubPage";
 import { PreferencesPage } from "@/features/preferences/PreferencesPage";
+import { AppearancePreferences } from "@/features/preferences/AppearancePreferences";
+import { LanguageRegionPreferences } from "@/features/preferences/LanguageRegionPreferences";
+import { NavigationPreferences } from "@/features/preferences/NavigationPreferences";
+import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPreferences";
+import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
+import { PaymentMethodsSettingsPage } from "@/features/settings/PaymentMethodsSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
 import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
 import { BranchManagementDetailPage } from "@/features/branches/BranchManagementDetailPage";
 import { BranchManagementListPage } from "@/features/branches/BranchManagementListPage";
+import { SupplyRoutesPage } from "@/features/replenishment/SupplyRoutesPage";
+import { StockRequestDetailPage } from "@/features/replenishment/StockRequestDetailPage";
+import { StockRequestListPage } from "@/features/replenishment/StockRequestListPage";
 import { OrgAreaDetailPage } from "@/features/areas/OrgAreaDetailPage";
 import { OrgAreasPage } from "@/features/areas/OrgAreasPage";
 import { OrgEssentialsPage } from "@/features/role/OrgEssentialsPage";
+import { AdminManageHubPage } from "@/features/admin/AdminManageHubPage";
+import { AdminMoreHubPage } from "@/features/admin/AdminMoreHubPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
+import { OrgSubscriptionBillingPage } from "@/features/organization/subscription/OrgSubscriptionBillingPage";
 import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import { CatalogBrandsPage } from "@/features/catalog/CatalogBrandsPage";
@@ -89,16 +114,26 @@ import {
 import { CatalogProductsPage } from "@/features/catalog/CatalogProductsPage";
 import { CatalogTemplateImportPage } from "@/features/catalog/CatalogTemplateImportPage";
 import { TodaysPricesPage } from "@/features/catalog/TodaysPricesPage";
+import { CustomerAddChooserPage } from "@/features/customers/CustomerAddChooserPage";
+import { CustomerBusinessAddChooserPage } from "@/features/customers/CustomerBusinessAddChooserPage";
+import { CustomerBusinessLocalFormPage } from "@/features/customers/CustomerBusinessLocalFormPage";
+import { CustomerBusinessOrgConnectPage } from "@/features/customers/CustomerBusinessOrgConnectPage";
 import { BusinessCustomerDetailPage } from "@/features/customers/BusinessCustomerDetailPage";
+import { BusinessCustomerReceivablesPage } from "@/features/customers/BusinessCustomerReceivablesPage";
+import { BusinessCustomerRepayPage } from "@/features/customers/BusinessCustomerRepayPage";
+import { BusinessCustomerStatementPage } from "@/features/customers/BusinessCustomerStatementPage";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 import { CustomerCreatePage, CustomerEditPage } from "@/features/customers/CustomerFormPage";
 import { CustomerRepayPage } from "@/features/customers/CustomerRepayPage";
 import { CustomerStatementPage } from "@/features/customers/CustomerStatementPage";
 import { CustomersListPage } from "@/features/customers/CustomersListPage";
+import { QuotationsListPage } from "@/features/quotations/QuotationsListPage";
+import { QuotationEditorPage } from "@/features/quotations/QuotationEditorPage";
 import { ExpirationSettingsPage } from "@/features/inventory/ExpirationSettingsPage";
 import { InventoryDetailPage } from "@/features/inventory/InventoryDetailPage";
 import { InventoryExpirationPage } from "@/features/inventory/InventoryExpirationPage";
 import { InventoryListPage } from "@/features/inventory/InventoryListPage";
+import { LowStockSettingsPage } from "@/features/inventory/LowStockSettingsPage";
 import { ProductionDefinitionDetailPage } from "@/features/inventory/ProductionDefinitionDetailPage";
 import { ProductionDefinitionFormPage } from "@/features/inventory/ProductionDefinitionFormPage";
 import { ProductionDefinitionListPage } from "@/features/inventory/ProductionDefinitionListPage";
@@ -124,6 +159,8 @@ import {
   OwnerRoleHomePage,
 } from "@/features/role/RoleHomePages";
 import { RegistersListPage } from "@/features/registers/RegistersListPage";
+import { RegisterHistoryPage } from "@/features/registers/RegisterHistoryPage";
+import { TransactionsListPage } from "@/features/registers/TransactionsListPage";
 import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
 import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
 import { CheckoutCashPage } from "@/features/checkout/CheckoutCashPage";
@@ -152,13 +189,20 @@ import { PurchaseOrderCreatePage } from "@/features/purchasing/PurchaseOrderCrea
 import { PurchaseOrderDetailPage } from "@/features/purchasing/PurchaseOrderDetailPage";
 import { PurchaseOrderReceivePage } from "@/features/purchasing/PurchaseOrderReceivePage";
 import { PrepareConnectedProductsPage } from "@/features/purchasing/PrepareConnectedProductsPage";
+import { IncomingOrdersListPage } from "@/features/purchasing/IncomingOrdersListPage";
+import { IncomingOrderDetailPage } from "@/features/purchasing/IncomingOrderDetailPage";
+import { IncomingOrderReceiptDetailPage } from "@/features/purchasing/IncomingOrderReceiptDetailPage";
 import { ReceivableOrdersPage } from "@/features/purchasing/ReceivableOrdersPage";
 import { ReceiveStockPage } from "@/features/purchasing/ReceiveStockPage";
 import { DirectPurchasesListPage } from "@/features/purchasing/DirectPurchasesListPage";
 import { DirectPurchaseDetailPage } from "@/features/purchasing/DirectPurchaseDetailPage";
+import { DirectPurchaseB2bDetailPage } from "@/features/purchasing/DirectPurchaseB2bDetailPage";
 import { OrgStaffAssignPage } from "@/features/staff/OrgStaffAssignPage";
 import { OrgStaffInvitePage } from "@/features/staff/OrgStaffInvitePage";
 import { OrgStaffPage } from "@/features/staff/OrgStaffPage";
+import { OrgStaffDetailPage } from "@/features/staff/OrgStaffDetailPage";
+import { OrgProfilePage } from "@/features/organization/OrgProfilePage";
+import { DocumentsPrintingSettingsPage } from "@/features/documents/DocumentsPrintingSettingsPage";
 import { OrgRoleDetailPage } from "@/features/staff/OrgRoleDetailPage";
 import { OrgRolesPage } from "@/features/staff/OrgRolesPage";
 import { StaffInvitationAcceptPage } from "@/features/staff/StaffInvitationAcceptPage";
@@ -204,6 +248,7 @@ import {
   RequireViewPurchasing,
   RequireViewRegisters,
   RequireViewReturns,
+  RequireViewSales,
   RequireViewShifts,
   RequireViewStatement,
   RequireViewSuppliers,
@@ -284,6 +329,21 @@ export const appRoutes = [
             <PersonalUtangInviteAcceptPage />
           </AllowInvitationAccept>
         ),
+      },
+      {
+        path: "/subscription-checkout",
+        element: (
+          <RequireSession>
+            <RequirePersonalSession>
+              <PreOrgCheckoutShell />
+            </RequirePersonalSession>
+          </RequireSession>
+        ),
+        children: [
+          { path: ":paymentId", element: <SubscriptionCheckoutPage /> },
+          { path: ":paymentId/result", element: <PaymentResultPage /> },
+          { path: ":paymentId/:channel", element: <SubscriptionPaymentSimulatorPage /> },
+        ],
       },
       {
         path: "/",
@@ -397,7 +457,18 @@ export const appRoutes = [
               </RequireOrganizationSession>
             ),
           },
-          { path: "settings/preferences", element: <PreferencesPage /> },
+          {
+            path: "settings/preferences",
+            element: <PreferencesPage />,
+            children: [
+              { path: "appearance", element: <AppearancePreferences /> },
+              { path: "language-region", element: <LanguageRegionPreferences /> },
+              { path: "navigation", element: <NavigationPreferences /> },
+              { path: "accessibility", element: <AccessibilityPreferences /> },
+            ],
+          },
+          { path: "ui-standards", element: <UiStandardsPage /> },
+          { path: "ui-standard", element: <Navigate to="/ui-standards?category=actions" replace /> },
           {
             path: "more",
             element: (
@@ -425,6 +496,36 @@ export const appRoutes = [
               { path: "offline-queued/:saleId", element: <OfflineSaleQueuedPage /> },
               { path: "sales/:saleId/summary", element: <TransactionSummaryPage /> },
             ],
+          },
+          {
+            path: "warehouse",
+            element: (
+              <RequireOrganizationSession>
+                <RequireBranchBound>
+                  <Outlet />
+                </RequireBranchBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <WarehouseIndexPage /> },
+              {
+                element: <RetailWarehouseShell />,
+                children: [
+                  { path: "request-stock", element: <RetailWarehouseRequestStockPage /> },
+                  { path: "my-requests", element: <RetailWarehouseRequestsPage /> },
+                  { path: "incoming", element: <RetailWarehouseIncomingPage /> },
+                  { path: "history", element: <RetailWarehouseHistoryPage /> },
+                  {
+                    path: "requests/:stockRequestId",
+                    element: <StockRequestDetailPage />,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            path: "role/warehouse",
+            element: <Navigate to="/warehouse" replace />,
           },
           {
             path: "role/owner",
@@ -485,6 +586,8 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <OrgEssentialsPage /> },
+              { path: "manage", element: <AdminManageHubPage /> },
+              { path: "more", element: <AdminMoreHubPage /> },
               { path: "business-qr", element: <OrgBusinessQrPage /> },
               {
                 path: "ownership-transfer",
@@ -493,6 +596,22 @@ export const appRoutes = [
                     <OrgOwnershipTransferPage />
                   </RequireOrganizationOwnerMembership>
                 ),
+              },
+              {
+                path: "profile",
+                element: <OrgProfilePage />,
+              },
+              {
+                path: "subscription",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgSubscriptionBillingPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "documents-printing",
+                element: <DocumentsPrintingSettingsPage />,
               },
               {
                 path: "staff",
@@ -519,6 +638,14 @@ export const appRoutes = [
                 ),
               },
               {
+                path: "staff/:membershipId",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgStaffDetailPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
                 path: "roles",
                 element: (
                   <RequireInviteStaff>
@@ -536,11 +663,20 @@ export const appRoutes = [
               },
               { path: "devices", element: <OrgPosDevicesPage /> },
               { path: "cash-handling", element: <CashHandlingSettingsPage /> },
+              { path: "payment-methods", element: <PaymentMethodsSettingsPage /> },
               {
                 path: "branches",
                 element: (
                   <RequireInviteStaff>
                     <BranchManagementListPage />
+                  </RequireInviteStaff>
+                ),
+              },
+              {
+                path: "supply-routes",
+                element: (
+                  <RequireInviteStaff>
+                    <SupplyRoutesPage />
                   </RequireInviteStaff>
                 ),
               },
@@ -643,6 +779,7 @@ export const appRoutes = [
             ),
             children: [
               { index: true, element: <InventoryListPage /> },
+              { path: "low-stock-settings", element: <LowStockSettingsPage /> },
               { path: "expiration", element: <InventoryExpirationPage /> },
               { path: "stock-counts", element: <StockCountListPage /> },
               { path: "stock-counts/new", element: <StockCountCreatePage /> },
@@ -650,6 +787,12 @@ export const appRoutes = [
               { path: "transfers", element: <InventoryTransferListPage /> },
               { path: "transfers/new", element: <InventoryTransferCreatePage /> },
               { path: "transfers/:transferId", element: <InventoryTransferDetailPage /> },
+              { path: "stock-requests", element: <StockRequestListPage /> },
+              {
+                path: "stock-requests/new",
+                element: <Navigate to="/warehouse/request-stock" replace />,
+              },
+              { path: "stock-requests/:stockRequestId", element: <StockRequestDetailPage /> },
               { path: "stock-use", element: <StockUseListPage /> },
               { path: "stock-use/new", element: <StockUseCreatePage /> },
               { path: "stock-use/:stockUseId", element: <StockUseDetailPage /> },
@@ -695,6 +838,14 @@ export const appRoutes = [
                   </RequireManageShifts>
                 ),
               },
+              {
+                path: ":shiftId/transactions",
+                element: (
+                  <RequireViewSales>
+                    <TransactionsListPage />
+                  </RequireViewSales>
+                ),
+              },
               { path: ":shiftId", element: <ShiftDetailPage /> },
             ],
           },
@@ -704,11 +855,23 @@ export const appRoutes = [
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
                   <RequireViewRegisters>
-                    <RegistersListPage />
+                    <Outlet />
                   </RequireViewRegisters>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>
             ),
+            children: [
+              { index: true, element: <RegistersListPage /> },
+              { path: ":registerId/history", element: <RegisterHistoryPage /> },
+              {
+                path: ":registerId/transactions",
+                element: (
+                  <RequireViewSales>
+                    <TransactionsListPage />
+                  </RequireViewSales>
+                ),
+              },
+            ],
           },
           {
             path: "customers",
@@ -727,13 +890,69 @@ export const appRoutes = [
                 path: "new",
                 element: (
                   <RequireCreateCustomer>
+                    <CustomerAddChooserPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/person",
+                element: (
+                  <RequireCreateCustomer>
                     <CustomerCreatePage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessAddChooserPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business/local",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessLocalFormPage />
+                  </RequireCreateCustomer>
+                ),
+              },
+              {
+                path: "new/business/organization",
+                element: (
+                  <RequireCreateCustomer>
+                    <CustomerBusinessOrgConnectPage />
                   </RequireCreateCustomer>
                 ),
               },
               {
                 path: "business/:connectionId",
                 element: <BusinessCustomerDetailPage />,
+              },
+              {
+                path: "business/:connectionId/repay",
+                element: (
+                  <RequireRecordRepayment>
+                    <BusinessCustomerRepayPage />
+                  </RequireRecordRepayment>
+                ),
+              },
+              {
+                path: "business/:connectionId/statement",
+                element: (
+                  <RequireViewStatement>
+                    <BusinessCustomerStatementPage />
+                  </RequireViewStatement>
+                ),
+              },
+              {
+                path: "business/:connectionId/receivables",
+                element: (
+                  <RequireViewStatement>
+                    <BusinessCustomerReceivablesPage />
+                  </RequireViewStatement>
+                ),
               },
               { path: ":customerId", element: <CustomerDetailPage /> },
               {
@@ -884,6 +1103,30 @@ export const appRoutes = [
                 ),
               },
               {
+                path: "incoming-orders",
+                element: (
+                  <RequireViewPurchasing>
+                    <IncomingOrdersListPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: "incoming-orders/:connectedPurchaseOrderId",
+                element: (
+                  <RequireViewPurchasing>
+                    <IncomingOrderDetailPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
+                path: "incoming-orders/:connectedPurchaseOrderId/receipts/:goodsReceiptId",
+                element: (
+                  <RequireViewPurchasing>
+                    <IncomingOrderReceiptDetailPage />
+                  </RequireViewPurchasing>
+                ),
+              },
+              {
                 path: "receipts",
                 element: (
                   <RequireViewPurchasing>
@@ -904,6 +1147,14 @@ export const appRoutes = [
                 element: (
                   <RequireViewInventory>
                     <DirectPurchasesListPage />
+                  </RequireViewInventory>
+                ),
+              },
+              {
+                path: "direct-purchases/b2b/:saleId",
+                element: (
+                  <RequireViewInventory>
+                    <DirectPurchaseB2bDetailPage />
                   </RequireViewInventory>
                 ),
               },
@@ -966,6 +1217,23 @@ export const appRoutes = [
             ],
           },
           {
+            path: "quotations",
+            element: (
+              <RequireOrganizationSession>
+                <RequireWorkspaceBound>
+                  <RequireCreateSale>
+                    <Outlet />
+                  </RequireCreateSale>
+                </RequireWorkspaceBound>
+              </RequireOrganizationSession>
+            ),
+            children: [
+              { index: true, element: <QuotationsListPage /> },
+              { path: "new", element: <QuotationEditorPage /> },
+              { path: ":quotationId", element: <QuotationEditorPage /> },
+            ],
+          },
+          {
             path: "expenses",
             element: (
               <RequireOrganizationSession>
@@ -1012,7 +1280,7 @@ export const appRoutes = [
               <RequireOrganizationSession>
                 <RequireWorkspaceBound>
                   <RequireViewDashboard>
-                    <ManagementDashboardPage />
+                    <DashboardRoutePage />
                   </RequireViewDashboard>
                 </RequireWorkspaceBound>
               </RequireOrganizationSession>

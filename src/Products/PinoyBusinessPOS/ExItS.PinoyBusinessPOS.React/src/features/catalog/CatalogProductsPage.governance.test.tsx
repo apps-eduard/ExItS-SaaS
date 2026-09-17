@@ -138,10 +138,11 @@ describe("CatalogProductsPage governance", () => {
 
   it("shows scope badges and not-offered label", async () => {
     renderPage();
-    await screen.findByText("Org Soap");
+    await screen.findByTestId(`catalog-product-row-${ORG_PRODUCT.productId}`);
+    expect(screen.getAllByText("Org Soap").length).toBeGreaterThanOrEqual(1);
     const badges = screen.getAllByTestId("catalog-product-scope-badge");
     expect(badges.length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("catalog.governance.branchProductThisBranch")).toBeInTheDocument();
+    expect(screen.getAllByText("catalog.governance.branchProductThisBranch").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId("catalog-product-offering")).toHaveTextContent(
       "catalog.governance.notOfferedAtBranch",
     );

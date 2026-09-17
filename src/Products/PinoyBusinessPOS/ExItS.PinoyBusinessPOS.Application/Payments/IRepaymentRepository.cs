@@ -38,6 +38,11 @@ public interface IRepaymentRepository
         POSCustomerId customerId,
         CancellationToken cancellationToken = default);
 
+    Task<decimal> SumPendingCheckAmountAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Active repayment totals keyed by customer id for one organization (reporting hot path).
     /// </summary>

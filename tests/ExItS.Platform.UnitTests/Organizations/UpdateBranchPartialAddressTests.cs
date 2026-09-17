@@ -1,7 +1,9 @@
 using ExItS.Platform.Application.Catalog;
+using ExItS.Platform.Application.Entitlements;
 using ExItS.Platform.Application.Organizations;
 using ExItS.Platform.Domain.Abstractions;
 using ExItS.Platform.Domain.Organizations;
+using ExItS.Platform.UnitTests.Support;
 
 namespace ExItS.Platform.UnitTests.Organizations;
 
@@ -22,6 +24,7 @@ public sealed class UpdateBranchPartialAddressTests
         var useCase = new UpdateBranch(
             new FakeSingleBranchRepository(branch),
             new FakeEmptyPolicyRepository(),
+            new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new NoOpUnitOfWork(),
             new FixedClock(T0.AddMinutes(1)));
 
@@ -52,6 +55,7 @@ public sealed class UpdateBranchPartialAddressTests
         var useCase = new UpdateBranch(
             new FakeSingleBranchRepository(branch),
             new FakeEmptyPolicyRepository(),
+            new EntitlementQueryService(new InMemoryEntitlementSnapshotRepository()),
             new NoOpUnitOfWork(),
             new FixedClock(T0.AddMinutes(1)));
 

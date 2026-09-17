@@ -269,6 +269,7 @@ public sealed class IssuePlatformAccessToken
         string? mappedPosRole = null;
         string? membershipRole = null;
         var organizationManagementAuthority = false;
+        IReadOnlyList<string>? enabledFeatureCodes = null;
         OrganizationMembership? resolvedMembership = null;
         string? normalizedProduct = string.IsNullOrWhiteSpace(productCode) ? null : productCode.Trim();
 
@@ -326,6 +327,7 @@ public sealed class IssuePlatformAccessToken
                 productLocalRole = resolved.ProductLocalRoleCode;
                 mappedPosRole = resolved.MappedPosRoleCode;
                 organizationManagementAuthority = resolved.OrganizationManagementAuthority;
+                enabledFeatureCodes = resolved.EnabledFeatureCodes;
             }
         }
         else if (eligible.Count == 1 && normalizedProduct is null)
@@ -369,6 +371,7 @@ public sealed class IssuePlatformAccessToken
             productLocalRole = resolved.ProductLocalRoleCode;
             mappedPosRole = resolved.MappedPosRoleCode;
             organizationManagementAuthority = resolved.OrganizationManagementAuthority;
+            enabledFeatureCodes = resolved.EnabledFeatureCodes;
         }
         else if (normalizedProduct is not null)
         {
@@ -427,7 +430,8 @@ public sealed class IssuePlatformAccessToken
             productLocalRole,
             mappedPosRole,
             membershipRole ?? resolvedMembership?.Role.ToString(),
-            organizationManagementAuthority));
+            organizationManagementAuthority,
+            enabledFeatureCodes));
     }
 
     private async Task<ProductEntryResolution> ResolveProductEntryAsync(
@@ -477,16 +481,20 @@ public sealed class IssuePlatformAccessToken
 
         if (access.CanOperate)
         {
+            // Keep membership management authority when Owner/Admin also has a POS operate role.
+            // Selling capability and Organization Web admin are independent dimensions.
             return new ProductEntryResolution(
                 true,
                 access.ReasonCode,
                 access.ProductLocalRoleCode,
                 access.MappedPosRoleCode,
-                OrganizationManagementAuthority: false);
+                OrganizationManagementAuthority: OrganizationManagementAuthority.Qualifies(membership.Role),
+                EnabledFeatureCodes: access.EnabledFeatureCodes);
         }
 
         // Owner/Administrator manage the business without an automatic POS checkout role.
         // Do not require commercial entitlement for core Organization Web management tokens.
+        // Still surface commercial feature codes so Admin UI can gate Areas/Warehouse honestly.
         if (OrganizationManagementAuthority.Qualifies(membership.Role))
         {
             return new ProductEntryResolution(
@@ -494,7 +502,8 @@ public sealed class IssuePlatformAccessToken
                 OrganizationManagementAuthority.ReasonCode,
                 ProductLocalRoleCode: null,
                 MappedPosRoleCode: null,
-                OrganizationManagementAuthority: true);
+                OrganizationManagementAuthority: true,
+                EnabledFeatureCodes: access.EnabledFeatureCodes);
         }
 
         return new ProductEntryResolution(
@@ -502,7 +511,8 @@ public sealed class IssuePlatformAccessToken
             access.ReasonCode,
             access.ProductLocalRoleCode,
             access.MappedPosRoleCode,
-            OrganizationManagementAuthority: false);
+            OrganizationManagementAuthority: false,
+            EnabledFeatureCodes: access.EnabledFeatureCodes);
     }
 
     private sealed record ProductEntryResolution(
@@ -510,7 +520,8 @@ public sealed class IssuePlatformAccessToken
         string ReasonCode,
         string? ProductLocalRoleCode,
         string? MappedPosRoleCode,
-        bool OrganizationManagementAuthority);
+        bool OrganizationManagementAuthority,
+        IReadOnlyList<string>? EnabledFeatureCodes = null);
 }
 
 public sealed class BindPlatformAccessTokenProductContext
@@ -662,6 +673,8 @@ public sealed class BindPlatformAccessTokenProductContext
         if (access.CanOperate)
         {
             // Product-local operate (may include checkout when role grants CreateSale).
+            // Owner/Admin membership still qualifies for Organization Web management.
+            organizationManagementAuthority = OrganizationManagementAuthority.Qualifies(membership.Role);
         }
         else if (OrganizationManagementAuthority.Qualifies(membership.Role))
         {
@@ -731,7 +744,8 @@ public sealed class BindPlatformAccessTokenProductContext
             productLocalRole,
             mappedPosRole,
             membership.Role.ToString(),
-            organizationManagementAuthority));
+            organizationManagementAuthority,
+            access.EnabledFeatureCodes));
     }
 
     private async Task<ApplicationResult<(PlatformAccessToken Token, PlatformUser User)>> ResolveActiveTokenAsync(
@@ -888,6 +902,9 @@ public sealed class IntrospectPlatformAccessToken
                     {
                         allowed = true;
                         reason = access.ReasonCode;
+                        // Membership management authority is independent of POS checkout operate.
+                        organizationManagementAuthority =
+                            OrganizationManagementAuthority.Qualifies(membership.Role);
                     }
                     else if (OrganizationManagementAuthority.Qualifies(membership.Role))
                     {

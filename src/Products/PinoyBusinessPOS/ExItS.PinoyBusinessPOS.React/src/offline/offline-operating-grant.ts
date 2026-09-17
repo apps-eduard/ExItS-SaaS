@@ -344,6 +344,7 @@ export function buildBoundWorkspaceFromGrant(
     organizationDisplayName: grant.organizationDisplayName,
     branchId: grant.branchId,
     branchName: grant.branchName ?? grant.branchId,
+    branchType: "Retail",
     experience: "start_selling",
   };
 }

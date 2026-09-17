@@ -50,7 +50,7 @@ export function ReportCsvExportButton({ disabled = false, onExport }: ReportCsvE
       <Button
         type="button"
         variant="outline"
-        className="min-h-11 w-fit"
+        className="w-fit"
         data-testid="report-export-csv"
         disabled={disabled || busy}
         aria-busy={busy}

@@ -135,7 +135,7 @@ export function SellPriceOverrideDialog({
             min={0.01}
             step={0.01}
             value={rawPrice}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
             onChange={(event) => {
               setRawPrice(event.target.value);
               setFormError(null);
@@ -150,7 +150,7 @@ export function SellPriceOverrideDialog({
             type="text"
             value={reason}
             maxLength={512}
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
             onChange={(event) => {
               setReason(event.target.value);
               setFormError(null);

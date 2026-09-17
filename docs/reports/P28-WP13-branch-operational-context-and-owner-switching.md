@@ -61,7 +61,9 @@ Organization mode → selected branch → selling capability → device matches 
 
 ## Shift guard
 
-Cashier shifts remain organization-scoped (no `Shift.BranchId`). An open shift blocks switching **operational** selected branch to a different id (`pos.branch.switch.shift_open` / HTTP 409). Reselecting the same branch is allowed. Close/cancel the open shift first. Management-only UI still goes through this POS guard when the operational client is registered, so an open cashier session cannot silently become Branch B.
+Cashier shifts remain organization-scoped (no `Shift.BranchId`). For **cashiers** (and other non-owner/admin roles), an open shift blocks switching **operational** selected branch to a different id (`pos.branch.switch.shift_open` / HTTP 409). Reselecting the same branch is allowed.
+
+**Organization Owner / Organization Administrator** and mapped POS **Owner / Admin** roles may switch operational branch while an open shift remains (management multi-location). Cashier-role actors must still close/cancel first.
 
 ## Sale BranchId
 

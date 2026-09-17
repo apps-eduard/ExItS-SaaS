@@ -1,6 +1,3 @@
-using ExItS.PinoyBusinessPOS.Application.Abstractions;
-using ExItS.PinoyBusinessPOS.Application.Platform;
-using ExItS.PinoyBusinessPOS.Application.Support;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 
 namespace ExItS.PinoyBusinessPOS.Application.Privacy;
@@ -53,26 +50,47 @@ public static class OrganizationPrivacyReadinessStatuses
 }
 
 /// <summary>
+/// Host-provided signals for organization privacy readiness (owner role + sales-doc education).
+/// Keeps POS API free of the full Maui/Web <c>IPlatformAccessClient</c> graph.
+/// </summary>
+public interface IOrganizationPrivacyContext
+{
+    Task<bool> IsExactOrganizationOwnerAsync(Guid organizationId, CancellationToken ct = default);
+
+    Task<bool> SalesDocumentEducationRequiresOwnerActionAsync(
+        Guid organizationId,
+        CancellationToken ct = default);
+}
+
+/// <summary>Safe defaults when education/owner signals are unavailable.</summary>
+public sealed class NullOrganizationPrivacyContext : IOrganizationPrivacyContext
+{
+    public Task<bool> IsExactOrganizationOwnerAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(false);
+
+    public Task<bool> SalesDocumentEducationRequiresOwnerActionAsync(
+        Guid organizationId,
+        CancellationToken ct = default) =>
+        Task.FromResult(false);
+}
+
+/// <summary>
 /// Builds a safe Organization projection from known POS technical boundaries and
 /// organization-local signals (e.g. sales-document education). Never reads Platform
 /// privacy-compliance reviewer notes.
 /// </summary>
 public sealed class GetOrganizationPrivacyReadiness
 {
-    private readonly IPlatformAccessClient _platform;
-    private readonly IOrganizationOwnerProbe _ownerProbe;
-    private readonly ICurrentUserContext _currentUser;
+    private readonly IOrganizationPrivacyContext _privacy;
     private readonly IClock _clock;
 
     public GetOrganizationPrivacyReadiness(
-        IPlatformAccessClient platform,
-        IOrganizationOwnerProbe ownerProbe,
-        ICurrentUserContext currentUser,
+        IOrganizationPrivacyContext privacy,
         IClock clock)
     {
-        _platform = platform;
-        _ownerProbe = ownerProbe;
-        _currentUser = currentUser;
+        _privacy = privacy;
         _clock = clock;
     }
 
@@ -80,20 +98,16 @@ public sealed class GetOrganizationPrivacyReadiness
         Guid organizationId,
         CancellationToken ct = default)
     {
-        var session = _currentUser.Session;
-        var isOwner = session is not null
-            && await _ownerProbe
-                .IsExactOrganizationOwnerAsync(session, organizationId, ct)
-                .ConfigureAwait(false);
+        var isOwner = await _privacy
+            .IsExactOrganizationOwnerAsync(organizationId, ct)
+            .ConfigureAwait(false);
 
         var educationActionNeeded = false;
         if (isOwner)
         {
-            var education = await _platform
-                .GetSalesDocumentEducationStatusAsync(organizationId, ct)
+            educationActionNeeded = await _privacy
+                .SalesDocumentEducationRequiresOwnerActionAsync(organizationId, ct)
                 .ConfigureAwait(false);
-            educationActionNeeded = education.IsSuccess
-                && education.Data?.RequiresOwnerAction == true;
         }
 
         var safeguards = BuildTechnicalSafeguards();

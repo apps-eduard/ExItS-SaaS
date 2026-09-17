@@ -1,15 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Ban,
-  CalendarClock,
-  Check,
-  Hourglass,
-  Loader2,
-  RefreshCw,
-  Store,
-  X,
-} from "lucide-react";
+import { Ban, CalendarClock, Check, Hourglass, Loader2, RefreshCw, Store, Users, X } from "lucide-react";
 import {
   acceptCustomerLinkRequest,
   blockBusinessFromCustomerLinkRequest,
@@ -351,6 +342,8 @@ function PendingTabContent({
     return (
       <div className="exits-animate-panel flex flex-col gap-3">
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.customerLinks.emptyTitle")}
           detail={t("personal.customerLinks.emptyDetail")}
         />
@@ -444,7 +437,7 @@ function PendingTabContent({
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     <Button
                       type="button"
-                      className="min-h-11 w-full sm:w-auto"
+                      className="w-full sm:w-auto"
                       disabled={actionsDisabled}
                       data-testid={`customer-link-accept-${request.id}`}
                       onClick={() => void onAcceptGroup(group)}
@@ -459,7 +452,7 @@ function PendingTabContent({
                     <Button
                       type="button"
                       variant="outline"
-                      className="min-h-11 w-full sm:w-auto"
+                      className="w-full sm:w-auto"
                       disabled={actionsDisabled}
                       data-testid={`customer-link-decline-${request.id}`}
                       onClick={() => void onDeclineGroup(group)}
@@ -475,7 +468,7 @@ function PendingTabContent({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11 w-full text-destructive sm:w-auto"
+                    className="w-full text-destructive sm:w-auto"
                     disabled={actionsDisabled}
                     data-testid={`customer-link-block-${request.id}`}
                     onClick={() => {
@@ -512,6 +505,8 @@ function HistoryTabContent({
     return (
       <div className="exits-animate-panel flex flex-col gap-3">
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("personal.customerLinks.historyEmptyTitle")}
           detail={t("personal.customerLinks.historyEmptyDetail")}
         />

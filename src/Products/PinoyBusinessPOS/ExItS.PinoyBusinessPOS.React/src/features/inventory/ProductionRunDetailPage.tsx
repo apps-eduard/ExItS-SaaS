@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -24,6 +25,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ProductionRunDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "production",
+    backLabel: t("production.backRuns"),
+    backTestId: "page-header-back-production-runs",
+  });
   const online = useBrowserOnline();
   const { runId } = useParams<{ runId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -103,9 +109,7 @@ export function ProductionRunDetailPage() {
       <PageHeader
         title={entry.productionNumber}
         description={t("production.runs.detailLede")}
-        backTo="/inventory/production/runs"
-        backLabel={t("production.backRuns")}
-        backTestId="page-header-back-production-runs"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("production.errorTitle")} detail={error} /> : null}
@@ -232,7 +236,7 @@ export function ProductionRunDetailPage() {
         <Button
           type="button"
           variant="outline"
-          className="min-h-11 w-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={!online || voiding}
           onClick={() => void onVoid()}
           data-testid="production-run-void"

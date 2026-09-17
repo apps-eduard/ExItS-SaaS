@@ -36,6 +36,11 @@ public interface ICustomerBranchAccessRepository
         POSCustomerId customerId,
         PartyBranchGrantSource grantSource,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CustomerBranchAccess>> ListByCustomerAsync(
+        PosOrganizationId organizationId,
+        POSCustomerId customerId,
+        CancellationToken cancellationToken = default);
 }
 
 public interface ISupplierBranchAccessRepository

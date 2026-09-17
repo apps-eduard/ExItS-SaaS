@@ -1,14 +1,56 @@
 import { CheckoutCustomerIdentity } from "@/features/checkout/CheckoutCustomerIdentity";
 import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import {
+  checkoutOptionKey,
+  isCheckoutBusiness,
+  isCheckoutBusinessDirectoryRow,
+  isCheckoutPerson,
+} from "@/features/checkout/checkout-customer-option";
+import {
+  checkoutConnectionStatusLabelKey,
+  checkoutConnectionStatusTone,
+  checkoutCreditStatusLabelKey,
+  checkoutCreditStatusTone,
+  resolveCheckoutConnectionDisplay,
+  type CheckoutConnectionDisplay,
+} from "@/features/checkout/checkout-utang-credit";
 import type { CustomerListConnectionOverlay } from "@/features/customers/customer-list-connection";
+import type { KindFilter } from "@/features/customers/customers-kind";
 import {
   checkoutCustomerTitle,
   visibleCheckoutCustomers,
 } from "@/features/customers/format-pos-customer-label";
 import { Button } from "@/components/ui/button";
 import { SearchField } from "@/components/exits/SearchField";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
+import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
+import { UserRoundX } from "lucide-react";
+
+function DirectoryConnectionCell({
+  connection,
+}: {
+  connection: CheckoutConnectionDisplay;
+}) {
+  const { t } = useI18n();
+  return (
+    <span
+      className="checkout-credit-directory__connection"
+      data-testid="checkout-credit-directory-connection"
+    >
+      {connection.kind === "chip" ? (
+        <StatusChip tone={checkoutConnectionStatusTone(connection.statusKey)}>
+          {t(checkoutConnectionStatusLabelKey(connection.statusKey))}
+        </StatusChip>
+      ) : connection.kind === "raw" ? (
+        <StatusChip tone="neutral">{connection.raw}</StatusChip>
+      ) : (
+        <span className="text-muted">{t("checkout.directoryCredit.availableEmDash")}</span>
+      )}
+    </span>
+  );
+}
 
 type CheckoutCustomerSelectedCardProps = {
   customer: CheckoutCustomerOption;
@@ -32,17 +74,63 @@ export function CheckoutCustomerSelectedCard({
         <CheckoutCustomerIdentity customer={customer} overlay={overlay} selected />
         <Button
           type="button"
-          variant="ghost"
-          className="min-h-9 shrink-0"
+          variant="outline"
+          className="checkout-customer-clear shrink-0"
           data-testid="checkout-customer-clear"
           disabled={disabled}
           onClick={onClear}
         >
+          <UserRoundX className="size-3.5 shrink-0" aria-hidden />
           {t("checkout.customerClear")}
         </Button>
       </div>
     </div>
   );
+}
+
+function directoryCreditStatus(customer: CheckoutCustomerOption): string | null {
+  if (isCheckoutBusiness(customer)) {
+    return customer.creditStatus ?? "NotConfigured";
+  }
+  if (!isCheckoutPerson(customer)) {
+    return "NotConfigured";
+  }
+  // POS Business party rows are B2B-shaped but not connection Kind=Business — no people credit.
+  if (isCheckoutBusinessDirectoryRow(customer)) {
+    return null;
+  }
+  return customer.creditStatus ?? "NotConfigured";
+}
+
+function directoryAvailableLabel(customer: CheckoutCustomerOption): string {
+  const status = isCheckoutBusiness(customer)
+    ? customer.creditStatus
+    : isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)
+      ? customer.creditStatus
+      : null;
+  if ((status ?? "").trim() !== "Approved") {
+    return "—";
+  }
+  const available = isCheckoutBusiness(customer)
+    ? customer.availableCredit
+    : isCheckoutPerson(customer)
+      ? customer.availableCredit
+      : 0;
+  return formatPeso(available ?? 0);
+}
+
+function directoryExItsId(customer: CheckoutCustomerOption): string | null {
+  if (isCheckoutBusiness(customer)) {
+    const orgId = customer.buyerPublicOrganizationId?.trim();
+    return orgId || null;
+  }
+  if (isCheckoutPerson(customer) && !isCheckoutBusinessDirectoryRow(customer)) {
+    return customer.linkedPersonalPublicUserId?.trim() || null;
+  }
+  if (isCheckoutPerson(customer) && isCheckoutBusinessDirectoryRow(customer)) {
+    return customer.linkedBuyerPublicOrganizationId?.trim() || null;
+  }
+  return null;
 }
 
 type CheckoutCustomerDirectoryProps = {
@@ -53,10 +141,20 @@ type CheckoutCustomerDirectoryProps = {
   onSearchChange: (value: string) => void;
   customers: CheckoutCustomerOption[];
   customersLoading: boolean;
+  customersError?: boolean;
+  onRetryLoad?: () => void;
   selectedCustomer: CheckoutCustomerOption | null;
   overlay?: CustomerListConnectionOverlay | null;
   onSelect: (customer: CheckoutCustomerOption) => void;
   disabled?: boolean;
+  kindFilter?: KindFilter;
+  onKindFilterChange?: (kind: KindFilter) => void;
+  /** When true, idle list keeps Local Validation walk-in seeds (Utang requires a person). */
+  includeWalkInsWhenIdle?: boolean;
+  /** Override idle empty copy (e.g. Utang people-only explanation). */
+  idleEmptyMessage?: string;
+  /** Utang: compact credit directory (does not hide ineligible customers). */
+  showCreditStatus?: boolean;
 };
 
 export function CheckoutCustomerDirectory({
@@ -67,70 +165,265 @@ export function CheckoutCustomerDirectory({
   onSearchChange,
   customers,
   customersLoading,
+  customersError = false,
+  onRetryLoad,
   selectedCustomer,
   overlay = null,
   onSelect,
   disabled,
+  kindFilter = "all",
+  onKindFilterChange,
+  includeWalkInsWhenIdle = false,
+  idleEmptyMessage,
+  showCreditStatus = false,
 }: CheckoutCustomerDirectoryProps) {
   const { t } = useI18n();
   const walkInLabel = t("checkout.walkInCustomer");
-  const visible = visibleCheckoutCustomers(customers, searchValue);
+  const kindFiltered =
+    kindFilter === "people"
+      ? customers.filter((c) => c.kind === "Customer" && !isCheckoutBusinessDirectoryRow(c))
+      : kindFilter === "businesses"
+        ? customers.filter((c) => isCheckoutBusinessDirectoryRow(c))
+        : customers;
+  const visible = visibleCheckoutCustomers(kindFiltered, searchValue, {
+    includeWalkInsWhenIdle,
+  });
   const idle = searchValue.trim().length === 0;
+  const searchHint =
+    kindFilter === "businesses"
+      ? t("checkout.customerSearchHintBusinesses")
+      : kindFilter === "people"
+        ? t("checkout.customerSearchHintPeople")
+        : t("checkout.customerSearchHint");
+  const emptyCopy = idle
+    ? idleEmptyMessage ??
+      (kindFilter === "businesses"
+        ? t("checkout.customerIdleEmptyBusinesses")
+        : t("checkout.customerIdleEmpty"))
+    : kindFilter === "businesses"
+      ? t("checkout.customerEmptyBusinesses")
+      : t("checkout.customerEmpty");
 
   return (
     <div className="checkout-customer-directory">
-      <SearchField
-        id={searchId}
-        label={searchLabel}
-        placeholder={searchLabel}
-        value={searchValue}
-        disabled={disabled}
-        data-testid={searchTestId}
-        containerClassName="checkout-customer-directory__search"
-        onChange={(event) => onSearchChange(event.target.value)}
-        onClear={() => onSearchChange("")}
-      />
-      <p className="checkout-customer-directory__hint">{t("checkout.customerSearchHint")}</p>
+      <div
+        className={cn(
+          "mb-2 flex min-w-0 flex-wrap items-center gap-1.5",
+          !onKindFilterChange && "mb-0",
+        )}
+      >
+        {onKindFilterChange ? (
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="tablist"
+            aria-label={t("checkout.customerKindFilter")}
+            data-testid="checkout-customer-kind-tabs"
+          >
+            {(
+              [
+                ["all", t("checkout.customerKindAll")],
+                ["people", t("checkout.customerKindPeople")],
+                ["businesses", t("checkout.customerKindBusinesses")],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={kindFilter === key}
+                className={cn(
+                  "exits-chip exits-chip--sm",
+                  kindFilter === key && "exits-chip--active",
+                )}
+                data-testid={`checkout-customer-kind-${key}`}
+                disabled={disabled}
+                onClick={() => onKindFilterChange(key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <SearchField
+          id={searchId}
+          label={searchLabel}
+          placeholder={searchLabel}
+          value={searchValue}
+          disabled={disabled}
+          data-testid={searchTestId}
+          containerClassName="checkout-customer-directory__search min-w-[10rem] flex-1"
+          onChange={(event) => onSearchChange(event.target.value)}
+          onClear={() => onSearchChange("")}
+        />
+      </div>
+      <p className="checkout-customer-directory__hint">{searchHint}</p>
 
       {customersLoading ? (
         <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
           {t("checkout.customerLoading")}
         </p>
+      ) : customersError ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="checkout-customer-load-error">
+          <p className="mb-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]">
+            {t("checkout.customerLoadError")}
+          </p>
+          {onRetryLoad ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-9"
+              data-testid="checkout-customer-retry"
+              disabled={disabled}
+              onClick={onRetryLoad}
+            >
+              {t("checkout.customerRetry")}
+            </Button>
+          ) : null}
+        </div>
       ) : visible.length === 0 ? (
         <p
           data-testid="checkout-customer-empty"
           className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
         >
-          {idle ? t("checkout.customerIdleEmpty") : t("checkout.customerEmpty")}
+          {emptyCopy}
         </p>
       ) : (
-        <ul className="checkout-customer-list" data-testid="checkout-customer-list">
-          {visible.map((customer) => {
-            const selected = selectedCustomer?.customerId === customer.customerId;
-            return (
-              <li key={customer.customerId}>
-                <button
-                  type="button"
-                  className={cn(
-                    "checkout-customer-row",
-                    selected && "checkout-customer-row--selected",
-                  )}
-                  data-testid={`checkout-customer-${customer.customerId}`}
-                  disabled={disabled}
-                  aria-pressed={selected}
-                  aria-label={checkoutCustomerTitle(customer, walkInLabel)}
-                  onClick={() => onSelect(customer)}
-                >
-                  <CheckoutCustomerIdentity
-                    customer={customer}
-                    overlay={overlay}
-                    selected={selected}
-                  />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <div
+          className={cn(
+            "checkout-credit-directory",
+            !showCreditStatus && "checkout-credit-directory--simple",
+          )}
+          data-testid="checkout-credit-directory"
+        >
+          <div className="checkout-credit-directory__head" aria-hidden>
+            <span>{t("checkout.directoryCredit.colCustomer")}</span>
+            {showCreditStatus ? (
+              <>
+                <span>{t("checkout.directoryCredit.colType")}</span>
+                <span>{t("checkout.directoryConnection.colConnection")}</span>
+                <span>{t("checkout.directoryCredit.colStatus")}</span>
+                <span className="checkout-credit-directory__available-head">
+                  {t("checkout.directoryCredit.colAvailable")}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>{t("checkout.directoryCredit.colExItsId")}</span>
+                <span>{t("checkout.directoryCredit.colType")}</span>
+                <span>{t("checkout.directoryConnection.colConnection")}</span>
+              </>
+            )}
+          </div>
+          <ul className="checkout-credit-directory__list" data-testid="checkout-customer-list">
+            {visible.map((customer) => {
+              const key = checkoutOptionKey(customer);
+              const selected =
+                selectedCustomer != null && checkoutOptionKey(selectedCustomer) === key;
+              const isB2b = isCheckoutBusinessDirectoryRow(customer);
+              const status = showCreditStatus ? directoryCreditStatus(customer) : null;
+              const available = showCreditStatus ? directoryAvailableLabel(customer) : null;
+              const exitsId = showCreditStatus ? null : directoryExItsId(customer);
+              const connection = resolveCheckoutConnectionDisplay(customer, overlay);
+              const connectionPending =
+                showCreditStatus &&
+                connection.kind === "chip" &&
+                connection.statusKey === "Pending";
+              const connectionHelper = connectionPending
+                ? t("checkout.utangSelect.connectionPending")
+                : undefined;
+              return (
+                <li key={key}>
+                  <button
+                    type="button"
+                    className={cn(
+                      "checkout-credit-directory__row",
+                      selected && "checkout-credit-directory__row--selected",
+                      connectionPending && "checkout-credit-directory__row--blocked",
+                    )}
+                    data-testid={
+                      isCheckoutBusiness(customer)
+                        ? `checkout-business-${customer.connectionId}`
+                        : `checkout-customer-${customer.customerId}`
+                    }
+                    disabled={disabled}
+                    aria-pressed={selected}
+                    aria-disabled={connectionPending || undefined}
+                    title={connectionHelper}
+                    aria-label={
+                      connectionHelper
+                        ? `${checkoutCustomerTitle(customer, walkInLabel)}. ${connectionHelper}`
+                        : checkoutCustomerTitle(customer, walkInLabel)
+                    }
+                    onClick={() => onSelect(customer)}
+                  >
+                    <span
+                      className="checkout-credit-directory__name"
+                      data-testid="checkout-credit-directory-name"
+                    >
+                      <span className="checkout-credit-directory__name-primary">
+                        {checkoutCustomerTitle(customer, walkInLabel)}
+                      </span>
+                    </span>
+                    {showCreditStatus ? (
+                      <>
+                        <span
+                          className="checkout-credit-directory__type"
+                          data-testid="checkout-credit-directory-type"
+                        >
+                          {isB2b
+                            ? t("checkout.directoryCredit.typeB2b")
+                            : t("checkout.directoryCredit.typePerson")}
+                        </span>
+                        <DirectoryConnectionCell connection={connection} />
+                        <span
+                          className="checkout-credit-directory__status"
+                          data-testid="checkout-customer-credit-line"
+                        >
+                          {status ? (
+                            <StatusChip tone={checkoutCreditStatusTone(status)}>
+                              {t(checkoutCreditStatusLabelKey(status))}
+                            </StatusChip>
+                          ) : (
+                            <span className="text-muted">
+                              {t("checkout.directoryCredit.availableEmDash")}
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className="checkout-credit-directory__available tabular-nums"
+                          data-testid="checkout-credit-directory-available"
+                        >
+                          {available === "—"
+                            ? t("checkout.directoryCredit.availableEmDash")
+                            : available}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className="checkout-credit-directory__exits-id tabular-nums"
+                          data-testid="checkout-credit-directory-secondary"
+                        >
+                          {exitsId ?? t("checkout.directoryCredit.availableEmDash")}
+                        </span>
+                        <span
+                          className="checkout-credit-directory__type"
+                          data-testid="checkout-credit-directory-type"
+                        >
+                          {isB2b
+                            ? t("checkout.directoryCredit.typeB2b")
+                            : t("checkout.directoryCredit.typePerson")}
+                        </span>
+                        <DirectoryConnectionCell connection={connection} />
+                      </>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
     </div>
   );

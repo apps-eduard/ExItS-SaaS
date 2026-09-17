@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -29,6 +30,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ExpenseDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "expenses",
+    backLabel: t("expense.backList"),
+    backTestId: "page-header-back-expenses",
+  });
   const online = useBrowserOnline();
   const { expenseId } = useParams<{ expenseId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -41,8 +47,8 @@ export function ExpenseDetailPage() {
 
   const organizationId = boundWorkspace?.organizationId ?? null;
   const workspace = useMemo(
-    () => (organizationId ? expenseWorkspaceScope(organizationId) : null),
-    [organizationId],
+    () => (organizationId ? expenseWorkspaceScope(organizationId, boundWorkspace?.branchId) : null),
+    [organizationId, boundWorkspace?.branchId],
   );
 
   const query = useQuery({
@@ -115,9 +121,7 @@ export function ExpenseDetailPage() {
       <PageHeader
         title={entry.expenseNumber}
         description={t("expense.detailLede")}
-        backTo="/expenses"
-        backLabel={t("expense.backList")}
-        backTestId="page-header-back-expenses"
+        {...smartBack}
       />
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="expense-no-edit">
@@ -213,7 +217,6 @@ export function ExpenseDetailPage() {
           <Button
             type="button"
             variant="destructive"
-            className="min-h-11"
             data-testid="expense-void-open"
             onClick={() => setVoidOpen(true)}
           >
@@ -223,7 +226,7 @@ export function ExpenseDetailPage() {
       ) : null}
 
       {isVoided && allowManage ? (
-        <Button asChild variant="outline" className="min-h-11 w-fit" data-testid="expense-record-replacement">
+        <Button asChild variant="outline" className="w-fit" data-testid="expense-record-replacement">
           <Link to={`/expenses/new?${replacementQuery.toString()}`}>
             {t("expense.recordReplacement")}
           </Link>
@@ -257,7 +260,6 @@ export function ExpenseDetailPage() {
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={voiding || !voidReason.trim()}
                 onClick={() => void onVoid()}
                 data-testid="expense-void-confirm"
@@ -267,7 +269,6 @@ export function ExpenseDetailPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={voiding}
                 onClick={() => {
                   setVoidOpen(false);

@@ -133,17 +133,20 @@ describe("DirectPurchaseDetailPage cost UX", () => {
     await waitFor(() => {
       expect(screen.getByTestId("direct-purchase-detail-page")).toBeInTheDocument();
     });
-    expect(screen.getByText("DP-000045")).toBeInTheDocument();
+    expect(screen.getAllByText("DP-000045").length).toBeGreaterThan(0);
     expect(screen.getByTestId("direct-purchase-source")).toHaveTextContent("ABC Trading");
     expect(screen.getByTestId("direct-purchase-receiving-branch")).toHaveTextContent("Remote Branch");
     expect(screen.getByTestId("direct-purchase-reference")).toHaveTextContent("OR-12345");
     expect(screen.getByTestId("direct-purchase-notes")).toHaveTextContent("Morning delivery");
     expect(screen.getByTestId("direct-purchase-total")).toHaveTextContent(formatPeso(4500));
-    expect(screen.getByText("Bath Soap")).toBeInTheDocument();
-    expect(screen.getByText(formatPeso(18))).toBeInTheDocument();
-    expect(screen.getByText(formatPeso(432))).toBeInTheDocument();
-    expect(screen.getByText("2027-12-30")).toBeInTheDocument();
-    expect(screen.getByText("LOT-A123")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-purchase-lines-table")).toBeInTheDocument();
+    expect(screen.getByTestId("direct-purchase-line-11111111-1111-4111-8111-111111111111")).toBeInTheDocument();
+    expect(screen.getAllByText("Bath Soap").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(formatPeso(18)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(formatPeso(432)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("2027-12-30").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("LOT-A123").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("exits-table-toolbar-selection")).not.toBeInTheDocument();
     expect(screen.getByText("Maria Santos")).toBeInTheDocument();
     expect(screen.getByTestId("direct-purchase-reverse")).toBeInTheDocument();
   });

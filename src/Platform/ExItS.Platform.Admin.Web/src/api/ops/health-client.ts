@@ -21,6 +21,20 @@ function parseReportedStatus(body: string): HealthReportedStatus {
   return "Unknown";
 }
 
+function isHtmlDocumentBody(body: string): boolean {
+  const head = body.slice(0, 200).toLowerCase();
+  return head.includes("<!doctype") || head.includes("<html");
+}
+
+/** Keep widget labels short; never surface SPA HTML fallbacks. */
+export function sanitizeHealthRawBody(body: string): string {
+  const trimmed = body.trim();
+  if (trimmed.length === 0 || isHtmlDocumentBody(trimmed) || trimmed.length > 120) {
+    return "";
+  }
+  return trimmed;
+}
+
 async function fetchHealthPath(
   baseUrl: string,
   path: string,
@@ -37,7 +51,7 @@ async function fetchHealthPath(
     signal,
   });
 
-  const rawBody = (await response.text()).trim();
+  const rawBody = sanitizeHealthRawBody(await response.text());
   const snapshot: HealthCheckSnapshot = {
     httpStatus: response.status,
     reportedStatus: parseReportedStatus(rawBody),
@@ -45,6 +59,10 @@ async function fetchHealthPath(
   };
 
   if (response.status === 200 || response.status === 503) {
+    // SPA/nginx HTML fallback often returns 200 with no parseable status.
+    if (snapshot.reportedStatus === "Unknown" && rawBody.length === 0) {
+      throw new Error(`Health endpoint ${path} returned an unusable body.`);
+    }
     return snapshot;
   }
 

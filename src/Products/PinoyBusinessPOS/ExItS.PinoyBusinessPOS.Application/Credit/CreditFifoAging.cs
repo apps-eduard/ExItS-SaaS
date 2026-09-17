@@ -108,7 +108,7 @@ public static class CreditFifoAging
                 pool -= applied;
             }
 
-            var dueStatus = ResolveDueStatus(credit, remaining, effectiveDate);
+            var dueStatus = ResolveDueStatus(credit.Status, credit.CurrentDueDate, remaining, effectiveDate);
             results.Add(new AgedCreditDto(
                 credit.Id.Value,
                 credit.OrganizationId.Value,
@@ -126,9 +126,64 @@ public static class CreditFifoAging
         return results;
     }
 
-    public static CreditDueStatus ResolveDueStatus(CreditEntry credit, decimal remainingUnpaid, DateOnly effectiveDate)
+    /// <summary>
+    /// Aging for B2B business credit entries. Remaining unpaid is computed by applying the
+    /// settled repayment pool in allocation order: due date ASC (nulls last), then CreatedAtUtc, then Id.
+    /// </summary>
+    public static IReadOnlyList<AgedCreditDto> AgeBusinessCredits(
+        IEnumerable<BusinessCreditEntry> credits,
+        decimal activeRepaymentTotal,
+        DateOnly effectiveDate)
     {
-        if (credit.Status == CreditEntryStatus.Reversed)
+        var pool = activeRepaymentTotal < 0m ? 0m : activeRepaymentTotal;
+        var results = new List<AgedCreditDto>();
+        var ordered = credits
+            .OrderBy(c => c.CurrentDueDate is null)
+            .ThenBy(c => c.CurrentDueDate ?? DateOnly.MaxValue)
+            .ThenBy(c => c.CreatedAtUtc)
+            .ThenBy(c => c.Id.Value);
+        foreach (var credit in ordered)
+        {
+            decimal remaining;
+            if (credit.Status == CreditEntryStatus.Reversed)
+            {
+                remaining = 0m;
+            }
+            else
+            {
+                var applied = Math.Min(pool, credit.Amount);
+                remaining = credit.Amount - applied;
+                pool -= applied;
+            }
+
+            var dueStatus = ResolveDueStatus(credit.Status, credit.CurrentDueDate, remaining, effectiveDate);
+            results.Add(new AgedCreditDto(
+                credit.Id.Value,
+                credit.SellerOrganizationId.Value,
+                credit.BuyerOrganizationId.Value,
+                credit.Amount,
+                remaining,
+                credit.Remarks,
+                credit.Status.ToString(),
+                credit.CreatedAtUtc,
+                credit.CurrentDueDate,
+                dueStatus.ToString(),
+                dueStatus == CreditDueStatus.Overdue));
+        }
+
+        return results;
+    }
+
+    public static CreditDueStatus ResolveDueStatus(CreditEntry credit, decimal remainingUnpaid, DateOnly effectiveDate) =>
+        ResolveDueStatus(credit.Status, credit.CurrentDueDate, remainingUnpaid, effectiveDate);
+
+    public static CreditDueStatus ResolveDueStatus(
+        CreditEntryStatus status,
+        DateOnly? currentDueDate,
+        decimal remainingUnpaid,
+        DateOnly effectiveDate)
+    {
+        if (status == CreditEntryStatus.Reversed)
         {
             return CreditDueStatus.Reversed;
         }
@@ -138,22 +193,22 @@ public static class CreditFifoAging
             return CreditDueStatus.Paid;
         }
 
-        if (credit.CurrentDueDate is null)
+        if (currentDueDate is null)
         {
             return CreditDueStatus.NoDueDate;
         }
 
-        if (credit.CurrentDueDate.Value < effectiveDate)
+        if (currentDueDate.Value < effectiveDate)
         {
             return CreditDueStatus.Overdue;
         }
 
-        if (credit.CurrentDueDate.Value == effectiveDate)
+        if (currentDueDate.Value == effectiveDate)
         {
             return CreditDueStatus.DueToday;
         }
 
-        if (credit.CurrentDueDate.Value <= effectiveDate.AddDays(DueSoonDays))
+        if (currentDueDate.Value <= effectiveDate.AddDays(DueSoonDays))
         {
             return CreditDueStatus.DueSoon;
         }

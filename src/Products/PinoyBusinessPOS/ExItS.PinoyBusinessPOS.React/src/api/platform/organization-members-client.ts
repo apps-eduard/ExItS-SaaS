@@ -17,6 +17,11 @@ export type OrganizationMemberWire = {
   productRoles?: string[] | null;
   branch?: string | null;
   employeeCode?: string | null;
+  department?: string | null;
+  jobTitle?: string | null;
+  workPhone?: string | null;
+  workEmail?: string | null;
+  isBusinessContact?: boolean;
 };
 
 type PagedMembersWire = {

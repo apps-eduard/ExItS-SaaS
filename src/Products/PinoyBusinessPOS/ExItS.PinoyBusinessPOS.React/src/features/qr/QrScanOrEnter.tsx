@@ -150,7 +150,7 @@ export function QrScanOrEnter({
               <div className="qr-manual-entry__field min-w-0 flex-1">
                 <input
                   ref={manualInputRef}
-                  className="qr-manual-entry__input min-h-11 w-full rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
+                  className="qr-manual-entry__input w-full rounded border border-[var(--exits-border)] bg-transparent px-3 uppercase"
                   data-testid="qr-manual-id"
                   value={manual}
                   disabled={disabled}
@@ -184,7 +184,7 @@ export function QrScanOrEnter({
               <Button
                 type="button"
                 variant="outline"
-                className="qr-manual-entry__search min-h-11 shrink-0"
+                className="qr-manual-entry__search shrink-0"
                 data-testid="qr-manual-submit"
                 disabled={Boolean(disabled) || !manual.trim()}
                 onClick={() => applyRaw(manual)}

@@ -8,6 +8,11 @@ internal sealed class OrganizationMembershipRecord
     public string Role { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string BranchAccessScope { get; set; } = nameof(Domain.Organizations.BranchAccessScope.Explicit);
+    public string? Department { get; set; }
+    public string? JobTitle { get; set; }
+    public string? WorkPhone { get; set; }
+    public string? WorkEmail { get; set; }
+    public bool IsBusinessContact { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public DateTimeOffset? SuspendedAtUtc { get; set; }

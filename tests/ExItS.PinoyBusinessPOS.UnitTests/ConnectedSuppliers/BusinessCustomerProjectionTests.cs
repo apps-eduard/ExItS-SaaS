@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.UnitTests.Parties;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.ConnectedSuppliers;
 
@@ -214,7 +215,7 @@ public sealed class BusinessCustomerProjectionTests
     }
 
     [Fact]
-    public async Task List_excludes_pending_and_does_not_duplicate_organization_identity()
+    public async Task List_includes_pending_without_connected_since_and_does_not_duplicate_identity()
     {
         var mica = PosOrganizationId.From(Guid.NewGuid());
         var paul = PosOrganizationId.From(Guid.NewGuid());
@@ -233,9 +234,108 @@ public sealed class BusinessCustomerProjectionTests
         var result = await list.ExecuteAsync(paul.Value);
 
         Assert.True(result.IsSuccess);
-        Assert.Empty(result.Value!);
+        Assert.Single(result.Value!);
+        Assert.Equal("Pending", result.Value![0].RelationshipStatus);
+        Assert.Null(result.Value[0].ConnectedSinceUtc);
         Assert.Single(relationships.Items);
         Assert.Equal(mica, relationships.Items[0].BuyerOrganizationId);
+    }
+
+    [Fact]
+    public void Connected_since_uses_responded_at_only_never_created_at()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var requestedAt = DateTimeOffset.Parse("2026-08-01T00:00:00Z");
+        var acceptedAt = DateTimeOffset.Parse("2026-08-10T12:00:00Z");
+        var r = ConnectedSupplierRelationship.Request(
+            mica,
+            paul,
+            requestedAt,
+            buyerDisplayName: "Mica Store",
+            buyerPublicOrganizationId: "ORGMICA01",
+            supplierDisplayName: "Paul Supply",
+            supplierPublicOrganizationId: "ORGPAUL01");
+        r.Approve(acceptedAt);
+        var dto = ListBusinessCustomers.MapFromSnapshot(
+            r,
+            eligibleCount: 0,
+            new BuyerRelationshipShareStats(0, 0, 0));
+        Assert.Equal("Active", dto.RelationshipStatus);
+        Assert.Equal(acceptedAt, dto.ConnectedSinceUtc);
+        Assert.True(dto.ConnectedSinceUtc != r.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task List_home_branch_only_hides_other_branch_from_acting_workspace()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var iloilo = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var manila = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var relationships = new InMemoryRelationships();
+        var connection = ConnectedSupplierRelationship.Request(
+            mica,
+            paul,
+            DateTimeOffset.UtcNow,
+            buyerDisplayName: "Mica Store",
+            buyerPublicOrganizationId: "ORGMICA01",
+            supplierDisplayName: "Paul",
+            supplierPublicOrganizationId: "ORGPAUL01",
+            supplierBranchId: iloilo,
+            supplierBranchName: "Iloilo");
+        connection.Approve(DateTimeOffset.UtcNow);
+        await relationships.AddAsync(connection);
+
+        var actor = FixedPartyBranchAccessActorAccessor.StoreManager(manila);
+        var list = new ListBusinessCustomers(
+            relationships,
+            new InMemoryShares(),
+            new FakeAccess(),
+            actor);
+        var hidden = await list.ExecuteAsync(paul.Value);
+        Assert.True(hidden.IsSuccess);
+        Assert.Empty(hidden.Value!);
+
+        var visibleList = new ListBusinessCustomers(
+            relationships,
+            new InMemoryShares(),
+            new FakeAccess(),
+            FixedPartyBranchAccessActorAccessor.StoreManager(iloilo));
+        var visible = await visibleList.ExecuteAsync(paul.Value);
+        Assert.Single(visible.Value!);
+        Assert.Equal(iloilo, visible.Value![0].SupplierBranchId);
+    }
+
+    [Fact]
+    public async Task Explicit_shared_branch_is_visible_at_secondary_workspace()
+    {
+        var mica = PosOrganizationId.From(Guid.NewGuid());
+        var paul = PosOrganizationId.From(Guid.NewGuid());
+        var iloilo = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var manila = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var relationships = new InMemoryRelationships();
+        var connection = ConnectedSupplierRelationship.Request(
+            mica,
+            paul,
+            DateTimeOffset.UtcNow,
+            buyerDisplayName: "Mica Store",
+            buyerPublicOrganizationId: "ORGMICA01",
+            supplierDisplayName: "Paul",
+            supplierPublicOrganizationId: "ORGPAUL01",
+            supplierBranchId: iloilo,
+            supplierBranchName: "Iloilo");
+        connection.Approve(DateTimeOffset.UtcNow);
+        connection.ShareSupplierBranch(manila, DateTimeOffset.UtcNow);
+        await relationships.AddAsync(connection);
+
+        var atManila = await new ListBusinessCustomers(
+            relationships,
+            new InMemoryShares(),
+            new FakeAccess(),
+            FixedPartyBranchAccessActorAccessor.StoreManager(manila))
+            .ExecuteAsync(paul.Value);
+        Assert.Single(atManila.Value!);
     }
 
     [Fact]

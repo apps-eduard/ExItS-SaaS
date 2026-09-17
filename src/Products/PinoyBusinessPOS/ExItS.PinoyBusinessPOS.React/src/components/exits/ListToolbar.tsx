@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-/** Shared pill classes for list-toolbar filter controls (Filters button, Sort, active chips). */
+/** Shared filter-chip classes for list-toolbar controls (Filters button, Sort, active chips). */
 export const exitsFilterPillClassName = "exits-filter-pill";
 
 export function FilterButton({

@@ -14,6 +14,7 @@ namespace ExItS.PinoyBusinessPOS.Api.Expenses;
 /// Organization-scoped store expense endpoints (P8-WP05). Development-stage only: organization
 /// scope comes from <c>X-Pos-Organization-Id</c>, the actor from <c>X-Dev-Platform-User-Id</c>, and
 /// cross-organization access returns 404 (fail closed). Online-only — no offline expense queue.
+/// Branch scope: null BranchId = organization-wide; non-null = branch expense.
 /// </summary>
 internal static class ExpenseEndpoints
 {
@@ -151,11 +152,29 @@ internal static class ExpenseEndpoints
 
     private static void MapExpenseGroup(RouteGroupBuilder group)
     {
+        group.MapGet("/scope-options", async (
+            HttpRequest request,
+            ExpenseScopeAuthority scopeAuthority,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ViewExpenses, out var organizationId, out var problem))
+            {
+                return problem!;
+            }
+
+            var options = await scopeAuthority.GetOptionsAsync(organizationId, ct).ConfigureAwait(false);
+            return Results.Ok(options);
+        });
+
         group.MapGet("/summary", async (
             HttpRequest request,
             string? fromDate,
             string? toDate,
+            string? scope,
+            Guid? branchId,
             ExpenseSummaryService summary,
+            ExpenseScopeAuthority scopeAuthority,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -170,8 +189,24 @@ internal static class ExpenseEndpoints
                 return problem!;
             }
 
+            var scopeResult = await ResolveBranchScopeAsync(
+                    request,
+                    organizationId,
+                    scope,
+                    branchId,
+                    scopeAuthority,
+                    ct)
+                .ConfigureAwait(false);
+            if (!scopeResult.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    scopeResult.ErrorCode!,
+                    scopeResult.ErrorMessage ?? "Invalid expense branch scope.",
+                    StatusCodes.Status400BadRequest);
+            }
+
             var result = await summary
-                .GetSummaryAsync(organizationId, parsedFrom, parsedTo, ct)
+                .GetSummaryAsync(organizationId, parsedFrom, parsedTo, scopeResult.Value, ct)
                 .ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -184,9 +219,12 @@ internal static class ExpenseEndpoints
             string? fromDate,
             string? toDate,
             string? expenseNumber,
+            string? scope,
+            Guid? branchId,
             int? page,
             int? pageSize,
             ExpenseQueryService queries,
+            ExpenseScopeAuthority scopeAuthority,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -216,7 +254,30 @@ internal static class ExpenseEndpoints
                 }
             }
 
-            var filter = new ExpenseFilter(parsedStatus, parsedMethod, parsedCategory, parsedFrom, parsedTo, expenseNumber);
+            var scopeResult = await ResolveBranchScopeAsync(
+                    request,
+                    organizationId,
+                    scope,
+                    branchId,
+                    scopeAuthority,
+                    ct)
+                .ConfigureAwait(false);
+            if (!scopeResult.IsSuccess)
+            {
+                return PosApiResults.Problem(
+                    scopeResult.ErrorCode!,
+                    scopeResult.ErrorMessage ?? "Invalid expense branch scope.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var filter = new ExpenseFilter(
+                parsedStatus,
+                parsedMethod,
+                parsedCategory,
+                parsedFrom,
+                parsedTo,
+                expenseNumber,
+                scopeResult.Value);
             var result = await queries.ListAsync(organizationId, filter, page, pageSize, ct).ConfigureAwait(false);
             return Results.Ok(result);
         });
@@ -259,6 +320,7 @@ internal static class ExpenseEndpoints
                         body.Payee,
                         body.GCashReference,
                         body.ExpenseId,
+                        body.BranchId,
                         ct2),
                     e => ExpenseQueryService.Map(e),
                     dto => Results.Created($"/api/v1/pos/expenses/{dto.ExpenseId:D}", dto),
@@ -314,6 +376,26 @@ internal static class ExpenseEndpoints
                 .ConfigureAwait(false);
             return PosApiResults.FromResult(result, e => Results.Ok(ExpenseQueryService.Map(e)));
         });
+    }
+
+    private static async Task<ApplicationResult<ExpenseBranchScopeCriteria>> ResolveBranchScopeAsync(
+        HttpRequest request,
+        Guid organizationId,
+        string? scope,
+        Guid? branchId,
+        ExpenseScopeAuthority scopeAuthority,
+        CancellationToken ct)
+    {
+        if (!PosOrganizationScope.TryGetOptionalBranchId(request, out var preferredBranchId))
+        {
+            return ApplicationResult<ExpenseBranchScopeCriteria>.Failure(
+                DomainErrorCodes.InvalidBranchId,
+                $"Header '{PosOrganizationHeaders.BranchHeaderName}' must be a non-empty GUID when provided.");
+        }
+
+        return await scopeAuthority
+            .ResolveViewCriteriaAsync(organizationId, scope, branchId, preferredBranchId, ct)
+            .ConfigureAwait(false);
     }
 
     private static bool TryAuthorize(

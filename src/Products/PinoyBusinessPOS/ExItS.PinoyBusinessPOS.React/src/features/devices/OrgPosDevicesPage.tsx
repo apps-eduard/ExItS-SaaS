@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CircleAlert,
   Eye,
   EyeOff,
   Gauge,
@@ -36,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { BottomSheet } from "@/components/exits/SheetDialog";
@@ -496,7 +496,6 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant={deviceEnforcementEnabled === false ? "outline" : "default"}
-                className="min-h-11"
                 data-testid="devices-register-optional"
                 onClick={() => openRegisterForm(boundWorkspace?.branchId ?? null)}
               >
@@ -506,7 +505,6 @@ export function OrgPosDevicesPage() {
             {currentBrowser.state === "revoked" ? (
               <Button
                 type="button"
-                className="min-h-11"
                 data-testid="devices-register-again"
                 onClick={() => openRegisterForm(currentBrowser.device?.branchId ?? null)}
               >
@@ -556,7 +554,7 @@ export function OrgPosDevicesPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="device-register-actions__cancel min-h-11"
+                  className="device-register-actions__cancel"
                   data-testid="devices-register-cancel"
                   onClick={() => {
                     setRegisterFormOpen(false);
@@ -568,7 +566,7 @@ export function OrgPosDevicesPage() {
               ) : null}
               <Button
                 type="button"
-                className="device-register-actions__submit min-h-11"
+                className="device-register-actions__submit"
                 data-testid="devices-register-browser"
                 disabled={registerMutation.isPending || capacityBlocked}
                 onClick={() => registerMutation.mutate()}
@@ -583,16 +581,9 @@ export function OrgPosDevicesPage() {
       </section>
 
       {actionError ? (
-        <div
-          role="alert"
-          className="exits-alert exits-alert--error"
-          data-testid="devices-action-error"
-        >
-          <div className="flex gap-3">
-            <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{actionError}</p>
-          </div>
-        </div>
+        <Notice tone="danger" testId="devices-action-error">
+          {actionError}
+        </Notice>
       ) : null}
 
       {devicesQuery.isLoading ? <LoadingSkeleton label={t("loading.label")} /> : null}
@@ -681,6 +672,8 @@ export function OrgPosDevicesPage() {
       {devices.length === 0 && !devicesQuery.isLoading ? (
         <div data-testid="devices-empty">
           <EmptyState
+              align="center"
+              icon={<MonitorSmartphone className="size-5" strokeWidth={1.75} />}
             title={t("devices.empty")}
             detail={
               deviceEnforcementEnabled === false ? t("devices.emptyOptionalDetail") : ""
@@ -785,7 +778,7 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="devices-revoke-actions__cancel min-h-11"
+                className="devices-revoke-actions__cancel"
                 data-testid="devices-revoke-cancel"
                 onClick={closeRevoke}
               >
@@ -794,7 +787,7 @@ export function OrgPosDevicesPage() {
               <Button
                 type="button"
                 variant="destructive"
-                className="devices-revoke-actions__confirm min-h-11"
+                className="devices-revoke-actions__confirm"
                 data-testid="devices-revoke-confirm"
                 disabled={
                   revokeMutation.isPending || revokeReasonTooShort || !revokePassword.trim()

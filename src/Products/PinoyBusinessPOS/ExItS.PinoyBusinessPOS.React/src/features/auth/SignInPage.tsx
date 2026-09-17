@@ -4,14 +4,15 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { Notice } from "@/components/exits/Notice";
 import { AuthExperienceLayout, AuthOrDivider } from "@/features/auth/AuthExperienceLayout";
-import { cn } from "@/lib/cn";
 import {
   persistRememberedUsername,
   readRememberMePreference,
   readRememberedUsername,
 } from "@/features/auth/remember-me";
 import { TestUserSelector } from "@/features/auth/TestUserSelector";
+import { DevPortHealthPanel } from "@/features/auth/DevPortHealthPanel";
 import {
   rememberStoreAcquisitionIntent,
   resolveAuthContinuePath,
@@ -48,18 +49,13 @@ function AuthInlineFeedback({
   tone?: "error" | "success";
 }) {
   return (
-    <p
-      role="alert"
-      data-testid={testId}
-      className={cn(
-        "m-0 rounded-[var(--exits-radius-md)] px-3 py-2 text-[length:var(--exits-text-sm)] leading-relaxed",
-        tone === "success"
-          ? "border border-success/30 bg-success/5 text-success"
-          : "border border-destructive/30 bg-destructive/5 text-destructive",
-      )}
+    <Notice
+      tone={tone === "success" ? "success" : "danger"}
+      testId={testId}
+      icon={null}
     >
       {message}
-    </p>
+    </Notice>
   );
 }
 
@@ -105,6 +101,7 @@ export function SignInPage() {
   const [canUsePin, setCanUsePin] = useState(false);
   const [pinNoEnrollment, setPinNoEnrollment] = useState(false);
   const [pinGrantExpired, setPinGrantExpired] = useState(false);
+  const [identitiesRefreshToken, setIdentitiesRefreshToken] = useState(0);
   const expired = Boolean((location.state as { expired?: boolean } | null)?.expired);
   const notice = (location.state as { notice?: string } | null)?.notice;
   const staffLoginHint = looksLikeOrgScopedStaffLogin(usernameOrEmail);
@@ -270,15 +267,21 @@ export function SignInPage() {
       offlineBanner={offlineBanner}
       belowCard={
         import.meta.env.MODE !== "production" ? (
-          <TestUserSelector
-            onSelectIdentity={(value) => {
-              setUsernameOrEmail(value);
-              setPassword("");
-              setError(null);
-              setSignInFailure(null);
-              setActiveTab("sign-in");
-            }}
-          />
+          <div className="flex flex-col gap-0">
+            <TestUserSelector
+              refreshToken={identitiesRefreshToken}
+              onSelectIdentity={(value) => {
+                setUsernameOrEmail(value);
+                setPassword("");
+                setError(null);
+                setSignInFailure(null);
+                setActiveTab("sign-in");
+              }}
+            />
+            <DevPortHealthPanel
+              onIdentitiesRefresh={() => setIdentitiesRefreshToken((value) => value + 1)}
+            />
+          </div>
         ) : null
       }
     >

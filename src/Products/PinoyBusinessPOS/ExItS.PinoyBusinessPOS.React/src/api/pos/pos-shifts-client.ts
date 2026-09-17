@@ -39,6 +39,10 @@ export type PosCashierShiftDto = {
   updatedAtUtc: string;
   openingDenominationLines?: CashCountDenominationLineDto[] | null;
   closingDenominationLines?: CashCountDenominationLineDto[] | null;
+  /** Completed sale count for this shift (list enrichment; null when not loaded). */
+  completedTransactionCount?: number | null;
+  /** Completed sales total for this shift (list enrichment; null when not loaded). */
+  completedSalesTotal?: number | null;
 };
 
 export type PosCashierShiftSummaryDto = {
@@ -160,6 +164,7 @@ export function listCashierShifts(
   options: {
     status?: string;
     actorId?: string;
+    registerId?: string;
     shiftNumber?: string;
     fromBusinessDate?: string;
     toBusinessDate?: string;
@@ -175,6 +180,7 @@ export function listCashierShifts(
     path: appendQuery(SHIFTS_PATH, {
       status: options.status,
       actorId: options.actorId,
+      registerId: options.registerId,
       shiftNumber: options.shiftNumber,
       fromBusinessDate: options.fromBusinessDate,
       toBusinessDate: options.toBusinessDate,

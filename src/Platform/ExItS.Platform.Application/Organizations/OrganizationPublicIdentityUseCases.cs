@@ -363,3 +363,104 @@ public sealed class LookupPublicStoreBranches(
             active));
     }
 }
+
+/// <summary>
+/// Public commerce-safe fulfillment flags for one Active branch.
+/// Used by connected buyers who are not seller-org members and cannot call ListBranches.
+/// </summary>
+public sealed record PublicStoreBranchCommerceFulfillmentDto(
+    Guid BranchId,
+    string Name,
+    bool PickupEnabled,
+    bool DeliveryEnabled,
+    bool PickupReady,
+    bool DeliveryReady,
+    bool CustomerOrderingEnabled);
+
+public sealed class LookupPublicStoreBranchCommerceFulfillment(
+    IPlatformOrganizationRepository organizations,
+    IOrganizationBranchRepository branches,
+    GetBranchFulfillmentReadiness readiness,
+    IAuditWriter audit)
+{
+    public async Task<ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>> ExecuteAsync(
+        string publicOrganizationIdOrPayload,
+        Guid branchId,
+        CancellationToken cancellationToken = default)
+    {
+        if (branchId == Guid.Empty)
+        {
+            return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Failure(
+                ApplicationErrorCodes.BranchNotFound,
+                "Branch was not found.");
+        }
+
+        string normalized;
+        try
+        {
+            normalized = PublicOrganizationIdRules.TryExtractFromQrPayload(publicOrganizationIdOrPayload);
+        }
+        catch (DomainException)
+        {
+            return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Failure(
+                DomainErrorCodes.InvalidPublicOrganizationId,
+                "Store was not found.");
+        }
+
+        var target = await organizations
+            .GetByPublicOrganizationIdAsync(normalized, cancellationToken)
+            .ConfigureAwait(false);
+
+        var foundActive = target is not null && target.Status is OrganizationStatus.Active;
+
+        await audit.WriteAsync(
+            "anonymous:public-store-branch-commerce-fulfillment",
+            AuditActorType.System,
+            PlatformAuditActions.PublicStoreLandingLookedUp,
+            "public_organization_id",
+            normalized,
+            foundActive ? AuditOutcome.Succeeded : AuditOutcome.Denied,
+            summary: $"purpose=public-store-branch-commerce-fulfillment;branchId={branchId:D}",
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        if (!foundActive)
+        {
+            return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Failure(
+                ApplicationErrorCodes.OrganizationNotFound,
+                "This store is unavailable.");
+        }
+
+        var branch = await branches
+            .GetByIdAsync(OrganizationBranchId.From(branchId), cancellationToken)
+            .ConfigureAwait(false);
+        if (branch is null
+            || branch.OrganizationId != target!.Id
+            || branch.Status != OrganizationBranchStatus.Active)
+        {
+            return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Failure(
+                ApplicationErrorCodes.BranchNotFound,
+                "Branch was not found.");
+        }
+
+        var readinessResult = await readiness
+            .ExecuteAsync(target.Id, branch.Id, cancellationToken)
+            .ConfigureAwait(false);
+        if (!readinessResult.IsSuccess || readinessResult.Value is null)
+        {
+            return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Failure(
+                readinessResult.ErrorCode ?? ApplicationErrorCodes.BranchNotFound,
+                readinessResult.ErrorMessage ?? "Branch was not found.");
+        }
+
+        var dto = readinessResult.Value;
+        return ApplicationResult<PublicStoreBranchCommerceFulfillmentDto>.Success(
+            new PublicStoreBranchCommerceFulfillmentDto(
+                branch.Id.Value,
+                branch.Name,
+                dto.PickupEnabled,
+                dto.DeliveryEnabled,
+                dto.PickupReady,
+                dto.DeliveryReady,
+                dto.CustomerOrderingEnabled));
+    }
+}

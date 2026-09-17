@@ -1,22 +1,14 @@
-import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
+import {
+  formatQuantityValue,
+  isByWeightSellingMode,
+  maxQuantityDecimals,
+  requiresWholeQuantity,
+} from "@/lib/quantity-rules";
 
-const WHOLE_UOMS = new Set(["piece", "pack", "box", "bottle", "can", "sachet", "pc"]);
-
-/** Match SaleMoney.MaxQuantityDecimals for return quantity controls. */
-export function maxReturnQuantityDecimals(unitOfMeasure: string, sellingMode: string): number {
-  if (isByWeightSellingMode(sellingMode)) {
-    return 3;
-  }
-  const uom = unitOfMeasure.trim().toLowerCase();
-  if (WHOLE_UOMS.has(uom)) {
-    return 0;
-  }
-  return 3;
-}
-
-export function requiresWholeReturnQuantity(unitOfMeasure: string, sellingMode: string): boolean {
-  return maxReturnQuantityDecimals(unitOfMeasure, sellingMode) === 0;
-}
+export {
+  maxQuantityDecimals as maxReturnQuantityDecimals,
+  requiresWholeQuantity as requiresWholeReturnQuantity,
+} from "@/lib/quantity-rules";
 
 export function clampReturnQuantity(value: number, max: number, decimals: number): number {
   if (!Number.isFinite(value) || value <= 0) {
@@ -35,9 +27,8 @@ export function formatReturnQuantityDisplay(
   unitOfMeasure: string,
   sellingMode: string,
 ): string {
-  const decimals = maxReturnQuantityDecimals(unitOfMeasure, sellingMode);
-  const formatted =
-    decimals === 0 ? String(Math.trunc(quantity)) : quantity.toFixed(Math.min(decimals, 3));
+  const decimals = maxQuantityDecimals(unitOfMeasure, sellingMode);
+  const formatted = formatQuantityValue(quantity, decimals);
   const unit = isByWeightSellingMode(sellingMode)
     ? "kg"
     : unitOfMeasure.trim().toLowerCase() === "piece"

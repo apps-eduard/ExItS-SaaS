@@ -16,6 +16,7 @@ export type PosSessionGrantFacts = Pick<
 export const FEATURE_OVERRIDE_SALE_PRICE = "store-sales-override-price";
 export const FEATURE_OVERRIDE_SALE_PRICE_UNLIMITED = "store-sales-override-price-unlimited";
 export const FEATURE_CUSTOMER_CREDIT_CREATE = "customer-credit-create";
+export const FEATURE_STORE_SALES_VIEW = "store-sales-view";
 export const FEATURE_STORE_REPORTS_VIEW = "store-reports-view";
 export const FEATURE_STORE_ADVANCED_REPORTS = "store-advanced-reports";
 export const FEATURE_STORE_EXPORT = "store-export";
@@ -23,6 +24,11 @@ export const FEATURE_STORE_CUSTOMER_ORDERING = "store-customer-ordering";
 export const FEATURE_STORE_DELIVERY_ORDERS = "store-delivery-orders";
 export const FEATURE_STORE_EXPENSES_VIEW = "store-expenses-view";
 export const FEATURE_STORE_EXPENSES_MANAGE = "store-expenses-manage";
+export const FEATURE_STORE_AREA_MANAGEMENT = "store-area-management";
+export const FEATURE_STORE_WAREHOUSE = "store-warehouse";
+export const FEATURE_STORE_BASIC_PAYMENTS = "store-basic-payments";
+export const FEATURE_STORE_PAYMENT_MANAGEMENT = "store-payment-management";
+export const FEATURE_STORE_ONLINE_PAYMENTS = "store-online-payments";
 
 function featureGrantDenied(
   grant: PosSessionGrantFacts | null | undefined,
@@ -147,6 +153,16 @@ export function isPosOwnerRole(grant: PosSessionGrantFacts | null | undefined): 
   return lower === "owner" || lower === "admin";
 }
 
+/**
+ * Customer branch visibility grant/revoke UI gate — mirrors PartyBranchExplicitAssignService
+ * Owner/Admin / org-management governance (not Area Manager alone, not Cashier).
+ */
+export function canManageCustomerBranchAccess(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return isPosOwnerRole(grant) || hasOrganizationManagementAuthority(grant);
+}
+
 /** POS StoreManager / Manager — operations, not Organization Web admin. */
 export function isPosOperationsManager(grant: PosSessionGrantFacts | null | undefined): boolean {
   const role = resolveEffectivePosRoleCode(grant);
@@ -178,8 +194,19 @@ export function canEnterSellFloor(grant: PosSessionGrantFacts | null | undefined
   return isSellFloorPosRole(roleCode);
 }
 
-/** WP04 UI gate — server remains authoritative for CreateSale later. */
-export function canCreateSale(grant: PosSessionGrantFacts | null | undefined): boolean {
+/** WP04 UI gate — server remains authoritative for CreateSale later.
+ * Warehouse branches never allow sales even when the role would.
+ */
+export function canCreateSale(
+  grant: PosSessionGrantFacts | null | undefined,
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType | string | null,
+): boolean {
+  if (
+    branchType != null &&
+    String(branchType).trim().toLowerCase() === "warehouse"
+  ) {
+    return false;
+  }
   return canEnterSellFloor(grant);
 }
 
@@ -272,6 +299,41 @@ export function canCreateCredit(grant: PosSessionGrantFacts | null | undefined):
     return false;
   }
   return isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant);
+}
+
+/**
+ * ManageCustomerCreditPolicy UI gate — PosRoleMatrix Owner/Admin/StoreManager.
+ * Cashier DENY. Requires customer-credit-create feature when the grant emits feature codes.
+ * Server remains authoritative (UtangCapability.ManageCustomerCreditPolicy).
+ */
+export function canManageCustomerCreditPolicy(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_CUSTOMER_CREDIT_CREATE)) {
+    return false;
+  }
+  return isPosOwnerRole(grant) || isPosOperationsManager(grant);
+}
+
+/**
+ * ApproveCustomerCreditPolicy UI gate — same matrix as Manage (Owner/Admin/StoreManager).
+ * Cashier DENY. Server remains authoritative (UtangCapability.ApproveCustomerCreditPolicy).
+ */
+export function canApproveCustomerCreditPolicy(
+  grant: PosSessionGrantFacts | null | undefined,
+): boolean {
+  return canManageCustomerCreditPolicy(grant);
+}
+
+/**
+ * MutateDueDate UI gate — Owner/Admin/StoreManager. Cashier DENY.
+ * Optional Utang due-date override at checkout when policy term already supplies a due date.
+ */
+export function canMutateDueDate(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return canManageCustomerCreditPolicy(grant);
 }
 
 /**
@@ -381,6 +443,25 @@ export function canManagePurchasing(grant: PosSessionGrantFacts | null | undefin
 }
 
 /**
+ * ViewSales UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
+ * Prefers session feature codes when present (`store-sales-view`).
+ * Server remains authoritative via StoreSalesView.
+ */
+export function canViewSales(grant: PosSessionGrantFacts | null | undefined): boolean {
+  if (!grant?.productAccessAllowed) {
+    return false;
+  }
+  if (featureGrantDenied(grant, FEATURE_STORE_SALES_VIEW)) {
+    return false;
+  }
+  if (isPosOwnerRole(grant) || isPosOperationsManager(grant) || isPosCashierRole(grant)) {
+    return true;
+  }
+  const role = resolveEffectivePosRoleCode(grant)?.toLowerCase();
+  return role === "reportinguser";
+}
+
+/**
  * ViewReturns UI gate — PosRoleMatrix Owner/Admin/StoreManager/Cashier (+ ReportingUser).
  * Cashier may view history but must not process returns.
  * Server remains authoritative via store-returns-view.
@@ -462,6 +543,34 @@ export function canViewAdvancedReports(grant: PosSessionGrantFacts | null | unde
 /** File export entitlement (`store-export`). Gates Organization report CSV export UI. */
 export function canExportData(grant: PosSessionGrantFacts | null | undefined): boolean {
   return grantHasFeatureCode(grant, FEATURE_STORE_EXPORT) === true;
+}
+
+/** Area management entitlement (`store-area-management`). Server remains authoritative. */
+export function canManageStoreAreas(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_AREA_MANAGEMENT) === true;
+}
+
+/** Warehouse branch entitlement (`store-warehouse`). Server remains authoritative. */
+export function canUseWarehouseBranches(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_WAREHOUSE) === true;
+}
+
+/** Everyday tenders: Cash / ManualGCash / Utang (`store-basic-payments`). */
+export function canUseBasicPayments(grant: PosSessionGrantFacts | null | undefined): boolean {
+  const coded = grantHasFeatureCode(grant, FEATURE_STORE_BASIC_PAYMENTS);
+  if (coded === false) return false;
+  // Legacy sessions without the code still allow basic payments when POS access is allowed.
+  return grant?.productAccessAllowed === true;
+}
+
+/** Manual payment method management (`store-payment-management`). */
+export function canManagePaymentMethods(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_PAYMENT_MANAGEMENT) === true;
+}
+
+/** Online payment integrations foundation (`store-online-payments`). */
+export function canUseOnlinePayments(grant: PosSessionGrantFacts | null | undefined): boolean {
+  return grantHasFeatureCode(grant, FEATURE_STORE_ONLINE_PAYMENTS) === true;
 }
 
 /**
@@ -655,8 +764,11 @@ export function canUseOperationsExperience(
 }
 
 /** Cashier / selling experience — CreateSale / EnterPos via role matrix. */
-export function canUseSellingExperience(grant: PosSessionGrantFacts | null | undefined): boolean {
-  return canCreateSale(grant);
+export function canUseSellingExperience(
+  grant: PosSessionGrantFacts | null | undefined,
+  branchType?: import("@/features/branches/branch-type").OrganizationBranchType | string | null,
+): boolean {
+  return canCreateSale(grant, branchType);
 }
 
 export function canEnterOwnerRoleHome(grant: PosSessionGrantFacts | null | undefined): boolean {

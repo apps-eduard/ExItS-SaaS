@@ -1,54 +1,114 @@
-import { Search, X } from "lucide-react";
-import type { InputHTMLAttributes } from "react";
+import { Loader2, Search, X } from "lucide-react";
+import { useId, type ChangeEvent, type InputHTMLAttributes, type KeyboardEvent } from "react";
 import { cn } from "@/lib/cn";
 
-export type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & {
+export type SearchFieldShape = "auto" | "standard" | "pill";
+
+export type SearchFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "size"> & {
+  /** Accessible name (rendered as sr-only label). */
   label: string;
+  /** Clears the value. Prefer providing this for controlled search state. */
   onClear?: () => void;
   containerClassName?: string;
+  /**
+   * Shape participation in Preferences → Control Shape.
+   * - auto (default): follows global `data-control-shape` via `--exits-control-radius`
+   * - standard / pill: explicit override
+   */
+  shape?: SearchFieldShape;
+  /** Optional restrained loading indicator (replaces search icon). */
+  loading?: boolean;
+  /** Test id on the outer field shell. */
+  testId?: string;
 };
 
+/**
+ * Canonical ExItS Search Field — dataset / list filter control.
+ * Follows Control Shape. Not a form data-entry input (`exits-input`).
+ */
 export function SearchField({
   label,
   value,
   onClear,
+  onChange,
+  onKeyDown,
   className,
   containerClassName,
   id,
+  disabled,
+  shape = "auto",
+  loading = false,
+  testId = "exits-search-field",
   ...props
 }: SearchFieldProps) {
-  const fieldId = id ?? props.name ?? "search-field";
+  const reactId = useId();
+  const fieldId = id ?? props.name ?? `exits-search-${reactId}`;
   const hasValue = typeof value === "string" && value.length > 0;
+  const canClear = hasValue && !disabled;
+
+  function handleClear() {
+    if (onClear) {
+      onClear();
+      return;
+    }
+    if (onChange) {
+      const target = { value: "" } as HTMLInputElement;
+      onChange({ target, currentTarget: target } as ChangeEvent<HTMLInputElement>);
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    onKeyDown?.(event);
+    if (event.defaultPrevented) return;
+    // Clear only when focused field has value — does not stop modal Escape if empty.
+    if (event.key === "Escape" && hasValue && !disabled) {
+      event.preventDefault();
+      handleClear();
+    }
+  }
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-1", containerClassName)}>
+    <div className={cn("exits-search-field-root flex min-w-0 flex-col gap-1", containerClassName)}>
       <label htmlFor={fieldId} className="sr-only">
         {label}
       </label>
-      <div className="relative min-w-0">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted"
-        />
+      <div
+        className={cn(
+          "exits-search-field",
+          disabled && "exits-search-field--disabled",
+          loading && "exits-search-field--loading",
+        )}
+        data-shape={shape}
+        data-testid={testId}
+      >
+        <span className="exits-search-field__leading" aria-hidden>
+          {loading ? (
+            <Loader2 className="exits-search-field__spinner size-4 animate-spin" strokeWidth={2} />
+          ) : (
+            <Search className="exits-search-field__icon size-4" />
+          )}
+        </span>
         <input
           id={fieldId}
-          // Use text (not search): browsers draw a native clear "x" that duplicates our button.
+          // text (not search): avoid native clear control duplicating our button.
           type="text"
           inputMode="search"
           enterKeyHint="search"
           value={value}
-          className={cn(
-            "box-border h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-full border border-border bg-surface py-0 pr-10 pl-10 text-[length:var(--exits-text-md)] leading-[var(--exits-control-height)] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            className,
-          )}
+          disabled={disabled}
+          aria-busy={loading || undefined}
+          onChange={onChange}
+          onKeyDown={handleKeyDown}
+          className={cn("exits-search-field__input", className)}
           {...props}
         />
-        {hasValue && onClear ? (
+        {canClear ? (
           <button
             type="button"
-            className="absolute top-1/2 right-1.5 inline-flex size-[var(--exits-touch-target-min)] -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="exits-search-field__clear"
             aria-label="Clear search"
-            onClick={onClear}
+            onClick={handleClear}
+            tabIndex={0}
           >
             <X className="size-4" aria-hidden />
           </button>
@@ -57,3 +117,6 @@ export function SearchField({
     </div>
   );
 }
+
+/** Alias matching ExItS naming in standards docs. */
+export { SearchField as ExitsSearchField };

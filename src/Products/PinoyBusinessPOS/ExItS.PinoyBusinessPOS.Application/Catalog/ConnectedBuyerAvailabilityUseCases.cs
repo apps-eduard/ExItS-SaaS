@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -228,6 +229,7 @@ public sealed class BulkMutateConnectedBuyerAvailability
 {
     private readonly ICatalogProductRepository _products;
     private readonly ISupplierProductExposureRepository _exposures;
+    private readonly IInventoryRepository _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IPosCommercialAccessAccessor _access;
@@ -237,6 +239,7 @@ public sealed class BulkMutateConnectedBuyerAvailability
     public BulkMutateConnectedBuyerAvailability(
         ICatalogProductRepository products,
         ISupplierProductExposureRepository exposures,
+        IInventoryRepository inventory,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         IPosCommercialAccessAccessor access,
@@ -245,6 +248,7 @@ public sealed class BulkMutateConnectedBuyerAvailability
     {
         _products = products;
         _exposures = exposures;
+        _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
         _access = access;
@@ -327,6 +331,24 @@ public sealed class BulkMutateConnectedBuyerAvailability
 
                 if (enable)
                 {
+                    if (!product.CanBeSold)
+                    {
+                        return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
+                            ApplicationErrorCodes.CatalogBulkValidation,
+                            $"{product.Name}: only sell-as-is products can be shared with connected business customers.");
+                    }
+
+                    var tracked = await ConnectedBuyerSharingRules
+                        .IsTrackedAsync(_inventory, org, product.Id, ct)
+                        .ConfigureAwait(false);
+                    var shareGate = ConnectedBuyerSharingRules.ValidateCanEnableSharing(tracked);
+                    if (!shareGate.IsSuccess)
+                    {
+                        return ConnectedBuyerAvailabilityGuard.Failure<BulkConnectedBuyerAvailabilityMutationResultDto>(
+                            shareGate.ErrorCode!,
+                            shareGate.ErrorMessage!);
+                    }
+
                     if (!product.CanExposeToConnectedBuyers)
                     {
                         product.EnableConnectedBuyerAvailability(now);
@@ -340,7 +362,7 @@ public sealed class BulkMutateConnectedBuyerAvailability
                 }
 
                 await _products.UpdateAsync(product, ct).ConfigureAwait(false);
-                await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct).ConfigureAwait(false);
+                await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, ct, _inventory).ConfigureAwait(false);
             }
 
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);

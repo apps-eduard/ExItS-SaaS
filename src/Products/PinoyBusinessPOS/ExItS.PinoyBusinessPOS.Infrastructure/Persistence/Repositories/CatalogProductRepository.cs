@@ -245,6 +245,12 @@ internal sealed class CatalogProductRepository : ICatalogProductRepository
             query = query.Where(p => p.CanBeSold == canBeSold);
         }
 
+        if (filter.CanBeUsedAsIngredient is not null)
+        {
+            var canBeUsedAsIngredient = filter.CanBeUsedAsIngredient.Value;
+            query = query.Where(p => p.CanBeUsedAsIngredient == canBeUsedAsIngredient);
+        }
+
         if (filter.Scope is not null)
         {
             var scopeCode = CatalogProductScopes.ToCode(filter.Scope.Value);

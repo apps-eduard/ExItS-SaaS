@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Users, X } from "lucide-react";
+import { Building2, Check, Loader2, Users, X } from "lucide-react";
 import { canManageSuppliers } from "@/access/pos-capabilities";
 import {
   approveConnection,
   declineConnection,
-  listRelationships,
+  listIncomingConnectionRequests,
   type ConnectedSupplierRelationship,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -78,10 +79,7 @@ export function ConnectedIncomingRequestsPage() {
   const query = useQuery({
     queryKey: ["connected-suppliers", "incoming", workspace?.organizationId, workspace?.branchId],
     enabled: Boolean(workspace),
-    queryFn: async ({ signal }) => {
-      const rows = await listRelationships(workspace!, "supplier", signal);
-      return rows.filter((row) => row.status.toLowerCase() === "pending");
-    },
+    queryFn: async ({ signal }) => listIncomingConnectionRequests(workspace!, signal),
   });
 
   const items = useMemo(() => {
@@ -89,22 +87,38 @@ export function ConnectedIncomingRequestsPage() {
     return rows.filter((item) => matchesIncomingSearch(item, debounced));
   }, [query.data, debounced]);
 
-  async function respond(relationshipId: string, accept: boolean, name: string) {
+  function isSupplierInvitation(item: ConnectedSupplierRelationship): boolean {
+    return (item.initiatedByParty ?? "Buyer").toLowerCase() === "supplier";
+  }
+
+  async function respond(item: ConnectedSupplierRelationship, accept: boolean) {
     if (!workspace || !allowManage || busyId) {
       return;
     }
-    if (accept) {
-      setAcceptSetup({ relationshipId, name });
+    const name = item.counterpartyDisplayName?.trim() || t("connected.requestingBusiness");
+    if (accept && !isSupplierInvitation(item)) {
+      setAcceptSetup({ relationshipId: item.relationshipId, name });
       setSharingMode("AllEligible");
       setDiscountPercent("");
       setActionError(null);
       return;
     }
-    setBusyId(relationshipId);
+    setBusyId(item.relationshipId);
     setActionError(null);
     try {
-      await declineConnection(workspace, relationshipId);
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      if (accept) {
+        await approveConnection(workspace, item.relationshipId);
+      } else {
+        await declineConnection(workspace, item.relationshipId);
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkout-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+      ]);
     } catch (err) {
       setActionError(
         err instanceof PosApiError
@@ -142,7 +156,14 @@ export function ConnectedIncomingRequestsPage() {
         name: acceptSetup.name,
       });
       setAcceptSetup(null);
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] }),
+        queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["checkout-customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+      ]);
     } catch (err) {
       setActionError(
         err instanceof PosApiError
@@ -169,8 +190,8 @@ export function ConnectedIncomingRequestsPage() {
       data-testid="connected-incoming-page"
     >
       <PageHeader
-        title={t("connected.incomingTitle")}
-        description={t("connected.incomingHelp")}
+        title={t("connected.connectionRequestsTitle")}
+        description={t("connected.connectionRequestsHelp")}
         backTo={pageBackNav.suppliers.to}
         backLabel={t("connected.backToSuppliers")}
         backTestId="page-header-back-suppliers"
@@ -203,9 +224,7 @@ export function ConnectedIncomingRequestsPage() {
       />
 
       {actionError ? (
-        <div className="exits-alert exits-alert--error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)]">{actionError}</p>
-        </div>
+        <Notice tone="danger">{actionError}</Notice>
       ) : null}
 
       {acceptSetup ? (
@@ -218,7 +237,7 @@ export function ConnectedIncomingRequestsPage() {
             <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
               {t("connected.catalogSharing")}
             </legend>
-            <label className="mb-2 flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+            <label className="mb-2 flex items-start gap-2 text-[length:var(--exits-text-sm)]">
               <input
                 type="radio"
                 name="sharing-mode"
@@ -232,7 +251,7 @@ export function ConnectedIncomingRequestsPage() {
                 <span className="text-muted">{t("connected.allEligibleProductsHelp")}</span>
               </span>
             </label>
-            <label className="flex min-h-11 items-start gap-2 text-[length:var(--exits-text-sm)]">
+            <label className="flex items-start gap-2 text-[length:var(--exits-text-sm)]">
               <input
                 type="radio"
                 name="sharing-mode"
@@ -249,7 +268,7 @@ export function ConnectedIncomingRequestsPage() {
             <label className="mt-3 flex min-w-0 flex-col gap-1 text-[length:var(--exits-text-sm)]">
               <span className="font-medium">{t("connected.customerDiscount")}</span>
               <input
-                className="min-h-11 w-full max-w-[8rem] rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3"
+                className="w-full max-w-[8rem] rounded-[var(--exits-radius-md)] border border-[var(--exits-border)] bg-[var(--exits-surface)] px-3"
                 inputMode="decimal"
                 value={discountPercent}
                 onChange={(event) => setDiscountPercent(event.target.value)}
@@ -266,7 +285,6 @@ export function ConnectedIncomingRequestsPage() {
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={Boolean(busyId)}
               onClick={() => setAcceptSetup(null)}
               data-testid="connected-accept-cancel"
@@ -275,7 +293,6 @@ export function ConnectedIncomingRequestsPage() {
             </Button>
             <Button
               type="button"
-              className="min-h-11"
               disabled={Boolean(busyId)}
               onClick={() => {
                 void confirmAcceptAndShare();
@@ -305,7 +322,6 @@ export function ConnectedIncomingRequestsPage() {
           <div className="connected-incoming-row__actions mt-3">
             <Button
               type="button"
-              className="min-h-11"
               data-testid="connected-share-now"
               onClick={() =>
                 navigate(`/suppliers/connected/buyers/${sharePrompt.relationshipId}/shared-products`)
@@ -316,7 +332,6 @@ export function ConnectedIncomingRequestsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="connected-share-later"
               onClick={() => setSharePrompt(null)}
             >
@@ -338,10 +353,15 @@ export function ConnectedIncomingRequestsPage() {
         />
       ) : null}
       {showTrueEmpty ? (
-        <EmptyState title={t("connected.noIncoming")} detail={t("connected.noIncomingHelp")} />
+        <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />} title={t("connected.noIncoming")} detail={t("connected.noIncomingHelp")} />
       ) : null}
       {showFilteredEmpty ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={t("connected.incomingNoMatch")}
           detail={t("connected.incomingNoMatchHelp")}
         />
@@ -356,6 +376,7 @@ export function ConnectedIncomingRequestsPage() {
             preferences.locale,
           );
           const isBusy = busyId === item.relationshipId;
+          const supplierInvite = isSupplierInvitation(item);
 
           return (
             <li key={item.relationshipId}>
@@ -372,9 +393,16 @@ export function ConnectedIncomingRequestsPage() {
                       </span>
                     ) : null}
                     <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
-                      {t("connected.incomingMessage").replace("{name}", name)}
+                      {supplierInvite
+                        ? t("connected.incomingSupplierInviteMessage").replace("{name}", name)
+                        : t("connected.incomingBuyerRequestMessage").replace("{name}", name)}
                     </span>
-                    {item.supplierBranchName ? (
+                    <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
+                      {supplierInvite
+                        ? t("connected.incomingKindSupplierInvite")
+                        : t("connected.incomingKindBuyerRequest")}
+                    </span>
+                    {item.supplierBranchName && !supplierInvite ? (
                       <span className="connected-incoming-row__meta mt-1 block text-[length:var(--exits-text-sm)] text-muted">
                         {t("connected.incomingLocation").replace("{name}", item.supplierBranchName)}
                       </span>
@@ -385,33 +413,32 @@ export function ConnectedIncomingRequestsPage() {
                       </span>
                     ) : null}
                   </div>
-                  <StatusChip tone="warning">{item.status}</StatusChip>
+                  <StatusChip tone="warning">{t("customers.badge.pending")}</StatusChip>
                 </div>
 
                 {allowManage ? (
                   <div className="connected-incoming-row__actions">
                     <Button
                       type="button"
-                      variant="outline"
-                      className="min-h-11"
                       data-testid={`connected-approve-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
-                      onClick={() => void respond(item.relationshipId, true, name)}
+                      onClick={() => void respond(item, true)}
                     >
                       {isBusy ? (
                         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
                       ) : (
                         <Check className="size-4 shrink-0" aria-hidden />
                       )}
-                      {t("connected.accept")}
+                      {supplierInvite
+                        ? t("connected.accept")
+                        : t("connected.reviewAndAccept")}
                     </Button>
                     <Button
                       type="button"
-                      variant="destructive"
-                      className="min-h-11"
+                      variant="outline"
                       data-testid={`connected-decline-${item.relationshipId}`}
                       disabled={Boolean(busyId)}
-                      onClick={() => void respond(item.relationshipId, false, name)}
+                      onClick={() => void respond(item, false)}
                     >
                       {isBusy ? (
                         <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />

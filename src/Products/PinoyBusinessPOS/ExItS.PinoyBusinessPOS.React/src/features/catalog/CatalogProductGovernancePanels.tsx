@@ -58,8 +58,8 @@ export function CatalogCreateScopeFields(props: {
       <legend className="m-0 mb-2 text-[length:var(--exits-text-sm)] font-semibold">
         {t("catalog.governance.productType")}
       </legend>
-      <div className="flex flex-col gap-2">
-        <label className="flex cursor-pointer gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-2.5">
+      <div className="catalog-choice-options catalog-choice-options--2">
+        <label className="catalog-choice-options__item">
           <input
             type="radio"
             name="catalogCreateScope"
@@ -68,14 +68,14 @@ export function CatalogCreateScopeFields(props: {
             data-testid="catalog-create-scope-OrganizationStandard"
             onChange={() => onCreateScopeChange("OrganizationStandard")}
           />
-          <span>
+          <span className="min-w-0">
             <span className="block font-semibold">{t("catalog.governance.organizationProduct")}</span>
             <span className="mt-0.5 block text-[length:var(--exits-text-sm)] text-muted">
               {t("catalog.governance.productTypeOrganizationHint")}
             </span>
           </span>
         </label>
-        <label className="flex cursor-pointer gap-3 rounded-[var(--exits-radius-md)] border border-[color:var(--exits-border)] px-3 py-2.5">
+        <label className="catalog-choice-options__item">
           <input
             type="radio"
             name="catalogCreateScope"
@@ -84,7 +84,7 @@ export function CatalogCreateScopeFields(props: {
             data-testid="catalog-create-scope-BranchLocal"
             onChange={() => onCreateScopeChange("BranchLocal")}
           />
-          <span>
+          <span className="min-w-0">
             <span className="block font-semibold">
               {t("catalog.governance.branchProduct")}
               {branchName ? ` · ${branchName}` : ""}
@@ -222,7 +222,6 @@ export function CatalogPromoteControls(props: {
       <Button
         type="button"
         variant="outline"
-        className="min-h-11"
         data-testid="catalog-promote"
         onClick={() => {
           setError(null);
@@ -252,7 +251,6 @@ export function CatalogPromoteControls(props: {
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                className="min-h-11"
                 disabled={promoteMutation.isPending}
                 data-testid="catalog-promote-confirm"
                 onClick={() => promoteMutation.mutate()}
@@ -265,7 +263,6 @@ export function CatalogPromoteControls(props: {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={promoteMutation.isPending}
                 data-testid="catalog-promote-cancel"
                 onClick={() => setOpen(false)}
@@ -389,7 +386,7 @@ export function CatalogBranchAvailabilitySection(props: {
   return (
     <section className="catalog-form-section exits-animate-panel" data-testid="catalog-branch-availability">
       <h2 className="catalog-form-section__title">{t("catalog.governance.branchAvailability")}</h2>
-      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
         {t("catalog.governance.branchAvailabilityHint")}
       </p>
       {error ? (
@@ -452,7 +449,6 @@ export function CatalogBranchAvailabilitySection(props: {
               <Button
                 type="button"
                 variant="destructive"
-                className="min-h-11"
                 disabled={mutation.isPending}
                 data-testid="catalog-stop-offering-confirm"
                 onClick={() =>
@@ -470,7 +466,6 @@ export function CatalogBranchAvailabilitySection(props: {
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-11"
                 disabled={mutation.isPending}
                 onClick={() => setPendingDisable(null)}
               >

@@ -72,19 +72,23 @@ public sealed class InventoryAccountDomainTests
     }
 
     [Fact]
-    public void RecordOpeningStock_requires_zero_on_hand()
+    public void RecordOpeningStock_allows_org_aggregate_above_zero_for_multi_branch()
     {
         var account = InventoryAccount.CreateUntracked(Org, Product, Utc);
         account.Enable(10m, UnitOfMeasure.Piece, Actor, Utc, hasOpeningStockAlready: false);
 
-        var ex = Assert.Throws<DomainException>(() =>
-            account.RecordOpeningStock(
-                5m,
-                UnitOfMeasure.Piece,
-                Actor,
-                Utc.AddMinutes(1),
-                hasOpeningStockAlready: false));
-        Assert.Equal(DomainErrorCodes.InventoryOpeningRequiresZeroOnHand, ex.ErrorCode);
+        // Organization already has stock at another location; branch opening is authorized by the use case.
+        var opening = account.RecordOpeningStock(
+            5m,
+            UnitOfMeasure.Piece,
+            Actor,
+            Utc.AddMinutes(1),
+            hasOpeningStockAlready: false,
+            openingUnitCost: 55m);
+
+        Assert.Equal(15m, account.OnHandQuantity);
+        Assert.Equal(5m, opening.QuantityEffect);
+        Assert.Equal(55m, opening.UnitCost);
     }
 
     [Fact]

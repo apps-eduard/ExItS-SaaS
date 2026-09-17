@@ -10,6 +10,8 @@ using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.UnitTests.TestDoubles;
 
 namespace ExItS.PinoyBusinessPOS.UnitTests.Catalog;
 
@@ -105,6 +107,7 @@ public sealed class CatalogProductHardeningConnectedBuyerTests
         new(
             products,
             new NoOpExposures(),
+            new AlwaysTrackedInventory(),
             new FakeUow(),
             new FixedClock(Now),
             new FakeAccess(),
@@ -225,6 +228,20 @@ public sealed class CatalogProductHardeningConnectedBuyerTests
     private sealed class FakeAccess : IPosCommercialAccessAccessor
     {
         public PosCommercialAccess Current { get; set; } = PosCommercialAccess.DevelopmentDefault;
+    }
+
+    /// <summary>Hardening bulk tests assume products are tracked so share-enable can succeed.</summary>
+    private sealed class AlwaysTrackedInventory : CostResolverInventoryStub
+    {
+        public override Task<InventoryAccount?> GetByProductIdAsync(
+            PosOrganizationId organizationId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default)
+        {
+            var account = InventoryAccount.CreateUntracked(organizationId, productId, Now);
+            account.Enable(0m, UnitOfMeasure.Piece, Guid.Empty, Now, hasOpeningStockAlready: false);
+            return Task.FromResult<InventoryAccount?>(account);
+        }
     }
 }
 

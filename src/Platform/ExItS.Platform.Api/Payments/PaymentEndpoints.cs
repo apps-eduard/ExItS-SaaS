@@ -1,6 +1,7 @@
 using ExItS.Platform.Api.Common;
 using ExItS.Platform.Application.Common;
 using ExItS.Platform.Application.Payments;
+using ExItS.Platform.Application.Subscriptions;
 using ExItS.Platform.Domain.Audit;
 using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
@@ -410,22 +411,8 @@ internal static class PaymentEndpoints
             cancellationToken: ct).ConfigureAwait(false);
     }
 
-    private static BillingCycle ParseBillingCycle(string? billingCycle)
-    {
-        if (string.IsNullOrWhiteSpace(billingCycle))
-        {
-            return BillingCycle.Monthly;
-        }
-
-        if (!Enum.TryParse<BillingCycle>(billingCycle, ignoreCase: true, out var parsed))
-        {
-            throw new DomainException(
-                ApplicationErrorCodes.InvalidBillingCycle,
-                "BillingCycle must be Monthly or Annual.");
-        }
-
-        return parsed;
-    }
+    private static BillingCycle ParseBillingCycle(string? billingCycle) =>
+        BillingCycleParsing.ParseOrDefault(billingCycle);
 
     private static async Task<IResult?> EnsurePaymentMutationAsync(
         PlatformAuthz authz,
@@ -475,20 +462,31 @@ internal static class PaymentEndpoints
             int? page,
             int? pageSize,
             SaaSPaymentQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageManualPayments,
-                PlatformAuditActions.PlatformAccessChecked,
-                "SaaSPayment",
-                organizationId.ToString("D"),
-                organizationId,
-                summary: "List organization manual payments.",
-                cancellationToken: ct).ConfigureAwait(false);
-            if (denied is not null)
+            // Owner commercial self-service (Subscription & Billing) or Platform finance staff.
+            var orgDenied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    ct)
+                .ConfigureAwait(false);
+            if (orgDenied is not null)
             {
-                return denied;
+                var platformDenied = await authz.EnsureAsync(
+                    PlatformPermission.ManageManualPayments,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    "SaaSPayment",
+                    organizationId.ToString("D"),
+                    organizationId,
+                    summary: "List organization manual payments.",
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (platformDenied is not null)
+                {
+                    return orgDenied;
+                }
             }
 
             var result = await queries

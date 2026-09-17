@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Package } from "lucide-react";
+import { Ban, CalendarClock, Package, Save } from "lucide-react";
 import { getCatalogProduct, updateCatalogProduct } from "@/api/pos/pos-catalog-client";
 import {
   enableExpirationTracking,
@@ -21,6 +21,7 @@ import {
   expirationSettingsHighlightClass,
   parseExpirationSettingsFocus,
 } from "@/features/inventory/expiration-settings-routes";
+import { hasMissingExpiry } from "@/features/inventory/inventory-lot-status";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -87,8 +88,11 @@ export function ExpirationSettingsPage() {
 
   const lotsReady = !tracksExpiration || !lotsQuery.isLoading;
   const onHand = accountQuery.data?.onHandQuantity ?? 0;
-  const needsRepair =
-    tracksExpiration && onHand > 0 && lotsReady && lotTotal === 0 && !lotsQuery.isFetching;
+  const needsRepair = hasMissingExpiry(
+    tracksExpiration,
+    onHand,
+    lotsReady && !lotsQuery.isFetching ? lotTotal : null,
+  );
 
   const focus = parseExpirationSettingsFocus(search);
   const highlightAssign = focus === "assign" && needsRepair;
@@ -288,7 +292,7 @@ export function ExpirationSettingsPage() {
           data-highlighted={highlightAssign ? "true" : undefined}
         >
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("inventory.expirationSetupRequired")}
+            {t("inventory.missingExpirationShort")}
           </h2>
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("inventory.expirationSetupRequiredDetail")}
@@ -321,17 +325,50 @@ export function ExpirationSettingsPage() {
               expirationWarningDays={resolvedWarningDays}
               intent="enable"
               onSuccess={onExpirationEnabled}
+              actionsExtra={
+                <Button
+                  asChild
+                  type="button"
+                  variant="outline"
+                  className="expiration-settings-view-lots-btn w-fit"
+                  data-testid="expiration-settings-view-lots"
+                >
+                  <Link to={`/inventory/${productId}`}>
+                    <Package className="size-4 shrink-0" aria-hidden />
+                    <span className="expiration-settings-view-lots-btn__label">
+                      {t("inventory.viewStockLots")}
+                    </span>
+                  </Link>
+                </Button>
+              }
             />
           ) : (
-            <Button
-              type="button"
-              className="min-h-11 w-fit"
-              disabled={enableMutation.isPending}
-              onClick={() => enableMutation.mutate()}
-              data-testid="expiration-settings-enable"
-            >
-              {t("inventory.enableExpirationTracking")}
-            </Button>
+            <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                className="w-fit"
+                disabled={enableMutation.isPending}
+                onClick={() => enableMutation.mutate()}
+                data-testid="expiration-settings-enable"
+              >
+                <CalendarClock className="size-4 shrink-0" aria-hidden />
+                {t("inventory.enableExpirationTracking")}
+              </Button>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="expiration-settings-view-lots-btn w-fit"
+                data-testid="expiration-settings-view-lots"
+              >
+                <Link to={`/inventory/${productId}`}>
+                  <Package className="size-4 shrink-0" aria-hidden />
+                  <span className="expiration-settings-view-lots-btn__label">
+                    {t("inventory.viewStockLots")}
+                  </span>
+                </Link>
+              </Button>
+            </div>
           )}
         </Card>
       ) : (
@@ -352,44 +389,50 @@ export function ExpirationSettingsPage() {
             onChange={(e) => setWarningDays(e.target.value)}
             data-testid="expiration-settings-warning-days"
           />
-          <Button
-            type="button"
-            className="min-h-11 w-fit"
-            disabled={saveWarningMutation.isPending || needsRepair}
-            onClick={() => saveWarningMutation.mutate()}
-            data-testid="expiration-settings-save"
-          >
-            {t("inventory.saveNearExpiryWarning")}
-          </Button>
-
-          <div className="flex flex-col gap-2">
+          <div className="expiration-settings-actions flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              className="expiration-settings-save-btn w-fit"
+              disabled={saveWarningMutation.isPending || needsRepair}
+              onClick={() => saveWarningMutation.mutate()}
+              data-testid="expiration-settings-save"
+            >
+              <Save className="size-4 shrink-0" aria-hidden />
+              {t("inventory.saveNearExpiryWarning")}
+            </Button>
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-fit"
+              className="expiration-settings-disable-btn w-fit"
               disabled={disableMutation.isPending || !disableAllowed}
               onClick={() => disableMutation.mutate()}
               data-testid="expiration-settings-disable"
             >
+              <Ban className="size-4 shrink-0" aria-hidden />
               {t("inventory.disableExpirationTracking")}
             </Button>
-            {!disableAllowed ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("inventory.disableExpirationBlocked")}
-              </p>
-            ) : null}
+            <Button
+              asChild
+              type="button"
+              variant="outline"
+              className="expiration-settings-view-lots-btn w-fit"
+              data-testid="expiration-settings-view-lots"
+            >
+              <Link to={`/inventory/${productId}`}>
+                <Package className="size-4 shrink-0" aria-hidden />
+                <span className="expiration-settings-view-lots-btn__label">
+                  {t("inventory.viewStockLots")}
+                </span>
+              </Link>
+            </Button>
           </div>
+          {!disableAllowed ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("inventory.disableExpirationBlocked")}
+            </p>
+          ) : null}
         </Card>
       )}
-
-      <Link
-        to={`/inventory/${productId}`}
-        className="inline-flex min-h-11 items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold underline underline-offset-2"
-        data-testid="expiration-settings-view-lots"
-      >
-        <Package className="size-4 shrink-0" aria-hidden />
-        {t("inventory.viewStockLots")}
-      </Link>
     </div>
   );
 }

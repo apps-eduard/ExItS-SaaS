@@ -16,6 +16,9 @@ import {
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   canAccessReportsHub,
   canCreateSale,
@@ -33,6 +36,7 @@ import {
   canUseAdminExperience,
   canUseOperationsExperience,
   hasOrganizationManagementAuthority,
+  isPosCashierRole,
   resolveEffectivePosRoleCode,
 } from "@/access/pos-capabilities";
 import { Button } from "@/components/ui/button";
@@ -40,10 +44,11 @@ import { Card } from "@/components/ui/card";
 import { ActionTileGrid, type ActionTileDef } from "@/components/exits/ActionTileGrid";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { ManagerHomePage } from "@/features/role/ManagerHomePage";
+import { CashierHomePage } from "@/features/role/CashierHomePage";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useSellingMode } from "@/selling/SellingModeProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-import { Link, useNavigate } from "react-router-dom";
 
 type RoleHomeShellProps = {
   titleKey: "role.ownerTitle" | "role.managerTitle" | "role.cashierTitle";
@@ -94,23 +99,26 @@ export function RoleHomeShell({
   const { t } = useI18n();
   const navigate = useNavigate();
   const { enter } = useSellingMode();
-  const { sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const { sessionGrant, deviceEnforcementEnabled, boundWorkspace, bindDestination } = useWorkspace();
   const showHomeDeviceRegister = deviceEnforcementEnabled !== false;
+  const [experienceSwitching, setExperienceSwitching] = useState(false);
 
   const canAdmin = canUseAdminExperience(sessionGrant);
   const canOps = canUseOperationsExperience(sessionGrant);
-  const canSell = canCreateSale(sessionGrant);
+  const canSell = canCreateSale(sessionGrant, boundWorkspace?.branchType);
+  const warehouse = isWarehouseBranch(boundWorkspace?.branchType);
   const canCatalog = canManageCatalog(sessionGrant);
   const canInventory = canViewInventory(sessionGrant);
-  const canShifts = canViewShifts(sessionGrant);
-  const canOpenShift = canManageShifts(sessionGrant);
-  const canRegisters = canViewRegisters(sessionGrant);
-  const canCustomers = canViewCustomers(sessionGrant);
-  const canCustomerOrders = canViewCustomerOrders(sessionGrant);
+  const canShifts = !warehouse && canViewShifts(sessionGrant);
+  const canOpenShift = !warehouse && canManageShifts(sessionGrant);
+  const canRegisters = !warehouse && canViewRegisters(sessionGrant);
+  const isCashier = isPosCashierRole(sessionGrant);
+  const canCustomers = !warehouse && canViewCustomers(sessionGrant);
+  const canCustomerOrders = !warehouse && canViewCustomerOrders(sessionGrant);
   const canSuppliers = canViewSuppliers(sessionGrant);
   const canPurchasing = canViewPurchasing(sessionGrant) || canViewInventory(sessionGrant);
-  const canReturns = canViewReturns(sessionGrant);
-  const canDashboard = canViewDashboard(sessionGrant);
+  const canReturns = !warehouse && canViewReturns(sessionGrant);
+  const canDashboard = !warehouse && canViewDashboard(sessionGrant);
   const canReports = canAccessReportsHub(sessionGrant);
   const canDevices = hasOrganizationManagementAuthority(sessionGrant);
   const securityRole = resolveEffectivePosRoleCode(sessionGrant);
@@ -118,6 +126,54 @@ export function RoleHomeShell({
   function startSelling() {
     enter(returnRoute);
     navigate("/sell");
+  }
+
+  async function openManageBusiness() {
+    if (!boundWorkspace || experienceSwitching) {
+      navigate("/org");
+      return;
+    }
+    setExperienceSwitching(true);
+    try {
+      const ok = await bindDestination({
+        organizationId: boundWorkspace.organizationId,
+        organizationDisplayName: boundWorkspace.organizationDisplayName,
+        branchId: null,
+        branchName: null,
+        experience: "manage_business",
+        route: "/org",
+        labelKey: "experience.manageBusiness",
+      });
+      if (ok) {
+        navigate("/org");
+      }
+    } finally {
+      setExperienceSwitching(false);
+    }
+  }
+
+  async function openOperations() {
+    if (!boundWorkspace?.branchId || experienceSwitching) {
+      navigate(boundWorkspace?.branchId ? "/role/manager" : "/workspace");
+      return;
+    }
+    setExperienceSwitching(true);
+    try {
+      const ok = await bindDestination({
+        organizationId: boundWorkspace.organizationId,
+        organizationDisplayName: boundWorkspace.organizationDisplayName,
+        branchId: boundWorkspace.branchId,
+        branchName: boundWorkspace.branchName,
+        experience: "operations",
+        route: "/role/manager",
+        labelKey: "experience.operations",
+      });
+      if (ok) {
+        navigate("/role/manager");
+      }
+    } finally {
+      setExperienceSwitching(false);
+    }
   }
 
   const quickTiles: TileDef[] = [];
@@ -145,7 +201,7 @@ export function RoleHomeShell({
   if (canShifts) {
     operationTiles.push({
       key: "shifts",
-      label: t("shift.hubTitle"),
+      label: isCashier ? t("shift.myHubTitle") : t("shift.hubTitle"),
       icon: RefreshCw,
       testId: "open-shifts",
       to: "/shifts",
@@ -163,7 +219,7 @@ export function RoleHomeShell({
   if (canRegisters) {
     operationTiles.push({
       key: "registers",
-      label: t("register.listTitle"),
+      label: isCashier ? t("register.myTitle") : t("register.listTitle"),
       icon: LayoutDashboard,
       testId: "open-registers",
       to: "/registers",
@@ -356,17 +412,30 @@ export function RoleHomeShell({
           aria-label={t("experience.chooserLabel")}
         >
           {canAdmin ? (
-            <Button asChild className="min-h-11 w-full">
-              <Link to="/org">{t("experience.manageBusiness")}</Link>
+            <Button
+              type="button"
+              className="w-full"
+              disabled={experienceSwitching}
+              onClick={() => void openManageBusiness()}
+              data-testid="experience-manage-business"
+            >
+              {t("experience.manageBusiness")}
             </Button>
           ) : null}
           {canOps ? (
-            <Button asChild variant="ghost" className="min-h-11 w-full">
-              <Link to="/role/manager">{t("experience.operations")}</Link>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              disabled={experienceSwitching}
+              onClick={() => void openOperations()}
+              data-testid="experience-operations"
+            >
+              {t("experience.operations")}
             </Button>
           ) : null}
           {canSell ? (
-            <Button type="button" className="min-h-11 w-full" onClick={startSelling}>
+            <Button type="button" className="w-full" onClick={startSelling}>
               {t("experience.startSelling")}
             </Button>
           ) : null}
@@ -376,7 +445,6 @@ export function RoleHomeShell({
           {canSell ? (
             <Button
               type="button"
-              className="min-h-11"
               variant={primarySell ? "default" : "ghost"}
               onClick={startSelling}
             >
@@ -387,7 +455,6 @@ export function RoleHomeShell({
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               onClick={() => navigate("/workspace")}
             >
               {t("workspace.switch")}
@@ -397,22 +464,22 @@ export function RoleHomeShell({
       )}
 
       {canShifts ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shifts">
-          <Link to="/shifts">{t("shift.hubTitle")}</Link>
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-shifts">
+          <Link to="/shifts">{isCashier ? t("shift.myHubTitle") : t("shift.hubTitle")}</Link>
         </Button>
       ) : null}
       {canOpenShift ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-shift-open">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-shift-open">
           <Link to="/shifts/open">{t("shift.openTitle")}</Link>
         </Button>
       ) : null}
       {canRegisters ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-registers">
-          <Link to="/registers">{t("register.listTitle")}</Link>
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-registers">
+          <Link to="/registers">{isCashier ? t("register.myTitle") : t("register.listTitle")}</Link>
         </Button>
       ) : null}
       {canDevices ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-org-devices">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-org-devices">
           <Link to="/org/devices">{t("devices.listTitle")}</Link>
         </Button>
       ) : null}
@@ -420,31 +487,31 @@ export function RoleHomeShell({
         <Button
           asChild
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="open-branch-fulfillment"
         >
           <Link to="/org/branches">{t("org.branchesLink")}</Link>
         </Button>
       ) : null}
       {showHomeDeviceRegister ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-device-register">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-device-register">
           <Link to="/devices/register">{t("devices.registerThisDevice")}</Link>
         </Button>
       ) : null}
       {canCatalog ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-catalog">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-catalog">
           <Link to="/catalog">{t("catalog.openCatalog")}</Link>
         </Button>
       ) : null}
       {canInventory ? (
         <>
-          <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-inventory">
+          <Button asChild variant="ghost" className="w-fit" data-testid="open-inventory">
             <Link to="/inventory">{t("inventory.open")}</Link>
           </Button>
           <Button
             asChild
             variant="ghost"
-            className="min-h-11 w-fit"
+            className="w-fit"
             data-testid="open-expiring-stock-home"
           >
             <Link to="/inventory/expiration">{t("inventory.openExpiring")}</Link>
@@ -452,7 +519,7 @@ export function RoleHomeShell({
         </>
       ) : null}
       {canCustomers ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-customers">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-customers">
           <Link to="/customers">{t("customers.open")}</Link>
         </Button>
       ) : null}
@@ -460,34 +527,34 @@ export function RoleHomeShell({
         <Button
           asChild
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="open-customer-orders"
         >
           <Link to="/orders">{t("orders.openQueue")}</Link>
         </Button>
       ) : null}
       {canSuppliers ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-suppliers">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-suppliers">
           <Link to="/suppliers">{t("suppliers.open")}</Link>
         </Button>
       ) : null}
       {canPurchasing ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-purchasing">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-purchasing">
           <Link to="/purchasing">{t("purchasing.open")}</Link>
         </Button>
       ) : null}
       {canReturns ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-returns">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-returns">
           <Link to="/returns">{t("returns.open")}</Link>
         </Button>
       ) : null}
       {canDashboard ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-dashboard">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-dashboard">
           <Link to="/dashboard">{t("dashboard.open")}</Link>
         </Button>
       ) : null}
       {canReports ? (
-        <Button asChild variant="ghost" className="min-h-11 w-fit" data-testid="open-reports">
+        <Button asChild variant="ghost" className="w-fit" data-testid="open-reports">
           <Link to="/reports">{t("reports.open")}</Link>
         </Button>
       ) : null}
@@ -509,30 +576,9 @@ export function OwnerRoleHomePage() {
 }
 
 export function ManagerRoleHomePage() {
-  return (
-    <RoleHomeShell
-      titleKey="role.managerTitle"
-      ledeKey="role.managerLede"
-      badgeKey="role.managerBadge"
-      bodyKey="role.managerBody"
-      returnRoute="/role/manager"
-      dashboardGuide
-      homeTestId="manager-home"
-    />
-  );
+  return <ManagerHomePage />;
 }
 
 export function CashierRoleHomePage() {
-  return (
-    <RoleHomeShell
-      titleKey="role.cashierTitle"
-      ledeKey="role.cashierLede"
-      badgeKey="role.cashierBadge"
-      bodyKey="role.cashierBody"
-      returnRoute="/role/cashier"
-      primarySell
-      dashboardGuide
-      homeTestId="cashier-home"
-    />
-  );
+  return <CashierHomePage />;
 }

@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { SessionCartLifecycle } from "@/cart/SessionCartLifecycle";
 import { SessionCartProvider } from "@/cart/SessionCartProvider";
+import { ToastNavigateBridge } from "@/components/exits/ToastNavigateBridge";
 import { ConnectivityHost } from "@/connectivity/ConnectivityHost";
 import { OnboardingResumeGate } from "@/features/onboarding/OnboardingResumeGate";
 import { ShiftContextProvider } from "@/features/shifts/ShiftContextProvider";
@@ -18,6 +19,7 @@ export function SessionWorkspaceRoot() {
           <ShiftContextProvider>
             <SessionCartProvider>
               <SellingModeProvider>
+                <ToastNavigateBridge />
                 <SellingModeLifecycle />
                 <SessionCartLifecycle />
                 <ConnectivityHost />

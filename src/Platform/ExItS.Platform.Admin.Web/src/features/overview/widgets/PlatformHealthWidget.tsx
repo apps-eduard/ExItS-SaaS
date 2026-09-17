@@ -35,7 +35,11 @@ function healthLabel(
   if (status === "Unhealthy") {
     return t("dashboard.health.Unavailable");
   }
-  return rawBody.length > 0 ? rawBody : t("dashboard.health.unknown");
+  // Never dump proxy/SPA HTML into the status chip.
+  if (rawBody.length === 0 || rawBody.startsWith("<") || rawBody.length > 80) {
+    return t("dashboard.health.unknown");
+  }
+  return rawBody;
 }
 
 export function PlatformHealthWidget({ enabled }: { enabled: boolean }) {

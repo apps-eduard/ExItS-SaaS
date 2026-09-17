@@ -7,6 +7,7 @@ namespace ExItS.Platform.Domain.Payments;
 /// <summary>
 /// Persisted provider payment attempt (gateway or local-validation simulation).
 /// Distinct from manual <see cref="SaaSPayment"/> staff-recorded references.
+/// Pricing snapshot columns preserve historical charged amounts if catalog prices change later.
 /// </summary>
 public sealed class ProviderPayment
 {
@@ -23,6 +24,12 @@ public sealed class ProviderPayment
     public string? FailureMessage { get; }
     public string IdempotencyKey { get; }
     public string? Purpose { get; }
+    public string? PlanKey { get; }
+    public string? BillingCycle { get; }
+    public decimal? BaseAmount { get; }
+    public decimal? DiscountAmount { get; }
+    public decimal? DiscountPercent { get; }
+    public decimal? FinalAmount { get; }
     public DateTimeOffset CreatedAtUtc { get; }
 
     private ProviderPayment(
@@ -39,6 +46,12 @@ public sealed class ProviderPayment
         string? failureMessage,
         string idempotencyKey,
         string? purpose,
+        string? planKey,
+        string? billingCycle,
+        decimal? baseAmount,
+        decimal? discountAmount,
+        decimal? discountPercent,
+        decimal? finalAmount,
         DateTimeOffset createdAtUtc)
     {
         Id = id;
@@ -54,6 +67,12 @@ public sealed class ProviderPayment
         FailureMessage = failureMessage;
         IdempotencyKey = idempotencyKey;
         Purpose = purpose;
+        PlanKey = planKey;
+        BillingCycle = billingCycle;
+        BaseAmount = baseAmount;
+        DiscountAmount = discountAmount;
+        DiscountPercent = discountPercent;
+        FinalAmount = finalAmount;
         CreatedAtUtc = createdAtUtc;
     }
 
@@ -63,7 +82,8 @@ public sealed class ProviderPayment
         PaymentProviderResult result,
         string? purpose,
         DateTimeOffset utcNow,
-        ProviderPaymentId? id = null)
+        ProviderPaymentId? id = null,
+        PaymentChargeRequest? charge = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(subscriptionId);
@@ -89,6 +109,12 @@ public sealed class ProviderPayment
             result.FailureMessage,
             result.IdempotencyKey.Trim(),
             purpose?.Trim(),
+            charge?.PlanKey?.Trim(),
+            charge?.BillingCycle?.Trim(),
+            charge?.BaseAmount,
+            charge?.DiscountAmount,
+            charge?.DiscountPercent,
+            charge is null ? result.Amount : charge.Amount,
             utcNow);
     }
 
@@ -106,7 +132,13 @@ public sealed class ProviderPayment
         string? failureMessage,
         string idempotencyKey,
         string? purpose,
-        DateTimeOffset createdAtUtc) =>
+        DateTimeOffset createdAtUtc,
+        string? planKey = null,
+        string? billingCycle = null,
+        decimal? baseAmount = null,
+        decimal? discountAmount = null,
+        decimal? discountPercent = null,
+        decimal? finalAmount = null) =>
         new(
             id,
             organizationId,
@@ -121,5 +153,11 @@ public sealed class ProviderPayment
             failureMessage,
             idempotencyKey,
             purpose,
+            planKey,
+            billingCycle,
+            baseAmount,
+            discountAmount,
+            discountPercent,
+            finalAmount,
             createdAtUtc);
 }

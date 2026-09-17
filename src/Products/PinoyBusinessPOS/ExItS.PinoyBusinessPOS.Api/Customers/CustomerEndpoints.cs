@@ -100,6 +100,7 @@ internal static class CustomerEndpoints
         group.MapGet("/checkout-search", async (
             HttpRequest request,
             string? search,
+            string? kind,
             int? page,
             int? pageSize,
             POSCustomerQueryService queries,
@@ -111,24 +112,16 @@ internal static class CustomerEndpoints
                 return problem!;
             }
 
-            // Cashier may search for Utang checkout; does not require ViewCustomersAndHistory.
+            // Cashier may search for checkout counterparts; does not require ViewCustomersAndHistory.
             if (!PosCommercialScope.TryAuthorize(access, UtangCapability.CreateSale, out problem))
             {
                 return problem!;
             }
 
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                return PosApiResults.Problem(
-                    ApplicationErrorCodes.CheckoutCustomerSearchRequired,
-                    "Checkout customer search requires a non-blank search term.",
-                    StatusCodes.Status400BadRequest);
-            }
-
             var result = await queries
-                .SearchForCheckoutAsync(organizationId, search.Trim(), page, pageSize, ct)
+                .SearchForCheckoutAsync(organizationId, search, page, pageSize, kind, ct)
                 .ConfigureAwait(false);
-            return Results.Ok(result);
+            return PosApiResults.FromResult(result, Results.Ok);
         });
 
         group.MapPost("/", async (
@@ -163,6 +156,9 @@ internal static class CustomerEndpoints
                         body.CustomerId,
                         body.PlatformBusinessCustomerId,
                         body.LinkedPersonalPublicUserId,
+                        body.PartyKind,
+                        body.LinkedBuyerOrganizationId,
+                        body.LinkedBuyerPublicOrganizationId,
                         ct2),
                     POSCustomerQueryService.Map,
                     dto => Results.Created($"/api/v1/pos/customers/{dto.CustomerId:D}", dto),
@@ -435,7 +431,10 @@ public sealed record CreateCustomerRequest(
     string? Notes,
     Guid? CustomerId = null,
     Guid? PlatformBusinessCustomerId = null,
-    string? LinkedPersonalPublicUserId = null);
+    string? LinkedPersonalPublicUserId = null,
+    string? PartyKind = null,
+    Guid? LinkedBuyerOrganizationId = null,
+    string? LinkedBuyerPublicOrganizationId = null);
 
 public sealed record UpdateCustomerRequest(
     string DisplayName,

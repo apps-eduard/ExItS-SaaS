@@ -65,7 +65,9 @@ if [ -n "$proxy_target" ]; then
       exit 1
       ;;
   esac
-  printf 'location /api/ {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header Cookie $http_cookie;\n    proxy_pass_header Set-Cookie;\n    client_max_body_size 10m;\n}\n' "$proxy_target" > /tmp/exits-api-proxy.conf
+  # /api/ for authenticated Platform calls; /health(+ /ready) for dashboard Platform readiness
+  # (must not hit SPA index.html or this container's /nginx-health).
+  printf 'location /api/ {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n    proxy_set_header Cookie $http_cookie;\n    proxy_pass_header Set-Cookie;\n    client_max_body_size 10m;\n}\nlocation = /health {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\nlocation = /health/ready {\n    proxy_pass %s;\n    proxy_http_version 1.1;\n    proxy_set_header Host $host;\n    proxy_set_header X-Real-IP $remote_addr;\n    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n    proxy_set_header X-Forwarded-Proto $scheme;\n}\n' "$proxy_target" "$proxy_target" "$proxy_target" > /tmp/exits-api-proxy.conf
 else
   printf '# no API reverse proxy\n' > /tmp/exits-api-proxy.conf
 fi

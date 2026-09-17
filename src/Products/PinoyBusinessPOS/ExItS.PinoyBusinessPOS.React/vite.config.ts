@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,15 +8,44 @@ import { defineConfig } from "vitest/config";
 import { createPlatformApiProxy } from "./vite.platform-api-proxy";
 import { createPosApiProxy } from "./vite.pos-api-proxy";
 import { blockServiceWorkerScriptsInDev } from "./vite.block-sw-in-dev";
+import { createDevPortHealthPlugin } from "./vite.dev-port-health";
+import { createLvSupervisorProxy } from "./vite.lv-supervisor-proxy";
 import { createPwaManifest } from "./src/pwa/pwa-manifest";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig({
+/**
+ * Build identity for runtime verification (dev / e2e). Not a secret.
+ * Production assets omit git SHA unless VITE_POS_BUILD_SHA or VITE_POS_EXPOSE_GIT_SHA=1.
+ */
+function resolvePosBuildSha(mode: string): string {
+  const fromEnv = process.env.VITE_POS_BUILD_SHA?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+  if (mode === "production" && process.env.VITE_POS_EXPOSE_GIT_SHA !== "1") {
+    return mode;
+  }
+  try {
+    return execSync("git rev-parse HEAD", {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+
+export default defineConfig(({ mode }) => ({
+  define: {
+    "import.meta.env.VITE_POS_BUILD_SHA": JSON.stringify(resolvePosBuildSha(mode)),
+  },
   plugins: [
     react(),
     tailwindcss(),
     blockServiceWorkerScriptsInDev(),
+    createDevPortHealthPlugin(),
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
@@ -81,6 +111,7 @@ export default defineConfig({
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
+      ...createLvSupervisorProxy(),
     },
   },
   preview: {
@@ -98,6 +129,7 @@ export default defineConfig({
     proxy: {
       ...createPlatformApiProxy(),
       ...createPosApiProxy(),
+      ...createLvSupervisorProxy(),
     },
   },
   test: {
@@ -111,7 +143,9 @@ export default defineConfig({
       "vite.pos-api-proxy.test.ts",
       "vite.proxy-cookie.test.ts",
       "vite.block-sw-in-dev.test.ts",
+      "vite.dev-port-health.test.ts",
+      "vite.lv-supervisor-proxy.test.ts",
       "scripts/emulator-port-forward.test.mjs",
     ],
   },
-});
+}));

@@ -17,10 +17,14 @@ public sealed class OrganizationNotificationBranchScopeTests
     }
 
     [Fact]
-    public void SUPBRREQ11_only_supplier_connection_requested_is_branch_targetable()
+    public void SUPBRREQ11_branch_targetable_types_include_stock_request_and_transfer()
     {
         Assert.True(OrganizationBusinessNotificationTypes.IsBranchTargetable(
             SupplierConnectionNotificationTypes.Requested));
+        Assert.True(OrganizationBusinessNotificationTypes.IsBranchTargetable(
+            StockRequestNotificationTypes.Submitted));
+        Assert.True(OrganizationBusinessNotificationTypes.IsBranchTargetable(
+            InventoryTransferNotificationTypes.Dispatched));
         Assert.False(OrganizationBusinessNotificationTypes.IsBranchTargetable(
             SupplierConnectionNotificationTypes.Accepted));
         Assert.False(OrganizationBusinessNotificationTypes.IsBranchTargetable(

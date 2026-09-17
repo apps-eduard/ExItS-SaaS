@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ChevronRight, History } from "lucide-react";
+import { ChevronRight, History, Users } from "lucide-react";
 import {
   getLinkedCustomerStatement,
   isExtendedHistoryRequiredError,
@@ -74,10 +74,10 @@ function ActivityRow({
       <div className="pc-activity-row__main">
         <span className="pc-activity-row__title">{title}</span>
         {subtitle ? <span className="pc-activity-row__meta">{subtitle}</span> : null}
-        <span className="pc-activity-row__meta">
-          {meta}
-          {item.sourceSaleId && item.hasDetails ? ` · ${openReceiptLabel}` : ""}
-        </span>
+        <span className="pc-activity-row__meta">{meta}</span>
+        {item.sourceSaleId && item.hasDetails ? (
+          <span className="pc-activity-row__action">{openReceiptLabel}</span>
+        ) : null}
       </div>
       {amount ? (
         <span
@@ -92,7 +92,7 @@ function ActivityRow({
         </span>
       ) : null}
       {item.sourceSaleId && item.hasDetails ? (
-        <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
+        <ChevronRight className="size-4 shrink-0 text-[var(--exits-primary)]" aria-hidden />
       ) : null}
     </>
   );
@@ -103,6 +103,7 @@ function ActivityRow({
         to={`/personal/linked-merchants/${organizationId}/${businessCustomerId}/receipts/${item.sourceSaleId}`}
         className="pc-activity-row pc-activity-row--clickable"
         data-testid="linked-merchant-activity-receipt-link"
+        aria-label={`${openReceiptLabel}: ${title}`}
       >
         {content}
       </Link>
@@ -450,6 +451,8 @@ export function LinkedMerchantStatementPage() {
           <h2 className="pc-section-heading">{t("personal.merchantStatement.openDebtSection")}</h2>
           {openDebt.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
               title={t("personal.merchantStatement.openDebtEmptyTitle")}
               detail={t("personal.merchantStatement.openDebtEmptyDetail")}
             />
@@ -483,6 +486,8 @@ export function LinkedMerchantStatementPage() {
         <h2 className="pc-section-heading">{t("personal.merchantStatement.recentSection")}</h2>
         {recent.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.merchantStatement.recentEmptyTitle")}
             detail={t("personal.merchantStatement.recentEmptyDetail")}
           />
@@ -518,14 +523,14 @@ export function LinkedMerchantStatementPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)]">
               {t("personal.merchantStatement.historyLocked")}
             </p>
-            <Button asChild className="min-h-11 w-full">
+            <Button asChild className="w-full">
               <Link to="/personal/rewards">{t("personal.merchantStatement.historyUnlock")}</Link>
             </Button>
           </div>
         ) : olderItems.length === 0 && !olderLoadAttempted ? (
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             disabled={busyOlder}
             data-testid="linked-merchant-older-load"
             onClick={() => void loadOlder()}
@@ -535,6 +540,8 @@ export function LinkedMerchantStatementPage() {
           </Button>
         ) : olderItems.length === 0 ? (
           <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
             title={t("personal.merchantStatement.olderEmptyTitle")}
             detail={t("personal.merchantStatement.olderEmptyDetail")}
           />

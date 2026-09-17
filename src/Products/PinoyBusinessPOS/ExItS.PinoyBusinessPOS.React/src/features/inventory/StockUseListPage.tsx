@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, PackageMinus } from "lucide-react";
+import { ChevronRight, Package, PackageMinus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listStockUses } from "@/api/pos/pos-stock-use-client";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,9 @@ export function StockUseListPage() {
         <ErrorState title={t("stockUse.errorTitle")} detail={t("stockUse.loadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("stockUse.empty")} detail={t("stockUse.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("stockUse.empty")} detail={t("stockUse.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="stock-use-list">
@@ -109,7 +111,7 @@ export function StockUseListPage() {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.stockUseId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/inventory/stock-use/${item.stockUseId}`}
                 className="exits-list__card stock-use-row block min-w-0 text-foreground no-underline"
                 data-testid={`stock-use-row-${item.stockUseId}`}
@@ -135,7 +137,7 @@ export function StockUseListPage() {
                     aria-hidden
                   />
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           );
         })}
@@ -146,7 +148,6 @@ export function StockUseListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canPrev || query.isFetching}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -160,7 +161,6 @@ export function StockUseListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canNext || query.isFetching}
             onClick={() => setPage((p) => p + 1)}
           >

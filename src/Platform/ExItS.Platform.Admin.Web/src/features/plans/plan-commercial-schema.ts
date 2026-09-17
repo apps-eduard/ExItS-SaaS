@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-/** Mirrors the Platform domain Plan.MaxAreas bounds so the editor fails before the API does. */
-export const MIN_MAX_AREAS = 1;
+/** Mirrors the Platform domain Plan.MaxAreas bounds so the editor fails before the API does. 0 = no Area management. */
+export const MIN_MAX_AREAS = 0;
 export const MAX_MAX_AREAS = 10_000;
 
 export type PlanRenameValues = {
@@ -49,7 +49,7 @@ export const planCommercialSchema = z
     maxAreas: z
       .number()
       .int()
-      .min(MIN_MAX_AREAS, "Must be at least 1.")
+      .min(MIN_MAX_AREAS, "Cannot be negative.")
       .max(MAX_MAX_AREAS, "Cannot exceed 10000."),
     customerCreditEnabled: z.boolean(),
     advancedReportsEnabled: z.boolean(),

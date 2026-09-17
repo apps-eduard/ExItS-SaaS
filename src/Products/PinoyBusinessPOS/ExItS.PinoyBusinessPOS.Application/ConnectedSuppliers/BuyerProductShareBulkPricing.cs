@@ -7,7 +7,9 @@ public enum BulkBuyerPricingMode
     UseDefault = 0,
     DiscountPercent = 1,
     AdjustAmount = 2,
-    FixedPrice = 3
+    FixedPrice = 3,
+    /// <summary>Increase each product's Default PO price by a percent (B2B markup).</summary>
+    MarkupPercent = 4
 }
 
 /// <summary>
@@ -59,6 +61,24 @@ public static class BuyerProductShareBulkPricing
                 }
 
                 buyerSpecificPoPrice = discounted;
+                return true;
+            }
+            case BulkBuyerPricingMode.MarkupPercent:
+            {
+                if (percent is null || percent < 0m || percent > 1000m)
+                {
+                    error = "Markup percent must be between 0 and 1000.";
+                    return false;
+                }
+
+                var markedUp = SaleMoney.RoundMoney(baseline * (1m + (percent.Value / 100m)));
+                if (markedUp <= 0m)
+                {
+                    error = "Markup would produce an invalid buyer PO price.";
+                    return false;
+                }
+
+                buyerSpecificPoPrice = markedUp;
                 return true;
             }
             case BulkBuyerPricingMode.AdjustAmount:

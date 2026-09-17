@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -34,6 +35,7 @@ public sealed class GoodsReceipt
     public DateTimeOffset? VoidedAtUtc { get; private set; }
     public Guid? VoidedByUserId { get; private set; }
     public string? VoidReason { get; private set; }
+    public GoodsReceiptSettlement Settlement { get; }
 
     public IReadOnlyList<GoodsReceiptLine> Lines => _lines;
 
@@ -50,6 +52,7 @@ public sealed class GoodsReceipt
         Guid receivedBy,
         PosBranchId? receivingBranchId,
         List<GoodsReceiptLine> lines,
+        GoodsReceiptSettlement settlement,
         GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
         Guid? voidedByUserId = null,
@@ -70,6 +73,7 @@ public sealed class GoodsReceipt
         VoidedAtUtc = voidedAtUtc;
         VoidedByUserId = voidedByUserId;
         VoidReason = voidReason;
+        Settlement = settlement;
         _lines = lines;
     }
 
@@ -85,7 +89,8 @@ public sealed class GoodsReceipt
         string? deliveryReference = null,
         string? notes = null,
         PosBranchId? receivingBranchId = null,
-        GoodsReceiptId? id = null)
+        GoodsReceiptId? id = null,
+        GoodsReceiptSettlement? settlement = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(receivedBy);
@@ -146,6 +151,7 @@ public sealed class GoodsReceipt
             receivedBy,
             receivingBranchId,
             lines,
+            settlement ?? GoodsReceiptSettlement.Empty,
             GoodsReceiptStatus.Posted);
     }
 
@@ -190,6 +196,7 @@ public sealed class GoodsReceipt
         Guid receivedBy,
         PosBranchId? receivingBranchId,
         IReadOnlyList<GoodsReceiptLine> lines,
+        GoodsReceiptSettlement settlement,
         GoodsReceiptStatus status = GoodsReceiptStatus.Posted,
         DateTimeOffset? voidedAtUtc = null,
         Guid? voidedByUserId = null,
@@ -207,6 +214,7 @@ public sealed class GoodsReceipt
             receivedBy,
             receivingBranchId,
             lines.ToList(),
+            settlement,
             status,
             voidedAtUtc,
             voidedByUserId,

@@ -1,3 +1,4 @@
+import { Building2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,6 +99,8 @@ export function LinkedProductsPage() {
   if (!supplierQuery.data || !isConnectedSupplier(supplierQuery.data) || !relationshipId) {
     return (
       <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
         title={t("connected.relationshipMissing")}
         detail={t("connected.relationshipMissingHelp")}
       />
@@ -117,7 +120,7 @@ export function LinkedProductsPage() {
         backLabel={t("connected.backToSupplier")}
         backTestId="page-header-back-suppliers"
       />
-      <Button asChild className="min-h-11 self-start" data-testid="linked-browse-catalog">
+      <Button asChild className="self-start" data-testid="linked-browse-catalog">
         <Link to={`/suppliers/${supplierId}/connected-catalog`}>
           {t("connected.browseProducts")}
         </Link>
@@ -148,6 +151,9 @@ export function LinkedProductsPage() {
       ) : null}
       {linksQuery.isSuccess && filtered.length === 0 ? (
         <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
           title={debounced ? t("connected.linkedNoMatch") : t("connected.linkedEmpty")}
           detail={debounced ? t("connected.linkedNoMatchHelp") : t("connected.linkedEmptyHelp")}
         />
@@ -168,7 +174,6 @@ export function LinkedProductsPage() {
                   <Button
                     type="button"
                     variant="ghost"
-                    className="min-h-11"
                     data-testid={`linked-unlink-${link.linkId}`}
                     disabled={busyId === link.linkId}
                     onClick={() => void unlink(link.linkId)}

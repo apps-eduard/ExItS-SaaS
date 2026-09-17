@@ -505,6 +505,27 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for inventory transfer cancel. Online-only.</summary>
     public const string InventoryTransferCancel = "inventory_transfer.cancel";
 
+    /// <summary>Server-side idempotency for stock request create. Online-only.</summary>
+    public const string StockRequestCreate = "stock_request.create";
+
+    /// <summary>Server-side idempotency for stock request approve. Online-only.</summary>
+    public const string StockRequestApprove = "stock_request.approve";
+
+    /// <summary>Server-side idempotency for stock request prepare. Online-only.</summary>
+    public const string StockRequestPrepare = "stock_request.prepare";
+
+    /// <summary>Server-side idempotency for stock request dispatch. Online-only.</summary>
+    public const string StockRequestDispatch = "stock_request.dispatch";
+
+    /// <summary>Server-side idempotency for stock request reject. Online-only.</summary>
+    public const string StockRequestReject = "stock_request.reject";
+
+    /// <summary>Server-side idempotency for stock request cancel. Online-only.</summary>
+    public const string StockRequestCancel = "stock_request.cancel";
+
+    /// <summary>Server-side idempotency for stock request fulfill via transfer. Online-only.</summary>
+    public const string StockRequestFulfillTransfer = "stock_request.fulfill_transfer";
+
     /// <summary>Server-side idempotency operation type for cashier shift cash movements. Online-only.</summary>
     public const string CashierShiftMovement = "cashier_shift.movement";
 
@@ -541,4 +562,25 @@ public static class OfflineOperationTypes
     /// dispatcher or queue handler. Names the idempotency scope so a retried payment replays.
     /// </summary>
     public const string SupplierPayablePayment = "supplier_payable.payment";
+
+    /// <summary>Server-side idempotency for customer credit policy upsert. Online-only.</summary>
+    public const string CustomerCreditPolicyUpsert = "customer_credit_policy.upsert";
+
+    /// <summary>Server-side idempotency for customer credit policy approve. Online-only.</summary>
+    public const string CustomerCreditPolicyApprove = "customer_credit_policy.approve";
+
+    /// <summary>Server-side idempotency for customer credit policy disable. Online-only.</summary>
+    public const string CustomerCreditPolicyDisable = "customer_credit_policy.disable";
+
+    /// <summary>Server-side idempotency for business customer credit policy upsert. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyUpsert = "business_customer_credit_policy.upsert";
+
+    /// <summary>Server-side idempotency for business customer credit policy approve. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyApprove = "business_customer_credit_policy.approve";
+
+    /// <summary>Server-side idempotency for business customer credit policy disable. Online-only.</summary>
+    public const string BusinessCustomerCreditPolicyDisable = "business_customer_credit_policy.disable";
+
+    /// <summary>Server-side idempotency for B2B business customer repayment create. Online-only.</summary>
+    public const string BusinessRepaymentCreate = "business_repayment.create";
 }

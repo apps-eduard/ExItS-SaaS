@@ -125,7 +125,9 @@ public sealed class PartyBranchAccess04H1IntegrationTests(PosPostgreSqlFixture f
 
         using var receive = ScopedBranch(HttpMethod.Post, $"{PurchaseOrders}/{po.PurchaseOrderId:D}/receive", org, OwnerActor, MicaB, PurchasingGrants);
         receive.Content = JsonContent.Create(
-            new ReceivePurchaseOrderRequest([new ReceivePurchaseOrderLineRequest(product.ProductId, 5m)]),
+            new ReceivePurchaseOrderRequest(
+                [new ReceivePurchaseOrderLineRequest(product.ProductId, 5m)],
+                PaymentMethodAtReceipt: "Cash"),
             options: JsonOptions);
         using var receiveResponse = await client.SendAsync(receive);
         Assert.Equal(HttpStatusCode.Created, receiveResponse.StatusCode);

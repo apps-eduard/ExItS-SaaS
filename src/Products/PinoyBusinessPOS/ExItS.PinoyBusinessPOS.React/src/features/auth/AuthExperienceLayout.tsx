@@ -47,30 +47,42 @@ export function AuthExperienceLayout({
 
       <div className="auth-experience__sheet-wrap relative z-[1] -mt-[4.75rem] flex flex-1 flex-col overflow-y-auto px-[max(var(--exits-page-padding),env(safe-area-inset-left))] pr-[max(var(--exits-page-padding),env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:-mt-[5.25rem]">
         <div
-          className="auth-experience__sheet mx-auto flex w-full max-w-[min(100%,28rem)] min-w-0 flex-col gap-5 rounded-[1.875rem] bg-surface p-5 shadow-[0_20px_48px_rgba(20,32,26,0.14)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
-          data-testid="auth-experience-sheet"
+          className={
+            belowCard
+              ? "mx-auto flex w-full min-w-0 max-w-[min(100%,28rem)] flex-col items-stretch gap-5 sm:max-w-[min(100%,30rem)] md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,56rem)] lg:flex-row lg:items-start lg:justify-center lg:gap-6"
+              : "mx-auto flex w-full min-w-0 max-w-[min(100%,28rem)] flex-col gap-5 sm:max-w-[min(100%,30rem)] md:max-w-[min(100%,32rem)]"
+          }
+          data-testid="auth-experience-main"
         >
-          <UnderlineTabBar
-            className="auth-experience__tabs exits-chip-bar--equal"
-            items={[
-              { key: "sign-in", label: t("auth.tabSignIn"), testId: "auth-tab-sign-in" },
-              { key: "sign-up", label: t("auth.tabSignUp"), testId: "auth-tab-sign-up" },
-            ]}
-            activeKey={activeTab}
-            onChange={(key) => onTabChange(key as AuthTab)}
-            ariaLabel={t("auth.tabsLabel")}
-          />
+          <div
+            className="auth-experience__sheet flex w-full min-w-0 max-w-[min(100%,28rem)] flex-col gap-5 rounded-[1.875rem] bg-surface p-5 shadow-[0_20px_48px_rgba(20,32,26,0.14)] sm:max-w-[min(100%,30rem)] sm:p-6 md:max-w-[min(100%,32rem)] lg:max-w-[min(100%,32rem)]"
+            data-testid="auth-experience-sheet"
+          >
+            <UnderlineTabBar
+              className="auth-experience__tabs exits-chip-bar--equal"
+              items={[
+                { key: "sign-in", label: t("auth.tabSignIn"), testId: "auth-tab-sign-in" },
+                { key: "sign-up", label: t("auth.tabSignUp"), testId: "auth-tab-sign-up" },
+              ]}
+              activeKey={activeTab}
+              onChange={(key) => onTabChange(key as AuthTab)}
+              ariaLabel={t("auth.tabsLabel")}
+            />
 
-          {offlineBanner}
+            {offlineBanner}
 
-          {children}
-        </div>
-
-        {belowCard ? (
-          <div className="mx-auto mt-5 w-full max-w-[min(100%,28rem)] min-w-0 sm:max-w-[min(100%,30rem)] md:max-w-[min(100%,32rem)]">
-            {belowCard}
+            {children}
           </div>
-        ) : null}
+
+          {belowCard ? (
+            <aside
+              className="auth-experience__aside mt-5 w-full min-w-0 max-w-[min(100%,28rem)] sm:max-w-[min(100%,30rem)] md:max-w-[min(100%,32rem)] lg:mt-0 lg:max-w-[min(100%,22rem)] lg:shrink-0 lg:self-start"
+              data-testid="auth-experience-aside"
+            >
+              {belowCard}
+            </aside>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -25,7 +25,60 @@ public sealed record BranchInventoryListFilter(
     bool? TrackedOnly = null,
     bool? LowStockOnly = null,
     bool? ReorderSuggestedOnly = null,
-    string? ProductStatus = null);
+    string? ProductStatus = null,
+    /// <summary>All | InStock | LowStock | OutOfStock</summary>
+    string? StockStatus = null,
+    /// <summary>All | BranchDefault | Custom | NotMonitored</summary>
+    string? MonitoringMode = null,
+    Guid? CategoryId = null);
+
+/// <summary>Stock filter for replenishment catalog: <c>all</c>, <c>low</c>, or <c>out</c>.</summary>
+public static class ReplenishmentStockFilters
+{
+    public const string All = "all";
+    public const string Low = "low";
+    public const string Out = "out";
+
+    public static bool TryNormalize(string? value, out string normalized)
+    {
+        normalized = All;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        var trimmed = value.Trim().ToLowerInvariant();
+        if (trimmed is All or Low or Out)
+        {
+            normalized = trimmed;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+public sealed record ReplenishmentCatalogFilter(
+    Guid SupplyWarehouseBranchId,
+    string? Search = null,
+    string StockFilter = ReplenishmentStockFilters.All,
+    Guid? CategoryId = null);
+
+public sealed record ReplenishmentCatalogRow(
+    Guid ProductId,
+    string Name,
+    string? Sku,
+    string? Barcode,
+    Guid? CategoryId,
+    string? CategoryName,
+    string UnitOfMeasure,
+    decimal BranchOnHandQuantity,
+    decimal WarehouseAvailableQuantity,
+    bool IsLowStock,
+    bool IsTracked,
+    string SellingMode = "PerItem",
+    decimal? WarehouseUnitCost = null,
+    decimal? BranchEffectiveSellingPrice = null);
 
 public sealed record BranchInventoryListRow(
     Guid ProductId,
@@ -47,4 +100,11 @@ public sealed record BranchInventoryListRow(
     DateTimeOffset UpdatedAtUtc,
     bool TracksExpiration,
     int? ExpirationWarningDays,
-    bool HasOpeningStock);
+    bool HasOpeningStock,
+    string? Sku = null,
+    string? Barcode = null,
+    Guid? CategoryId = null,
+    string? CategoryName = null,
+    string MonitoringMode = "BranchDefault",
+    decimal BranchReserved = 0m,
+    decimal BranchAvailable = 0m);

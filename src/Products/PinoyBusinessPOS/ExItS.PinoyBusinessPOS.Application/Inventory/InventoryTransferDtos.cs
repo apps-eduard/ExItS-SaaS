@@ -12,7 +12,8 @@ public sealed record CreateInventoryTransferRequest(
     Guid SourceBranchId,
     Guid DestinationBranchId,
     IReadOnlyList<InventoryTransferLineRequest> Lines,
-    string? Notes = null);
+    string? Notes = null,
+    Guid? StockRequestId = null);
 
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
@@ -38,11 +39,13 @@ public sealed record InventoryTransferLineDto(
     string? DiscrepancyNote,
     Guid? SourceLotId = null,
     string? LotNumber = null,
-    DateOnly? ExpirationDate = null);
+    DateOnly? ExpirationDate = null,
+    decimal? UnitCostSnapshot = null);
 
 public sealed record InventoryTransferDto(
     Guid TransferId,
     Guid OrganizationId,
+    Guid? StockRequestId,
     string? TransferNumber,
     Guid SourceBranchId,
     string? SourceBranchName,
@@ -66,6 +69,7 @@ public sealed record InventoryTransferDto(
 
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,
+    Guid? StockRequestId,
     string? TransferNumber,
     Guid SourceBranchId,
     string? SourceBranchName,
@@ -76,7 +80,11 @@ public sealed record InventoryTransferListItemDto(
     decimal TotalSentQty,
     decimal TotalReceivedQty,
     decimal TotalDifferenceQty,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    Guid CreatedBy,
+    Guid? DispatchedBy = null,
+    Guid? ReceivedBy = null,
+    Guid? CancelledBy = null);
 
 public sealed record InventoryTransferFilter(
     string? Status = null,
@@ -92,4 +100,5 @@ public sealed record InventoryTransferAlert(
     Guid TargetBranchId,
     Guid TransferId,
     string TransferNumber,
-    string Message);
+    string Message,
+    Guid? StockRequestId = null);

@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -440,6 +441,9 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public Task<Supplier?> GetByIdAsync(PosOrganizationId organizationId, SupplierId supplierId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Items.FirstOrDefault(s => s.OrganizationId == organizationId && s.Id == supplierId));
 
+        public Task<Supplier?> FindByConnectedRelationshipIdAsync(PosOrganizationId organizationId, ConnectedSupplierRelationshipId relationshipId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(s => s.OrganizationId == organizationId && s.ConnectedRelationshipId == relationshipId));
+
         public Task<(IReadOnlyList<Supplier> Items, int TotalCount)> ListAsync(
             PosOrganizationId organizationId,
             SupplierFilter filter,
@@ -639,6 +643,14 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         CatalogProductId productId,
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
+
+    public Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
 
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult<decimal?>(null);

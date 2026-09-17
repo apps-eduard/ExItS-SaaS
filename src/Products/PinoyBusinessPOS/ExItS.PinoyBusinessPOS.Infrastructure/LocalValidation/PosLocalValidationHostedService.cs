@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.LocalValidation;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -56,6 +57,32 @@ public sealed class PosLocalValidationHostedService(
         var identities = await WaitForIdentitiesAsync(cancellationToken).ConfigureAwait(false);
         var initializer = scope.ServiceProvider.GetRequiredService<InitializePosLocalValidationRoles>();
         await initializer.ExecuteAsync(identities, cancellationToken).ConfigureAwait(false);
+
+        // Soft-deactivate V1 retail-source supply routes so they cannot create new stock requests.
+        try
+        {
+            var normalize = scope.ServiceProvider.GetRequiredService<DeactivateNonWarehouseSupplySources>();
+            var orgIds = identities
+                .Where(i => i.OrganizationId is Guid oid && oid != Guid.Empty)
+                .Select(i => i.OrganizationId!.Value)
+                .Distinct()
+                .ToList();
+            foreach (var orgId in orgIds)
+            {
+                var count = await normalize.ExecuteAsync(orgId, cancellationToken).ConfigureAwait(false);
+                if (count > 0)
+                {
+                    logger.LogInformation(
+                        "Deactivated {Count} non-warehouse supply route source(s) for org {OrganizationId}.",
+                        count,
+                        orgId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Non-warehouse supply route normalization skipped.");
+        }
 
         logger.LogInformation("POS LocalValidation hosted initialization finished.");
     }

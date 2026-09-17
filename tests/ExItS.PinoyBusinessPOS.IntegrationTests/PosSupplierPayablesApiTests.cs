@@ -31,7 +31,7 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
     private const string Report = "/api/v1/pos/reports/supplier-payables";
 
     [Fact]
-    public async Task Receive_creates_payable_partial_pay_record_payment_overpay_idempotency_and_summary()
+    public async Task Receive_creates_payable_rejects_buyer_manual_payment_and_summary()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
@@ -86,39 +86,26 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         var hash = ComputePayloadHash(payBody);
         AttachIdempotency(pay, "spp-pay-1", hash, OfflineOperationTypes.SupplierPayablePayment);
         using var payResponse = await client.SendAsync(pay);
-        Assert.Equal(HttpStatusCode.Created, payResponse.StatusCode);
-        var payment = await payResponse.Content.ReadFromJsonAsync<PosSupplierPayablePaymentDto>(JsonOptions);
-        Assert.Equal(30m, payment!.Amount);
-
-        using var replay = Scoped(HttpMethod.Post, $"{Payables}/{payable.PayableId:D}/payments", org);
-        replay.Content = JsonContent.Create(payBody, options: JsonOptions);
-        AttachIdempotency(replay, "spp-pay-1", hash, OfflineOperationTypes.SupplierPayablePayment);
-        using var replayResponse = await client.SendAsync(replay);
-        Assert.Equal(HttpStatusCode.OK, replayResponse.StatusCode);
-
-        using var overpay = Scoped(HttpMethod.Post, $"{Payables}/{payable.PayableId:D}/payments", org);
-        overpay.Content = JsonContent.Create(
-            new RecordSupplierPayablePaymentRequest(50m, "Cash"),
-            options: JsonOptions);
-        using var overpayResponse = await client.SendAsync(overpay);
-        Assert.Equal(HttpStatusCode.BadRequest, overpayResponse.StatusCode);
-        Assert.Equal(DomainErrorCodes.SupplierPayableOverpayNotAllowed, await ReadErrorCodeAsync(overpayResponse));
+        Assert.Equal(HttpStatusCode.BadRequest, payResponse.StatusCode);
+        Assert.Equal(
+            DomainErrorCodes.SupplierPayableBuyerManualSettlementForbidden,
+            await ReadErrorCodeAsync(payResponse));
 
         using var payments = Scoped(HttpMethod.Get, $"{Payables}/{payable.PayableId:D}/payments", org);
         using var paymentsResponse = await client.SendAsync(payments);
         paymentsResponse.EnsureSuccessStatusCode();
         var paymentList = await paymentsResponse.Content.ReadFromJsonAsync<List<PosSupplierPayablePaymentDto>>(JsonOptions);
-        Assert.Single(paymentList!);
+        Assert.Empty(paymentList!);
 
         using var afterPay = Scoped(HttpMethod.Get, $"{Payables}/{payable.PayableId:D}", org);
         using var afterPayResponse = await client.SendAsync(afterPay);
         var updated = await afterPayResponse.Content.ReadFromJsonAsync<PosSupplierPayableDto>(JsonOptions);
-        Assert.Equal(70m, updated!.PaidAmount);
-        Assert.Equal(30m, updated.Balance);
+        Assert.Equal(40m, updated!.PaidAmount);
+        Assert.Equal(60m, updated.Balance);
         Assert.Equal("PartiallyPaid", updated.Status);
-        Assert.True(updated.HasPostedPayments);
+        Assert.False(updated.HasPostedPayments);
 
-        // Inventory / cost unchanged by supplier payment.
+        // Inventory / cost unchanged by rejected supplier payment attempt.
         Assert.Equal(14m, await OnHandAsync(client, org, product.ProductId));
         var movements = await MovementsAsync(client, org, product.ProductId);
         Assert.DoesNotContain(movements, m => m.MovementType.Contains("Payable", StringComparison.OrdinalIgnoreCase));
@@ -127,8 +114,8 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         using var summaryResponse = await client.SendAsync(summary);
         summaryResponse.EnsureSuccessStatusCode();
         var summaryDto = await summaryResponse.Content.ReadFromJsonAsync<PosSupplierPayableSummaryDto>(JsonOptions);
-        Assert.Equal(30m, summaryDto!.OutstandingTotal);
-        Assert.Equal(30m, summaryDto.OverdueTotal);
+        Assert.Equal(60m, summaryDto!.OutstandingTotal);
+        Assert.Equal(60m, summaryDto.OverdueTotal);
         Assert.Equal(1, summaryDto.OpenCount);
 
         using var report = Scoped(HttpMethod.Get, $"{Report}?outstandingOnly=true", org);
@@ -136,14 +123,14 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         reportResponse.EnsureSuccessStatusCode();
         var reportDto = await reportResponse.Content.ReadFromJsonAsync<PosSupplierPayableReportDto>(JsonOptions);
         Assert.NotNull(reportDto);
-        Assert.Contains(reportDto.Payables, r => r.PayableId == payable.PayableId && r.Balance == 30m);
-        Assert.Equal(30m, reportDto.Summary.OutstandingTotal);
+        Assert.Contains(reportDto.Payables, r => r.PayableId == payable.PayableId && r.Balance == 60m);
+        Assert.Equal(60m, reportDto.Summary.OutstandingTotal);
         Assert.True(reportDto.Summary.PartiallyPaidCount >= 1);
-        Assert.Contains(reportDto.Suppliers, s => s.SupplierId == supplier.SupplierId && s.OutstandingBalance == 30m);
+        Assert.Contains(reportDto.Suppliers, s => s.SupplierId == supplier.SupplierId && s.OutstandingBalance == 60m);
     }
 
     [Fact]
-    public async Task Fully_paid_at_receipt_reversal_voids_payable_but_posted_payment_blocks_reversal()
+    public async Task Fully_paid_at_receipt_reversal_voids_payable_and_buyer_manual_payment_is_rejected()
     {
         await using var factory = new PosApiFactory(fixture.ConnectionString);
         var client = factory.CreateClient();
@@ -173,7 +160,7 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         var voidedPayable = await getVoidedPayableResponse.Content.ReadFromJsonAsync<PosSupplierPayableDto>(JsonOptions);
         Assert.Equal("Voided", voidedPayable!.Status);
 
-        // Credit receive + later payment → reverse blocked.
+        // Credit receive remains reversible while buyer cannot post manual payments.
         var (_, grnCredit) = await CreateOrderedAndReceiveAsync(
             client, org, supplier.SupplierId, product.ProductId, 2m, 20m, 2m, paidNow: 0m);
         using var listOpen = Scoped(HttpMethod.Get, $"{Payables}?status=Open", org);
@@ -187,18 +174,17 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
             new RecordSupplierPayablePaymentRequest(10m, "BankTransfer"),
             options: JsonOptions);
         using var payResponse = await client.SendAsync(pay);
-        Assert.Equal(HttpStatusCode.Created, payResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, payResponse.StatusCode);
+        Assert.Equal(
+            DomainErrorCodes.SupplierPayableBuyerManualSettlementForbidden,
+            await ReadErrorCodeAsync(payResponse));
 
         var onHandBefore = await OnHandAsync(client, org, product.ProductId);
-        using var voidBlocked = Scoped(HttpMethod.Post, $"{GoodsReceipts}/{grnCredit.GoodsReceiptId:D}/void", org);
-        voidBlocked.Content = JsonContent.Create(new VoidGoodsReceiptRequest("Should block"), options: JsonOptions);
-        using var voidBlockedResponse = await client.SendAsync(voidBlocked);
-        Assert.Equal(HttpStatusCode.Conflict, voidBlockedResponse.StatusCode);
-        Assert.Equal(
-            DomainErrorCodes.SupplierPayableReceiptReversalBlocked,
-            await ReadErrorCodeAsync(voidBlockedResponse));
-        Assert.Equal(onHandBefore, await OnHandAsync(client, org, product.ProductId));
-        Assert.Equal("Posted", (await GetGoodsReceiptAsync(client, org, grnCredit.GoodsReceiptId)).Status);
+        using var voidCredit = Scoped(HttpMethod.Post, $"{GoodsReceipts}/{grnCredit.GoodsReceiptId:D}/void", org);
+        voidCredit.Content = JsonContent.Create(new VoidGoodsReceiptRequest("Undo credit"), options: JsonOptions);
+        using var voidCreditResponse = await client.SendAsync(voidCredit);
+        Assert.Equal(HttpStatusCode.OK, voidCreditResponse.StatusCode);
+        Assert.Equal(onHandBefore - 2m, await OnHandAsync(client, org, product.ProductId));
     }
 
     [Fact]
@@ -360,7 +346,10 @@ public sealed class PosSupplierPayablesApiTests(PosPostgreSqlFixture fixture)
         var hash = ComputePayloadHash(new RecordSupplierPayablePaymentRequest(5m, "Cash"));
         AttachIdempotency(managePay, "spp-perm-1", hash, OfflineOperationTypes.SupplierPayablePayment);
         using var managePayResponse = await client.SendAsync(managePay);
-        Assert.Equal(HttpStatusCode.Created, managePayResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, managePayResponse.StatusCode);
+        Assert.Equal(
+            DomainErrorCodes.SupplierPayableBuyerManualSettlementForbidden,
+            await ReadErrorCodeAsync(managePayResponse));
     }
 
     private static async Task<(Guid PurchaseOrderId, PosGoodsReceiptDto Receipt)> CreateOrderedAndReceiveAsync(

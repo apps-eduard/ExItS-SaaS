@@ -130,7 +130,7 @@ export function BranchStorefrontQrPanel({
           <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
             {t("branches.storefrontQr.notReady")}
           </p>
-          <Button asChild type="button" variant="outline" className="min-h-11 w-full sm:w-auto">
+          <Button asChild type="button" variant="outline" className="w-full sm:w-auto">
             <Link
               to={branchFulfillmentEditPath(branchId)}
               data-testid="branch-storefront-qr-setup"
@@ -151,7 +151,7 @@ export function BranchStorefrontQrPanel({
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("branches.storefrontQr.setupHint")}
               </p>
-              <Button asChild type="button" variant="outline" className="min-h-11 w-full sm:w-auto">
+              <Button asChild type="button" variant="outline" className="w-full sm:w-auto">
                 <Link
                   to={branchFulfillmentEditPath(branchId)}
                   data-testid="branch-storefront-qr-setup"
@@ -183,7 +183,7 @@ export function BranchStorefrontQrPanel({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-full"
+              className="w-full"
               onClick={() => void copyLink()}
               data-testid="branch-storefront-qr-copy"
             >
@@ -193,7 +193,7 @@ export function BranchStorefrontQrPanel({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-full"
+              className="w-full"
               onClick={() => void downloadQr()}
               data-testid="branch-storefront-qr-download"
             >

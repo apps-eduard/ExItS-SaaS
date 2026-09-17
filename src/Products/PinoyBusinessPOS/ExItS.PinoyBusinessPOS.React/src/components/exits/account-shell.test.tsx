@@ -100,28 +100,33 @@ describe("account shell", () => {
 
     const trigger = screen.getByTestId("account-menu-trigger");
     expect(trigger).toHaveTextContent("OM");
-    expect(screen.getByTestId("workspace-context")).toHaveTextContent("Kizy Store");
-    const mobileContext = screen.getByTestId("workspace-context-mobile");
-    expect(mobileContext).toHaveTextContent("Kizy Store");
-    expect(mobileContext).toHaveTextContent("Main Branch");
+    expect(screen.getByTestId("workspace-context")).toHaveTextContent("Main Branch");
+    expect(screen.queryByTestId("workspace-context-mobile")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workspace-context").closest(".app-top-bar__center")).toHaveClass(
+      "hidden",
+      "lg:flex",
+    );
     expect(screen.queryByRole("button", { name: "Preferences" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument();
 
-    await user.click(trigger);
-    const menu = await screen.findByRole("menu");
-    expect(within(menu).getByText("Olivia Mendoza")).toBeInTheDocument();
-    expect(within(menu).getByTestId("account-menu-role")).toHaveTextContent("Cashier");
-    expect(within(menu).queryByText("olivia")).not.toBeInTheDocument();
-
-    await user.click(within(menu).getByRole("menuitem", { name: "Preferences" }));
+    expect(screen.getByTestId("shell-preferences-button")).toBeInTheDocument();
+    await user.click(screen.getByTestId("shell-preferences-button"));
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Preferences" })).toBeInTheDocument();
     });
 
     await user.click(screen.getByTestId("preferences-close"));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "More" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "New Sale" })).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("preferences-drawer")).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId("account-menu-trigger"));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByText("Olivia Mendoza")).toBeInTheDocument();
+    expect(within(menu).getByTestId("account-menu-role")).toHaveTextContent("Cashier");
+    expect(within(menu).queryByText("olivia")).not.toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: "Preferences" })).not.toBeInTheDocument();
   });
 
   it("closes the account menu on Escape", async () => {
@@ -168,7 +173,7 @@ describe("account shell", () => {
     );
     expect(screen.getByTestId("workspace-context")).toHaveAttribute(
       "title",
-      expect.stringContaining("Very Long Organization"),
+      expect.stringContaining("Main Branch"),
     );
   });
 

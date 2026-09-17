@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Play, RotateCcw } from "lucide-react";
+import { Clock3, Play, RotateCcw } from "lucide-react";
 import { ActionButtonLoading } from "@/components/exits/loading/ActionButtonLoading";
-import { canManageRegisters, canManageShifts, canViewShifts } from "@/access/pos-capabilities";
+import { canManageShifts, canViewShifts } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   getOperationalSetup,
@@ -24,16 +24,14 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { DenominationCountHelper } from "@/features/shifts/DenominationCountHelper";
-import {
-  ensurePwaDefaultCashRegister,
-  PWA_DEFAULT_REGISTER_NAME,
-} from "@/features/shifts/ensure-pwa-default-register";
+import { ensurePwaDefaultCashRegister } from "@/features/shifts/ensure-pwa-default-register";
 import { RegisterInUsePanel } from "@/features/shifts/RegisterInUsePanel";
 import { useShiftContext } from "@/features/shifts/ShiftContextProvider";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -51,8 +49,7 @@ export function ShiftOpenPage() {
 
   const canView = canViewShifts(sessionGrant);
   const canManage = canManageShifts(sessionGrant);
-  const canCreateRegister = canManageRegisters(sessionGrant);
-  // Pure React PWA: device enforcement paused → allow auto cash register PWA-0001.
+  // Pure React PWA: device enforcement paused → auto-provision next free / next PWA-NNNN.
   const pwaOptionalCashRegister = deviceEnforcementEnabled === false;
 
   const workspaceScope = useMemo(() => {
@@ -155,14 +152,14 @@ export function ShiftOpenPage() {
     });
   }, [freeRegisters, registers]);
 
-  // PWA: auto-provision cash register PWA-0001 when none are available for shift.
+  // PWA: ensure a free register — reuse existing free, else provision next PWA-NNNN.
   useEffect(() => {
     if (
       !pwaOptionalCashRegister ||
-      !canCreateRegister ||
+      !canManage ||
       !workspaceScope ||
       !registersQuery.isSuccess ||
-      registers.length > 0 ||
+      freeRegisters.length > 0 ||
       pwaEnsureAttemptedRef.current
     ) {
       return;
@@ -174,27 +171,25 @@ export function ShiftOpenPage() {
     setPwaRegisterError(null);
     void (async () => {
       try {
-        const created = await ensurePwaDefaultCashRegister(workspaceScope);
+        const ensured = await ensurePwaDefaultCashRegister(workspaceScope);
         if (cancelled) {
           return;
         }
         await registersQuery.refetch();
-        setSelectedRegisterId(created.registerId);
+        setSelectedRegisterId(ensured.registerId);
       } catch (error) {
         if (cancelled) {
           return;
         }
         pwaEnsureAttemptedRef.current = false;
         const message =
-          error instanceof Error && error.message === "PWA_DEFAULT_REGISTER_BUSY"
-            ? t("shift.pwaRegisterBusy")
-            : error instanceof PosApiError
-              ? (error.problem.detail ?? error.message)
-              : error instanceof TypeError && /digest/i.test(error.message)
-                ? t("shift.pwaRegisterError")
-                : error instanceof Error
-                  ? error.message
-                  : t("shift.pwaRegisterError");
+          error instanceof PosApiError
+            ? (error.problem.detail ?? error.message)
+            : error instanceof TypeError && /digest/i.test(error.message)
+              ? t("shift.pwaRegisterError")
+              : error instanceof Error
+                ? error.message
+                : t("shift.pwaRegisterError");
         setPwaRegisterError(message);
       } finally {
         if (!cancelled) {
@@ -206,14 +201,22 @@ export function ShiftOpenPage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot ensure when empty
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot ensure when no free register
   }, [
     pwaOptionalCashRegister,
-    canCreateRegister,
+    canManage,
     workspaceScope,
     registersQuery.isSuccess,
-    registers.length,
+    freeRegisters.length,
   ]);
+
+  // Reset ensure gate once a free register appears (e.g. after close or provision).
+  useEffect(() => {
+    if (freeRegisters.length > 0) {
+      pwaEnsureAttemptedRef.current = false;
+      setPwaRegisterError(null);
+    }
+  }, [freeRegisters.length]);
 
   useEffect(() => {
     if (!workspaceScope || !canView) {
@@ -390,19 +393,19 @@ export function ShiftOpenPage() {
       />
 
       {submitError ? (
-        <div className="exits-alert exits-alert--error" data-testid="shift-open-error" role="alert">
-          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{t("error.title")}</p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)]">{submitError}</p>
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-3 min-h-11"
-            onClick={() => void registersQuery.refetch()}
-          >
-            <RotateCcw className="size-4 shrink-0" aria-hidden />
-            {t("shift.retry")}
-          </Button>
-        </div>
+        <Notice
+          tone="danger"
+          testId="shift-open-error"
+          title={t("error.title")}
+          action={
+            <Button type="button" variant="outline" onClick={() => void registersQuery.refetch()}>
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("shift.retry")}
+            </Button>
+          }
+        >
+          {submitError}
+        </Notice>
       ) : null}
 
       <section className="catalog-form-section exits-animate-panel">
@@ -418,8 +421,10 @@ export function ShiftOpenPage() {
               Uncomment this block and remove the PWA auto-provision path below
               when PosDeviceAuthorization:EnforcementEnabled=true for native installs.
 
-            <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
-            <Button asChild variant="outline" className="mt-3 min-h-11">
+            <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+            <Button asChild variant="outline" className="mt-3">
               <Link to="/registers">{t("shift.goToRegisters")}</Link>
             </Button>
             */}
@@ -427,11 +432,10 @@ export function ShiftOpenPage() {
             {pwaOptionalCashRegister ? (
               <div className="flex flex-col gap-2" data-testid="shift-open-pwa-register">
                 <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />}
                   title={t("shift.pwaRegisterTitle")}
-                  detail={t("shift.pwaRegisterDetail").replace(
-                    "{name}",
-                    PWA_DEFAULT_REGISTER_NAME,
-                  )}
+                  detail={t("shift.pwaRegisterDetail")}
                 />
                 {ensuringPwaRegister ? (
                   <LoadingState label={t("shift.pwaRegisterPreparing")} />
@@ -445,11 +449,11 @@ export function ShiftOpenPage() {
                     {pwaRegisterError}
                   </p>
                 ) : null}
-                {!ensuringPwaRegister && canCreateRegister ? (
+                {!ensuringPwaRegister && canManage ? (
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-1 min-h-11"
+                    className="mt-1"
                     data-testid="shift-open-pwa-register-retry"
                     onClick={() => {
                       pwaEnsureAttemptedRef.current = false;
@@ -464,13 +468,11 @@ export function ShiftOpenPage() {
                         .catch((error: unknown) => {
                           pwaEnsureAttemptedRef.current = false;
                           const message =
-                            error instanceof Error && error.message === "PWA_DEFAULT_REGISTER_BUSY"
-                              ? t("shift.pwaRegisterBusy")
-                              : error instanceof PosApiError
-                                ? (error.problem.detail ?? error.message)
-                                : error instanceof Error
-                                  ? error.message
-                                  : t("shift.pwaRegisterError");
+                            error instanceof PosApiError
+                              ? (error.problem.detail ?? error.message)
+                              : error instanceof Error
+                                ? error.message
+                                : t("shift.pwaRegisterError");
                           setPwaRegisterError(message);
                         })
                         .finally(() => setEnsuringPwaRegister(false));
@@ -482,8 +484,10 @@ export function ShiftOpenPage() {
               </div>
             ) : (
               <>
-                <EmptyState title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
-                <Button asChild variant="outline" className="mt-3 min-h-11">
+                <EmptyState
+              align="center"
+              icon={<Clock3 className="size-5" strokeWidth={1.75} />} title={t("shift.noRegisterTitle")} detail={t("shift.noRegisterMessage")} />
+                <Button asChild variant="outline" className="mt-3">
                   <Link to="/registers">{t("shift.goToRegisters")}</Link>
                 </Button>
               </>
@@ -534,13 +538,28 @@ export function ShiftOpenPage() {
                   openedByDisplayName={
                     actors.resolve(selectedRegister.openShiftActorId)?.displayName ?? null
                   }
+                  preparing={ensuringPwaRegister || (pwaOptionalCashRegister && freeRegisters.length === 0)}
+                  preparingLabel={t("shift.pwaRegisterPreparing")}
                   chooseRegisterHref="/registers"
                   onChooseRegister={
                     freeRegisters.length > 0
                       ? () => setSelectedRegisterId(freeRegisters[0]!.registerId)
                       : undefined
                   }
+                  hideChooseRegister={
+                    freeRegisters.length === 0 &&
+                    (pwaOptionalCashRegister || ensuringPwaRegister)
+                  }
                 />
+                {pwaRegisterError ? (
+                  <p
+                    className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-destructive"
+                    role="alert"
+                    data-testid="shift-open-pwa-register-error"
+                  >
+                    {pwaRegisterError}
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </>
@@ -604,7 +623,7 @@ export function ShiftOpenPage() {
             <Button
               type="button"
               variant="outline"
-              className="catalog-form-actions__restore min-h-11 w-full sm:w-auto"
+              className="catalog-form-actions__restore w-full sm:w-auto"
               disabled={
                 saving ||
                 selectedRegisterBusy ||
@@ -630,7 +649,7 @@ export function ShiftOpenPage() {
         <div className="catalog-form-actions__secondary">
           <ActionButtonLoading
             type="button"
-            className="catalog-form-actions__save min-h-11"
+            className="catalog-form-actions__save"
             disabled={startBlocked}
             loading={saving}
             data-testid="shift-open-confirm"

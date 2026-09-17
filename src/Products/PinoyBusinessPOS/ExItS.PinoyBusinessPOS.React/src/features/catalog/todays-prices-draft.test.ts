@@ -5,6 +5,7 @@ import {
   isPriceDraftDirty,
   mergePriceDraftMap,
   parseDraftPrice,
+  resetPriceDraft,
   type PriceDraft,
 } from "@/features/catalog/todays-prices-draft";
 import type { PosCatalogProductDto } from "@/api/pos/pos-catalog-types";
@@ -91,6 +92,16 @@ describe("todays-prices-draft", () => {
     expect(next.currentPrice).toBe(30);
     expect(next.draftPrice).toBe("30");
     expect(next.expectedUpdatedAtUtc).toBe("token-saved");
+    expect(next.rowError).toBeNull();
+    expect(isPriceDraftDirty(next)).toBe(false);
+  });
+
+  it("resetPriceDraft restores current price and clears row error", () => {
+    const next = resetPriceDraft(
+      draft({ draftPrice: "99.5", rowError: "prices.invalidPrice" }),
+    );
+    expect(next.draftPrice).toBe("28");
+    expect(next.currentPrice).toBe(28);
     expect(next.rowError).toBeNull();
     expect(isPriceDraftDirty(next)).toBe(false);
   });

@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { EmptyState } from "@/components/exits/EmptyState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -39,6 +40,10 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { ReportCsvExportButton } from "@/features/reports/ReportCsvExportButton";
 import { ReportFilters } from "@/features/reports/ReportFilters";
 import { ReportScopeControls } from "@/features/reports/ReportScopeControls";
+import { DocumentActions } from "@/features/documents/DocumentActions";
+import { SalesSummaryBusinessDocument } from "@/features/documents/SalesSummaryBusinessDocument";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import {
   canAccessOperationalReport,
   isOperationalReportKind,
@@ -431,6 +436,9 @@ export function OperationalReportPage() {
   const { kind: kindParam } = useParams<{ kind: string }>();
   const { t } = useI18n();
   const { boundWorkspace, sessionGrant } = useWorkspace();
+  const organizationId = boundWorkspace?.organizationId ?? null;
+  const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
+  const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
   const [preset, setPreset] = useState<ReportDatePreset>("today");
   const [custom, setCustom] = useState<ReportDateRangeValue>(() =>
     resolveReportDatePreset("today"),
@@ -492,6 +500,18 @@ export function OperationalReportPage() {
       !isProductProfitability &&
       !isSupplierPayables,
     queryFn: ({ signal }) => loadLines(kind, workspace!, applied, signal, t, reportBranchId),
+  });
+
+  const salesSummaryDocQuery = useQuery({
+    queryKey: [
+      "sales-summary-document",
+      workspace?.organizationId,
+      reportBranchId ?? "all",
+      applied.fromDate,
+      applied.toDate,
+    ],
+    enabled: Boolean(workspace && kindValid && allowed && kind === "sales-summary"),
+    queryFn: ({ signal }) => getSalesSummaryReport(workspace!, applied, signal, reportBranchId),
   });
 
   const productProfitQuery = useQuery({
@@ -589,7 +609,7 @@ export function OperationalReportPage() {
         <Button
           type="button"
           variant="ghost"
-          className="min-h-11 w-fit"
+          className="w-fit"
           data-testid="report-refresh"
           disabled={activeQuery.isFetching}
           onClick={() => void activeQuery.refetch()}
@@ -643,7 +663,12 @@ export function OperationalReportPage() {
               onRankByChange={setRankBy}
             />
           ) : !productProfitQuery.isLoading && !errorMessage ? (
-            <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+            <EmptyState
+              size="compact"
+              variant="filtered"
+              title={t("reports.emptyTitle")}
+              detail={t("reports.emptyDetail")}
+            />
           ) : null
         ) : null}
         {isSupplierPayables && supplierPayablesQuery.data ? (
@@ -671,9 +696,38 @@ export function OperationalReportPage() {
         query.data.length === 0 &&
         !query.isLoading &&
         !errorMessage ? (
-          <p className="m-0 text-muted">{t("reports.emptyDetail")}</p>
+          <EmptyState
+            size="compact"
+            variant="filtered"
+            title={t("reports.emptyTitle")}
+            detail={t("reports.emptyDetail")}
+          />
         ) : null}
       </Card>
+
+      {kind === "sales-summary" && salesSummaryDocQuery.data ? (
+        <section className="flex flex-col gap-3" data-testid="sales-summary-document-section">
+          <DocumentActions
+            printLabel={t("exitsTable.print")}
+            pdfLabel={t("exitsTable.exportPdf")}
+            testId="sales-summary-document-actions"
+          />
+          <SalesSummaryBusinessDocument
+            settings={documentSettings}
+            identity={identity}
+            headerVisibility={headerVisibility(documentSettings.header)}
+            model={{
+              dateRangeLabel: `${salesSummaryDocQuery.data.fromDate} – ${salesSummaryDocQuery.data.toDate}`,
+              grossSales: salesSummaryDocQuery.data.preDiscountGrossSales,
+              discounts: salesSummaryDocQuery.data.commercialDiscountTotal,
+              returns: salesSummaryDocQuery.data.completedReturnsRefunds,
+              netSales: salesSummaryDocQuery.data.netSales,
+              transactionCount: salesSummaryDocQuery.data.completedTransactionCount,
+            }}
+            preview
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

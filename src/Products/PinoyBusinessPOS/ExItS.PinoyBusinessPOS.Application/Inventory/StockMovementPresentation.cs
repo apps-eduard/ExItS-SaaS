@@ -46,6 +46,7 @@ public static class StockMovementPresentation
             StockMovementType.WasteLossVoidRestoration => "Waste/loss voided",
             StockMovementType.PurchaseReceiptReversal => "Purchase receipt reversed",
             StockMovementType.DirectPurchaseReceiptReversal => "Direct purchase reversed",
+            StockMovementType.ConnectedPurchaseFulfillment => "Connected PO fulfillment",
             _ => type.ToString()
         };
     }

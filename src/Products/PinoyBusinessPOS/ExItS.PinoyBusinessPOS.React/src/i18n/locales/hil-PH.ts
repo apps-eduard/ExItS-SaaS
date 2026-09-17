@@ -1,4851 +1,13234 @@
 import { en } from "./en";
 
+
+
 export const hilPH: Record<keyof typeof en, string> = {
+
   "accessDenied.antiforgery": "Indi ma-verify ini nga aksyon. I-reload ang page kag tilawi liwat.",
+
   "accessDenied.antiforgeryTitle": "Napakyas ang security check",
+
   "accessDenied.branchNotAccessible": "Indi accessible nga Active branch ina para sa sini nga account.",
+
   "accessDenied.openShiftBlocksBranchSwitch":
+
     "Sirad-a ukon kanselahon an imo bukas nga cashier shift antes magbalhin sa iban nga branch.",
+  "accessDenied.openShiftTitle": "Open cashier shift",
+  "accessDenied.openShiftGoToShifts": "Go to shifts",
+
   "accessDenied.branchTitle": "Indi available ang branch",
+
   "accessDenied.detail": "Wala ka sing access sa Pinoy Business POS para sa sini nga business.",
+
   "accessDenied.generic": "Indi mabuksan ini nga workspace. Tilawi liwat ukon mag-sign in liwat.",
+
   "accessDenied.profileRequired": "Kinahanglan ang Organization account profile para sa organization workspace.",
+
   "accessDenied.serviceTitle": "Temporaryo nga indi available",
+
   "accessDenied.serviceUnavailable": "Indi matapos sang Pinoy Business POS ang pagbukas sini nga workspace. Tilawi liwat sa diutay nga tion.",
+
   "accessDenied.sessionExpired": "Nag-expire na ang imo session. Palihog mag-sign in liwat.",
+
   "accessDenied.sessionTitle": "Nag-expire na ang session",
+
   "accessDenied.staffOrgLock": "Naka-lock ini nga staff account sa iya home organization. Mag-sign in sang iban nga account agud magamit ang iban nga organization.",
+
   "accessDenied.title": "Ginadilian ang access sa product",
+
   "account.menu": "Menu sang account",
+
   "account.role.admin": "Admin",
+
   "account.role.cashier": "Cashier",
+
   "account.role.manager": "Manager",
+
   "account.role.owner": "Owner",
+
   "account.signedIn": "Naka-sign in na",
+
   "account.switchToPersonal": "Magbalhin sa Personal",
+
   "account.switchingPersonal": "Ginabalhin?",
+
   "accountClass.deniedDetail": "Mag-sign in gamit ang husto nga Personal ukon Organization staff account. Ang person-link indi magpaambit sang session ukon permiso.",
+
   "accountClass.deniedLede": "Ini nga screen para sa iban nga klase sang account.",
+
   "accountClass.deniedTitle": "Indi tugotan ang klase sang account",
+
   "accountClass.switchingLabel": "Switching account?",
+
   "app.name": "Pinoy Business POS",
+
   "app.skipToContent": "Laktaw sa sulod",
+
   "auth.backToSignIn": "Back to Sign In",
+
   "auth.activateTitle": "Activate your account",
+
   "auth.createPassword": "Create a password to finish activating your Personal account.",
+
   "auth.passwordRequirements": "Use at least 12 characters with upper and lower case letters, a number, and a symbol.",
+
   "auth.passwordRequirementsLocalValidation":
+
     "Local Validation: any non-empty password works (one character is enough). Ignore the browser if it asks for 12 characters.",
+
   "auth.newPassword": "New password",
+
   "auth.confirmPassword": "Confirm password",
+
   "auth.passwordsMustMatch": "Passwords must match.",
+
   "auth.fieldRequired": "This field is required.",
+
   "auth.activateAccount": "Activate Account",
+
   "auth.activating": "Activating?",
+
   "auth.activationFailed": "Could not activate this account. Try again or request a new link.",
+
   "auth.activationLinkInvalid": "This activation link is missing or incomplete. Open the link from your email, or register again.",
+
   "auth.resetTitle": "Choose a new password",
+
   "auth.resetLede": "Enter a new password for your ExItS account.",
+
   "auth.resetPassword": "Reset Password",
+
   "auth.resetting": "Saving?",
+
   "auth.resetFailed": "Could not reset your password. Try again or request a new link.",
+
   "auth.resetLinkInvalid": "This reset link is missing or incomplete. Open the link from your email, or request a new reset.",
+
   "auth.tokenExpired": "This link has expired. Request a new one from Sign In.",
+
   "auth.tokenInvalid": "This link is no longer valid. Request a new one from Sign In.",
+
   "auth.noticeActivated": "Your account is active. Sign in with your email and password.",
+
   "auth.noticeReset": "Your password was updated. Sign in with your new password.",
+
   "auth.brandLine": "Expert IT Solutions",
+
   "auth.continueWithFacebook": "Continue with Facebook",
+
   "auth.continueWithGoogle": "Continue with Google",
+
   "auth.continueWithPin": "Use Offline PIN",
+
   "auth.facebook": "Facebook",
+
   "auth.forgotPassword": "Forgot Password",
+
   "auth.forgotPasswordAck": "If an account matches that login, reset instructions have been sent. Check your email.",
+
   "auth.forgotPasswordLede": "Enter your email or staff login. If an account exists, we will send reset instructions.",
+
   "auth.forgotPasswordOffline": "Internet connection is required to reset your password.",
+
   "auth.forgotPasswordSubmit": "Send reset link",
+
   "auth.forgotPasswordSubmitting": "Sending?",
+
   "auth.forgotPasswordTitle": "Reset your password",
+
   "auth.google": "Google",
+
   "auth.hidePassword": "Hide password",
+
   "auth.mailpitHint": "Local Validation: open Mailpit to read the message.",
+
   "auth.mailpitOpen": "Open Mailpit",
+
   "auth.offlineBannerDetail": "Online sign-in is unavailable until you reconnect.",
+
   "auth.offlineBannerTitle": "You are offline",
+
   "auth.offlineGrantExpired": "Offline authorization expired. Connect to the internet and sign in again.",
+
   "auth.offlinePasswordBlocked": "Connect to the internet to sign in with your password.",
+
   "auth.offlinePinUnavailable": "Offline login isn't available on this device yet. Connect to the internet and sign in first.",
+
   "auth.offlineSignUpBlocked": "Connect to the internet to create a Personal account.",
+
   "auth.orDivider": "or",
+
   "auth.pinLogin": "PIN",
+
   "auth.productLine": "Pinoy Business POS",
+
   "auth.providerOffline": "Connect to the internet to use online sign-in providers.",
+
   "auth.providerUnavailable": "That sign-in provider is not configured on this server.",
+
   "auth.rememberMe": "Remember Me",
+
   "auth.showPassword": "Show password",
+
   "auth.signUpAck": "Registration started. Check your email to activate your Personal account, then sign in.",
+
   "auth.signUpEmailLabel": "Email",
+
   "auth.signUpLede": "Create a Personal account only. This does not create an organization or POS access.",
+
   "auth.signUpNameLabel": "Display name",
+
   "auth.signUpSubmit": "Create Personal account",
+
   "auth.signUpSubmitting": "Creating account?",
+
   "auth.socialHelperOffline": "Online sign-in providers are unavailable while offline.",
+
   "auth.socialHelperOnline": "Use Facebook, Google, or your offline PIN when this device is prepared.",
+
   "auth.tabSignIn": "Sign In",
+
   "auth.tabSignUp": "Sign Up",
+
   "auth.tabsLabel": "Authentication tabs",
+
   "auth.usernameHintHide": "Tagu-a ang bulig sa sign-in username",
+
   "auth.usernameHintShow": "Ipakita ang bulig sa sign-in username",
+
   "branches.additionalPerKm": "Dugang bayad kada km",
+
   "branches.addressLine1": "Address line 1",
+
   "branches.addressLine2": "Address line 2",
+
   "branches.addressTitle": "Address",
-  "branches.backList": "Balik sa mga branch",
+
+  "branches.backList": "Back to Branches & Warehouses",
+
   "branches.backOrg": "Balik sa organisasyon",
+
   "branches.baseFee": "Base nga bayad sa delivery",
+
   "branches.cancel": "Kanselahon",
+
   "branches.channel.delivery": "Delivery",
+  "branches.confirm.enablePickupTitle": "Turn on Pickup?",
+  "branches.confirm.enablePickupDetail":
+    "This branch will accept pickup for purchase orders and customer orders that use pickup.",
+  "branches.confirm.enablePickupConfirm": "Turn on",
+  "branches.confirm.disablePickupTitle": "Turn off Pickup?",
+  "branches.confirm.disablePickupDetail":
+    "Pickup will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disablePickupConfirm": "Turn off",
+  "branches.confirm.enableDeliveryTitle": "Turn on Delivery?",
+  "branches.confirm.enableDeliveryDetail":
+    "This branch will accept delivery for purchase orders and customer orders that use delivery.",
+  "branches.confirm.enableDeliveryConfirm": "Turn on",
+  "branches.confirm.disableDeliveryTitle": "Turn off Delivery?",
+  "branches.confirm.disableDeliveryDetail":
+    "Delivery will no longer be available for this branch until you turn it back on.",
+  "branches.confirm.disableDeliveryConfirm": "Turn off",
+  "branches.confirm.enableOrderingTitle": "Turn on Online orders?",
+  "branches.confirm.enableOrderingDetail":
+    "Customers will be able to place online orders at this branch.",
+  "branches.confirm.enableOrderingConfirm": "Turn on",
+  "branches.confirm.pauseOrderingTitle": "Pause Online orders?",
+  "branches.confirm.pauseOrderingDetail":
+    "New online orders will be paused. Pickup and Delivery settings stay configured.",
+  "branches.confirm.pauseOrderingConfirm": "Pause",
+  "branches.confirm.resumeOrderingTitle": "Resume Online orders?",
+  "branches.confirm.resumeOrderingDetail":
+    "Online orders will be available again for this branch.",
+  "branches.confirm.resumeOrderingConfirm": "Resume",
+
   "branches.channel.ordering": "Online orders",
+
   "branches.channel.pickup": "Pickup",
+
   "branches.city": "Syudad",
+
   "branches.configure": "I-configure",
+
   "branches.contactPhone": "Contact phone",
+
   "branches.coordsPairRequired": "Ibutang ang latitude kag longitude, ukon limpyohan ang duha.",
+
   "branches.countryCode": "Country code",
+
   "branches.day.friday": "Biyernes",
+
   "branches.day.monday": "Lunes",
+
   "branches.day.saturday": "Sabado",
+
   "branches.day.sunday": "Domingo",
+
   "branches.day.thursday": "Huwebes",
+
   "branches.day.tuesday": "Martes",
+
   "branches.day.wednesday": "Miyerkules",
+
   "branches.deliveryAreas.add": "Magdugang sang area",
+
   "branches.deliveryAreas.addFailed": "Indi madugang ang delivery area.",
+
   "branches.deliveryAreas.added": "Nadugang ang delivery area.",
+
   "branches.deliveryAreas.city": "Syudad / munisipyo",
+
   "branches.deliveryAreas.cityRequired": "Kinahanglan ang syudad ukon munisipyo.",
-  "branches.deliveryAreas.region": "Rehiyon / probinsya",
+
+  "branches.deliveryAreas.region": "Rehiyon",
+
+  "branches.deliveryAreas.regionSelect": "Rehiyon",
+
+  "branches.deliveryAreas.regionPlaceholder": "Pilia ang rehiyon",
+
+  "branches.deliveryAreas.regionSearchPlaceholder": "Pangita sang rehiyonâ€¦",
+
+  "branches.deliveryAreas.regionSelected": "Napili nga rehiyon",
+
+  "branches.deliveryAreas.changeRegion": "Ilisan",
+
+  "branches.deliveryAreas.noRegionMatch": "Wala sing tumugma nga rehiyon",
+
+  "branches.deliveryAreas.regionsLoading": "Nagaload sang mga rehiyonâ€¦",
+
+  "branches.deliveryAreas.regionsFailed": "Indi ma-load ang mga rehiyon.",
+
+  "branches.deliveryAreas.pickRegionFirst": "Pilia anay ang rehiyon agod makapili sang mga syudad.",
+
+  "branches.deliveryAreas.citiesInRegion": "Mga syudad kag munisipyo",
+
+  "branches.deliveryAreas.citySelect": "Syudad / munisipyo",
+
+  "branches.deliveryAreas.cityPlaceholder": "Pilia ang syudad ukon munisipyo",
+
+  "branches.deliveryAreas.citiesLoading": "Nagaload sang mga syudadâ€¦",
+
+  "branches.deliveryAreas.citiesFailed": "Indi ma-load ang mga syudad.",
+
+  "branches.deliveryAreas.noCitiesInRegion": "Wala sing syudad sa sini nga rehiyon.",
+
   "branches.deliveryAreas.remove": "Kuhaa ang delivery area",
+
   "branches.deliveryAreas.removeFailed": "Indi makuha ang delivery area.",
+
   "branches.deliveryAreas.removed": "Ginkuha ang delivery area.",
+
   "branches.deliveryAreasEmpty": "Wala pa sang delivery areas.",
-  "branches.deliveryAreasLede": "Pilia ang mga syudad ukon munisipyo diin magdeliver ang branch.",
+
+  "branches.deliveryAreasLede": "Pilia ang rehiyon, dayon pilia ang mga syudad ukon munisipyo kung diin mag-deliver ang branch.",
+
   "branches.deliveryAreasTitle": "Mga delivery area",
+
   "branches.deliveryAreas.country": "Pungsod",
+
   "branches.deliveryAreas.philippines": "Pilipinas (PH)",
+
   "branches.deliveryAreas.search": "Pangita sang syudad ukon munisipyo",
-  "branches.deliveryAreas.searchPlaceholder": "Pangita…",
+
+  "branches.deliveryAreas.searchPlaceholder": "Pangita???",
+
   "branches.deliveryAreas.typeToSearch": "I-type ang syudad ukon munisipyo",
-  "branches.deliveryAreas.searching": "Nagapangita…",
+
+  "branches.deliveryAreas.searching": "Nagapangita???",
+
   "branches.deliveryAreas.noMatch": "Wala sang tumugma nga syudad ukon munisipyo",
+
   "branches.deliveryAreas.searchFailed": "Indi makapangita sang localities.",
+
   "branches.deliveryAreas.cityType": "Syudad",
+
   "branches.deliveryAreas.municipality": "Munisipyo",
+
   "branches.deliveryAreas.alreadyAdded": "Nadugang na",
+
   "branches.deliveryAreas.selectedTitle": "Mga napili nga delivery area",
+
   "branches.deliveryAreas.needsVerification": "Kinahanglan i-verify",
+
   "branches.deliveryAreas.verified": "Verified",
+
   "branches.deliveryAreas.replace": "Islan",
-  "branches.deliveryAreas.replaceHint": "Pilia ang opisyal nga syudad ukon munisipyo para islan ang wala pa na-verify nga area.",
+
+  "branches.deliveryAreas.replaceHint": "Pilia ang rehiyon, dayon pilia ang opisyal nga syudad ukon munisipyo agod ilisan ang wala pa na-verify nga area.",
+
   "branches.deliveryDisabled": "Delivery: Naka-disable",
+
   "branches.deliveryEnabled": "Delivery: Naka-enable",
+
   "branches.deliveryNotReady": "Delivery: Indi pa handa",
+
   "branches.deliveryPolicyTitle": "Palisiya sang delivery",
+
   "branches.denied": "Organization owners kag administrators lang ang makadumala sang branch fulfillment.",
+
   "branches.detailsTitle": "Detalye sang branch",
+
   "branches.disableDelivery": "I-disable ang delivery",
+
   "branches.editLede": "Lokasyon sang fulfillment, oras sang operasyon, kag kahanda sang pickup/delivery.",
+
   "branches.editTitle": "Branch settings",
+
   "branches.emptyDetail": "Himuon anay ang branch sa Platform antes i-configure ang fulfillment diri.",
+
   "branches.emptyTitle": "Wala sing branch",
+
   "branches.enableDelivery": "I-enable ang delivery",
+
   "branches.enableOrdering": "I-enable ang online orders",
+
   "branches.enablePickup": "I-enable ang pickup",
-  "branches.enablementGapsTitle": "Naka-off pa",
+
+
   "branches.freeThreshold": "Threshold para sa libre nga delivery",
+
   "branches.fulfillmentFailed": "Indi ma-update ang fulfillment settings.",
+
   "branches.fulfillmentTitle": "Pickup kag delivery",
+
   "branches.gps.denied": "Ginpangindi ang permiso sa lokasyon.",
+
   "branches.gps.timeout": "Nag-timeout ang request sa lokasyon.",
+
   "branches.gps.unavailable": "Indi makuha ang subong nga lokasyon.",
+
   "branches.gps.unsupported": "Ini nga browser wala nagasuporta sang lokasyon.",
+
   "branches.gpsAssist": "Gamiton ang subong nga lokasyon",
+
   "branches.gpsWorking": "Naga-kuha sang lokasyon?",
+
   "branches.hours24": "Abierta 24 ka oras",
+
   "branches.hoursClosed": "Serado",
+
   "branches.hoursConfigured": "Naka-configure na ang oras.",
+
   "branches.hoursEnd": "Maga-sera",
+
   "branches.hoursNotConfigured": "Wala pa naka-configure ang oras.",
+
   "branches.hoursOpen": "Abierta",
+
   "branches.hoursStart": "Maga-abri",
+
+  "branches.hoursSameAllDaysTitle": "Same hours for every day",
+
+  "branches.hoursSameAllDaysLede":
+    "Set opens and closes once, then apply to all days â€” or mark every day open 24 hours.",
+
+  "branches.hoursApplyAll": "Apply to all days",
+
+  "branches.hoursApplyFromDay": "Apply to all days",
+
+  "branches.hoursAllDayEveryDay": "Open 24 hours every day",
+
+  "branches.hoursClosedEveryDay": "Closed every day",
+
   "branches.mapUnavailable": "Indi available ang mapa subong. Gamiton ang subong nga lokasyon ukon maglagay sang coordinates manually.",
+
   "branches.mapChooseOnMap": "Pilion sa mapa",
+
   "branches.mapChangeOnMap": "Ilisan sa mapa",
+
   "branches.mapSelectedLocation": "Ginpili nga lokasyon",
+
   "branches.mapNoSelection": "Wala pa sang ginpili nga lokasyon.",
+
   "branches.mapAdvancedCoordinates": "Advanced nga coordinates",
+
   "branches.mapPickerTitle": "Pilion ang lokasyon sang branch",
+
   "branches.mapPickerHint": "I-tap ang mapa ukon i-drag ang pin para itakda ang lokasyon sang branch.",
+
   "branches.mapUseThisLocation": "Gamiton ini nga lokasyon",
+
   "branches.saveDetails": "I-save ang detalye",
+
   "branches.saveHours": "I-save ang oras",
+
   "branches.saveLocation": "I-save ang lokasyon",
+
   "branches.savePolicy": "I-save ang polisiya",
+
   "branches.savedDetails": "Na-save ang detalye sang branch.",
+
   "branches.savedHours": "Na-save ang operating hours.",
+
   "branches.savedLocation": "Na-save ang lokasyon.",
+
   "branches.savedPolicy": "Na-save ang delivery policy.",
+
   "branches.hoursTitle": "Oras sang operasyon",
+
   "branches.includedKm": "Apil nga distansya (km)",
+
   "branches.invalidLatitude": "Ang latitude dapat sa tunga sang -90 kag 90 (WGS84).",
+
   "branches.invalidLongitude": "Ang longitude dapat sa tunga sang -180 kag 180 (WGS84).",
+
   "branches.latitude": "Latitude",
+
   "branches.listLede": "I-set ang address, map coordinates, oras, kag pickup ukon delivery para sa tagsa ka branch.",
+
   "branches.listTitle": "Branch fulfillment",
+  "branches.offerDeliveryTitle": "Organization Delivery",
+  "branches.offerDeliveryLede": "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
+  "branches.offerDelivery": "Offer Delivery",
+  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
+  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
+
   "branches.loadError": "Indi ma-load ang mga branch.",
+
   "branches.longitude": "Longitude",
+
   "branches.mapFallback": "Indi available ang mapa subong. Gamiton ang subong nga lokasyon ukon maglagay sang coordinates manually.",
+
   "branches.mapHint": "Itakda ang eksaktong lokasyon kung diin magsugod ang delivery.",
+
   "branches.mapProviderReady": "Naka-configure ang map provider sa sini nga build.",
+
   "branches.mapTitle": "Lokasyon sang delivery",
+
   "branches.maximumKm": "Maximum nga distansya sang delivery (km)",
+
   "branches.minimumOrder": "Minimum nga order",
+
   "branches.missing.branchActive": "Aktibo nga branch",
+
   "branches.missing.branchAddress": "Kompleto nga address sang branch",
+
   "branches.missing.deliveryArea": "Delivery service area",
+
   "branches.missing.deliveryEntitlement": "Entitlement sa delivery",
+
   "branches.missing.deliveryPolicy": "Palisiya sang delivery",
+
   "branches.missing.mapLocation": "Coordinates sa mapa",
+
   "branches.missing.orderingEntitlement": "Entitlement sa customer ordering",
+
   "branches.missing.storeContact": "Contact phone sang tindahan",
+
   "branches.missing.storeHours": "Oras sang tindahan",
+
   "branches.missing.timezone": "Time zone",
+
   "branches.missing.unknown": "Dugang requirement",
+
   "branches.missingNone": "Kompleto na ang setup requirements.",
+
+  "branches.configuredButMethodsOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
+
   "branches.missingTitle": "Kulang nga configuration",
+
   "branches.name": "Ngalan",
+
+  "branches.type": "Klase sang branch",
+
+  "branches.type.retail": "Retail (baligya)",
+
+  "branches.type.warehouse": "Bodega",
+
+  "branches.type.retailHelp": "Lugar sa pagbaligya kag imbentaryo.",
+
+  "branches.type.warehouseHelp": "Imbentaryo, pagbakal, kag transfer lang - wala retail sales.",
+
+  "branches.type.warehouseLocked": "Warehouse branches require Pro or Pro+. Upgrade your plan to enable this option.",
+
   "branches.nameRequired": "Kinahanglan ang ngalan sang branch.",
+
   "branches.notFound": "Wala makita ang branch sa sini nga organisasyon.",
+
   "branches.openGoogleMaps": "Buksan sa Google Maps",
+
   "branches.openOsm": "Buksan sa OpenStreetMap",
+
   "branches.orderingDisabled": "Online orders: Naka-disable",
+
   "branches.orderingEnabled": "Online orders: Naka-enable",
+
   "branches.orderingNotReady": "Online orders: Indi pa handa",
+
   "branches.orderingPaused": "Online orders: Naka-pause",
+
   "branches.pauseOrders": "I-pause ang online orders",
+
   "branches.pickupDisabled": "Pickup: Naka-disable",
+
   "branches.pickupEnabled": "Pickup: Naka-enable",
+
   "branches.pickupNotReady": "Pickup: Indi pa handa",
+
   "branches.postalCode": "Postal code",
+
   "branches.progress.of": "{complete} sa {total} kompleto",
+
   "branches.readinessTitle": "Kahanda sang fulfillment",
+  "branches.poFulfillment.title": "Purchase Order Fulfillment",
+
+  "branches.poFulfillment.status.ready": "Ready",
+
+  "branches.poFulfillment.status.setupRequired": "Setup required",
+
+  "branches.poFulfillment.lede.setupRequired": "Complete the required fulfillment setup before this branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.lede.configuredButOff":
+    "Configuration complete. Enable Pickup or Delivery to activate PO fulfillment.",
+
+  "branches.poFulfillment.lede.ready": "This branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.readyNote": "This branch can fulfill connected purchase orders.",
+
+  "branches.poFulfillment.whyRequiredTitle": "Why is this required?",
+
+  "branches.poFulfillment.whyRequiredBody":
+    "Connected purchase orders need at least one active fulfillment method. Enable Pickup or Delivery so buyers can choose how the order will be fulfilled.",
+
+  "branches.poFulfillment.helper.pickup":
+    "Enable if customers will collect connected purchase orders from this branch.",
+
+  "branches.poFulfillment.helper.delivery":
+    "Enable if this branch will deliver connected purchase orders.",
+
+  "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
+
+  "branches.poFulfillment.checklist.branchInfo": "Complete required branch information",
+
+  "branches.poFulfillment.checklist.branchInfoComplete": "Required branch information complete",
+
+  "branches.poFulfillment.checklist.pickupReady": "Pickup ready",
+
+  "branches.poFulfillment.checklist.pickupIncomplete": "Finish Pickup setup",
+
+  "branches.poFulfillment.checklist.deliveryReady": "Delivery ready",
+
+  "branches.poFulfillment.checklist.deliveryIncomplete": "Finish Delivery setup",
+
+  "branches.poFulfillment.methodOff": "Off",
+
+  "branches.poFulfillment.methodReady": "Ready",
+
+  "branches.poFulfillment.methodSetup": "Setup required",
+
+  "branches.poFulfillment.configure": "Configure fulfillment",
+
+  "branches.poFulfillment.openDetails": "Branch details",
+
+  "branches.poFulfillment.summaryTitle": "Supplier readiness",
+
+  "branches.poFulfillment.summary.fulfillment": "Fulfillment",
+
+  "branches.poFulfillment.summary.catalog": "Catalog",
+
+  "branches.poFulfillment.summary.payments": "Payments",
+
+  "branches.poFulfillment.summary.contact": "Contact",
+
+  "branches.poFulfillment.viewSupplierReadiness": "View supplier readiness",
+
+
   "branches.reason.branchAddressIncomplete": "Indi kompleto ang address sang branch",
+
   "branches.reason.branchInactive": "Indi aktibo ang branch",
+
   "branches.reason.customerOrderingDisabled": "Naka-disable ang customer ordering",
+
   "branches.reason.deliveryAreaMissing": "Wala sang delivery service area",
+
   "branches.reason.deliveryDisabled": "Naka-disable ang delivery",
+
   "branches.reason.deliveryEntitlementMissing": "Wala sing delivery entitlement",
+
   "branches.reason.deliveryPolicyIncomplete": "Indi kompleto ang palisiya sang delivery",
+
   "branches.reason.deliveryPolicyMissing": "Wala sing palisiya sang delivery",
+
   "branches.reason.mapLocationMissing": "Wala sing lokasyon sa mapa",
+
   "branches.reason.onlineOrdersPaused": "Naka-pause ang online orders",
+
   "branches.reason.orderingEntitlementMissing": "Wala sing ordering entitlement",
+
   "branches.reason.pickupDisabled": "Naka-disable ang pickup",
+
   "branches.reason.storeClosed": "Serado ang tindahan subong",
+
   "branches.reason.storeContactMissing": "Wala sing contact sang tindahan",
+
   "branches.reason.storeHoursInvalid": "Indi valid ang oras sang tindahan",
+
   "branches.reason.storeHoursMissing": "Wala sing oras sang tindahan",
+
   "branches.reason.timezoneMissing": "Wala sing time zone",
+
   "branches.reason.unknown": "Dugang rason sang kahanda",
+
   "branches.region": "Rehion",
+
   "branches.resumeOrders": "Ipadayon ang online orders",
+
   "branches.save": "I-save",
+
   "branches.saveActions": "Mga aksyon sa pag-save",
+
   "branches.saveFailed": "Indi ma-save ang branch settings.",
+
   "branches.saved": "Na-save ang branch fulfillment settings.",
+
   "branches.saving": "Naga-save?",
+
   "branches.setupGapsLede": "Punoa ini sa idalom, dayon i-save antes i-enable ang pickup ukon delivery.",
+
   "branches.setupGapsTitle": "Para makompleto ang setup",
+
   "branches.setupTabsLabel": "Mga seksyon sang branch setup",
+
   "branches.status.disabled": "Naka-disable",
+
   "branches.status.enabled": "Naka-enable",
+
   "branches.status.notReady": "Indi pa ready",
+
   "branches.status.paused": "Naka-pause",
+
   "branches.tab.areas": "Delivery areas",
+
   "branches.setup.title": "Setup sang branch",
+
   "branches.setup.description": "Susiha ang tagsa ka parte antes maging live ini nga branch.",
+
   "branches.setup.backToBranch": "Balik sa branch",
+
   "branches.setup.overall": "Pangkalibutanon nga kahandaan",
+
   "branches.setup.overallStatus.NotStarted": "Wala pa nagsugod",
+
   "branches.setup.overallStatus.NeedsAttention": "Kinahanglan sang pagtagad",
+
   "branches.setup.overallStatus.Ready": "Andam na",
+
   "branches.setup.section.Details": "Detalye sang branch",
+
   "branches.setup.section.Staff": "Access sang staff",
+
   "branches.setup.section.Products": "Mga produkto",
+
   "branches.setup.section.Pricing": "Presyo",
+
   "branches.setup.section.Inventory": "Pang-una nga inventory",
+
   "branches.setup.section.Parties": "Mga customer kag supplier",
+
   "branches.setup.section.Fulfillment": "Fulfillment",
+
   "branches.setup.section.Device": "Mga device",
+
   "branches.setup.sectionStatus.Complete": "Kompleto",
+
   "branches.setup.sectionStatus.NeedsAttention": "Kinahanglan sang pagtagad",
+
   "branches.setup.sectionStatus.Optional": "Opsyonal",
+
   "branches.setup.sectionStatus.NotApplicable": "Indi applicable",
+
   "branches.setup.openSection": "Ablihi",
+
   "branches.setup.markVisited": "Markahi nga nabistahan",
+
   "branches.setup.loadError": "Indi ma-load ang kahandaan sang branch setup.",
+
   "branches.setup.workspaceBranchHint": "Ilisi ang workspace branch agud magtugma sa ini nga setup page para sa operational actions.",
+
   "branches.tab.details": "Detalye sang branch",
+
   "branches.tab.hours": "Oras sang operasyon",
+
   "branches.tab.location": "Lokasyon sang delivery",
+
   "branches.tab.overview": "Overview",
+
   "branches.tab.policy": "Palisiya sang delivery",
+
   "branches.timeZone": "Time zone",
+
   "branches.toggle.completeSetupFirst": "Kompletuhon anay ang setup",
+
   "branches.toggle.deliveryNotInPlan": "Wala ang delivery sa imo nga plan",
+
   "cashHandling.add": "Idugang",
+
   "cashHandling.addDenomination": "Magdugang sang denomination",
+
   "cashHandling.addDenominationPlaceholder": "Amount",
+
+  "cashHandling.closingTitle": "Closing shift",
+
   "cashHandling.denied": "Wala ka sing permiso nga usbon ang cash handling settings.",
+
   "cashHandling.denominationsHelp": "Magamit sa cashiers ini nga values isip counting helper. Indi sila makahimo sang laing denominations.",
+
   "cashHandling.denominationsTitle": "Cash denominations nga gipakita sa cashiers",
+
   "cashHandling.emptyDenoms": "Wala sing naka-configure nga cash denominations",
+
   "cashHandling.emptyDenomsDetail": "Makabutang gihapon ka sang total cash amount manually kung mag-abli ukon magnasirado sang shift.",
+
   "cashHandling.invalidDenomination": "Butangi sang valid nga amount nga sobra sa zero.",
+
   "cashHandling.lede": "Magpili kanus-a kinahanglan magbilang sang cash ang cashiers, kag unsang denominations ang mogawas isip helpers.",
+
   "cashHandling.loadError": "Indi ma-load ang cash handling settings.",
-  "cashHandling.remove": "Kuhaa",
+
+  "cashHandling.openingTitle": "Opening shift",
+
+  "cashHandling.policyTitle": "Shift cash count",
+
+  "cashHandling.remove": "Kuhaa ang {amount} denomination",
+
   "cashHandling.requireClosing": "Require ang cash count kung magnasirado sang shift",
+
   "cashHandling.requireClosingHelp": "Kinahanglan magbutang sang closing cash ang cashiers antes manasirado ang shift.",
+
   "cashHandling.requireOpening": "Require ang cash count kung mag-abli sang shift",
+
   "cashHandling.requireOpeningHelp": "Kinahanglan magbutang sang opening cash ang cashiers antes magsugod ang shift.",
+
   "cashHandling.resetDefaults": "I-reset sa default",
+
   "cashHandling.resetSaved": "Na-reset ang cash denominations sa default.",
+
   "cashHandling.save": "I-save ang changes",
+
   "cashHandling.saveError": "Indi ma-save ang cash handling settings.",
+
   "cashHandling.saved": "Na-save ang cash handling settings.",
+
   "cashHandling.snapshotHint": "Mo-apply ang changes sa sunod nga shift. Ang naka-abli na nga shift magpabilin sa policy sina nga nagsugod.",
+
   "cashHandling.title": "Cash handling",
+
   "catalog.addBrand": "Magdugang sang brand",
+
   "catalog.addCategory": "Magdugang sang category",
+
   "catalog.addPurchaseUnit": "Magdugang sang purchase package",
+
   "catalog.addSellUnit": "Magdugang sang sell package",
+
   "catalog.addingBrand": "Nagadugang?",
+
   "catalog.addingCategory": "Nagadugang?",
+
   "catalog.allBrands": "Tanan nga brands",
+
   "catalog.allCategories": "Tanan nga categories",
+
   "catalog.allowsCustomQuantity": "Tugoti ang measured quantity",
+
   "catalog.allowsCustomQuantityHint":
+
     "Para sa pagbaligya paagi sa ginsukod nga kantidad pareho sang 0.5 kg ukon 250 g.",
+
   "catalog.back": "Balik sa products",
+
   "catalog.barcode": "Barcode / kodigo",
+
   "catalog.baseSellingPrice": "Base nga baligya nga presyo",
+
   "catalog.baseSellingPriceHint":
+
     "Default nga presyo para sa base unit. Ma-override ini sang package-specific prices kon gibutang.",
+
   "catalog.baseUnit": "Base nga unit of measure",
+
   "catalog.brand": "Brand / tatak",
+
   "catalog.brandAlreadyExists": "May brand na sini.",
+
+  "catalog.categoryAlreadyExists": "May category na sini.",
+
   "catalog.brandOptional": "Opsyonal ang tatak.",
+
   "catalog.brandStatusFilter": "Status sang brand",
+
   "catalog.brandsLede": "Organisaha ang products suno sa brand.",
+
   "catalog.brandsTitle": "Brands",
+
   "catalog.businessTemplate": "Template sa negosyo",
+
   "catalog.byWeightRequiresKg": "Ang by weight kinahanglan sang base unit nga Kilogram.",
+
   "catalog.canBeSold": "Mabaligya",
+
   "catalog.businessUsage.question": "Paano pagagamiton sang tindahan ini nga produkto?",
+  "catalog.capability.question": "Paggamit / kapabilidad sang produkto",
+  "catalog.capability.canBeSold": "Pwede ibaligya",
+  "catalog.capability.canBeSoldHint": "Makita sa Sell floor kung offered sa branch.",
+  "catalog.capability.canBeIngredient": "Pwede gamiton bilang production ingredient",
+  "catalog.capability.canBeIngredientHint": "Eligible bilang materyal sa Production setups.",
+  "catalog.capability.isProduced": "Produced / manufactured product",
+  "catalog.capability.isProducedHint": "Ginhimo ukon ginpreparar sang business (production output).",
+  "production.setups.ingredients": "Mga ingredient / materyal",
+  "production.setups.outputTabProduced": "Mga produced item",
+  "production.setups.outputTabAll": "Tanan nga eligible",
+
   "catalog.businessUsage.resale": "Para ibaligya",
+
   "catalog.businessUsage.resaleHint": "Ginapalit kag ginabaligya ang amo man nga produkto sa kostumer.",
+
   "catalog.businessUsage.ingredient": "Materyal / sangkap",
+
   "catalog.businessUsage.ingredientHint": "Ginagamit sa paghimo ukon pagpreparar sang iban nga produkto.",
+
   "catalog.businessUsage.internalUse": "Para sa tindahan lang",
+
   "catalog.businessUsage.internalUseHint": "Ginagamit sang tindahan, indi ibaligya sa kostumer.",
+
   "catalog.businessUsage.producedItem": "Nahimo nga produkto",
+
   "catalog.businessUsage.producedItemHint": "Ginhimo ukon ginpreparar sang inyo nga negosyo.",
+
   "catalog.businessUsage.label": "Paggamit sa tindahan",
+
   "catalog.businessUsage.leaveSellFloor": "Indi na magpakita ini nga produkto sa Sell screen.",
+
   "catalog.businessUsage.chooseRequired": "Pilia kung paano pagagamiton sang tindahan ini nga produkto.",
+
   "catalog.businessUsage.filterAll": "Tanan",
+
   "catalog.businessUsage.filterResale": "Para ibaligya",
+
   "catalog.businessUsage.filterIngredient": "Mga sangkap",
+
   "catalog.businessUsage.filterInternal": "Para sa tindahan lang",
+
   "catalog.businessUsage.filterProduced": "Nahimo",
-  "catalog.cancelRename": "Kanselahon ang pag-rename",
+
+  "catalog.cancelRename": "Kanselahon",
+
   "catalog.categoriesLede": "Organisaha ang products ngadto sa categories.",
-  "catalog.categoriesTitle": "Categories",
+
+  "catalog.categoriesTitle": "Mga kategorya sang produkto",
+
   "catalog.category": "Kategorya",
+
   "catalog.categoryStatusFilter": "Status sang kategorya",
+
   "catalog.configurePackages": "Gamita ang lain-laing purchase ukon selling packages",
+
   "catalog.conflict": "Giilisan ang product sa laing dapit. I-reload kag tilawi liwat.",
+
   "catalog.deactivate": "I-deactivate / hunonga",
+
   "catalog.description": "Deskripsyon",
+
   "catalog.duplicate.title": "May product na nga amo sini",
+
   "catalog.duplicate.useExisting": "Gamiton ang existing product",
+
   "catalog.duplicate.hiddenForeign":
+
     "May product na nga may amo sini nga ngalan sa inyo nga organization. Indi mahimo ang duplicate. Pangayo sa organization administrator nga usisaon ini.",
+
   "catalog.duplicate.inactive": "May product na nga amo sini pero inactive.",
+
   "catalog.duplicate.notOffered":
+
     "Yara na ini nga product sa inyo nga organization pero wala pa ginahatag sa sini nga branch.",
+
   "catalog.duplicate.organizationProduct": "Organization product",
+
   "catalog.duplicate.branchProduct": "Branch product",
+
   "catalog.editProduct": "Islan ang product",
+
   "catalog.emptyBrands": "Wala sing nakit-an nga brands",
+
   "catalog.emptyBrandsDetail": "Magdugang sang brand, dayon i-assign ini sa products.",
+
   "catalog.emptyCategories": "Wala pa sing categories",
+
   "catalog.emptyCategoriesDetail": "Magdugang sang category, dayon i-assign ini sa products.",
+
   "catalog.emptyProducts": "Wala pa sing products",
+
   "catalog.emptyProductsDetail": "Paghimo sang product agud magsugod sang baligya gikan sa catalog.",
+
   "catalog.expirationWarningDays": "Near-expiry warning (adlaw)",
+
   "catalog.expirationBehaviorHint":
+
     "Ang near-expiry stock magpabilin nga mabaligya. Indi mabaligya ang expired stock. Ang earliest-expiring stock ang una nga gamiton (FEFO).",
+
   "catalog.expirationManagedInSettings":
+
     "I-manage ang expiration tracking kag near-expiry warning hali sa Inventory expiration settings.",
+
   "catalog.expirationReceivingHint":
+
     "Ang expiry dates ibutang kon madawat ang stock. Mahimo magkalain ang expiry date sa tagsa ka stock lot.",
+
   "catalog.globalCatalog": "Sangkalibutan nga katalogo",
+
   "catalog.image": "Litrato sang produkto",
+
   "catalog.invalidPrice": "Butangi sang valid nga non-negative price.",
-  "catalog.governance.scopeFilter": "Product type",
+
+  "catalog.governance.scopeFilter": "Scope",
+
   "catalog.governance.scopeAll": "All",
+
   "catalog.governance.scopeOrganization": "Organization products",
+
   "catalog.governance.scopeBranch": "Branch products",
+
   "catalog.governance.organizationProduct": "Organization product",
+
   "catalog.governance.branchProduct": "Branch product",
-  "catalog.governance.branchProductThisBranch": "Branch product · this branch",
-  "catalog.governance.branchProductOrigin": "Branch product · {branch}",
+
+  "catalog.governance.branchProductThisBranch": "Branch product ?? this branch",
+
+  "catalog.governance.branchProductOrigin": "Branch product ?? {branch}",
+
   "catalog.governance.offeredHere": "Offered here",
+
   "catalog.governance.notOfferedAtBranch": "Not offered at this branch",
+
   "catalog.governance.productType": "Product type",
+
   "catalog.governance.productTypeOrganizationHint": "Shared across the organization. Branch offering can be controlled separately.",
+
   "catalog.governance.productTypeBranchHint": "Local to the selected branch until promoted to an organization product.",
+
   "catalog.governance.productTypeBranchFixedHint": "Branch products stay local to {branch} until an organization owner promotes them.",
+
   "catalog.governance.managedByOrganization": "Managed by organization",
+
   "catalog.governance.managedByOrganizationLede": "Organization products can only be edited by an organization owner or admin.",
+
   "catalog.governance.organizationPrice": "Organization price",
+
   "catalog.governance.currentBranchProductPrice": "Branch product price",
+
   "catalog.governance.originBranch": "Origin branch",
+
   "catalog.governance.originallyCreatedAt": "Originally created at {branch}",
+
   "catalog.governance.promote": "Promote to organization product",
+
   "catalog.governance.promoteTitle": "Promote to organization product?",
+
   "catalog.governance.promoteBody": "This branch product becomes an organization product. The same product ID is kept. Offering at other branches can be managed after promotion.",
+
   "catalog.governance.promoteConfirm": "Promote",
+
   "catalog.governance.promoteCancel": "Cancel",
+
   "catalog.governance.promoteSuccess": "Product promoted to organization catalog.",
+
   "catalog.governance.branchAvailability": "Branch availability",
+
   "catalog.governance.branchAvailabilityHint": "Turn offering on or off per active branch. Stock is not deleted when a branch stops offering.",
+
   "catalog.governance.offered": "Offered",
+
   "catalog.governance.notOffered": "Not offered",
+
   "catalog.governance.stopOfferingTitle": "Stop offering at this branch?",
+
   "catalog.governance.stopOfferingBody": "The product will no longer be sellable at {branch}. Inventory is kept.",
+
   "catalog.governance.stopOfferingConfirm": "Stop offering",
+
   "catalog.governance.availableAtOriginOnly": "Available at origin branch only",
+
   "catalog.governance.availableAtThisBranch": "Available at this branch",
+
   "catalog.governance.notOfferedAtThisBranch": "Not offered at this branch",
+
   "catalog.governance.branchRequiredForBranchProduct": "Select a branch workspace before creating a branch product.",
+
   "catalog.governance.importRequiresOrgGovernance": "Importing into the organization catalog requires organization owner or admin access.",
-  "catalog.branchPricing.title": "Branch pricing",
-  "catalog.branchPricing.hint": "Set a custom selling price for {branch} only. Other branches keep the organization default unless they have their own custom price.",
+
+  "catalog.sellingPrice.title": "Selling price",
+  "catalog.sellingPrice.hint": "Manage the organization default and this branch's selling price.",
+  "catalog.branchPricing.title": "{branch} price",
+
+  "catalog.branchPricing.hint": "Use the organization default price or set a custom selling price for {branch}.",
+
   "catalog.branchPricing.basePrice": "Base unit price",
+
   "catalog.branchPricing.unitPrice": "Unit: {name}",
-  "catalog.branchPricing.organizationDefault": "Organization default price",
-  "catalog.branchPricing.inheritedByBranches": "Inherited by branches without a custom price.",
+
+  "catalog.branchPricing.organizationDefault": "Organization default",
+
+  "catalog.branchPricing.inheritedByBranches": "Used by branches without their own custom price.",
+
   "catalog.branchPricing.branchSellingPrice": "{branch} selling price",
-  "catalog.branchPricing.useOrganizationDefaultMode": "Use organization default",
-  "catalog.branchPricing.customBranchPriceMode": "Custom branch price",
+
+  "catalog.branchPricing.priceSource": "Price source",
+  "catalog.branchPricing.useOrganizationDefaultMode": "Organization default",
+
+  "catalog.branchPricing.customBranchPriceMode": "Custom price",
+
   "catalog.branchPricing.inheritMode": "Uses organization default",
+
   "catalog.branchPricing.useOrganizationDefault": "Use organization default",
-  "catalog.branchPricing.customPriceInput": "Custom branch price",
+
+  "catalog.branchPricing.customPriceInput": "Custom selling price",
+
   "catalog.branchPricing.branchOverride": "Branch override",
+
   "catalog.branchPricing.effectivePrice": "Effective price",
+
   "catalog.branchPricing.saveCustom": "Save branch price",
+
   "catalog.branchPricing.save": "Save override",
-  "catalog.branchPricing.saving": "Saving…",
+
+  "catalog.branchPricing.saving": "Saving???",
+
   "catalog.branchPricing.remove": "Remove override",
-  "catalog.branchPricing.removing": "Removing…",
+
+  "catalog.branchPricing.removing": "Removing???",
+
   "catalog.branchPricing.saved": "Branch price saved.",
+
   "catalog.branchPricing.removed": "Branch price override removed.",
+
   "catalog.branchPricing.branchRequired": "Select a branch workspace to manage branch pricing.",
+
   "catalog.branchPricing.hasOverride": "Override active",
+
   "catalog.productListPrice.branchPrice": "Branch price",
+
   "catalog.productListPrice.orgDefault": "Org default",
+
   "catalog.stockInStock": "{qty} in stock",
+
   "catalog.stockOut": "Out of stock",
+
   "catalog.stockLow": "Only {qty} left",
+
   "catalog.stockNotTracked": "Stock not tracked",
-  "catalog.organizationPricing.title": "Organization pricing",
-  "catalog.organizationPricing.defaultPrice": "Organization default selling price",
-  "catalog.organizationPricing.hint": "Changing this updates the inherited price for every branch that does not have a custom branch price.",
+
+  "catalog.organizationPricing.title": "Organization default price",
+
+  "catalog.organizationPricing.defaultPrice": "Default selling price",
+
+  "catalog.organizationPricing.hint": "Used by branches without their own custom price.",
+
   "catalog.organizationPricing.changeWarning": "Organization default. Branches without a custom price will use this price.",
+
   "catalog.organizationPricing.confirmBody": "Change the organization default price? Branches without a custom price will inherit this new price.",
+
   "prices.managedByOrganization": "Managed by organization",
+
   "prices.organizationPrice": "Organization default",
+
   "prices.branchPrice": "Branch price",
+
   "prices.branchEffectivePrice": "Effective branch price",
+
   "prices.branchScopeHint": "Changes here apply to this branch only. Other branches are not affected.",
+
   "prices.organizationScopeHint": "Changes here update the organization default for all branches without a custom price.",
+
   "catalog.multiplierToBase": "Multiplier ngadto sa base",
+
   "catalog.name": "Ngalan",
+
+  "catalog.col.price": "Presyo",
+
+  "catalog.col.stock": "Stock",
+
+  "catalog.col.scope": "Saklaw",
+  "catalog.col.actions": "Mga buhat",
+
   "catalog.newBrandPlaceholder": "Ngalan sang brand",
+
   "catalog.newCategoryPlaceholder": "Bag-ong ngalan sa category",
+
   "catalog.newProduct": "Bag-ong product",
+
   "catalog.nextPage": "Dasun",
+
   "catalog.noBrand": "Wala sing brand",
+
   "catalog.noCategory": "Wala sing category",
+
   "catalog.openCatalog": "Katalogo",
+
   "catalog.packagesLede":
+
     "Pananglitan: Bakal paagi sa case of 24, ibaligya paagi sa piece. Isa lang ka inventory ang tanan nga packages.",
+
   "catalog.pageLabel": "Pahina {page} sang {totalPages}",
+
   "catalog.prevPage": "Nagligad",
+
   "catalog.productFormLede": "Ang SKU kag barcode kinahanglan unique sa organization kung gibutang.",
+
   "catalog.productsLede": "Dumalaha ang catalog products para sa sini nga organization.",
+
   "catalog.productsTitle": "Products",
+
   "catalog.reactivate": "I-reactivate / buhion liwat",
+
   "catalog.removeUnit": "Kuhaa",
+
   "catalog.rename": "Ilisan ang ngalan",
+
   "catalog.renameBrandPrompt": "Ngalan sang brand",
+
   "catalog.renamePrompt": "Ngalan sa category",
+
   "catalog.save": "I-save / tipigi",
+
   "catalog.saveRename": "I-save ang bag-o nga ngalan",
+  "catalog.resetRename": "I-reset",
+
   "catalog.saved": "Natipig na",
+
   "catalog.saving": "Gina-save?",
+
   "catalog.searchBrands": "Pangitaa ang brands",
+
   "catalog.searchCategories": "Pangitaa ang categories",
+
   "catalog.searchProducts": "Pangita sang products",
+
   "catalog.sectionBasics": "Mga batakan",
+
   "catalog.sectionBrand": "Tatak",
+
   "catalog.sectionBrandQuickAdd": "Dali nga pagdugang sang brand",
+
   "catalog.sectionCategoryQuickAdd": "Dali nga pagdugang sang kategorya",
+
   "catalog.sectionExpiration": "Expiration / pagka-expire",
+
   "catalog.sectionInventory": "Imbentaryo",
+
   "catalog.trackStockQuantity": "I-track ang kadamuon sang stock",
+  "catalog.trackStockQuantityRequiredForIngredient": "Track inventory (required for ingredients)",
+  "catalog.ingredientRequiresTrackedInventory": "Ingredients must use tracked inventory.",
+  "catalog.connectedShare.cantShareTitle": "Product can't be shared",
+  "catalog.connectedShare.cantShareMessage":
+    "Only inventory-tracked products can be shared with connected businesses. Enable inventory tracking first.",
+  "catalog.connectedShare.sharedBlocksDisableTitle": "Product is currently shared",
+  "catalog.connectedShare.sharedBlocksDisableMessage":
+    "Stop sharing this product before disabling inventory tracking.",
+  "catalog.connectedShare.section": "Connected buyers",
+  "catalog.connectedShare.shareProduct": "Allow sharing with connected businesses",
+  "catalog.connectedShare.trackedHelp":
+    "Allowed products can be shared with connected buyers. Sharing is managed per buyer.",
+
   "catalog.sectionImage": "Hulagway",
+
   "catalog.sectionPackages": "Mga pakete",
+
   "catalog.sectionPricing": "Presyo kag pagbaligya",
+
   "catalog.selectBrand": "Pilia ang brand",
+
   "catalog.sellingMode": "Paagi sa pagbaligya",
+
   "catalog.sellingModeByWeight": "Pinaagi sa weight (kada kilogram)",
+
   "catalog.sellingModePerItem": "Kada item / package",
+
   "catalog.sku": "SKU / kodigo",
+
   "catalog.statusActive": "Aktibo",
+
   "catalog.statusAll": "Tanan nga status",
-  "catalog.statusFilter": "Status sang produkto",
+
+  "catalog.statusFilter": "Status",
+
   "catalog.filters": "Filters",
+
   "catalog.filtersTitle": "Filter products",
+
   "catalog.filtersDone": "Done",
+
   "catalog.clearFilters": "Clear filters",
+
   "catalog.activeFilters": "Active filters",
+
   "catalog.filtersTaxonomy": "Category & brand",
+
+  "catalog.filters.scope": "Scope",
+
+  "catalog.filters.search": "Search",
+
+  "catalog.filters.status": "Status",
+
+  "catalog.filters.use": "Use",
+
+  "catalog.filters.scopeOrganization": "Organization",
+
+  "catalog.filters.scopeBranch": "Branch",
+
   "catalog.statusInactive": "Indi aktibo",
+
   "catalog.tracksExpiration": "I-track ang petsa sang expiration",
+
   "catalog.tracksExpirationHint":
+
     "I-on agod i-track ang expiry kada stock lot. Indi magbutang sang expiry date sa product mismo.",
+
   "catalog.unitDisplayName": "Ngalan sa package",
+
   "catalog.unitSellingPrice": "Presyo sang sell unit",
+
   "catalog.unitShortLabel": "Mubo nga label",
+
   "catalog.unitValidationBlankRow":
+
     "Kompletoha ukon kuhaa ang blank package rows antes mag-save.",
+
   "catalog.unitValidationMultiplier": "Ang multiplier ngadto sa base kinahanglan mas dako sa zero.",
+
   "catalog.unitValidationNameLabel":
+
     "Kinahanglan ang tagsa ka package sang package name kag short label.",
+
   "catalog.unitValidationSellPrice":
+
     "Kinahanglan ang tagsa ka sell package sang selling price nga mas dako sa zero.",
+
   "catalogGlobal.allCategories": "Tanan nga kategorya",
+
   "catalogGlobal.category": "Kategorya",
+
   "catalogGlobal.categoryFilter": "Filter sang kategorya",
+
   "catalogGlobal.empty": "Wala sing nakitang products",
+
   "catalogGlobal.emptyDetail": "Sulayi ang laing search o kategorya.",
+
   "catalogGlobal.importSelected": "Importa ang gipili",
+
   "catalogGlobal.lede": "Pangitaa ang ginpublikar nga global products kag importa ang bag-o sa lokal nga catalog.",
+
   "catalogGlobal.nothingToImport": "Pagpili sang isa man lang ka product nga wala pa nadugang.",
+
   "catalogGlobal.search": "Pangitaa ang global products",
+
   "catalogGlobal.select": "Pilia",
+
   "catalogGlobal.selectedCount": "{count} ang gipili",
+
   "catalogGlobal.title": "Sangkalibutan nga katalogo",
+
   "catalogImport.alreadyAdded": "Nadugang na",
+
   "catalogImport.back": "Balik",
+
   "catalogImport.backToProducts": "Balik sa products",
+
   "catalogImport.confirmCheckbox": "Nasabtan ko nga i-import kini isip lokal nga catalsang items.",
+
   "catalogImport.confirmDuplicates": "Gilaktawan ang products nga anaa na sa imo catalog.",
+
   "catalogImport.confirmOpeningStock": "Pagkatapos sa import, gamita ang Inventory palang sa opening stock.",
+
   "catalogImport.confirmPricesEditable": "Ang selling prices mahimo editable nga lokal nga starting values.",
+
   "catalogImport.confirmStockZero": "Initial stock ay 0. Gamita ang inventory flow palang sa opening stock.",
+
   "catalogImport.confirmTitle": "Antes mag-import",
+
   "catalogImport.continueConfirm": "Padayon",
+
   "catalogImport.emptyPreview": "Wala sing produkto sa sini nga batch",
+
   "catalogImport.emptyPreviewDetail": "Tilawi ang iban nga pagpangita ukon pili sang iban nga template.",
+
   "catalogImport.emptyTemplates": "Wala sing nakitang templates",
+
   "catalogImport.emptyTemplatesDetail": "Sulayi ang laing search o i-refresh.",
+
   "catalogImport.failed": "Nagpalya",
+
   "catalogImport.firstBatchCount": "Unang batch",
+
   "catalogImport.goToProducts": "Kadto sa Products",
+
   "catalogImport.imported": "Na-import",
+
   "catalogImport.lede": "Pagpili sang ginpublikar nga template, previewa ang produkto, dayon importa isip lokal nga POS products.",
+
   "catalogImport.localOwnership": "Ang na-import nga products mahimo editable nga lokal nga POS products sining organization.",
+
   "catalogImport.previewBatchCount": "{count} ka produkto sa sini nga batch",
+
   "catalogImport.processed": "Naproseso",
+
   "catalogImport.progressBackground": "Mahimo magpadayon ang job sa background. I-refresh aron bag-ohon ang ihap.",
+
   "catalogImport.progressDone": "NaPagkatapos ang import.",
+
   "catalogImport.progressLede": "Sunda ang import job halin sa server.",
+
   "catalogImport.progressTitle": "Progreso sa import",
+
   "catalogImport.refresh": "I-refresh",
+
   "catalogImport.reviewLocal": "Tan-awa ang lokal nga products",
+
   "catalogImport.searchPreview": "Pangitaa ang preview products",
+
   "catalogImport.searchTemplates": "Pangitaa ang templates",
+
   "catalogImport.select": "Pilia",
+
   "catalogImport.skipped": "Gilaktawan",
+
   "catalogImport.startImport": "Sugdi ang import",
+
   "catalogImport.starting": "Nagasugod...",
+
   "catalogImport.statusComplete": "Na-import na",
+
   "catalogImport.statusFirstDone": "Pagkatapos na ang unang batch",
+
   "catalogImport.statusNextBatch": "Handa ang sunod nga batch (~{count})",
+
   "catalogImport.statusPartial": "Bahin lang ang na-import",
+
   "catalogImport.statusReadyFirst": "Handa sa unang batch",
+
   "catalogImport.statusUnknown": "Ginasusi ang status sa import...",
+
   "catalogImport.step.choose": "Pagpili",
+
   "catalogImport.step.confirm": "Kumpirmaha",
+
   "catalogImport.step.preview": "Previewa",
+
   "catalogImport.stepsAria": "Mga lakang sa import",
+
   "catalogImport.suggestedPrice": "Gisugyot nga presyo",
+
   "catalogImport.title": "Importa ang template sa negosyo",
+
   "catalogImport.unnamedProduct": "Wala sing ngalang produkto",
+
   "checkout.addCustomer": "Magdugang sang customer",
+
   "checkout.addLinkCustomer": "Magdugang/link customer",
+
   "checkout.amountToPay": "Amount to Pay",
+
   "checkout.backToCart": "Balik sa cart",
+
   "checkout.blockedDevice": "Ini nga browser wala ma-register ukon wala ma-authorize para sa gipili nga branch. I-register ang device antes mag-post sang sale.",
+
   "checkout.blockedGeneric": "Indi pa handa ang checkout. Ayo-a una ang kahanda sa shift kag device.",
+
   "checkout.errorSecureId":
+
     "Indi makahimo ang browser sang secure transaction ID. I-reload ang app ukon gamita ang supported browser antes mag-checkout.",
+
   "checkout.blockedLede": "Ginablock ang checkout hasta matuman ang requirements sa shift kag device.",
+
   "checkout.blockedShift": "Kinahanglan sang bukas nga cashier shift uban ang register antes ang checkout.",
+
   "checkout.cashExact": "Exact",
+
   "checkout.cashLede": "Magpili sang Cash, GCash, ukon Utang kag kumpirmaha ang sale.",
+
   "checkout.cashReceived": "Nadawat nga cash",
+
   "checkout.change": "Sukli",
+
   "checkout.changeAdvisory": "Advisory ang sukli hasta i-record sa server ang sale.",
+
   "checkout.confirmCash": "Kumpirmaha ang cash sale",
+
   "checkout.confirmGCash": "Kumpirmaha ang GCash sale",
+
   "checkout.confirmSale": "Kumpirmaha ang sale",
+
   "checkout.confirmUtang": "Kumpirmaha ang Utang sale",
+
   "checkout.confirming": "Gina-record ang sale?",
+
+  "checkout.creditPolicy.afterSale": "After sale",
+
+  "checkout.creditPolicy.available": "Available",
+
+  "checkout.creditPolicy.due": "Due",
+  "checkout.creditPolicy.dueWithDate": "Due {date}",
+
+  "checkout.creditPolicy.limit": "Limit",
+
+  "checkout.creditPolicy.loadError": "Indi ma-load ang credit policy. Tilawi liwat.",
+
+  "checkout.creditPolicy.loading": "Gina-load ang credit policy...",
+
+  "checkout.creditPolicy.notApproved":
+    "Naka-block ang Utang hasta Approved ang credit policy sang customer.",
+  "checkout.creditPolicy.pendingApproval": "Customer credit is pending approval. Utang cannot be used yet.",
+  "checkout.creditPolicy.notConfigured": "Credit is not enabled for this customer.",
+  "checkout.creditPolicy.disabled": "Customer credit is currently paused.",
+
+  "checkout.creditPolicy.outstanding": "Outstanding",
+
+  "checkout.creditPolicy.overLimit":
+    "Credit limit exceeded. Available credit is {amount}.",
+
+  "checkout.creditPolicy.thisSale": "Sale nga ini",
+
+  "checkout.creditPolicy.title": "Customer credit",
+
   "checkout.customerAlreadyInContacts": "Na-add na si {name} sa imo contacts.",
+
   "checkout.customerClear": "Kuhaa ang customer",
+
   "checkout.customerEmpty": "Wala sing nahaum nga active customers.",
+
+  "checkout.customerEmptyBusinesses": "Wala sing nahaum nga business. Tilawi ang ngalan ukon ORG######.",
+
   "checkout.customerIdleEmpty": "Pangita sa ngalan ukon numero para sa walk-in, ukon i-scan ang ExItS ID.",
+
+  "checkout.customerIdleEmptyBusinesses":
+    "Wala pa business. Ang Active B2B connections kag ORG-linked business customers magapakita diri.",
+
   "checkout.customerLoading": "Nagakarga sang customers?",
+  "checkout.customerLoadError": "Could not load customers. Try again.",
+  "checkout.customerRetry": "Retry",
+
   "checkout.customerNotLinked": "Wala naka-link ang customer sa sini nga negosyo",
+
   "checkout.customerNotLinkedCancel": "Isara",
+
   "checkout.customerNotLinkedDenied": "Wala naka-link ini nga customer. Pangayo sa manager nga magdugang ukon mag-link sang customer.",
+
   "checkout.customerSearchHint": "Pangita sa ngalan ukon numero. I-scan ang ExItS ID para sa naka-link nga customer.",
+
+  "checkout.customerSearchHintBusinesses":
+    "Pangita sa ngalan sang business ukon ORG######. Ang Active B2B connections para sa Direct Organization sales.",
+
+  "checkout.customerSearchHintPeople": "Pangita sa ngalan ukon numero. I-scan ang ExItS ID para sa naka-link nga customer.",
+
   "checkout.customerSection": "Customer",
+
   "checkout.customerSelected": "Ginpili nga customer",
+
   "checkout.deniedDetail": "Kinahanglan ang CreateSale para sa checkout.",
+
   "checkout.discount": "Diskwento",
+
   "checkout.discountAdd": "Magdugang sang diskwento",
+
   "checkout.discountAppliedCount": "{count} ka diskwento ang na-apply",
+
   "checkout.discountApply": "I-apply ang diskwento",
+
   "checkout.discountCancel": "Kansela",
+
   "checkout.discountEmpty": "Wala sing nadugang nga diskwento.",
+
   "checkout.discountLede": "Ang diskwento magpabilin ang catalog price. Ang amounts gikan sa server quote.",
+
   "checkout.discountLine": "Line",
+
   "checkout.discountMethod": "Paagi",
+
   "checkout.discountMethodFixed": "Fixed amount",
+
   "checkout.discountMethodPercent": "Percentage",
+
   "checkout.discountReason": "Rason",
+
   "checkout.discountReasonRequired": "Kinahanglan sang rason antes mag-apply sang diskwento.",
+
   "checkout.discountRemove": "Kuhaa",
+
   "checkout.discountScope": "Scope",
+
   "checkout.discountScopeLine": "Usa ka line",
+
   "checkout.discountScopeSale": "Tibuok sale",
+
   "checkout.discountSection": "Commercial diskwento",
+
   "checkout.discountValue": "Value",
+
   "checkout.discountValueInvalid": "Butangi sang valid nga discount value nga sobra sa zero.",
+
   "checkout.errorAlreadyVoided": "Na-void na ini nga sale.",
+
   "checkout.errorCreditDenied": "Indi ka makahimo sang Utang credit sa sini nga role.",
+
   "checkout.errorDeviceRevoked": "Gi-revoke ini nga POS device. I-register liwat antes ang checkout.",
+
   "checkout.errorDeviceUnregistered": "Ini nga browser wala ma-register para sa money posting. I-register, dayon tilawi liwat.",
+
   "checkout.errorDeviceWrongBranch": "Ini nga device naka-register sa laing branch. Ilisan ang branch ukon i-register liwat.",
+
   "checkout.errorDiscountDenied": "Indi ka maka-apply sang commercial diskwento sa sini nga role. Pangayo sa owner ukon manager.",
+
   "checkout.errorGCashReference": "Nawala ukon indi valid ang GCash reference.",
+
   "checkout.errorGeneric": "Indi ma-record ang sale. Tilawi liwat.",
+
   "checkout.errorInsufficientStock": "Kulanga ang stock para sa usa ukon daghang items.",
+
   "checkout.errorInsufficientTender": "Ang nadawat nga cash kinahanglan indi mas diutay sa total sa sale.",
+
   "checkout.errorInvalidTender": "Indi valid ang nadawat nga cash.",
+
   "checkout.errorNoShift": "Wala sing bukas nga cashier shift. Buksan ang shift, dayon tilawi liwat.",
+
   "checkout.errorOverrideAboveLimit": "Sobrado sa imo ginatugot nga limit ang sina nga presyo. Pangayo sa owner, ukon pilia ang presyo sulod sa 100% sang karon nga presyo.",
+
   "checkout.errorOverrideDenied": "Indi mo maislan ang selling price sa sini nga role. Pangayo sa owner ukon manager.",
+
   "checkout.errorOverrideInvalid": "Gamita ang diskwento kung gusto mo himuon nga libre ini nga item. Kon indi, butangi sang positibo nga selling price.",
+
   "checkout.errorOverrideReasonRequired": "Kinahanglan sang rason antes mag-islan sang presyo.",
+
   "checkout.errorOverrideStaleBaseline": "Nagbaylo ang catalog price sukot ginsag-om ini nga pag-islan sang presyo. Hawanan kag itakda liwat ang presyo.",
+
   "checkout.errorProductAccess": "Ginaindian ang product access sa sini nga sale.",
+
   "checkout.errorProductUnavailable": "Adunay product sa cart nga unavailable.",
+
   "checkout.errorSession": "Nag-expire ang imo session. Pag-sign in liwat, dayon tilawi ang checkout.",
+
   "checkout.errorUtangCustomer": "Kinahanglan sang customer ang Utang.",
+
   "checkout.errorUtangZero": "Ang total sa Utang kinahanglan sobra sa zero.",
+
   "checkout.errorVoidDenied": "Indi ka maka-void sang sales sa sini nga role. Pangayo sa owner ukon manager.",
+
   "checkout.errorVoidReason": "Kinahanglan sang rason sa void.",
+
   "checkout.fieldRequired": "Kinahanglan",
+
   "checkout.gcashReference": "GCash reference",
+
   "checkout.gcashReferenceHint": "Operator-confirmed transfer reference. Indi gateway verification.",
+
   "checkout.gcashReferenceRequired": "Butangi ang GCash reference (max 64 characters).",
+
   "checkout.noPaymentRequired": "Wala sing kinahanglan nga bayad",
+
   "checkout.optionalCustomerHint": "Opsyonal ? i-attach ang customer sa sini nga Cash ukon GCash sale.",
+
   "checkout.optionalCustomerSearch": "Pangita sang customers (opsyonal)",
+  "checkout.customerKindFilter": "Customer type",
+  "checkout.customerKindAll": "All",
+  "checkout.customerKindPeople": "People",
+  "checkout.customerKindBusinesses": "Businesses",
+  "checkout.badge.b2b": "B2B",
+  "checkout.b2bUtangBlocked":
+    "Business credit is approved, but Business Utang checkout is not available yet.",
+
   "checkout.orderPreview": "Preview sa sale",
+
   "checkout.paymentCash": "Cash",
+
   "checkout.paymentGCash": "GCash",
+
   "checkout.paymentGCashHint": "Isulat ang reference pagkatapos magbayad",
+
   "checkout.paymentGCashManual": "GCash / Manual",
+
   "checkout.paymentMethod": "Paagi sa bayad",
+
   "checkout.paymentMethodChoose": "Pilia ang paagi sa bayad",
+
   "checkout.paymentUtang": "Utang",
+  "checkout.paymentBankTransfer": "Bank transfer",
+  "checkout.paymentCheck": "Check",
+  "checkout.paymentManualMaya": "Maya / Manual",
+  "checkout.paymentReference": "Payment reference",
+  "checkout.paymentReferenceHint": "Optional or required based on store payment settings. Not verified with a provider.",
+  "checkout.fieldOptional": "Optional",
+
   "checkout.personalCustomerHint": "Pangita sang existing customer nga naka-link sa Personal ExItS identity.",
+
   "checkout.personalCustomerShowHint": "Tago hasta kinahanglan. Buksan para pangita sa QR ukon ExItS ID.",
+
   "checkout.personalCustomerTitle": "I-scan ang ExItS QR ukon isulat ang ExItS ID",
+
   "checkout.personalResolveFailed": "Indi ma-resolve ang ExItS ID nga amo.",
+
   "checkout.priceOverrideNote": "Ang pag-islan sang presyo sa sini nga sale lain sa commercial diskwento kag Today's Prices.",
+
   "checkout.quoteError": "Indi ma-refresh ang quote. Usisaa ang diskwento kag tilawi liwat.",
+
   "checkout.quoteLoading": "Gina-update ang amounts?",
+
   "checkout.registerDevice": "I-register ini nga browser",
+
   "checkout.shiftHint": "Ref#-{shift} Register {register}",
+
   "checkout.tenderInvalid": "Butangi sang nadawat nga cash nga indi mas diutay sa total (hasta 2 decimal places).",
+
   "checkout.title": "Checkout",
+
   "checkout.totalAmount": "Kinatibuk-ang Amount",
+
   "checkout.utangCustomer": "Customer",
+
   "checkout.utangCustomerDenied": "Ang pagpangita sang customers kinahanglan sang permiso sa Manager ukon Owner. Pangayo sa manager agud kompletoha ang Utang, ukon gamita ang Cash / GCash.",
+
   "checkout.utangCustomerRequired": "Magpili sang customer para sa Utang.",
+
   "checkout.utangCustomerSearch": "Pangita sang customers",
+
   "checkout.utangDebtHint": "Ang natala nga utang pareho sa Amount to Pay.",
+
   "checkout.utangDueDate": "Due date (opsyonal)",
+
+  "checkout.utangCustomerIdleEmpty":
+    "No checkout customers yet. People and businesses share this directory ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚Â¢ Available {amount}",
+  "checkout.directoryCredit.pending": "Pending approval",
+  "checkout.directoryCredit.notConfigured": "Credit not enabled",
+  "checkout.directoryCredit.disabled": "Paused",
+  "checkout.directoryCredit.b2bBlocked": "Utang not available for B2B",
+  "checkout.utangSelect.pendingApproval": "Customer credit is pending approval. Utang cannot be used yet.",
+  "checkout.utangSelect.notConfigured": "Credit is not enabled for this customer.",
+  "checkout.utangSelect.disabled": "Customer credit is currently paused.",
+  "checkout.utangSelect.overLimit": "Credit limit exceeded. Available credit is {amount}.",
+  "checkout.utangSelect.b2bNotAvailable": "Business credit is approved, but Business Utang checkout is not available yet.",
+  "checkout.utangSelect.businessInactive":
+    "Business relationship is not active. Utang cannot be used.",
+  "checkout.utangSelect.connectionPending": "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
+  "checkout.utangPendingUnavailableHint": "Unavailable",
+  "checkout.paymentUtangUnavailable": "Utang â€” unavailable",
+  "checkout.utangPendingRelationshipHelper": "Utang becomes available after the customer accepts the relationship and credit requirements are met.",
+  "checkout.directoryCredit.colCustomer": "Customer",
+  "checkout.directoryCredit.colExItsId": "ExItS ID#",
+  "checkout.directoryCredit.colType": "Type",
+  "checkout.directoryConnection.colConnection": "Connection",
+  "checkout.directoryConnection.status.Pending": "Pending",
+  "checkout.directoryConnection.status.Connected": "Connected",
+  "checkout.directoryConnection.status.Declined": "Declined",
+  "checkout.directoryConnection.status.Disconnected": "Disconnected",
+  "checkout.directoryCredit.colStatus": "Credit status",
+  "checkout.directoryCredit.colAvailable": "Available",
+  "checkout.directoryCredit.typePerson": "Person",
+  "checkout.directoryCredit.typeB2b": "B2B",
+  "checkout.directoryCredit.status.Approved": "Approved",
+  "checkout.directoryCredit.status.PendingApproval": "Pending approval",
+  "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
+  "checkout.directoryCredit.status.Disabled": "Paused",
+  "checkout.directoryCredit.availableEmDash": "ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€",
+
+
+  "checkout.utangDueDateOverride": "Due date override (opsyonal)",
+
+  "checkout.utangDueFromPolicy": "Due hali sa credit policy",
+
   "checkout.utangZeroBlocked": "Ang Utang kinahanglan sang Amount to Pay nga sobra sa zero.",
+
   "checkout.walkInCustomer": "Walk-in",
+
   "commercial.accessUnavailable": "Indi namon ma-verify ang imo subscription access. Tilawi liwat.",
+
   "commercial.notIncludedInPlan": "Wala ini sa imo subong nga plan.",
+
   "commercial.productUnavailable": "Indi available ini nga produkto para sa imo organization.",
+
   "commercial.subscriptionSuspended": "Suspended ang imo subscription subong.",
+
   "connected.accept": "Batuna",
+
   "connected.acceptAndStartSharing": "Accept & start sharing",
+
   "connected.acceptSetupCancel": "Cancel",
+
   "connected.acceptSetupHelp": "{name} wants to connect with your business.",
+
   "connected.acceptSetupInventoryNote": "Catalog sharing controls which products this customer can order. Inventory quantities are never shared.",
+
   "connected.acceptSetupTitle": "Accept connection",
+
   "connected.allEligibleProducts": "Share all eligible products",
+
   "connected.allEligibleProductsHelp": "Current and future eligible products will be available to this customer.",
+
   "connected.catalogAndPricing": "Catalog & pricing",
+
   "connected.catalogSharing": "Catalog sharing",
+
   "connected.customerDiscount": "Customer discount %",
+
   "connected.customerDiscountHelp": "Applied to selling price unless a product has a custom price.",
+
   "connected.customerDiscountInvalid": "Enter a discount between 0 and 100.",
+
   "connected.customerPrice": "Customer price",
+
   "connected.excluded": "Excluded",
+
   "connected.filterExcluded": "Excluded",
+
   "connected.filterOverrides": "Overrides",
+
   "connected.noCustomPrices": "No custom prices.",
+
   "connected.noExcludedProducts": "No excluded products.",
+
   "connected.overrides": "Overrides",
+
   "connected.priceNotConfigured": "Price not configured",
+
   "connected.selectedProductsOnly": "Share selected products only",
+
   "connected.yourPrice": "Your price",
+
   "connected.applyBuyerPrice": "I-apply ang buyer price",
+
   "connected.backToBuyer": "Balik sa buyer",
+
   "connected.backToBuyers": "Balik sa mga buyer",
+
   "connected.backToSupplier": "Balik sa supplier",
+
   "connected.backToSuppliers": "Balik sa mga supplier",
+
   "connected.browseProducts": "Tan-awa ang shared nga produkto",
+
   "connected.bulkAffected": "Na-update ang {count} ka produkto.",
+
   "connected.bulkShare": "Ipaambit ang ginpili",
+
   "connected.bulkUnshare": "Hunonga ang pagpaambit",
+  "connected.bulkSelectedCount": "{count} selected",
+  "connected.selectAllPage": "Select all ({count})",
+  "connected.deselectAllPage": "Deselect all",
+  "connected.bulkSelectHint": "Select products to connect several at once. You can still connect one product with its own buttons.",
+  "connected.bulkConfirmMatches": "Confirm matches ({count})",
+  "connected.bulkAddAsNew": "Add selected as new ({count})",
+  "connected.bulkConfirmResult": "Confirmed {ok} match(es). {failed} failed.",
+  "connected.bulkAddAsNewResult": "Added {ok} as new. {failed} failed.",
+
   "connected.businessQrHint": "ORG###### ukon teksto sang Business QR",
+
   "connected.businessQrOrOrgId": "Business QR ukon organization ID",
+
   "connected.buyerDetailTitle": "Konektado nga buyer",
+
   "connected.buyerNotFound": "Wala makita ang koneksyon sang buyer",
+
   "connected.buyerNotFoundHelp": "Basi nadiskonekta na ini.",
+
   "connected.buyerPrice": "Presyo para sa buyer",
+  "connected.buyerPriceSellingRef": "Selling {price}",
+  "connected.discountPercent": "Discount %",
+  "connected.discountPercentHelp": "Same % off each selected productÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â„¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.applyDiscountPercent": "Apply discount",
+  "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
+  "connected.increasePercent": "Increase %",
+  "connected.increasePercentHelp": "Same % up each selected productÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â„¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.applyIncreasePercent": "Apply increase",
+  "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
+  "connected.percentModeLabel": "Percent change type",
+  "connected.percentModeDiscount": "Discount",
+  "connected.percentModeIncrease": "Increase",
   "connected.buyerPriceInvalid": "Ibutang ang hustong buyer price.",
+
   "connected.buyersEmpty": "Wala pa sang konektado nga buyer",
+
   "connected.buyersEmptyHelp": "Batuna ang pangayo para magsugod magpaambit.",
+
   "connected.buyersHelp": "Mga negosyo nga konektado para mabakalsad sa imo.",
+
   "connected.buyersNoMatch": "Wala sang nagahisugtong nga mamumulaklon",
+
   "connected.buyersNoMatchHelp": "Suwayi ang iban nga pagpangita.",
+
   "connected.buyersTitle": "Mga konektado nga buyer",
+
   "connected.cancel": "Kanselahon",
+
   "connected.catalogDenied": "Wala ka permiso nga tan-awon ini nga katalogo.",
+
   "connected.catalogEmpty": "Wala pa sang shared nga produkto",
+
   "connected.catalogEmptyHelp": "Wala pa magpaambit ang supplier sang produkto sa imo.",
+
   "connected.catalogNoMatch": "Wala sang nagsanto nga produkto",
+
   "connected.catalogNoMatchHelp": "Tilawi ang iban nga pangita.",
+
   "connected.catalogPermissionRequired": "Kinahanglan sang purchasing permission para mag-link.",
+
   "connected.catalogSearch": "Pangita sa shared nga produkto",
+
   "connected.catalogTitle": "Shared nga katalogo",
+
   "connected.chooseProduct": "Pilia isa sang imo nga produkto",
+
   "connected.connectedSince": "Naka-konektar {when}",
+
   "connected.createAndLink": "Idugang sa akon nga produkto",
+
   "connected.createAndLinkFailed": "Indi mahimo kag ma-link ang produkto.",
+
   "connected.createAndLinkSucceeded": "Nahimo kag na-link ang produkto.",
+
   "connected.decline": "Indi pagbatuna",
+
   "connected.enterDetailsInstead": "Isulod ang local details",
+
   "connected.exposableNotSharedNote": "Catalog sharing controls which products this customer can order. Inventory quantities are never shared.",
+
   "connected.filterAll": "Tanan",
+
   "connected.filterAllCount": "Tanan ({count})",
+
+  "connected.catalogHelp": "Linked = supplier product is already connected to your catalog; safe exact matches may be linked automatically. New product = no credible matching product was found in your catalog ??? add it as a new product. Check match = one likely product was found and needs confirmation. Needs attention = conflicting or ambiguous matches need manual resolution.",
+
+  "connected.newProductHelp": "No credible matching product was found in your catalog. Add it as a new product.",
+
+  "connected.filterNewProducts": "New products ({count})",
+
+  "connected.filterCheckMatch": "Check match ({count})",
+
+  "connected.filterLinked": "Linked ({count})",
+
+  "connected.statusLinked": "Linked",
+
+  "connected.statusNewProduct": "New product",
+
+  "connected.statusCheckMatch": "Check match",
+
+  "connected.statusAttention": "Needs attention",
+
+  "connected.statusPending": "Checking match...",
+
+  "connected.candidateLabel": "Possible match in your products",
+
+  "connected.candidateUnknown": "Candidate product",
+
+  "connected.evidenceName": "Name",
+
+  "connected.evidenceSku": "SKU",
+
+  "connected.evidenceBarcode": "Barcode",
+
+  "connected.evidenceUom": "UOM",
+
+  "connected.conflictHelp": "Conflicting products were found. Select one to link.",
+
+  "connected.conflictNoCandidates": "No candidate products were returned for this conflict.",
+
+  "connected.confirmMatch": "Confirm match",
+
+  "connected.addAsNew": "Add as new",
+
+  "connected.findExisting": "Find existing",
+
+  "connected.linkSelected": "Link selected product",
+
+  "connected.autoLinkedBanner": "Automatically linked {count} exact match(es).",
+
   "connected.filterAttention": "Hatagan pansin ({count})",
+
   "connected.filterNew": "Bag-o ({count})",
+
   "connected.filterNotShared": "Indi shared",
+
   "connected.filterReady": "Handa ({count})",
+
   "connected.filterReview": "Usisa ({count})",
+
   "connected.filterShared": "Shared",
+
   "connected.guidRejected": "Ibutang ang Business QR ukon organization ID (ORG######). Indi dawaton ang bare ID lang.",
+
   "connected.incomingCompact": "Nagaabot nga pangayo ({count})",
+
   "connected.incomingHelp": "Tan-awa ang mga negosyo nga gusto mabakalsad sa imo.",
+
   "connected.incomingMessage": "Gusto ni {name} magkonekta bilang inyo supplier.",
+
   "connected.incomingLocation": "Lokasyon: {name}",
+
   "connected.incomingNoMatch": "Wala sang nagahisugtong nga pangayo",
+
   "connected.incomingNoMatchHelp": "Suwayi ang iban nga pagpangita.",
+
   "connected.incomingRequests": "Nagaabot nga pangayo",
+
   "connected.incomingTitle": "Nagaabot nga pangayo sang koneksyon",
+
   "connected.linkExisting": "I-link ang ara na",
+
   "connected.linkFailed": "Indi ma-link ang produkto.",
+
   "connected.linkSucceeded": "Na-link ang produkto.",
+
   "connected.linkedEmpty": "Wala pa sang linked nga produkto",
+
   "connected.linkedEmptyHelp": "Tan-awa ang katalogo para mag-link.",
+
   "connected.linkedHelp": "Mga produkto nga na-link mo na. Ang pag-unlink indi magbag-o sang stock.",
+
   "connected.linkedNoMatch": "Wala sang nagsanto nga linked",
+
   "connected.linkedNoMatchHelp": "Tilawi ang iban nga pangita.",
+
   "connected.linkedTitle": "Linked nga produkto",
+  "connected.createPurchaseOrder": "Create new purchase order",
+
   "connected.loadFailed": "Indi ma-load ang datos sang connected supplier.",
+
   "connected.manageSharedHelp": "Ipaambit ukon hunonga ang pagpaambit, kag itakda ang buyer price. Indi ini magbag-o sang stock.",
+
   "connected.manageSharedProducts": "Dumalaha ang shared nga produkto",
+
   "connected.manageSharedTitle": "Shared nga produkto",
+
   "connected.noIncoming": "Wala sang nagaabot nga pangayo",
+
   "connected.noIncomingHelp": "Kon may magpangayo sang koneksyon, makita diri.",
+
   "connected.noProductsForFilter": "Wala produkto sa sini nga filter",
+
   "connected.noProductsForFilterHelp": "Tilawi ang iban nga filter ukon pangita.",
+
   "connected.noSku": "Wala SKU",
+
   "connected.notCustomerNote": "Ang konektado nga buyer indi pareho sang walk-in nga kustomer.",
+
   "connected.notNow": "Indi anay",
+
   "connected.notShared": "Indi shared",
+
   "connected.openLinkedProducts": "Buksan ang linked nga produkto",
+
   "connected.poPrice": "PO price",
+
   "connected.priceApplied": "Na-apply ang buyer price sa {count} ka produkto.",
+
   "connected.productsSharedCount": "{count} ka produkto ang shared",
+
   "connected.qrRequired": "Ibutang ang Business QR ukon ORG######.",
+
   "connected.readinessFilters": "Status sang setup",
+
   "connected.relationshipMissing": "Indi available ang koneksyon",
+
   "connected.relationshipMissingHelp": "Indi ini aktibo nga connected nga negosyo.",
+
   "connected.requestConnection": "I-konek ang negosyo",
+
   "connected.requestFailed": "Indi mapadala ang pangayo sang koneksyon.",
+
   "connected.requestHelp": "I-scan ang Business QR sang supplier, mag-upload sang QR photo, ukon i-type ang organization ID (ORG######).",
+
   "connected.requestSent": "Napadala ang pangayo. Hulata nga batunon sang supplier.",
+
   "connected.requestTitle": "Magpangayo sang koneksyon",
+
   "connected.requestedAt": "Ginpangayo {when}",
+
   "connected.requestingBusiness": "Isa ka negosyo",
+
   "connected.respondFailed": "Indi masabat ang pangayo.",
+
   "connected.saveSharingFailed": "Indi ma-update ang pagpaambit.",
+
   "connected.scanOrSearchHelp": "Gamiton ang camera, mag-upload sang QR image, ukon pangitaa ang ORG######.",
+
   "connected.scanOrSearchTitle": "I-scan ukon pangita paagi sa ID",
+
   "connected.searchBuyers": "Pangita-a ang naka-konektar nga mga mamumulaklon",
+
   "connected.searchIncoming": "Pangita-a ang nagaabot nga pangayo",
+
   "connected.searchLinked": "Pangita sa linked",
+
   "connected.searchProducts": "Pangita sang produkto",
+
   "connected.selectedId": "Andam na ipadala: {id}",
+
   "connected.sendRequest": "Ipadala ang pangayo",
+
   "connected.addSupplier": "Add supplier",
+
   "connected.whichLocationSupplies": "Which location supplies you?",
+
   "connected.supplierLocationLabel": "Supplier location: {name}",
+
   "connected.noActiveLocations": "This supplier has no active locations to connect.",
+
   "connected.branchUnavailable": "That supplier location is not available.",
+
   "connected.connectedBusiness": "Connected business",
+
   "connected.supplierLocation": "Supplier location",
+
   "connected.changeSupplierLocation": "Change supplier location",
+
   "connected.locationChangeFailed": "Could not change the supplier location.",
+
   "purchasing.receivingBranchHelp": "Inventory will post only to this buyer receiving branch - not the supplier location.",
+
   "connected.sending": "Ginapadala?",
+
   "connected.shareFilter": "Filter sang pagpaambit",
+
   "connected.shareProductsNow": "Manage shared products",
+
   "connected.sharePromptHelp": "Ang pagbaton indi awtomatiko nga nagapaambit. Pilia kon ano ang ma-order ni {name}.",
+
   "connected.sharePromptTitle": "Manage this customer's catalog",
+
   "connected.shareSummary": "{shared} shared sa {eligible} eligible",
+
   "connected.shareSummaryAllEligible": "{shared} available of {eligible} eligible (all eligible shared by default)",
+
   "connected.customerDiscountBanner": "Customer pricing: {percent}% off selling price",
+
   "connected.sellingPriceBaselineBanner": "Customer price uses each product selling price (no extra discount).",
+
   "connected.listPrice": "Selling price",
+
   "connected.noListPrice": "No selling price",
+  "connected.colProduct": "Product",
+  "connected.colSku": "SKU",
+  "connected.colStatus": "Status",
+
   "connected.shared": "Shared",
+
   "connected.unknownBusiness": "Wala nabal-an nga negosyo",
+
   "connected.unlink": "I-unlink",
+
   "connected.unlinkFailed": "Indi ma-unlink ang produkto.",
+
   "connected.unlinkSucceeded": "Na-unlink ang produkto.",
+
   "connected.usesDefaultPo": "Default nga PO price",
+
   "connected.waitingForApproval": "Hulata nga batunon sang supplier.",
+
+  "connected.requestPending": "Connection request pending",
+
+  "connected.cancelRequest": "Cancel request",
+
+  "connected.cancelRequestConfirm": "Cancel this pending connection request?",
+
+  "connected.cancelRequestFailed": "Could not cancel the connection request.",
+
   "connection.detail.org.awaiting": "Connection request sent. Waiting for the customer to accept.",
+
   "connection.detail.org.connected": "This customer has connected their ExItS account.",
+
   "connection.detail.org.declined": "The customer declined the connection request.",
+
   "connection.detail.org.disconnected": "The account is no longer connected.",
+
   "connection.detail.org.expired": "The previous connection request expired.",
+
   "connection.detail.org.notConnected": "Send a connection request to link this customer's ExItS account.",
+
   "connection.detail.org.unavailable": "Connection requests are unavailable for this customer.",
+
   "connection.detail.personal.blocked": "Connection requests from this store are blocked.",
+
   "connection.detail.personal.connected": "Your account is connected to this store.",
+
   "connection.detail.personal.declined": "No store access to Personal-linked history is granted for this request.",
+
   "connection.detail.personal.disconnected": "Your ExItS account is no longer connected to this store.",
+
   "connection.detail.personal.expired": "The previous connection request expired.",
+
   "connection.detail.personal.notConnected": "Connect your account to this store to view purchases linked to you.",
+
   "connection.detail.personal.pending": "This store wants to connect your ExItS account to their customer record.",
+
   "connection.detail.personal.unavailable": "Connection status could not be loaded.",
+
   "connection.sectionTitle": "ExItS account connection",
+
   "connection.status.blocked": "Blocked",
+
   "connection.status.connected": "Connected",
+
   "connection.status.declined": "Request declined",
+
   "connection.status.disconnected": "Disconnected",
+
   "connection.status.expired": "Request expired",
+
   "connection.status.notConnected": "Not connected",
+
   "connection.status.org.awaiting": "Request sent",
+
   "connection.status.org.connected": "Linked",
+
   "connection.status.org.declined": "Declined",
+
   "connection.status.org.disconnected": "Revoked",
+
   "connection.status.org.expired": "Expired",
+
   "connection.status.org.notConnected": "Local customer",
+
   "connection.status.org.unavailable": "Unavailable",
+
   "connection.status.request": "Connection request",
+
   "connection.status.unavailable": "Unavailable",
+
   "connectivity.offlineDetail": "Magkonekta liwat agud magpadayon.",
+
   "connectivity.offlineTitle": "Offline ka subong",
+
   "connectivity.online": "Online",
+
   "connectivity.reconnecting": "Nagakonekta liwat?",
+
   "connectivity.staleDataDetail": "Mahimo nga daan ang ginapakita nga data hasta makakonekta ka liwat.",
+
   "connectivity.backOnline": "Online na liwat",
+
   "connectivity.orgWebRequiresInternet": "Kinahanglan sang internet connection ang ExItS Web para luwas nga ma-access ang imo business kag karon nga data.",
+
   "connectivity.pageNeedsInternet": "Magkonekta liwat agud ma-load ang karon nga data.",
+
   "connectivity.actionRequiresInternet": "Kinahanglan sang internet connection agud magpadayon.",
+
   "checkout.confirmingTransaction": "Gina-confirm ang transaksyon?",
+
   "checkout.transactionStatusUnknown": "Indi makumpirma ang status sang transaksyon. Indi pag-isumite liwat hasta ma-verify ang status.",
+
   "customers.add": "Magdugang sang customer",
+
   "customers.address": "Address",
+
   "customers.linkElig.checking": "Checking if this person can be linked?",
+
   "customers.linkElig.failed": "We could not verify this ExItS account. Try again.",
+
   "customers.linkElig.ownerSelf": "You're already the owner of this business.",
+
   "customers.linkElig.organizationStaff": "This person already works for this business and can't also be linked as a customer.",
+
   "customers.linkElig.alreadyLinked": "This person is already in your customers.",
+
   "customers.linkElig.pendingInvitation": "An invitation has already been sent to this person.",
+
   "customers.linkElig.unavailable": "This ExItS account isn't available for linking.",
+
   "customers.alreadyInContacts":
+
     "Na-add na si {name} sa imo contacts. Buksan ina nga customer, indi magpadala sang bag-o nga link.",
+
   "customers.delivery.title": "Delivery",
+
   "customers.delivery.normalLede": "Normal nga delivery coverage ang nagakabagay sa customer nga ini.",
+
   "customers.delivery.exceptionOnLede": "Ini nga customer makabaton sang delivery bisan labaw sa normal nga limitasyon sa distansya.",
+
   "customers.delivery.allowBeyond": "Pagtugot sang delivery labaw sa normal nga distansya",
+
   "customers.delivery.normalHint": "Naga-usar sang branch service areas kag limitasyon sa distansya sang branch.",
+
   "customers.delivery.exceptionHint": "Naga-apply pa gihapon ang delivery area, availability sang tenda, minimum order, kag normal nga delivery fees.",
+
   "customers.delivery.distanceExceptionBadge": "Distance exception",
+
   "customers.delivery.updateFailed": "Indi ma-update ang delivery exception.",
+
   "customers.delivery.extendedApproved": "Na-aprubahan ang extended delivery",
+
   "customers.amountOwed": "Amount owed",
+
   "customers.back": "Balik sa customers",
+
   "customers.backDetail": "Balik sa customer",
+
   "customers.createKindChange": "Islan ang klase",
+
   "customers.createKindExits": "May ExItS ID",
+
   "customers.createKindExitsHint": "I-scan ukon i-type ang Personal ExItS ID agud magpadala sang link request.",
+
   "customers.createKindLede": "Pilia ang walk-in (wala ExItS ID) ukon i-link ang Personal ExItS identity.",
+
   "customers.createKindTitle": "Klase sang customer",
+
   "customers.createKindWalkIn": "Wala ExItS ID",
+
   "customers.createKindWalkInHint": "Ngalan kag opsyonal nga contact lang. Wala Personal account link.",
+
+  "customers.creditPolicy.approve": "I-approve",
+
+  "customers.creditPolicy.approvedBy": "Gin-approve ni",
+
+  "customers.creditPolicy.available": "Available credit",
+  "customers.creditPolicy.usedOfLimit": "Used {percent}% of {limit}",
+  "customers.creditPolicy.utilizationProgress": "Credit utilization",
+
+  "customers.creditPolicy.cancel": "Cancel",
+
+  "customers.creditPolicy.concurrencyReload": "I-reload ang credit policy kag tilawi liwat.",
+
+  "customers.creditPolicy.configure": "I-configure",
+
+  "customers.creditPolicy.disable": "I-disable",
+
+  "customers.creditPolicy.edit": "I-edit",
+
+  "customers.creditPolicy.hideHistory": "Tagua ang history",
+
+  "customers.creditPolicy.history": "History",
+
+  "customers.creditPolicy.historyAction": "Action",
+
+  "customers.creditPolicy.historyEmpty": "Wala pa sing pagbag-o sa policy.",
+
+  "customers.creditPolicy.historyStatus": "Status",
+  "customers.creditPolicy.loadMoreHistory": "Load 10 more",
+  "customers.creditPolicy.historyShowing": "Showing {shown} of {total}",
+  "customers.creditPolicy.historyEnd": "End of history",
+
+  "customers.creditPolicy.invalidLimit": "Isulod ang valid nga credit limit (max 2 decimal places).",
+
+  "customers.creditPolicy.invalidTerm": "Ang term days dapat 1 asta 365.",
+
+  "customers.creditPolicy.checkoutNote": "Utang checkout uses this approved credit policy and available credit.",
+  "customers.creditPolicy.limit": "Credit limit",
+
+  "customers.creditPolicy.limitHelper":
+    "Maximum nga wala pa nabayran nga credit nga pwede iya sang customer sa isa ka tion.",
+
+  "customers.creditPolicy.nextPage": "Dason",
+
+  "customers.creditPolicy.offline": "Kinahanglan sang online connection para sa credit policy.",
+  "customers.creditPolicy.loadFailed": "Credit policy could not be loaded.",
+  "customers.creditPolicy.retry": "Retry",
+  "customers.creditPolicy.notApprovedHint": "Utang is not approved for this customer.",
+  "customers.creditPolicy.pendingHint":
+    "Utang is not yet allowed. Credit terms are pending approval.",
+  "customers.creditPolicy.disabledHint":
+    "New Utang is paused. Existing balances can still be paid.",
+
+  "customers.creditPolicy.outstanding": "Outstanding",
+  "customers.creditPolicy.overdue": "Overdue",
+  "customers.creditPolicy.reservedActivePos": "Reserved by active POs",
+
+  "customers.creditPolicy.outstandingOverLimitWarning":
+    "Mas daku ang outstanding sangsa bag-o nga limit. Zero ang available credit hasta magkubos ang balance.",
+
+  "customers.creditPolicy.prevPage": "Previous",
+
+  "customers.creditPolicy.reasonForChange": "Rason sang pagbag-o",
+
+  "customers.creditPolicy.reasonForChangeHelper":
+    "Required. Ma-record sa credit audit history.",
+
+  "customers.creditPolicy.reasonRequired": "Isulod ang reason.",
+
+  "customers.creditPolicy.reapprovalWarning":
+    "Changing these terms will require approval again.\nNew Utang will be paused until approved.",
+
+  "customers.creditPolicy.save": "I-save",
+
+  "customers.creditPolicy.saveForApproval": "I-save para sa pag-apruba",
+
+  "customers.creditPolicy.setCreditTerms": "I-set ang credit terms",
+
+  "customers.creditPolicy.setNewCreditTerms": "I-set ang bag-o nga credit terms",
+
+  "customers.creditPolicy.editCreditTerms": "I-edit ang credit terms",
+
+  "customers.creditPolicy.editProposedTerms": "I-edit ang proposed terms",
+
+  "customers.creditPolicy.approveCredit": "I-apruba ang credit",
+
+  "customers.creditPolicy.pauseCredit": "I-pause ang credit",
+
+  "customers.creditPolicy.updateProposedTerms": "I-update ang proposed terms",
+
+  "customers.creditPolicy.allowCredit": "Allow credit (Utang)",
+  "customers.creditPolicy.allowCreditOffHint":
+    "Credit is currently disabled for this business.",
+  "customers.creditPolicy.allowCreditNeedsSetupHint":
+    "Complete credit terms before this business can use Utang.",
+  "customers.creditPolicy.confirmEnableTitle": "Turn on Allow credit?",
+  "customers.creditPolicy.confirmEnableDetail":
+    "Utang will be allowed once credit terms are active. Existing limit and payment term are reused when available.",
+  "customers.creditPolicy.confirmEnableConfirm": "Turn on",
+  "customers.creditPolicy.confirmDisableTitle": "Turn off Allow credit?",
+  "customers.creditPolicy.confirmDisableDetail":
+    "New Utang will be blocked. Credit limit, payment term, balances, and history are kept.",
+  "customers.creditPolicy.confirmDisableConfirm": "Turn off",
+  "customers.creditPolicy.utangAllowed": "Ginatugot ang Utang",
+
+  "customers.creditPolicy.utangAllowedYes": "Huo",
+  "customers.creditPolicy.utangAllowedNo": "Indi",
+
+  "customers.creditPolicy.customTerm": "Custom nga term",
+
+  "customers.creditPolicy.status.Approved": "Active",
+
+  "customers.creditPolicy.status.Disabled": "Off",
+
+  "customers.creditPolicy.status.NotConfigured": "Wala pa na-configure",
+  "customers.creditPolicy.status.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.status.NeedsSetup": "Needs setup",
+  "customers.creditPolicy.status.Active": "Active",
+  "customers.creditPolicy.status.Paused": "Paused",
+  "customers.creditPolicy.buyerStatus.Unavailable": "Credit unavailable",
+  "customers.creditPolicy.buyerStatus.Available": "Credit available",
+  "customers.creditPolicy.buyerStatus.Paused": "Credit paused",
+  "customers.creditPolicy.confirmPauseTitle": "Pause credit?",
+  "customers.creditPolicy.confirmPauseDetail": "New Utang sales and new Utang PO exposure will be blocked.\nExisting balances, payments, statements, reservations, and history remain.",
+  "customers.creditPolicy.confirmPauseConfirm": "Pause credit",
+  "customers.creditPolicy.confirmResumeTitle": "Resume credit?",
+  "customers.creditPolicy.confirmResumeDetail": "If prior terms are still valid, credit returns to Active. Otherwise you will finish setup before credit is usable.",
+  "customers.creditPolicy.confirmResumeConfirm": "Resume credit",
+
+  "customers.creditPolicy.status.PendingApproval": "Activating",
+
+  "customers.creditPolicy.term": "Default payment term (in days)",
+
+  "customers.creditPolicy.termAbout3Months": "mga 3 ka bulan",
+
+  "customers.creditPolicy.termCustom": "Custom",
+
+  "customers.creditPolicy.termDays": "{days} ka adlaw",
+
+  "customers.creditPolicy.termDaysUnit": "ka adlaw",
+
+  "customers.creditPolicy.termExampleHelper":
+    "Halimbawa: ang 90 ka adlaw mga 3 ka bulan.",
+
+  "customers.creditPolicy.title": "Credit & payment terms",
+
   "customers.creditsEmpty": "Wala pa sing charges",
+
   "customers.creditsEmptyDetail": "Makita diri ang Utang sales sa sini nga customer.",
+
   "customers.creditsTitle": "Utang charges",
+  "customers.branchAccess.title": "Manage branch access",
+  "customers.branchAccess.help":
+    "Customer stays organization-owned. Areas only help select branches - access is saved as an explicit branch list.",
+  "customers.branchAccess.homeBranch": "Home branch",
+  "customers.branchAccess.homeUnknown": "Not set",
+  "customers.branchAccess.homeBadge": "Home",
+  "customers.branchAccess.visibility": "Visibility",
+  "customers.branchAccess.modeThisBranch": "This branch only",
+  "customers.branchAccess.modeSelected": "Selected branches",
+  "customers.branchAccess.modeAll": "All branches",
+  "customers.branchAccess.selectedBranches": "Selected branches",
+  "customers.branchAccess.unassigned": "Unassigned branches",
+  "customers.branchAccess.branches": "Branches",
+  "customers.branchAccess.save": "Save branch access",
+  "customers.branchAccess.saving": "Saving...",
+  "customers.branchAccess.saveError": "Could not save branch access.",
+  "customers.branchAccess.loadError": "Could not load branches.",
+  "customers.branchAccess.offline": "Branch access can be managed when you are online.",
+
   "customers.deactivate": "I-deactivate",
+
   "customers.detailLede": "Business Utang balance, charges, kag payments.",
+
   "customers.displayName": "Display name",
+
   "customers.displayNameRequired": "Kinahanglan ang display name.",
+
   "customers.edit": "Islan",
+
   "customers.editTitle": "Islan ang customer",
+
   "customers.email": "Email",
+
   "customers.empty": "Wala sing nakitang customers",
+
   "customers.emptyDetail": "Magdugang sang customer ukon islan ang search.",
+
   "customers.kindFilter": "Customer kind",
+
   "customers.kindAll": "All",
+
   "customers.kindPeople": "People",
+
   "customers.kindBusinesses": "Businesses",
+  "customers.addChooserLede": "Choose whether this customer is a person or a business.",
+  "customers.addStepsAria": "Add customer steps",
+  "customers.addStepChoose": "Choose",
+  "customers.addStepComplete": "Details",
+  "customers.addStepBusiness": "Business",
+  "customers.addStepConnect": "Connect",
+  "customers.addPerson": "Person",
+  "customers.addPersonDetail": "Individual customer",
+  "customers.addBusiness": "Business",
+  "customers.addBusinessDetail": "Company, store, organization, or other business",
+  "customers.addBusinessChooserLede": "Create a local business customer or connect an ExItS Organization.",
+  "customers.addBusinessLocal": "Business not on ExItS",
+  "customers.backBusinessChooser": "Back to business options",
+  "customers.backCustomerChooser": "Back to customer options",
+  "customers.saveBusiness": "Save business",
+  "customers.addBusinessLocalDetail": "Create a local business customer",
+  "customers.addBusinessLocalLede": "Save business details without an ExItS Organization identity.",
+  "customers.addBusinessOrganization": "ExItS Organization",
+  "customers.addBusinessOrganizationDetail": "Find or connect an existing ExItS Organization",
+  "customers.addBusinessOrganizationLede": "Reuse the Organization identity. Do not create a duplicate customer.",
+  "customers.addBusinessChooserHint": "Customer and supplier roles are independent. The same organization can be both.",
+  "customers.businessName": "Business name",
+  "customers.businessNameRequired": "Business name is required.",
+  "customers.contactPerson": "Contact person",
+  "customers.orgIdRequired": "Enter or scan a valid ExItS Organization ID / QR.",
+  "customers.orgSelfRejected": "You cannot add your own organization as a customer.",
+  "customers.orgConnectAsCustomer": "Add as business customer",
+
+  "customers.orgNeedsBuyerConnection":
+    "Kinahanglan sang Active supplier connection para sa Direct B2B checkout. Sugua ini nga organization nga mag-connect sa imo sa Suppliers, dayon batuna ang request. Pagkatapos, magapakita sila sa Customers ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â€ Ãƒâ€šÃ‚â€™ Businesses kag sa Sell checkout.",
+
+  "customers.orgNeedsConnectionAction": "Paano magkonekta",
+  "customers.orgOpenExistingConnection": "Open existing connection",
+  "customers.orgOpenExistingCustomer": "Open existing customer",
+  "customers.badge.local": "Local",
+  "customers.badge.connected": "Connected",
+  "customers.badge.exitsOrganization": "ExItS Organization",
+  "customers.badge.personal": "Personal",
+  "customers.badge.b2b": "B2B",
+  "customers.badge.alsoSupplier": "Also a supplier",
+
   "customers.peopleEmptyCompact": "No people customers yet.",
+
   "customers.business.badgeShort": "Business",
+
   "customers.business.search": "Search businesses",
+
   "customers.business.discountShort": "{percent}% off",
+
   "customers.business.sharedCountShort": "{count} shared",
+
   "customers.business.badge": "Business customer",
+
   "customers.business.detailTitle": "Business customer",
+
   "customers.business.back": "Business customers",
+
   "customers.business.connectedOrg": "Connected organization",
+
+  "customers.business.organizationLabel": "Organization",
+
   "customers.business.connectedSince": "Connected since {when}",
+
+  "customers.business.connectionRequestPending": "Connection request pending",
+
+  "customers.business.waitingForAcceptDetail":
+    "Waiting for {name} to accept the business connection request.",
+
+  "customers.business.requestSentLabel": "Request sent",
+
+  "customers.business.revokeRequest": "Revoke request",
+
+  "customers.business.requestRevoked": "Connection request revoked.",
+
+  "customers.business.requestRevokeFailed": "Could not revoke this connection request.",
+
+  "customers.business.connectionDeclined": "Connection declined",
+
+  "customers.business.connectionInactive": "Connection inactive",
+
+  "customers.business.branchAccessHelp":
+    "Default visibility is this home branch only. Main Branch does not auto-share business customers.",
+
   "customers.business.catalogPricing": "Catalog & pricing",
+
   "customers.business.catalogMode": "Catalog",
+
   "customers.business.modeAllEligible": "All eligible products",
+
   "customers.business.modeSelectedOnly": "Selected products only",
+
   "customers.business.shared": "Shared",
+
   "customers.business.excluded": "Excluded",
+
   "customers.business.overrides": "Price overrides",
+
   "customers.business.customerPricing": "Customer pricing",
+
   "customers.business.discountOff": "{percent}% off selling price",
-  "customers.business.noDiscount": "No customer discount",
+
+  "customers.business.noDiscount": "Standard pricing",
+
   "customers.business.sharedCount": "{count} products shared",
+
   "customers.business.manageCatalog": "Manage catalog & pricing",
+  "customers.business.creditPolicy.title": "Credit & payment terms",
+    "purchasing.supplierNotReadyTitle": "Supplier not ready for purchase orders",
+
+  "purchasing.supplierNotReadyBody": "This supplier is not currently ready to accept purchase orders from your organization. Please contact your supplier.",
+
+  "purchasing.supplierNotReady.dismiss": "Dismiss",
+
+  "purchasing.supplierNotReady.issuePrefix": "Issue:",
+
+  "purchasing.supplierNotReady.issuesPrefix": "Issues:",
+
+  "purchasing.supplierNotReady.issue.fulfillment": "Fulfillment setup",
+
+  "purchasing.supplierNotReady.issue.noUsableMethod": "Pickup or Delivery",
+
+  "purchasing.supplierNotReady.issue.payment": "Payment",
+
+  "purchasing.supplierNotReady.issue.catalog": "Catalog",
+
+  "purchasing.supplierNotReady.issue.contact": "Contact",
+
+  "purchasing.supplierNotReady.issue.credit": "Credit",
+
+  "purchasing.supplierNotReady.phrase.fulfillment": "fulfillment",
+
+  "purchasing.supplierNotReady.phrase.noUsableMethod": "fulfillment methods",
+
+  "purchasing.supplierNotReady.phrase.payment": "payment",
+
+  "purchasing.supplierNotReady.phrase.catalog": "catalog",
+
+  "purchasing.supplierNotReady.phrase.contact": "contact",
+
+  "purchasing.supplierNotReady.phrase.credit": "credit",
+
+  "purchasing.supplierNotReady.reason.fulfillment": "Purchase orders are currently unavailable because this supplier has not completed its fulfillment setup. Please contact the supplier and ask them to review their purchase-order fulfillment settings.",
+
+  "purchasing.supplierNotReady.reason.noUsableMethod": "This supplier currently has no Pickup or Delivery method available for purchase orders. Please contact the supplier.",
+
+  "purchasing.supplierNotReady.reason.payment": "This supplier has not configured an accepted payment method for purchase orders.",
+
+  "purchasing.supplierNotReady.reason.catalog": "This supplier currently has no products available for purchase ordering.",
+
+  "purchasing.supplierNotReady.reason.contact": "The supplier must complete its business contact setup before accepting purchase orders.",
+
+  "purchasing.supplierNotReady.reason.credit": "Credit purchasing is currently unavailable for this business relationship.",
+
+  "purchasing.supplierNotReady.reason.multiple": "Purchase orders are currently unavailable due to {reasons} setup. Please contact your supplier.",
+
+"customers.business.commerceReadinessTitle": "Supplier Readiness",
+  "customers.business.commerceReadinessReady": "Ready",
+  "customers.business.commerceReadinessSetupRequired": "Setup required",
+  "customers.business.commerceReadinessNotReady":
+    "Complete the items below before this connection can accept purchase orders.",
+  "customers.business.commerceReadinessCompleteSetup": "Complete setup",
+  "customers.business.commerceReadinessFixItems": "Fix {n} items",
+  "customers.business.commerceReadinessReviewSetup": "Review setup",
+  "customers.business.commerceReadinessFilterLabel": "Readiness filter",
+  "customers.business.commerceReadinessFilter.needsSetup": "Needs setup ({n})",
+  "customers.business.commerceReadinessFilter.complete": "Complete ({n})",
+  "customers.business.commerceReadinessFilter.all": "All ({n})",
+  "customers.business.commerceReadinessEmptyFilter": "No items in this filter.",
+  "customers.business.commerceReadinessOpenItem": "Open {title}",
+  "customers.business.commerceReadinessStatus.Complete": "Complete",
+  "customers.business.commerceReadinessStatus.Missing": "Needs setup",
+  "customers.business.commerceReadinessStatus.NotApplicable": "Not required",
+  "customers.business.deliveryAllowanceTitle": "Delivery",
+  "customers.business.deliveryAllowance": "Allow delivery",
+  "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
+  "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
+  "customers.business.deliveryAllowanceOrgOff":
+    "Delivery is not currently offered by your organization.",
+  "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
+  "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
+  "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
+  "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
+  "customers.business.creditPolicy.allowCreditOffHint":
+    "Credit is currently disabled for this business.",
+  "customers.business.creditPolicy.allowCreditNeedsSetupHint":
+    "Complete credit terms before this business can use Utang.",
+  "customers.business.creditPolicy.checkoutNote": "Business Utang checkout will use this approved policy when B2B credit sales are enabled.",
+
+  "customers.business.creditsEmptyDetail": "Utang sales for this business appear here.",
+  "customers.business.paymentsEmptyDetail": "Record a payment when the business pays toward Amount owed.",
+  "customers.business.repayLede": "Record a payment toward this business customer's Utang balance.",
+  "customers.business.repayUnavailableDetail": "Business customer payment recording is not available yet. Charges will appear under Utang charges after Business Utang sales.",
+  "customers.business.statementLede": "Review Utang charges and payments for this business customer.",
+  "customers.business.statementUnavailableDetail": "Business customer statements are not available yet. Charges will appear under Utang charges after Business Utang sales.",
+
   "customers.business.identityNote": "This is the buyer's Organization identity. You manage relationship settings only ? not their business name or logo.",
+
   "customers.business.incomingRequests": "Incoming connection requests",
+
   "customers.business.empty": "No business customers yet",
-  "customers.business.emptyHelp": "Accept a buyer connection request to add a business customer.",
+
+  "customers.business.emptyHelp": "Add a local business or connect an ExItS Organization. Buyer connections also appear here.",
+
   "customers.business.loadFailed": "Could not load business customers.",
+
   "customers.business.loadFailedHelp": "Check your connection and try again.",
+
   "customers.business.retry": "Retry",
+
   "customers.business.notFound": "Business customer was not found.",
+
   "customers.business.notFoundHelp": "The connection may have been removed.",
+
   "customers.business.unknown": "Unknown business",
+
   "customers.exItsIdLabel": "Personal ExItS ID",
+
   "customers.exItsIdNone": "None",
+
   "customers.formLede": "Kinahanglan ang display name. Opsyonal ang mobile, address, kag notes.",
+
   "customers.formLedeExits": "Ibutang ang detalye sang customer kag ang ila ExItS Personal ID. Kinahanglan i-Accept sang Personal user ang link request.",
+
   "customers.formLedeWalkIn": "Walk-in customer ? kinahanglan ang ngalan. Wala ExItS Personal link. Opsyonal ang mobile, address, kag notes.",
+
   "customers.lede": "People for walk-in and Utang, plus connected business customers.",
+
   "customers.linkCancelInvitation": "Bawi-on ang request",
+
   "customers.linkConnectionUnavailableDetail": "Customer connection requests are unavailable for this customer.",
+
   "customers.linkHistoryTitle": "Kasaysayan sang koneksyon",
+
   "customers.linkInvitationSent": "Invitation sent: {date}",
+
   "customers.linkInvitationSentLabel": "Naipadala ang imbitasyon",
+
   "customers.linkAfterCreateSuccess": "Naipadala ang imbitasyon",
+
   "customers.linkPendingDismissSuccess": "Sige",
+
   "customers.linkPendingNextStepsTitle": "Ano ang sunod",
+
   "customers.linkPendingStep1":
+
     "Hangyua si {name} nga mag-sign in sa ExItS Personal sa phone ukon browser.",
+
   "customers.linkPendingStep2":
+
     "Abri ang More ? Customer link requests, ukon tan-awa ang Notifications para sa ngalan sang tindahan.",
+
   "customers.linkPendingStep3":
+
     "I-tap ang Accept agud i-link ang Personal account sa customer record sang tindahan.",
+
   "customers.linkPendingExItsHint":
+
     "Siguradua nga ini nga Personal ExItS ID amo ang customer antes sila mag-accept.",
+
   "customers.linkInviteAgain": "Invite again",
+
   "customers.linkLastReminder": "Last reminder: {date}",
+
   "customers.linkPendingAfterCreate": "Customer added. Personal link request sent ? waiting for acceptance.",
+
   "customers.linkPendingBanner": "Waiting for the Personal user to accept this customer link request.",
+
   "customers.linkPendingTitle": "Personal link pending",
+
   "customers.linkRemind": "Magpadala sang pahinumdom",
+
   "customers.linkRemindCooldown": "You can remind again later.",
+
   "customers.linkRemindersCount": "Reminders: {count}",
+
   "customers.linkSendNewInvite": "Send new invite",
+
   "customers.linkStatus.declined": "Declined",
+
   "customers.linkStatus.expired": "Expired",
+
   "customers.linkStatus.linked": "Linked",
+
   "customers.linkStatus.notLinked": "Local customer",
+
   "customers.linkStatus.pending": "Request sent",
+
   "customers.linkStatus.revoked": "Revoked",
+
   "customers.linkStatus.unavailable": "Link status unavailable",
+
   "customers.linkStatus.unavailableOffline": "Link status unavailable offline",
+
   "customers.linkStatusLabel": "Customer link",
+
   "customers.linkedPersonal": "Naka-link sa ExItS Personal",
+
   "customers.listBadge.connected": "Connected",
+
   "customers.listBadge.exItsId": "ExItS ID",
+
   "customers.listBadge.noExItsId": "Wala ExItS ID",
+
   "customers.listBadge.pending": "Pending",
+
   "customers.listExItsIdHint": "ExItS ID",
+
   "customers.mobile": "Mobile",
+
   "customers.newTitle": "Bag-ong customer",
+
   "customers.notFound": "Wala makita ang customer.",
+
   "customers.notLinked": "Wala ma-link sa ExItS Personal",
+
   "customers.notes": "Notes",
+
+  "customers.storeDetails.title": "Store customer details",
+  "customers.storeDetails.edit": "Edit customer details",
+  "customers.storeDetails.editTitle": "Edit customer details",
+  "customers.storeDetails.preferredName": "Preferred name",
+  "customers.storeDetails.contactPhone": "Contact phone",
+  "customers.storeDetails.deliveryAddress": "Delivery address",
+  "customers.storeDetails.deliveryInstructions": "Delivery instructions",
+  "customers.storeDetails.internalNotes": "Internal notes",
+  "customers.storeDetails.linkedProfile": "Linked profile",
+  "customers.storeDetails.readOnlyIdentity": "Identity managed by customer.",
+  "customers.storeDetails.cancel": "Cancel",
+  "customers.storeDetails.save": "Save changes",
+  "customers.storeDetails.saving": "Savingâ€¦",
+  "customers.storeDetails.saved": "Customer details saved.",
+  "customers.storeDetails.saveFailed": "Could not save customer details.",
+  "customers.storeDetails.nameRequired": "Preferred name is required.",
+  "customers.personalProfile.title": "Personal profile",
+  "customers.personalProfile.readOnly": "Read-only",
+  "customers.personalProfile.managedBy":
+    "Managed by the customer through their ExItS account.",
+  "customers.personalProfile.name": "Name",
+  "customers.personalProfile.phone": "Profile phone",
+  "customers.personalProfile.email": "Profile email",
+  "customers.personalProfile.unavailable": "Profile details unavailable offline.",
+  "customers.business.orgInformation.title": "Organization information",
+  "customers.business.orgInformation.readOnly": "Read-only",
+  "customers.business.orgInformation.managedBy":
+    "Organization information is managed by {name}.",
+  "customers.business.orgInformation.organizationId": "Organization ExItS ID",
+  "customers.business.orgInformation.businessName": "Business name",
+  "customers.business.orgInformation.officialEmail": "Official email",
+  "customers.business.orgInformation.officialPhone": "Official phone",
+  "customers.business.orgInformation.businessAddress": "Business address",
+  "customers.business.relationshipContact.title": "Relationship contact",
+  "customers.business.relationshipContact.edit": "Edit relationship contact",
+  "customers.business.relationshipContact.add": "Add relationship contact",
+  "customers.business.relationshipContact.emptyTitle": "No relationship contact yet",
+  "customers.business.relationshipContact.emptyDetail":
+    "Add a contact person for this buyer relationship.",
+  "customers.business.relationshipContact.editTitle": "Edit relationship contact",
+  "customers.business.relationshipContact.organization": "Organization",
+  "customers.business.relationshipContact.orgIdentityManaged": "Organization identity is managed by {name}.",
+  "customers.business.relationshipContact.contactSource": "Contact source",
+  "customers.business.relationshipContact.sourceOrganization": "Customer's staff",
+  "customers.business.relationshipContact.sourceCustom": "Custom contact",
+  "customers.business.relationshipContact.pendingCustomOnly":
+    "Connection is still pending. Use a custom contact until the buyer accepts.",
+  "customers.business.relationshipContact.organizationContact": "Contact at {name}",
+  "customers.business.relationshipContact.directoryHelp": "Lists owner and staff from {name} - not your own organization.",
+  "customers.business.relationshipContact.searchContacts": "Search staffâ€¦",
+  "customers.business.relationshipContact.loadingContacts": "Loading contactsâ€¦",
+  "customers.business.relationshipContact.noContacts": "No matching people at {name}.",
+  "customers.business.relationshipContact.noContactsAvailable": "{name} has no owner or staff to choose yet. Invite staff on their side, or use a custom contact.",
+  "customers.business.relationshipContact.contactsLoadFailed": "Could not load organization contacts.",
+  "customers.business.relationshipContact.retry": "Retry",
+  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffâ€¦",
+  "customers.business.relationshipContact.changeContact": "Change contact",
+  "customers.business.relationshipContact.ownerBadge": "Owner",
+  "customers.business.relationshipContact.useCustomContact": "+ Use custom contact",
+  "customers.business.relationshipContact.organizationManagedReadonly":
+    "Organization-managed contact information Â· Read-only",
+  "customers.business.relationshipContact.contactUnavailable": "Contact no longer available",
+  "customers.business.relationshipContact.chooseAnother": "Choose another contact",
+  "customers.business.relationshipContact.directoryCount": "{count} people at {name}",
+  "customers.business.relationshipContact.contactPerson": "Contact person",
+  "customers.business.relationshipContact.department": "Department",
+  "customers.business.relationshipContact.role": "Role",
+  "customers.business.relationshipContact.phone": "Phone",
+  "customers.business.relationshipContact.email": "Email",
+  "customers.business.relationshipContact.preferredMethod": "Preferred contact method",
+  "customers.business.relationshipContact.preferredMethodHint": "Phone, Email, or Either",
+  "customers.business.relationshipContact.deliveryInstructions": "Delivery instructions",
+  "customers.business.relationshipContact.billingNotes": "Billing / contact notes",
+  "customers.business.relationshipContact.internalNotes": "Internal notes",
+  "customers.business.relationshipContact.cancel": "Cancel",
+  "customers.business.relationshipContact.save": "Save changes",
+  "customers.business.relationshipContact.saving": "Savingâ€¦",
+  "customers.business.relationshipContact.saved": "Relationship contact saved.",
+  "customers.business.relationshipContact.saveFailed": "Could not save relationship contact.",
+
   "customers.open": "Customers",
+
   "customers.openExisting": "Buksan ang customer",
+
   "customers.payment": "Bayad",
+
   "customers.paymentExceeds": "Indi mahimo sobra sa Amount owed ang payment.",
+  "customers.paymentExceedsOutstanding":
+    "Payment exceeds outstanding balance. Maximum is {max}.",
+
   "customers.paymentInvalid": "Butangi sang valid nga payment nga sobra sa zero.",
+
   "customers.paymentNotes": "Notes (opsyonal)",
+
   "customers.paymentsEmpty": "Wala pa sing payments",
+
   "customers.paymentsEmptyDetail": "I-record ang payment kung mobayad ang customer sa Amount owed.",
+
   "customers.paymentsTitle": "Payments",
+
   "customers.periodCharges": "Charges sa panahon",
+
   "customers.periodEnd": "Hangtod",
+
   "customers.periodPayments": "Payments sa panahon",
+
   "customers.periodStart": "Gikan",
+
   "customers.personalLink.confirm": "Confirm and send link request",
 
+
+
   "customers.personalLink.foundTitle": "ExItS account found",
+
   "customers.personalLink.selectedTitle": "ExItS account selected",
+
   "customers.personalLink.useAccount": "Use this account",
+
   "customers.personalLink.changeAccount": "Change account",
+
   "customers.personalLink.selectRequired": "I-resolve kag pilion ang ExItS Personal ID antes mag-save.",
+
   "customers.saveAndSendLink": "I-save kag mag-invite",
+
   "customers.saveAsLocalInstead": "Save as local customer instead",
+
   "customers.personalLink.confirmHint": "This account will not be linked until {name} accepts your request.",
+
   "customers.personalLink.createFailed": "Could not create the customer link request.",
+
   "customers.personalLink.lede": "Kinahanglan ang ExItS Personal ID para sa sini nga klase. Kinahanglan i-Accept sang customer antes ma-connect ang ila ExItS account.",
+
   "customers.personalLink.nameRequired": "Enter a customer display name before confirming the link.",
+
   "customers.personalLink.requiresOnline": "Linking an ExItS Personal user requires an online connection.",
+
   "customers.personalLink.resolveFailed": "Could not resolve that ExItS ID.",
+
   "customers.personalLink.sending": "Sending?",
+
   "customers.personalLink.sent": "Link request sent. The Personal user must Accept.",
+
   "customers.personalLink.title": "Link ExItS Personal user",
+
   "customers.reactivate": "I-reactivate",
+
   "customers.recordPayment": "I-record ang payment",
+
   "customers.remainingBalance": "Nahabilin nga balance",
+
   "customers.repayLede": "Bayad para kang {name}. Mo-update ang remaining balance human i-save.",
+
   "customers.repayTitle": "I-record ang payment",
+
   "customers.save": "I-save",
+
   "customers.saving": "Gina-save?",
+
   "customers.search": "Pangita sang customers",
+
+  "customers.searchPeople": "Pangita sang tawo",
+
   "customers.sectionBasics": "Panguna",
+
   "customers.sectionDetails": "Mga detalye",
+
   "customers.sectionInfo": "Impormasyon sang customer",
+
   "customers.statementEmpty": "Wala sing lines sa sini nga panahon",
+
   "customers.statementEmptyDetail": "Tilawi ang mas lapad nga date range.",
+  "customers.statementEntryFilter": "Klase sang entry",
+  "customers.statementFilterAll": "Tanan",
+  "customers.statementFilterCredit": "Credit",
+  "customers.statementFilterRepayment": "Repayment",
+
   "customers.statementLede": "Statement para kang {name}.",
+
+    "customers.accountName": "Account name (optional)",
+  "customers.bankName": "Bank name",
+  "customers.bounceCheckConfirmDetail": "This check will stay in history and will not reduce the outstanding balance.",
+  "customers.bounceCheckConfirmTitle": "Mark check bounced?",
+  "customers.cancelCheck": "Cancel check",
+  "customers.cancelCheckConfirmDetail": "This check will stay in history and will not reduce the outstanding balance.",
+  "customers.cancelCheckConfirmTitle": "Cancel check?",
+  "customers.checkClearedToast": "Check cleared. {amount} was applied to the customer's balance.",
+  "customers.checkDate": "Check date",
+  "customers.checkFieldsRequired": "Check number, bank name, and check date are required.",
+  "customers.checkNumber": "Check number",
+  "customers.checkStatus.bounced": "Bounced",
+  "customers.checkStatus.cancelled": "Cancelled",
+  "customers.checkStatus.cleared": "Cleared",
+  "customers.checkStatus.none": "Recorded",
+  "customers.checkStatus.pending": "Pending clearing",
+  "customers.checkStatusUpdateFailed": "Could not update check status.",
+  "customers.checkStatusUpdated": "Check status updated.",
+  "customers.clearCheckConfirmDetail": "Confirm that this check has cleared and apply the amount to the customer's outstanding balance?",
+  "customers.clearCheckConfirmTitle": "Clear check?",
+  "customers.markCheckBounced": "Mark bounced",
+  "customers.markCheckCleared": "Mark cleared",
+  "customers.paymentMethod": "Payment method",
+  "customers.paymentMethod.cash": "Cash",
+  "customers.paymentMethod.check": "Check",
+  "customers.paymentMethod.manualGcash": "GCash (manual)",
+  "customers.pendingChecks": "Pending checks",
+  "customers.receivables.pageTitle": "Mga bukas nga receivable",
+  "customers.receivables.openTitle": "Mga bukas nga receivable",
+  "customers.receivables.openCount": "{count} bukas",
+  "customers.receivables.allocateManually": "I-allocate sang manual",
+  "customers.receivables.allocateAutomatically": "I-allocate sang awtomatiko",
+  "customers.receivables.allocationPreview": "Preview sang allocation",
+  "customers.receivables.allocationAuto": "Awtomatiko (pinakadaan nga due una)",
+  "customers.receivables.allocationManual": "Manual nga allocation",
+  "customers.receivables.allocationPreviewReady": "Nagasanto ang manual allocation sa payment.",
+  "customers.receivables.allocationSumMismatch": "Kinahanglan nagasanto ang total allocation sa payment.",
+  "customers.receivables.allocationExceeds": "Indi mahimo mag-allocate sang sobra sa outstanding sang receivable.",
+  "customers.receivables.allocationInvalidLine": "Butangi sang positibo nga amount para sa tagsa ka napili nga receivable.",
+  "customers.receivables.source.po": "PO",
+  "customers.receivables.source.direct": "Direct purchase",
+  "customers.receivables.source.sale": "Sale",
+  "customers.receivables.source.other": "Iban",
+  "customers.receivables.columnSource": "Source",
+  "customers.receivables.columnReference": "Reference",
+  "customers.receivables.dueDate": "Due",
+  "customers.receivables.outstanding": "Outstanding",
+  "customers.receivables.amountApplied": "Na-apply",
+  "customers.receivables.remaining": "Nabilin",
+  "customers.receivables.loading": "Nagaload sang receivablesâ€¦",
+  "customers.receivables.loadFailed": "Indi ma-load ang receivables.",
+  "customers.receivables.empty": "Wala sing bukas nga receivable",
+  "customers.receivables.emptyDetail": "Nabayaran na ang tanan nga credit line sini nga business customer.",
+  "customers.receivables.offline": "Indi available ang receivables offline",
+  "customers.receivables.offlineDetail": "Magkonekta liwat agod makita ang bukas nga receivables.",
+  "customers.receivables.backToCustomer": "Balik sa business customer",
+  "customers.receivables.sectionTitle": "Receivables",
+  "b2bObligations.receivablesTitle": "Receivables",
+  "b2bObligations.payablesTitle": "Payables",
+  "b2bObligations.filterAria": "Filter obligations",
+  "b2bObligations.filter.open": "Open",
+  "b2bObligations.filter.overdue": "Overdue",
+  "b2bObligations.filter.paid": "Paid",
+  "b2bObligations.filter.all": "All",
+  "b2bObligations.status.open": "Open",
+  "b2bObligations.status.partiallyPaid": "Partially paid",
+  "b2bObligations.status.paid": "Paid",
+  "b2bObligations.status.voided": "Voided",
+  "b2bObligations.status.reversed": "Reversed",
+  "b2bObligations.source.sale": "Product sale",
+  "b2bObligations.source.goodsReceipt": "PO receipt",
+  "b2bObligations.source.directPurchase": "Direct purchase",
+  "b2bObligations.source.other": "Other",
+  "b2bObligations.originalAmount": "Original amount",
+  "b2bObligations.paidAtSource": "Paid at sale",
+  "b2bObligations.paidAtReceipt": "Paid at receipt",
+  "b2bObligations.laterPayments": "Later payments",
+  "b2bObligations.balance": "Balance",
+  "b2bObligations.dueDate": "Due date",
+  "b2bObligations.overdueBadge": "Overdue",
+  "b2bObligations.recordPayment": "Record payment",
+  "b2bObligations.payNow": "Pay now",
+  "b2bObligations.payNowNotReady": "Online supplier payments are not ready yet.",
+  "b2bObligations.viewDetails": "View details",
+  "b2bObligations.viewDetailsUnavailable": "Source document is not available here.",
+  "b2bObligations.loadMore": "Load 10 more",
+  "b2bObligations.loadFailed": "Could not load obligations.",
+  "b2bObligations.empty": "No obligations in this filter.",
+  "b2bObligations.emptyOpen": "No open obligations.",
+  "b2bObligations.col.status": "Status",
+  "b2bObligations.col.source": "Source",
+  "b2bObligations.col.actions": "Actions",
+  "customers.receivables.pageTitleAll": "Receivables",
+  "customers.recordedPaymentCashToast": "Payment of {amount} recorded.",
+  "customers.recordedPaymentCheckToast": "Check payment of {amount} recorded and is pending clearing.",
+  "customers.reference": "Reference (optional)",
   "customers.statementTitle": "Customer statement",
+
   "customers.statusActive": "Active",
+
   "customers.statusAll": "Tanan",
+
   "customers.statusFilter": "Status sa customer",
+
+  "customers.statusLabel": "Status",
+
   "customers.statusInactive": "Inactive",
+
   "customers.title": "Customers",
+
   "customers.viewStatement": "Tan-awa ang statement",
+
   "dashboard.activeRegisters": "Active registers",
-  "dashboard.businessDate": "Business date (UTC)",
+
+  "dashboard.businessDate": "Business date",
+
   "dashboard.cashSales": "Cash",
+
   "dashboard.completedSales": "Completed sales",
+
   "dashboard.expenses": "Expenses",
+
   "dashboard.expiredLots": "Expired lots",
+
   "dashboard.gcashSales": "GCash",
+
   "dashboard.lede": "Today and organization metrics include all branches. Period sales follow the branch filter below.",
+
   "dashboard.lowStock": "Low stock products",
+
   "dashboard.nearExpiryLots": "Near-expiry lots",
+
   "dashboard.open": "Dashboard",
+
   "dashboard.openShifts": "Open shifts",
+
   "dashboard.openUtang": "Open utang",
+
   "dashboard.overdueUtang": "Overdue utang",
+
   "dashboard.scope.branch": "Branch",
-  "dashboard.scope.organization": "Organization-wide",
+
+  "dashboard.scope.organization": "Organization",
+
   "dashboard.scope.allBranches": "All branches",
-  "dashboard.scope.branchNamed": "Branch: {name}",
+
+  "dashboard.scope.branchNamed": "{name}",
+
   "dashboard.section.branchPerformance": "Branch performance",
+
   "dashboard.section.organizationOverview": "Organization overview",
+
+  "dashboard.section.salesPerformance": "Sales",
+
+  "dashboard.avgSale": "Average sale",
+
+  "dashboard.salesTrend": "Sales trend",
+
+  "dashboard.paymentMix": "Payment mix",
+
+  "dashboard.utangHealth": "Utang health",
+
+  "dashboard.overdueShare": "overdue",
+
+  "dashboard.of": "of",
+
+  "dashboard.inventoryHealth": "Inventory",
+
+  "dashboard.topProducts": "Top products",
+
+  "dashboard.topProductsEmpty": "No product sales in this period.",
+
+  "dashboard.rankBySales": "Sales",
+
+  "dashboard.rankByQuantity": "Quantity",
+
+  "dashboard.grossMargin": "Gross margin",
+
+  "dashboard.grossProfit": "Gross profit",
+
+  "dashboard.grossProfitCostIncomplete": "Cost data incomplete",
+
+  "dashboard.grossProfitCostUnavailable": "Cost data unavailable",
+
+  "dashboard.grossProfitCostUnavailableDetail": "No complete cost data is available for this period.",
+
+  "dashboard.grossProfitAppearsWhenComplete": "Gross profit and margin will appear when all sale costs are complete.",
+
+  "dashboard.costCoverage": "Cost coverage",
+
+  "dashboard.salesCosted": "Sales costed",
+
+  "dashboard.salesCostedCount": "{complete} of {total}",
+
+  "dashboard.incompleteCostSales": "Missing/incomplete cost",
+
+  "dashboard.viewProfitability": "View profitability",
+
+
+  "dashboard.branchRanking": "Branch comparison",
+
+  "dashboard.branchRankingEmpty": "No branch sales in this period.",
+
+  "dashboard.branchRankingHint": "Switch scope to All branches to compare performance.",
+
+  "dashboard.repayments": "Repayments",
+
+  "dashboard.section.operations": "Operations",
+
+  "dashboard.salesTrendEmpty": "No sales activity yet",
+
+  "dashboard.salesTrendEmptyDetail": "Sales will appear here as transactions are completed.",
+
+  "dashboard.noSalesYet": "No sales yet in this period",
+
+  "dashboard.paymentMixEmpty": "No payment activity for this period.",
+
+  "dashboard.utangClear": "No outstanding Utang",
+
+  "dashboard.utangClearDetail": "Customer balances are clear for this organization.",
+
+  "dashboard.inventoryClear": "Inventory looks good",
+
+  "dashboard.inventoryClearDetail": "No low-stock or expiry issues right now.",
+
+  "dashboard.compareBranches": "Compare branches",
+
+  "dashboard.vsPriorShort": "vs previous period",
+
+  "dashboard.totalSales": "Total sales",
+
   "dashboard.scope.filterNote":
+
     "Branch filter applies to Branch performance metrics only. Organization overview metrics always include all branches.",
+
   "dashboard.scope.periodOrgNote":
+
     "These metrics include all branches and are not affected by the branch filter.",
+
   "dashboard.paymentBreakdown": "Payment breakdown",
+
   "dashboard.paymentsReceived": "Payments received",
+
   "dashboard.pctUnavailable": "change % n/a",
+
   "dashboard.periodTitle": "Selected period",
+
   "dashboard.refresh": "Refresh",
+
   "dashboard.salesByDay": "Sales by day",
+
   "dashboard.salesByDayEmpty": "No daily sales in this period.",
+
   "dashboard.title": "Dashboard",
+
   "dashboard.todayCash": "Today's cash",
+
   "dashboard.todayOverview": "Today (business date)",
+
   "dashboard.todaySales": "Today's sales",
+
   "dashboard.todayUtang": "Today's utang",
+
   "dashboard.transactions": "txns",
+
   "dashboard.utangOutstanding": "Utang outstanding",
+
   "dashboard.utangSales": "Utang",
+
   "dashboard.voidedSales": "Voided sales",
+
   "dashboard.vsPriorPeriod": "vs {from} ? {to}",
+
   "density.balance": "Balanse",
+
   "density.comfort": "Komportable",
+  "appearance.primary.label": "Primary color",
+  "appearance.primary.green": "Green",
+  "appearance.primary.teal": "Teal",
+  "appearance.primary.cyan": "Cyan",
+  "appearance.primary.blue": "Blue",
+  "appearance.primary.indigo": "Indigo",
+  "appearance.primary.violet": "Violet",
+  "appearance.primary.fuchsia": "Fuchsia",
+  "appearance.primary.rose": "Rose",
+  "appearance.primary.orange": "Orange",
+  "appearance.primary.amber": "Amber",
+  "appearance.controlShape.label": "Control shape",
+  "appearance.controlShape.standard": "Standard",
+  "appearance.controlShape.soft": "Soft",
+  "appearance.controlShape.pill": "Pill",
+  "appearance.motion.label": "Animations",
+  "appearance.motion.system": "System",
+  "appearance.motion.reduced": "Reduced",
+  "appearance.motion.hint": "Controls interface transitions and decorative motion.",
+  "navigationMode.label": "Sidebar",
+  "navigationMode.standard": "Standard",
+  "navigationMode.compact": "Compact",
+  "navigationMode.reveal": "Reveal",
+  "navigationMode.helper": "Standard shows icons and labels. Compact is a permanent icon rail. Reveal expands on hover or focus.",
+  "navigationMode.helperStandard": "Icons and labels.",
+  "navigationMode.helperCompact": "Permanent icon rail.",
+  "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "shell.collapseSidebar": "I-collapse ang sidebar",
+  "shell.expandSidebar": "I-expand ang sidebar",
+  "shell.collapseAllNavGroups": "I-collapse tanan",
+  "shell.expandAllNavGroups": "I-expand tanan",
+
   "density.compact": "Compact / hugot",
+
   "density.label": "Densidad",
+
   "devices.actionError": "Adunay sala sa device action.",
+
   "devices.appVersion": "Bersyon sang app",
+
   "devices.backDevices": "Back to authorized devices",
+
   "devices.backOrg": "Balik sa organization",
+
   "devices.branchFallback": "Ginpili nga sanga",
+
   "devices.branchLabel": "Branch",
+
   "devices.branchLocked": "Branch: {branch}",
+
   "devices.branchPlaceholder": "Magpili sang branch?",
+
   "devices.branchRequired": "Choose a branch for this device.",
+
   "devices.cancel": "Kanselahon",
+
   "devices.capacity.activeOfAllowed": "{used} sa {allowed} ang aktibo",
+
   "devices.capacity.available": "{available} ang magamit",
+
   "devices.capacity.limitReached": "Naabot na ang utlanan sang device",
+
   "devices.capacity.limitReachedDetail": "Wala sing magamit nga slot sang device. I-revoke ang wala ginagamit nga device ukon bag-oha ang plano/settings.",
+
   "devices.capacityLoadError": "Indi ma-load ang kapasidad sang device.",
+
   "devices.closeSheet": "Isira",
+
   "devices.codePlaceholder": "I-paste ang code diri",
+
   "devices.copied": "Nakopya na",
+
   "devices.copyFailed": "Indi makopya ang installation id.",
+
   "devices.copyInstallationId": "Kopyaha ang id",
+
   "devices.creatingCode": "Ginahimo ang code?",
+
   "devices.currentDevice.activeDetail": "This browser is registered for {branch}.",
+
   "devices.currentDevice.activeTitle": "This browser is registered",
+
   "devices.currentDevice.registerAgain": "Register this browser",
+
   "devices.currentDevice.revokedDetail": "This browser registration was revoked. You can still sell on the web while device checks are paused, or register again when ready.",
+
   "devices.currentDevice.revokedTitle": "This browser was revoked",
+
   "devices.currentDevice.unregisteredDetailOptional": "Registration is optional on the web version. Selling does not require it while device checks are paused.",
+
   "devices.currentDevice.unregisteredTitle": "This browser is not registered",
+
   "devices.defaultBrowserName": "Browser POS",
+
   "devices.deniedDetail": "Only organization owners and administrators can manage authorized devices.",
+
   "devices.deviceNameLabel": "Ngalan sa device",
+
   "devices.empty": "No registered devices yet. Registration is optional on the web version.",
+
   "devices.emptyOptionalDetail": "You can sell without registering. Use Register this browser only for testing or future installed-app control.",
+
   "devices.enforcementPausedHint": "Web version: device registration is optional. Selling does not require a registered browser. Capacity and registration remain for testing and for the future installed app.",
+
   "devices.identityUnavailable": "Indi makatipig ini nga browser sang durable installation id. I-enable ang storage kag tilawi liwat.",
+
   "devices.installationIdDetails": "Teknikal nga installation id",
+
   "devices.installationIdLabel": "Installation ID",
+
   "devices.lastUsed": "Katapusan nga gingamit",
+
   "devices.listLede": "Optional list of phones, tablets, or browsers marked for this organization. Separate from cash registers used for shifts.",
+
   "devices.listTitle": "Authorized devices",
+
   "devices.loadError": "Could not load authorized devices.",
+
   "devices.manageDevices": "Dumala ang mga device",
+
   "devices.modelLabel": "Modelo",
+
   "devices.noOrganization": "I-bind una ang organization workspace.",
+
   "devices.platformLabel": "Plataporma",
+
   "devices.registerBrowser": "Register this browser",
+
   "devices.registerError": "Could not register this browser.",
+
   "devices.registerHint": "Signing in does not use a device slot. Explicit registration does ? and it stays on this browser across tabs and reloads.",
+
   "devices.registerLede": "Optional. Register this browser for device capacity and testing. The web POS can sell without registration while device checks are paused.",
+
   "devices.registerThisDevice": "Register this browser",
+
   "devices.registerTitle": "Register this browser",
+
   "devices.registeredOn": "Narehistro",
+
   "devices.registering": "Gina-register?",
+
   "devices.remove.warning": "Indi na pagatugutan ini nga device magbaligya sa POS kag indi na ini maggamit sang isa sa imo active device slots.",
+
   "devices.remove.warningCurrentDevice": "Ini ang device nga ginagamit mo subong. Kung kuhaon, indi ka makabaligya diri hasta irehistro mo liwat.",
+
   "devices.remove.warningCurrentDeviceOptional": "This is the browser you are currently using. Removing it frees a device slot. On the web version you can keep selling without registering again while device checks are paused.",
+
   "devices.removeConfirm": "Kuhaa ang device",
+
   "devices.removeDevice": "Kuhaa ang device",
+
   "devices.removeTitle": "Kuhaa ini nga device?",
+
   "devices.removing": "Ginakuha?",
+
   "devices.revoke": "I-revoke",
+
   "devices.revoke.consumed": "Nagamit na ina nga pamatuod. Isulod liwat ang imo password.",
+
   "devices.revoke.credentialCheckFailed": "Indi ma-usisa ang imo account antes magbawi. Tilawi liwat sa dali lang.",
+
   "devices.revoke.expired": "Nag-expire ang pamatuod. Isulod liwat ang imo password.",
+
   "devices.revoke.hidePassword": "Itago ang password",
+
   "devices.revoke.invalidScope": "Wala nagsakto sa device ini nga pamatuod. Tilawi liwat.",
+
   "devices.revoke.noPassword": "Wala pa sing password ang imo account, gani indi mapamatud-an diri ini nga aksyon. Papatapusa sa platform administrator ang setup sang imo account.",
+
   "devices.revoke.notAllowed": "Wala ka ginatugutan nga bawion ini nga device.",
+
   "devices.revoke.passwordHint": "Pamatud-i nga ikaw gid ini. Ang imo password wala ginatago sa sini nga device.",
+
   "devices.revoke.passwordLabel": "Ang imo subong nga password",
+
   "devices.revoke.passwordRequired": "Isulod ang imo subong nga password agud makapadayon.",
+
   "devices.revoke.reasonHint": "Indi magnubo sa 8 ka karakter. Ginarekord ini sa audit trail.",
+
   "devices.revoke.reasonTooShort": "Magbutang sang indi magnubo sa 8 ka karakter nga rason sang pagbawi.",
+
   "devices.revoke.showPassword": "Ipakita ang password",
+
   "devices.revoke.successCurrentDevice": "Ginbawi ini nga browser. Irehistro liwat kon handa ka na magbaligya diri.",
+
   "devices.revoke.unavailable": "Indi mapamatud-an ang imo password subong. Tilawi liwat sa dali lang.",
+
   "devices.revoke.warning": "Kon mabawi, indi na makabaligya ini nga device. Kinahanglan ini irehistro liwat sang staff.",
+
   "devices.revoke.warningCurrentDevice": "Amo ini ang browser nga ginagamit mo subong. Kon mabawi, dayon nga ma-block ang pagbaligya diri kag kinahanglan mo ini irehistro liwat.",
+
   "devices.revoke.wrongPassword": "Wala nagsakto ang password. Tilawi liwat.",
+
   "devices.revokeConfirm": "Kumpirmaha ang revoke",
+
   "devices.revokeError": "Indi ma-revoke ang device. Basin kinahanglan sang dugang verification.",
+
   "devices.revokeReasonLabel": "Rason",
+
   "devices.revokeReasonRequired": "Butangi sang rason agud i-revoke ini nga device.",
+
   "devices.revokeTitle": "I-revoke ang POS device",
+
   "devices.revokedOn": "Ginbawi",
+
   "devices.revoking": "Gina-revoke?",
+
   "devices.status.active": "Aktibo",
+
   "devices.status.revoked": "Ginbawi",
+
   "devices.statusLabel": "Status",
+
   "devices.technicalDetails": "Teknikal nga detalye",
+
   "devices.thisBrowserTitle": "This browser",
+
   "devices.thisDevice": "Ini nga device",
+
   "diagnostics.copied": "Nakopya na",
+
   "diagnostics.copy": "Kopyaha ang detalye sang sayop",
-  "diagnostics.copyFailed": "Copy failed ? select the text below",
-  "diagnostics.copyFallbackHint": "Select all and copy manually",
+
+  "diagnostics.copyFailed": "Nagpakyas ang pagkopya ??? pilia ang text sa idalom",
+
+  "diagnostics.copyFallbackHint": "Pilia tanan kag kopyaha mano-mano",
+
   "diagnostics.copyableReport": "Report sang error nga makopya",
+
   "diagnostics.dismiss": "Isira",
+
   "diagnostics.globalHint": "Kopyaha ang report sa idalom kag i-paste sa support o troubleshooting chat.",
+
   "diagnostics.globalTitle": "May natabo nga sala",
+
   "diagnostics.loadFailedTitle": "May natabo nga sala samtang gin-load ang imo nga workspace.",
+
   "diagnostics.reload": "I-reload ang page",
-  "diagnostics.technicalDetails": "Technical details",
+
+  "diagnostics.technicalDetails": "Teknikal nga detalye",
+
   "empty.detail": "Mag-abot ang product screens sa masunod nga awtorisado nga package.",
+
   "empty.title": "Wala pa diri",
-  "error.body": "Something went wrong. Try again.",
+
+  "error.body": "May sayop. Tilawi liwat.",
+
   "error.detail": "I-reload ang page. Wala sing business data nga gintipigan sa sini nga foundation.",
+
+  "exitsTable.exportCsv": "Export CSV",
+  "exitsTable.exportExcel": "Export Excel",
+  "exitsTable.exportPdf": "Export PDF",
+  "exitsTable.exportPrintMenu": "Export & Print",
+  "exitsTable.outputFailed": "Could not generate table output.",
+  "exitsTable.print": "Print",
+  "exitsTable.selectedLinesTotal": "Selected lines total",
+  "uiStandards.buttonShapesTitle": "Button shapes",
+  "uiStandards.buttonShapesLede": "Same action in standard, soft, and pill shapes for side-by-side comparison. Round is reserved for icon-only circles.",
+  "uiStandards.buttonStatesHint": "Elevated samples lift on hover and settle when pressed. Loading is a disabled demo only.",
+  "uiStandards.buttonStatesTitle": "Button states",
+  "uiStandards.buttonIconOnlyTitle": "Icon only",
+  "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
+  "uiStandards.buttonMotionTitle": "Button motion",
+  "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
+  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Cancel / dismiss. CornerUpLeft ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Cancel and return / abandon edit. X ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Back/navigation.",
+  "uiStandards.collapseAll": "Collapse all",
+  "uiStandards.expandAll": "Expand all",
+  "uiStandards.resetLayout": "Reset layout",
+  "uiStandards.tableDemoLede": "Approved ExitsTable reference with search, filter, sort, multi-select, output icons, pagination, Actions, and field-menu inline editing.",
+  "uiStandards.buttonTreatmentsTitle": "Button treatments",
+  "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
+  "uiStandards.buttonCheatTitle": "Cursor shorthand",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
+  "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
+  "uiStandards.buttonPilotTitle": "Button samples",
+  "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
+  "uiStandards.prefsHint": "Use Settings to test theme and density.",
+  "uiStandards.copyCommandsHint": "Visual standards are paired with copyable Cursor commands. Choose the approved sample, copy its command, and paste it into Cursor.",
+  "uiStandards.sections": "UI standards sections",
+  "uiStandards.tabButtons": "Buttons",
+  "uiStandards.tabChips": "Chips",
+  "uiStandards.tabTabs": "Tabs",
+  "uiStandards.tabModuleSubnav": "Module Subnav",
+  "uiStandards.tabActionChips": "Mga Action Chip",
+  "uiStandards.tabCards": "Cards",
+  "uiStandards.tabsPilotBadge": "TABS STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
+  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Docs/UI/exits-tabs-standard.md.",
+  "uiStandards.tabsVariantsTitle": "Tab variants",
+  "uiStandards.tabsCountsTitle": "Tabs with counts",
+  "uiStandards.tabsIconsTitle": "Icons",
+  "uiStandards.tabsIconOptionsTitle": "Tab icon options",
+  "uiStandards.tabsPillBarTitle": "Pill bar",
+  "uiStandards.tabsStatesTitle": "States",
+  "uiStandards.tabsMobileTitle": "Mobile / overflow",
+  "uiStandards.tabsRealWorldTitle": "Real-world examples",
+  "uiStandards.tabsCheatTitle": "Cursor shorthand",
+  "uiStandards.tabsCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
+  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ PILOT / CANDIDATE",
+  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Docs/UI/exits-module-subnav-standard.md.",
+  "uiStandards.moduleSubnavComparisonTitle": "Variant comparison",
+  "uiStandards.moduleSubnavIconsTitle": "Icons",
+  "uiStandards.moduleSubnavCountsTitle": "Counts",
+  "uiStandards.moduleSubnavPillBarTitle": "Pill bar",
+  "uiStandards.moduleSubnavRealWorldTitle": "Real-world examples",
+  "uiStandards.moduleSubnavCheatTitle": "Cursor shorthand",
+  "uiStandards.moduleSubnavCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
+  "uiStandards.actionChipsPilotBadge": "ACTION CHIP ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ PILOT / CANDIDATE (Hiligaynon)",
+  "uiStandards.actionChipsPilotLede": "ExItS Action Chip pilot (ExitsChipBar variant=actions + ActionChipBar). Magaan nga actions kag navigation shortcuts ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ indi Tabs, Filters, Module Subnav, ukon Buttons. Theme kag density hali sa Preferences. PILOT / CANDIDATE ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Docs/UI/exits-action-chip-standard.md.",
+  "uiStandards.actionChipsOverviewTitle": "Semantic overview (Hil)",
+  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ pareho ang label, lain ang trabaho.",
+  "uiStandards.actionChipsVariantsTitle": "Visual variants (Hil)",
+  "uiStandards.actionChipsVariantsLede": "Soft, outline, ghost, primary treatments, elevated, kag special-use gradient. Pareho ang label para comparison.",
+  "uiStandards.actionChipsShapesTitle": "Mga porma",
+  "uiStandards.actionChipsShapesLede": "Pill, soft, kag square ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ reuse sang locked Chip shape language nga may action touch targets.",
+  "uiStandards.actionChipsContentTitle": "Content kag states",
+  "uiStandards.actionChipsContentLede": "Text, icons, counts, primary emphasis, disabled, kag loading.",
+  "uiStandards.actionChipsGroupsTitle": "Action Chip groups (Hil)",
+  "uiStandards.actionChipsGroupsLede": "Inline, wrap, scroll, responsive auto, grid, primary-first, sectioned, overflow, kag mixed button compositions. Tanan nga pattern may mobile.",
+  "uiStandards.actionChipsRealWorldTitle": "Real-world examples (Hil)",
+  "uiStandards.actionChipsRealWorldLede": "Static Inventory, Purchasing, Stock Count, Returns, kag Staff shortcuts para visual comparison. Wala APIs.",
+  "uiStandards.actionChipsCheatTitle": "Cursor shorthand (Hil)",
+  "uiStandards.actionChipsCheatLede": "Pilot vocabulary para sa Cursor tasks. PILOT / CANDIDATE.",
+  "uiStandards.cardsPilotBadge": "CARD STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
+  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable kag status accents, motion. Theme kag density hali sa Preferences. APPROVED / LOCKED ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Docs/UI/exits-card-standard.md.",
+  "uiStandards.cardsTreatmentsTitle": "Card treatments",
+  "uiStandards.cardsBasicTitle": "Basic / content cards",
+  "uiStandards.cardsKpiTitle": "KPI / Stat",
+  "uiStandards.cardsActionTitle": "Action cards",
+  "uiStandards.cardsEntityTitle": "Entity cards",
+  "uiStandards.cardsProductTitle": "Product / media cards",
+  "uiStandards.cardsSelectableTitle": "Selectable cards",
+  "uiStandards.cardsStatusTitle": "Status / accent cards",
+  "uiStandards.cardsCompactTitle": "Compact cards",
+  "uiStandards.cardsStatesTitle": "States",
+  "uiStandards.cardsMotionTitle": "Card motion",
+  "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
+  "uiStandards.cardsRealWorldTitle": "Real-world examples",
+  "uiStandards.cardsCheatTitle": "Cursor shorthand",
+  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ Docs/UI/exits-card-standard.md.",
+  "uiStandards.chipPilotBadge": "CHIP STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
+  "uiStandards.chipPilotLede": "Approved ExItS chip language. Soft semantic surfaces, density from Preferences, primary via --exits-primary. See Docs/UI/exits-chip-standard.md.",
+  "uiStandards.chipStatusTitle": "Status chips",
+  "uiStandards.chipShapesTitle": "Chip shapes",
+  "uiStandards.chipCompactTagsTitle": "Compact tags",
+  "uiStandards.chipStatusIconsTitle": "Status icon options",
+  "uiStandards.chipFilterTitle": "Filter chips",
+  "uiStandards.chipFilterModesTitle": "Single vs multi",
+  "uiStandards.chipTagsTitle": "Tag chips",
+  "uiStandards.chipRemovableTitle": "Removable chips",
+  "uiStandards.chipCountTitle": "Count chips",
+  "uiStandards.chipCountBadgeTitle": "Count badges",
+  "uiStandards.chipRealWorldTitle": "Real-world examples",
+  "uiStandards.chipCheatTitle": "Cursor shorthand",
+  "uiStandards.chipCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
+  "uiStandards.tabTables": "Tables",
+  "uiStandards.viewClassic": "Classic",
+  "uiStandards.viewSimple": "Simple",
+  "uiStandards.viewSimpleV2": "Simple V2",
+  "uiStandards.viewSwitcherAria": "UI Standards view",
+  "uiStandards.simpleLede": "Choose a visual pattern, then copy its Cursor command.",
+  "uiStandards.simpleV2Lede": "Copy the Cursor command, then use the visual row below it.",
+  "uiStandards.simpleLedeSecondary": "Detailed rules remain available in Classic.",
+  "uiStandards.simpleSectionsAria": "Simple catalog sections",
+  "uiStandards.tabBadges": "Badges",
+  "uiStandards.tabFilters": "Filters",
+  "uiStandards.simpleModuleSubnavNote": "Related route/page navigation.",
+  "uiStandards.simpleFiltersNote": "Changes the current dataset/view; does not navigate to another page.",
+  "uiStandards.tableCheatLede": "Use these terms in Cursor tasks. Explicit ON/OFF overrides FULL TABLE defaults. ACTIONS and INLINE EDIT are optional.",
+  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ APPROVED / LOCKED",
+  "uiStandards.tablesAlignmentTitle": "Table alignment",
+  "uiStandards.tablesActionsTitle": "Table actions",
+  "uiStandards.tablesInlineRowEditTitle": "Inline row edit",
+  "uiStandards.tablesInlineCellEditTitle": "Inline cell edit",
+  "uiStandards.tablesValidationTitle": "Validation / saving",
+  "uiStandards.tablesStickyActionsTitle": "Sticky actions",
+  "uiStandards.tablesMobileEditTitle": "Mobile edit",
+  "uiStandards.tableCheatTitle": "Cursor shorthand",
+  "uiStandards.title": "ExItS UI Standards",
+  "uiStandards.topbar": "UI Standards",
+  "exitsTable.clearSelection": "Clear selection",
+  "exitsTable.filter": "Filter",
+  "exitsTable.filterAll": "All items",
+  "exitsTable.filterHasSku": "Has SKU",
+  "exitsTable.filterNoSku": "No SKU",
+  "exitsTable.next": "Next",
+  "exitsTable.previous": "Previous",
+  "exitsTable.range": "{from}ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€œ{to} of {total}",
+  "exitsTable.rowsPerPage": "Rows per page",
+  "exitsTable.searchProducts": "Search products",
+  "exitsTable.selectAll": "Select all visible rows",
+  "exitsTable.selectRow": "Select row",
+  "exitsTable.selectedCount": "{count} selected",
   "error.title": "May natabo nga sala",
+
   "experience.chooserLabel": "Owner experience",
+
   "experience.current": "Subong",
+
   "experience.deniedDetail": "Wala sing authority ang imo account sa sini nga screen. Wala mausab ang security role.",
+
   "experience.deniedTitle": "Indi available ang experience",
+
   "experience.manageBusiness": "Manage business",
+
   "experience.operations": "Operations",
+
+  "workspace.locations": "Locations",
+
+  "workspace.locationsWithCount": "Locations ({count})",
+
+  "workspace.locationCountOne": "1 location",
+
+  "workspace.locationCountMany": "{count} locations",
+
+  "workspace.locationTypeBreakdown": "{retail} Retail ? {warehouse} Warehouse",
+
+  "experience.warehouseOperations": "Warehouse operations",
+
   "experience.securityRole": "Security role",
+
   "experience.startSelling": "Sugdi ang pagbaligya",
+
   "foundation.lede": "Pundasyon sang React client",
+
   "foundation.next": "Online-first ang static PWA shell. Indi pa available ang pagbaligya nga offline.",
+
   "foundation.scope": "Ini ang kandidato nga Mobile Client sa palaabuton. Wala sing authentication, workspace, pagbaligya, ukon offline finance sa sini nga package.",
+
   "foundation.title": "Pinoy Business POS",
+
   "home.badge": "Handa",
+
   "home.body": "Aktibo ang browser session kag workspace binding. Available ang catalog, session cart, kag online cash checkout.",
+
   "home.emptyDetail": "Magbukas ang POS operations hali sa sini nga workspace shell.",
+
   "home.emptyTitle": "Magpadayon diri",
+
   "home.lede": "Magpadayon ang foundation pagkatapos sang browser session kag workspace binding.",
+
   "home.scope": "Ang online checkout nagasuporta sang Cash, GCash, kag Utang; available ang void sa managers.",
+
   "home.title": "Handa na ang workspace",
+
   "inventory.adjustIn": "Dugangi (In)",
+
   "inventory.adjustOut": "Pakunhuri (Out)",
+
   "inventory.adjustQuantity": "Quantity",
+
   "inventory.applyAdjustment": "I-apply ang adjustment",
+
+  "inventory.applyDecrease": "I-apply ang decrease",
+
+  "inventory.applyIncrease": "I-apply ang increase",
+
   "inventory.backList": "Balik sa inventory",
+
   "inventory.backOps": "Balik sa operations",
+
   "inventory.customFrom": "Halin",
+
   "inventory.customRangeInvalid": "Pilia ang husto nga From kag To date.",
+
   "inventory.customTo": "Tubtob",
+
   "inventory.detailLede": "I-enable ang tracking, buksan ang stock, i-adjust, kag tan-awa ang movements.",
+
   "inventory.direction": "Direksyon sa adjustment",
+
   "inventory.disable": "I-disable ang tracking (kinahanglan zero on hand)",
+
   "inventory.empty": "Wala sing products",
+
   "inventory.emptyDetail": "Magdugang anay sang products, dayon i-track ang stock diri.",
+
   "inventory.emptyAddProduct": "Magdugang sang una nga product",
+
   "inventory.enable": "I-enable ang tracking",
+
   "inventory.expirationDate": "Expiration date",
+
   "inventory.expirationDateRequired": "Kinahanglan ang expiration date sa sini nga stock change.",
+
   "inventory.expirationEmpty": "Wala sing lots sa sini nga window",
+
   "inventory.expirationEmptyDetail": "Tilawi ang laing window ukon search, ukon usisaa ang product inventory detail.",
+
   "inventory.expirationLede":
+
     "Tan-awa ang expired kag near-expiry lots. I-write off ang expired stock sa Waste / Loss kung naconfirm ang physical quantity.",
+
   "inventory.viewProduct": "Tan-awa",
+
   "inventory.writeOffExpired": "I-write off",
+
   "inventory.expirationTitle": "Mo-expire nga stock",
+
   "inventory.expiredQty": "Nag-expire",
+
   "inventory.expiryCountExpired": "Expired lots: {count}",
+
   "inventory.expiryCountNear": "Near expiry lots: {count}",
-  "inventory.expiryCounts": "Expired lots: {expired} · Near expiry lots: {near}",
+
+  "inventory.expiryCounts": "Expired lots: {expired} ÃƒÆ’Ã‚â€šÃƒâ€šÃ‚Â· Near expiry lots: {near}",
+
   "inventory.expiryWindow": "Ipakita ang window",
+
   "inventory.filterAll": "Tanan",
+
   "inventory.filterTracked": "Tracked",
+
   "inventory.filterUntracked": "Not tracked",
+
   "inventory.lede": "Naka-off by default ang tracking. Ang untracked indi pasabot nga out of stock.",
+
   "inventory.manageScopeHint": "Inventory management includes stock use, waste / write-off, production, stock counts, transfers, and adjustments.",
+
   "inventory.viewOnlyHint": "View only. Recording stock use, waste, production, counts, transfers, and adjustments needs inventory management.",
+
   "inventory.loadMore": "Karga pa",
+
   "inventory.loadingMore": "Nagakarga pa?",
+
   "inventory.lotNumberOptional": "Lot number (opsyonal)",
+
   "inventory.lotRequired": "Magpili sang lot para sa sini nga pagkunhod.",
+
   "inventory.lots": "Lots",
+
   "inventory.lotsEmpty": "Wala pa sing lots nga naay stock.",
+
   "inventory.lowStock": "Low stock",
+  "lowStockSettings.title": "Low stock settings",
+  "lowStockSettings.branchLabel": "Branch: {branch}",
+  "lowStockSettings.branchDefault": "Branch default",
+  "lowStockSettings.editDefault": "Edit default",
+  "lowStockSettings.defaultSaved": "Branch default saved.",
+  "lowStockSettings.rowSaved": "Low stock setting saved.",
+  "lowStockSettings.bulkDone": "Updated {ok}, skipped {skip}, failed {fail}.",
+  "lowStockSettings.search": "Search product / SKU / barcode",
+  "lowStockSettings.searchLabel": "Search",
+  "lowStockSettings.category": "Category",
+  "lowStockSettings.allCategories": "All categories",
+  "lowStockSettings.stockStatus": "Stock status",
+  "lowStockSettings.monitoring": "Monitoring",
+  "lowStockSettings.filterAll": "All",
+  "lowStockSettings.inStock": "In stock",
+  "lowStockSettings.lowStock": "Low stock",
+  "lowStockSettings.outOfStock": "Out of stock",
+  "lowStockSettings.monitoringBranchDefault": "Branch default",
+  "lowStockSettings.monitoringCustom": "Custom",
+  "lowStockSettings.monitoringNotMonitored": "Not monitored",
+  "lowStockSettings.selectedCount": "{count} products selected",
+  "lowStockSettings.setLowStockLevel": "Set low-stock level",
+  "lowStockSettings.useBranchDefault": "Use branch default",
+  "lowStockSettings.dontMonitor": "Don't monitor",
+  "lowStockSettings.pageSelected": "{count} products on this page selected.",
+  "lowStockSettings.selectAllFiltered": "Select all {count} products matching these filters",
+  "lowStockSettings.allFilteredSelected": "All {count} products matching these filters selected.",
+  "lowStockSettings.selectPage": "Select page",
+  "lowStockSettings.product": "Product",
+  "lowStockSettings.skuBarcode": "SKU / Barcode",
+  "lowStockSettings.onHand": "On hand",
+  "lowStockSettings.lowStockAt": "Low stock at",
+  "lowStockSettings.reorderQty": "Reorder qty",
+  "lowStockSettings.reorderQtyOptional": "Optional reorder quantity",
+  "lowStockSettings.lowStockWhen": "Low stock when quantity reaches",
+  "lowStockSettings.status": "Status",
+  "lowStockSettings.actions": "Actions",
+  "lowStockSettings.empty": "No tracked products",
+  "lowStockSettings.emptyDetail": "Try a different search or filter.",
+  "lowStockSettings.applyToCount": "Apply to {count} products",
+  "lowStockSettings.customThreshold": "Custom threshold",
+  "lowStockSettings.open": "Low stock settings",
+  "lowStockSettings.cancel": "Cancel",
+  "lowStockSettings.save": "Save",
+  "lowStockSettings.edit": "Edit",
+  "lowStockSettings.previous": "Previous",
+  "lowStockSettings.next": "Next",
+
   "inventory.movements": "Kasaysayan sa movement",
+
+  "inventory.movementCol.when": "Sang",
+
+  "inventory.movementCol.qty": "Qty",
+
+  "inventory.movementCol.type": "Klase",
+
+  "inventory.movementCol.batch": "Expiry / Lot",
+
   "inventory.nearExpiryQty": "Hapit mo-expire",
+
   "inventory.notFound": "Wala makita ang inventory account.",
+
   "inventory.notTracked": "Wala i-track",
+
   "inventory.onHand": "Naay stock",
+
+  "inventory.reserved": "Reserved",
+
+  "inventory.available": "Available",
+
+  "inventory.availableQty": "{qty} {uom} available",
+
+  "inventory.reservedBadge": "{qty} reserved",
+
+  "inventory.viewReservations": "Tan-awa ang reservations",
+
+  "inventory.reservationsTitle": "Stock reservations",
+
+  "inventory.reservationsClose": "Close",
+
+  "inventory.reservationsLoading": "Loading reservations…",
+
+  "inventory.reservationsEmpty": "Wala sang active reservations",
+
+  "inventory.reservationsEmptyDetail": "Reserved stock magapakita diri kung may purchase orders nga nagahold sang inventory.",
+
+  "inventory.reservationTypeTemporary": "Temporary proposal",
+
+  "inventory.reservationTypeConfirmed": "Confirmed order",
+
+  "inventory.reservationStatusTemporary": "Temporary",
+
+  "inventory.reservationStatusConfirmed": "Confirmed",
+
+  "inventory.reservationExpires": "Expires {when}",
+
+  "inventory.reservationCreated": "Created {when}",
+
+  "inventory.viewPurchaseOrder": "Tan-awa ang purchase order",
+
   "inventory.onHandAtBranch": "Stock sa {branch}: {qty} {uom}",
+
   "inventory.organizationInventory": "Organization inventory",
+
   "inventory.organizationOnHand": "Organization on hand: {qty} {uom}",
+
   "inventory.organizationReserved": "Reserved: {qty}",
+
   "inventory.organizationAvailable": "Available: {qty}",
+
   "inventory.accessibleInventory": "Maabot nga imbentaryo",
+
   "inventory.accessibleOnHand": "Maabot nga ara: {qty} {uom}",
+
   "inventory.accessibleReserved": "Ginareserba: {qty}",
+
   "inventory.accessibleAvailable": "Magamit: {qty}",
+
   "inventory.accessibleScopeNote": "Nagalakip lang ini sang mga sanga nga imo maabot, indi sang bug-os nga organisasyon.",
+
   "inventory.areaBreakdown": "By area",
+
   "inventory.branchBreakdown": "By branch",
-  "inventory.branchBreakdownMetrics": "{onHand} on hand · {reserved} reserved · {available} available",
+
+  "inventory.branchBreakdownMetrics": "{onHand} on hand ?? {reserved} reserved ?? {available} available",
+
   "inventory.branchNameUnknown": "Wala nabal-an nga branch",
+
   "inventory.thisBranch": "ini nga branch",
+
   "inventory.branchBreakdownRow": "{branch}: {onHand} on hand / {reserved} reserved / {available} available",
+
   "inventory.branchScope": "Branch: {name}",
+
   "inventory.open": "Inventory",
+
   "inventory.openExpiring": "Mo-expire nga stock",
+
   "inventory.openStockUse": "Stock Use",
+
   "inventory.openWasteLoss": "Waste / Loss",
+
   "inventory.openStockCount": "Stock Count",
+
   "inventory.openTransfers": "Transfers",
+
   "inventory.openProduction": "Produksyon",
+
   "inventory.recordStockUse": "I-record ang stock use",
+
   "inventory.recordWasteLoss": "Irekord ang waste / loss",
+
   "inventory.openingExpiryHint": "Kinahanglan kung ang opening quantity sobra sa zero para sa expiry-tracked products.",
+
   "inventory.openingHint": "Ibili sang 0 agud ma-enable sa zero nga wala sing opening movement.",
+
   "inventory.openingQuantity": "Opening quantity (base units)",
+
   "inventory.openingQuantityOptional": "Opening quantity (optional)",
+
   "inventory.enableTracking": "Enable inventory tracking",
+
   "inventory.addOpeningStock": "Add opening stock",
+
+  "inventory.addOpeningStockTitle": "Opening stock sa {location}",
+
+  "inventory.openingVsPurchaseHint": "Gamita ang opening stock para sa inventory nga ara na. Para sa bag-o nga palit, gamita ang Receive stock.",
+
   "inventory.addOpeningStockHint":
-    "Record your first on-hand quantity and purchase cost. Selling price stays on the product.",
+
+    "I-record ang stock nga ara na sa sini nga location kung gina-set up.",
+
   "inventory.unitPurchaseCost": "Presyo sang pagbakal kada unit",
+
   "inventory.stockValue": "Bilihon sang stock",
+
   "inventory.currentSellingPrice": "Karon nga selling price",
+
   "inventory.sellingPriceBranch": "Presyo sang branch",
+
   "inventory.sellingPriceOrganization": "Presyo sang organisasyon",
+
   "inventory.purchaseCostZeroMargin": "Wala sing gross margin sa karon nga selling price.",
+
   "inventory.purchaseCostHigherThanSelling":
+
     "Mas mataas ang purchase cost sangsa karon nga selling price.",
+
   "inventory.purchaseCostHigherBy": "Mas mataas sang {amount} ang purchase cost sangsa karon nga selling price.",
+
   "inventory.reviewSellingPrice": "Tan-awon ang selling price",
+
   "inventory.reason": "Rason",
+
   "inventory.reasonRequired": "Kinahanglan sang rason para sa stock adjustments.",
+
   "inventory.search": "Pangita sa inventory",
+
   "inventory.searchExpiring": "Pangita sang mo-expire nga lots",
+
   "inventory.selectLot": "Lot nga pakunhuron",
+
   "inventory.selectLotPlaceholder": "Magpili sang lot",
+
   "inventory.sellable": "Mabaligya",
+
   "inventory.statusExpired": "Nag-expire",
+
   "inventory.statusExpiresInDays": "Mo-expire sa {days} ka adlaw",
+
   "inventory.statusExpiresToday": "Mo-expire karong adlawa",
+
   "inventory.statusOk": "OK",
+
   "inventory.statusGood": "Good",
+
   "inventory.enableExpirationTracking": "I-enable ang expiration tracking",
+
   "inventory.disableExpirationTracking": "I-disable ang tracking",
+
   "inventory.expirationTrackingOn": "Expiration tracking ON",
+
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON · {days}-day warning",
+
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON ÃƒÆ’Ã‚â€šÃƒâ€šÃ‚Â· {days}-day warning",
+
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
+
   "inventory.expirationTrackingDisabled": "Na-disable ang expiration tracking.",
+
   "inventory.manageExpirationSettings": "I-manage ang expiration settings",
+
   "inventory.expirationSettingsTitle": "Expiration settings",
+
   "inventory.expirationSettingsEnableHint":
+
     "I-on ang expiration tracking para ma-record ang expiry dates sang stock lots kag near-expiry warnings.",
-  "inventory.expirationSetupRequired": "Kinahanglan ang expiration setup",
+
+  "inventory.expirationSetupRequired": "Missing expiry",
+
   "inventory.expirationSetupRequiredDetail":
+
     "Naka-track ang expiration sini nga product kag may stock on hand, pero wala pa sing assigned nga stock lots. Mag-assign sang expiry dates para magtugma sa subong nga on-hand quantity.",
+
   "inventory.expirationPendingSummary":
+
     "{qty} {uom} on hand kinahanglan sang expiry dates antes makita ang Good / Near expiry / Expired.",
-  "inventory.assignExpirationDates": "Mag-assign sang expiration dates",
+
+  "inventory.assignExpirationDates": "Assign expiry",
+
   "inventory.expirationLotsAssigned": "Na-assign ang expiration dates.",
+
   "inventory.viewStockLots": "Tan-awa ang stock lots",
+
   "inventory.saveNearExpiryWarning": "I-save ang near-expiry warning",
+
   "inventory.expirationWarningSaved": "Na-save ang near-expiry warning.",
+
   "inventory.expirationWarningDaysInvalid": "Magbutang sang near-expiry warning nga indi mag-ubos sa 1 ka adlaw.",
+
   "inventory.enableExpirationCopy":
+
     "Ini nga product may ara na sang {qty} {uom} on hand. I-assign anay ang expiry dates sa existing stock antes i-enable ang tracking.",
+
   "inventory.enableExpirationCurrentStock": "Karon nga stock",
+
   "inventory.enableExpirationQuantity": "Quantity",
+
   "inventory.enableExpirationExpiry": "Expiry date",
+
   "inventory.enableExpirationLotOptional": "Batch / Lot number (optional)",
+
   "inventory.enableExpirationAddRow": "Magdugang sang isa pa ka expiry/batch",
+
   "inventory.enableExpirationAllocated": "Allocated {allocated} / {onHand}",
+
   "inventory.enableExpirationRemaining": "Nabilin: {remaining}",
+
   "inventory.enableExpirationOverAllocated":
+
     "Ang allocated nga {allocated} sobra sa on-hand ({onHand}). Bawasan ang lot quantities.",
+
   "inventory.enableExpirationQuantityMax": "Max {max} para sa sini nga row",
+
   "inventory.enableExpirationSubmitHint":
+
     "Magbutang sang expiry dates kag i-allocate ang eksakto nga {onHand} {uom} para ma-save.",
+
   "inventory.enableExpirationExpiryRequiredHint":
+
     "Kumpleto na ang quantity. Magbutang sang expiry date sa tagsa ka lot para ma-save.",
+
   "inventory.enableExpirationAddDisabledHint":
+
     "Na-allocate na ang tanan nga on-hand stock. Bawasan anay ang quantity sang isa ka lot para makadugang sang isa pa ka expiry/batch.",
+
   "inventory.enableExpirationSubmit": "Mag-assign sang expiration dates",
+
   "inventory.enableExpirationCancel": "Cancel",
+
   "inventory.enableExpirationPastWarning": "Nagligad na ini nga expiry date.",
+
   "inventory.enableExpirationRemoveRow": "Kuhaon",
+
   "inventory.disableExpirationBlocked":
+
     "Mahimo lang i-off ang expiration tracking kon wala sing stock ang product.",
+
   "inventory.nearExpiryWarningLabel": "Near-expiry warning",
+
   "inventory.daysUnit": "adlaw",
+
   "inventory.stockAdjustment": "Stock adjustment",
+
   "inventory.adjustingAtBranch": "Adjusting stock at: {name}",
+
   "inventory.stockDetails": "Stock details",
+
   "inventory.expirationDateRequiredLabel": "Expiry date",
+
   "inventory.batchLotNumber": "Batch / Lot number",
+
   "inventory.stockInExpiryHint":
+
     "Gin-record ang expiry kada stock lot kay lain-lain ang expiry date sang kada delivery.",
+
   "inventory.deductFrom": "Deduct from",
+
   "inventory.deductAutoFefo": "Awtomatikong gamiton ang earliest-expiring stock",
+
   "inventory.deductChooseLot": "Pili sang specific stock lot",
+
   "inventory.deductAutoHint":
+
     "Gamiton ang stock nga mauuna mag-expire luwas kon magpili ka sang lot. Earliest expiry first (FEFO).",
+
   "inventory.adjustQuantityRequired": "Quantity",
+
   "inventory.quantityRequired": "Butangi sang quantity nga mas dako sa zero.",
+
   "inventory.lotQuantityExceeded":
+
     "Indi maka-sobra ang quantity sa available amount sang napili nga lot.",
+
   "inventory.addStock": "Dugangi sang stock",
+
   "inventory.addStockHint":
-    "Stock correction — not a purchase. Use Direct Buy or PO receive to record purchase cost.",
+
+    "Stock correction ??? not a purchase. Use Direct Buy or PO receive to record purchase cost.",
+
   "inventory.expirationInventory": "Expiration inventory",
+
   "inventory.onHandSummary": "on hand",
+
   "inventory.stockLots": "Stock lots",
+
   "inventory.lotsEmptyHint": "Makita ang expiry details kon madawat na ang stock.",
+
   "inventory.lotColumnExpiry": "Expiry",
+
   "inventory.lotColumnBatch": "Batch",
+
   "inventory.lotColumnAvailable": "Available",
+
   "inventory.lotColumnStatus": "Status",
+
   "inventory.lotCardBatch": "Lot",
+
   "inventory.movementExpiry": "Expiry",
+
   "inventory.movementLot": "Lot",
+
   "inventory.movementUnitCost": "Unit purchase cost",
+
   "inventory.movementStockValue": "Stock value",
+
   "orders.deliveryArea": "Delivery area",
+
   "orders.deliveryAreaEmpty": "Wala sang naka-configure nga delivery areas ang branch.",
+
   "orders.deliveryAreaRequired": "Pilia ang delivery area para sa branch.",
+
   "stockUse.title": "Stock Use",
+
   "stockUse.lede": "I-record ang stock nga ginagamit sang negosyo nga wala sang sale.",
+
   "stockUse.history": "Kasaysayan sang Stock Use",
+
   "stockUse.recordUse": "I-record ang use",
+
   "stockUse.recordTitle": "I-record ang Stock Use",
+
   "stockUse.detailLede": "Stock nga ginagamit sang negosyo.",
+
   "stockUse.backList": "Balik sa Stock Use",
+
   "stockUse.reason": "Rason",
+
   "stockUse.reason.internalOperations": "Operasyon sang negosyo",
+
   "stockUse.reason.staffUse": "Gamit sang staff",
+
   "stockUse.reason.sampleOrTesting": "Sample / testing",
+
   "stockUse.reason.other": "Iban pa",
+
   "stockUse.notes": "Mga nota",
+
   "stockUse.notesOptional": "Opsyonal",
+
   "stockUse.quantityUsed": "Kadamuon nga gingamit",
+
   "stockUse.available": "Available",
+  "stockUse.remaining": "Nabilin",
+
   "stockUse.addProduct": "Magdugang sang product",
+
   "stockUse.removeLine": "Kuhaon",
+
   "stockUse.usedByBusiness": "Gingamit sang negosyo",
+
   "stockUse.notASale": "Indi ini maghimo sang sale.",
+
   "stockUse.insufficientStock": "Kulang ang stock",
+
   "stockUse.onlyAvailable": "{quantity} lang ang available.",
+
   "stockUse.recordedSuccessfully": "Madinalag-on nga nai-record",
+
   "stockUse.reference": "Reference",
+
   "stockUse.usedStock": "Gingamit nga stock",
+
   "stockUse.filterInternalUse": "Internal use",
+
   "stockUse.filterAllStock": "Tanan nga stock",
+
   "stockUse.searchProducts": "Pangita sang products",
+
   "stockUse.empty": "Wala pa sang stock use",
+
   "stockUse.emptyDetail": "I-record diri ang stock nga ginagamit sang negosyo.",
+
   "stockUse.draftEmpty": "Magdugang sang isa ka product.",
+
   "stockUse.noProducts": "Wala sang nakit-an nga product",
+
   "stockUse.noProductsDetail": "Tilawi ang iban nga search ukon All stock.",
-  "stockUse.loading": "Nagaload ang stock use…",
+
+  "stockUse.loading": "Nagaload ang stock use?",
+
   "stockUse.errorTitle": "Stock Use",
+
   "stockUse.loadFailed": "Indi ma-load ang stock use.",
+
   "stockUse.notFound": "Indi makita ang stock use.",
+
   "stockUse.manageDenied": "Wala ka sang permiso para mag-record sang stock use.",
+
   "stockUse.offline": "Kinahanglan sang online connection ang stock use.",
+
   "stockUse.invalidQuantity": "Magbutang sang quantity nga sobra sa zero.",
+
   "stockUse.saveFailed": "Indi ma-record ang stock use.",
-  "stockUse.recording": "Nagarecord…",
+
+  "stockUse.recording": "Nagarecord?",
+
   "stockUse.void": "I-void",
-  "stockUse.voiding": "Nagavoid…",
+
+  "stockUse.voiding": "Nagavoid???",
+
   "stockUse.voidConfirm": "I-void ini nga stock use kag ibalik ang inventory?",
+
   "stockUse.voidFailed": "Indi ma-void ang stock use.",
+
   "stockUse.status.posted": "Posted",
+
   "stockUse.status.voided": "Voided",
+
   "stockUse.linesCount": "{count} items",
+
   "stockUse.estimatedCost": "Banabana nga stock cost",
+
   "stockUse.prevPage": "Previous",
+
   "stockUse.nextPage": "Next",
+
   "stockUse.pageOf": "Page {page} of {pages}",
+
   "wasteLoss.title": "Waste / Loss",
+
   "wasteLoss.lede": "Irekord ang spoiled, expired, damaged, ukon nawala nga stock nga wala sale.",
+
   "wasteLoss.history": "Kasaysayan sang Waste / Loss",
+
   "wasteLoss.recordWasteLoss": "Irekord ang waste / loss",
+
   "wasteLoss.recordTitle": "Irekord ang Waste / Loss",
+
   "wasteLoss.recordExpiredTitle": "Irekord ang expired stock",
+
   "wasteLoss.detailLede": "Stock nga na-write off bilang waste ukon loss.",
+
   "wasteLoss.backList": "Balik sa Waste / Loss",
+
   "wasteLoss.backToExpiration": "Balik sa Expiration",
+
   "wasteLoss.lotLabel": "Lot",
+
   "wasteLoss.expiredOn": "Expired",
+
   "wasteLoss.availableInLot": "Available sa sini nga lot",
+
   "wasteLoss.confirmPhysicalQuantity":
+
     "I-confirm ang physical quantity antes irekord. Marekord ang ginpili nga quantity bilang expired waste.",
+
   "wasteLoss.noStockRemainsInLot": "Wala na sing stock sa sini nga lot.",
+
   "wasteLoss.lotNoLongerAvailable": "Indi na available ang sini nga lot.",
+
   "wasteLoss.lotNoLongerExpired":
+
     "Indi na marked as expired ang sini nga lot. Usisaa ang reason kag quantity antes irekord.",
+
   "wasteLoss.expiredWriteOffHint":
+
     "Naka-set sa Expired ang reason para sa sini nga lot. Pwede mo usbon kung mas nabagay ang iban nga waste reason.",
+
   "wasteLoss.reason": "Rason",
+
   "wasteLoss.reason.spoiled": "Spoiled",
+
   "wasteLoss.reason.expired": "Expired",
+
   "wasteLoss.reason.damaged": "Damaged",
+
   "wasteLoss.reason.broken": "Broken",
+
   "wasteLoss.reason.spillage": "Spillage",
+
   "wasteLoss.reason.missingOrShrinkage": "Missing / shrinkage",
+
   "wasteLoss.reason.other": "Others",
+
   "wasteLoss.notes": "Mga nota",
+
   "wasteLoss.notesOptional": "Optional",
+
   "wasteLoss.notesRequired": "Kinahanglan ang nota kon Other ang rason.",
+
   "wasteLoss.notesRequiredPlaceholder": "Kinahanglan para sa Other",
+
   "wasteLoss.quantityWasted": "Kadamo",
+
   "wasteLoss.available": "Available",
+  "wasteLoss.remaining": "Nabilin",
+
   "wasteLoss.addProduct": "Magdugang produkto",
+
   "wasteLoss.removeLine": "Tangtangon",
+
   "wasteLoss.wastedStock": "Wasted stock",
+
   "wasteLoss.lines": "Mga linya",
+
   "wasteLoss.notASale": "Indi ini maghimo sang sale.",
+
   "wasteLoss.insufficientStock": "Kulang ang stock",
+
   "wasteLoss.onlyAvailable": "{quantity} lang ang available.",
+
   "wasteLoss.recordedSuccessfully": "Malampuson nga narekord",
+
   "wasteLoss.reference": "Reference",
+
   "wasteLoss.searchProducts": "Pangita-a ang mga produkto",
+
   "wasteLoss.empty": "Wala pa waste / loss",
+
   "wasteLoss.emptyDetail": "Irekord diri ang spoiled, expired, ukon damaged stock.",
+
   "wasteLoss.draftEmpty": "Magdugang sang isa ka produkto.",
+
   "wasteLoss.noProducts": "Wala nakita nga produkto",
+
   "wasteLoss.noProductsDetail": "Tilawi ang iban nga pagpangita.",
-  "wasteLoss.loading": "Nag-load sang waste / loss…",
+
+  "wasteLoss.loading": "Nag-load sang waste / loss???",
+
   "wasteLoss.errorTitle": "Waste / Loss",
+
   "wasteLoss.loadFailed": "Indi ma-load ang waste / loss.",
+
   "wasteLoss.notFound": "Wala makita ang waste / loss.",
+
   "wasteLoss.manageDenied": "Wala ka permiso sa pagrekord sang waste / loss.",
+
   "wasteLoss.offline": "Kinahanglan sang online connection ang waste / loss.",
+
   "wasteLoss.invalidQuantity": "Magbutang sang quantity nga labaw sa zero.",
+
   "wasteLoss.saveFailed": "Indi marekord ang waste / loss.",
-  "wasteLoss.recording": "Nagarekord…",
+
+  "wasteLoss.recording": "Nagarekord???",
+
   "wasteLoss.void": "I-void",
-  "wasteLoss.voiding": "Nag-void…",
+
+  "wasteLoss.voiding": "Nag-void???",
+
   "wasteLoss.voidConfirm": "I-void ini nga waste / loss kag ibalik ang inventory?",
+
   "wasteLoss.voidFailed": "Indi ma-void ang waste / loss.",
+
   "wasteLoss.status.posted": "Posted",
+
   "wasteLoss.status.voided": "Voided",
+
   "wasteLoss.linesCount": "{count} ka items",
+
   "wasteLoss.estimatedCost": "Gintantiya nga cost",
+
   "wasteLoss.costStatus": "Cost status",
+
   "wasteLoss.costComplete": "Complete",
+
   "wasteLoss.costPartial": "Partial",
+
   "wasteLoss.costUnavailable": "Unavailable",
+
   "wasteLoss.costPartialDetail": "May pipila ka line cost nga unavailable.",
+
   "wasteLoss.costUnavailableDetail": "Unavailable ang cost para sa sini nga rekord.",
+
   "wasteLoss.lineCostUnavailable": "Cost unavailable",
+
   "wasteLoss.selectLot": "Pili-a ang lot",
+
   "wasteLoss.lotRequired": "Pili-a ang lot para sa expiry-tracked products.",
+
   "wasteLoss.lotQuantityExceeded": "{quantity} lang ang available sa napili nga lot.",
+
   "wasteLoss.expiredLotsFirst": "Una ang expired lots. Pili-a ang lot nga i-write off.",
+
   "wasteLoss.prevPage": "Previous",
+
   "wasteLoss.nextPage": "Next",
+
   "wasteLoss.pageOf": "Page {page} of {pages}",
+
       "transfer.actionFailed": "Could not update transfer.",
+
   "transfer.addProduct": "Add",
+
   "transfer.addProducts": "Add products",
+
   "transfer.backList": "Back to Transfers",
+
   "transfer.backToTransfer": "Back to transfer",
+
   "transfer.baseUomHint": "Quantities use each product base unit of measure.",
+
   "transfer.cancel": "Cancel the transfer",
-  "transfer.cancelDraftConfirm": "Cancel transfer?\n\nThe draft will be kept in history as Cancelled and inventory will not change.",
-  "transfer.cancelInTransitConfirm": "Cancel transfer?\n\nThe quantities already dispatched will be restored to the source branch.",
+
+  "transfer.cancelConfirmTitle": "Cancel transfer?",
+
+  "transfer.cancelCreate": "Cancel",
+
+  "transfer.cancelDraftConfirmDetail":
+
+    "The draft will be kept in history as Cancelled and inventory will not change.",
+
+  "transfer.cancelInTransitConfirmDetail":
+
+    "The quantities already dispatched will be restored to the source branch.",
+
+  "transfer.dialogCancel": "Cancel",
+
+  "transfer.dispatchConfirmDetail":
+
+    "This will remove the listed quantities from {source} and mark the transfer as in transit to {destination}.\n\nItems: {count}",
+
+  "transfer.dispatchConfirmTitle": "Dispatch inventory transfer?",
+
+  "transfer.itemsEmpty": "No items added yet",
+  "transfer.itemsEmptyDetail": "Search or browse products at the source branch to add transfer lines.",
+  "transfer.findProducts": "Find products",
+  "transfer.closeFindProducts": "Close",
+  "transfer.detailsTitle": "Transfer details",
+
+  "transfer.listSection": "Transfers",
+
+  "transfer.receiveConfirmTitle": "Receive transfer?",
+
+  "transfer.receiveFinalConfirmDetail":
+
+    "Receiving this transfer is final. Verify the quantities before confirming.",
+
+  "transfer.resetCreate": "Reset",
+
+  "transfer.summaryTitle": "Transfer summary",
+
   "transfer.cancelledAt": "Cancelled at",
+
   "transfer.cancelledRestoredSuccess": "Transfer cancelled. Dispatched inventory was restored to {source}.",
+
   "transfer.cancelledSuccess": "Transfer cancelled",
+
   "transfer.createdSuccess": "Transfer draft created",
+
   "transfer.currentBranch": "Current branch",
+
   "transfer.destinationBranch": "Destination branch",
+
   "transfer.destinationRequired": "Choose a destination branch.",
+
   "transfer.difference": "Kinalain",
+
   "transfer.discrepancy": "Discrepancy",
+
   "transfer.discrepancy.damaged": "Damaged",
+
   "transfer.discrepancy.lostInTransit": "Lost in transit",
+
   "transfer.discrepancy.other": "Other",
+
   "transfer.discrepancy.shortShipment": "Short shipment",
+
   "transfer.discrepancy.wrongItem": "Wrong item",
+
   "transfer.discrepancyNote": "Discrepancy note",
+
   "transfer.discrepancyReason": "Discrepancy reason",
+
   "transfer.dispatch": "Dispatch the transfer",
-  "transfer.dispatchConfirm": "Dispatch inventory transfer?\n\nThis will remove the listed quantities from {source} and mark the transfer as in transit to {destination}.\n\nItems: {count}",
+
+  "transfer.dispatching": "Dispatching...",
+
+  "transfer.dispatchFailedTitle": "Cannot dispatch transfer",
+
+  "transfer.cancelFailedTitle": "Cannot cancel transfer",
+
+  "transfer.cancelling": "Cancelling...",
+
+  "transfer.receiveFailedTitle": "Cannot receive transfer",
+
   "transfer.dispatched": "Dispatched",
+
   "transfer.dispatchedSuccess": "Transfer dispatched. Inventory is now in transit to {destination}.",
+
   "transfer.draftEmpty": "Add at least one product.",
-  "transfer.draftNoEdit": "Draft transfers cannot be edited. Cancel and create a new transfer to change items.",
+
+  "transfer.draftNoEdit":
+
+    "Draft transfers cannot be edited. Cancel this draft and create a new transfer to change items.",
+
   "transfer.draftNumber": "Draft",
+
   "transfer.duplicateLine": "That product lot is already on this transfer.",
+
   "transfer.empty": "Wala pa sang inventory transfer",
+
   "transfer.emptyDetail": "Move stock between your branches when needed.",
+
   "transfer.errorTitle": "Inventory Transfers",
+
   "transfer.expiry": "Expiry",
+
   "transfer.filter.all": "Tanan",
+
   "transfer.filter.direction": "Direction",
+
   "transfer.filter.incoming": "Pagsulod",
+
   "transfer.filter.outgoing": "Pagawas",
+
   "transfer.filter.status": "Status",
-  "transfer.fromBranch": "From branch",
+
+  "transfer.fromBranch": "From",
+
   "transfer.invalidQuantity": "Enter a quantity greater than zero.",
+
   "transfer.invalidReceivedQuantity": "Received quantity must be between zero and the sent quantity.",
+
+  "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
+
+  "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
+
   "transfer.items": "Mga item",
+
   "transfer.lede": "Ilipat ang stock sa tunga sang mga branch sang inyo organisasyon.",
+
   "transfer.linesCount": "{count} items",
+
   "transfer.loadFailed": "Could not load transfers.",
+
   "transfer.loading": "Nagaload sang transfers...",
+
   "transfer.lot": "Lot number",
+
   "transfer.lotRequired": "Select a source lot for expiration-tracked products.",
+
   "transfer.manageDenied": "You do not have permission to manage inventory transfers.",
+
   "transfer.new": "New transfer",
+
   "transfer.newLede": "Create a draft transfer from your current branch, then dispatch when ready.",
+
   "transfer.newTitle": "New Inventory Transfer",
+
   "transfer.nextPage": "Next",
+
   "transfer.noProducts": "No matching tracked products",
+
   "transfer.noProductsDetail": "Only active tracked products can be transferred.",
+
   "transfer.notes": "Mga nota",
+
   "transfer.notesOptional": "Optional",
+
   "transfer.notFound": "Transfer was not found.",
+
   "transfer.offline": "Kinahanglan sang online connection ang inventory transfers.",
+
   "transfer.pageOf": "Page {page} of {pages}",
+
   "transfer.partiallyReceivedSuccess": "Transfer recorded as partially received. Review the recorded differences.",
+
   "transfer.prevPage": "Previous",
+
   "transfer.product": "Produkto",
+
   "transfer.quantity": "Kadamuon",
+
   "transfer.receive": "Receive the transfer",
+
   "transfer.received": "Ginbaton",
+
   "transfer.receivedAt": "Received at",
+
   "transfer.receivedSuccess": "Transfer received. Inventory was added to {destination}.",
-  "transfer.receiveFinalConfirm": "Receiving this transfer is final. Verify the quantities before confirming.",
+
   "transfer.receiveFinalHint": "Receiving this transfer is final. Verify the quantities before confirming.",
+
   "transfer.receiveTitle": "Receive transfer",
+
   "transfer.receiving": "Receiving...",
+
   "transfer.remove": "Remove",
+
   "transfer.requiresTwoBranches": "Inventory transfers require at least two branches.",
+
   "transfer.sameBranch": "Source and destination must be different branches.",
+
   "transfer.saveDraft": "Save the transfer",
+
   "transfer.saveFailed": "Could not save transfer.",
+
   "transfer.saving": "Saving...",
+
   "transfer.searchProducts": "Search by name, SKU, or barcode",
+
   "transfer.selectDestination": "Select destination branch",
+
   "transfer.selectDiscrepancy": "Select reason",
+
   "transfer.selectLot": "Select lot",
+
   "transfer.sent": "Ginpadala",
-  "transfer.singleBranchDetail": "Add another branch before using inventory transfers.",
+
+  "transfer.singleBranchDetail": "Add another branch to start transferring stock.",
+
   "transfer.sourceBranch": "Source branch",
+
   "transfer.sourceFixedHint": "Source is always your current branch. Switch branch to transfer from elsewhere.",
+
   "transfer.status.cancelled": "Gincancel na",
+
   "transfer.status.draft": "Draft pa",
+
   "transfer.status.inTransit": "Nagalakat",
+
   "transfer.status.partiallyReceived": "Partially received",
+
   "transfer.status.received": "Nabaton na",
+
   "transfer.title": "Inventory Transfers",
-  "transfer.toBranch": "To branch",
+
+  "transfer.toBranch": "To",
+
   "transfer.tracksExpiry": "Tracks expiry",
+
+  "transfer.available": "Available: {qty} {uom}",
+  "transfer.colAvailable": "Available at source",
+
+  "transfer.outOfStock": "Out of stock",
+
+  "transfer.unavailable": "Unavailable",
+
+  "transfer.onlyAvailableAtSource": "Only {qty} {uom} available at {branch}.",
+
+  "transfer.notTracked": "Inventory is not tracked for this product.",
+
+  "transfer.decreaseQuantity": "Decrease quantity",
+
+  "transfer.increaseQuantity": "Increase quantity",
+
+  "transfer.byCreated": "Created by {name}",
+
+  "transfer.byDispatched": "Dispatched by {name}",
+
+  "transfer.byReceived": "Received by {name}",
+
+  "transfer.byCancelled": "Cancelled by {name}",
+
   "stockCount.title": "Pag-ihap sang Stock",
+
   "stockCount.lede": "Ihap ang physical stock kag i-reconcile ang mga kinalain sa inventory sang organisasyon.",
+
   "stockCount.orgScopeNote": "Stock count para sa {name}. Kon matapos, ma-adjust ang branch; ang org total mag-iba lang base sa variance.",
+
   "stockCount.branchRequired": "Pili sang workspace branch antes magsugod sang stock count.",
+
   "stockCount.new": "Bag-o nga stock count",
+
   "stockCount.newTitle": "Bag-o nga Stock Count",
+
   "stockCount.newLede": "Choose products, save a draft, then start counting.",
+
   "stockCount.createFirst": "Create your first stock count",
+
   "stockCount.backList": "Back to Stock Counts",
+
   "stockCount.backToCount": "Back to count",
+
   "stockCount.countPeriod": "Panahon sang bilang",
+
   "stockCount.period.weekly": "Kada semana",
+
   "stockCount.period.monthly": "Kada bulan",
+
   "stockCount.period.quarterly": "Kada tres bulan",
+
   "stockCount.period.annual": "Inatig",
+
   "stockCount.period.custom": "Ginpili",
+
   "stockCount.fieldTitle": "Ngalan sang bilang",
-  "stockCount.titleSuggestedHint": "Ginasuggest nga ngalan — pwede mo i-edit.",
+
+  "stockCount.titleSuggestedHint": "Ginasuggest nga ngalan ??? pwede mo i-edit.",
+
   "stockCount.titleRequired": "Magbutang sang titulo para sa stock count.",
+
   "stockCount.countDate": "Petsa sang bilang",
+
   "stockCount.countNumber": "Count number",
+
   "stockCount.draftNumber": "Burador",
+
   "stockCount.notes": "Mga nota",
+
   "stockCount.notesOptional": "Opcional",
+
   "stockCount.productsToCount": "Mga produkto nga bilangon",
+
   "stockCount.products": "mga produkto",
+
   "stockCount.addProducts": "Magdugang sang produkto",
+
   "stockCount.addProduct": "Idugang",
+
   "stockCount.alreadyAdded": "Nadugang na",
+
   "stockCount.removeProduct": "Kuhaon",
+
   "stockCount.countAll": "Count all tracked products",
+
   "stockCount.countAllCapped": "Only the first {max} tracked products were added (server limit).",
+
   "stockCount.loadingAll": "Loading products?",
+
   "stockCount.noTrackedProducts": "No tracked inventory products were found.",
+
   "stockCount.maxLines": "A stock count can include at most {max} products.",
+
   "stockCount.searchProducts": "Search by name, SKU, or barcode",
+
   "stockCount.searchCountNumber": "Search count number",
+
   "stockCount.searchWithinCount": "Search products in this count",
+
   "stockCount.saveDraft": "I-save ang burador",
+
   "stockCount.saving": "Saving?",
+
   "stockCount.saveFailed": "Could not save stock count.",
+
   "stockCount.draftEmpty": "Add at least one tracked product.",
+
   "stockCount.empty": "Wala pa sang stock counts",
+
   "stockCount.emptyDetail": "Create a stock count to reconcile physical inventory.",
+
   "stockCount.loading": "Loading stock counts?",
+
   "stockCount.errorTitle": "Pag-ihap sang Stock",
+
   "stockCount.loadFailed": "Could not load stock counts.",
+
   "stockCount.notFound": "Stock count was not found.",
+
   "stockCount.manageDenied": "You do not have permission to manage stock counts.",
+
   "stockCount.offline": "Kinahanglan sang online connection ang stock count.",
+
   "stockCount.actionFailed": "Could not update stock count.",
+
   "stockCount.invalidQuantity": "Enter a quantity of zero or greater.",
+
   "stockCount.allMustBeCounted": "Enter a physical count for every product before completing.",
+
   "stockCount.noProducts": "No matching inventory products",
+
   "stockCount.noProductsDetail": "Only tracked products can be counted. Try another search.",
+
   "stockCount.noMatchingLines": "No matching lines",
+
   "stockCount.noMatchingLinesDetail": "Try another search or filter.",
+
   "stockCount.status.draft": "Burador",
+
   "stockCount.status.inProgress": "Nagapadayon",
+
   "stockCount.status.completed": "Natapos",
+
   "stockCount.status.cancelled": "Gincancel",
+
   "stockCount.filter.all": "Tanan",
+
   "stockCount.filter.status": "Kahimtang",
+
   "stockCount.filter.lines": "Line filters",
+
   "stockCount.filter.notCounted": "Not counted",
+
   "stockCount.filter.hasDifference": "Has difference",
+
   "stockCount.filter.matched": "Matched",
+
   "stockCount.linesCount": "{count} products",
+
   "stockCount.productsWithDifferences": "{count} with differences",
+
   "stockCount.started": "Started",
+
   "stockCount.completed": "Completed",
+
   "stockCount.cancelled": "Cancelled",
+
   "stockCount.prevPage": "Nagligad",
+
   "stockCount.nextPage": "Sunod",
+
   "stockCount.pageOf": "Page {page} of {pages}",
+
   "stockCount.edit": "Usbon",
+
   "stockCount.editProductsHint": "To change which products are on this draft, remove products below or create a new count.",
+
   "stockCount.start": "Sugod sang stock count",
+
   "stockCount.startConfirm": "Start stock count?\n\nCurrent system quantities will be captured as the reference quantities for this count.\nYou can then enter the quantities physically counted.",
+
   "stockCount.cancel": "Cancel stock count",
+
   "stockCount.cancelConfirm": "Cancel stock count?\n\nThe count will be kept in history as Cancelled and inventory will not be adjusted.",
+
   "stockCount.saveProgress": "I-save ang pag-uswag",
+
   "stockCount.reviewComplete": "Review & complete",
+
   "stockCount.reviewTitle": "Stock Count Review",
+
   "stockCount.reviewLede": "Confirm differences before inventory is adjusted.",
+
   "stockCount.complete": "Kompletoha ang stock count",
+
   "stockCount.completing": "Completing?",
+
   "stockCount.completeConfirm": "Completing this stock count will adjust inventory to the physical quantities entered.",
+
   "stockCount.product": "Product",
+  "stockCount.unit": "Unit",
   "stockCount.systemStock": "Stock sang sistema",
+
   "stockCount.systemQuantity": "Kadamuon sang sistema",
+
   "stockCount.physicalCount": "Physical nga ihap",
+
   "stockCount.countedQuantity": "Counted quantity",
+
   "stockCount.difference": "Kinalain",
+
   "stockCount.matched": "Nagtugma",
+
   "stockCount.lowerThanSystem": "Lower than system",
+
   "stockCount.higherThanSystem": "Higher than system",
+
   "stockCount.productsCounted": "{count} products counted",
+
   "stockCount.productsRemaining": "{count} remaining",
+
   "stockCount.allProductsCounted": "All products counted",
+
   "stockCount.progressCounted": "{counted} of {total} counted",
+
   "stockCount.inventoryWillAdjust": "Inventory will be adjusted when this count is completed.",
+
   "stockCount.noAdjustment": "No adjustment",
+
   "stockCount.inventoryReconciled": "Inventory reconciled",
+
   "stockCount.createdSuccess": "Stock count draft created",
+
   "stockCount.startedSuccess": "Stock count started",
+
   "stockCount.progressSaved": "Progress saved",
+
   "stockCount.draftSaved": "Draft saved",
+
   "stockCount.completedSuccess": "Stock count completed. Inventory has been reconciled.",
+
   "stockCount.cancelledSuccess": "Stock count cancelled",
+
   "production.title": "Produksyon",
+
   "production.lede": "Himoa ang mga produkto halin sa mga materyal kag tan-awa ang history.",
+
   "production.homeProduce": "Himoa",
-  "production.homeSetups": "Mga setup",
+
+  "production.homeSetups": "Recipes",
+
   "production.homeHistory": "Kasaysayan",
+
   "production.offline": "Kinahanglan sang online nga koneksyon ang produksyon.",
+
   "production.onlineOnly": "Online lang ang produksyon.",
+
   "production.errorTitle": "Produksyon",
+
   "production.manageDenied": "Wala ka permiso sa pagdumala sang produksyon.",
-  "production.loading": "Nagaload ang produksyon…",
+
+  "production.loading": "Nagaload ang produksyon???",
+
   "production.backHome": "Balik sa Produksyon",
-  "production.backSetups": "Balik sa mga Setup",
+
+  "production.backSetups": "Back to Recipes",
+
   "production.backRuns": "Balik sa Kasaysayan",
+
   "production.setups.title": "Mga setup sang produksyon",
+
   "production.setups.lede": "Ipasundayag kon ano nga mga materyal ang magahimo sang produkto.",
+
   "production.setups.detailLede": "Resipe / definition sang produksyon.",
+
   "production.setups.formLede": "Pilia ang output nga produkto kag ang mga materyal.",
+
   "production.setups.empty": "Wala pa sang setup sang produksyon",
+
   "production.setups.emptyDetail": "Maghimo anay sang setup antes magprodyus.",
+
   "production.setups.new": "Bag-o nga setup",
+
   "production.setups.edit": "Ilisan ang setup",
+
   "production.setups.name": "Ngalan sang setup",
+
   "production.setups.outputProduct": "Output nga produkto",
+
   "production.setups.outputQuantity": "Kadamuon sang output",
+
   "production.setups.materials": "Mga materyal",
+
   "production.setups.addMaterial": "Magdugang sang materyal",
+
+  "production.setups.addIngredient": "+ Magdugang sang sangkap",
+  "production.setups.closeIngredientPicker": "Sirado",
+  "production.setups.tableIngredient": "Sangkap",
+  "production.setups.tableQty": "Kadamuon",
+  "production.setups.tableUnit": "Unit",
+  "production.setups.tableAvailable": "Available",
+  "production.setups.tableActions": "Mga aksyon",
+  "production.setups.availableShort": "Available {qty} {uom}",
+
   "production.setups.removeMaterial": "Kuhaon",
+
   "production.setups.materialQuantity": "Kadamuon sang materyal",
+
   "production.setups.search": "Pangita sang setup",
+
   "production.setups.searchOutput": "Pangita sang output nga produkto",
+
   "production.setups.searchMaterial": "Pangita sang materyal",
+
   "production.setups.componentsCount": "{count} ka materyal",
+
   "production.setups.revision": "Rev {revision}",
+
   "production.setups.revisionLabel": "Rebisyon",
+
   "production.setups.setActive": "I-aktibo",
+
   "production.setups.setInactive": "I-deactivate",
+
   "production.setups.save": "I-save ang setup",
-  "production.setups.saving": "Nagasave…",
+
+  "production.setups.saving": "Nagasave???",
+
   "production.setups.saveFailed": "Indi ma-save ang setup sang produksyon.",
+
   "production.setups.loadFailed": "Indi ma-load ang mga setup sang produksyon.",
+
   "production.setups.notFound": "Wala makita ang setup sang produksyon.",
+
   "production.setups.invalidQuantity": "Magbutang sang kadamuon nga labaw sa zero.",
+
   "production.setups.needName": "Magbutang sang ngalan sang setup.",
+
   "production.setups.needOutput": "Pilia ang output nga produkto.",
+
   "production.setups.needMaterials": "Magdugang sang bisan isa ka materyal.",
+
   "production.setups.status.active": "Aktibo",
+
   "production.setups.status.inactive": "Indi aktibo",
+
   "production.setups.noProducts": "Wala makita nga produkto",
+
   "production.setups.noProductsDetail": "Tilawi ang iban nga pagpangita.",
+
   "production.setups.selectProduct": "Pilia",
+
   "production.setups.changeProduct": "Ilisan ang produkto",
+
   "production.setups.draftEmpty": "Magdugang sang mga materyal para sa output.",
+  "production.setups.searchMaterialPlaceholder": "Pangita sang materyal, SKU ukon barcode...",
+  "production.setups.selectedMaterials": "Mga napili nga materyal",
+  "production.setups.selectedCount": "{count} ka materyal ang napili",
+  "production.setups.materialSelected": "Napili",
+  "production.setups.editMaterial": "Ilisan",
+  "production.setups.requiredQuantity": "Kinahanglan nga kadamuon",
+  "production.setups.duplicateMaterial": "Napili na ina nga materyal.",
+  "production.setups.materialAsOutputForbidden": "Indi magamit ang output product bilang materyal.",
+  "production.setups.noEligibleMaterials": "Wala sang eligible nga materyal",
+  "production.setups.noEligibleMaterialsDetail": "Markahi ang produkto bilang ingredient (Can be used as ingredient) sa catalog.",
+  "production.setups.noProductionIngredientsYet": "Wala pa sang production ingredients.",
+  "production.setups.noProductionIngredientsDetail": "Markahi anay ang produkto bilang \"Can be used as production ingredient\" sa Products. Kinahanglan ang inventory tracking para sa ingredients.",
+  "production.setups.manageProducts": "Manage products",
+  "production.setups.materialNotEligible": "Tracked production ingredients lang ang pwede idugang. I-configure anay ang produkto sa Products.",
+  "production.setups.loadMoreMaterials": "Mag-load pa sang materyal",
+  "production.recipes.formLedeFirstTime": "Name the recipe, set standard yield, add ingredients ? then save to create the finished product.",
+  "production.recipes.standardYield": "Standard yield",
+  "production.recipes.outputCreatedOnSaveHint": "The finished product is created or linked when you save this recipe.",
+  "production.recipes.saveAsRecipe": "Save as production recipe",
+  "production.recipes.createOutputTitle": "Create output product",
+  "production.recipes.outputMode": "Output product",
+  "production.recipes.createNewOutput": "Create new output product",
+  "production.recipes.useExistingOutput": "Use existing product",
+  "production.recipes.outputProductName": "Product name",
+  "production.recipes.standardProducedQty": "Standard produced quantity",
+  "production.recipes.baseUnit": "Base unit",
+  "production.recipes.canBeSold": "Can be sold?",
+  "production.recipes.canBeIngredient": "Can be used as ingredient?",
+  "production.recipes.sellingPrice": "Selling price",
+  "production.recipes.category": "Category",
+  "production.recipes.categoryNone": "No category",
+  "production.recipes.estimatedMaterialCost": "Estimated material cost",
+  "production.recipes.estimatedBatchCost": "Estimated batch material cost",
+  "production.recipes.estimatedUnitCost": "{cost} / {uom}",
+  "production.recipes.estimatedMargin": "Estimated margin: {amount} / pc ({percent}%)",
+  "production.recipes.estimatedCostPartial": "Some ingredient costs are unknown ? estimate is partial.",
+  "production.recipes.estimatedCostUnavailable": "Estimated material cost unavailable until ingredient acquisition costs are known.",
+  "production.recipes.createProductAndSave": "Create product & save recipe",
+  "production.recipes.createOutputFailed": "Could not create the output product.",
+  "production.recipes.enableTrackingFailed": "Product was created, but inventory tracking could not be enabled. Open Inventory for this product and enable tracking, then Produce.",
+  "production.recipes.needOutputName": "Enter a product name.",
+  "production.recipes.invalidSellingPrice": "Enter a valid selling price.",
+  "production.recipes.yes": "Yes",
+  "production.recipes.no": "No",
+  "production.recipes.standardYieldLabel": "Standard yield: {qty}",
+  "production.recipes.produceAction": "Produce",
+  "production.recipes.browseCatalogToEnable": "Browse catalog products",
+  "production.recipes.showTaggedIngredientsOnly": "Show tagged ingredients only",
+  "production.recipes.browseCatalogHint": "Pick a product ? it will be marked as an ingredient when you add it.",
+  "production.recipes.willEnableIngredient": "Enable as ingredient",
+  "production.recipes.enableIngredientFailed": "Could not mark this product as an ingredient.",
+  "production.recipes.stockZeroUntilProduce": "Sell stock stays 0 until you Produce. Saving the recipe only creates the product and price.",
+
   "production.produce.title": "Himoa",
+
   "production.produce.lede": "Gamita ang setup para himoon nga stock ang mga materyal.",
+
   "production.produce.selectSetup": "Setup sang produksyon",
+
   "production.produce.chooseSetup": "Pilia ang setup",
+
   "production.produce.noActiveSetups": "I-aktibo ukon maghimo anay sang setup.",
+
   "production.produce.outputQuantity": "Kadamuon sang output",
+
   "production.produce.scaleHint": "Nagasunod ang kadamuon sang materyal sa output. Ilisan ang aktwal kung kinahanglan.",
+
   "production.produce.materials": "Mga materyal nga gingamit",
+
   "production.produce.expected": "Ginalauman",
+
   "production.produce.actual": "Aktwal",
+
   "production.produce.available": "Available",
+
   "production.produce.availabilityOk": "Igo ang stock para sa ginalauman nga paggamit.",
+  "production.produce.required": "Kinahanglan",
+  "production.produce.shortBy": "Kulang sang {quantity}",
+  "production.produce.cannotProduce": "Indi makaproduce sang {qty}.",
+  "production.produce.cannotProduceShortage": "Indi makaproduce ? kulang ang stock sang isa ukon madamo nga ingredient.",
+  "production.produce.addIngredient": "+ Magdugang sang ingredient",
+  "production.produce.extraBadge": "Extra (ini nga run lang)",
+  "production.produce.extraExceedsAvailable": "Sobra sa available stock ang {name} ({available}).",
+  "production.produce.standardOutput": "Standard output",
+  "production.produce.ingredientsCountLabel": "ka ingredient",
+  "production.produce.maxProducible": "Maximum nga maproduce sa current stock: {qty}",
+  "production.produce.successToast": "Napproduce: {qty} {name}.",
+  "production.produce.submitWithQty": "Produce {qty}",
+
   "production.produce.availabilityShort": "Available lang ang {quantity}.",
+
   "production.produce.notes": "Mga nota",
+
   "production.produce.reference": "Reperensiya",
+
   "production.produce.expiration": "Petsa sang pagka-expire sang output",
+
   "production.produce.expirationRequired": "Kinahanglan ang expiration date para sa sini nga nahimo nga produkto.",
+
   "production.produce.lotNumber": "Numero sang lot / batch",
+
   "production.produce.optional": "Opsiyonal",
+
   "production.produce.submit": "Irekord ang produksyon",
-  "production.produce.submitting": "Nagarecord…",
+
+  "production.produce.submitting": "Nagarecord???",
+
   "production.produce.saveFailed": "Indi ma-record ang produksyon.",
+
   "production.produce.invalidQuantity": "Magbutang sang kadamuon nga labaw sa zero.",
+
   "production.runs.title": "Kasaysayan sang produksyon",
+
   "production.runs.lede": "Mga na-post nga pagdagan sang produksyon.",
+
   "production.runs.empty": "Wala pa sang pagdagan sang produksyon",
+
   "production.runs.emptyDetail": "Magprodyus halin sa setup para makita ang kasaysayan.",
+
   "production.runs.loadFailed": "Indi ma-load ang kasaysayan sang produksyon.",
+
   "production.runs.notFound": "Wala makita ang pagdagan sang produksyon.",
+
   "production.runs.detailLede": "Mga materyal kag na-post nga output.",
+
   "production.runs.materials": "Mga materyal",
+
   "production.runs.output": "Output",
+
   "production.runs.totalMaterialCost": "Kabug-osan nga gasto sang materyal",
+
   "production.runs.outputUnitCost": "Unit cost sang output",
+
   "production.runs.costStatus": "Kahimtang sang gasto",
+
   "production.runs.costComplete": "Kompleto",
+
   "production.runs.costPartial": "Bahin",
+
   "production.runs.costUnavailable": "Wala",
+
   "production.runs.void": "I-void",
-  "production.runs.voiding": "Nagavoid…",
+
+  "production.runs.voiding": "Nagavoid???",
+
   "production.runs.voidConfirm": "I-void bala ini nga pagdagan kag ibalik ang inventory?",
+
   "production.runs.voidFailed": "Indi ma-void ang pagdagan sang produksyon.",
+
   "production.runs.status.posted": "Na-post",
+
   "production.runs.status.voided": "Gin-void",
+
   "production.runs.prevPage": "Nagligad nga pahina",
+
   "production.runs.nextPage": "Masunod nga pahina",
+
   "production.runs.pageOf": "Pahina {page} sang {pages}",
+
   "openingStock.title": "Opening stock",
+
   "openingStock.optional": "Optional",
+
   "openingStock.addNow": "Add opening stock now",
+
   "openingStock.helper": "You can start with zero stock and receive inventory later.",
+
   "openingStock.quantity": "Opening quantity",
+
   "openingStock.unitCost": "Unit purchase cost",
-  "openingStock.unitCostHelper": "What you paid per base inventory unit — not the selling price.",
+
+  "openingStock.unitCostHelper": "What you paid per base inventory unit ??? not the selling price.",
+
   "openingStock.value": "Stock value",
+
   "openingStock.expiry": "Expiry date",
+
   "openingStock.batch": "Batch / Lot number",
+
   "openingStock.baseUnitHelper": "Opening stock is entered in {unit}.",
+
   "openingStock.expiryHelper": "Expiry is recorded for this opening stock lot.",
+
   "openingStock.editHint": "Use Inventory to adjust stock after the product is created.",
+
   "openingStock.quantityRequired": "Opening quantity is required.",
+
   "openingStock.quantityInvalid": "Opening quantity must be greater than zero.",
+
   "openingStock.unitCostRequired": "Unit cost is required for opening stock.",
+
   "openingStock.unitCostInvalid": "Unit cost must be greater than zero.",
+
   "openingStock.expiryRequired": "Expiry date is required for opening stock on expiration-tracked products.",
+
   "inventory.reasonStockCountPlaceholder": "Stock count correction",
+
+  "incomingOrders.accept": "Batuna ang order",
+
+  "incomingOrders.actionFailed": "Indi ma-update ini nga order.",
+
+  "incomingOrders.backList": "Balik sa incoming orders",
+
+  "incomingOrders.buyer": "Buyer",
+
+  "incomingOrders.buyerUnknown": "Connected buyer",
+
+  "incomingOrders.compact": "Incoming orders ({count})",
+
+  "incomingOrders.decline": "Balibaran",
+
+  "incomingOrders.declineNote": "Nota (opsyonal)",
+
+  "incomingOrders.declineReason": "Rason sang pagbalibad",
+
+  "incomingOrders.declineReason.cannotFulfillQuantity": "Indi matuman ang kadamuon",
+
+  "incomingOrders.declineReason.other": "Iban pa",
+
+  "incomingOrders.declineReason.outOfStock": "Wala stock",
+
+  "incomingOrders.declineReason.priceOrOrderIssue": "Problema sa presyo ukon order",
+
+  "incomingOrders.declineReason.unableToFulfill": "Indi matuman",
+
+  "incomingOrders.declineReasonOptional": "Opsyonal",
+
+  "incomingOrders.deliverTo": "Ihatod / tumanon gikan sa",
+
+  "incomingOrders.detailLede": "Usisa ang order snapshot gikan sa buyer. Ang pagbaton indi magbag-o sang inventory.",
+  "incomingOrders.shortageWarning": "Requested quantity exceeds available stock.",
+  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} — confirm {confirm} or propose changes.",
+  "incomingOrders.acceptBlockedShortage": "Exact accept is blocked while any line exceeds available stock. Propose changes instead.",
+  "incomingOrders.proposeChanges": "Propose changes",
+  "incomingOrders.proposeNoMaterialChanges": "Adjust at least one confirmed quantity before proposing changes.",
+  "incomingOrders.stockAdjustmentRequired": "Stock adjustment required",
+  "incomingOrders.stockAdjustmentDetail": "{shortageCount} of {totalCount} items does not have enough available stock.",
+  "incomingOrders.stockAdjustmentHint": "Review the highlighted quantities and adjust the confirmed quantity before proposing changes.",
+  "incomingOrders.stockAvailable": "Stock available",
+  "incomingOrders.stockAvailableDetail": "All requested quantities are currently available.",
+  "incomingOrders.stockAvailableHint": "Accepting the order will reserve these quantities.",
+  "incomingOrders.colRequestedQty": "Requested qty",
+  "incomingOrders.colOnHand": "On hand",
+  "incomingOrders.colReserved": "Reserved",
+  "incomingOrders.colAvailableStock": "Available stock",
+  "incomingOrders.colConfirmQty": "Confirm qty",
+  "incomingOrders.colProposedQty": "Proposed qty",
+  "incomingOrders.colProposedLineTotal": "Proposed line total",
+  "incomingOrders.changesProposedTitle": "Changes proposed",
+  "incomingOrders.awaitingBuyerReview": "Awaiting buyer review",
+  "incomingOrders.supplierProposedChanges": "Supplier proposed changes",
+  "incomingOrders.buyerMustReviewProposal": "Buyer must review and accept these changes before the order is confirmed.",
+  "incomingOrders.originalOrderTotal": "Original order total",
+  "incomingOrders.proposedOrderTotal": "Proposed order total",
+  "incomingOrders.proposalDifference": "Difference",
+  "incomingOrders.withdrawProposal": "Withdraw proposal",
+  "incomingOrders.unavailable": "Unavailable",
+  "incomingOrders.detailTitle": "Incoming order",
+
+  "incomingOrders.empty": "Wala pa incoming orders",
+
+  "incomingOrders.emptyHelp": "Ang mga purchase order gikan sa connected buyers magapakita diri.",
+
+  "incomingOrders.filterAccepted": "Ginbaton",
+
+  "incomingOrders.filterAll": "Tanan",
+
+  "incomingOrders.filterCompleted": "Natapos",
+
+  "incomingOrders.filterDeclined": "Ginbalibaran",
+
+  "incomingOrders.filterPending": "Nagahulat",
+
+  "incomingOrders.filterPreparing": "Ginaandam",
+
+  "incomingOrders.lede": "Mga purchase order gikan sa connected buyers. Lain sa connection requests.",
+
+  "incomingOrders.loadFailed": "Indi ma-load ang incoming orders.",
+
+  "incomingOrders.markReady": "Markahi nga handa",
+  "incomingOrders.markReadyRemaining": "Markahi ang nabilin nga handa",
+  "incomingOrders.prepareRemaining": "Andamon ang nabilin",
+  "incomingOrders.prepareRemainingItems": "Prepare remaining items",
+  "incomingOrders.closeRemaining": "Close remaining",
+  "incomingOrders.closeRemainingTitle": "Close remaining quantity?",
+  "incomingOrders.closeRemainingBody":
+    "The remaining items will be cancelled and this purchase order will be completed based on goods actually received.",
+  "incomingOrders.closeRemainingReason": "Reason",
+  "incomingOrders.closeRemainingConfirm": "Close remaining",
+  "incomingOrders.goodReceivedValue": "Good received value",
+  "incomingOrders.remainingCancelledValue": "Remaining qty/value being cancelled",
+  "incomingOrders.paymentReceived": "Payment received",
+  "incomingOrders.refundDue": "Refund due",
+  "incomingOrders.statusCompletedRemainingCancelled": "Completed · Remaining quantity cancelled",
+  "incomingOrders.shortClosed": "Short closed",
+  "incomingOrders.finalAcceptedValue": "Final accepted value",
+  "incomingOrders.balanceDue": "Balance due",
+  "incomingOrders.ordered": "Ordered",
+  "incomingOrders.cancelledRemaining": "Cancelled remaining",
+  "incomingOrders.totalRemaining": "Total remaining",
+  "incomingOrders.fulfillmentProgress": "Fulfillment progress",
+  "incomingOrders.latestReceipt": "Latest goods receipt",
+  "incomingOrders.receiptHistory": "Receipt history",
+  "incomingOrders.viewReceiptDetails": "View receipt details",
+  "incomingOrders.receiptDetailTitle": "Goods receipt",
+  "incomingOrders.receiptNotFound": "Goods receipt was not found.",
+  "incomingOrders.noBuyerReceipts": "No buyer goods receipts yet.",
+  "incomingOrders.loadMoreReceipts": "Load more",
+  "incomingOrders.receiptPosted": "Posted",
+  "incomingOrders.receiptVoided": "Voided",
+  "incomingOrders.colOrdered": "Ordered",
+  "incomingOrders.colGoodReceived": "Good received",
+  "incomingOrders.colDamaged": "Damaged",
+  "incomingOrders.colMissing": "Missing / not delivered",
+  "incomingOrders.colRemainingValue": "Remaining value",
+
+  "incomingOrders.noMatch": "Wala nagasanto nga order",
+
+  "incomingOrders.noMatchHelp": "Tilawi ang iban nga ngalan sang buyer ukon PO number.",
+
+  "incomingOrders.notFound": "Wala makita ang incoming order.",
+
+  "incomingOrders.orderDate": "Petsa sang order",
+  "incomingOrders.orderTotal": "Order total",
+
+  "incomingOrders.review": "Usisa ang order",
+
+  "incomingOrders.search": "Pangitaa paagi sa buyer ukon PO number",
+
+  "incomingOrders.startPreparing": "Sugdi ang pag-andam",
+
+  "incomingOrders.statusAccepted": "Ginbaton",
+
+  "incomingOrders.statusAwaitingReceipt": "Nagahulat sang receipt sang buyer",
+
+  "incomingOrders.statusChangesProposed": "May ginsugyot nga pagbag-o",
+
+  "incomingOrders.statusCompleted": "Natapos",
+
+  "incomingOrders.statusDeclined": "Ginbalibaran",
+
+  "incomingOrders.statusFilter": "Status sang incoming order",
+
+  "incomingOrders.statusPartiallyReceived": "Bahin nga nabaton",
+
+  "incomingOrders.statusPending": "Nagahulat",
+
+  "incomingOrders.statusPreparing": "Ginaandam",
+
+  "incomingOrders.statusReady": "Handa para sa pickup",
+
+  "incomingOrders.statusReceivedWithIssues": "Nabaton nga may isyu",
+
+  "incomingOrders.statusWithdrawn": "Ginbawi",
+
+  "incomingOrders.summary": "{products} produkto ?? {units} yunit",
+
+  "incomingOrders.title": "Incoming orders",
+
+  "incomingOrders.total": "Kabilugan",
+
+  "incomingOrders.unnamedPo": "Purchase order",
+
+  "incomingOrders.viewOnly": "Makita mo ang order, pero purchasing managers lang ang makasabat.",
+
   "inventory.title": "Inventory",
+
   "inventory.totalOnHand": "Kinatibuk-ang naay stock",
+
   "inventory.tracked": "Gi-track",
+
   "inventory.trackingFilter": "Tracking status",
+
   "inventory.tracksExpirationShort": "Tracks expiry",
-  "inventory.untrackedHint": "Ang not tracked pasabot nga naka-off ang inventory enforcement — indi zero stock.",
+  "inventory.missingExpirationShort": "Missing expiry",
+  "inventory.expirationIncompleteShort": "Expiry information incomplete",
+
+  "inventory.untrackedHint": "Ang not tracked pasabot nga naka-off ang inventory enforcement ??? indi zero stock.",
+
   "inventory.windowCustom": "Custom",
+
   "inventory.windowDays14": "14 ka adlaw",
+
   "inventory.windowDays30": "30 ka adlaw",
+
   "inventory.windowDays7": "7 ka adlaw",
+
   "inventory.windowExpired": "Expired",
+
   "inventory.writeOffHint": "Gamita ang rason nga Expired agud i-write off ang expired stock gikan sa gipili nga lot.",
+
   "invitations.accept": "Accept",
+
   "invitations.connectionRequestBody": "wants to connect with you",
+
   "invitations.connectionRequests": "Connection requests",
+
   "invitations.decline": "Decline",
+
   "invitations.openUtangInvites": "Open Utang invitations",
+
   "invitations.duplicateCount": "{count} pending from this person",
+
   "invitations.duplicateCountSent": "{count} pending to this person",
+
   "invitations.lede":
+
     "[HIL] Review who wants to connect with you and track requests you have sent. Connection is separate from Utang.",
+
   "invitations.receivedCount": "[HIL] {count} received",
+
   "invitations.sentCount": "[HIL] {count} sent",
+
   "invitations.requestedAt": "[HIL] Requested",
+
   "invitations.expiresAt": "[HIL] Expires",
+
   "invitations.utangCardTitle": "[HIL] Utang invitations",
+
   "invitations.utangCardHelp":
+
     "[HIL] Money-lending invites use a separate inbox from connection requests.",
+
   "invitations.sentEmptyTitle": "[HIL] No outgoing requests",
+
   "invitations.emptyHubTitle": "[HIL] No pending connection requests",
+
   "invitations.emptyHubBody":
+
     "[HIL] Add someone in People first, then request a connection from their profile when you are ready.",
+
   "invitations.openPeople": "[HIL] Open People",
+
   "invitations.emptyBody": "When someone sends you a connection request, it appears here.",
+
   "invitations.emptyTitle": "No pending connection requests",
+
   "invitations.personalUtangRequest": "Personal Utang request",
+
   "invitations.received": "Received",
+
   "invitations.respondHelp": "Accept and Decline need the invitation token from the invitation link. Listing alone does not expose the token.",
+
   "invitations.respondTitle": "Respond with invitation link",
+
   "invitations.sent": "Sent",
+
   "invitations.sentEmpty": "No outgoing pending invitations.",
+
   "invitations.someone": "Someone",
+
   "invitations.title": "Connection requests",
+
   "invitations.tokenLabel": "Invitation token",
+
   "invitations.tokenRequired": "Invitation token is required.",
+
   "invitations.utangSeparateHint": "Utang invitations are separate from connection requests.",
+
   "invitations.waitingResponse": "Waiting for response",
+
   "loading.label": "Nagakarga",
+
   "common.recordedBy": "Narecord ni",
+
   "common.processedBy": "Naproseso ni",
+
   "common.createdBy": "Ginhimo ni",
+
   "common.orderedBy": "Gin-order ni",
+
   "common.receivedBy": "Ginbaton ni",
+
+  "common.by": "ni",
+
   "common.openedBy": "Ginbuksan ni",
+
   "common.closedBy": "Ginsira ni",
+
   "common.cancelledBy": "Ginkansela ni",
+
   "common.voidedBy": "Ginbawi ni",
+
   "common.soldBy": "Ginbaligya ni",
+
   "common.reversedBy": "Ginbalik ni",
+
   "common.dispatchedBy": "Ginpadala ni",
+
   "common.system": "System",
+
   "common.formerStaff": "Dati nga staff",
+
   "common.notAvailable": "Wala available",
+
   "common.voidedAt": "Oras sang pagbawi",
+
   "common.reason": "Rason",
+
   "orders.activity": "Aktibidad",
+
   "orders.activityReceived": "Nabaton ang order",
+
   "orders.activityAccepted": "Ginbaton",
+
   "orders.activityRejected": "Ginsikway",
+
   "orders.activityCancelled": "Ginkansela",
+
   "orders.activityReady": "Handa na",
+
   "orders.activityOutForDelivery": "Padulong na",
+
   "orders.activityDelivered": "Nahatod",
+
   "orders.activityCollected": "Nakolekta",
+
   "orders.activityCompleted": "Natapos",
+
   "purchasing.receiptHistory": "Kasaysayan sang goods receipt",
+
   "purchasing.receiptHistoryEmpty": "Wala pa goods receipt.",
+
   "purchasing.receiptStatus.posted": "Na-post",
+
   "purchasing.receiptStatus.voided": "Na-reverse",
+
   "purchasing.reverseReceipt": "I-reverse ang receipt",
+
   "purchasing.reverseTitle": "I-reverse ini nga receipt?",
+
   "purchasing.reverseLede":
+
     "I-reverse ang na-post nga receipt kag kuhaon ang nadawat nga stock. Magpabilin ang orihinal nga receipt sa history.",
+
   "purchasing.reverseReason": "Rason",
+
   "purchasing.reverseReasonRequired": "Magsulat sang rason para i-reverse ang receipt.",
+
   "purchasing.reverseConfirm": "I-reverse ang receipt",
+
   "purchasing.reverseCancel": "Kanselahon",
-  "purchasing.reversing": "Gina-reverse…",
+
+  "purchasing.reversing": "Gina-reverse???",
+
   "purchasing.reverseFailed": "Indi ma-reverse ang receipt.",
+
   "purchasing.reversedBy": "Gin-reverse ni",
+
   "purchasing.unitPurchaseCost": "Presyo sang pagbakal kada unit",
+
   "purchasing.lineTotal": "Kabilugan sang linya",
+
   "purchasing.orderTotal": "Kabilugan sang order",
+
   "purchasing.confirmedTotal": "Kumpirmado nga total",
+
   "purchasing.proposedTotal": "Ginsugyot nga total",
+
   "purchasing.orderedValue": "Bili sang order",
+
   "purchasing.receiptValue": "Bili sang receipt",
+
   "purchasing.receivedGood": "Maayo nga nabaton",
+
   "purchasing.rejected": "Ginsikway",
-  "purchasing.shortClosed": "Kulang / short-closed",
+
+  "purchasing.shortClosed": "Ginkansela ang nabilin",
+
   "purchasing.discrepancy": "Wala maghambal",
+
   "purchasing.discrepancyNote": "Nota",
+
   "purchasing.purchaseInformation": "Impormasyon sang pagbakal",
+
   "purchasing.totalPurchaseCost": "Kabilugan nga gasto sang pagbakal",
+
   "purchasing.items": "Mga linya sang order",
+  "purchasing.searchDirectLines": "Pangitaa ang mga item sa sini nga receipt",
+  "purchasing.directLineFilter": "Direct purchase line filter",
+  "purchasing.directFilterAll": "Tanan nga lines",
+  "purchasing.directFilterWithExpiry": "May expiry",
+  "purchasing.directFilterWithoutExpiry": "Wala expiry",
+  "purchasing.directLinesNoMatch": "Wala matching items",
+  "purchasing.directLinesNoMatchDetail": "Tilawi ang iban nga search ukon ipakita tanan nga lines.",
+  "purchasing.directLinesEmpty": "Wala items sa sini nga receipt",
+  "purchasing.directLinesEmptyDetail": "Wala line items ang direct purchase nga ini.",
+  "purchasing.directLinesTotal": "Total sang items",
+
   "inventory.movementType.openingStock": "Opening stock / unang stock",
+
   "inventory.movementType.directBuy": "Direct buy / direkta nga bakal",
+
   "inventory.movementType.poReceipt": "PO receipt / resibo sang PO",
-  "inventory.movementType.manualIncrease": "Stock adjustment — dugang",
-  "inventory.movementType.manualDecrease": "Stock adjustment — bawas",
+
+  "inventory.movementType.manualIncrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
+
+  "inventory.movementType.manualDecrease": "Stock adjustment ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
+
   "inventory.movementType.sale": "Baligya",
+
   "inventory.movementType.saleVoid": "Sale void restoration / ginbalik",
+
   "inventory.movementType.customerReturn": "Pagbalik sang kostumer",
+
   "inventory.movementType.transferOut": "Transfer out / ginkuha",
+
   "inventory.movementType.transferIn": "Transfer in / ginsulod",
-  "inventory.movementType.transferCancel": "Transfer cancel restore",
-  "inventory.movementType.stockCountIncrease": "Stock count — dugang",
-  "inventory.movementType.stockCountDecrease": "Stock count — bawas",
-  "inventory.movementType.stockUse": "Stock use",
-  "inventory.movementType.stockUseVoid": "Stock use void restoration",
-  "inventory.movementType.wasteLoss": "Waste / loss",
-  "inventory.movementType.wasteLossVoid": "Waste / loss void restoration",
+
+  "inventory.movementType.transferCancel": "Pagbalik gikan sa ginsibat nga transfer",
+
+  "inventory.movementType.stockCountIncrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ dugang",
+
+  "inventory.movementType.stockCountDecrease": "Stock count ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ bawas",
+
+  "inventory.movementType.stockUse": "Paggamit sang stock",
+
+  "inventory.movementType.stockUseVoid": "Pagbalik gikan sa voided stock use",
+
+  "inventory.movementType.wasteLoss": "Basura / kawala",
+
+  "inventory.movementType.wasteLossVoid": "Pagbalik gikan sa voided waste/loss",
+
   "inventory.movementType.productionMaterial": "Materyal sa produksyon",
+
   "inventory.movementType.productionMaterialVoid": "Ginbalik ang materyal sa produksyon",
+
   "inventory.movementType.productionOutput": "Output sang produksyon",
+
   "inventory.movementType.productionOutputVoid": "Ginbalik ang output sang produksyon",
+
   "inventory.movementType.other": "Iban nga stock movement",
+
   "loading.preparingWorkspace": "[HIL] Preparing your workspace?",
+
   "loading.switchingWorkspace": "[HIL] Switching workspace?",
+
   "loading.updating": "[HIL] Updating?",
+
   "loading.working": "[HIL] Working?",
+
   "locale.cebPH": "Bisaya (Cebuano)",
+
   "locale.en": "English",
+
   "locale.filPH": "Filipino",
+
   "locale.hilPH": "Ilonggo (Hiligaynon)",
+
   "locale.iloPH": "Ilocano",
+
   "locale.label": "Pulong",
+
   "nav.backToManagerHome": "Balik sa Manager home",
+
   "nav.invitations": "Invitations",
+
   "nav.notifications": "Alerts",
+
   "nav.people": "People",
+
   "noLocation.detail": "Pangayo sa organization owner nga i-activate ang branch ukon i-assign ka sa accessible nga location.",
+
   "noLocation.lede": "Wala sing active nga branch para sa POS ang imo memberships.",
+
   "noLocation.title": "Wala sing accessible nga branch",
+
   "notFound.detail": "Indi bahin sina nga route sang sini nga foundation.",
+
   "notFound.home": "Balik sa home",
+
   "notFound.title": "Wala makita ang page",
+
   "notifications.archiveEmptyBody": "Notifications older than 30 days will appear here.",
+
   "notifications.archiveEmptyTitle": "No archived notifications yet.",
+
   "notifications.archiveLede": "Older activity is kept here for reference.",
+
   "notifications.archiveLoadMoreError": "Couldn?t load more notifications.",
+
   "notifications.archiveStatus.connected": "Connected",
+
   "notifications.archiveStatus.declined": "Declined",
+
   "notifications.archiveStatus.expired": "Expired",
+
   "notifications.archiveStatus.read": "Read",
+
   "notifications.archiveStatus.resolved": "Resolved",
+
   "notifications.archiveStatus.revoked": "Revoked",
+
   "notifications.archiveStatus.unread": "Unread",
+
   "notifications.archiveTitle": "Archived notifications",
+
   "notifications.connectionAcceptedPreview": "{name} accepted your connection request.",
+
   "notifications.connectionRequestPreview": "{name} wants to connect with you.",
+
   "notifications.connectionTitle": "Connection",
+
   "notifications.emptyBody": "Alerts about connection requests and Personal activity appear here.",
+
   "notifications.emptyTitle": "No notifications",
+
   "notifications.group.earlier": "Earlier",
+
   "notifications.group.today": "Today",
+
   "notifications.group.yesterday": "Yesterday",
+
   "notifications.lede": "Connection requests, Utang invitations, and Personal alerts.",
+
   "notifications.loadMore": "Load more",
+
   "notifications.markRead": "Mark read",
+
   "notifications.tabAll": "All",
+
   "notifications.tabUnread": "Unread",
+
   "notifications.title": "Notifications",
+
   "notifications.unread": "Unread",
+
   "notifications.unreadEmptyBody": "You're all caught up for the last 30 days.",
+
   "notifications.unreadEmptyTitle": "No unread notifications",
+
   "notifications.utangInviteAcceptedPreview": "{name} accepted your Utang invitation.",
+
   "notifications.utangInviteDeclinedPreview": "{name} declined your Utang invitation.",
+
   "notifications.utangInvitePreview": "{name} invited you to share an Utang record.",
+
   "notifications.utangInviteTitle": "Utang invitation",
+
   "notifications.viewArchived": "View archived notifications",
 
+
+
   "offline.blockedDiscount": "Kuhaa ang diskwento agod matapos ini nga baligya offline.",
+
   "offline.blockedPriceOverride": "Gamita ang regular nga presyo agod matapos ini nga baligya offline.",
+
   "offline.cachedBalanceNotice": "Gina-tipigan nga balanse. Maga-refresh kon makakonektar liwat.",
+
   "offline.cachedCatalogNotice": "Gina-tipigan nga produkto ang ginapakita. Maga-refresh ang presyo kon makakonektar liwat.",
+
   "offline.cachedCustomersNotice": "Gina-tipigan nga customer ang ginapakita. Maga-refresh ang balanse kon makakonektar liwat.",
+
   "offline.cashOnlyDetail": "Sarang mo matapos ang Cash nga baligya bisan offline. Gina-tipigan sa device kag maga-sync kon makakonektar liwat.",
+
   "offline.cashOnlyTitle": "Offline ? Cash lang",
+
   "offline.coldStartLocked": "Magkonektar sa internet agod ma-verify ini nga device antes gamiton ang offline POS data sa sini nga browser.",
+
   "offline.coldStartLockedTitle": "Na-lock ang offline data",
+
   "offline.coldStartReconnect": "Mag-sign in online sing makaisa agod mag-andam sang offline access, dayon mahimo na mag-restart offline sa sini nga device.",
+
   "offline.customerEnqueueFailed": "Wala natipigan ang customer sa device. Tilawi liwat.",
+
   "offline.customerNotCached": "Wala ini natipigan nga customer sa sini nga device.",
+
   "offline.customerQueuedDetail": "Wala pa ini narekord sa server.",
+
   "offline.customerQueuedTitle": "Natipigan ang customer sa sini nga device",
+
   "offline.customerWillQueue": "Offline ka. Ang pag-save magapabilin sa device tubtob makakonektar ka liwat.",
+
   "offline.enqueueFailed": "Indi na-tipigan ini nga baligya sa device. Sulayi liwat.",
+
   "offline.internetRequiredDetail": "Kinahanglan sang internet connection ang aksyon.",
+
   "offline.internetRequiredTitle": "Kinahanglan ang internet",
+
   "offline.notReady": "Kinahanglan sang device kag bukas nga shift nga nakumpirmar samtang online antes makabaligya offline.",
+
   "offline.paymentEnqueueFailed": "Wala natipigan ang bayad sa device. Tilawi liwat.",
+
   "offline.paymentQueuedDetail": "Kompirmahon ini sang server batok sa matuod nga balanse kon makakonektar liwat.",
+
   "offline.paymentQueuedTitle": "Natipigan ang bayad sa sini nga device",
+
   "offline.paymentWillQueue": "Offline ka. Ang bayad magapabilin sa device tubtob kompirmahon ini sang server.",
+
   "offline.personalCachedNotice": "Gina-tipigan nga utang ang ginapakita. Maga-refresh kon makakonektar liwat.",
+
   "offline.personalContactWillQueue": "Offline ka. Magapabilin ini nga tawo sa device tubtob makakonektar ka.",
+
   "offline.personalEnqueueFailed": "Wala ini natipigan sa device. Tilawi liwat.",
+
   "offline.personalEntryWillQueue": "Offline ka. Magapabilin ini nga entry sa device tubtob makakonektar ka.",
+
   "offline.personalOwnerUnknown": "Buksan ang Utang isa ka beses samtang online, dayon mahimo na offline.",
+
   "offline.personalUtangWillQueue": "Offline ka. Magapabilin ini nga utang sa device tubtob makakonektar ka.",
+
   "offline.personalWaitingBadge": "Ginahulat ang sync",
+
   "offline.pin.confirmLabel": "Kumpirma ang PIN",
+
   "offline.pin.confirmMismatch": "Indi mag-ugma ang mga PIN.",
+
   "offline.pin.enrollAction": "I-save ang offline PIN",
+
   "offline.pin.enrollMessage": "Pili sang 6-digit nga PIN agod ma-unlock ang offline data sa sini nga device pagkatapos mag-sign out ukon mag-restart.",
+
   "offline.pin.enrollTitle": "Mag-set sang offline PIN",
+
   "offline.pin.grantMissing": "Wala pa handa ang offline access sa sini nga device.",
+
   "offline.pin.insecureDevWarning": "Development mode: Offline PIN protection is insecure on this HTTP connection.",
+
   "offline.pin.invalidFormat": "Magbutang sang indi menos 6 ka digit.",
+
   "offline.pin.label": "Offline PIN",
+
   "offline.pin.locked": "Damo gid nga sayop. Hulat kag sulayi liwat.",
+
   "offline.pin.notSignedIn": "Mag-sign in online anay antes mag-set sang offline PIN.",
+
   "offline.pin.openEmulatorDevUrl": "Open http://127.0.0.1:5177",
+
   "offline.pin.selectIdentityHint": "Choose your profile, then enter your offline PIN.",
-  "offline.pin.selectIdentityTitle": "Who's using this POS?",
+
+  "offline.pin.selectIdentityTitle": "Sin-o ang naggamit sini nga POS?",
+
   "offline.pin.unlockAction": "I-unlock",
+
   "offline.pin.unlockSubtitle": "Ibutang ang offline PIN agod mabuksan ang naka-save nga POS data sa sini nga device.",
+
   "offline.pin.unlockTitle": "I-unlock ang offline",
+
   "offline.pin.webCryptoUnavailable": "Offline PIN encryption requires a secure browser context. npm run dev sets up adb reverse automatically ? open http://127.0.0.1:5177 in the emulator browser (not http://10.0.2.2).",
+
   "offline.pin.wrong": "Sayop nga PIN. Sulayi liwat.",
+
   "offline.priceRefreshRequired": "Magkonektar anay agod ma-refresh ang mga presyo antes magbaligya.",
+
   "offline.priceRefreshRequiredTitle": "Kinahanglan i-refresh ang mga presyo",
+
   "offline.queuedDetail": "Wala pa ini na-rekord sa server.",
+
   "offline.queuedNewSale": "Bag-o nga baligya",
+
   "offline.queuedPending": "Awtomatiko nga maga-sync ini nga Cash nga baligya kon magbalik ang internet.",
+
   "offline.queuedReference": "Reperensiya sang device: {reference}",
+
   "offline.queuedTitle": "Na-tipigan ang baligya sa sini nga device",
+
   "offline.requiredCatalogImport": "Kinahanglan internet para mag-import halin sa business template ukon global catalog.",
+
   "online_required.catalog_product_create":
+
     "Kinahanglan internet ang paghimo sang product agud mausisa ang mga duplicate sa bilog nga organization.",
+
   "online_required.catalog_product_identity_mutation":
+
     "Kinahanglan internet ang pag-ilis sang ngalan, SKU, ukon barcode agud mausisa ang mga duplicate sa bilog nga organization.",
+
   "offline.requiredContextSwitch": "Kinahanglan internet para magbalhin sa negosyo.",
+
   "offline.requiredCreditExtend": "Kinahanglan internet sa pagdugang sang utang.",
+
   "offline.requiredCreditReverse": "Kinahanglan internet sa pagbawi sang entry.",
+
   "offline.requiredCustomerLink": "Kinahanglan internet sa pag-link sang ExItS account.",
+
   "offline.requiredCustomerStatement": "Kinahanglan internet ang statement.",
+
   "offline.requiredCustomerStatus": "Kinahanglan internet sa pagbag-o sang status sang customer.",
+
   "offline.requiredDeviceRegister": "Kinahanglan sang internet ang pagparehistro sini nga device.",
+
   "offline.requiredDiscount": "Kinahanglan sang internet ang diskwento.",
+
   "offline.requiredGCash": "Kinahanglan sang internet ang GCash.",
+
   "offline.requiredHistory": "Kinahanglan internet ang purchase history.",
+
   "offline.requiredOpenShift": "Kinahanglan sang internet ang pagbukas sang shift.",
+
   "offline.requiredPersonalContactLink": "Kinahanglan internet sa pag-link sang ExItS account sini nga tawo.",
+
   "offline.requiredPersonalTodoShare": "Kinahanglan internet sa pag-share sang to-do.",
+
   "offline.requiredPersonalUtangAdjustment": "Kinahanglan internet sa pagtadlong sang balanse.",
+
   "offline.requiredPersonalUtangSettle": "Kinahanglan internet para i-settle ini nga utang.",
+
   "offline.requiredPersonalOwnershipTransfer":
+
     "Kinahanglan internet para batunon ukon isikwal ang ownership.",
+
   "offline.requiredOrgOwnershipTransfer":
+
     "Kinahanglan internet para mag-umpisa ukon kanselahon ang pagbalhin sang ownership.",
+
   "offline.requiredPersonalUtangInvite": "Kinahanglan internet sa pag-share sini nga utang.",
+
   "offline.requiredPersonalUtangReminder": "Kinahanglan internet sa pagpadala sang pahanumdom.",
+
   "offline.requiredPriceOverride": "Kinahanglan sang internet ang pagbag-o sang presyo.",
+
   "offline.requiredUtang": "Kinahanglan sang internet ang utang.",
+
   "offline.shiftContinued": "Offline ? nagapadayon ang shift {shift}",
+
   "offline.todoCachedNotice": "Gina-tipigan nga to-do ang ginapakita. Maga-refresh kon makakonektar liwat.",
+
   "offline.todoEnqueueFailed": "Wala natipigan ang to-do sa device. Tilawi liwat.",
+
   "offline.todoNoReminders": "Ang ExItS ang magapadala sang pahanumdom, gani maga-abot ini kon makakonektar liwat.",
+
   "offline.todoNotCached": "Wala ini nga to-do natipigan sa device.",
+
     "offline.requiredPersonalTodo": "To-dos need internet on this Web app.",
+
   "offline.requiredPersonalUtangRecord": "Recording utang needs internet on this Web app.",
+
   "offline.requiredPersonalPeople": "People changes need internet on this Web app.",
-"offline.todoWillQueue": "Offline ka. Magapabilin ini nga to-do sa device tubtob makakonektar ka.",
+
+  "offline.todoWillQueue": "Offline ka. Magapabilin ini nga to-do sa device tubtob makakonektar ka.",
+
   "offline.tryAgain": "Sulayi liwat",
+
   "offline.unsupportedGrantSchema": "Daan na ang offline grant sa sini nga device. Mag-sign in online sing makaisa agod i-refresh ang offline access.",
+
   "onboarding.business.applyFailed": "We couldn't apply this setup. Try again or skip for now.",
+
   "onboarding.business.lede": "Pick defaults that match how your store sells. This is not the product catalog step.",
+
   "onboarding.business.notProducts": "Starter products are offered next and stay optional.",
+
   "onboarding.business.preset.bullet.fastSell": "Fast cashier selling",
+
   "onboarding.business.preset.bullet.inventory": "Inventory-ready",
+
   "onboarding.business.preset.bullet.retailUnits": "Common retail units",
+
   "onboarding.business.preset.bullet.utangIfPlan": "Customer Utang available if your plan allows it",
+
   "onboarding.business.preset.general.blurb": "A balanced setup for everyday retail selling.",
+
   "onboarding.business.preset.general.title": "General Retail",
+
   "onboarding.business.preset.grocery.blurb": "Good for small grocery and convenience-style shops.",
+
   "onboarding.business.preset.grocery.title": "Mini Grocery",
+
   "onboarding.business.preset.hardware.blurb": "Good for hardware and construction supply shops.",
+
   "onboarding.business.preset.hardware.title": "Hardware",
+
   "onboarding.business.preset.pharmacy.blurb": "Good for drugstore-style retail with careful stock tracking.",
+
   "onboarding.business.preset.pharmacy.title": "Pharmacy",
+
   "onboarding.business.preset.restaurant.blurb": "Good for food service and quick counter selling.",
+
   "onboarding.business.preset.restaurant.title": "Restaurant",
+
   "onboarding.business.preset.sariSari.blurb": "Good for neighborhood stores selling daily essentials.",
+
   "onboarding.business.preset.sariSari.title": "Sari-sari Store",
+
   "onboarding.business.title": "Choose a business setup",
+
   "onboarding.business.useSetup": "Use this setup",
+
   "onboarding.lede": "A few optional steps help your store start selling faster. You can skip any step.",
+
   "onboarding.loadErrorDetail": "Check your connection and try again. Your business and subscription are already saved.",
+
   "onboarding.loadErrorTitle": "Could not load setup",
+
   "onboarding.loading": "Loading setup?",
+
   "onboarding.missingOrgDetail": "Sign in to your organization account to continue setup.",
+
   "onboarding.missingOrgTitle": "Business context required",
+
   "onboarding.notRequiredDetail": "This business does not have an open setup checklist. You can start selling anytime.",
+
   "onboarding.notRequiredTitle": "Setup not required",
+
   "onboarding.org.address": "Address",
+
   "onboarding.org.city": "City",
+
   "onboarding.org.contactEmail": "Contact email",
+
   "onboarding.org.contactPhone": "Contact number",
+
   "onboarding.org.country": "Country",
+
   "onboarding.org.displayName": "Store display name",
+
   "onboarding.org.lede": "Add a few details now so your store is ready for customers. You can change these later in Settings.",
+
   "onboarding.org.postalCode": "Postal code",
+
   "onboarding.org.region": "Region / province",
+
   "onboarding.org.saveContinue": "Save & continue",
+
   "onboarding.org.saveFailed": "We couldn't save these settings. Try again or skip for now.",
+
   "onboarding.org.skipHint": "Skipping does not cancel your business, subscription, or POS access.",
+
   "onboarding.org.title": "Set up your business",
+
   "onboarding.products.addStarter": "Add starter products",
+
   "onboarding.products.empty": "No starter product templates are available for this business type yet. You can start with an empty catalog.",
+
   "onboarding.products.importFailed": "Starter products couldn't be added. Retry or start with an empty catalog.",
+
   "onboarding.products.lede": "Import a starter catalog so you are not creating every common item by hand.",
+
   "onboarding.products.previewTitle": "Sample products",
+
   "onboarding.products.productCount": "{count} products",
+
   "onboarding.products.selectRequired": "Choose a starter template first, or start empty.",
+
   "onboarding.products.startEmpty": "Start empty",
+
   "onboarding.products.title": "Add starter products",
+
   "onboarding.progressLabel": "Setup progress",
+
   "onboarding.ready.actionFailed": "Something went wrong. Try again, or use Finish later.",
+
   "onboarding.ready.addProducts": "Add products",
+
   "onboarding.ready.nextStepsTitle": "Antes sang una nga baligya",
+
   "onboarding.ready.nextStepsDetail": "I-register ang device kung kinahanglan, magbukas sang cashier shift, magdugang sang opening stock, dayon magbaligya.",
+
   "onboarding.ready.openShift": "Magbukas sang cashier shift",
+
   "onboarding.ready.openingStock": "Magdugang sang opening stock",
+
   "onboarding.ready.addStaff": "Mag-imbita sang staff",
+
   "onboarding.ready.businessApplied": "Business setup applied",
+
   "onboarding.ready.businessCreated": "Business created",
+
   "onboarding.ready.businessFallback": "Your business",
+
   "onboarding.ready.businessSkipped": "Business setup skipped",
+
   "onboarding.ready.finishLater": "Finish later",
+
   "onboarding.ready.orgSaved": "Business details saved",
+
   "onboarding.ready.orgSkipped": "Business details skipped",
+
   "onboarding.ready.productsAdded": "Starter products added",
+
   "onboarding.ready.productsEmpty": "Started with an empty catalog",
+
   "onboarding.ready.setUpBranch": "Set up a store branch",
+
   "onboarding.ready.startSelling": "Start selling",
+
   "onboarding.ready.title": "Your business is ready",
+
   "onboarding.retry": "Try again",
+
   "onboarding.skipForNow": "Skip for now",
+
   "onboarding.startSetup": "Start setup",
+
   "onboarding.step.business": "Business",
+
   "onboarding.step.organization": "Organization",
+
   "onboarding.step.products": "Products",
+
   "onboarding.step.ready": "Ready",
+
   "onboarding.title": "Set up your business",
+
   "orders.accept": "Accept",
+
   "orders.addressLine1": "Address",
+
   "orders.addressLine2": "Address line 2",
+
   "orders.availabilityIn": "In stock",
+
   "orders.availabilityLow": "Low stock",
+
   "orders.availabilityOut": "Out of stock",
+
   "orders.availabilityUntracked": "Available",
+
   "orders.backToQueue": "Back to orders",
+
   "orders.backToShop": "Back to shop",
+
   "orders.branch": "Branch",
+
   "orders.branchUnavailableTitle": "Indi available ang branch",
+
   "orders.branchUnavailableDetail": "Ini nga storefront link nagtudlo sa branch nga indi available para sa pag-order.",
+
   "orders.cancel": "Cancel",
+
   "orders.cartEmptyDetail": "Add products from the shop before checking out.",
+
   "orders.cartEmptyTitle": "Cart is empty",
+
   "orders.checkoutTitle": "Checkout",
+
   "orders.city": "City",
+
   "orders.complete": "Complete",
+
   "orders.delivery": "Delivery",
+
   "orders.deliveryAddress": "Delivery address",
+
   "orders.deliveryFee": "Delivery fee",
+
   "orders.deliveryFieldsRequired": "Enter recipient, address, and valid coordinates for delivery.",
+
   "orders.deliveryNotes": "Delivery notes",
+
   "orders.deliveryUnavailable": "Delivery is not available for this location.",
+
   "orders.emptyBuyerDetail": "Mag-appear diri ang imo nga mga order sa naka-konekta nga tindahan.",
+
   "orders.emptySellerDetail": "Mag-appear diri ang bag-o nga customer orders.",
+
   "orders.emptyTitle": "Wala sing order",
+
   "orders.error": "Error sa mga order",
+
   "orders.feeServerAuthoritative": "Delivery fee is calculated by the server. The client does not invent fees.",
+
   "orders.filterAll": "Tanan",
+
   "orders.filterIssues": "Isyu",
+
   "orders.filterLabel": "Mga filter sang order",
+
   "orders.filterNew": "Bag-o",
+
   "orders.filterPreparing": "Ginaandam",
+
   "orders.filterReady": "Andam",
+
   "orders.fulfillmentType": "Fulfillment",
+
   "orders.items": "items",
+
   "orders.latitude": "Latitude",
+
   "orders.longitude": "Longitude",
+
   "orders.markCollected": "Mark collected",
+
   "orders.markDelivered": "Mark delivered",
+
   "orders.markReady": "Mark ready",
+
   "orders.missingBuyerIdentity": "Signed-in user id is required to place an order.",
+
   "orders.missingLinkedCustomer": "Your account is not linked to this store yet. Open Stores and finish linking, then try again.",
+
   "orders.noLiveTracking": "Order status updates when you refresh. Continuous live tracking is not provided.",
+
   "orders.noProductsDetail": "No storefront products match this branch or search.",
+
   "orders.noProductsTitle": "No products",
+
   "orders.notFound": "Order not found",
+
   "orders.notFoundHelp": "The order may have been removed or you may not have access.",
+
   "orders.open": "Open",
+
   "orders.openQueue": "Mga order sang customer",
+
   "orders.outForDelivery": "Out for delivery",
+
   "orders.paused": "Paused",
+
   "orders.paymentCash": "Cash",
+
   "orders.paymentGCash": "GCash (manual)",
+
   "orders.paymentMethod": "Payment method",
+
   "orders.paymentStatus": "Payment status",
+
   "orders.paymentUtang": "Utang",
+
   "orders.pickup": "Pickup",
+
   "orders.placeOrder": "Place order",
+
   "orders.placing": "Placing?",
+
   "orders.quotingFee": "Calculating delivery fee?",
+
   "orders.readyForPickup": "Ready for pickup",
+
   "orders.recipientName": "Recipient name",
+
   "orders.recipientPhone": "Phone",
+
   "orders.refreshStorefront": "Refresh storefront",
+
   "orders.reject": "Reject",
+
   "orders.rejectDeliveryUnavailable": "Delivery unavailable",
+
   "orders.rejectNotes": "Notes",
+
   "orders.rejectOther": "Other",
+
   "orders.rejectOutOfStock": "Out of stock",
+
   "orders.rejectReason": "Reject reason",
+
   "orders.rejectStoreTooBusy": "Store too busy",
+
   "orders.rejectUnableToFulfill": "Unable to fulfill",
+
   "orders.retry": "Tilawi liwat",
+
   "orders.reviewOrder": "Review order",
+
   "orders.searchProducts": "Search products",
+
   "orders.sellerLede": "Batuna kag i-fulfill ang online pickup kag delivery orders.",
+
   "orders.sellerTitle": "Mga order sang customer",
+
   "orders.startPreparing": "Start preparing",
+
   "orders.statusAccepted": "Accepted",
+
   "orders.statusCancelled": "Cancelled",
+
   "orders.statusCollected": "Collected",
+
   "orders.statusCompleted": "Completed",
+
   "orders.statusDelivered": "Delivered",
+
   "orders.statusNew": "New",
+
   "orders.statusOutForDelivery": "Out for delivery",
+
   "orders.statusPreparing": "Preparing",
+
   "orders.statusReady": "Ready",
+
   "orders.statusReadyPickup": "Ready for pickup",
+
   "orders.statusRejected": "Rejected",
+
   "orders.stockConflict": "Some items are no longer available. Refresh the storefront and update your cart.",
+
   "orders.stockConflictTitle": "Stock changed",
+
   "orders.subtotal": "Subtotal",
+
   "orders.total": "Total",
+
   "orders.viewDetails": "View details",
+
+  "operations.nav.aria": "Operations navigation",
+
+  "operations.nav.group.control": "Control",
+
+  "operations.nav.group.customers": "Customers",
+
+  "operations.nav.group.daily": "Daily",
+
+  "operations.nav.group.insights": "Insights",
+
+  "operations.nav.group.operations": "Operations",
+
+  "operations.nav.group.stock": "Stock",
+
+  "operations.nav.group.utility": "Settings",
+
+  "operations.shell.operations": "Operations",
+
+  "operations.shell.productName": "Pinoy Business POS",
+
   "org.action.branchesDetail": "Address, oras, kag pickup ukon delivery",
+
   "org.action.businessQrDetail": "Show the public Business QR for this organization",
+
   "org.action.catalogDetail": "Mga produkto, presyo, kag kategoriya",
+
   "org.action.devicesDetail": "Optional browser registration and authorized device management",
+
   "org.action.inviteDetail": "Imbitaha ang staff sang organisasyon gamit ang recovery email",
+
   "org.action.startSellingDetail": "Buksan ang sell floor kon handa na ang device kag shift",
+
   "org.action.workspaceDetail": "Magpili sang iban nga organisasyon ukon sanga",
+
   "org.badge": "Admin",
+
   "org.body": "Ang Organization Web / admin experience lain sa POS Manager operations. Ang Invite staff kinahanglan sang Owner membership authority.",
+
   "org.branchesLink": "Branches",
+
   "org.businessQr.back": "Back to organization",
+
   "org.businessQr.connectHint": "Use this to identify or connect with this business.",
+
   "org.businessQr.copyBusinessId": "Kopyahon ang Business ID",
+
   "store.landing.lede": "You're visiting this business on ExItS.",
+
   "store.landing.branchLede": "Ginaabri mo ang isa ka piho nga branch storefront sa ExItS.",
+
   "store.landing.signIn": "Mag-sign in",
+
   "store.landing.signInExisting": "Already have an account? Sign in",
+
   "store.landing.createAccount": "Himuon ang account",
+
   "store.landing.newVisitorInvite":
+
     "{storeName} shared this QR to invite you. Create a free Personal account to connect as their customer ? you'll confirm before anything is linked.",
+
   "store.landing.continueStore": "Magpadayon sa tindahan",
+
   "store.landing.continueFailed": "Indi mabuksan ang tindahan subong. Tilawi liwat kung online.",
+
   "store.landing.linkConsentHint":
+
     "Ang pagbukas sang tindahan indi tago nga maghimu sang staff ukon tag-iya. Kinahanglan pa gid ang customer-link consent.",
+
   "store.landing.unavailableTitle": "Indi available ang tindahan",
+
   "store.landing.unavailableDetail": "Indi makita ukon indi available ini nga tindahan.",
+
   "store.landing.invalidId": "Indi mayo ang link sang tindahan.",
+
   "store.landing.invalidBranch": "Indi valid ang link sang branch storefront.",
+
   "store.landing.loadErrorDetail": "Indi ma-load ang tindahan. Tilawi liwat kung online.",
+
   "store.landing.offlineTitle": "Offline ka",
+
   "store.landing.offlineDetail": "Magkonekta sa internet agud mabuksan ini nga tindahan.",
+
   "store.landing.orderingUnavailable": "Subong indi available ang pag-order sa sini nga tindahan.",
+
   "store.landing.staffTitle": "Gamita ang Personal account",
+
   "store.landing.staffDetail":
+
     "Indi mabuksan sang Organization staff session ang Personal customer stores. Mag-sign in gamit ang Personal ExItS account.",
+
   "store.landing.signInPersonal": "Mag-sign in bilang Personal",
+
   "store.install.title": "I-install ang ExItS",
+
   "store.install.detail": "Idugang ang ExItS sa home screen para mas madali. Opsiyonal ? pwede ka magpadayon sa browser.",
+
   "store.install.accept": "I-install ang ExItS",
+
   "store.install.dismiss": "Indi subong",
+
   "store.install.continueBrowser": "Magpadayon sa browser",
+
   "org.businessQr.copyStoreLink": "Kopyahon ang store link",
+
   "org.businessQr.imageAlt": "Business ExItS QR code",
+
   "org.businessQr.lede": "Your organization's public ExItS identity.",
+
   "org.businessQr.loadErrorDetail": "Try again when you are online.",
+
   "org.businessQr.loadErrorTitle": "Could not load Business QR",
+
   "org.businessQr.noOrg": "No organization is selected.",
+
   "org.businessQr.shareText": "Business ExItS ID:",
+
   "org.businessQr.title": "Business QR",
+
   "org.cashHandlingLink": "Cash handling",
+
   "org.cashHandlingLinkDetail": "Mga regla sa opening kag closing cash count kag denominations",
+
   "org.emptyDetail": "I-assign ang Owner, Manager, ukon Cashier POS roles para sa pagbaligya. Ang bug-at nga administration magpabilin sa sini nga surface.",
+
   "org.emptyTitle": "Admin experience",
+
   "org.group.administration": "Administrasyon",
+
   "org.group.insights": "Insights",
+
   "org.group.operations": "Mga operasyon",
+
   "org.group.today": "Subong sa isa ka tan-aw",
+
+  "org.group.plan": "Plan",
+
+  "org.plan.usageTitle": "Usage",
+
   "org.group.workspace": "Lugar sang trabaho",
+
   "org.lede": "Home sang Owner kag administrator ? tan-awa ang adlaw subong, insights, kag organization tools.",
+
   "org.more.back": "Balik sa More",
+
   "org.more.customers": "Mga customer",
+
   "org.more.dashboard": "Dashboard",
-  "org.more.devices": "Authorized devices",
+
+  "org.more.devices": "Ginatudlo nga devices",
+
   "org.more.finishSetup": "Finish setup",
+
   "org.more.group.insights": "Mga pagtan-aw",
+
   "org.more.group.operations": "Operasyon",
+
   "org.more.group.organization": "Negosyo",
+
   "org.more.group.settings": "Mga setting sang app",
+
   "org.more.inventory": "Imbentaryo",
+
   "org.more.lede": "Iban nga POS tool kag setting para sa organisasyon.",
+
   "org.more.organization": "Organisasyon",
+
   "org.more.preferences": "Mga preference",
+
   "org.more.purchasing": "Pagbakal",
+
   "org.more.reports": "Mga report",
+
   "org.more.returns": "Mga return",
+
   "org.more.shifts": "Mga shift",
+
   "org.more.staff": "Dumala sang staff",
+
   "org.more.suppliers": "Mga supplier",
+
   "org.more.expenses": "Mga Gastos sang Negosyo",
+
+  "org.more.receiveStock": "Batuna ang stock",
+
+  "org.more.transfers": "Mga transfer",
+
+  "org.more.expiringLots": "Mga lot / expiry",
+
+  "org.more.stockMovements": "Mga lihok sang stock",
+
+  "warehouse.title": "Bodega",
+
+  "warehouse.lede": "Operasyon para sa {branch}",
+
+  "warehouse.ledeFallback": "Operasyon sang bodega",
+
+  "warehouse.quickActions": "Madasig nga aksyon",
+
+  "warehouse.action.receiveStock": "Batuna ang stock",
+
+  "warehouse.action.transferStock": "I-transfer ang stock",
+
+  "warehouse.action.inventory": "Imbentaryo",
+
+  "warehouse.action.purchaseOrders": "Mga purchase order",
+
+  "warehouse.action.suppliers": "Mga supplier",
+
+  "warehouse.incoming": "Nagaabot",
+
+  "warehouse.incomingEmpty": "Wala nagahulat",
+
+  "warehouse.incomingEmptyDetail": "Ang nagaabot nga transfer kag purchase order nga kinahanglan aksyon makita diri.",
+
+  "warehouse.fromBranch": "Ginhalinan nga branch",
+
+  "warehouse.stockAlerts": "Mga alerto sang stock",
+
+  "warehouse.lowStock": "Gamay nga stock",
+
+  "warehouse.expiredLots": "Mga lot nga expired",
+
+  "warehouse.nearExpiryLots": "Malapit ma-expire",
+
+  "warehouse.pendingTransfers": "{count} pending nga transfer",
+
+  "warehouse.loading": "Nagaload sang bodega...",
+
+  "warehouse.loadError": "Indi ma-load ang overview sang bodega.",
+
   "expense.title": "Mga Gastos sang Negosyo",
+
   "expense.orgScopeNote": "Mga gastos sang negosyo para sa organisasyon nga ini.",
-  "expense.orgScopeBanner": "Bug-os nga organisasyon — indi limitado sa subong nga branch.",
+
+  "expense.scope.label": "Sakop",
+
+  "expense.scope.allBranches": "Tanan nga assigned nga branch",
+
+  "expense.scope.organization": "Mga gastos sang organisasyon",
+
+  "expense.scope.allExpenses": "Tanan nga gastos",
+
+  "expense.scope.createLabel": "Irekord batok sa",
+
   "expense.offline": "Kinahanglan sang koneksyon sa internet ang mga gastos.",
+
   "expense.recordExpense": "Irekord ang gastos",
+
   "expense.recordLede": "Irekord ang gastos sang negosyo. Indi na ini ma-edit pagkatapos ma-rekord.",
+
   "expense.categories": "Mga kategorya sang gastos",
+
   "expense.categoriesLede": "I-organisa ang mga gastos. Ang inactive nga kategorya magapabilin sa history pero indi magamit para sa bag-o nga gastos.",
+
   "expense.backList": "Balik sa mga gastos",
-  "expense.loading": "Gina-load ang mga gastos…",
-  "expense.loadingCategories": "Gina-load ang mga kategorya…",
+
+  "expense.loading": "Gina-load ang mga gastos???",
+
+  "expense.loadingCategories": "Gina-load ang mga kategorya???",
+
   "expense.errorTitle": "Mga Gastos",
+
   "expense.loadFailed": "Indi ma-load ang mga gastos.",
+
   "expense.categoriesLoadFailed": "Indi ma-load ang mga kategorya sang gastos.",
+
   "expense.empty": "Wala pa sang narekord nga gastos.",
+
   "expense.emptyDetail": "Irekord diri ang abang, utilities, kag iban pa nga gastos.",
+
   "expense.emptyReadonly": "Wala pa sang gastos para sa organisasyon nga ini.",
+
   "expense.emptyFiltered": "Wala sang gastos nga nagasanto sa mga filter.",
+
   "expense.emptyFilteredDetail": "Tilawi ang iban nga status, paagi sang bayad, petsa, ukon numero sang gastos.",
+
   "expense.prevPage": "Nagligad",
+
   "expense.nextPage": "Sunod",
+
   "expense.pageOf": "Panid {page} sang {pages}",
+
   "expense.filter.status": "Kahimtang",
+
   "expense.filter.payment": "Paagi sang bayad",
+
   "expense.filter.expenseNumber": "Pangitaa ang numero sang gastos",
-  "expense.filter.expenseNumberPlaceholder": "EXP-…",
+
+  "expense.filter.expenseNumberPlaceholder": "EXP-???",
+
   "expense.filter.fromDate": "Halin sa petsa",
+
   "expense.filter.toDate": "Tubtob sa petsa",
+
   "expense.filter.all": "Tanan",
+
   "expense.status.recorded": "Narekord",
+
   "expense.status.voided": "Na-void",
+
   "expense.status.unknown": "Wala mahibaluan",
+
   "expense.payment.cash": "Cash",
+
   "expense.payment.manualGCash": "Manual nga GCash",
+
   "expense.payment.unknown": "Wala mahibaluan",
+
   "expense.category": "Kategorya",
+
   "expense.category.unknown": "Kategorya",
+
   "expense.category.active": "Aktibo",
+
   "expense.category.inactive": "Indi aktibo",
+
   "expense.categoryPlaceholder": "Pilia ang kategorya",
-  "expense.category.creating": "Ginahimo…",
+
+  "expense.category.creating": "Ginahimo???",
+
   "expense.category.deactivateConfirm": "I-deactivate bala ini nga kategorya? Magapabilin ini sa history pero indi mapilian para sa bag-o nga gastos.",
+
   "expense.amount": "Kantidad",
+
   "expense.paymentMethod": "Paagi sang bayad",
+
   "expense.expenseDate": "Petsa sang gastos",
+
   "expense.description": "Deskripsyon",
+
   "expense.payee": "Nakabaton",
+
   "expense.optional": "opsyonal",
+
   "expense.gCashReference": "Reperensya sang GCash",
-  "expense.recording": "Ginarekord…",
+
+  "expense.recording": "Ginarekord???",
+
   "expense.recordedTitle": "Narekord ang gastos",
+
   "expense.recordedLede": "Ang numero sang gastos gintao sang server.",
+
   "expense.viewExpense": "Tan-awa ang gastos",
+
   "expense.recordAnother": "Irekord ang iban",
+
   "expense.immutableHint": "Indi na ma-edit ang gastos pagkatapos ma-rekord. I-void kag irekord ang kapalit kung kinahanglan sang koreksyon.",
+
   "expense.noActiveCategories": "Kinahanglan sang kategorya sang gastos antes magrekord sang gasto.",
+
   "expense.noActiveCategoriesDetail": "Himoa anay ang aktibo nga kategorya pareho Abang ukon Kuryente.",
+
   "expense.createCategory": "Himoa ang kategorya",
+
   "expense.editCategory": "Usbon ang kategorya",
+
   "expense.deactivate": "I-deactivate",
+
   "expense.reactivate": "I-reactivate",
+
   "expense.save": "Tipigi",
+
   "expense.cancel": "Kanselahon",
+
   "expense.manageDenied": "Wala ka permiso sa pagdumala sang mga gastos.",
+
   "expense.networkError": "Sayop sa network. Usisa ang koneksyon kag tilawi liwat.",
+
   "expense.recordFailed": "Indi ma-rekord ang gastos.",
+
   "expense.categoryCreateFailed": "Indi mahimo ang kategorya.",
+
   "expense.categoryUpdateFailed": "Indi ma-update ang kategorya. I-refresh kag tilawi liwat kung nagbag-o.",
+
   "expense.categoryDeactivateFailed": "Indi ma-deactivate ang kategorya.",
+
   "expense.categoryReactivateFailed": "Indi ma-reactivate ang kategorya.",
+
   "expense.categoriesEmpty": "Wala pa sang kategorya sang gastos.",
+
   "expense.categoriesEmptyDetail": "Himoa ang kategorya antes magrekord sang mga gastos.",
+
   "expense.categoriesEmptyReadonly": "Wala sang available nga kategorya.",
+
   "expense.detailLede": "Rekord sang gastos sang organisasyon.",
+
   "expense.noEdit": "Indi ma-edit ang narekord nga mga gastos.",
+
   "expense.notFound": "Wala makita ang gastos.",
+
   "expense.voidExpense": "I-void ang gastos",
+
   "expense.voidTitle": "I-void ang gastos?",
+
   "expense.voidLede": "Ang pag-void magapabilin sini sa history pero kuhaon ini sa aktibo/net nga total sang gastos.",
+
   "expense.voidReason": "Rason sang void",
+
   "expense.voidConfirm": "I-void ang gastos",
-  "expense.voiding": "Gina-void…",
+
+  "expense.voiding": "Gina-void???",
+
   "expense.voidFailed": "Indi ma-void ang gastos.",
+
   "expense.voidedSection": "Na-void",
+
   "expense.recordReplacement": "Irekord ang kapalit",
+
   "expense.summary.net": "Net nga gastos",
+
   "expense.summary.gross": "Narekord nga gastos",
+
   "expense.summary.voided": "Na-void nga gastos",
+
   "expense.summary.recordedCount": "{count} narekord",
+
   "expense.summary.voidedCount": "{count} na-void",
+
   "expense.summary.byCategory": "Paagi sa kategorya",
+
   "expense.summary.byPayment": "Paagi sa bayad",
+  "expense.summary.shareOfTotal": "{percent}% of recorded",
+
   "expense.validation.categoryRequired": "Pilia ang kategorya.",
+
   "expense.validation.amountInvalid": "Isulod ang kantidad nga sobra sa zero.",
+
   "expense.validation.descriptionRequired": "Kinahanglan ang deskripsyon.",
+
   "expense.validation.descriptionTooLong": "Sobra ka dugay ang deskripsyon.",
+
   "expense.validation.payeeTooLong": "Sobra ka dugay ang nakabaton.",
+
   "expense.validation.gCashRefTooLong": "Sobra ka dugay ang reperensya sang GCash.",
+
   "expense.validation.dateRequired": "Kinahanglan ang petsa sang gastos.",
+
+  "expense.validation.scopeRequired": "Pilia diin irekord ang gastos.",
   "expense.validation.voidReasonRequired": "Kinahanglan ang rason sang void.",
+
   "expense.validation.categoryNameRequired": "Kinahanglan ang ngalan sang kategorya.",
-  "org.more.title": "More",
+
+  "org.more.title": "Dugang pa",
+
   "org.nav.aria": "Nabigasyon sang organisasyon",
+
   "org.nav.catalog": "Catalog",
+
   "org.nav.home": "Home",
-  "org.nav.more": "More",
+
+  "org.nav.more": "Dugang",
+
+  "org.nav.inventory": "Imbentaryo",
+
+  "org.nav.transfers": "Mga transfer",
+
+  "org.nav.purchasing": "Pagbakal",
+
+  "admin.shell.productName": "Pinoy Business POS",
+
+  "admin.shell.manageBusiness": "Manage Business",
+
+  "admin.shell.railMark": "MB",
+
+  "admin.nav.aria": "Manage Business navigation",
+
+  "admin.nav.group.overview": "Overview",
+
+  "admin.nav.group.organization": "Organization",
+
+  "admin.nav.group.business": "Business",
+
+  "admin.nav.group.review": "Review",
+
+  "admin.nav.group.security": "Security",
+
+  "admin.nav.group.settings": "Settings",
+
+  "admin.nav.overview": "Overview",
+  "admin.nav.profile": "Organization profile",
+  "admin.nav.documentsPrinting": "Documents & Printing",
+    "orgSubscription.planCurrent": "Current plan",
+
+  "orgSubscription.selectPlan": "Select",
+
+  "orgSubscription.selectedPlan": "Selected",
+
+  "orgSubscription.previewGainedFeatures": "Features you would gain",
+
+  "orgSubscription.reviewTitle": "Review plan change",
+
+  "orgSubscription.reviewCurrentPlan": "Current plan",
+
+  "orgSubscription.reviewNewPlan": "New plan",
+
+  "orgSubscription.reviewBillingCycle": "Billing cycle",
+
+  "orgSubscription.reviewCurrentPrice": "Current price",
+
+  "orgSubscription.reviewNewPrice": "New price",
+
+  "orgSubscription.reviewEffective": "Effective",
+
+  "orgSubscription.reviewEffectiveImmediate": "Immediately after simulated payment",
+
+  "orgSubscription.reviewEffectiveRenewal": "At next renewal ({date})",
+
+  "orgSubscription.reviewLimitsTitle": "Capacity changes",
+
+  "orgSubscription.reviewLimitRow": "{label}: {current} â†’ {target}",
+
+  "orgSubscription.continueToPayment": "Continue to simulated payment",
+
+  "orgSubscription.scheduleDowngrade": "Schedule downgrade",
+
+  "orgSubscription.backToPlans": "Back to plans",
+
+  "orgSubscription.simulatedPaymentTitle": "Simulated payment",
+
+  "orgSubscription.simulatedPaymentDetail": "BillingMode is Simulated. This is not a real payment gateway.",
+
+  "orgSubscription.simulatedAmountDue": "Amount due",
+
+  "orgSubscription.simulatedMethod": "Demo payment method",
+
+  "orgSubscription.simulatedMethodValue": "ExItS Local Validation card",
+
+  "orgSubscription.simulateSuccess": "Simulate successful payment",
+
+  "orgSubscription.simulateFailure": "Simulate failed payment",
+
+  "orgSubscription.submitting": "Workingâ€¦",
+
+  "orgSubscription.upgradeSuccess": "Plan upgraded successfully.",
+
+  "orgSubscription.downgradeSuccess": "Downgrade scheduled successfully.",
+
+  "orgSubscription.paymentFailedTitle": "Simulated payment failed",
+
+  "orgSubscription.paymentFailedDetail": "Your plan and entitlements were not changed. You can try again or choose another plan.",
+
+  "orgSubscription.changeError": "Could not change the plan right now.",
+
+  "orgSubscription.billingModeLabel": "Billing mode",
+
+  "orgSubscription.billingModeSimulated": "Simulated",
+
+  "orgSubscription.invoicesTitle": "Simulated invoices & payments",
+
+  "orgSubscription.invoiceSimulated": "Simulated",
+
+  "orgSubscription.historyTitle": "Recent plan-change payments",
+
+"orgProfile.title": "Organization profile",
+  "orgProfile.lede": "Business name, contact details, and public organization ID.",
+  "orgProfile.editShort": "Edit",
+  "orgProfile.copyId": "Copy ID",
+  "orgProfile.copyFailed": "Could not copy organization ID.",
+  "orgProfile.contactTitle": "Contact details",
+  "orgProfile.incompleteTitle": "Add missing business details",
+  "orgProfile.incompleteBody":
+    "A phone number and full address help receipts, documents, and supplier connections.",
+  "orgProfile.incompleteAction": "Complete profile",
+  "orgProfile.addressCountryOnly": "Country only ({country}) â€” add street and city.",
+  "orgProfile.section.basics": "Basics",
+  "orgProfile.section.contact": "Contact",
+  "orgProfile.section.address": "Address",
+  "orgProfile.edit": "Edit organization profile",
+  "orgProfile.editTitle": "Edit organization profile",
+  "orgProfile.save": "Save",
+  "orgProfile.cancel": "Cancel",
+  "orgProfile.saved": "Organization profile saved.",
+  "orgProfile.saveFailed": "Could not save organization profile.",
+  "orgProfile.nameRequired": "Business name is required.",
+  "orgProfile.orgRequired": "Organization required",
+  "orgProfile.orgRequiredDetail": "Open Manage Business for an organization first.",
+  "orgProfile.loadFailed": "Could not load organization profile",
+  "orgProfile.loadFailedDetail": "Refresh and try again.",
+  "orgProfile.publicIdPending": "Public ID pending",
+  "orgProfile.fields.logoUrl": "Logo URL",
+  "orgProfile.fields.businessName": "Business name",
+  "orgProfile.fields.businessPhone": "Business phone",
+  "orgProfile.fields.businessEmail": "Business email",
+  "orgProfile.fields.address": "Business address",
+  "orgProfile.fields.addressLine1": "Address line 1",
+  "orgProfile.fields.addressLine2": "Address line 2",
+  "orgProfile.fields.city": "City",
+  "orgProfile.fields.region": "Region",
+  "orgProfile.fields.postalCode": "Postal code",
+  "orgProfile.fields.countryCode": "Country code",
+  "documentsPrinting.resetDone": "Document settings reset.",
+  "documentsPrinting.reset": "Reset to defaults",
+  "documentsPrinting.saved": "Document settings saved.",
+  "documentsPrinting.save": "Save settings",
+  "documentsPrinting.showPoReference": "Show PO reference",
+  "documentsPrinting.showDamagedQuantity": "Show damaged quantity",
+  "documentsPrinting.showExpectedDelivery": "Show expected delivery",
+  "documentsPrinting.showNotes": "Show notes",
+  "documentsPrinting.showDiscount": "Show discount",
+  "documentsPrinting.showSku": "Show SKU",
+  "documentsPrinting.showPaymentMethod": "Show payment method",
+  "documentsPrinting.showCashier": "Show cashier",
+  "documentsPrinting.showCustomerAddress": "Show customer address",
+  "documentsPrinting.showCustomerName": "Show customer name",
+  "documentsPrinting.documentTitle": "Document title",
+  "documentsPrinting.showSalesDisclaimer": "Show sales BIR-safe disclaimer",
+  "documentsPrinting.showPageNumber": "Show page number",
+  "documentsPrinting.showBusinessContact": "Show business contact in footer",
+  "documentsPrinting.customFooterText": "Custom footer text",
+  "documentsPrinting.showCustomFooter": "Show custom footer",
+  "documentsPrinting.showBranchAddress": "Show branch address",
+  "documentsPrinting.showBranchName": "Show branch name",
+  "documentsPrinting.showWebsite": "Show website",
+  "documentsPrinting.showBusinessEmail": "Show business email",
+  "documentsPrinting.showBusinessPhone": "Show business phone",
+  "documentsPrinting.showBusinessAddress": "Show business address",
+  "documentsPrinting.showBusinessName": "Show business name",
+  "documentsPrinting.showLogo": "Show logo",
+  "documentsPrinting.grnSection": "Goods Receipt",
+  "documentsPrinting.poSection": "Purchase Order",
+  "documentsPrinting.salesSection": "Sales / Customer Purchase Summary",
+  "documentsPrinting.footerSection": "Footer",
+  "documentsPrinting.headerSection": "Header",
+  "documentsPrinting.readOnly": "You can view document settings. Owner or Admin can edit.",
+  "documentsPrinting.orgRequiredDetail": "Open Manage Business for an organization first.",
+  "documentsPrinting.orgRequired": "Organization required",
+  "documentsPrinting.lede": "Organization defaults for printable business documents. Display settings never change transaction data.",
+  "documentsPrinting.title": "Documents & Printing",
+  "staffBusinessProfile.title": "Staff member",
+  "staffBusinessProfile.section": "Business profile",
+  "staffBusinessProfile.edit": "Edit business profile",
+  "staffBusinessProfile.editTitle": "Edit business profile",
+  "staffBusinessProfile.save": "Save changes",
+  "staffBusinessProfile.cancel": "Cancel",
+  "staffBusinessProfile.saved": "Business profile saved.",
+  "staffBusinessProfile.saveFailed": "Could not save business profile.",
+  "staffBusinessProfile.department": "Department",
+  "staffBusinessProfile.jobTitle": "Position / Job title",
+  "staffBusinessProfile.departmentPlaceholder": "Select or add department",
+  "staffBusinessProfile.jobTitlePlaceholder": "Select or add position",
+  "staffBusinessProfile.catalogSearch": "Searchâ€¦",
+  "staffBusinessProfile.catalogEmpty": "No matches",
+  "staffBusinessProfile.createDepartment": "Add â€œ{value}â€",
+  "staffBusinessProfile.createJobTitle": "Add â€œ{value}â€",
+  "staffBusinessProfile.unsavedTitle": "Discard unsaved changes?",
+  "staffBusinessProfile.unsavedDetail": "You have unsaved changes. Close anyway?",
+  "staffBusinessProfile.unsavedConfirm": "Discard",
+  "staffBusinessProfile.unsavedCancel": "Keep editing",
+  "staffBusinessProfile.workPhone": "Work phone",
+  "staffBusinessProfile.workEmail": "Work email",
+  "staffBusinessProfile.availableAsContact": "Available as organization contact",
+  "staffBusinessProfile.yes": "Yes",
+  "staffBusinessProfile.no": "No",
+  "staffBusinessProfile.manageAccess": "Manage POS access",
+  "staffBusinessProfile.viewProfile": "Business profile",
+  "staffBusinessProfile.missing": "Staff member not found",
+  "staffBusinessProfile.missingDetail": "Choose a staff member from the list.",
+  "staffBusinessProfile.loadFailed": "Could not load business profile",
+  "staffBusinessProfile.loadFailedDetail": "Refresh and try again.",
+
+  "admin.nav.areas": "Areas",
+
+  "admin.nav.branchesWarehouses": "Branches & Warehouses",
+
+  "admin.nav.staff": "Staff",
+
+  "admin.nav.roles": "Roles & Permissions",
+
+  "admin.nav.devices": "Devices",
+
+  "admin.nav.cashHandling": "Cash Handling",
+
+  "admin.nav.businessQr": "Business QR",
+
+  "admin.nav.dashboard": "Dashboard",
+
+  "admin.nav.reports": "Reports",
+
+  "admin.nav.ownership": "Ownership Transfer",
+
+  "admin.nav.subscription": "Subscription & Billing",
+
+  "orgSubscription.title": "Subscription & Billing",
+
+  "orgSubscription.lede": "Ang imo ExItS plan, paggamit batok sa plan limits, kag billing status.",
+  "orgSubscription.openFromOverview": "Abihi ang Subscription & Billing",
+  "orgSubscription.tabsAria": "Subscription and billing sections",
+
+  "orgSubscription.tab.overview": "Overview",
+
+  "orgSubscription.tab.plan": "Plan & Usage",
+
+  "orgSubscription.tab.billing": "Billing",
+
+  "orgSubscription.tab.invoices": "Invoices",
+
+  "orgSubscription.deniedTitle": "Owner access required",
+
+  "orgSubscription.deniedDetail":
+    "Ang organization Owner lang ang makakita sang subscription kag billing details.",
+
+  "orgSubscription.loading": "Ginakarga ang imo subscriptionâ€¦",
+
+  "orgSubscription.loadError": "Indi makarga ang imo subscription",
+
+  "orgSubscription.loadErrorDetail": "Tan-awa ang koneksyon kag tilawi liwat sa dali lang.",
+
+  "orgSubscription.noSubscription": "Wala pa sang subscription",
+
+  "orgSubscription.noSubscriptionDetail":
+    "Ini nga organization wala pa sang ExItS subscription para sa Pinoy Business POS.",
+
+  "orgSubscription.plan": "Plan",
+
+  "orgSubscription.status": "Status",
+
+  "orgSubscription.billingCycle": "Billing cycle",
+
+  "orgSubscription.nextPayment": "Masunod nga bayad",
+
+  "orgSubscription.amount": "Ginkasugtan nga presyo",
+
+  "orgSubscription.notAvailable": "Wala",
+
+  "orgSubscription.action.changePlan": "Islan ang plan",
+
+  "orgSubscription.action.manageBilling": "Manage billing",
+
+  "orgSubscription.usageTitle": "Paggamit sang plan",
+
+  "orgSubscription.pendingChange": "Naka-schedule nga pag-islan sang plan",
+
+  "orgSubscription.pendingChangeDetail": "Magasugod ang {plan} sa {date}.",
+
+  "orgSubscription.pendingChangeDetailNoDate": "Naka-schedule na nga magasugod ang {plan}.",
+
+  "orgSubscription.featuresTitle": "Ano ang nalakip sa imo plan",
+
+  "orgSubscription.feature.customerCredit": "Customer credit (Utang)",
+
+  "orgSubscription.feature.advancedReports": "Advanced reports",
+
+  "orgSubscription.feature.export": "Data export",
+
+  "orgSubscription.featureIncluded": "Nalakip",
+
+  "orgSubscription.featureUnavailable": "Wala sa sini nga plan",
+
+  "orgSubscription.limitsTitle": "Paggamit batok sa plan limits",
+
+  "orgSubscription.nearLimitTitle": "Malapit na maabot ang plan limit",
+
+  "orgSubscription.nearLimitDetail":
+    "Malapit na nimo maabot ang plan limit. Tan-awa ang plan antes magdugang.",
+
+  "orgSubscription.atLimitTitle": "Naabot na ang plan limit",
+
+  "orgSubscription.atLimitDetail":
+    "Nagamit na ang tanan nga ginatugot sini nga plan. Ipaanggid ang mga plan sa idalom antes magdugang.",
+
+  "orgSubscription.plansTitle": "Mga available nga plan",
+
+  "orgSubscription.plansEmpty": "Wala pa sang iban nga plan nga naka-publish subong.",
+
+  "orgSubscription.planUpgrade": "Mas mataas nga plan",
+
+  "orgSubscription.planDowngrade": "Mas manubo nga plan",
+
+  "orgSubscription.planLimits":
+    "Branches {branches} Â· Staff {staff} Â· Devices {devices} Â· Areas {areas}",
+
+  "orgSubscription.compare": "Tan-awa ang epekto",
+
+  "orgSubscription.comparing": "Ginatan-aw ang epektoâ€¦",
+
+  "orgSubscription.previewError": "Indi matan-aw ang epekto sini nga plan subong.",
+
+  "orgSubscription.previewBlockedTitle": "Indi pa mapadapat ini nga plan",
+
+  "orgSubscription.previewBlockedDetail":
+    "Ang imo paggamit subong labaw sa ginatugot sang {plan}. Wala sang gin-islan. Pabuhini anay ang paggamit, ukon magpabilin sa imo subong nga plan.",
+
+  "orgSubscription.previewOkTitle": "Wala sang nagabalabag nga conflict",
+
+  "orgSubscription.previewOkDetail": "Nagakasyo ang imo paggamit subong sa {plan}.",
+
+  "orgSubscription.previewLostFeatures": "Mga feature nga madula",
+
+  "orgSubscription.billingManagedTitle": "Billing mode: Simulated",
+
+  "orgSubscription.billingManagedDetail":
+    "Subscription payments in this environment use ExItS Local Validation simulation. Plan changes update the real subscription and entitlements; only the payment provider is simulated.",
+
+  "orgSubscription.invoicesEmptyTitle": "Wala sang invoice nga mapakita",
+
+  "orgSubscription.invoicesEmptyDetail":
+    "Successful simulated plan-change payments appear here after they are linked. Store sales and supplier payables are not subscription invoices.",
+
+  "admin.nav.preferences": "Preferences",
+
+  "admin.nav.lockedPro": "Available on Pro",
+
+  "admin.mobile.aria": "Manage Business mobile navigation",
+
+  "admin.mobile.home": "Home",
+
+  "admin.mobile.manage": "Manage",
+
+  "admin.mobile.review": "Review",
+
+  "admin.mobile.more": "More",
+
+  "admin.manageHub.title": "Manage",
+
+  "admin.manageHub.lede": "Organization structure and access.",
+
+  "admin.moreHub.title": "More",
+
+  "admin.moreHub.lede": "Business configuration, security, and settings.",
+
+  "admin.context.aria": "Usage context",
+
+  "admin.context.usageTitle": "Plan usage",
+
+  "admin.context.branches": "Branches",
+
+  "admin.context.areas": "Areas",
+
+  "admin.context.devices": "Devices",
+
   "org.nav.orders": "Mga order",
+
   "org.nav.sell": "Magbaligya",
+
   "org.noPayChrome": "Indi gipakita diri ang Bayad kag sell-floor checkout.",
+
   "org.notifications.close": "Isara ang mga pahibalo",
+
   "org.notifications.emptyDetail": "Magatunga diri ang bag-o nga mga alerto sang negosyo.",
+
   "org.notifications.emptyTitle": "Wala sing pahibalo",
+
   "org.notifications.lede": "Mga alerto sang negosyo para sa sini nga organisasyon ? suppliers, orders, kag customer links.",
+
   "org.notifications.loadErrorDetail": "Tilawi liwat kung naka-online ka.",
+
   "org.notifications.loadErrorTitle": "Indi ma-load ang mga pahibalo",
+
   "org.notifications.markRead": "Markahi nga nabasa",
+
   "org.notifications.open": "Abihan",
+
   "org.notifications.tabAll": "Tanan",
+
   "org.notifications.tabUnread": "Wala pa nabasa",
+
   "org.notifications.title": "Mga pahibalo",
+
   "org.notifications.unread": "Wala pa nabasa",
+
   "org.notifications.unreadEmptyDetail": "Nakasunod ka na. Magbalhin sa Tanan agud tan-awon ang nauna nga mga pahibalo.",
+
   "org.notifications.unreadEmptyTitle": "Wala sing wala pa nabasa nga pahibalo",
+
   "org.overviewOffline": "Magkonekta para i-refresh ang overview subong.",
+
   "org.overviewOpenDashboard": "Buksan ang bug-os nga dashboard",
+
+  "org.today.noSales": "No sales yet today",
+
+  "org.attention.title": "Needs attention",
+
+  "org.attention.clear": "No management issues need attention",
+
+  "org.attention.branchCapacity": "Branch capacity full",
+
+  "org.attention.deviceCapacity": "Device capacity full",
+
+  "org.attention.areaCapacity": "Area capacity full",
+
+  "org.glance.title": "Organization at a glance",
+
+  "org.glance.locations": "Locations",
+
+  "org.glance.locationsBreakdown": "{retail} Retail ?? {warehouse} Warehouse",
+
+  "org.glance.areas": "Areas",
+
+  "org.glance.staff": "Staff",
+
+  "org.glance.devices": "Devices",
+
+  "org.actions.title": "Quick actions",
+
   "org.ownershipTransfer.back": "Balik",
+
   "org.ownershipTransfer.cancel": "Kanselahon ang transfer",
+
   "org.ownershipTransfer.cancelConfirm": "Kanselahon ang tanyag",
+
   "org.ownershipTransfer.cancelDetail":
+
     "Kuhaon ang tanyag. Ikaw gihapon ang tag-iya sang organisasyon.",
+
   "org.ownershipTransfer.cancelFailed": "Indi makansela ini nga ownership transfer.",
+
   "org.ownershipTransfer.cancelTitle": "Kanselahon ang transfer kay {name}?",
+
   "org.ownershipTransfer.changeTarget": "Ilisan",
+
   "org.ownershipTransfer.confirmBulletDataStays":
+
     "Magpabilin sa organisasyon ang profile, staff, inventory, baligya, kag suppliers.",
+
   "org.ownershipTransfer.confirmBulletExpires":
+
     "Ma-expire ang tanyag sa petsa nga gintakda sang server kung indi batunon.",
+
   "org.ownershipTransfer.confirmBulletLeave":
+
     "Maghalin ka sa organisasyon pagkatapos makompleto ang transfer.",
+
   "org.ownershipTransfer.confirmBulletNotTransferred":
+
     "Indi mabalhin ang Personal data, Personal Utang, paagi sang bayad, POS-local roles, kag device registrations.",
+
   "org.ownershipTransfer.confirmBulletOwner":
+
     "Pagkatapos batunon, ang makabaton magiging Organization Owner.",
+
   "org.ownershipTransfer.confirmBulletRecipientAccept":
+
     "Kinahanglan batunon sang makabaton ang tanyag sa ila Personal account.",
+
   "org.ownershipTransfer.createdAt": "Ginpangayo sang {date}",
+
   "org.ownershipTransfer.errorDetail":
+
     "Indi ma-load ang status sang ownership transfer. Usisaa ang koneksyon kag tilawi liwat.",
+
   "org.ownershipTransfer.errorTitle": "Indi ma-load ang ownership transfer",
+
   "org.ownershipTransfer.expiresAt": "Ma-expire sa {date}",
+
   "org.ownershipTransfer.initiateHint":
+
     "Ibutang ang Personal ExItS ID sang makabaton ukon i-paste ang Personal QR payload, dayon i-resolve antes mangayo.",
+
   "org.ownershipTransfer.keepPending": "Padayon nga pending",
+
   "org.ownershipTransfer.lede":
+
     "Itanyag ang ownership sini nga organisasyon sa iban nga Personal ExItS account. Kinahanglan batunon sang makabaton.",
+
   "org.ownershipTransfer.noOrg": "Wala napilian nga organisasyon.",
+
   "org.ownershipTransfer.pendingHint":
+
     "Nagahulat nga batunon sang makabaton. Mahimo mo ini kanselahon samtang pending pa.",
+
   "org.ownershipTransfer.request": "Mangayo sang transfer",
+
   "org.ownershipTransfer.requestConfirm": "Ipadala ang ownership offer",
+
   "org.ownershipTransfer.requestFailed": "Indi mangayo sini nga ownership transfer.",
+
   "org.ownershipTransfer.requestTitle": "Ibalhin ang ownership kay {name}?",
+
   "org.ownershipTransfer.resolve": "I-resolve",
+
   "org.ownershipTransfer.resolveFailed": "Indi ma-resolve amo nga Personal identity.",
+
   "org.ownershipTransfer.resolvedTitle": "Target sang transfer",
+
   "org.ownershipTransfer.retry": "Tilawi liwat",
+
   "org.ownershipTransfer.staleConflict":
+
     "Nagbag-o ang transfer. Na-refresh ang page ? usisaa liwat.",
+
   "org.ownershipTransfer.statusPending": "Pending",
+
   "org.ownershipTransfer.targetHint":
+
     "Personal account lang ang makabaton sang ownership. Indi valid diri ang organization staff login.",
+
   "org.ownershipTransfer.targetLabel": "Personal ExItS ID ukon QR",
+
   "org.ownershipTransfer.targetPlaceholder": "EX-____-____ ukon exits://qr/?",
+
   "org.ownershipTransfer.targetRequired": "Ibutang ang Personal ExItS ID ukon QR payload.",
+
   "org.ownershipTransfer.tile": "Ibalhin ang ownership",
+
   "org.ownershipTransfer.title": "Ibalhin ang ownership",
+
   "org.title": "Manage business",
+
   "pageHeader.infoChip": "Info",
+
   "pageHeader.infoToggle": "Page information",
+
   "people.add": "[HIL] Add",
+
   "people.add.cancel": "[HIL] Cancel",
+
   "people.add.cannotAddSelf": "[HIL] You cannot add yourself.",
+
   "people.add.alreadyAdded": "{name} is already in your People list.",
+
   "people.add.alreadyAddedTitle": "Already added",
+
   "people.add.openExisting": "Open person",
+
   "people.add.confirm": "[HIL] Add person",
+
   "people.add.exitsId": "[HIL] ExItS ID",
+
   "people.add.exitsIdPlaceholder": "[HIL] EX-____-____",
+
   "people.add.find": "[HIL] Find person",
+
   "people.add.identityFound": "[HIL] Identity found",
+
   "people.add.lede": "[HIL] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+
   "people.add.notFound": "[HIL] No matching ExItS identity was found.",
+
   "people.add.requiredId": "[HIL] Enter an exact ExItS ID.",
+
   "people.add.scanHint": "[HIL] Paste the QR payload into ExItS ID, then find the person.",
+
   "people.connectionInbox": "Connection requests",
+
   "people.connectionInboxBadge": "{count} pending",
+
   "people.connectionInboxHelp": "Review incoming and outgoing connection requests.",
+
   "people.add.scanQr": "[HIL] Scan QR",
+
   "people.addPerson": "[HIL] Add person",
+
   "people.newTitle": "[HIL] Add person",
+
   "people.backToList": "[HIL] Back to People",
+
   "people.createKindTitle": "[HIL] Person type",
+
   "people.createKindLede":
+
     "[HIL] Choose without ExItS ID or link a Personal ExItS identity. Requesting a connection is a separate step.",
+
   "people.createKindWalkIn": "[HIL] Without ExItS ID",
+
   "people.createKindWalkInHint": "[HIL] Name and optional contact only. No ExItS account link.",
+
   "people.createKindExits": "[HIL] With ExItS Personal ID",
+
   "people.createKindExitsHint":
+
     "[HIL] Scan or enter their Personal ExItS ID to add them to your list.",
+
   "people.createKindChange": "[HIL] Change type",
+
   "people.formLedeWalkIn":
+
     "[HIL] Keep someone in People without linking an ExItS account. Connecting is optional and done separately from their profile.",
+
   "people.formLedeExits":
+
     "[HIL] Find someone with their exact ExItS ID or QR payload. Adding does not send a connection request.",
+
   "people.sectionBasics": "[HIL] Basics",
+
   "people.sectionDetails": "[HIL] Contact details",
+
   "people.displayName": "[HIL] Name",
+
   "people.save": "[HIL] Add person",
+
   "people.saving": "[HIL] Adding?",
+
   "people.add.toggle": "[HIL] Add person",
+
   "people.add.close": "[HIL] Close add person",
+
   "people.identityPanel.title": "[HIL] ExItS identity",
+
   "people.identityPanel.lede":
+
     "[HIL] Scan or enter their Personal ExItS ID to confirm who you are adding.",
+
   "people.identityPanel.confirmHint":
+
     "[HIL] Review the identity above, then add them to your People list.",
+
   "people.listTitle": "[HIL] Your people",
+
   "people.filter.label": "[HIL] Filter people",
+
   "people.filter.all": "[HIL] All",
+
   "people.filter.connected": "[HIL] Connected",
+
   "people.filter.pending": "[HIL] Pending",
+
   "people.filter.local": "[HIL] Local",
+
   "people.filter.notConnected": "[HIL] Not connected",
+
   "people.noResultsTitle": "[HIL] No matches",
+
   "people.noResultsBody": "[HIL] Try a different name, ExItS ID, or filter.",
+
   "people.detail.amount": "[HIL] Amount",
+
   "people.detail.amountInvalid": "[HIL] Enter a valid amount.",
+
   "people.detail.block": "[HIL] Block person",
+
   "people.detail.blockConfirmBody": "[HIL] This person cannot send you new connection requests until you unblock them.",
+
   "people.detail.blockedHelp": "[HIL] This person cannot send you new connection requests.",
+
   "people.detail.cancelRequest": "[HIL] Cancel request",
+
   "people.detail.confirmUtang": "[HIL] Continue",
+
   "people.detail.connectedSince": "[HIL] Connected since {date}",
+
   "people.detail.connection": "[HIL] Connection",
+
   "people.detail.connectionHelp": "[HIL] Connecting lets both accounts recognize this Personal relationship. It does not create debt or organization access.",
+
   "people.detail.iBorrowed": "[HIL] I borrowed money",
+
   "people.detail.iLent": "[HIL] I lent money",
+
   "people.detail.notConnectedHelp": "[HIL] Connecting lets both accounts recognize this Personal relationship. It does not create debt or organization access.",
+
   "people.detail.notFoundBody": "[HIL] This person is not in your People list.",
+
   "people.detail.notFoundTitle": "[HIL] Person not found",
+
   "people.detail.relationship": "[HIL] Relationship",
+
   "people.detail.requestConnection": "[HIL] Request connection",
+
   "people.detail.safety": "[HIL] Safety",
+
   "people.detail.sendAgain": "[HIL] Send again",
+
   "people.detail.sentOn": "[HIL] Sent {date}",
+
   "people.detail.unblock": "[HIL] Unblock",
+
   "people.detail.unlink": "[HIL] Unlink",
+
   "people.detail.unlinkConfirmAction": "[HIL] Unlink",
+
   "people.detail.unlinkConfirmBody": "[HIL] You will no longer be connected. Existing financial records will not be deleted.",
+
   "people.detail.unlinkConfirmTitle": "[HIL] Unlink {name}?",
+
   "people.detail.utang": "[HIL] Utang",
+
   "people.detail.waitingBody": "[HIL] Waiting for {name} to respond.",
+
   "people.detail.waitingTitle": "[HIL] Request pending",
+
   "people.emptyBody": "[HIL] Add someone you lend to, borrow from, or want to keep track of.",
+
   "people.emptyTitle": "[HIL] No people yet",
+
   "people.howToAdd.lede": "[HIL] Choose without ExItS ID or link a Personal ExItS identity.",
+
   "people.howToAdd.title": "[HIL] How to add",
+
   "people.howToAdd.withId": "[HIL] With ExItS Personal ID",
+
   "people.howToAdd.withIdHelp": "[HIL] Scan or enter their Personal ExItS ID to add them to your list. Requesting a connection is a separate step.",
+
   "people.howToAdd.withoutId": "[HIL] Without ExItS ID",
+
   "people.howToAdd.withoutIdHelp": "[HIL] Name and optional contact only. No ExItS account link.",
+
   "people.info.body1": "[HIL] People can be local contacts or identified ExItS users.",
+
   "people.info.body2": "[HIL] Connecting is optional and requires approval from the other person.",
+
   "people.info.body3": "[HIL] Connection consent and Utang records are separate.",
+
   "people.info.close": "[HIL] Got it",
+
   "people.info.open": "[HIL] About People",
+
   "people.info.title": "[HIL] About People",
+
   "people.loadError": "[HIL] Unable to load people.",
+
   "people.localAdd.confirm": "[HIL] Add person",
+
   "people.localAdd.email": "[HIL] Email (optional)",
+
   "people.localAdd.name": "[HIL] Name",
+
   "people.localAdd.nameRequired": "[HIL] Name is required.",
+
   "people.localAdd.phone": "[HIL] Phone (optional)",
+
   "people.localAdd.subtitle": "[HIL] Keep someone in People without linking an ExItS account. Connecting is optional and done separately from their profile.",
+
   "people.localAdd.title": "[HIL] Add local contact",
+
   "people.localContact": "[HIL] Local contact",
+
   "people.search": "[HIL] Search people",
+
   "people.searchPlaceholder": "[HIL] Search people...",
+
   "people.status.blocked": "[HIL] Blocked",
+
   "people.status.connected": "[HIL] Connected",
+
   "people.status.local": "[HIL] Local contact",
+
   "people.status.notConnected": "[HIL] Not connected",
+
   "people.status.requestPending": "[HIL] Request pending",
+
   "people.status.requestSent": "Request sent",
+
   "people.status.requestReceived": "Request received",
+
   "people.summary": "[HIL] {identified} with ExItS ID ? {local} local only",
+
   "people.title": "[HIL] People",
+
   "personal.backToMerchants": "Balik sa mga tindahan",
+
   "personal.badge": "Personal",
+
   "personal.blockedBusinesses.blockedAt": "Blocked {date}",
+
   "personal.blockedBusinesses.empty": "No blocked businesses.",
+
   "personal.blockedBusinesses.lede": "Businesses that cannot send you customer connection requests or reminders.",
+
   "personal.blockedBusinesses.title": "Blocked businesses",
+
   "personal.blockedBusinesses.unblock": "Unblock",
+
   "personal.blockedBusinesses.unblockFailed": "Could not unblock this business.",
+
   "personal.consentAction.waitCooldown": "Please wait a moment before trying again.",
+
   "personal.body": "Start a Business and organization features continue on authorized surfaces.",
+
   "personal.customerLinks.accept": "Batuna",
+
   "personal.customerLinks.acceptFailed": "Indi mabatun ang pangabay sa link.",
+
   "personal.customerLinks.acceptHint": "Kung batunon, kilalahon ka sang tindahan para sa mga order kag resibo. Indi ini maghatag sang staff access.",
+
   "personal.customerLinks.blockBusiness": "Block this business",
+
   "personal.customerLinks.blockConfirm": "Blocking prevents this business from sending you future customer connection requests or reminders. It does not erase transactions held by the business.",
+
   "personal.customerLinks.blockFailed": "Could not block this business.",
+
   "personal.customerLinks.cardPrompt": "Gusto sini nga tindahan nga i-link ang imo ExItS account bilang ila customer.",
+
   "personal.customerLinks.decline": "Balibara",
+
   "personal.customerLinks.declineFailed": "Indi mabalibad ang pangabay sa link.",
+
   "personal.customerLinks.duplicateCount": "{count} pending from this store",
+
   "personal.customerLinks.emptyDetail": "Kung magpadala ang tindahan sang customer link request, makita ini diri.",
+
   "personal.customerLinks.emptyTitle": "Wala sing naga-hulat nga pangabay sa link",
+
   "personal.customerLinks.errorDetail": "Indi ma-load ang customer link requests. Tilawi liwat.",
+
   "personal.customerLinks.errorTitle": "Indi ma-load ang mga pangabay sa link",
+
   "personal.customerLinks.expiresAt": "Ma-expire",
+
   "personal.customerLinks.lede": "Batuna ang tindahan para i-link ang imo Personal account bilang ila customer. Balibara kung indi mo ini kilala.",
+
   "personal.customerLinks.listTitle": "Naga-hulat",
+
   "personal.customerLinks.requestedAt": "Gin-request",
+
   "personal.customerLinks.statusAccepted": "Ginbaton",
+
   "personal.customerLinks.statusDeclined": "Ginbalibaran",
 
+
+
   "personal.customerLinks.historyTitle": "History",
+
   "personal.customerLinks.historyEmptyTitle": "No resolved link requests",
+
   "personal.customerLinks.historyEmptyDetail": "Accepted, declined, expired, and revoked requests appear here.",
+
   "personal.customerLinks.statusExpired": "Expired",
+
   "personal.customerLinks.statusRevoked": "Revoked",
+
   "personal.customerLinks.statusPending": "Naga-hulat",
+
   "personal.customerLinks.title": "Mga pangabay sa link sang tindahan",
+
   "personal.emptyDetail": "Magdugang sang tawo kag i-record ang kuwarta nga ginahatag ukon utang.",
+
   "personal.emptyTitle": "Wala pa Utang",
+
   "personal.explore.billingMonth": "bulan",
+
   "personal.explore.billingYear": "tuig",
+
+  "personal.explore.billingMonthly": "Monthly",
+
+  "personal.explore.billingAnnual": "Annual",
+  "personal.explore.billingQuarterly": "3 Months",
+  "personal.explore.billingSixMonths": "6 Months",
+  "personal.explore.billingEveryMonth": "every month",
+  "personal.explore.billingEvery3Months": "every 3 months",
+  "personal.explore.billingEvery6Months": "every 6 months",
+  "personal.explore.billingEveryYear": "every year",
+  "personal.explore.billingPopular": "Popular",
+  "personal.explore.billingBestValue": "Best value",
+  "personal.explore.billingBestValueSave": "Best value Ã¢â‚¬â€ Save {percent}%",
+  "personal.explore.billingSavePercent": "Save {percent}%",
+  "personal.explore.cycleSavings": "Save {percent}%",
+  "personal.explore.cycleSavingsDetail": "Save {amount} Ã‚Â· {percent}%",
+  "personal.explore.equivalentMonthly": "{amount}/month equivalent",
+  "personal.startBusiness.baseAmount": "Base",
+  "personal.startBusiness.discount": "Discount ({percent}%)",
+  "personal.startBusiness.totalDueNow": "Total due now",
+  "personal.startBusiness.paymentMethodsHint": "Payment method: GCash / Maya / Card (simulated in Local Validation).",
+
+  "personal.explore.billingToggleAria": "Billing period",
+
+  "personal.explore.annualSavings": "Save {percent}% vs monthly",
+
+  "personal.explore.capacityLine": "{branches} branch Ã‚Â· {staff} staff Ã‚Â· {devices} POS",
+  "personal.explore.viewAllFeatures": "View all features",
+  "personal.explore.simulatedPaymentsNotice":
+    "Payments are currently simulated. No real charge will be made.",
+  "personal.explore.checkoutFailedTitle": "Could not start checkout",
+  "personal.explore.checkoutApiMissing": "Subscription checkout API was not found. Rebuild and restart Platform API, then try again.",
+  "personal.explore.badge.mostPopular": "MOST POPULAR",
+
+  "personal.explore.badge.complete": "COMPLETE",
+
+  "personal.explore.tagline.starter": "For one small store",
+
+  "personal.explore.tagline.growth": "For growing businesses",
+
+  "personal.explore.tagline.pro": "For multi-branch operations",
+
+  "personal.explore.tagline.proPlus": "For larger operations",
+
+  "personal.explore.tagline.fallback": "POS plan",
+
+  "personal.explore.includesEverythingIn": "Everything in {plan}, plus...",
+
+  "personal.explore.featureAreas": "Up to {count} areas",
+
+  "personal.explore.featureWarehouse": "Warehouse branches",
+
+  "personal.explore.highlight.sellCatalog": "Sell, catalog, inventory",
+
+  "personal.explore.highlight.utang": "Utang / customer credit",
+
+  "personal.explore.highlight.purchasing": "Purchasing, returns, expenses",
+
+  "personal.explore.highlight.shiftsReports": "Shifts, registers, basic reports",
+
+  "personal.explore.highlight.multiBranch": "Multi-branch operations",
+
+  "personal.explore.highlight.ordering": "Customer ordering & delivery",
+
+  "personal.explore.highlight.connectedSuppliers": "Connected supplier commerce",
+
+  "personal.explore.highlight.areas": "Area management",
+
+  "personal.explore.highlight.warehouse": "Warehouse branches",
+
+  "personal.explore.highlight.advancedReports": "Advanced reports & export",
+
+  "personal.explore.highlight.highestCapacities": "Highest capacities",
+
+  "personal.explore.highlight.completeSet": "Complete implemented feature set",
+  "personal.explore.payments.title": "Payments",
+  "personal.explore.payments.cash": "Cash",
+  "personal.explore.payments.gcash": "GCash",
+  "personal.explore.payments.utang": "Utang",
+  "personal.explore.payments.management": "Payment management",
+  "personal.explore.payments.bankTransfer": "Bank transfer",
+  "personal.explore.payments.check": "Check",
+  "personal.explore.payments.manualMethods": "Manual payment methods",
+  "personal.explore.payments.online": "Online payments",
+  "personal.explore.payments.onlineIntegrations": "Online payment integrations",
+  "personal.explore.payments.onlineNote": "Provider availability depends on integration.",
+  "personal.explore.payments.onlineGCash": "GCash Online",
+  "personal.explore.payments.onlineMaya": "Maya Online",
+  "personal.explore.payments.qrPh": "QR PH",
+  "personal.explore.payments.cards": "Cards",
+  "personal.explore.payments.onlineBanking": "Online Banking",
+  "personal.explore.payments.comingSoon": "Coming soon",
+  "admin.nav.paymentMethods": "Payment methods",
+  "paymentMethods.title": "Payment methods",
+  "paymentMethods.lede": "Choose how your stores accept payment. Online providers stay Coming soon until integrated.",
+  "paymentMethods.builtIn": "Built-in",
+  "paymentMethods.manual": "Payment Management",
+  "paymentMethods.online": "Online payments",
+  "paymentMethods.active": "Active",
+  "paymentMethods.enabled": "Enabled",
+  "paymentMethods.disabled": "Disabled",
+  "paymentMethods.comingSoon": "Coming soon",
+  "paymentMethods.notConnected": "Not connected",
+  "paymentMethods.proBadge": "Pro",
+  "paymentMethods.proPlusBadge": "Pro Plus",
+  "paymentMethods.upgradeForManagement": "Upgrade to Pro to manage Bank Transfer, Check, and other manual methods.",
+  "paymentMethods.upgradeForOnline": "Upgrade to Pro Plus to unlock online payment integrations.",
+  "paymentMethods.save": "Save",
+  "paymentMethods.requireReference": "Require reference number",
+  "paymentMethods.accountHint": "Account hint (bank + ending digits)",
+  "paymentMethods.instructions": "Instructions",
+  "paymentMethods.displayName": "Display name",
+  "paymentMethods.availability": "Availability",
+  "paymentMethods.allBranches": "All branches",
+  "paymentMethods.selectedBranches": "Selected branches",
+  "paymentMethods.noBranches": "No active branches to select yet.",
+  "paymentMethods.orgRequired": "Open Payment methods from Manage Business for an organization.",
+  "paymentMethods.loading": "Loading payment methodsÃ¢â‚¬Â¦",
+  "paymentMethods.errorTitle": "Could not load payment methods",
+  "paymentMethods.saved": "Payment method saved",
+
+
+  "personal.explore.cta.current": "Current plan",
+
+  "personal.explore.cta.upgrade": "Upgrade to {plan}",
+
+  "personal.explore.cta.change": "Change to {plan}",
+
+  "personal.explore.cta.choose": "Choose {plan}",
+
+  "personal.explore.compare.show": "Compare all features",
+
+  "personal.explore.compare.hide": "Hide comparison",
+
+  "personal.explore.compare.feature": "Feature",
+
+  "personal.explore.compare.branches": "Branches",
+
+  "personal.explore.compare.staff": "Staff",
+
+  "personal.explore.compare.devices": "POS devices",
+
+  "personal.explore.compare.businessTypes": "Business types",
+
+  "personal.explore.compare.areas": "Areas",
+
+  "personal.explore.compare.warehouse": "Warehouse",
+
+  "personal.explore.compare.utang": "Utang / customer credit",
+
+  "personal.explore.compare.ordering": "Customer ordering",
+
+  "personal.explore.compare.reports": "Advanced reports",
+
+  "personal.explore.compare.export": "Export",
+
+  "personal.explore.compare.yes": "Included",
+
+  "personal.explore.compare.no": "Not included",
+
   "personal.explore.emptyDetail": "Wala pa sing active nga POS plans.",
+
   "personal.explore.emptyTitle": "Wala sing available nga plans",
+
   "personal.explore.errorDetail": "Indi ma-load ang commercial plans. Tilawi liwat.",
+
   "personal.explore.errorTitle": "Indi ma-load ang plans",
+
   "personal.explore.featureBranches": "Tubtub {count} ka branches",
+
   "personal.explore.featureBusinessTypes": "Tubtub {count} ka business types",
+
   "personal.explore.featureCredit": "Utang sang kostumer",
+
   "personal.explore.featureDevices": "Tubtub {count} ka POS devices",
+
   "personal.explore.featureExport": "Mga export",
+
   "personal.explore.featureReports": "Advanced nga reports",
+
   "personal.explore.featureStaff": "Tubtub {count} ka active staff",
+
   "personal.explore.lede": "Pilia ang plan, dayon himoa ang imo business organization.",
+
   "personal.explore.loading": "Nagakarga sang plans?",
+
   "personal.explore.localValidationNote": "Local Validation mode: Ang Subscribe naggamit sang simulated payment provider (indi production card charge).",
+  "subscriptionCheckout.title": "Subscription checkout",
+  "subscriptionCheckout.lede": "Review your plan total, then complete a simulated payment.",
+  "subscriptionCheckout.loading": "Loading payment?",
+  "subscriptionCheckout.retry": "Retry",
+  "subscriptionCheckout.errorTitle": "Could not load payment",
+  "subscriptionCheckout.errorDetail": "This subscription payment could not be loaded. Try again.",
+  "subscriptionCheckout.missingOrganization": "Select your business organization to continue checkout.",
+  "subscriptionCheckout.alreadyPaid": "This payment is already marked paid.",
+  "subscriptionCheckout.viewReceipt": "View receipt",
+  "subscriptionCheckout.testBannerTitle": "TEST PAYMENT",
+  "subscriptionCheckout.testBannerBody": "No real charge will be made. This is a simulated checkout environment.",
+  "subscriptionCheckout.summaryTitle": "Order summary",
+  "subscriptionCheckout.plan": "Plan",
+  "subscriptionCheckout.billing": "Billing",
+  "subscriptionCheckout.reference": "Reference",
+  "subscriptionCheckout.base": "Subtotal",
+  "subscriptionCheckout.discount": "Discount",
+  "subscriptionCheckout.total": "Total due",
+  "subscriptionCheckout.methodTitle": "Payment method",
+  "subscriptionCheckout.methodHint": "Choose GCash, Maya, or Card (simulator only).",
+  "subscriptionCheckout.method.gcash": "GCash",
+  "subscriptionCheckout.method.maya": "Maya",
+  "subscriptionCheckout.method.card": "Card",
+  "subscriptionCheckout.skipForNow": "Continue to onboarding without paying now",
+  "subscriptionCheckout.simulatorTitle": "{channel} payment (simulator)",
+  "subscriptionCheckout.simulatorLede": "Confirm a simulated payment. Card and wallet details are not charged.",
+  "subscriptionCheckout.backToMethods": "Payment methods",
+  "subscriptionCheckout.payingAmount": "Amount due: {amount}",
+  "subscriptionCheckout.payNow": "Pay now (simulated)",
+  "subscriptionCheckout.confirmSimulatedPay": "Confirm simulated payment",
+  "subscriptionCheckout.processing": "ProcessingÃ¢â‚¬Â¦",
+  "subscriptionCheckout.processFailed": "Payment could not be processed.",
+  "subscriptionCheckout.invalidChannel": "Choose GCash, Maya, or Card.",
+  "subscriptionCheckout.ewalletHint": "Simulate a {channel} wallet authorization. No real wallet is contacted.",
+  "subscriptionCheckout.simulationOutcome": "Simulation outcome",
+  "subscriptionCheckout.outcome.succeed": "Succeed (Paid)",
+  "subscriptionCheckout.outcome.fail": "Fail (declined)",
+  "subscriptionCheckout.outcome.processing": "Leave as Processing",
+  "subscriptionCheckout.card.name": "Name on card",
+  "subscriptionCheckout.card.number": "Card number",
+  "subscriptionCheckout.card.expiry": "Expiry",
+  "subscriptionCheckout.card.cvv": "CVV",
+  "subscriptionCheckout.card.requiredFields": "Enter card name, number, expiry, and CVV.",
+  "subscriptionCheckout.card.invalidNumber": "Enter a test card number.",
+  "subscriptionCheckout.card.testScenarios": "Test card autofill",
+  "subscriptionCheckout.card.scenarioSuccess": "4242Ã¢â‚¬Â¦ success",
+  "subscriptionCheckout.card.scenarioDecline": "4000Ã¢â‚¬Â¦0002 fail",
+  "subscriptionCheckout.card.scenarioProcessing": "4000Ã¢â‚¬Â¦9995 processing",
+  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 Ã¢â€ â€™ Paid",
+  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 Ã¢â€ â€™ Failed",
+  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 Ã¢â€ â€™ Processing",
+  "subscriptionCheckout.resultTitle": "Payment result",
+  "subscriptionCheckout.receiptTitle": "Receipt",
+  "subscriptionCheckout.paymentDetailsTitle": "Payment details",
+  "subscriptionCheckout.preOrgBadge": "Subscription checkout",
+  "subscriptionCheckout.backToPlans": "Back to plans",
+  "subscriptionCheckout.chooseAnotherMethod": "Choose another payment method",
+  "subscriptionCheckout.continueWithChannel": "Continue with {channel}",
+  "subscriptionCheckout.startNewPayment": "Start new payment",
+  "subscriptionCheckout.retryFailed": "Could not start a new payment attempt.",
+  "subscriptionCheckout.state.chooseMethodTitle": "Choose payment method",
+  "subscriptionCheckout.state.completeTitle": "Complete payment",
+  "subscriptionCheckout.state.processingTitle": "Processing payment",
+  "subscriptionCheckout.state.failedTitle": "Payment failed",
+  "subscriptionCheckout.state.cancelledTitle": "Payment cancelled",
+  "subscriptionCheckout.state.cancelledBody": "No subscription was activated.",
+  "subscriptionCheckout.state.expiredTitle": "Payment expired",
+  "subscriptionCheckout.state.expiredBody": "This payment attempt is no longer active.",
+  "subscriptionCheckout.state.paidTitle": "Payment successful",
+  "subscriptionCheckout.activityTitle": "Activity",
+  "subscriptionCheckout.status": "Status",
+  "subscriptionCheckout.channel": "Channel",
+  "subscriptionCheckout.providerRef": "Provider reference",
+  "subscriptionCheckout.cardMasked": "Card",
+  "subscriptionCheckout.result.paidTitle": "Payment successful",
+  "subscriptionCheckout.result.paidBody": "Your subscription payment was recorded. Continue to business setup.",
+  "subscriptionCheckout.result.failedTitle": "Payment failed",
+  "subscriptionCheckout.result.failedBody": "The simulated payment was declined.",
+  "subscriptionCheckout.result.processingTitle": "Payment processing",
+  "subscriptionCheckout.result.processingBody":
+    "The simulator left this payment in Processing. Refresh to check again.",
+  "subscriptionCheckout.continueOnboarding": "Continue",
+  "subscriptionCheckout.tryAgain": "Try again",
+  "subscriptionCheckout.refreshStatus": "Check status",
+
   "personal.explore.noTrial": "Wala sing trial",
+
   "personal.explore.paymentNote": "Wala pa ang production payment providers. Ang trial activation indi mag-charge sang card.",
+
   "personal.explore.paymentUnavailable": "Indi available ang bayad nga subscribe kung wala sing configured payment provider.",
+
   "personal.explore.retry": "Tilawi liwat",
+
   "personal.explore.selectHint": "Sugodi ang trial kung available. Ang bayad nga subscribe naggamit sang Local Validation payment sa non-production lang.",
+
   "personal.explore.startTrial": "Sugodi ang trial",
+
   "personal.explore.subscribe": "Mag-subscribe (Local Validation)",
+
   "personal.explore.title": "Tilawi ang POS plans",
+
   "personal.explore.trialDays": "{days}-adlaw nga trial",
+
   "personal.guide.accessDeterminedOnOpen": "Makita ang imo matuod nga access kon tukaron mo ang feature.",
+
   "personal.guide.availableWhenApplicable": "Available kon nagakaigo.",
+
   "personal.guide.availableWhenSupported": "Available kon suportahan sang browser ang pag-install.",
+
   "personal.guide.category.account": "Account",
+
   "personal.guide.category.activity": "Aktibidad",
+
   "personal.guide.category.business": "Negosyo",
+
   "personal.guide.category.money": "Kuwarta kag Utang",
+
   "personal.guide.category.people": "Mga tawo",
+
   "personal.guide.category.productivity": "Produktibidad",
+
   "personal.guide.category.shopping": "Pagbakal",
+
   "personal.guide.collapse": "Tagoa ang detalye",
+
   "personal.guide.emptyFilter": "Wala feature sa sini nga filter.",
+
   "personal.guide.expand": "Ipakita ang detalye",
+
   "personal.guide.feature.account-security.bullet1": "Pilia ang imo hambal.",
+
   "personal.guide.feature.account-security.bullet2": "I-set ang light, dark, ukon system nga tema.",
+
   "personal.guide.feature.account-security.bullet3": "Islan ang density agod komportable ang screen.",
+
   "personal.guide.feature.account-security.description": "Hambal, tema, kag hitsura sang app sa imo device.",
+
   "personal.guide.feature.account-security.title": "Mga panguna nga setting",
+
   "personal.guide.feature.business-qr.bullet1": "I-scan ang business QR gamit ang camera sang telepono.",
+
   "personal.guide.feature.business-qr.bullet2": "Buksan ang public store, dayon mag-sign in ukon magrehistro kon kinahanglan.",
+
   "personal.guide.feature.business-qr.bullet3": "Ang business QR magbukas sang tindahan. Indi ni magbalhin ownership.",
+
   "personal.guide.feature.business-qr.description": "Buksan ang participating store halin sa iya business QR.",
+
   "personal.guide.feature.business-qr.title": "I-scan ang business QR",
+
   "personal.guide.feature.business-switching.bullet1": "Buksan ang More agod magbalhin kon may negosyo ka.",
+
   "personal.guide.feature.business-switching.bullet2": "Kinahanglan internet agod magbalhin.",
+
   "personal.guide.feature.business-switching.bullet3": "Ang staff account magpabilin sa iya organisasyon.",
+
   "personal.guide.feature.business-switching.description": "Magbalhin sa tunga sang Personal kag mga negosyo nga imo.",
+
   "personal.guide.feature.business-switching.title": "Magbalhin sa negosyo",
+
   "personal.guide.feature.checkout.bullet1": "Ang checkout magtan-aw sang current price, stock, kag fulfillment.",
+
   "personal.guide.feature.checkout.bullet2": "Pickup ukon delivery nagsalig sa ginatanyag sang merchant.",
+
   "personal.guide.feature.checkout.bullet3": "Cash, GCash, ukon Utang maggua lang kon suportahan sang tindahan.",
+
   "personal.guide.feature.checkout.description": "Mag-order gamit ang karon nga presyo kag options sang tindahan.",
+
   "personal.guide.feature.checkout.title": "Checkout",
+
   "personal.guide.feature.customer-links.bullet1": "Pwede magpangayo ang tindahan nga ikonekta ang imo Personal account.",
+
   "personal.guide.feature.customer-links.bullet2": "Batuna lang ang mga tindahan nga kilala mo.",
+
   "personal.guide.feature.customer-links.bullet3": "Ini customer link, indi staff access.",
+
   "personal.guide.feature.customer-links.description": "Batuna ang palangayo sang tindahan nga i-link ka bilang kustomer.",
+
   "personal.guide.feature.customer-links.title": "Relasyon bilang kustomer",
+
   "personal.guide.feature.install-pwa.bullet1": "Opsiyonal ang install ? pwede ka magpadayon sa browser.",
+
   "personal.guide.feature.install-pwa.bullet2": "Kon ginatanyag, idugang ang ExItS daw app sa telepono.",
+
   "personal.guide.feature.install-pwa.bullet3": "Magpadayon sa browser kon wala install.",
+
   "personal.guide.feature.install-pwa.description": "Idugang ang ExItS sa home screen kon pasugtan sang browser.",
+
   "personal.guide.feature.install-pwa.title": "I-install ang ExItS",
+
   "personal.guide.feature.invitations.bullet1": "Batuna ukon indi ang gusto magkonekta.",
+
   "personal.guide.feature.invitations.bullet2": "Lantawa ang request nga imo ginpadala kag nabaton.",
+
   "personal.guide.feature.invitations.bullet3": "Ang pagkonekta indi maghatag access sa imo negosyo.",
+
   "personal.guide.feature.invitations.description": "Usisaa ang connection requests halin sa iban nga Personal account.",
+
   "personal.guide.feature.invitations.title": "Mga imbitasyon kag palangayo",
+
   "personal.guide.feature.my-orders.bullet1": "Lantawa ang recent nga order kag ila status.",
+
   "personal.guide.feature.my-orders.bullet2": "Buksan ang order para sa pickup, delivery, kag bayad.",
+
   "personal.guide.feature.my-orders.bullet3": "May status updates man sa Notifications kon ginpadala.",
+
   "personal.guide.feature.my-orders.description": "Sunda ang order nga imo ginbutang sa connected nga tindahan.",
+
   "personal.guide.feature.my-orders.title": "Akon mga order",
+
   "personal.guide.feature.notifications.bullet1": "Basaha ang order status halin sa tindahan.",
+
   "personal.guide.feature.notifications.bullet2": "Lantawa ang imbitasyon kag customer-link nga palangayo.",
+
   "personal.guide.feature.notifications.bullet3": "Buksan ang notipikasyon agod magkadto sa related nga screen.",
+
   "personal.guide.feature.notifications.description": "Lantawa ang order updates, imbitasyon, kag palangayo sa isa ka inbox.",
+
   "personal.guide.feature.notifications.title": "Mga notipikasyon",
+
   "personal.guide.feature.ownership-transfer.bullet1": "Pwede ihatag sa imo sang karon nga owner ang ownership.",
+
   "personal.guide.feature.ownership-transfer.bullet2": "Usisaa ang palangayo, dayon batuna ukon indi.",
+
   "personal.guide.feature.ownership-transfer.bullet3": "Ang pag-scan sang business QR indi magbalhin ownership.",
+
   "personal.guide.feature.ownership-transfer.description": "Usisaa ang palangayo nga ibalhin ang negosyo sa imo Personal account.",
+
   "personal.guide.feature.ownership-transfer.title": "Pagbalhin sang ownership",
+
   "personal.guide.feature.people.bullet1": "Magdugang tawo with ukon without ExItS account.",
+
   "personal.guide.feature.people.bullet2": "Buksan ang isa ka tawo agod makita ang inyo relasyon.",
+
   "personal.guide.feature.people.bullet3": "Ang People amo ang lista sa likod sang Utang kag invite.",
+
   "personal.guide.feature.people.description": "Lista sang tawo nga imo ginabantayan para sa Utang kag koneksyon.",
+
   "personal.guide.feature.people.title": "Mga tawo",
+
   "personal.guide.feature.personal-qr.bullet1": "Ipakita ang Personal QR sa abyan ukon tindahan.",
+
   "personal.guide.feature.personal-qr.bullet2": "Pasagdi sila nga idugang ka nga wala pagtype sang ID.",
+
   "personal.guide.feature.personal-qr.bullet3": "Ini Personal identity, indi business QR.",
+
   "personal.guide.feature.personal-qr.description": "Ipaambit ang imo Personal ExItS ID agod makita ka.",
+
   "personal.guide.feature.personal-qr.title": "Personal QR",
+
   "personal.guide.feature.profile.bullet1": "Lantawa ang ngalan sa imo Personal account.",
+
   "personal.guide.feature.profile.bullet2": "I-update kon paano ka makita sang tawo kag tindahan.",
+
   "personal.guide.feature.profile.bullet3": "Huptan nga husto ang imo contact details.",
+
   "personal.guide.feature.profile.description": "Lantawa kag i-update ang imo ngalan kag contact details.",
+
   "personal.guide.feature.profile.title": "Personal nga profile",
+
   "personal.guide.feature.shopping-cart.bullet1": "Isa lang ka merchant ang yara sa imo cart sa isa ka tion.",
+
   "personal.guide.feature.shopping-cart.bullet2": "Magpabilin ang cart kon mag-refresh ka ukon maghalin kag magbalik.",
+
   "personal.guide.feature.shopping-cart.bullet3": "Matinlo ang cart kon successful ang order.",
+
   "personal.guide.feature.shopping-cart.description": "Magdugang items halin sa isa ka tindahan, dayon mag-checkout.",
+
   "personal.guide.feature.shopping-cart.title": "Cart",
+
   "personal.guide.feature.start-business.bullet1": "Pilia ang plan, dayon himoa ang imo negosyo.",
+
   "personal.guide.feature.start-business.bullet2": "Pwede ka mag-tag-iya sang negosyo nga indi maging staff.",
+
   "personal.guide.feature.start-business.bullet3": "Ang availability nagsalig sa imo account kag plan options.",
+
   "personal.guide.feature.start-business.description": "Himoa ang organisasyon kag buksan ang owner workspace.",
+
   "personal.guide.feature.start-business.title": "Magsugod sang Negosyo",
+
   "personal.guide.feature.stores.bullet1": "Lantawa ang tindahan nga nag-link sa imo bilang kustomer.",
+
   "personal.guide.feature.stores.bullet2": "Buksan ang tindahan agod magbakal kon available ang order.",
+
   "personal.guide.feature.stores.bullet3": "Ang options nagsalig sa sina nga negosyo.",
+
   "personal.guide.feature.stores.description": "Lantawa ang mga negosyo nga konektado sa imo Personal account.",
+
   "personal.guide.feature.stores.title": "Mga tindahan",
+
   "personal.guide.feature.todo-reminders.bullet1": "Ibutang ang due date kon maghimo ukon mag-edit.",
+
   "personal.guide.feature.todo-reminders.bullet2": "Lantawa ang Today, Upcoming, kag Overdue sa Home kag To-do.",
+
   "personal.guide.feature.todo-reminders.bullet3": "Paandaman lang ini ? indi ni maghulag sang kuwarta.",
+
   "personal.guide.feature.todo-reminders.description": "Gamita ang due dates agod makita ang upcoming kag overdue.",
+
   "personal.guide.feature.todo-reminders.title": "Mga paandaman sa himuon",
+
   "personal.guide.feature.todo.bullet1": "Magdugang himuon para subong ukon sa ulihi.",
+
   "personal.guide.feature.todo.bullet2": "Kompletoha, i-reopen, ukon kanselahon kon nagbag-o ang plano.",
+
   "personal.guide.feature.todo.bullet3": "I-link ang himuon sa tawo ukon Utang account kon kinahanglan.",
+
   "personal.guide.feature.todo.description": "Lista ang personal nga himuon kag due dates.",
+
   "personal.guide.feature.todo.title": "Mga himuon",
+
   "personal.guide.feature.utang-settlement.bullet1": "I-settle kon wala na dapat bayaran.",
+
   "personal.guide.feature.utang-settlement.bullet2": "Magkaangay sang klaro nga record nga tapos na ang account.",
+
   "personal.guide.feature.utang-settlement.bullet3": "Buksan ang Utang account agod mag-settle didto.",
+
   "personal.guide.feature.utang-settlement.description": "Sirad-an ang balance kon tapos na kamo sang isa ka tawo.",
+
   "personal.guide.feature.utang-settlement.title": "Settlement",
+
   "personal.guide.feature.utang.bullet1": "I-record ang kuwarta nga imo ginhatag kag ginutang.",
+
   "personal.guide.feature.utang.bullet2": "Lantawa ang balances kag magdugang bayad.",
+
   "personal.guide.feature.utang.bullet3": "Buksan ang account para sa bug-os nga history.",
+
   "personal.guide.feature.utang.description": "Bantayi ang imo utang ukon utang sa imo.",
+
   "personal.guide.feature.utang.title": "Utang",
+
   "personal.guide.filterAll": "Tanan",
+
   "personal.guide.filterAria": "Filter sang progreso sang giya",
+
   "personal.guide.filterCompleted": "Natapos na",
+
   "personal.guide.filterNotExplored": "Wala pa natilaw",
+
   "personal.guide.lede": "Hibalua kon ano ang mahimo mo sa imo Personal account.",
+
   "personal.guide.markLearned": "Markahi nga natun-an",
+
   "personal.guide.percent": "{percent}%",
+
   "personal.guide.progress": "{explored} sa {total} ka features ang natilaw",
+
   "personal.guide.showHomeCard": "Ipakita ang guide card sa Home",
+
   "personal.guide.stateInProgress": "Gintukar",
+
   "personal.guide.stateLearned": "Natapos na",
+
   "personal.guide.stateNotExplored": "Wala pa natilaw",
+
   "personal.guide.title": "Tilawi ang ExItS",
+
   "personal.guide.tryIt": "Tilawi",
+
   "personal.guide.whatYouCanDo": "Ano ang mahimo mo:",
+
   "personal.home.actionLent": "Kuwarta nga ginahatag ko",
+
   "personal.home.actionOwe": "Kuwarta nga utang ko",
+
   "personal.home.actionPeople": "Magdugang tawo",
+
   "personal.home.actionStartBusiness": "Magsugod Negosyo",
+
   "personal.home.actionStores": "Mga tindahan",
+
   "personal.home.actionTodo": "Magdugang ihimo",
+
   "personal.home.active": "Aktibo",
+
   "personal.home.attentionDueSoon": "{count} payments due soon",
+
   "personal.home.attentionDueSoonOne": "{name} ? due soon",
+
   "personal.home.attentionOverdue": "{count} payments overdue",
+
   "personal.home.attentionOverdueOne": "{name} ? payment overdue",
+
   "personal.home.attentionPending": "{count} entries need confirmation",
+
   "personal.home.guideCardContinue": "Padayon sa giya",
+
   "personal.home.guideCardDismiss": "Tagoa ang guide card",
+
   "personal.home.guideCardLede": "Hibalua ang features nga available sa imo Personal account.",
+
   "personal.home.guideCardTitle": "Tilawi ang ExItS",
+
   "personal.home.iOwe": "May utang ako",
+
   "personal.home.loadErrorDetail": "Usisa ang koneksyon kag tilawan liwat.",
+
   "personal.home.loadErrorTitle": "Indi makarga ang kabilugan",
+
   "personal.home.loading": "Ginakarga ang kabilugan",
+
   "personal.home.needsAttention": "Needs attention",
+
   "personal.home.owedToMe": "May utang sa akon",
+
   "personal.home.people": "Mga tawo",
+
   "personal.home.personalTracker": "Personal Tracker",
+
   "personal.home.quickActions": "Madali nga aksyon",
+
   "personal.home.retry": "Tilawi liwat",
+
   "personal.home.stores": "Stores",
+
   "personal.home.storesEmptyClear": "No store balances to pay right now.",
+
   "personal.home.storesEmptyNone": "No connected stores yet. Link a store from More.",
+
   "personal.home.storesLoading": "Loading store balances?",
+
   "personal.home.storesToPay": "Stores to Pay",
+
   "personal.home.storesUnavailable": "Store balances are unavailable right now.",
+
   "personal.home.todoEmpty": "Wala pa bukas nga ihimo. Magdugang sa Ihimo.",
+
   "personal.home.todoSoon": "Ang personal nga ihimo magapakita diri sa masunod nga update.",
+
   "personal.home.todoSummary": "Ihimo",
+
   "personal.home.todoUnavailable": "Indi magamit subong ang bilang sang ihimo.",
+
   "personal.home.todoCachedSummary": "Showing saved to-dos from this device.",
+
   "personal.home.utangSnapshot": "Personal Tracker",
+
   "personal.home.utangSummary": "Kabilugan sang utang",
+
   "personal.home.viewAllUtang": "View all Utang",
+
   "personal.lede": "Bantayi ang personal nga Utang, to-do, kag mga store.",
+
   "personal.merchantReceipt.backToStatement": "Balik sa aktibidad",
+  "personal.merchantReceipt.title": "Purchase summary",
+
   "personal.merchantReceipt.errorTitle": "Indi ma-load ang resibo",
+
   "personal.merchantReceipt.lede": "Mga sale line gikan sa merchant ledger (read-only).",
+
   "personal.merchantReceipt.linesSection": "Mga linya",
+
   "personal.merchantReceipt.loadFailed": "Indi ma-load ang receipt. Tilawi liwat.",
+
   "personal.merchantReceipt.missing": "Wala makita ini nga receipt.",
+
   "personal.merchantReceipt.missingTitle": "Wala makita ang resibo",
+
   "personal.merchantReceipt.store": "Tindahan",
+
   "personal.merchantStatement.backToStores": "Balik sa mga tindahan",
+
   "personal.merchantStatement.denied": "Wala ka authorization sa activity sini nga store.",
+
   "personal.merchantStatement.deniedHint": "Ang naka-link nga Personal account lang ang makatan-aw sini nga purchase history.",
+
   "personal.merchantStatement.deniedTitle": "Wala access",
+
   "personal.merchantStatement.errorTitle": "Indi ma-load ang aktibidad",
+
   "personal.merchantStatement.historyLoadError": "Your store connection is still active. Try again.",
+
   "personal.merchantStatement.historyLoadErrorHint": "This is a temporary data problem, not a broken store connection.",
+
   "personal.merchantStatement.historyLoadErrorTitle": "Purchase history couldn't be loaded",
+
   "personal.merchantStatement.historyLocked": "Kinahanglan ang Personal extended-history entitlement para sa mas daan nga settled records.",
+
   "personal.merchantStatement.historyLockedTitle": "Naka-lock ang extended history",
+
   "personal.merchantStatement.historyNotReady": "Your store connection is active, but purchase history is still being prepared.",
+
   "personal.merchantStatement.historyNotReadyHint": "Try again shortly. Past seller-owned records stay with the store.",
+
   "personal.merchantStatement.historyNotReadyTitle": "Purchase history is not ready yet",
+
   "personal.merchantStatement.historyUnlock": "Abri ang rewards",
+
   "personal.merchantStatement.lede": "Outstanding balance kag recent purchases gikan sa linked store (read-only).",
+
   "personal.merchantStatement.loadFailed": "Indi ma-load ang merchant activity. Tilawi liwat.",
+
   "personal.merchantStatement.loadMore": "Load more",
+
   "personal.merchantStatement.missing": "Indi pa ma-load ang mga bakal para sa store link sini.",
+
   "personal.merchantStatement.missingHint": "Posible ginapahuman pa sang tindahan ang imo customer link, ukon wala pa na-record nga baligya. Sulayi liwat sa ulihi.",
+
   "personal.merchantStatement.missingTitle": "Indi available ang purchase history",
+
   "personal.merchantStatement.noActivityDetail": "Ang mga baligya, resibo, kag Utang activity halin sini nga tindahan makita diri kon na-record na.",
+
   "personal.merchantStatement.noActivityHint": "Magbakal sa sini nga tindahan ukon balik pagkatapos sang imo sunod nga in-store purchase.",
+
   "personal.merchantStatement.noActivityTitle": "Wala pa bakal",
+
   "personal.merchantStatement.olderEmptyDetail": "Wala sing mas daan nga settled activity nga ginsubli para sa sini nga store.",
+
   "personal.merchantStatement.olderEmptyTitle": "Wala sing mas daan nga settled rows",
+
   "personal.merchantStatement.olderLoad": "I-load ang mas daan nga history",
+
   "personal.merchantStatement.olderSection": "Mas daan nga settled history",
+
   "personal.merchantStatement.openDebtEmptyDetail": "May outstanding balance, pero wala sing open-debt activity rows nga ginsubli.",
+
   "personal.merchantStatement.openDebtEmptyTitle": "Wala sing open-debt rows",
+
   "personal.merchantStatement.openDebtSection": "Bukas nga utang",
+
   "personal.merchantStatement.openPurchases": "Mga bakalan kag aktibidad",
-  "personal.merchantStatement.openReceipt": "Abri ang resibo",
+
+  "personal.merchantStatement.openReceipt": "Tan-awa ang purchase summary",
+
   "personal.merchantStatement.outstandingLabel": "Karon nga balanse",
+
   "personal.merchantStatement.recentEmptyDetail": "Mag-appear diri ang recent purchases kag Utang activity kon available.",
+
   "personal.merchantStatement.recentEmptyTitle": "Wala sing bag-o nga aktibidad",
+
   "personal.merchantStatement.recentSection": "Bag-o nga aktibidad",
+
   "personal.merchantStatement.title": "Aktibidad sang tindahan",
+
   "personal.merchants.listTitle": "[HIL] Your stores",
+
   "personal.merchants.listLede": "[HIL] Shop, review purchases, and manage store connections.",
+
   "personal.merchants.search": "[HIL] Search stores",
+
   "personal.merchants.searchPlaceholder": "[HIL] Store name",
+
   "personal.merchants.filter.label": "[HIL] Filter stores",
+
   "personal.merchants.filter.all": "[HIL] All",
+
   "personal.merchants.filter.canOrder": "[HIL] Can order",
+
   "personal.merchants.filter.unavailable": "[HIL] Unavailable",
+
   "personal.merchants.noResultsTitle": "[HIL] No matches",
+
   "personal.merchants.noResultsBody": "[HIL] Try a different store name or filter.",
+
   "personal.merchants.linkedAs": "[HIL] Linked as {name}",
+
   "personal.merchants.linkedSince": "[HIL] Linked",
+
   "personal.merchants.manageConnection": "[HIL] Manage connection",
+
   "personal.merchants.disconnect": "Disconnect",
+
   "personal.merchants.disconnectAndBlock": "Disconnect and block business",
+
   "personal.merchants.disconnectBlockConfirm": "Disconnect and block this business? They cannot invite you again until you unblock them. Transactions held by the business are not erased.",
+
   "personal.merchants.disconnectConfirm": "Disconnect this store? Your store history stays with the business. You will not see this store until you accept a new invitation.",
+
   "personal.merchants.disconnectFailed": "Could not disconnect this store.",
+
   "personal.merchantsEmptyDetail": "Kung i-link sang business ang imo Personal account bilang customer, mag-appear ini diri para makapang-order.",
+
   "personal.merchantsEmptyTitle": "Wala sing naka-konekta nga tindahan",
+
   "personal.merchantsLede": "Magbakal sa mga tindahan nga naka-link ka. Wala sa package ini ang public storefront URL.",
+
   "personal.merchantsLink": "Mga tindahan",
+
   "personal.merchantsTitle": "Mga tindahan",
+
   "personal.more.back": "Balik sa Lain pa",
+
   "personal.more.exploreExits": "Tilawi ang ExItS",
+
   "personal.ownershipTransfers.moreTile": "Pagbalhin sang ownership",
+
   "personal.workplaces.title": "Mga workplace",
+
   "personal.workplaces.lede":
+
     "Mga negosyo diin ikaw staff. Ang Personal account mo lain sa work login sang tagsa ka workplace.",
+
   "personal.workplaces.moreTile": "Mga workplace",
+
   "personal.workplaces.pendingSection": "Pending nga invitations",
+
   "personal.workplaces.mineSection": "Akon mga workplace",
+
   "personal.workplaces.pendingEmpty": "Wala sang pending nga staff invitation.",
+
   "personal.workplaces.openInvitations": "Abihi ang staff invitations",
+
   "personal.workplaces.emptyTitle": "Wala ka pa sa bisan ano nga workplace.",
+
   "personal.workplaces.emptyDetail":
+
     "Kon mag-accept ka sang staff invitation, magapabilin ang workplace diri upod sa imo work login.",
+
   "personal.workplaces.loadError": "Indi ma-load ang mga workplace.",
+
   "personal.workplaces.statusActive": "Active nga staff",
+
   "personal.workplaces.statusSuspended": "Nasuspinde",
+
   "personal.workplaces.role": "Role",
+
   "personal.workplaces.branch": "Branch",
+
   "personal.workplaces.roleUnknown": "Wala pa na-assign",
+
   "personal.workplaces.branchUnknown": "Wala pa na-assign",
+
   "personal.workplaces.branchPending": "I-assign pagkatapos sang sync",
+
   "personal.workplaces.workLogin": "Work login",
+
   "personal.workplaces.personalAccount": "Personal account",
+
   "personal.workplaces.open": "Abihi ang workplace",
+
   "personal.workplaces.openNamed": "Abihi ang {org}",
+
   "personal.workplaces.copyLogin": "Kopyaha ang login",
+
   "personal.workplaces.copied": "Nakopya",
+
   "personal.workplaces.copyFailed": "Indi makopya ang work login.",
+
   "personal.workplaces.acceptedTitle": "Yara ka na sa team",
+
   "personal.workplaces.acceptedLede": "Staff ka na sa {org}.",
+
   "personal.workplaces.viewMine": "Tan-awa ang akon mga workplace",
+
   "personal.ownershipTransfers.moreTileCount": "Pagbalhin sang ownership ({count})",
+
   "personal.ownershipTransfers.title": "Pagbalhin sang ownership",
+
   "personal.ownershipTransfers.lede":
+
     "Kung may naghalad sa imo sang ownership sang negosyo, usisa kag batuna ukon isikwal diri.",
+
   "personal.ownershipTransfers.emptyTitle": "Wala sang nagahulat nga pagbalhin sang ownership",
+
   "personal.ownershipTransfers.emptyDetail":
+
     "Makita diri ang mga halad nga ibalhin sa imo ang ownership sang negosyo.",
+
   "personal.ownershipTransfers.errorTitle": "Indi ma-load ang mga transfer",
+
   "personal.ownershipTransfers.errorDetail":
+
     "Indi ma-load ang ownership transfers. Usisa ang koneksyon kag tilawi liwat.",
+
   "personal.ownershipTransfers.retry": "Tilawi liwat",
+
   "personal.ownershipTransfers.cardHint":
+
     "Kung batunon, ikaw ang Organization Owner. Magapabilin sa organisasyon ang datos sang negosyo.",
+
   "personal.ownershipTransfers.expiresAt": "Matapos sa {date}",
+
   "personal.ownershipTransfers.statusPending": "Nagahulat",
+
   "personal.ownershipTransfers.statusExpired": "Natapos na",
+
   "personal.ownershipTransfers.expiredDetail":
+
     "Natapos na ini nga halad. Pangayo sang bag-o sa karon nga tag-iya kung kinahanglan pa.",
+
   "personal.ownershipTransfers.accept": "Batuna",
+
   "personal.ownershipTransfers.decline": "Isikwal",
+
   "personal.ownershipTransfers.cancel": "Kanselahon",
+
   "personal.ownershipTransfers.acceptTitle": "Mangin tag-iya sang {name}?",
+
   "personal.ownershipTransfers.acceptBulletOwner":
+
     "Ikaw mangin Organization Owner sini nga negosyo.",
+
   "personal.ownershipTransfers.acceptBulletLeave":
+
     "Maggwa ang karon nga tag-iya sa organisasyon.",
+
   "personal.ownershipTransfers.acceptBulletDataStays":
+
     "Magapabilin sa organisasyon ang profile, staff, inventory, baligya, kag suppliers.",
+
   "personal.ownershipTransfers.acceptBulletNotTransferred":
+
     "Indi ini magbalhin sang Personal data, Personal Utang, paagi sang bayad, POS-local roles, ukon device registrations.",
+
   "personal.ownershipTransfers.acceptConfirm": "Batuna ang ownership",
+
   "personal.ownershipTransfers.declineTitle": "Isikwal ang ownership sang {name}?",
+
   "personal.ownershipTransfers.declineConfirm": "Isikwal ang halad",
+
   "personal.ownershipTransfers.acceptFailed": "Indi mabatun ini nga ownership transfer.",
+
   "personal.ownershipTransfers.declineFailed": "Indi masikwal ini nga ownership transfer.",
+
   "personal.ownershipTransfers.staleConflict":
+
     "Nagbag-o ang transfer. Na-refresh ang lista ? usisa liwat.",
+
   "personal.ownershipTransfers.successTitle": "Ikaw na ang tag-iya sang {name}",
+
   "personal.ownershipTransfers.successDetail":
+
     "Pwede mo buksan ang business workspace subong, ukon magpabilin sa Personal.",
+
   "personal.ownershipTransfers.goToBusiness": "Kadto sa negosyo",
+
   "personal.ownershipTransfers.stayPersonal": "Magpabilin sa Personal",
+
   "personal.more.group.account": "Account",
+
   "personal.more.group.business": "Settings kag negosyo",
+
   "personal.more.group.commerce": "Tindahan kag orders",
+
   "personal.more.group.social": "Tawo kag alerts",
+
   "personal.more.lede": "Mga tindahan, prefensiya, kag Mag-umpisa Negosyo.",
+
   "personal.more.startBusiness": "Mag-umpisa Negosyo",
+
   "personal.more.stores": "Mga tindahan",
+
   "personal.more.switchToBusiness": "Magbalhin sa negosyo",
+
   "personal.more.switchingBusiness": "Nagabalhin?",
+
   "personal.more.title": "Lain pa",
+
   "personal.myOrdersLede": "Mga pickup kag delivery order nga ginbutang mo sa naka-konekta nga tindahan.",
+
   "personal.myOrdersLink": "Akon nga mga order",
+
   "personal.myOrdersTitle": "Akon nga mga order",
+
   "personal.nav.aria": "Nabigasyon personal",
+
   "personal.nav.home": "Balay",
+
   "personal.nav.more": "Lain pa",
+
   "personal.nav.orders": "Mga order",
+
   "personal.nav.todo": "Ihimo",
+
   "personal.nav.utang": "Utang",
+
   "personal.orderingAvailable": "Pwede mag-order",
+
   "personal.orderingUnavailable": "Indi pwede mag-order",
+
   "personal.orderingUnavailableDetail": "Indi dawaton sini nga store ang online customer orders subong.",
+
   "personal.orderingUnavailableHint": "Balik lang liwat, ukon tan-awa ang imo purchase history sa sini nga tindahan.",
+
   "personal.profile.accountClass": "Account class",
+
   "personal.profile.cancel": "Cancel",
+
   "personal.profile.edit": "I-edit ang profile",
+
   "personal.profile.email": "Email",
+
   "personal.profile.lede": "Detalye sang imo Personal account.",
+
   "personal.profile.loadFailed": "Indi available ang profile",
+
   "personal.profile.loadFailedDetail": "Indi ma-load ang profile. Tilawi liwat.",
+
   "personal.profile.loading": "Nagaload ang profile?",
+
   "personal.profile.name": "Ngalan",
+
   "personal.profile.save": "I-save",
+
   "personal.profile.saveFailed": "Indi ma-save ang profile.",
+
   "personal.profile.saving": "Nagasave?",
+
   "personal.profile.title": "Profile",
+
   "personal.profile.updated": "Na-update ang profile.",
+
   "personal.profile.username": "Username",
+
   "personal.rewards.comingSoon": "Mo-abot sa sunod nga update ang reward balance kag redemption. Diri man ang extended history unlock.",
+
   "personal.rewards.lede": "Personal reward points kag feature unlocks.",
+
   "personal.rewards.title": "Rewards",
+
   "personal.shopLede": "Tan-awa ang available nga produkto para sa pickup ukon delivery.",
+
   "personal.shopLink": "Magbakal",
+
   "personal.social.accept": "Batunon",
+
   "personal.social.acceptFailed": "Could not accept this invitation.",
+
   "personal.social.acceptLede": "Accept only if you recognize the person who invited you.",
+
   "personal.social.acceptSuccess": "Invitation accepted. Shared Utang is now linked.",
+
   "personal.social.acceptTitle": "Utang invitation",
+
   "personal.social.addReminder": "Add reminder",
+
   "personal.social.cancelReminder": "Cancel",
+
   "personal.social.customerLinkAcceptedHint": "Active na ang store link sa imo account.",
+
   "personal.social.customerLinkDeclinedHint": "Indi na pending ini nga link request.",
+
   "personal.social.decline": "Indi batunon",
+
   "personal.social.declineFailed": "Could not decline this invitation.",
+
   "personal.social.declineSuccess": "Invitation declined.",
+
   "personal.social.invitationsEmptyDetail": "Create an invitation from a relationship detail.",
+
   "personal.social.invitationsEmptyTitle": "No invitations",
+
   "personal.social.invitationsLede": "Invite people to share a Personal Utang record.",
+
   "personal.social.invitationsTitle": "Mga imbitasyon",
+
   "personal.social.inviteAndRemind": "Invite and reminders",
+
   "personal.social.inviteFailed": "Could not create invitation.",
+
   "personal.social.inviteNoEmail": "No email on file",
+
   "personal.social.inviteToExits": "Invite to ExItS",
+
   "personal.social.loadErrorDetail": "Check your connection and try again.",
+
   "personal.social.loadErrorTitle": "Could not load",
+
   "personal.social.markRead": "Mark read",
+
   "personal.social.missingTokenDetail": "Open the invitation link again.",
+
   "personal.social.missingTokenTitle": "Missing invitation",
+
   "personal.social.notif.customerLinkPreview": "Gindugang ka ni {name} bilang customer kag gusto niya i-link ang imo ExItS account.",
+
   "personal.social.notif.customerLinkPreviewGeneric": "May tindahan nga nagdugang sa imo bilang customer kag gusto niya i-link ang imo ExItS account.",
+
   "personal.social.notif.customerLinkTitle": "Pangabay sa link sang tindahan",
+
   "personal.social.notif.todoReminderTitle": "Paalala sa ihimo",
+
   "personal.social.notif.utangReminderTitle": "Paalala sa utang",
+
   "personal.social.notif.ownershipTransferTitle": "Ownership transfer",
+
   "personal.social.notif.ownershipTransferPreview":
+
     "Gusto ni {name} i-transfer ang ownership sa imo.",
+
   "personal.social.notif.ownershipTransferPreviewGeneric":
+
     "May negosyo nga gusto i-transfer ang ownership sa imo.",
+
   "personal.social.notif.orderUpdateTitle": "Update sa order",
+
   "personal.social.notif.orderAcceptedTitle": "Gin-accept ang order",
+
   "personal.social.notif.orderRejectedTitle": "Gin-decline ang order",
+
   "personal.social.notif.orderCancelledTitle": "Gin-cancel ang order",
+
   "personal.social.notif.orderReadyTitle": "Ready na para pickup",
+
   "personal.social.notif.orderOutForDeliveryTitle": "Na-out for delivery",
+
   "personal.social.notif.orderDeliveredTitle": "Na-deliver",
+
   "personal.social.notif.orderCollectedTitle": "Na-collect",
+
   "personal.social.notif.orderCompletedTitle": "Natapos ang order",
+
   "personal.social.notificationsClose": "Isara ang mga pahibalo",
+
   "personal.social.notificationsEmptyDetail": "New alerts will appear here.",
+
   "personal.social.notificationsEmptyTitle": "No notifications",
+
   "personal.social.notificationsLede": "In-app alerts for Personal Utang and reminders.",
+
   "personal.social.notificationsTitle": "Mga notipikasyon",
+
   "personal.social.openCustomerLink": "Accept or decline",
+
   "personal.social.openCustomerLinkHint": "Opens the next screen where you can accept or decline this store.",
+
   "personal.social.openLinkedStores": "Tan-awa ang linked stores",
+
   "personal.social.openTodo": "Abihi ang ihimo",
+
   "personal.social.openUtang": "Abihi ang utang",
+
   "personal.social.qrConnectHint": "Use this to connect with me on ExItS.",
+
   "personal.social.qrImageAlt": "Personal ExItS QR code",
+
   "personal.social.qrLede": "Share this ID so others can invite you. Scanning alone does not create debt.",
+
   "personal.social.qrSafety": "No passwords or secrets are in this ID.",
+
   "personal.social.qrShareText": "My ExItS ID:",
+
   "personal.social.qrTitle": "Akong QR",
+
   "personal.social.reminderDateRequired": "Choose a reminder time.",
+
   "personal.social.reminderFailed": "Could not create reminder.",
+
   "personal.social.reminderInOneHour": "Sa sulod sang 1 oras",
+
   "personal.social.reminderServerHint": "Ipadala sang ExItS ini nga pahanumdom bilang in-app notification sa gintakda nga oras.",
+
   "personal.social.reminderTomorrow": "Buwas sa aga",
+
   "personal.social.reminderWhen": "Remind me at",
+
   "personal.social.resend": "Resend",
+
   "personal.social.revoke": "Revoke",
+
   "personal.social.tabAll": "Tanan",
+
   "personal.social.tabUnread": "Wala pa nabasa",
+
   "personal.social.unread": "Unread",
+
   "personal.social.unreadEmptyDetail": "Nakasabay ka na. Magbalhin sa Tanan para makita ang nauna nga pahibalo.",
+
   "personal.social.unreadEmptyTitle": "Wala sing wala pa nabasa nga pahibalo",
+
   "personal.startBusiness.addressLine1": "Address",
+
   "personal.startBusiness.billingCycle": "Siklo sang bayad",
+
   "personal.startBusiness.businessTypesLoadFailed": "Indi ma-load ang business types.",
+
   "personal.startBusiness.changePlan": "Islan ang plan",
+
   "personal.startBusiness.city": "Ciudad",
+
   "personal.startBusiness.confirmHint": "Kompirma para himoon ang organization, i-activate ang POS access, kag buksan ang workspace.",
+
   "personal.startBusiness.confirmSubmit": "Himoa ang negosyo",
+
   "personal.startBusiness.contactEmail": "Contact email",
+
   "personal.startBusiness.contactHelper": "Opsyonal. Kopyahon isa ka beses sa organization profile ? indi i-sync sa ulihi.",
+
   "personal.startBusiness.contactPhone": "Contact phone",
+
   "personal.startBusiness.contactTitle": "Contact sang organization",
+
   "personal.startBusiness.country": "Pungsod",
+
   "personal.startBusiness.displayName": "Ngalan sang negosyo",
+
   "personal.startBusiness.displayNamePlaceholder": "halimbawa Ana's Sari-Sari",
+
   "personal.startBusiness.failed": "Nagpalya ang Mag-umpisa Negosyo. Tilawi liwat.",
+
   "personal.startBusiness.formTitle": "Detalye sang negosyo",
+
   "personal.startBusiness.lede": "Himoa ang imo organization kag buksan ang owner workspace.",
+
   "personal.startBusiness.loading": "Nagakarga sang Mag-umpisa Negosyo?",
+
   "personal.startBusiness.modeSubscribe": "Subscribe",
+
   "personal.startBusiness.modeTrial": "Trial",
+
   "personal.startBusiness.planLoadFailed": "Indi ma-load ang plan",
+
   "personal.startBusiness.planLoadFailedDetail": "Balik sa Explore POS kag pilia liwat ang plan.",
+
   "personal.startBusiness.planRequired": "Pilia anay ang plan",
+
   "personal.startBusiness.planRequiredDetail": "Buksa ang Explore POS plans, pilia ang trial ukon Local Validation subscribe, dayon padayon.",
+
   "personal.startBusiness.postalCode": "Postal code",
+
   "personal.startBusiness.primaryTypeHint": "Pilia ang klase nga pinakaangay sa imo tindahan.",
+
   "personal.startBusiness.primaryTypeRequired": "Pilia ang panguna nga klase sang negosyo.",
+
   "personal.startBusiness.primaryTypeTitle": "Panguna nga klase sang negosyo",
+
   "personal.startBusiness.region": "Rehiyon",
+
   "personal.startBusiness.selectedPlan": "Ginpili nga plan",
+
   "personal.startBusiness.sessionSwitchFailed":
+
     "Nahimo na ang negosyo, pero wala nabalhin ang session. Mag-sign in liwat para buksan ini.",
+
   "personal.startBusiness.slug": "Organization slug",
+
   "personal.startBusiness.slugHint": "Auto-filled from your business name. You cannot edit this.",
+
   "personal.startBusiness.slugPlaceholder": "Generated from your business name",
+
   "personal.startBusiness.submitting": "Ginahimo?",
+
   "personal.startBusiness.title": "Mag-umpisa Negosyo",
+
   "personal.startBusiness.trialDays": "{days}-adlaw nga trial, dayon ang plan price.",
+
   "personal.startBusiness.useMyContactDetails": "Gamita ang akon Personal contact details",
+
   "personal.startBusiness.validationRequired": "Isulat ang ngalan sang negosyo.",
+
   "personal.title": "Personal home",
+
   "personal.todo.add": "Magdugang ihimo",
+
   "personal.todo.back": "Balik sa ihimo",
+
   "personal.todo.cancel": "Kanselahon",
+
   "personal.todo.complete": "Markahi nga natapos",
+
   "personal.todo.concurrencyConflict": "Nagbag-o ang ihimo. I-refresh kag tilawi liwat.",
+
   "personal.todo.concurrencyConflictDetail":
+
     "This to-do was updated on another device. Reload the latest version, then try your change again.",
+
   "personal.todo.reloadAndRetry": "Reload and retry",
+
   "personal.todo.searchLabel": "Search to-dos",
+
   "personal.todo.searchPlaceholder": "Search title or notes",
+
   "personal.todo.moreOptions": "More options",
+
   "personal.todo.hideMoreOptions": "Hide options",
+
   "personal.todo.quickDueLabel": "Quick due",
+
   "personal.todo.quickDueToday": "Today",
+
   "personal.todo.quickDueTomorrow": "Tomorrow",
+
   "personal.todo.quickDueNextWeek": "Next week",
+
   "personal.todo.quickDueNone": "No due",
+
   "personal.todo.relatedPick": "Link to",
+
   "personal.todo.relatedPickPlaceholder": "Choose a record",
+
   "personal.todo.relatedPickerOfflineHint": "Connect to pick from your People or Utang lists.",
+
   "personal.todo.relatedLinkLabel": "Linked to",
+
   "personal.todo.emptyTodayTitle": "Nothing due today",
+
   "personal.todo.emptyTodayDetail": "You are clear for today. Check Upcoming for what's next.",
+
   "personal.todo.emptyUpcomingTitle": "No upcoming to-dos",
+
   "personal.todo.emptyUpcomingDetail": "Add a to-do with a future due date to plan ahead.",
+
   "personal.todo.emptyOverdueTitle": "You're caught up on overdue",
+
   "personal.todo.emptyOverdueDetail": "No open to-dos are past due.",
+
   "personal.todo.emptyOpenTitle": "No open to-dos",
+
   "personal.todo.emptyOpenDetail": "Create a to-do above to get started.",
+
   "personal.todo.emptyCompletedTitle": "No completed to-dos yet",
+
   "personal.todo.emptyCompletedDetail": "Completed tasks stay here for your records.",
+
   "personal.todo.emptyCancelledTitle": "No cancelled to-dos",
+
   "personal.todo.emptyCancelledDetail": "Cancelled tasks appear here if you need to reactivate one.",
+
   "personal.todo.emptySearchTitle": "No matching to-dos",
+
   "personal.todo.emptySearchDetail": "Try a different search or clear the filter.",
+
   "personal.todo.countOpen": "Bukas",
+
   "personal.todo.countOverdue": "Nalapas",
+
   "personal.todo.countToday": "Subong",
+
   "personal.todo.countUpcoming": "Nagaabot",
+
   "personal.todo.createTitle": "Bag-o nga ihimo",
+
   "personal.todo.detailTitle": "Detalye sang ihimo",
+
   "personal.todo.dueAt": "Petsa/oras sang deadline (opsyonal)",
+
   "personal.todo.dueLabel": "Deadline",
+
   "personal.todo.edit": "Usbon",
+
   "personal.todo.emptyDetail": "Himoa ang ihimo sa ibabaw ukon baylohi ang filter.",
+
   "personal.todo.emptyTitle": "Wala ihimo diri",
+
   "personal.todo.filterCancelled": "Ginkansela",
+
   "personal.todo.filterCompleted": "Natapos",
+
   "personal.todo.filterOpen": "Bukas",
+
   "personal.todo.filterOverdue": "Nalapas na",
+
   "personal.todo.filterToday": "Subong",
+
   "personal.todo.filterUpcoming": "Nagaabot",
+
   "personal.todo.filters": "Mga filter sang ihimo",
+
   "personal.todo.genericError": "May sala. Tilawi liwat.",
+
   "personal.todo.lede": "Pribadong ihimo nga magapabilin sa imo Personal account.",
+
   "personal.todo.loadErrorDetail": "Usisa ang koneksyon kag tilawan liwat.",
+
   "personal.todo.loadErrorTitle": "Indi makarga ang ihimo",
+
   "personal.todo.loading": "Ginakarga ang ihimo",
+
   "personal.todo.noDue": "Wala deadline",
+
   "personal.todo.notes": "Mga nota (opsyonal)",
+
   "personal.todo.priority": "Prayoridad",
+
   "personal.todo.priorityHigh": "Mataas",
+
   "personal.todo.priorityLow": "Manubo",
+
   "personal.todo.priorityNone": "Wala",
+
   "personal.todo.priorityNormal": "Normal",
+
   "personal.todo.reactivate": "I-reactivate",
+
   "personal.todo.relatedContact": "Tawo",
+
   "personal.todo.relatedId": "Related ID (opsyonal)",
+
   "personal.todo.relatedNone": "Wala",
+
   "personal.todo.relatedOrder": "Order sang kostumer",
+
   "personal.todo.relatedOrg": "Organisasyon",
+
   "personal.todo.relatedType": "May kaangtanan (opsyonal)",
+
   "personal.todo.relatedUtang": "Relasyon sa Utang",
+
   "personal.todo.reminderAt": "Pahanumdom (opsyonal)",
+
   "personal.todo.reminderDelivered": "Napadala na ang pahanumdom",
+
   "personal.todo.reminderPending": "Naka-iskedyul ang pahanumdom",
+
   "personal.todo.reminderServerHint": "Magapadala ang ExItS sang in-app notification sa sini nga oras samtang naka-sign in ka.",
+
   "personal.todo.reopen": "Buksan liwat",
+
   "personal.todo.save": "I-save ang mga pagbag-o",
+
   "personal.todo.status": "Kahimtang",
+
   "personal.todo.statusCancelled": "Ginkansela",
+
   "personal.todo.statusCompleted": "Natapos",
+
   "personal.todo.statusOpen": "Bukas",
+
   "personal.todo.title": "Ihimo",
+
   "personal.todo.titleField": "Titulo",
+
   "personal.todo.titleRequired": "Kinahanglan ang titulo.",
+
   "personal.utang.accountsFilterEmptyDetail": "Try another filter or search.",
+
   "personal.utang.accountsFilterEmptyTitle": "No matching accounts",
+
   "personal.utang.accountsLoading": "Loading accounts?",
+
   "personal.utang.accountsUnavailable": "Accounts could not be loaded. Summary totals above are still available.",
+
   "personal.utang.activeAccounts": "Active accounts",
+
   "personal.utang.activity": "Mga aktibidad",
+
   "personal.utang.addAmount": "Magdugang kantidad",
+
   "personal.utang.addByExitsConfirmHint": "Kumpirmaha ini nga tawo antes idugang sa listahan.",
+
   "personal.utang.addByExitsHint": "Use a personal ExItS ID (EX-?), not an organization ID (ORG?). Resolve the person, confirm identity, then create a contact.",
+
   "personal.utang.addByExitsRequiresOnline": "Kinahanglan sang internet agod magdugang gamit ang ExItS ID.",
+
   "personal.utang.addByExitsTitle": "Magdugang gamit ang ExItS ID / QR",
+
   "personal.utang.addPerson": "Magdugang tawo",
+
   "personal.utang.addPersonExits": "Magdugang tawo gamit ang ExItS ID",
+
   "personal.utang.addPersonFirst": "Magdugang anay sang tawo",
+
   "personal.utang.addPersonKindChange": "Bag-uhon ang tipo",
+
   "personal.utang.addPersonKindExits": "May ExItS Personal ID",
+
   "personal.utang.addPersonKindExitsHint": "I-scan ukon i-type ang Personal ExItS ID agud idugang sila sa listahan.",
+
   "personal.utang.addPersonKindLede": "Pilia ang wala ExItS ID ukon i-link ang Personal ExItS identity.",
+
   "personal.utang.addPersonKindTitle": "Paano magdugang",
+
   "personal.utang.addPersonKindWalkIn": "Wala ExItS ID",
+
   "personal.utang.addPersonKindWalkInHint": "Ngalan kag optional contact lang. Wala ExItS account link.",
+
   "personal.utang.addPersonManualTitle": "Magdugang nga wala ExItS ID",
+
   "personal.utang.adjustBalance": "Tarunga ang balanse",
+
   "personal.utang.adjustmentDelta": "Pag-usab (+/-)",
+
   "personal.utang.amount": "Kantidad",
+
   "personal.utang.amountRequired": "Butang sang kantidad nga sobra sa zero.",
+
   "personal.utang.back": "Balik sa Utang",
+
   "personal.utang.balanceAfter": "Balanse pagkatapos",
+
   "personal.utang.cancelEdit": "Kanselahon",
+
   "personal.utang.cancelPending": "Kanselahon",
+
   "personal.utang.choosePerson": "Pili sang tawo",
+
   "personal.utang.coming": "Ang bug-os nga lista sang Utang kag bayad mag-abot sa masunod nga Personal update.",
+
   "personal.utang.concurrencyConflict": "Nagbag-o ang rekord. I-refresh kag tilawi liwat.",
+
   "personal.utang.settle": "I-settle",
+
   "personal.utang.settleTitle": "I-settle ini nga utang?",
+
   "personal.utang.settleConfirm": "Kumpirmahon ang settle",
+
   "personal.utang.settlePrivateHint": "Markahan sini ang balanse nga settled sa imo pribado nga rekord.",
+
   "personal.utang.settleSharedHint": "Kinahanglan kumpirmahon sang iban antes ma-settle ang shared utang.",
+
   "personal.utang.settleAmount": "Kantidad sang settlement",
+
   "personal.utang.settleAfter": "Balanse pagkatapos mag-settle",
+
   "personal.utang.settleAwaiting": "Nagahulat sang kumpirmasyon sang iban sa settlement.",
+
   "personal.utang.markSettled": "Markahan nga settled",
+
   "personal.utang.markSettledHint": "Zero na ang balanse (?0). Markahan nga settled.",
+
   "personal.utang.statusSettled": "Settled",
+
   "personal.utang.statusActive": "Aktibo",
+
   "personal.utang.statusClosed": "Serrado",
+
   "personal.utang.settlementEntry": "Settlement",
+
   "personal.utang.settleStaleConflict": "Nagbag-o ang balanse. I-refresh kag tilawi liwat mag-settle.",
+
   "personal.utang.settlePendingBlocked": "Kumpirmahon ukon i-dispute ang pending entries antes mag-settle.",
+
   "personal.utang.settleRequiresOnline": "Kinahanglan internet para i-settle ini nga utang.",
+
   "personal.utang.confirm": "Kumpirmaha",
+
   "personal.utang.confirmReceived": "Kumpirmaha ang nadawat",
+
   "personal.utang.dispute": "I-dispute",
+
   "personal.utang.disputeKeep": "Pabilin nga pending",
+
   "personal.utang.disputeReason": "Rason (opsyonal)",
+
   "personal.utang.disputeReasonAmount": "Sala ang kantidad",
+
   "personal.utang.disputeReasonNotReceived": "Wala nadawat",
+
   "personal.utang.disputeReasonOther": "Iban pa",
+
   "personal.utang.disputeSubmit": "Isumite ang dispute",
+
   "personal.utang.dueDate": "Petsa sang bayad (opsyonal)",
+
   "personal.utang.dueOverdue": "Nalapas na",
+
   "personal.utang.dueSoon": "Madali na ang petsa",
+
   "personal.utang.dueUpcoming": "Petsa",
+
   "personal.utang.editPerson": "I-edit ang tawo",
+
   "personal.utang.editRequiresOnline": "Kinahanglan sang internet agod ma-edit ang tawo.",
+
   "personal.utang.email": "Email (opsyonal)",
+
   "personal.utang.emailLinkedReadonly": "Email hali sa naka-link nga ExItS account (read-only)",
+
   "personal.utang.entryType": "Klase",
+
   "personal.utang.entryTypeAdjustment": "Pag-tadlong sang balanse",
+
   "personal.utang.entryTypeLoan": "Gindugang nga kantidad",
+
   "personal.utang.entryTypePayment": "Bayad",
+
   "personal.utang.filterAll": "All",
+
   "personal.utang.filterIOwe": "I owe",
+
   "personal.utang.filterLabel": "Account filter",
+
   "personal.utang.filterOwedToMe": "Owed to me",
+
   "personal.utang.genericError": "May sala. Tilawi liwat.",
+
   "personal.utang.historyEmptyDetail": "Ang mga bayad kag pag-usab magapakita diri.",
+
   "personal.utang.historyEmptyTitle": "Wala pa aktibidad",
+
   "personal.utang.lede": "Kuwarta nga ginahatag mo kag kuwarta nga utang mo.",
+
   "personal.utang.lent": "Kuwarta nga ginahatag ko",
+
   "personal.utang.lentLede": "Kuwarta nga utang sang iban sa imo.",
+
   "personal.utang.linkExitsId": "Link ExItS ID",
+
   "personal.utang.linked": "Naka-link",
+
   "personal.utang.linkedBadge": "Linked",
+
   "personal.utang.listEmptyDetail": "Himoa ang una nga rekord sa ibabaw.",
+
   "personal.utang.listEmptyDetailLent": "Open Record money lent above to add your first entry.",
+
   "personal.utang.listEmptyDetailOwe": "Open Record money I owe above to add your first entry.",
+
   "personal.utang.listEmptyTitle": "Wala pa rekord",
+
   "personal.utang.loadErrorDetail": "Usisa ang koneksyon kag tilawan liwat.",
+
   "personal.utang.loadErrorTitle": "Indi makarga ang Utang",
+
   "personal.utang.name": "Ngalan",
+
   "personal.utang.nameRequired": "Kinahanglan ang ngalan.",
+
   "personal.utang.needsConfirmation": "Needs confirmation",
+
   "personal.utang.noBalanceChange": "Wala pa pagbag-o sa balanse",
+
   "personal.utang.notLinkedToExits": "Wala pa naka-link sa ExItS",
+
   "personal.utang.note": "Nota (opsyonal)",
+
   "personal.utang.adjustmentReason": "Reason / Note",
+
   "personal.utang.adjustmentReasonHelp": "Explain why this balance adjustment is needed.",
+
   "personal.utang.adjustmentReasonRequired": "Add a reason / note for this adjustment.",
+
   "personal.utang.noteOptional": "Note (optional)",
+
   "personal.utang.privateSaveHint": "This will be saved to your private Utang record.",
+
   "personal.utang.activityYouLent": "You lent {name}",
+
   "personal.utang.activityYouBorrowed": "You borrowed from {name}",
+
   "personal.utang.activityTheyLentYou": "{name} lent you",
+
   "personal.utang.activityTheyBorrowed": "{name} borrowed from you",
+
   "personal.utang.purpose": "Purpose / Note",
+
   "personal.utang.purposeHelp": "Add why this money was lent or borrowed so you can remember it later.",
+
   "personal.utang.purposeRequired": "Add a purpose / note before saving.",
+
   "personal.utang.recordUtang": "Record Utang",
+
   "personal.utang.reviewBorrowed": "You owe {name} ?{amount}",
+
   "personal.utang.reviewLent": "You lent {name} ?{amount}",
+
   "personal.utang.saveUtang": "Save Utang",
+
   "personal.utang.whatHappenedBorrowed": "What happened? I borrowed money ? I owe someone.",
+
   "personal.utang.whatHappenedLent": "What happened? I lent money ? someone owes me.",
+
   "personal.utang.owe": "Kuwarta nga utang ko",
+
   "personal.utang.oweLede": "Kuwarta nga utang mo sa iban.",
+
   "personal.utang.owesYou": "May utang sa imo",
+
   "personal.utang.pendingConfirmations": "Nagahulat sa imo ({count})",
+
   "personal.utang.pendingConfirmationsLede": "Buksan ang shared utang para kumpirmahon ukon i-dispute ang ginarekord sang pihak.",
+
   "personal.utang.people": "Mga tawo",
+
   "personal.utang.peopleEmptyDetail": "Magdugang bisan wala pa sila sa ExItS.",
+
   "personal.utang.peopleEmptyTitle": "Wala pa mga tawo",
+
   "personal.utang.peopleLede": "Mga tawo nga ginabantayan mo para sa personal nga Utang.",
+
   "personal.utang.peopleLinkedLabel": "naka-link sa ExItS ID",
+
   "personal.utang.peopleUnlinkedLabel": "wala ExItS ID",
+
   "personal.utang.person": "Tawo",
+
   "personal.utang.personRequired": "Pili sang tawo.",
+
   "personal.utang.perspectiveCreditor": "May utang sila sa imo",
+
   "personal.utang.perspectiveDebtor": "May utang ka sa ila",
+
   "personal.utang.phone": "Telepono (opsyonal)",
+
   "personal.utang.phoneLinkedReadonly": "Telepono hali sa naka-link nga ExItS account (read-only)",
+
   "personal.utang.privateRecord": "Pribado nga rekord",
+
   "personal.utang.recordLent": "Irekord ang ginahatag",
+
   "personal.utang.recordOwe": "Irekord ang utang ko",
+
   "personal.utang.recordPayment": "Irekord ang bayad",
+
   "personal.utang.resolveSelf": "Amo na ang imo mismo nga ExItS ID.",
+
   "personal.utang.reviewAccounts": "Review accounts",
+
   "personal.utang.saveEntry": "I-save",
+
   "personal.utang.savePerson": "I-save ang mga kambyo",
+
   "personal.utang.searchLabel": "Search people",
+
   "personal.utang.searchPlaceholder": "Search by name",
+
   "personal.utang.sectionComing": "Ini nga bahin sang Utang sunod pa. Gamita ang Balay para sa kabilugan.",
+
   "personal.utang.sendForConfirmation": "Ipadala para kumpirmahon",
+
   "personal.utang.sendForConfirmationHint": "This will be sent to {name} for confirmation.",
+
   "personal.utang.pendingLimitReached":
+
     "You already have 3 entries waiting for {name}'s review. Wait for one to be confirmed or disputed before adding another.",
+
   "personal.utang.dailyLimitReached":
+
     "You've reached today's limit for new Utang entries with {name}. Try again later.",
+
   "personal.utang.duplicateSubmission": "This Utang entry was already submitted.",
+
   "personal.utang.pendingWaitingCount": "{count} entries are waiting for {name}'s review.",
+
   "personal.utang.viewPending": "View pending entries",
+
   "personal.utang.sharedLedger": "Shared ledger",
+
   "personal.utang.statusCancelled": "Gin-cancel",
+
   "personal.utang.statusConfirmed": "Nakumpirma",
+
   "personal.utang.statusDisputed": "Gina-dispute",
+
   "personal.utang.statusPending": "Pending",
+
   "personal.utang.title": "Utang",
+
   "personal.utang.unlinkedContact": "Wala pa na-link sa ExItS account",
+
   "personal.utang.waitingForName": "Nagahulat kay {name}",
+
   "personal.utang.waitingForYou": "Nagahulat sa imo",
+
   "personal.utang.recordedForReview": "{name} recorded an Utang entry",
+
   "personal.utang.workspaceEmptyDetail": "Track money you lend or owe without using paper notes.",
+
   "personal.utang.workspaceEmptyTitle": "No Utang yet",
+
   "personal.utang.workspaceLede": "Balances, people, and confirmations for money you lend or owe.",
+
   "personal.utang.workspaceMeta": "{active} active ? {people} people",
+
   "personal.utang.youOwe": "May utang ka",
+
   "preferences.appearance": "Hitsura",
+
   "preferences.close": "Siraduhan ang preferences",
-  "preferences.lede": "Mga setting sang pulong, hitsura, kag density para sa sini nga device.",
+  "preferences.menuLabel": "Mga seksyon sang Preferences",
+  "preferences.section.appearance": "Panagway",
+  "preferences.section.languageRegion": "Lengguahe kag Rehiyon",
+  "preferences.section.navigation": "Nabigasyon",
+  "preferences.section.accessibility": "Aksesibilidad",
+  "preferences.navigationEmpty": "Wala pa sang dugang navigation preferences. Magapakita diri ang personal nga navigation options kung available na.",
+  "preferences.accessibilityEmpty": "Wala pa sang dugang accessibility preferences. Ang Motion preferences ara sa Appearance.",
+
+  "preferences.lede": "I-personalize kung paano makita kag maggawi ang ExItS para sa imo.",
+
   "preferences.title": "Mga setting",
+
   "prices.current": "Subong",
+
   "prices.dirty": "Giilisan",
+
   "prices.emptyDetail": "Wala sing active nga products nga i-price.",
+
   "prices.invalidPrice": "Magbutang sang balido nga price hangtud 2 decimal places.",
+
   "prices.itemFailed": "Indi ma-update ini nga price.",
+
   "prices.lede": "I-update ang selling price sa tagsa ka produkto. Tagsa ka kausaban i-save sing hungod.",
+
   "prices.newPrice": "Bag-ong price",
+
   "prices.noChanges": "Wala sing wala pa na-save nga kausaban",
+
   "prices.nothingToSave": "Wala sing price changes nga i-save.",
+
   "prices.partialFailure": "{failed} nagpalya, {succeeded} nagmadinalag-on. Ayo-a ang conflicts kag tilawi liwat.",
+
   "prices.pendingCount": "{count} wala pa na-save nga kausaban",
+
   "prices.resultTitle": "Resulta sa pag-save",
+
   "prices.save": "I-save ang {count} ka price(s)",
+
   "prices.saveOne": "I-save",
+
   "prices.saveOneAria": "I-save ang price para sa {product}",
-  "prices.savingOne": "Nagase-save…",
+  "prices.resetOneAria": "I-reset ang price para sa {product}",
+  "prices.savingOne": "Nagase-save???",
+
   "prices.staleConflict": "Gin-islan ang price sa iban nga lugar. Tan-awa ang pinakabag-o nga price kag tilawi liwat.",
+
   "prices.success": "Na-save. {changed} ka price(s) ang giilisan.",
+
   "prices.title": "Mga Presyo Karon",
+
   "prices.updatedToast": "Na-update ang price sang {product} sa {price}.",
+
   "purchasing.acceptChanges": "Accept changes",
+
   "purchasing.actionFailed": "Could not complete that action.",
+
   "purchasing.addLine": "Add line",
+
   "purchasing.addProducts": "Add products",
+
+  "purchasing.addStockToBranch": "Add stock to {name}",
+
+  "purchasing.orderProducts": "Mga produkto nga i-order",
+
+  "purchasing.connectedOrderingHelp": "Mga naka-link nga shared product lang ang pwede i-order diri.",
+
+  "purchasing.noReadyProducts": "Wala produkto nga handa i-order.",
+
+  "purchasing.noReadyProductsHelp": "I-link anay ang shared catalog products, dayon balika diri para mag-order.",
+
+  "purchasing.openSharedCatalog": "Bukasi ang shared catalog",
+
+  "purchasing.supplierSku": "SKU sang supplier",
+  "purchasing.colProduct": "Product",
+  "purchasing.colSku": "SKU",
+  "purchasing.colUnit": "Unit",
+  "purchasing.colPrice": "Price",
+  "purchasing.colStock": "Stock",
+  "purchasing.colQty": "Qty",
+  "purchasing.colAction": "Action",
+
+  "purchasing.supplierOutOfStock": "Out of stock",
+
+  "purchasing.supplierStockInStock": "Available",
+
+  "purchasing.supplierStockAvailable": "{n} available",
+
+  "purchasing.supplierAvailableNow": "Available now: {qty} {unit}",
+
+  "purchasing.supplierOverOrderWarning":
+    "Requested quantity exceeds current available stock. Supplier confirmation may be required.",
+
+  "purchasing.stockNotTracked": "Stock not tracked",
+
+  "purchasing.stockBlocksCreate": "Remove or reduce lines that exceed supplier stock.",
+
+  "purchasing.stockChanged": "Supplier stock changed. Refresh quantities and try again.",
+
+  "purchasing.addProduct": "Add",
+
+  "purchasing.categoryAll": "Tanan",
+
+  "purchasing.categoryOther": "Iban pa",
+
+  "purchasing.categoryFilter": "Mga kategoriya sang produkto",
+
+  "purchasing.setupTabHelp": "I-link ukon ayuhon anay ini nga mga produkto sa Shared catalog antes mag-order.",
+
+  "purchasing.connectInSharedCatalog": "I-connect sa shared catalog",
+
+  "purchasing.noSetupProducts": "Wala produkto sa sini nga setup status.",
+
+  "purchasing.noSetupProductsHelp": "Magbalhin sa Linked para mag-order, ukon bukasi ang Shared catalog.",
+
+  "purchasing.increaseQty": "Dugangi ang kadamuon",
+
+  "purchasing.decreaseQty": "Buhini ang kadamuon",
+
+  "purchasing.draftSummary": "{products} produkto ?? {units} yunit",
+
+  "purchasing.subtotal": "Kabilugan",
+
   "purchasing.backDetail": "Back to purchase order",
+
   "purchasing.backDirect": "Back to direct purchases",
+
   "purchasing.backHub": "Back to purchasing",
+
   "purchasing.backOrders": "Back to purchase orders",
+
   "purchasing.backToReceipt": "Back to edit",
+
   "purchasing.boughtFrom": "Bought from",
+
   "purchasing.branch": "Branch",
+
   "purchasing.cancel": "Cancel",
+
   "purchasing.cancelled": "Purchase order cancelled.",
+
   "purchasing.changesAccepted": "Supplier changes accepted.",
+
   "purchasing.changesNeedApproval": "Supplier proposed changes. Accept them before receiving.",
+  "purchasing.reservedUntil": "Reserved until {datetime}",
+
   "purchasing.choiceOrder": "Create a purchase order when you will receive later ? ordering alone does not add stock.",
+
   "purchasing.choiceReceive": "Receive stock when goods are already here ? inventory increases immediately.",
+
   "purchasing.closeAsShort": "Close remaining as short",
-  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as short-closed.",
+
+  "purchasing.closeRemainingHelp": "Marks leftover outstanding quantity as cancelled remaining.",
+
   "purchasing.confirmDirect": "Confirm direct purchase",
+
   "purchasing.confirmReceipt": "Confirm goods receipt",
+
   "purchasing.connectedReceiveBlocked": "This connected order is not ready to receive yet.",
+
   "purchasing.createLede": "Choose supplier, branch, and products. Stock does not change yet.",
+
   "purchasing.createOrder": "Create purchase order",
+
   "purchasing.createTitle": "New purchase order",
+
   "purchasing.damaged": "Damaged",
+
   "purchasing.deliveryReference": "Delivery reference",
+
   "purchasing.detailTitle": "Purchase order",
+
   "purchasing.directDate30": "30 ka adlaw",
+
   "purchasing.directDate7": "7 ka adlaw",
+
   "purchasing.directDate90": "90 ka adlaw",
+
   "purchasing.directDateAll": "Tan?n nga petsa",
+
   "purchasing.directDateFilter": "Petsa sang pagbakal",
+
   "purchasing.directDetailLede": "Direct purchase that increased inventory.",
+
   "purchasing.directEmpty": "No direct purchases yet",
-  "purchasing.directEmptyDetail": "Receive stock to create the first direct purchase receipt.",
+
+  "purchasing.directEmptyDetail": "ExItS B2B sales to your organization appear here automatically. Record a local direct purchase when you buy outside ExItS.",
+
   "purchasing.directNoMatch": "Wala sang nagahisugtong nga resibo",
+
   "purchasing.directNoMatchDetail": "Suwayi ang iban nga pagpangita ukon filter sang petsa.",
+
   "purchasing.directNotFound": "Direct purchase receipt was not found.",
+
   "purchasing.directPurchases": "Direct purchases",
+
   "purchasing.directPurchasesLede": "Past direct purchase receipts that increased stock.",
+  "purchasing.recordDirectPurchase": "Record direct purchase",
+  "purchasing.directSourceFilter": "Source",
+  "purchasing.directSourceAll": "All",
+  "purchasing.directSourceB2b": "B2B",
+  "purchasing.directSourceLocal": "Local",
+  "purchasing.directStatusFilter": "Status",
+  "purchasing.directStatusAll": "All",
+  "purchasing.directStatusCompleted": "Completed",
+  "purchasing.directStatusVoided": "Voided",
+  "purchasing.directBadgeB2b": "B2B",
+  "purchasing.directBadgeLocal": "Local",
+  "purchasing.directColDate": "Date",
+  "purchasing.directColSeller": "Seller / Source",
+  "purchasing.directColType": "Type",
+  "purchasing.directColReference": "Reference",
+  "purchasing.directColItems": "Items",
+  "purchasing.directColTotal": "Total",
+  "purchasing.directColStatus": "Status",
+  "purchasing.b2bDetailTitle": "Transaction Summary",
+  "purchasing.b2bDetailMissing": "This B2B purchase was not found for your organization.",
+  "purchasing.b2bPurchasedFrom": "Purchased from",
+  "purchasing.b2bSellerOrgId": "Organization ID",
+  "purchasing.b2bSellerStore": "Seller store",
+  "purchasing.b2bDiscount": "Discount",
+
   "purchasing.directSaveFailed": "Could not save the direct purchase.",
+
   "purchasing.draft": "Draft lines",
-  "purchasing.draftEmpty": "No products in this receipt yet.",
+
+  "purchasing.draftEmpty": "No products added yet",
+  "purchasing.draftEmptyDetail": "Search or browse products to add items to this receipt.",
+
   "purchasing.errorTitle": "Purchasing error",
+
   "purchasing.expiryDate": "Expiry date",
+
   "purchasing.expiryRequired": "Expiry date is required when receiving expiration-tracked stock.",
+
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
+
   "purchasing.fieldOrderDate": "Order date",
+
   "purchasing.fieldStatus": "Status",
+
   "purchasing.fieldSupplier": "Supplier",
+
   "purchasing.receivingAt": "Receiving at",
+
   "purchasing.goodReceived": "Good received",
-  "purchasing.hubLede": "Receive stock now, or create purchase orders for later delivery.",
+
+  "purchasing.receivedBefore": "Received before",
+
+  "purchasing.receiveNow": "Receive now",
+
+  "purchasing.editReceiveNow": "Edit receive quantity",
+
+  "purchasing.deliverLater": "Deliver / replace later",
+
+  "purchasing.cancelRemaining": "Cancel remaining",
+
+  "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
+
+  "purchasing.remainingDecisionTitle": "Remaining quantity",
+  "purchasing.discrepancyClassifyTitle": "Classify discrepancy",
+  "purchasing.discrepancyClassifyHint": "Classify the remaining quantity.",
+  "purchasing.notAcceptedQty": "{qty} was not accepted",
+  "purchasing.allDamaged": "All damaged",
+  "purchasing.allNotDelivered": "All not delivered",
+  "purchasing.notDelivered": "Not delivered",
+  "purchasing.remainingToClassify": "Remaining to classify: {qty}",
+  "purchasing.discrepancyNoteRequired": "Add a note for each discrepancy before continuing.",
+  "purchasing.discrepancyClassificationRequired": "Classify damaged and not delivered quantities before continuing.",
+  "purchasing.saveClassification": "Save classification",
+  "purchasing.classifyBeforeReview": "Classify all receipt discrepancies before reviewing the receipt.",
+  "purchasing.needsClassification": "Needs classification",
+  "purchasing.remainingActionDeliverLater": "Deliver / replace later",
+  "purchasing.remainingActionCancel": "Cancel remaining",
+
+  "purchasing.activity.created": "Purchase order created",
+
+  "purchasing.activity.submitted": "Submitted to supplier",
+
+  "purchasing.activity.supplierAccepted": "Supplier accepted",
+
+  "purchasing.activity.supplierPreparing": "Supplier preparing",
+
+  "purchasing.activity.supplierReady": "Supplier marked ready / shipped",
+
+  "purchasing.activity.supplierDeclined": "Supplier declined",
+
+  "purchasing.activity.changesProposed": "Supplier proposed changes",
+  "purchasing.activity.stockReserved": "Stock reserved",
+  "purchasing.activity.proposalReservation": "Proposal stock hold",
+  "purchasing.activity.reservationConfirmed": "Reservation confirmed",
+  "purchasing.activity.reservationReleased": "Reservation released",
+  "purchasing.activity.reservationExpired": "Reservation expired",
+
+  "purchasing.activity.withdrawn": "Withdrawn",
+
+  "purchasing.activity.cancelled": "Cancelled",
+
+  "purchasing.activity.receipt": "Goods receipt {grn}",
+
+  "purchasing.activity.receiptReversed": "Receipt {grn} reversed",
+
+  "purchasing.activity.completed": "Fully received",
+  "purchasing.activity.remainingClosed": "Remaining quantity cancelled",
+
+  "purchasing.activity.empty": "No activity yet.",
+
+  "purchasing.activity.partialReceipt": "Partial receipt",
+
+  "purchasing.activity.fullyReceived": "Fully received",
+
+  "purchasing.activity.receivedLabel": "Received",
+
+  "purchasing.activity.showReceiptDetail": "Show receipt detail",
+
+  "purchasing.activity.hideReceiptDetail": "Hide receipt detail",
+  "purchasing.timeline": "Timeline",
+  "purchasing.timelineTitle": "Purchase order timeline",
+  "purchasing.timelineClose": "Close timeline",
+  "purchasing.hubLede": "Manage business buying and selling activity.",
+  "purchasing.buyingTitle": "Buying",
+  "purchasing.buyingLede": "Buy stock from suppliers and manage purchasing activity.",
+  "purchasing.buyingPrimary": "Primary actions",
+  "purchasing.buyingManage": "Manage",
+  "purchasing.sellingTitle": "Selling",
+  "purchasing.sellingLede": "Review and manage orders other businesses place with you.",
+  "purchasing.sellingPrimary": "Primary actions",
+  "purchasing.sellingStatus": "By status",
+
   "purchasing.invalidLine": "Enter a valid quantity and unit cost.",
+
   "purchasing.invalidReceiveQty": "Enter valid non-negative quantities.",
+
   "purchasing.inventoryManageDenied": "You don't have permission to receive stock.",
+
+  "purchasing.inventoryNotCurrentlyTracked": "Inventory is not currently tracked.",
+
+  "purchasing.inventoryTrackingEnabled": "Inventory tracking enabled",
+
+  "purchasing.enableInventoryTracking": "Enable inventory tracking",
+
   "purchasing.lines": "Lines",
+  "purchasing.orderItems": "Purchase order items",
+  "purchasing.addItems": "Add items",
+  "purchasing.orderItemsEmpty": "No products added yet",
+  "purchasing.orderItemsEmptyHelp": "Add products to build this purchase order.",
+  "purchasing.seller": "Seller",
+  "purchasing.export": "Export",
+  "purchasing.colActions": "Actions",
+
   "purchasing.linesCount": "{count} lines",
+
   "purchasing.linesEmpty": "No lines yet.",
+
   "purchasing.linesRequired": "Add at least one line.",
+
   "purchasing.loadFailed": "Could not load purchasing data.",
+
   "purchasing.loading": "Loading purchasing?",
+
   "purchasing.lotNumber": "Batch / Lot number",
+
   "purchasing.manageDenied": "You don't have permission to manage purchase orders.",
+
   "purchasing.newOrder": "New purchase order",
+
   "purchasing.nextPage": "Next",
+
   "purchasing.noProducts": "No matching products",
+
   "purchasing.noProductsDetail": "Try another name, barcode, or SKU.",
+
   "purchasing.notFound": "Purchase order was not found.",
+
   "purchasing.notes": "Notes",
+  "purchasing.notesOptional": "Notes (optional)",
+  "purchasing.purchaseDetails": "Purchase details",
+  "purchasing.receiptItems": "Receipt items",
+  "purchasing.receiptTotal": "Total",
+  "purchasing.addNewProduct": "Add new product",
+  "purchasing.qtyShort": "Qty",
+  "purchasing.costShort": "Cost",
+  "purchasing.sellingPriceShort": "Selling price",
+  "purchasing.costZeroMarginWarning": "Purchase cost equals the current selling price (zero margin).",
+  "purchasing.costNegativeMarginWarning":
+    "Purchase cost is higher than the current selling price (negative margin).",
+  "purchasing.sellingPriceNeedsReview": "Selling price needs review",
+  "purchasing.sellingPriceNeedsReviewDetail":
+    "Purchase cost is equal to or higher than the current selling price. Review the selling price to avoid a zero or negative margin.",
+  "purchasing.sellingPriceNeedsReviewDetailMany":
+    "{count} received products have purchase costs equal to or higher than their current selling prices. Review their selling prices to avoid zero or negative margins.",
+  "purchasing.reviewPrice": "Review price",
+  "purchasing.reviewPrices": "Review prices",
+
+
   "purchasing.offline": "Purchasing needs an internet connection.",
+
   "purchasing.open": "Pagbakal",
+
   "purchasing.orderDate": "Order date",
+
   "purchasing.ordered": "Ordered",
+
   "purchasing.orders": "Purchase orders",
+
   "purchasing.ordersEmpty": "No purchase orders",
+
   "purchasing.ordersEmptyDetail": "Create a purchase order or change the filter.",
+  "purchasing.ordersNoMatch": "No matching purchase orders",
+  "purchasing.ordersNoMatchDetail": "Try another PO number, supplier, or status.",
+  "purchasing.searchOrders": "Search purchase orders",
+  "purchasing.poNumber": "PO number",
+
   "purchasing.ordersLede": "Draft, submit, and track purchase orders.",
+
   "purchasing.ordersNoStock": "Creating or submitting a purchase order does not increase inventory.",
+
   "purchasing.outstanding": "Outstanding",
+
   "purchasing.outstandingSummary": "{qty} outstanding ? {count} lines",
+
   "purchasing.overReceive": "Cannot receive more than outstanding quantity.",
+
   "purchasing.pageLabel": "Page {page} of {totalPages}",
+
   "purchasing.paymentTerm": "Payment",
+
+  "purchasing.paymentMethod": "Payment method",
+
+  "purchasing.paymentMethodIntendedHelp":
+    "Choose the intended payment method for this order. This does not mean payment has been received.",
+
+  "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
+
+  "purchasing.paymentMethod.cod": "COD / Pay on delivery",
+
+  "purchasing.paymentMethod.bankTransfer": "Bank transfer",
+  "purchasing.paymentMethod.bankDeposit": "Bank deposit",
+  "purchasing.paymentMethod.check": "Check",
+
+  "purchasing.paymentMethod.gcash": "GCash / Manual e-wallet",
+
+  "purchasing.paymentMethod.utang": "Utang / Credit",
+
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
+
+  "purchasing.paymentHelp.bankTransfer":
+    "Payment can be completed after the supplier confirms the order.",
+
+  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
+
+  "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+
+  "purchasing.utang.unavailable": "unavailable",
+
+  "purchasing.utang.notConnected": "Utang is only available for connected suppliers.",
+
+  "purchasing.utang.permissionDenied": "You do not have permission to use Utang on purchase orders.",
+
+  "purchasing.utang.creditNotApproved": "Approved credit terms are required before Utang can be used.",
+
+  "purchasing.utang.noAvailableCredit": "No available credit on this relationship.",
+
+  "purchasing.utang.insufficientCredit":
+    "Order total exceeds available credit. Reduce the order or choose another payment method.",
+  "purchasing.utang.creditLimit": "Credit limit",
+  "purchasing.utang.outstanding": "Outstanding Utang",
+  "purchasing.utang.reservedActivePos": "Reserved by active POs",
+  "purchasing.utang.available": "Available credit",
+  "purchasing.utang.thisPoTotal": "This PO total",
+  "purchasing.utang.remainingAfterPo": "Remaining after PO",
+
+  "purchasing.declineChanges": "Decline changes",
+
+  "purchasing.changesDeclined": "Proposed changes declined. Waiting for supplier response.",
+
   "purchasing.prevPage": "Previous",
-  "purchasing.productSearch": "Search by product name, barcode, or SKU",
+
+  "purchasing.productSearch": "Search name, barcode or SKU",
+
   "purchasing.purchaseDate": "Purchase date",
+
+  "purchasing.purchaseAmount": "Purchase amount",
+
+  "purchasing.purchasePrice": "Purchase price",
+
   "purchasing.qty": "Quantity",
+
   "purchasing.readyToReceive": "Ready to receive.",
+
   "purchasing.prepareProductsTitle": "prepareProductsTitle",
+
   "purchasing.prepareProductsHelp": "prepareProductsHelp",
+
   "purchasing.prepareProductsAction": "prepareProductsAction",
+
   "purchasing.prepareAllReady": "prepareAllReady",
+
   "purchasing.prepareAllReadyHelp": "prepareAllReadyHelp",
+
   "purchasing.prepareNewProduct": "prepareNewProduct",
+
   "purchasing.prepareMatchFound": "prepareMatchFound",
+
   "purchasing.prepareYourProduct": "prepareYourProduct",
+
   "purchasing.prepareLinkThis": "prepareLinkThis",
+
   "purchasing.prepareMatchExisting": "prepareMatchExisting",
+
   "purchasing.prepareCreateProduct": "prepareCreateProduct",
+
   "purchasing.prepareChooseExisting": "prepareChooseExisting",
+
   "purchasing.prepareSearchProducts": "prepareSearchProducts",
+
   "purchasing.prepareCreateFromSupplier": "prepareCreateFromSupplier",
+
   "purchasing.prepareSupplierProduct": "prepareSupplierProduct",
+
   "purchasing.preparePurchaseCost": "preparePurchaseCost",
+
   "purchasing.prepareYourSellingPrice": "prepareYourSellingPrice",
+
   "purchasing.prepareSellingPriceInvalid": "prepareSellingPriceInvalid",
+
   "purchasing.prepareCreateAndLink": "prepareCreateAndLink",
+
   "purchasing.prepareLinkFailed": "prepareLinkFailed",
+
   "purchasing.prepareCreateFailed": "prepareCreateFailed",
+
   "purchasing.prepareExposureMissing": "prepareExposureMissing",
+
   "purchasing.continueToReceiving": "continueToReceiving",
+
   "purchasing.prepareFinishSetup": "prepareFinishSetup",
+
   "purchasing.backToOrder": "backToOrder",
+
+  "purchasing.previousTrackedStock": "Previous",
+
+  "purchasing.newTrackedStock": "New tracked stock",
+
+  "purchasing.receiptCompleted": "Receipt completed",
+
   "purchasing.receipts": "Ready to receive",
+
   "purchasing.receiptsEmpty": "Nothing ready to receive",
+
   "purchasing.receiptsEmptyDetail": "Submitted orders with outstanding quantity appear here.",
+
   "purchasing.receiptsFilter": "Status sang pagbaton",
+
   "purchasing.receiptsLede": "Purchase orders waiting for goods receipt.",
+
   "purchasing.receiptsNoMatch": "Wala sang nagahisugtong nga order",
+
   "purchasing.receiptsNoMatchDetail": "Suwayi ang iban nga pagpangita ukon filter.",
+
   "purchasing.receiptsStockNote": "Inventory increases only when you confirm a goods receipt.",
+
   "purchasing.receive": "Receive goods",
+
   "purchasing.receiveAgainstPo": "Receive against this order",
+
   "purchasing.receiveFailed": "Could not record the goods receipt.",
+
   "purchasing.receiveNotes": "Receipt notes",
+
   "purchasing.receiveRequiresLines": "Enter at least one quantity to receive.",
+
   "purchasing.receiveStock": "Receive stock",
-  "purchasing.receiveStockHelper": "Use this when you bought goods without a purchase order.",
+
+  "purchasing.receiveStockHelper":
+    "Record goods you already purchased and received. Confirming this receipt adds them to inventory.",
+  "purchasing.findProducts": "Find products",
+  "purchasing.supplierProducts": "Supplier product",
+  "purchasing.supplierPrice": "Supplier price",
+  "purchasing.productAdded": "Added",
+  "purchasing.categories": "Categories",
+  "purchasing.category": "Category",
+  "purchasing.categoriesPlaceholder": "Select categories",
+  "purchasing.categoriesSelected": "{count} selected",
+  "purchasing.categoriesTriggerCount": "Categories Â· {count}",
+  "purchasing.selectAllCategories": "Pilion tanan",
+  "purchasing.deselectAllCategories": "Kuhaon tanan",
+  "purchasing.clearCategories": "Clear categories",
+  "purchasing.removeCategory": "Remove {name}",
+  "purchasing.noMatchingProducts": "No matching products",
+  "purchasing.noMatchingProductsDetail": "Try changing the search or category filters.",
+  "purchasing.draftEmptyDetailLeft": "Magdugang sang produkto para mahimo ini nga receipt.",
+  "purchasing.closeFindProducts": "Isara na",
+  "purchasing.unit": "Unit",
+  "purchasing.action": "Action",
+  "purchasing.inventoryTracking": "Inventory tracking",
+  "purchasing.trackedOnly": "Tracked only",
+  "purchasing.inventoryTrackingRequired": "Inventory tracking required",
+  "purchasing.inventoryTrackingRequiredDetail":
+    "{name} is not inventory-tracked. Enable tracking before receiving it.",
+  "purchasing.removeNamed": "Remove {name}",
+  "purchasing.recentCompletedReceipts": "Recent completed receipts",
+  "purchasing.viewAllDirectPurchases": "View all direct purchases",
+  "purchasing.completedReceiptsEmpty": "No completed receipts yet",
+  "purchasing.completedReceiptsEmptyDetail": "Completed Receive Stock transactions will appear here.",
+  "purchasing.receiveStockConfirm": "Receive stock",
+  "purchasing.view": "View",
+
   "purchasing.receiveStockLede": "Record a direct purchase and increase inventory.",
+
   "purchasing.receivingIntoBranch": "Receiving into: {name}",
+
   "purchasing.receivingBranch": "Receiving branch",
+
   "purchasing.receivedAtBranch": "Received at: {name}",
+
   "purchasing.branchSwitchDraftReset":
-    "Workspace branch changed. Your draft was cleared — re-enter items for the current branch.",
+
+    "Workspace branch changed. Your draft was cleared ??? re-enter items for the current branch.",
+
   "purchasing.receiveStockNotTracked": "Only inventory-tracked products can be received here.",
+
   "purchasing.receiveSubtitle": "Confirm quantities received.",
+
   "purchasing.receiveTitle": "Receive goods",
+  "purchasing.searchReceiveLines": "Search products on this order",
+  "purchasing.receiveLineFilter": "Receive line filter",
+  "purchasing.receiveFilterOutstanding": "Outstanding",
+  "purchasing.receiveFilterAll": "All lines",
+  "purchasing.receiveLinesEmpty": "No lines on this order",
+  "purchasing.receiveLinesEmptyDetail": "This purchase order has no products to receive.",
+  "purchasing.receiveLinesNoMatch": "No matching lines",
+  "purchasing.receiveLinesNoMatchDetail": "Try another search or show all lines.",
+  "purchasing.receiveProduct": "Product",
+  "purchasing.yes": "Yes",
+  "purchasing.no": "No",
+
   "purchasing.received": "Received",
+
   "purchasing.receiving": "Receiving?",
-  "purchasing.reference": "Reference",
+
+  "purchasing.receivingWill": "Receiving will:",
+
+  "purchasing.trackingStartsWithReceived":
+
+    "Tracking starts with the quantity received in this receipt.",
+
+  "purchasing.reference": "Reference / receipt no.",
+
   "purchasing.removeLine": "Remove",
+
   "purchasing.reviewDirect": "Review receipt",
+
   "purchasing.reviewReceipt": "Review receipt",
+
   "purchasing.saveFailed": "Could not create the purchase order.",
+
   "purchasing.saving": "Saving?",
+
   "purchasing.searchDirect": "Pangita-a ang direkta nga pagbakal",
+
   "purchasing.searchReceipts": "Pangita-a ang handa nga batunon",
+
   "purchasing.selectProduct": "Select a product first.",
+
   "purchasing.selectSupplier": "Select a supplier",
+
   "purchasing.sourceEmpty": "No source named",
+
   "purchasing.sourceName": "Source name",
+
   "purchasing.sourcePlaceholder": "Store or supplier name",
+
   "purchasing.statusAll": "All",
+
   "purchasing.statusCancelled": "Cancelled",
+
   "purchasing.statusDraft": "Draft",
+
   "purchasing.statusFilter": "Status",
+
   "purchasing.statusOrdered": "Ordered",
+
   "purchasing.statusPartial": "Partial",
+
   "purchasing.statusReceived": "Received",
+
   "purchasing.submit": "Submit order",
+
   "purchasing.submitted": "Purchase order submitted. Inventory unchanged until goods receipt.",
+
   "purchasing.supplier": "Supplier",
+
   "purchasing.supplierRequired": "Select a supplier.",
+
   "purchasing.suppliers": "Suppliers",
+
   "purchasing.title": "Pagbakal",
+
   "purchasing.totalCost": "Total cost",
+
   "purchasing.paymentAtReceipt": "Bayad sa resibo",
+
   "purchasing.paymentStatus": "Kahimtang sang bayad",
+
   "purchasing.paidInFull": "Nabayran tanan",
+
   "purchasing.supplierCredit": "Supplier credit",
+
   "purchasing.purchaseTotal": "Kabilogan sang pagbakal",
+
   "purchasing.paidNow": "Ginbayad subong",
+
   "purchasing.balanceDue": "Balanse nga bayaran",
+
   "purchasing.remainingCredit": "Balanse nga bayaran",
+
   "purchasing.dueDateOptional": "Petsa sang bayad (opsyonal)",
+
   "purchasing.paymentMethodAtReceipt": "Paagi sang bayad sa resibo",
+
   "purchasing.paymentMethodRequired": "Pili sang paagi sang bayad kung may ginbayad.",
+
   "purchasing.supplierRequiredForCredit": "Pili sang supplier para marekord ang supplier credit.",
+
   "purchasing.invalidPaidNow": "Magbutang sang husto nga kantidad nga ginbayad.",
+
   "purchasing.paidNowExceedsTotal": "Ang ginbayad indi maglabaw sa kabilugan nga gasto.",
+
   "supplierPayables.title": "Supplier Credit",
+
   "supplierPayables.summaryLede": "Mga balanse nga dapat bayaran sa supplier hali sa nabaton nga pagbakal.",
+
   "supplierPayables.outstanding": "Outstanding",
+
   "supplierPayables.overdue": "Overdue",
+
   "supplierPayables.openCount": "Open payables",
+
   "supplierPayables.paidCount": "Paid payables",
+
+  "supplierPayables.approvedCreditLimit": "Approved credit limit",
+  "supplierPayables.reservedActivePos": "Reserved by active POs",
+  "supplierPayables.availableCredit": "Available credit",
+  "supplierPayables.usedOfLimit": "Used {percent}% of {limit}",
+  "supplierPayables.utilizationUnavailable": "Utilization unavailable",
+  "supplierPayables.utilizationProgress": "Credit utilization",
+  "supplierPayables.filterAria": "Filter payables",
+  "supplierPayables.filter.open": "Open",
+  "supplierPayables.filter.overdue": "Overdue",
+  "supplierPayables.filter.paid": "Paid",
+  "supplierPayables.filter.all": "All",
+
   "supplierPayables.listTitle": "Payables",
+
   "supplierPayables.outstandingPayables": "Outstanding Payables",
+
   "supplierPayables.amountPaid": "Amount Paid",
+
   "supplierPayables.originalAmount": "Orihinal nga kantidad",
+
   "supplierPayables.paidAtReceipt": "Ginbayad sa resibo",
+
   "supplierPayables.laterPayments": "Mga masunod nga bayad",
+
   "supplierPayables.totalPaid": "Kabilogan nga bayad",
+
   "supplierPayables.balance": "Balanse",
+
   "supplierPayables.balanceDue": "Balance Due",
+
   "supplierPayables.dueDate": "Due Date",
+
   "supplierPayables.recordPayment": "Record Payment",
+
+  "supplierPayables.payNow": "Bayad subong",
+
+  "supplierPayables.payNowNotReady": "Wala pa handa ang online payment initiation.",
+
+  "supplierPayables.onlinePaymentUnavailable":
+    "Wala pa available ang online supplier payment. Wala sang manual self-settlement.",
+
   "supplierPayables.paymentHistory": "Payment History",
+
   "supplierPayables.remainingBalance": "Nabilin nga balanse",
+
   "supplierPayables.viewDetails": "Tan-awa ang detalye",
+
   "supplierPayables.detailTitle": "Detalye sang payable",
+
   "supplierPayables.source": "Ginhalinan",
+
   "supplierPayables.receiptDate": "Petsa sang resibo",
+
   "supplierPayables.voidReason": "Rason sang void",
+
   "supplierPayables.reverseBlockedByPayments":
+
     "Indi mabalik ang resibo tungod kay may narekord na nga bayad sa supplier.",
+
   "supplierPayables.paymentMethod": "Paagi sang bayad",
+
   "supplierPayables.reference": "Reference",
+
   "supplierPayables.notes": "Mga nota",
+
   "supplierPayables.amount": "Kantidad",
+
   "supplierPayables.overpay": "Ang bayad indi maglabaw sa balance due.",
+
   "supplierPayables.amountRequired": "Magbutang sang kantidad sang bayad nga labaw sa zero.",
+
   "supplierPayables.recordFailed": "Indi marekord ang bayad.",
-  "supplierPayables.recording": "Nagarekord…",
+
+  "supplierPayables.recording": "Nagarekord???",
+
   "supplierPayables.confirmPayment": "Irekord ang bayad",
+
   "supplierPayables.cancel": "Cancel",
+
   "supplierPayables.empty": "Wala pa supplier payables.",
+  "supplierPayables.emptyOpen": "No open payables.",
+
   "supplierPayables.noPayments": "Wala pa narekord nga bayad.",
+
   "supplierPayables.loadFailed": "Indi ma-load ang supplier credit.",
+
   "supplierPayables.status.open": "Open",
+
   "supplierPayables.status.partiallyPaid": "Partial nga bayad",
+
   "supplierPayables.status.paid": "Nabayran",
+
   "supplierPayables.status.voided": "Voided",
+
   "supplierPayables.method.cash": "Cash",
+
   "supplierPayables.method.bankTransfer": "Bank transfer",
+
   "supplierPayables.method.gcash": "GCash",
+
   "supplierPayables.method.other": "Iban",
+
   "supplierPayables.source.goodsReceipt": "Goods receipt",
+
   "supplierPayables.source.directPurchase": "Direct purchase",
-  "purchasing.unitCost": "Unit purchase cost",
+  "supplierPayables.source.sale": "Sale",
+
+  "purchasing.unitCost": "Unit cost",
+  "purchasing.catalogPrice": "Supplier/catalog price",
+
   "purchasing.unknownSupplier": "Unknown supplier",
+
   "purchasing.unnamedPo": "Purchase order",
+
   "purchasing.useAnotherSource": "Use another source",
+
   "purchasing.willIncreaseStock": "Confirming will increase inventory now.",
+
   "pwa.refresh": "I-refresh",
+
   "pwa.updateAvailable": "May update",
+
   "qr.cameraHint": "Use live camera, upload a QR photo, or enter the ExItS ID manually.",
+
   "qr.cameraUnavailable": "Camera or photo decode is unavailable. Enter the ExItS ID instead.",
+
   "qr.cameraUnsupported": "Live scanning isn't supported in this browser.",
+
   "qr.clear": "Clear",
+
   "qr.closeScanner": "Close",
+
   "qr.copied": "Copied",
+
   "qr.copyId": "Copy ID",
+
   "qr.decodeFailed": "No QR code was found in that photo.",
+
   "qr.enterId": "Enter ExItS ID manually",
+
   "qr.inputHint": "Use live camera, upload a QR photo, or enter the ExItS ID manually.",
+
   "qr.insecureContext": "Live camera requires HTTPS or localhost. Upload a QR image or enter the ExItS ID instead.",
+
   "qr.invalidPayload": "That is not a valid ExItS QR or public ID.",
+
   "qr.liveScanPrompt": "Point your camera at an ExItS QR code.",
+
   "qr.liveScanTitle": "Scan QR code",
+
   "qr.manualHint": "Type the ExItS ID, then search.",
+
   "qr.modeManual": "Enter ExItS ID",
+
   "qr.modeScan": "Scan QR",
+
   "qr.modeToggleAria": "Choose how to enter an ExItS ID",
+
   "qr.noCamera": "No camera is available on this device.",
+
   "qr.openCamera": "Open camera",
+
   "qr.organizationNotAllowedHere": "This is an organization ExItS ID (ORG?). Only a personal ExItS ID (EX-?) can be added here.",
+
   "qr.permissionDenied": "Camera access is blocked.",
+
   "qr.personalNotAllowedHere": "This is a personal ExItS ID (EX-?). Only an organization ExItS ID (ORG?) is allowed here.",
+
   "qr.resolve": "Search",
+
   "qr.scan": "Scan QR",
+
   "qr.scanFrameHint": "Keep the QR inside the frame.",
+
   "qr.scanHint": "Scan with the camera or upload a QR photo.",
+
   "qr.scanWithCamera": "Scan with camera",
+
   "qr.scanning": "Reading?",
+
   "qr.share": "Share",
+
   "qr.startingCamera": "Starting camera?",
+
   "qr.torchOff": "Flashlight off",
+
   "qr.torchOn": "Flashlight",
+
   "qr.tryAgain": "Try again",
+
   "qr.unsupportedExitsQr": "That's not a supported ExItS QR code.",
+
   "qr.uploadImage": "Upload QR image",
+
   "qr.wrongPurpose": "This QR code can't be used here.",
+
   "register.deniedDetail": "Indi tugotan ang access sa register para sa sini nga account.",
+
   "register.empty": "No cash registers yet. Create one before opening a shift.",
+
   "register.hasOpenShift": "Adunay bukas nga shift",
+
   "register.listLede": "Cash counters for opening shifts. Separate from authorized devices (browser/app installations).",
+
+  "register.myLede": "Your operational cash register for this branch.",
+
   "register.listTitle": "Cash registers",
+
+  "register.myTitle": "My cash register",
+
   "register.loadError": "Could not load cash registers.",
+
   "register.noOpenShift": "Wala sing bukas nga shift",
+
+  "register.openShiftStatus": "Open shift",
+
+  "register.availableStatus": "Available",
+
+  "register.statusReady": "Ready",
+
+  "register.cashierLabel": "Cashier",
+
+  "register.openedLabel": "Opened",
+
+  "register.openingCashLabel": "Opening cash",
+
+  "register.transactionsLabel": "Transactions",
+
+  "register.cashSalesLabel": "Cash sales",
+
+  "register.continueSelling": "Continue selling",
+
+  "register.viewMyShift": "View my shift",
+
+  "register.viewShift": "View shift",
+  "register.viewHistory": "History",
+  "register.viewTransactions": "Transactions",
+  "register.historyTitle": "Register history",
+  "register.historyDateRange": "Activity date range",
+  "register.historyShiftsTitle": "Shifts on this register",
+  "register.historyShiftsEmpty": "No shifts in this date range.",
+  "register.backToHistory": "Back to register history",
+  "register.notFound": "That cash register was not found.",
+  "register.activityLoadError": "Could not load register activity.",
+  "register.activityOpenShifts": "Open shifts",
+  "register.activityClosedShifts": "Closed shifts",
+  "register.activitySales": "Completed sales",
+  "register.activityGross": "Gross sales",
+  "register.activityCash": "Cash sales",
+  "register.activityGCash": "GCash",
+  "register.activityUtang": "Utang",
+  "register.preset.today": "Today",
+  "register.preset.last7Days": "Last 7 days",
+  "register.preset.last30Days": "Last 30 days",
+  "register.preset.thisWeek": "This week",
+  "register.preset.thisMonth": "This month",
+  "transactions.registerTitle": "Register transactions",
+  "transactions.registerLede": "Sales recorded on this cash register.",
+  "transactions.shiftTitle": "Shift transactions",
+  "transactions.shiftLede": "Sales recorded on this cashier shift.",
+  "transactions.deniedDetail": "Sales history is not allowed for this account.",
+  "transactions.dateRange": "Transaction date range",
+  "transactions.loadError": "Could not load transactions.",
+  "transactions.empty": "No transactions in this range.",
+  "transactions.emptyDetail": "Try another date range or open a different register or shift.",
+  "transactions.viewSummary": "View transaction summary",
+  "transactions.pageOf": "Page {page} of {pages}",
+  "transactions.prevPage": "Previous",
+  "transactions.nextPage": "Next",
+  "transactions.pageRange": "{start}?{end} of {total}",
+  "transactions.col.saleNumber": "Sale No.",
+  "transactions.col.dateTime": "Date / Time",
+  "transactions.col.cashier": "Cashier",
+  "transactions.col.payment": "Payment",
+  "transactions.col.status": "Status",
+  "transactions.col.amount": "Amount",
+  "shift.col.shift": "Shift",
+  "shift.col.cashier": "Cashier",
+  "shift.col.register": "Register",
+  "shift.col.opened": "Opened",
+  "shift.col.closed": "Closed",
+  "shift.col.status": "Status",
+  "shift.col.transactions": "Transactions",
+  "shift.col.sales": "Sales",
+  "shift.col.variance": "Variance",
+  "shift.col.actions": "Actions",
+  "shift.viewTransactions": "View transactions",
+  "shift.viewTransactionsDetail": "Sales recorded on this shift",
+  "shift.backToShift": "Back to shift",
+  "shift.myHistoryTitle": "My shifts history",
+  "shift.historyTitle": "Shift history",
+  "shift.historyDateRange": "Shift date range",
+  "shift.historyEmpty": "No shifts in this date range.",
+  "shift.openShiftsTitle": "Open shifts",
+  "shift.openShiftsEmpty": "No open shifts on this branch.",
+  "shift.loadHistoryError": "Could not load shift history.",
+  "shift.statusClosed": "Closed",
+  "shift.filterStatus": "Status",
+  "shift.filterStatusAll": "All statuses",
+  "shift.filterRegister": "Register",
+  "shift.filterRegisterAll": "All registers",
+  "shift.filterCashier": "Cashier",
+  "shift.filterCashierAll": "All cashiers",
+
+  "register.preparingMine": "Preparing your cash register?",
+
+  "register.cashierNoRegister": "No register available. Ask your manager to make a register available.",
+
   "register.viewOnly": "You can view cash registers. Creating or editing them needs manager access.",
+
   "registers.back": "Back to cash registers",
+
   "reports.activeRange": "Range",
+
   "reports.apply": "Apply",
+
   "reports.back": "Back to reports",
+
   "reports.branchLabel": "Branch context",
+
   "reports.branchOrgWideNote": "Branch-capable reports default to the current branch. Organization-only reports stay all-branch.",
+
   "reports.scope.label": "Report scope",
+
   "reports.scope.help": "Branch-capable reports default to the current branch. All branches is explicit when selected. Organization-only reports always show all-branch / org totals.",
+
   "reports.scope.currentBranch": "Current branch",
+
   "reports.scope.allBranches": "All branches",
+
   "reports.scope.orgOnlyNote": "This report includes all branches (organization-wide).",
-  "reports.scope.noDataForBranch": "No data for this branch in the selected period.",
+
+  "reports.scope.noDataForBranch": "No report rows for this branch in the selected period.",
+
   "reports.cashVariance": "Cash variance",
+
   "reports.classicExpenses": "Expenses report",
+
   "reports.classicInventory": "Inventory report",
-  "reports.classicLede": "Classic organization reports.",
+
+  "reports.classicLede": "Organization business reports.",
+
   "reports.classicSales": "Sales report",
-  "reports.classicSection": "Classic reports",
-  "reports.classicUtang": "Utang report",
+
+  "reports.classicSection": "Business reports",
+
+    "reports.classicUtang": "Utang report",
+
+  "reports.hub.dashboardDetail": "Business performance and key trends",
+
+  "reports.hub.salesTitle": "Sales",
+
+  "reports.hub.salesDetail": "Revenue, payments and sales activity",
+
+  "reports.hub.utangTitle": "Utang",
+
+  "reports.hub.utangDetail": "Customer credit and outstanding balances",
+
+  "reports.hub.inventoryTitle": "Inventory",
+
+  "reports.hub.inventoryDetail": "Stock levels, movement and expiry",
+
+  "reports.hub.expensesTitle": "Expenses",
+
+  "reports.hub.expensesDetail": "Business spending and expense activity",
+
+  "reports.hub.salesOverviewTitle": "Sales overview",
+
+  "reports.hub.salesOverviewDetail": "Revenue, payments and sales activity",
+
+  "reports.hub.inventoryOverviewTitle": "Inventory overview",
+
+  "reports.hub.inventoryOverviewDetail": "Stock levels, movement and expiry",
+
+  "reports.hub.expensesOverviewTitle": "Expenses overview",
+
+  "reports.hub.expensesOverviewDetail": "Business spending and expense activity",
+
+  "reports.hub.utangOverviewTitle": "Utang overview",
+
+  "reports.hub.utangOverviewDetail": "Customer credit and outstanding balances",
+
+  "reports.hub.category.overview": "Overview",
+
+  "reports.hub.categoriesLabel": "Report categories",
+
+  "reports.hub.searchLabel": "Search reports",
+
+  "reports.hub.searchPlaceholder": "Search reports...",
+
+  "reports.hub.searchResults": "Matching reports",
+
+  "reports.hub.searchEmpty": "No reports match your search.",
+
+  "reports.hub.categoryEmpty": "No reports in this category.",
+
+  "reports.hub.upgradeTitle": "Advanced reporting",
+
+  "reports.hub.upgradeDetail": "More profitability, purchasing and inventory analysis is available on Pro.",
+
+  "reports.hub.viewPlan": "View plan",
+
+  "reports.hub.desc.salesSummary": "Sales totals and transaction performance",
+
+  "reports.hub.desc.salesByPayment": "Breakdown of sales by payment method",
+
+  "reports.hub.desc.salesByProduct": "Sales performance by product",
+
+  "reports.hub.desc.returns": "Returned items and refund activity",
+
+  "reports.hub.desc.profitability": "Gross profit and margin for the period",
+
+  "reports.hub.desc.productProfitability": "Rank products by profit, sales, or margin",
+
+  "reports.hub.desc.inventoryStatus": "Current stock levels by location",
+
+  "reports.hub.desc.inventoryMovements": "Stock in, out, and transfer activity",
+
+  "reports.hub.desc.stockCountVariance": "Differences between counted and system stock",
+
+  "reports.hub.desc.purchasingSummary": "Purchase activity for the selected period",
+
+  "reports.hub.desc.purchaseOutstanding": "Open purchase orders and receipts",
+
+  "reports.hub.desc.supplierPurchasing": "Purchasing totals by supplier",
+
+  "reports.hub.desc.supplierPayables": "Balances owed to suppliers",
+
+  "reports.hub.desc.expenseSummary": "Expense totals for the selected period",
+
+  "reports.hub.desc.utangByProduct": "Customer credit balances by product",
+
+  "reports.hub.desc.shiftSummary": "Shift activity and register performance",
+
+  "reports.hub.desc.cashVariance": "Cash drawer expected vs counted differences",
+
   "reports.commercialDiscountUnavailable": "Ang commercial discount totals ara na sa sales reports.",
+
   "reports.datePresets": "Date range",
-  "reports.emptyDetail": "No data for this period.",
-  "reports.emptyTitle": "No rows",
+
+  "reports.emptyDetail": "Try another date range or branch scope.",
+
+  "reports.emptyTitle": "No report rows for this period",
+
   "reports.errorTitle": "Report error",
+
   "reports.export.csv": "I-export ang CSV",
+
   "reports.export.failed": "Nagpalya ang export. Tilawi liwat.",
+
   "reports.export.noData": "Wala sang data nga i-export",
-  "reports.export.preparing": "Ginahimo ang export…",
+
+  "reports.export.preparing": "Ginahimo ang export???",
+
   "reports.expenseSummary": "Expense summary",
+
+  "reports.asOfSnapshot": "This report is a point-in-time snapshot (as of now).",
+
   "reports.filtersTitle": "Filters",
+
   "reports.fromDate": "From",
+
   "reports.groupExpenses": "Expenses",
+
   "reports.groupInventory": "Inventory",
+
   "reports.groupPurchasing": "Purchasing",
+
   "reports.groupSales": "Sales",
+
   "reports.groupShifts": "Shifts",
+
   "reports.groupUtang": "Utang",
+
   "reports.invalidRange": "Choose a valid from/to range within 366 days.",
+
   "reports.inventoryMovements": "Inventory movements",
+
   "reports.inventoryStatus": "Inventory status",
-  "reports.lede": "Operational and classic reports. Online only ? no invented accounting.",
+
+  "reports.lede": "Analyze your business across the locations you can access.",
+
   "reports.loadError": "Could not load this report.",
+
   "reports.loading": "Loading report?",
+
   "reports.metric.absVariance": "Absolute variance",
+
   "reports.metric.avgTxn": "Average transaction",
+
   "reports.metric.cashVariance": "Cash variance",
+
   "reports.metric.closedShifts": "Closed shifts",
+
   "reports.metric.preDiscountGross": "Sales antes sang diskwento",
+
   "reports.metric.commercialDiscounts": "Commercial nga diskwento",
+
   "reports.metric.netSubtotal": "Net nga subtotal",
+
   "reports.metric.tax": "Buwis",
+
   "reports.metric.completedSales": "Natapos nga sales",
+
   "reports.metric.netSales": "Net nga sales",
+
   "reports.metric.commercialDiscountNote": "Commercial nga diskwento",
+
   "reports.metric.completedCounts": "Completed counts",
+
   "reports.metric.expenseCount": "Expense count",
+
   "reports.metric.expenses": "Expenses",
+
   "reports.metric.gross": "Natapos nga sales",
+
   "reports.metric.lowStock": "Low stock",
+
   "reports.metric.movements": "Movements",
+
   "reports.metric.net": "Net nga sales",
+
   "reports.metric.orderedQty": "Ordered qty",
+
   "reports.metric.orders": "Orders",
+
   "reports.metric.outOfStock": "Out of stock",
+
   "reports.metric.outstanding": "Outstanding",
+
   "reports.metric.outstandingOrders": "Outstanding orders",
+
   "reports.metric.outstandingQty": "Outstanding qty",
+
   "reports.metric.overdue": "Overdue",
+
   "reports.metric.receivedQty": "Received qty",
+
   "reports.metric.refundAmount": "Refund amount",
+
   "reports.metric.returnCount": "Return count",
+
   "reports.metric.returnedQty": "Returned quantity",
+
   "reports.metric.returns": "Returns",
+
   "reports.metric.shiftCount": "Shifts",
+
   "reports.metric.signedVariance": "Signed variance",
+
   "reports.metric.tracked": "Tracked products",
+
   "reports.metric.transactions": "Transactions",
+
   "reports.metric.utangCount": "Utang sale count",
+
   "reports.metric.utangSales": "Utang sales",
+
   "reports.metric.varianceLines": "Variance lines",
+
   "reports.metric.voidedExpenses": "Voided expenses",
+
   "reports.metric.voids": "Voids",
+
   "reports.metric.cogs": "COGS",
+
   "reports.metric.knownCogs": "Known COGS",
+
   "reports.metric.grossProfit": "Gross profit",
+
   "reports.metric.grossMargin": "Gross margin",
+
   "reports.metric.costIncomplete": "Cost completeness",
+
   "reports.costIncompletePartial":
-    "May kulang ukon partial nga sale costs — indi ginapakita ang gross profit.",
+
+    "May kulang ukon partial nga sale costs ??? indi ginapakita ang gross profit.",
+
   "reports.costIncompleteUnavailable":
-    "Indi available ang sale costs sa sini nga period — indi ginapakita ang gross profit.",
+
+    "Indi available ang sale costs sa sini nga period ??? indi ginapakita ang gross profit.",
+
   "reports.metric.wasteLossCost": "Waste / loss cost",
+
   "reports.metric.stockUseCost": "Internal use (stock use) cost",
+
   "reports.metric.costCompleteness": "Cost completeness",
+
   "reports.noBranch": "No branch bound",
+
   "reports.open": "Reports",
-  "reports.operationalLede": "Server-authoritative operational totals.",
+
+  "reports.operationalLede": "Operational report totals for the selected period.",
+
   "reports.overview": "Overview",
+
   "reports.preset.custom": "Custom",
+
   "reports.preset.thisMonth": "This month",
+
   "reports.preset.thisWeek": "This week",
+
   "reports.preset.today": "Today",
+
   "reports.preset.yesterday": "Yesterday",
+
   "reports.purchaseOutstanding": "Purchase outstanding",
+
   "reports.purchasingSummary": "Purchasing summary",
+
   "reports.returns": "Returns",
+
   "reports.profitability": "Profitability",
+
   "reports.productProfitability": "Product profitability",
+
   "reports.productProfitabilityLede":
+
     "I-rank ang mga produkto paagi sa gross profit, net sales, ukon margin gamit ang immutable sale cost snapshots. Gross profit makita lang kung Complete ang COGS.",
+
   "reports.rank.label": "I-rank suno sa",
+
   "reports.rank.grossProfitDesc": "Pinakamataas nga gross profit",
+
   "reports.rank.grossProfitAsc": "Pinakamanubo nga gross profit",
+
   "reports.rank.netSalesDesc": "Pinakamataas nga net sales",
+
   "reports.rank.grossMarginDesc": "Pinakamataas nga gross margin %",
+
   "reports.col.product": "Produkto",
+
   "reports.col.qtySold": "Nabakal nga qty",
+
   "reports.col.returnedQty": "Ginbalik nga qty",
+
   "reports.metric.cogsStatus": "COGS status",
+
   "reports.salesByPayment": "Sales by payment",
+
   "reports.salesByProduct": "Sales by product",
+
   "reports.salesSummary": "Sales summary",
+
   "reports.shiftSummary": "Shift summary",
+
   "reports.stockCountVariance": "Stock-count variance",
+
   "reports.supplierPurchasing": "Supplier purchasing",
+
   "reports.supplierPayables": "Supplier credit",
+
   "reports.supplierPayables.lede":
+
     "Mga balanse sa bilog nga organisasyon nga dapat bayaran sa suppliers hali sa nabaton nga pagbakal (as-of).",
+
   "reports.supplierPayables.outstanding": "Outstanding",
+
   "reports.supplierPayables.overdue": "Overdue",
+
   "reports.supplierPayables.open": "Open",
+
   "reports.supplierPayables.partiallyPaid": "Partial nga bayad",
+
   "reports.supplierPayables.supplier": "Supplier",
+
   "reports.supplierPayables.source": "Ginhalinan",
+
   "reports.supplierPayables.receiptDate": "Petsa sang resibo",
+
   "reports.supplierPayables.originalAmount": "Orihinal nga kantidad",
+
   "reports.supplierPayables.paidAtReceipt": "Ginbayad sa resibo",
+
   "reports.supplierPayables.laterPayments": "Mga masunod nga bayad",
+
   "reports.supplierPayables.totalPaid": "Kabilogan nga bayad",
+
   "reports.supplierPayables.balance": "Balanse",
+
   "reports.supplierPayables.dueDate": "Petsa sang bayad",
+
   "reports.supplierPayables.status": "Kahimtang",
+
   "reports.supplierPayables.asOf": "Truncado sa",
+
   "reports.supplierPayables.supplierBalances": "Mga balanse sang supplier",
+
   "reports.supplierPayables.payableDetail": "Detalye sang payable",
+
   "reports.supplierPayables.oldestDue": "Pinakauna nga due date",
+
   "reports.supplierPayables.source.goodsReceipt": "Goods Receipt",
+
   "reports.supplierPayables.source.directPurchase": "Direct Purchase",
+  "reports.supplierPayables.source.sale": "Sale",
+
   "reports.switchBranch": "Switch branch",
+
   "reports.timezoneNote": "Dates use UTC calendar days (server ReportDateRange). Explicit fromDate/toDate are sent on every query.",
+
   "reports.title": "Reports",
+
   "reports.toDate": "To",
+
   "reports.unknownSupplier": "Supplier",
+
   "reports.utangByProduct": "Utang by product",
+
   "returns.alreadyReturned": "Na-return na ang tanang items sa sini nga transaction.",
+
   "returns.alreadyReturnedDetail": "Wala sing nahabilin nga i-return sa sini nga transaction.",
+
   "returns.back": "Balik sa returns",
+
   "returns.backToEdit": "Balik sa pag-edit",
+
   "returns.cannotReturn": "Indi ma-return ini nga transaction.",
+
   "returns.cannotReturnVoided": "Indi ma-return ang voided transactions.",
+
   "returns.confirmLede": "I-review ang items antes i-submit",
+
   "returns.confirmSubmit": "Kumpirmaha ang return",
+
   "returns.confirmTitle": "Kumpirmaha ang return",
+
   "returns.continue": "I-review ang return",
+
   "returns.decreaseQty": "Pakunhuri ang quantity",
+
   "returns.detailTitle": "Detalye sa return",
+
   "returns.doNotRestockHint": "Gamita ini para sa damaged, spoiled, opened, ukon indi na mabaligya nga items.",
+
   "returns.doNotReturnToStock": "Ayaw ibalik sa stock",
+
   "returns.errorDenied": "Wala ka sing permiso nga mag-process sang returns.",
+
   "returns.errorGeneric": "Indi ma-process ini nga return. Tilawi liwat.",
+
   "returns.errorNoShift": "Buksan ang cashier shift antes maghatag sang cash refund.",
+
   "returns.errorNotFound": "Wala makita ang return.",
+
   "returns.errorOffline": "Kinahanglan sang internet connection ang returns.",
+
   "returns.errorSecureId": "Indi makahimo ini nga browser sang secure transaction ID. I-reload ang app ukon gamita ang supported browser antes mag-process sa return.",
+
   "returns.errorStale": "Nausab ini nga transaction. I-review ang updated nga returnable items.",
+
   "returns.estimateDisclaimer": "Ang final refund i-confirm sa server human nimo i-submit.",
+
   "returns.estimatedRefund": "Gibanabana nga refund",
+
   "returns.increaseQty": "Dugangi ang quantity",
+
   "returns.lede": "Pangita sang transaction, i-return ang items, kag tan-awa ang bag-ong returns.",
+
   "returns.linesTitle": "Na-return nga items",
+
   "returns.loadError": "Indi ma-load ang return details.",
+
   "returns.missingReturn": "Wala sing gipili nga return.",
+
   "returns.missingSale": "Wala sing gipili nga transaction.",
+
   "returns.notes": "Notes (opsyonal)",
+
   "returns.open": "Returns",
+
   "returns.processDenied": "Wala ka sing permiso nga mag-process sang returns.",
+
   "returns.processLede": "Magpili unsay i-return",
+
   "returns.putBackHint": "Magamit pa ang item kag mabalik sa inventory.",
+
   "returns.putBackInStock": "Ibalik sa stock",
+
   "returns.quantity": "Quantity",
+
   "returns.reason": "Rason sa return",
+
   "returns.reasonRequired": "Butangi sang rason sa return agud magpadayon.",
+
   "returns.recentEmpty": "Wala pa sing returns",
+
   "returns.recentEmptyDetail": "Makita diri ang na-process nga returns.",
+
   "returns.recentTitle": "Bag-ong returns",
+
   "returns.refundAmount": "Refund amount",
+
   "returns.refundMethod": "Paagi sa refund",
+
   "returns.returnAll": "I-return tanan",
+
   "returns.returnItems": "I-return ang items",
+
   "returns.returnNumber": "Numero sa return",
+
   "returns.returnableQty": "Maka-return pa",
+
   "returns.search": "Pangita",
+
   "returns.searchResults": "Mohaum nga transactions",
+
   "returns.searchTransaction": "Pangita sang transaction",
+
   "returns.stockDisposition": "Stock",
+
   "returns.submitting": "Gina-submit?",
+
   "returns.successCash": "Cash refund",
+
   "returns.successGCash": "GCash refund ? kompletoha ang transfer manually kag note-i ang reference.",
+
   "returns.successTitle": "Nahuman ang return",
+
   "returns.successUtang": "Mikunhod ang Amount owed",
+
   "returns.title": "Returns",
+
   "returns.transactionNotFound": "Wala makita ang transaction.",
+
   "returns.transactionNumber": "Numero sa transaction",
+
   "returns.tryAnother": "Usisaa ang numero sa transaction kag tilawi liwat.",
+
   "returns.viewDetail": "Tan-awa ang return",
+
   "returns.viewTransaction": "Tan-awa ang transaction",
+
   "role.cashierBadge": "Cashier",
+
   "role.cashierBody": "Entry sa pagbaligya uban ang kaugalingong shift. Buksan ang imo shift, dayon gamita ang sell floor.",
+
   "role.cashierLede": "Shift-ready nga entry sa pagbaligya para sa checkout staff.",
+
   "role.cashierTitle": "Cashier home",
+
   "role.managerBadge": "Manager",
+
   "role.managerBody": "Operations lang by default. Ang Start selling moabli sa sell floor kung tugotan ang CreateSale ? indi mausab ang imo Manager role.",
+
   "role.managerLede": "Adlaw-adlaw nga store operations kag entry sa pagbaligya.",
+
   "role.managerTitle": "Manager home",
+
   "role.openSellFloor": "Buksan ang New Sale",
+
   "role.ownerBadge": "Owner",
+
   "role.ownerBody": "Magpili sang Manage business, Operations, ukon Start selling. Indi mausab ang imo Owner security role.",
+
   "role.ownerLede": "Mga essential sa organization kag entry sa POS operations.",
+
   "role.ownerTitle": "Owner home",
+
   "role.section.devices": "Mga device",
+
   "role.section.insights": "Insights",
+
   "role.section.operations": "Operations",
+
   "role.section.quickActions": "Madasig nga aksyon",
+
   "role.startSelling": "Sugdi ang pagbaligya",
+
   "role.startSellingHint": "Mabuksan ang sell floor kung tugutan ang CreateSale. Indi mausab ang Manager role.",
+
+  "managerHome.lede": "What is happening in this branch today, and what needs attention.",
+
+  "managerHome.loading": "Loading branch operations?",
+
+  "managerHome.loadError": "Could not load manager home.",
+
+  "managerHome.warehouseTitle": "Warehouse operations",
+
+  "managerHome.warehouseLede": "Receiving, transfers, and inventory that need attention.",
+
+  "managerHome.section.today": "Today",
+
+  "managerHome.section.needsAttention": "Needs attention",
+
+  "managerHome.section.quickActions": "Quick actions",
+
+  "managerHome.section.snapshot": "Operations snapshot",
+
+  "managerHome.section.stockSnapshot": "Stock snapshot",
+
+  "managerHome.section.insights": "Insights",
+
+  "managerHome.today.sales": "Today's sales",
+
+  "managerHome.today.transactions": "Transactions",
+
+  "managerHome.today.shift": "Shift",
+
+  "managerHome.today.register": "Register",
+
+  "managerHome.today.noSales": "No sales yet today",
+
+  "managerHome.shift.open": "Open",
+
+  "managerHome.shift.closed": "No open shift",
+
+  "managerHome.shift.view": "View shift",
+
+  "managerHome.shift.openAction": "Open shift",
+
+  "managerHome.register.none": "?",
+
+  "managerHome.attention.healthy": "Everything looks under control",
+
+  "managerHome.attention.healthyDetail": "No low-stock, expiry, order, or shift issues requiring action.",
+
+  "managerHome.attention.generic": "Needs attention",
+
+  "managerHome.attention.lowStock": "Low stock",
+
+  "managerHome.attention.lowStockDetail": "{count} products low",
+
+  "managerHome.attention.expiry": "Expiring stock",
+
+  "managerHome.attention.expiryDetail": "{count} lots near expiry or expired",
+
+  "managerHome.attention.orders": "Customer orders",
+
+  "managerHome.attention.ordersDetail": "{count} awaiting action",
+
+  "managerHome.attention.purchasing": "Purchase orders",
+
+  "managerHome.attention.purchasingDetail": "{count} awaiting receiving",
+
+  "managerHome.attention.transfers": "Transfers",
+
+  "managerHome.attention.transfersDetail": "{count} pending",
+
+  "managerHome.attention.utang": "Overdue Utang",
+
+  "managerHome.attention.utangDetail": "{amount} outstanding overdue",
+
+  "managerHome.attention.shift": "No open shift",
+
+  "managerHome.attention.shiftDetail": "Open a shift before selling.",
+
+  "managerHome.action.createPo": "Create purchase order",
+
+  "managerHome.action.recordExpense": "Record expense",
+
+  "managerHome.snapshot.inventory": "Inventory",
+
+  "managerHome.snapshot.inventoryDetail": "Low stock {low} ? Expiry {expiry}",
+
+  "managerHome.snapshot.inventoryClear": "No stock issues",
+
+  "managerHome.snapshot.orders": "Orders",
+
+  "managerHome.snapshot.ordersDetail": "{count} open customer orders",
+
+  "managerHome.snapshot.ordersClear": "No open customer orders",
+
+  "managerHome.snapshot.purchasing": "Purchasing",
+
+  "managerHome.snapshot.purchasingDetail": "{count} ready to receive",
+
+  "managerHome.snapshot.purchasingClear": "No receivable purchase orders",
+
+  "managerHome.snapshot.utang": "Utang",
+
+  "managerHome.snapshot.utangDetail": "Outstanding {outstanding} ? Overdue {overdue}",
+
+  "managerHome.snapshot.transfers": "Transfers",
+
+  "managerHome.snapshot.transfersDetail": "{count} incoming",
+
+  "managerHome.snapshot.transfersClear": "No incoming transfers",
+
+  "managerHome.warehouse.incomingTransfers": "Incoming transfers",
+
+  "managerHome.warehouse.receivablePos": "Ready to receive",
+
+  "managerHome.warehouse.stockAlerts": "Stock alerts",
+
+  "managerHome.warehouse.noIncoming": "No incoming transfers",
+
+  "managerHome.warehouse.noReceivable": "No purchase orders ready",
+
   "sell.accessDeniedDetail": "Wala sing active nga Cashier, Manager, ukon Owner POS role ang imo account para sa sini nga organization.",
+
   "sell.accessDeniedTitle": "Ginadilian ang access sa pagbaligya",
+
   "sell.addToCart": "Idugang sa cart",
+
   "sell.cancel": "Kanselahon",
+
   "sell.cartBarHint": "Tan-awa ang cart",
+
   "sell.cartClear": "Hawanan",
+
   "sell.cartClearConfirm": "Hawanan ang cart",
+
   "sell.cartClearDetail": "Kuhaa ang tanan nga lines sa sini nga session cart.",
+
   "sell.cartClearTitle": "Hawanan ang cart?",
+
   "sell.cartDecrease": "Pakunhuri ang quantity",
+
   "sell.cartIncrease": "Dugangi ang quantity",
+
   "sell.cartItemPlural": "mga item",
+
   "sell.cartItemSingular": "item",
+
   "sell.cartItemsLabel": "Mga item",
+
   "sell.cartLabel": "Cart",
+
   "sell.cartRemove": "Kuhaa",
+
   "sell.cartRemoveLine": "Kuhaa ang line",
+
   "sell.cartSheetClose": "Sirado",
+
   "sell.cartSheetTitle": "Cart",
+
   "sell.cartSubtotalLabel": "Subtotal",
+
   "sell.cartTotalLabel": "Kabilugan",
+
   "sell.catalogEmpty": "Wala pa sing product nga mabaligya.",
+
   "sell.catalogEmptyAddProduct": "Magdugang sang una nga product",
+
   "sell.catalogLoadError": "Indi ma-load ang catalog. Usisaa ang koneksyon kag tilawi liwat.",
+
   "sell.catalogNoResults": "Wala sing nagaangay nga products.",
+
   "sell.categoriesLabel": "Categories",
+
   "sell.categoryAll": "Tanan",
+
   "sell.changePrice": "Islan ang presyo",
+
   "sell.checkoutReadinessBlocked": "Wala sing bukas nga shift. Buksan ang shift agud magpadayon sa checkout.",
+
   "sell.checkoutReadinessClosed": "Nasirado ang shift. Buksan ang bag-o nga shift agud magpadayon.",
+
   "sell.checkoutReadinessDenied": "Indi tugotan ang access sa shift para sa sini nga account.",
+
   "sell.checkoutReadinessLabel": "Kahanda sang checkout",
+
   "sell.checkoutReadinessMoneyReady": "Bukas nga shift kag authorized device ? handa na para sa cash checkout.",
+
   "sell.checkoutReadinessNeedsDevice": "Handa ang bukas nga shift. I-register kag i-authorize ini nga browser agud mag-post sang sales.",
+
   "sell.checkoutReadinessNoRegister": "Wala sing register ang bukas nga shift. Buksan liwat sa Active register.",
+
   "sell.checkoutReadinessReady": "Bukas nga shift upod ang register ? handa na para sa masunod nga checkout.",
+
   "sell.customQtyAdd": "Idugang sa cart",
+
   "sell.customQtyAddTitle": "Butangi sang quantity",
+
   "sell.customQtyEditTitle": "Islan ang quantity",
+
   "sell.customQtyErrorInvalid": "Butangi sang valid nga quantity.",
+
   "sell.customQtyErrorPrecision": "Gamita hasta 3 decimal places.",
+
   "sell.customQtyErrorZero": "Butangi sang quantity nga sobra sa zero.",
+
   "sell.customQtyUpdate": "I-update",
+
   "sell.editCustomQty": "Islan ang quantity",
+
   "sell.editWeight": "Islan",
+
   "sell.exitSelling": "Gua sa pagbaligya",
+
   "sell.floatingCartSummary": "{count} ka butang ? ?{subtotal}",
+
   "sell.floatingCartView": "Tan-awa ang cart",
+
   "sell.floatingCartViewLabel": "Tan-awa",
+
   "sell.hideOutOfStock": "Tagoa ang out of stock",
+
   "sell.info.cartNotHeld": "Ang quantity sa cart wala pa na-reserve. Makita pa sang iban nga register ang committed on-hand hasta sa checkout.",
+
   "sell.info.close": "Isira",
+
   "sell.info.device": "Irehistro ini nga device antes mag-post sang sales.",
+
   "sell.info.search": "Maghanap ukon magpili sang produkto para magsugod sang sale.",
+
   "sell.info.shift": "Buksan ang shift antes ang checkout.",
+
   "sell.info.weighted": "Ang weighted products naggamit sang ginsulod nga weight para sa line total.",
+
   "sell.infoChip": "Info",
+
   "sell.infoToggle": "Mga tip sa sale",
+
   "sell.lede": "Maghanap ukon magpili sang produkto para magsugod sang sale.",
-  "sell.linePreview": "{qty} {unit} ? ?{price}/{unit} = ?{amount}",
+
+  "sell.linePreview": "{qty} {unit} ÃƒÆ’Ã‚Æ’Ãƒâ€šÃ‚â€” {price} = {amount}",
+
   "sell.midSession.deviceLost": "Indi na aprubado ang imo device para sa pagbaligya.",
+
   "sell.midSession.fixDevice": "Irehistro ini nga device",
+
   "sell.midSession.openShift": "Abrihi ang shift",
+
   "sell.midSession.shiftLost": "Indi na abri ang imo shift.",
+
   "sell.outOfStockEmpty": "Wala sing out-of-stock nga products.",
+
   "sell.outOfStockHiddenEmpty": "Tago ang out-of-stock nga products.",
+
   "sell.pay": "Bayad",
+
   "sell.payAddItems": "Magdugang sang items agud ma-enable ang Bayad.",
+
   "sell.payDisabledEmpty": "Magdugang sang items sa cart antes ang checkout.",
+
   "sell.payDisabledNeedsDevice": "I-register kag i-authorize ini nga browser antes ang checkout.",
+
   "sell.payDisabledNeedsShift": "Buksan ang shift antes ang checkout.",
+
   "sell.payDisabledStock": "Ayuhon anay ang cart quantities nga sobra sa available stock antes ang checkout.",
+
   "sell.payDisabledTitle": "Indi available ang checkout para sa sini nga account.",
+
   "sell.payNeedsDevice": "Bukas ang shift. I-register ini nga browser agud ma-enable ang money posting.",
+
   "sell.payNotReady": "Open a shift before checkout.",
+
   "sell.payReadyHint": "Handa na ang cash checkout. Ang Bayad magabukas sang tender screen.",
+
   "sell.payReadyTitle": "Magpadayon sa checkout.",
+
   "sell.payWithItems": "Bayad",
+
   "sell.continueToPayment": "Padayon sa bayad",
+
   "sell.priceChanged": "Gin-islan ang presyo",
+
   "sell.priceOverrideAboveLimit": "Sobrado sa imo ginatugot nga limit ang sina nga presyo. Pangayo sa owner, ukon pilia ang presyo sulod sa 100% sang karon nga presyo.",
+
   "sell.priceOverrideApply": "I-apply",
+
   "sell.priceOverrideCurrent": "Karon nga presyo",
+
   "sell.priceOverrideInvalid": "Butangi sang valid nga presyo hasta 2 decimal places.",
+
   "sell.priceOverrideNew": "Bag-o nga presyo",
+
   "sell.priceOverrideReason": "Rason",
+
   "sell.priceOverrideReasonRequired": "Kinahanglan sang rason antes mag-islan sang presyo.",
+
   "sell.priceOverrideTitle": "Islan ang selling price",
+
   "sell.priceOverrideUseRegular": "Gamita ang regular nga presyo",
+
   "sell.priceOverrideZero": "Gamita ang diskwento kung gusto mo himuon nga libre ini nga item.",
+
   "sell.pricePerKg": "/ kg",
+
   "sell.pricePerUnit": "/ {unit}",
+
   "sell.productsLabel": "Products",
+
   "sell.quantityDirect": "Butangi sang quantity",
+
   "sell.quantityLabel": "Quantity",
+
   "sell.readiness.deviceDetail": "Kinahanglan irehistro ini nga device antes ka makasugod magbaligya sa {branch}.",
+
   "sell.readiness.deviceHelp": "Mahimo mo ipadayon ang pagtan-aw kag pagdumala sang imo negosyo, ukon irehistro ini nga device agod makasugod ka magbaligya.",
+
   "sell.readiness.deviceRevokedDetail": "Ginbawi ini nga device para sa {branch}, gani na-block ang pagbaligya diri.",
+
   "sell.readiness.deviceRevokedHelp": "Indi magbalik ang rehistro sa iya kaugalingon. Irehistro liwat ini nga device kung may available nga device slot.",
+
   "sell.readiness.deviceRevokedTitle": "Ginbawi ini nga device",
+
   "sell.readiness.deviceTitle": "Kinahanglan ang setup sang device",
+
   "sell.readiness.loading": "Ginausisa ang kahanda sa pagbaligya?",
+
   "sell.readiness.manageDevices": "Dumalahan ang mga POS device",
+
   "sell.readiness.openShift": "Abrihi ang shift",
+
   "sell.readiness.registerBrowser": "Irehistro ini nga device",
+
   "sell.readiness.registerDevice": "Irehistro ini nga device",
+
   "sell.readiness.shiftDetail": "Abrihi anay ang shift antes magsugod magbaligya.",
+
   "sell.readiness.shiftHelp": "Kinahanglan ang abri nga shift antes ka makahimo kag makabayad sang baligya.",
+
   "sell.readiness.shiftTitle": "Kinahanglan mag-abri sang shift",
+
   "sell.regularPrice": "Regular nga presyo",
+
   "sell.searchLabel": "Pangita ukon i-scan",
+
   "sell.searchPlaceholder": "Pangita paagi sa product name, barcode, ukon SKU",
+
   "sell.searchUnknownBarcode": "Wala sing product nga nagaangay sina nga barcode.",
+
   "sell.sellAsTitle": "Ibaligya bilang",
+
   "sell.shiftClosedBanner": "Wala sing bukas nga shift. Buksan ang shift antes ang checkout.",
+
   "sell.shiftClosedShort": "Wala sing bukas nga shift",
+
   "sell.shiftOpenBanner": "Bukas nga shift {shift} sa {register}.",
+
   "sell.showOutOfStock": "Ipakita ang out of stock",
+
   "sell.stockLineExceeds": "{name} exceeds available stock. Available: {available}.",
+
   "sell.stockLow": "Kulang ang stock",
+
   "sell.stockNotTracked": "Available",
+
   "sell.stockOnHand": "May stock: {qty} {unit}",
+
   "sell.stockOnlyAvailable": "Only {qty} available.",
+
   "sell.stockOnlyAvailableWithUnit": "Only {qty} {unit} available.",
+
   "sell.stockOut": "Wala stock",
+
   "sell.stockAvailable": "{qty} {unit} available",
+
   "sell.stockAvailablePlain": "{qty} available",
+
   "sell.stockSellable": "Mabaligya: {qty} {unit}",
+
   "sell.tileByWeight": "Butangi sang weight",
+
   "sell.tileChooseUnit": "Magpili sang sell unit",
+
   "sell.tileCustomQty": "Butangi sang quantity",
+
   "sell.title": "New Sale",
+
   "sell.unitEqualsBase": "1 {unit} = {multiplier} {base}",
+
   "sell.viewOnlyBanner": "View only ? Irehistro ini nga device para makabaligya",
+
   "sell.viewOnlyShort": "View only",
+
   "sell.weightAdd": "Idugang sa cart",
+
   "sell.weightAddTitle": "Magdugang sang weight",
+
   "sell.weightEditTitle": "Islan ang weight",
+
   "sell.weightErrorInvalid": "Indi valid ina nga weight.",
+
   "sell.weightErrorPrecision": "Hasta 3 decimal places para sa kg, ukon bilog nga grams.",
+
   "sell.weightErrorZero": "Butangi sang weight nga sobra sa zero.",
+
+  "sell.weightGramsEqualsKg": "{grams} g = {kg} kg",
+
+  "sell.weightSummaryPriceLabel": "Presyo",
+
+  "sell.weightSummaryTotalLabel": "Kabilugan",
+
+  "sell.weightSummaryWeightLabel": "Weight",
+
   "sell.weightQuantity": "Weight",
+
   "sell.weightUnit": "Unit",
+
   "sell.weightUnitG": "Grams (g)",
+
   "sell.weightUnitKg": "Kilograms (kg)",
+
   "sell.weightUpdate": "I-update",
+
   "session.loading": "Gina-usisa ang session?",
-  "shell.back": "Back",
+
+  "shell.back": "Balik",
+
   "shell.connection.offline": "Offline",
+
   "shell.connection.offlineDetail": "Indi available ang iban nga online nga feature.",
+
   "shell.connection.online": "Online",
+
   "shell.connection.onlineDetail": "Nakonekta.",
+
   "shell.connection.refreshData": "I-refresh ang datos",
+
   "shell.connection.title": "Koneksyon",
+
   "shell.connectionSync.accessRequired": "Kinahanglan sang access para matapos ang sync",
+
   "shell.connectionSync.allSynced": "Tanan nga pagbag-o naka-sync",
+
   "shell.connectionSync.connectionSection": "Koneksyon",
+
   "shell.connectionSync.lastSynced": "Katapusan nga sync {time}",
+
   "shell.connectionSync.needsAttention": "{count} ka pagbag-o kinahanglan pansina",
+
   "shell.connectionSync.offlineWaiting": "Offline ? {count} nagahulat",
+
   "shell.connectionSync.refreshFromServer": "I-refresh halin sa server",
+
   "shell.connectionSync.retrySync": "Sulayi liwat ang sync",
+
   "shell.connectionSync.syncSection": "Synchronization",
+
   "shell.connectionSync.syncing": "Naga-sync?",
+
   "shell.connectionSync.title": "Koneksyon kag Sync",
+
   "shell.connectionSync.waiting": "{count} ka pagbag-o nagahulat",
+
   "shell.notifications.label": "Mga pahibalo",
+
   "shell.notifications.unreadLabel": "Mga pahibalo, {count} wala pa nabasa",
+  "shell.needsAttention.title": "Needs attention",
+
+  "shell.needsAttention.countLabel": "Needs attention, {count} issues",
+  "shell.needsAttention.allClearLabel": "Needs attention, all clear",
+
+  "shell.needsAttention.allClear": "All clear",
+
+  "shell.needsAttention.allClearDetail": "No items currently need attention.",
+
+
+  "shell.needsAttention.close": "Close",
+
+  "shell.needsAttention.group.inventory": "Inventory",
+
+  "shell.needsAttention.group.connectedCommerce": "Connected commerce",
+
+  "shell.needsAttention.group.branchFulfillment": "Branch / fulfillment",
+
+  "shell.needsAttention.group.creditConfiguration": "Credit / configuration",
+
+  "shell.needsAttention.group.subscription": "Subscription & billing",
+
+  "shell.needsAttention.subscriptionPastDue": "Past due ang subscription",
+
+  "shell.needsAttention.subscriptionPastDueReason": "Overdue ang bayad para sa imo ExItS plan",
+
+  "shell.needsAttention.subscriptionSuspended": "Suspended ang subscription",
+
+  "shell.needsAttention.subscriptionSuspendedReason": "Suspended ang imo ExItS plan",
+
+  "shell.needsAttention.subscriptionCapacity": "Naabot na ang plan limit",
+
+  "shell.needsAttention.subscriptionCapacityReason": "Nagamit na ang mga plan allowance",
+
+  "shell.needsAttention.lowStock": "Low stock",
+
+  "shell.needsAttention.lowStockReason": "Products below reorder level",
+
+  "shell.needsAttention.outOfStock": "Out of stock",
+
+  "shell.needsAttention.outOfStockReason": "Tracked products with zero on hand",
+
+  "shell.needsAttention.expiringSoon": "Expiring soon",
+
+  "shell.needsAttention.expiringSoonReason": "Lots near expiry or already expired",
+
+  "shell.needsAttention.supplierReadiness": "Supplier readiness incomplete",
+
+  "shell.needsAttention.supplierReadinessReason": "Finish setup before buyers can order",
+
+  "shell.needsAttention.paymentSetup": "Payment setup incomplete",
+
+  "shell.needsAttention.paymentSetupReason": "Enable a purchase-order payment method",
+
+  "shell.needsAttention.creditSetup": "Credit setup incomplete",
+
+  "shell.needsAttention.creditSetupReason": "Complete credit terms for business customers with Allow credit on",
+
+  "shell.needsAttention.deliveryReadiness": "Delivery readiness incomplete",
+
+  "shell.needsAttention.deliveryReadinessReason": "Finish delivery setup for this branch",
+
+  "shell.needsAttention.pickupReadiness": "Pickup readiness incomplete",
+
+  "shell.needsAttention.pickupReadinessReason": "Finish pickup location setup for this branch",
+
+  "shell.needsAttention.missingFulfillment": "Missing fulfillment method",
+
+  "shell.needsAttention.missingFulfillmentReason": "Enable Delivery or Pickup so this branch can fulfill connected purchase orders",
+
+  "shell.needsAttention.branchInfo": "Required branch info incomplete",
+
+  "shell.needsAttention.branchInfoReason": "Complete required branch details",
+
+
   "shift.backToShifts": "Balik sa mga shift",
+
   "shift.cashCountModeOff": "Off",
+
   "shift.cashCountModeOptional": "Opsyonal",
+
   "shift.cashCountModeRequired": "Kinahanglan",
+
   "shift.cashIn": "Cash in",
+
   "shift.cashOnHand": "Cash on hand",
+
   "shift.cashOut": "Cash out",
+
   "shift.cashRefunds": "Cash refunds",
+
   "shift.cashSales": "Cash sales",
+
   "shift.cashSummaryHeading": "Summary sang cash",
+
   "shift.cashVariance": "Kalainan sang cash",
+
   "shift.closeConfirm": "Nasirado ang shift",
+
   "shift.closeError": "Indi manasirado ang shift.",
+
   "shift.closeTitle": "Nasirado ang shift",
+
   "shift.closing": "Ginanasirado?",
+
   "shift.closingCash": "Closing cash",
+
   "shift.closingCashCountPolicy": "Closing cash count",
+
   "shift.closingCashInvalid": "Butangi sang valid nga closing cash amount.",
+
   "shift.closingCashLabel": "Closing cash",
+
   "shift.closingCashRequired": "Kinahanglan ang closing cash.",
+
   "shift.closingNotesLabel": "Notes (opsyonal)",
+
   "shift.countedCash": "Nabilang nga cash",
+
   "shift.deniedDetail": "Indi tugotan ang access sa shift para sa sini nga account.",
+
   "shift.denomDecreaseAria": "Magkunhod sang isa ka {denom}",
+
   "shift.denomEmpty": "Wala sing naka-configure nga cash denominations",
+
   "shift.denomEmptyDetail": "Butangi manually ang total cash amount.",
+
   "shift.denomHelper": "Cash denomination helper",
+
   "shift.denomHelperHint": "I-tap ang bill ukon coin agud magdugang. Gamita ang ? agud magkunhod.",
+
   "shift.denomIncreaseAria": "Magdugang sang isa ka {denom}",
+
   "shift.denomTapToAdd": "I-tap agud magdugang",
+
   "shift.detailLede": "Mga detalye sa shift kag summary sa cash.",
+
   "shift.detailTitle": "Shift",
+
   "shift.difference": "Kalainan",
+
   "shift.expectedCashLabel": "Ginaekspertar nga cash",
+
   "shift.expectedClosingCash": "Ginapaabot nga closing cash",
+
   "shift.gCashSales": "GCash sales",
+
   "shift.goToRegisters": "Kadto sa registers",
+
   "shift.hubLede": "Buksan kag nasirado ang imo cashier shift. Kinahanglan sang bukas nga shift ang checkout.",
+
   "shift.hubTitle": "Mga shift",
+
+  "shift.hubDetail": "View open and previous cashier shifts",
+
+  "shift.myHubTitle": "My shifts",
+
+  "shift.myHubDetail": "View my shift history",
+
   "shift.manageDeniedDetail": "Makatan-aw ka sang shifts pero indi maka-abli ukon maka-nasirado.",
+
   "shift.noRegisterMessage": "Paghimo sang Active register nga wala sing bukas nga shift antes mag-abli.",
+
   "shift.noRegisterOnShift": "Wala sing register sa sini nga shift",
+
   "shift.noRegisterTitle": "Wala sing available nga register",
+
   "shift.nonCashInfoHint": "Indi drawer cash ang GCash kag Utang.",
+
   "shift.noneMessage": "Wala ka sing bukas nga shift.",
+
   "shift.notCounted": "Wala nabilang",
+
   "shift.notFound": "Wala makita ina nga shift.",
+
   "shift.openConfirm": "Buksan ang shift",
+
   "shift.openError": "Indi maabli ang shift.",
+
   "shift.openLede": "Magpili sang register kag butangi ang opening cash kung kinahanglan.",
+
   "shift.openReadyHint": "Handa na abrihon ang shift.",
+
   "shift.openSelectRegisterHint": "Pili sang register para magpadayon.",
+
   "shift.registerInUseTitle": "Gina-usar ang register",
+
   "shift.registerInUseDetail":
+
     "May open shift ang {register} nga ginbuksan ni {name}.",
+
   "shift.registerInUseHelp":
+
     "Indi ka makabaligya sa register nga ini hasta masira ang karon nga shift.",
+
   "shift.registerInUseUnknownOpener": "iban nga cashier",
+
   "shift.chooseAnotherRegister": "Pili sang iban nga register",
+
   "shift.openTitle": "Buksan ang shift",
+
   "shift.opening": "Ginabuksan?",
+
   "shift.openingCash": "Opening cash",
+
   "shift.openingCashCountPolicy": "Opening cash count",
+
   "shift.openingCashHelpOptional": "Opsyonal ang opening cash sa sini nga store.",
+
   "shift.openingCashHelpRequired": "Butangi ang cash sa drawer antes magsugod.",
+
   "shift.openingCashInvalid": "Butangi sang valid nga opening cash amount.",
+
   "shift.openingCashLabel": "Opening cash",
+
   "shift.openingCashPreview": "Opening cash: {amount}",
+
   "shift.openingCashRequired": "Kinahanglan ang opening cash.",
+
   "shift.openingCashSection": "Opening cash",
-  "shift.pwaRegisterBusy": "PWA-0001 already has an open shift. Close that shift first, or use another cash register.",
-  "shift.pwaRegisterDetail": "Web POS creates cash register {name} automatically so you can open a shift without manual register setup.",
-  "shift.pwaRegisterError": "Could not create the web cash register.",
-  "shift.pwaRegisterPreparing": "Creating PWA-0001?",
-  "shift.pwaRegisterRetry": "Create PWA-0001",
+
+  "shift.pwaRegisterBusy": "All cash registers are currently in use. Close a shift or wait while another register is prepared.",
+
+  "shift.pwaRegisterDetail": "Web POS prepares an available cash register automatically so you can open a shift without manual register setup.",
+
+  "shift.pwaRegisterError": "Could not prepare a web cash register.",
+
+  "shift.pwaRegisterPreparing": "Preparing another register?",
+
+  "shift.pwaRegisterRetry": "Prepare register",
+
   "shift.pwaRegisterTitle": "Preparing web cash register",
-  "shift.readinessBlocked": "Ginablock — wala sing bukas nga shift.",
+
+  "shift.readinessBlocked": "Ginablock ??? wala sing bukas nga shift.",
+
   "shift.readinessClosed": "Ginablock ? nasirado ang shift.",
+
   "shift.readinessDenied": "Ginablock ? ginaindian ang access sa shift.",
+
   "shift.readinessLabel": "Kahanda sang checkout",
+
   "shift.readinessNoRegister": "Ginablock ? wala sing register ang bukas nga shift.",
+
   "shift.readinessReady": "Handa ? bukas nga shift uban ang register.",
+
   "shift.registerLabel": "Register",
+
   "shift.registerPlaceholder": "Magpili sang register?",
+
   "shift.registerSection": "Register",
+
   "shift.registersLoadError": "Indi ma-load ang registers.",
+
   "shift.resetCount": "I-reset",
+
   "shift.retry": "Tilawi liwat",
+
   "shift.skipClosingCash": "Laktawi ang closing cash",
+
   "shift.skipOpeningCash": "Laktawi ang opening cash",
+
   "shift.statusOpen": "Bukas",
+
   "shift.tapDenominationHint": "I-tap para sa panagbahin sang denomination",
+
   "shift.useTotal": "Gamita ang total",
+
   "shift.utangSales": "Utang sales",
+
   "shift.varianceBalanced": "Balanced",
+
   "shift.varianceOverBy": "Sobra sang",
+
   "shift.varianceShortBy": "Kulang sang",
+
   "shift.viewCurrent": "Tan-awa ang kasamtangang shift",
+
   "shift.viewDenominationBreakdown": "Panagbahin sang denomination sang closing cash",
+
   "shift.viewOpeningDenominationBreakdown": "Panagbahin sang denomination sang opening cash",
+
   "signIn.accountDisabled": "This account can't sign in right now.",
+
   "signIn.accountLocked": "This account is temporarily locked. Try again later.",
+
   "signIn.denied": "Sign in was denied.",
+
   "signIn.devTools": "Development tools",
+  "signIn.portHealth": "Kahimtang sang port",
+  "signIn.portHealthRefresh": "I-refresh",
+  "signIn.portHealthChecking": "Ginasusi ang mga port?",
+  "signIn.portHealthUnavailable": "Wala available ang port health (i-restart ang Vite).",
+  "signIn.portHealthUp": "up",
+    "signIn.portHealthDown": "down",
+  "signIn.localValidationPanel": "Local Validation",
+  "signIn.localValidationRestartService": "Restart",
+  "signIn.localValidationStartService": "Start",
+  "signIn.localValidationRestartAppsDone": "Local Validation applications restarted.",
+  "signIn.localValidationRestartApps": "Restart apps",
+  "signIn.localValidationReset": "Reset test data",
+  "signIn.localValidationResetCancel": "Cancel",
+  "signIn.localValidationResetTitle": "Reset Local Validation?",
+  "signIn.localValidationResetBody": "This will:",
+  "signIn.localValidationResetBullet1": "delete Local Validation transactional data",
+  "signIn.localValidationResetBullet2": "reset Platform/POS Local Validation databases",
+  "signIn.localValidationResetBullet3": "migrate and reseed",
+  "signIn.localValidationResetBullet4": "restore exactly 2 baseline users: Olivia Mendoza and Rafael Torres",
+  "signIn.localValidationResetCannotUndo": "This cannot be undone.",
+  "signIn.localValidationSupervisorOffline": "Supervisor offline ? start Local Validation to enable Restart / Reset.",
+  "signIn.localValidationControlsLocalhostOnly": "Restart and Reset are available only when browsing via localhost.",
+
   "signIn.error": "Nagpalya ang pag-sign in. Usisaa ang credentials kag tilawi liwat.",
+
   "signIn.expired": "Nag-expire ang imo session. Mag-sign in liwat agud magpadayon.",
+
   "signIn.failed": "Sign in failed.",
+
   "signIn.lede": "Gamita ang imo ExItS account agud mabuksan ang Pinoy Business POS.",
+
   "signIn.localValidation": "Local validation users",
+
   "signIn.localValidationHint": "Magpili sang seeded user agud mapuno ang username. Ikaw mismo magbutang sang password.",
+
   "signIn.networkError": "Unable to reach the authentication service.",
+
   "signIn.passwordIncorrect": "That password isn't correct. Try again or use Forgot password.",
+
   "signIn.passwordLabel": "Password",
+
   "signIn.rateLimited": "Too many sign-in attempts. Wait a moment and try again.",
+
   "signIn.selectUser": "Magpili sang user?",
+
   "signIn.staffLoginHint": "Nakita ang staff login. Gamita ang organization staff password ? lain ini sa bisan anong Personal password.",
+
   "signIn.submit": "Mag-sign in",
+
   "signIn.submitting": "Naga-sign in?",
+
   "signIn.testUser": "Test user",
+
   "signIn.title": "Mag-sign in",
+
   "signIn.userNotFound": "We couldn't find an account with that email or username.",
+
   "signIn.usernameHint": "Personal account: imo email. Organization staff: staff login (halimbawa local@ORG123456), indi ang contact email.",
+
   "signIn.usernameLabel": "Email ukon staff login",
+
   "staffAccept.contactLabel": "Contact / recovery email",
+
   "staffAccept.error": "Indi mabat?n ang invitation.",
+
   "staffAccept.lede": "Maghimo sang imo organization staff account gamit ang bag-o nga staff password.",
+
   "staffAccept.modeAnonymous": "Invitation accept",
+
   "staffAccept.modePersonal": "Personal accept",
+
   "staffAccept.orgLabel": "Organization",
+
   "staffAccept.passwordHint": "Ini nga staff password lain sa bisan anong Personal password. Mag-sign in lang ini sa generated staff login.",
+
   "staffAccept.passwordLabel": "Bag-o nga staff password",
+
   "staffAccept.requiresPersonal": "Mag-sign in sa imo Personal account agud mabat?n ini nga invitation.",
+
   "staffAccept.requiresPersonalDetail": "May ara na nga Personal account ini nga contact email. Mag-sign in bilang Personal, dayon batuna liwat agud mahimo ang linked staff principal.",
+
   "staffAccept.separateCredentials": "Ang staff login kag password lain nga account halin sa Personal. Ang person-link indi magpaambit sang session ukon permiso.",
+
   "staffAccept.signInPersonal": "Mag-sign in bilang Personal",
+
   "staffAccept.signInStaff": "Mag-sign in gamit ang staff login",
+
   "staffAccept.staffLoginLabel": "Staff login",
+
   "staffAccept.submit": "Batuna ang invitation",
+
   "staffAccept.submitting": "Ginabaton?",
+
   "staffAccept.successBadge": "Handa",
+
   "staffAccept.successLede": "Gamita ang staff login sa idalom. Indi gamiton ang contact email bilang login.",
+
   "staffAccept.successTitle": "Nahimo ang staff account",
+
   "staffAccept.title": "Batuna ang staff invitation",
+
   "staffAccept.tokenLabel": "Invitation token",
+
   "staffAccept.unverifiedEmail": "I-verify ang imo Personal email antes batunon ini nga invitation.",
+
   "staffAssign.error": "Indi ma-assign ang POS role.",
+
   "staffAssign.lede": "Pilia ang Owner, Manager, ukon Cashier para sa miyembro.",
+
   "staffAssign.ownerConfirmAction": "I-assign ang Owner",
+
   "staffAssign.ownerConfirmMessage": "Ang Owner nagahatag sang bug-os nga POS control. I-assign lang sa trusted nga tawo.",
+
   "staffAssign.ownerConfirmTitle": "I-assign ang Owner role?",
+
   "staffAssign.replaceHint": "Karon nga role: {role}. Ang bag-o nga assignment magapuli sini.",
+
   "staffAssign.roleCashier": "Cashier",
+
   "staffAssign.roleCashierDesc": "Magbaligya, batuna ang bayad, kag dumala sang register shifts.",
+
   "staffAssign.roleManager": "Manager",
+
   "staffAssign.roleManagerDesc": "Padagana ang operations, catalog, inventory, kag reporting.",
+
   "staffAssign.roleOwner": "Owner",
+
   "staffAssign.roleOwnerDesc": "Bug-os nga kontrol sa business para sini nga product, upod staff kag devices.",
+
   "staffAssign.roleSection": "POS role",
+
   "staffAssign.submit": "I-assign ang role",
+
   "staffAssign.submitting": "Nag-assign?",
+
   "staffAssign.title": "I-assign ang POS role",
+
   "staffAssign.unknownName": "Miyembro",
+
   "staffAssign.userSection": "Miyembro",
+
   "staffAssign.validation": "Abihi ang Assign hali sa Manage staff page.",
+
   "staffInvite.acceptLinkLabel": "Accept path",
+
   "staffInvite.backOrg": "Balik sa organization",
+
   "staffInvite.ledeNative": "Find the person on ExItS. They must approve before joining your business.",
+
   "staffInvite.findHint": "Use their ExItS ID or Personal QR.",
+
   "staffInvite.send": "Send invitation",
+
   "staffInvite.continue": "Continue",
+
   "staffInvite.back": "Back",
+
   "staffInvite.cancel": "Cancel",
+
   "staffInvite.tryAnother": "Try another ID",
+
   "staffInvite.notFound": "We couldn't find this ExItS account. They need a Personal account first.",
+
   "staffInvite.onlineRequired": "Stay online to invite or review staff invitations.",
+
   "staffInvite.sentTitle": "Invitation sent",
+
   "staffInvite.sentLede": "They will get a Personal notification to review.",
+
   "staffInvite.sentBadge": "Sent",
+
   "staffInvite.sentDetail": "Your invitee can Accept or Decline in Personal. Their Personal account stays private.",
+
   "staffInvite.backToStaff": "Back to Manage staff",
+
   "staffInvite.personalAccount": "ExItS Personal",
+
   "staffInvite.invitingTo": "You're inviting this person to: {org}",
+
   "staffInvite.thisBusiness": "this business",
+
   "staffInvite.orgRoleFixed": "Organization role: Staff",
+
   "staffInvite.orgRoleStaff": "Staff",
+
   "staffInvite.posRoleLabel": "POS access",
+
   "staffInvite.posRoleCashier": "Cashier",
+
   "staffInvite.posRoleManager": "Store Manager",
+
   "staffInvite.posRoleOwner": "POS Owner",
+
   "staffInvite.personalTitle": "Staff invitations",
+
   "staffInvite.personalLede": "Review invitations to join a business as staff.",
+
   "staffInvite.personalEmptyTitle": "No staff invitations",
+
   "staffInvite.personalEmptyDetail": "When a business invites you, it will show up here.",
+
   "staffInvite.personalLoadError": "Could not load staff invitations.",
+
   "staffInvite.personalJoinTitle": "Join {org}?",
+
   "staffInvite.personalJoinDetail": "{org} invited you to join their team.",
+
   "staffInvite.personalPrivacyNote": "Your Personal account stays private. Joining creates a separate work account for this business.",
+
   "staffInvite.personalAccept": "Accept",
+
   "staffInvite.personalDecline": "Decline",
+
   "staffInvite.personalPasswordLabel": "Create staff password",
+
   "staffInvite.personalPasswordHint": "This password is for your work login only ? not your Personal password.",
+
   "staffInvite.personalPasswordRequired": "Enter a staff password to accept.",
+
   "staffInvite.personalAcceptFailed": "Could not accept this invitation.",
+
   "staffInvite.personalDeclineFailed": "Could not decline this invitation.",
+
   "staffInvite.personalAcceptedTitle": "Work account ready",
+
   "staffInvite.personalAcceptedDetail": "{org} is ready. Sign in with work login {login} when you open the business.",
+
   "staffManage.pendingInvites": "Pending invitations",
+
   "staffManage.cancelInvite": "Cancel invitation",
+
   "staffManage.cancelInviteConfirm": "Cancel the pending invitation for {name}?",
+
   "staffManage.invitationPending": "Invitation pending",
+
   "staffInvite.badge": "Organization staff",
+
   "staffInvite.contactEmailHint": "Indi ini ang staff login. Ang staff login daw local@ORG123456 pagkatapos batunon.",
+
   "staffInvite.contactEmailLabel": "Contact / recovery email",
+
   "staffInvite.contactIsNotLogin": "Pahanumduma ang gin-agda: ang contact email indi staff login. Magbutang sila sang lain nga staff password.",
+
   "staffInvite.createdBadge": "Nahimo",
+
   "staffInvite.createdLede": "Ipaambit ang accept link sa gin-agda.",
+
   "staffInvite.createdTitle": "Nahimo ang invitation",
+
   "staffInvite.displayNameLabel": "Display name (opsyonal)",
+
   "staffInvite.error": "Indi mahimo ang invitation.",
+
   "staffInvite.lede": "Padala sang invitation sa organization staff. Ang contact email para recovery lang ? mabuhat ang staff login kon batunon.",
+
   "staffInvite.noWorkspace": "I-bind anay ang organization workspace antes mag-agda sang staff.",
+
   "staffInvite.openAccept": "Abr?hi ang accept page",
+
   "staffInvite.roleHint": "Ang role Organization Staff (OrganizationMember). Indi sini ang paagi sa pag-agda sang Owners.",
+
   "staffInvite.submit": "Maghimo sang invitation",
+
   "staffInvite.submitting": "Ginahimo?",
+
   "staffInvite.title": "Agda sang staff",
+
   "staffManage.actionError": "Indi matapos ang aksyon sa staff.",
+
   "staffManage.assignRole": "I-assign ang POS role",
+
   "staffManage.back": "Balik sa staff",
+
   "staffManage.cancel": "Cancel",
+
   "staffManage.confirm": "Confirm",
+
   "staffManage.emptyMessage": "Mag-imbita anay, dayon i-assign ang Owner, Manager, ukon Cashier.",
+
   "staffManage.emptyTitle": "Wala pa staff",
+
   "staffManage.footnote": "Para sa advanced membership governance, gamita ang Platform Admin.",
+
   "staffManage.lede": "Mag-imbita, mag-assign sang POS role, kag dumala sang membership.",
+
   "staffManage.loadError": "Indi ma-load ang lista sang staff.",
+
   "staffManage.noPosRoles": "Wala POS role",
+
   "staffManage.organizationOwnerRole": "Organization Owner",
+
   "staffManage.ownerProtectedNote": "Protected owner account",
+
   "staffManage.remove": "Kuhaa",
+
   "staffManage.removeConfirmDetail": "Kuhaa si {name} sa sini nga organization? Indi ini mabawi hali sa POS.",
+
   "staffManage.removeConfirmTitle": "Kuhaa ang membership?",
+
   "staffManage.retry": "Tilawi liwat",
+
   "staffManage.revokeRole": "I-revoke ang role",
+
   "staffManage.revokeRoleConfirmDetail": "I-revoke ang {role} hali kay {name}?",
+
   "staffManage.revokeRoleConfirmTitle": "I-revoke ang POS role?",
+
   "staffManage.suspend": "I-suspend",
+
   "staffManage.suspendConfirmDetail": "I-suspend si {name} sa sini nga organization?",
+
   "staffManage.suspendConfirmTitle": "I-suspend ang membership?",
+
   "staffManage.title": "Dumala sang staff",
+
   "status.foundation": "Pundasyon",
+
   "summary.cashReceived": "Nadawat nga cash",
+
   "summary.change": "Sukli",
+
   "summary.customer": "Customer",
+
   "summary.dateTime": "Petsa kag oras",
+
   "summary.disclaimerBody": "Ini nga dokumento para lang sa rekord sa business kag customer. Indi ini BIR-registered invoice kag indi mopuli sa bisan unsang invoice ukon dokumento nga legal nga kinahanglan i-issue sa manugbaligya. Indi determinahan sa ExItS ang legal nga BIR invoicing obligations sa manugbaligya.",
+
   "summary.disclaimerTitle": "Disclaimer",
+
   "summary.gcashReference": "GCash reference",
+
   "summary.loadError": "Indi ma-load ini nga transaction summary.",
+
+  "summary.backToSell": "Balik sa Sell",
+  "summary.print": "I-print",
+  "summary.printSummary": "I-print",
+  "summary.preview": "Preview",
+  "summary.closePreview": "Isara",
+  "summary.exportPdf": "PDF / Export",
+  "summary.customerPurchaseSummary": "Customer Purchase Summary",
+  "summary.documentPreview": "Document",
+  "summary.discount": "Diskwento",
+  "summary.utangBalance": "Utang / balanse",
+  "summary.itemDescription": "Item",
+  "summary.itemQty": "Qty",
+  "summary.itemUnitPrice": "Presyo kada unit",
+  "summary.itemLineTotal": "Total sang linya",
+
+  "summary.paidSuccess": "Narekord ang bayad. Natapos ang sale.",
+  "summary.paidSuccessHint": "Magsugod sang bag-o nga sale, i-print ang summary, ukon mag-return kung kinahanglan.",
+  "summary.sectionDetails": "Detalye sang transaksyon",
+  "summary.sectionItems": "Mga item",
+  "summary.sectionTotals": "Mga total",
   "summary.missingSale": "Wala sing gipili nga sale.",
+
   "summary.newSale": "Bag-ong sale",
+
   "summary.paymentMethod": "Bayad",
+
   "summary.priceOverrideReason": "Rason",
+
   "summary.costSection": "Cost & profit (internal)",
+
   "summary.costStatus": "Cost status",
+
   "summary.totalCost": "Total cost",
+
   "summary.knownCost": "Known cost",
+
   "summary.grossProfit": "Gross profit",
+
   "summary.grossMargin": "Gross margin",
+
   "summary.costIncompletePartial":
-    "May kulang nga line costs — indi ginapakita ang profit.",
+
+    "May kulang nga line costs ??? indi ginapakita ang profit.",
+
   "summary.costIncompleteUnavailable":
-    "Indi available ang line costs — indi ginapakita ang profit.",
+
+    "Indi available ang line costs ??? indi ginapakita ang profit.",
+
   "summary.lineCost": "Line cost",
+
   "summary.regularPrice": "Regular nga presyo",
+
   "summary.saleNumber": "Numero sa sale",
+
   "summary.sellingPrice": "Selling price",
+
   "summary.shift": "Shift",
+
   "summary.status": "Status",
-  "summary.subtitle": "Rekord sa business kag customer",
+
+  "summary.subtitle": "Rekord sang sale kag mga aksyon",
+
   "summary.subtotal": "Subtotal",
-  "summary.title": "Summary sa Transaction",
+
+  "summary.title": "Detalye sang Transaksyon",
+
   "summary.total": "Total",
+
   "summary.voidConfirm": "I-void ang sale",
+  "summary.voidConfirmTitle": "Void this sale?",
+  "summary.voidConfirmDetail":
+    "This cannot be undone from the sale screen. Inventory will be restored, and any linked Utang credit will be reversed. You will enter a void reason next.",
+  "summary.voidConfirmContinue": "Continue to void",
+  "summary.returnConfirmTitle": "Return items from this sale?",
+  "summary.returnConfirmDetail":
+    "You will choose which items to return and how to refund the customer.",
+
   "summary.voidDenied": "Owner ukon manager lang ang maka-void sa sini nga sale.",
+
   "summary.voidLede": "Ang void mobalik sa inventory. Ang Utang usab mo-reverse sa linked credit.",
+
   "summary.voidReason": "Rason sa void",
+
   "summary.voidReasonLabel": "Rason",
+
   "summary.voidReasonRequired": "Butangi sang rason antes i-void.",
+
   "summary.voidSection": "I-void ang sale",
+
   "summary.voidedBanner": "Na-void ini nga sale.",
+
   "summary.voiding": "Gina-void?",
+
   "suppliers.activate": "I-activate",
+
   "suppliers.add": "Magdugang sang supplier",
+
   "suppliers.addChooserHint": "ExItS businesses: Scan ukon search. Manual: suppliers nga wala sa ExItS.",
+
   "suppliers.addChooserLede": "Magkonekta sa ExItS business gamit ang QR ukon ID, ukon isulod ang local contact details.",
+
   "suppliers.addManual": "Isulod ang details",
+
   "suppliers.addManualDetail": "Himuon ang local supplier record nga may ngalan kag contact info.",
+
   "suppliers.addStepChoose": "Magpili sang paagi",
+
   "suppliers.addStepComplete": "Kompletohon",
+
   "suppliers.addStepsAria": "Mga lakatsa pagdugang sang supplier",
+
   "suppliers.addViaQr": "I-scan ukon pangita paagi sa ID",
+
   "suppliers.addViaQrDetail": "Camera, QR photo, ukon i-type ang ORG###### para maghangyo sang connection.",
-  "suppliers.addressLine1": "Address line 1",
+
+  "suppliers.addressLine1": "Building / House No. and Street",
+
   "suppliers.addressLine2": "Address line 2",
+
   "suppliers.back": "Balik sa suppliers",
+
   "suppliers.city": "Siudad / banwa",
+
   "suppliers.code": "Supplier code",
+
   "suppliers.connectionConnected": "Naka-connect",
+
   "suppliers.connectionManual": "Manual",
+
   "suppliers.listOrgId": "Org ID: {id}",
+
   "suppliers.listBranch": "Branch: {name}",
+
+  "suppliers.contactDetails": "Contact details",
+
   "suppliers.contactPerson": "Contact person",
+
   "suppliers.deactivate": "I-deactivate",
+
   "suppliers.detailLede": "Contact details kag status sang supplier.",
+  "suppliers.detailsHeading": "Supplier details",
+  "suppliers.localDetails": "Local details",
+  "suppliers.noLocalDetails": "No local contact or address details saved.",
+
   "suppliers.edit": "Islan",
+
   "suppliers.editTitle": "Islan ang supplier",
+
   "suppliers.email": "Email",
+
   "suppliers.empty": "Wala sing nakitang suppliers",
+
   "suppliers.emptyDetail": "Magdugang sang supplier ukon islan ang search.",
+
   "suppliers.errorConcurrency": "Gin-islan ang supplier sa iban nga lugar. I-reload kag tilawi liwat.",
+
   "suppliers.errorDenied": "Wala ka sing permiso sa pagdumala sang suppliers.",
+
   "suppliers.errorEmailConflict": "May supplier na nga may amo sini nga email.",
+
   "suppliers.errorGeneric": "Indi ma-save ang supplier. Tilawi liwat.",
+
   "suppliers.errorMobileConflict": "May supplier na nga may amo sini nga mobile number.",
+
   "suppliers.errorNameConflict": "May supplier na nga may amo sini nga ngalan.",
+
   "suppliers.errorNotFound": "Wala makita ang supplier para sa sini nga business.",
+
   "suppliers.errorTaxConflict": "May supplier na nga may amo sini nga tax ukon registration number.",
+
   "suppliers.formLede": "Kinahanglan ang ngalan. Opsyonal ang iban nga fields.",
+
   "suppliers.lede": "Pangita sang suppliers, tan-awa ang contact details, kag i-update ang status.",
+
   "suppliers.mobile": "Mobile",
+
   "suppliers.name": "Ngalan",
+
   "suppliers.nameRequired": "Kinahanglan ang ngalan.",
+
   "suppliers.newTitle": "Bag-ong supplier",
+
   "suppliers.nextPage": "Sunod",
+
   "suppliers.notFound": "Wala makita ang supplier.",
+
   "suppliers.notes": "Notes",
+
   "suppliers.open": "Suppliers",
+
   "suppliers.pageLabel": "Pahina {page} sang {totalPages}",
+
   "suppliers.postalCode": "Postal code",
+
   "suppliers.prevPage": "Nagligad",
+
   "suppliers.province": "Probinsiya",
+
   "suppliers.save": "I-save",
+
   "suppliers.saving": "Gina-save?",
+
   "suppliers.search": "Pangita paagi sa ngalan ukon supplier code",
+
   "suppliers.sectionAddress": "Address",
+
   "suppliers.sectionBasics": "Sukaranan",
+
   "suppliers.sectionContact": "Contact",
+
   "suppliers.sectionNotes": "Notes",
+
   "suppliers.statusActive": "Active",
+
   "suppliers.statusAll": "Tanan",
+
   "suppliers.statusFilter": "Status sa supplier",
+
   "suppliers.statusInactive": "Inactive",
+
   "suppliers.taxNumber": "Tax ukon registration number",
+
   "suppliers.telephone": "Telephone",
+
   "suppliers.title": "Mga supplier",
+
   "theme.dark": "Madulom",
+
   "theme.label": "Tema",
+
   "theme.light": "Masanag",
+
   "theme.system": "Sistema",
+
   "topbar.editProfile": "I-edit ang profile",
+
   "topbar.preferences": "Mga setting",
+
   "topbar.signOut": "Mag-sign out",
+
   "topbar.signOutFailed": "Nagpalya ang pag-sign out. Usisaa ang koneksyon kag tilawi liwat.",
+
   "topbar.signingOut": "Naga-sign out?",
+
   "topbar.workspacePending": "Wala pa ma-bind ang workspace",
+
   "workspace.branchCountMany": "{count} ka branches",
+
   "workspace.branchCountOne": "1 branch",
+
   "workspace.branches": "Branches",
+
   "workspace.branchesWithCount": "Branches ({count})",
+
   "workspace.branchActive": "Active",
+
   "workspace.yourRole": "Imo role: {role}",
+
   "workspace.branchesLabel": "active nga branches",
+
   "workspace.experienceLede": "Magpili paano mo gusto magtrabaho.",
+
   "workspace.grantProbeFailedDetail": "Indi ma-resolve ang server session grant para sa organization. Sulayi liwat kon online ka na.",
+
   "workspace.grantProbeFailedTitle": "Indi ma-load ang workspace authorization",
+
   "workspace.grantProbeRetry": "Sulayi liwat ang authorization",
+
   "workspace.lede": "Pilia ang organization kag branch nga imo pagadumalahan.",
+
   "workspace.loadError": "Indi ma-load ang workspace data.",
+
   "workspace.loading": "Nagakarga sang workspaces?",
+
   "workspace.loadingDestinations": "Nagakarga sang available nga experiences?",
+
   "workspace.management": "Management",
+
   "workspace.managementTeam": "Management team",
+
   "workspace.noActiveBranches": "Wala pa sing active nga branches. Available gihapon ang Manage business.",
+
   "workspace.noAuthorizedDestinationsDetail": "Makita sang organization sang account mo, pero wala pa POS experiences nga gin-authorize sang server.",
+
   "workspace.noAuthorizedDestinationsTitle": "Wala authorized workspace destinations",
+
   "workspace.opening": "Ginabuksan?",
+
   "workspace.preparingPermissions": "Preparing workspace permissions?",
+
   "workspace.previousBranchInaccessible": "Indi na available ang dati nga napilian nga branch. Pilia ang active nga branch.",
+
   "workspace.previousWorkspaceInaccessible": "Indi na available ang dati nga napilian nga workspace. Pilia liwat.",
+
   "workspace.switch": "Islan ang workspace",
+  "workspace.current": "Current",
+  "workspace.changeLocationAria": "Change workspace. Current location: {details}.",
+
   "workspace.switchExperience": "Islan ang experience",
+
   "workspace.branchRequiredTitle": "Choose a branch",
+
   "workspace.branchRequiredDetail": "Catalog, Sell, and Orders need a store branch. You are in Manage Business (organization only). Open Choose workspace and pick Operations for a branch.",
+
   "workspace.branchRequiredCta": "Choose workspace",
+
   "workspace.title": "Magpili sang workspace",
+
   "org.more.roles": "Roles & permissions",
+
   "staffManage.organizationAccess": "Organization access",
+
   "staffManage.posRole": "POS role",
+
   "staffManage.posOwnerEquivalent": "POS Owner",
+
   "staffManage.changePosRole": "Change POS role",
+
   "staffManage.manageAccess": "Manage access",
+
   "staffManage.removePosAccess": "Remove POS access",
+
   "staffManage.removePosAccessConfirmTitle": "Remove POS access?",
+
   "staffManage.removePosAccessConfirmDetail": "staffManage.removePosAccessConfirmDetail",
+
   "staffManage.suspendedRoleHint": "Suspend membership before changing roles, or reactivate membership first.",
+
   "staffManage.organizationAdminRole": "Organization Administrator",
+
   "staffManage.staffMemberRole": "Staff member",
+
   "staffManage.posAccess": "POS role",
+
   "staffManage.protectedAccount": "Protected owner account",
+
   "staffManage.status.removed": "Removed",
+
   "staffManage.status.suspended": "Suspended",
+
   "staffManage.status.active": "Active",
+
   "staffManage.moreActions": "More",
+
   "staffAssign.changeTitle": "Change POS role",
+
   "staffAssign.changeLede": "Replace this member's effective Pinoy Business POS role.",
+
   "staffAssign.manageTitle": "Manage staff access",
-  "staffAssign.manageLede": "Update this member's POS role and branch access.",
-  "staffAssign.manageConfirmAction": "Save access",
+
+  "staffAssign.manageLede": "I-update ang POS role kag location access sining miyembro.",
+
+  "staffAssign.manageConfirmAction": "I-save ang mga pagbag-o",
+
   "staffAssign.changeConfirmTitle": "Change POS role?",
+
   "staffAssign.changeConfirmDetail": "Change {name}'s POS role from {from} to {to}? Their Pinoy Business POS access will change.",
+
   "staffAssign.changeConfirmAction": "Change role",
+
   "staffAssign.sameRoleDisabled": "This member already has this POS role.",
+
   "staffAssign.currentRole": "Current",
+
   "staffAssign.roleInventoryStaff": "Inventory Staff",
+
   "staffAssign.roleInventoryStaffDesc": "Handles stock, purchasing, and inventory operations.",
+
   "staffAssign.roleReportingUser": "Reporting User",
+
   "staffAssign.roleReportingUserDesc": "Views reports and business information without operational changes.",
-  "staffAssign.branchSection": "Branch access",
-  "staffAssign.allBranches": "All branches",
-  "staffAssign.allBranchesHint": "Dynamically includes every current and newly activated branch.",
-  "staffAssign.areaScope": "Mga area",
+
+  "staffAssign.branchSection": "Location access",
+
+  "staffAssign.allBranches": "Tanan nga active locations",
+
+  "staffAssign.allBranchesHint": "Access sa tanan nga current kag future active locations sa sini nga organisasyon.",
+
+  "staffAssign.areaScope": "Area(s)",
+
   "staffAssign.areaScopeHint":
-    "Ang access nagasunod sa mga sanga sang napili nga area, lakip ang idugang sa ulihi.",
+
+    "Access sa tanan nga locations sang ginpili nga Areas.",
+
   "staffAssign.areaRequired": "Magpili sang bisan isa ka area.",
+
+  "staffAssign.selectAreas": "Pili sang areas",
+
+  "staffAssign.areaLocationBreakdown": "{count} locations ? {retail} Retail ? {warehouse} Warehouse",
+
+  "staffAssign.areaLocationBreakdownRetailOnly": "{count} locations ? {retail} Retail",
+
+  "staffAssign.areaLocationBreakdownWarehouseOnly": "{count} locations ? {warehouse} Warehouse",
+
+  "staffAssign.areaNameLabel": "{name} Area",
+
+  "staffAssign.saveSummaryRole": "Role",
+
+  "staffAssign.saveSummaryAccess": "Location access",
+
+  "areas.detail.transfer": "Isaylo",
+
+  "areas.detail.assignConfirmTitle": "I-assign ang location nga ini?",
+
+  "areas.detail.assignConfirmDetail": "I-assign si {location} sa {area}.",
+
+  "areas.detail.assignConfirmAction": "I-assign",
+
+  "areas.detail.transferConfirmTitle": "Isaylo ang location nga ini?",
+
+  "areas.detail.transferConfirmDetail": "Isaylo si {location} hali sa {fromArea} padulong sa {area}.",
+
+  "areas.detail.transferConfirmAction": "Isaylo",
+
+  "areas.detail.removeConfirmTitle": "Kuhaon ang location nga ini?",
+
+  "areas.detail.removeConfirmDetail": "Kuhaon si {location} hali sa {area}. Magapabilin nga active kag unassigned ang location.",
+
+  "areas.detail.removeConfirmAction": "Kuhaon",
+
   "staffAssign.areasSummary": "Mga area",
-  "staffAssign.specificBranches": "Specific branches",
-  "staffAssign.specificBranchesHint": "Only the selected branches. Future branches are not included automatically.",
-  "staffAssign.singleBranchAutomatic": "Main Branch / Automatic: {branch}",
+
+  "staffAssign.specificBranches": "Espesipiko nga locations",
+
+  "staffAssign.specificBranchesHint": "Pili sang indibidwal nga Retail kag Warehouse locations.",
+
+  "staffAssign.singleBranchAutomatic": "Awtomatiko: {branch}",
+
   "staffAssign.mainBranch": "Main",
+
   "staffAssign.branchAutomaticAll":
-    "Organization Owner and Administrator already have access to all active branches.",
-  "staffAssign.branchNoneActive": "No active branches are available to assign.",
-  "staffAssign.branchRequired": "Select at least one branch.",
-  "staffAssign.branchSaveError": "POS role was saved, but branch access could not be updated.",
-  "staffManage.branchAccess": "Branch access",
-  "staffManage.branchAccessAll": "All branches",
-  "staffManage.branchAccessAutomatic": "All branches",
+
+    "Ang Organization Owner kag Administrator may access na sa tanan nga active locations.",
+
+  "staffAssign.branchNoneActive": "Wala sing available nga active locations nga i-assign.",
+
+  "staffAssign.branchRequired": "Pili sang bisan isa ka location.",
+
+  "staffAssign.branchSaveError": "Na-save ang POS role, pero wala na-update ang location access.",
+
+  "staffManage.branchAccess": "Location access",
+
+  "staffManage.branchAccessAll": "Tanan nga active locations",
+
+  "staffManage.branchAccessAutomatic": "Tanan nga active locations",
+
   "staffManage.branchAccessUnknown": "Not assigned",
+
   "orgRoles.title": "Roles & permissions",
+
   "orgRoles.lede": "Control what staff can do in Pinoy Business POS.",
+
   "orgRoles.loadError": "Roles could not be loaded.",
+
   "orgRoles.notFound": "Role not found.",
+
   "orgRoles.detailTitle": "Role permissions",
+
   "orgRoles.detailLede": "System role permissions are read-only.",
+
   "orgRoles.backList": "Back to roles",
+
   "orgRoles.viewPermissions": "View permissions",
+
   "orgRoles.systemRole": "System role",
+
   "orgRoles.staffCountOne": "1 staff",
+
   "orgRoles.staffCountMany": "{count} staff",
+
   "orgRoles.staffUsingRole": "{count} staff using this role",
+
   "orgRoles.customRolesDeferred": "Custom roles are not available yet.",
+
   "orgRoles.posOwnerOwnershipNote": "orgRoles.posOwnerOwnershipNote",
+
   "orgRoles.allowed": "Allowed",
+
   "orgRoles.notIncluded": "Not included",
+
   "staffInvite.posRoleInventoryStaff": "Inventory Staff",
+
   "staffInvite.posRoleReportingUser": "Reporting User",
+
   "staffInvite.posOwnerWarning": "staffInvite.posOwnerWarning",
-  "branches.create.capacityExceeded": "Branch limit reached",
+
+  "branches.create.capacityExceeded": "Location limit reached",
+
+  "branches.create.warehouseEntitlement": "Your plan does not include Warehouse branches. Upgrade to Pro or Pro+.",
+
   "branches.create.code": "Branch code",
+
   "branches.create.codeConflict": "That branch code is already in use.",
+
   "branches.create.codeHelper": "Used internally to identify this branch.",
+
   "branches.create.codeRequired": "Branch code is required.",
-  "branches.create.creating": "Creating…",
+
+  "branches.create.creating": "Creating???",
+
   "branches.create.failed": "Could not create branch.",
-  "branches.create.lede": "Create a new business location. Fulfillment stays off until you configure it.",
+
+  "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
+
   "branches.create.name": "Branch name",
+
+  "branches.create.reset": "Reset",
+
   "branches.create.submit": "Create branch",
+
   "branches.create.success": "Branch created",
-  "branches.create.title": "Add branch",
+
+  "branches.create.title": "Add location",
+
   "branches.detail.archive": "Archive branch",
+
   "branches.detail.archived": "Branch archived",
+
   "branches.detail.changePrimary": "Change primary branch",
+
   "branches.detail.changePrimaryConfirm": "Make {name} the primary branch? The current primary becomes secondary.",
+
   "branches.detail.codeReadonly": "Branch code",
+
   "branches.detail.configureFulfillment": "Configure fulfillment",
+
   "branches.detail.details": "Branch details",
+
   "branches.detail.devices": "Devices",
+
   "branches.detail.fulfillment": "Fulfillment",
+
   "branches.detail.fulfillmentLede": "Configure pickup, delivery, hours, and map location for this branch.",
+
   "branches.detail.historyKept": "Historical transactions will be kept.",
+
   "branches.detail.lifecycleTitle": "Branch lifecycle",
+
   "branches.detail.makePrimary": "Make primary branch",
+
   "branches.detail.overview": "Branch overview",
+
   "branches.detail.primaryBranch": "Primary branch",
+
   "branches.detail.reactivate": "Reactivate branch",
+
   "branches.detail.reactivated": "Branch reactivated",
+
   "branches.detail.reason": "Reason",
+
   "branches.detail.setPrimaryDone": "Primary branch updated",
+
   "branches.storefrontQr.title": "Customer storefront",
-  "branches.storefrontQr.loading": "Nagaload ang storefront QR…",
+
+  "branches.storefrontQr.loading": "Nagaload ang storefront QR???",
+
   "branches.storefrontQr.loadFailed": "Indi ma-load ang storefront QR.",
+
   "branches.storefrontQr.notReady": "Wala pa ready ang customer storefront. Kompletoha anay ang branch fulfillment/public-store setup.",
+
   "branches.storefrontQr.setupHint":
+
     "Wala pa kompleto ang storefront setup. Mahimo pa gihapon ma-open ang link, pero ang ordering posible indi available hasta makompleto ang setup.",
+
   "branches.storefrontQr.completeSetup": "Kompletoha ang storefront setup",
+
   "branches.storefrontQr.scanHint": "I-scan para mabakalyo sa {branch}",
+
   "branches.storefrontQr.imageAlt": "Customer storefront QR para sa {branch}",
+
   "branches.storefrontQr.copyLink": "Kopyaha ang link",
+
   "branches.storefrontQr.copied": "Nakopya ang link",
+
   "branches.storefrontQr.download": "I-download ang QR",
+
   "branches.storefrontQr.downloadFailed": "Indi ma-download ang QR code.",
+
   "branches.detail.staff": "Staff access",
+
   "branches.detail.suspend": "Suspend branch",
+
   "branches.detail.suspended": "Branch suspended",
+
   "branches.detail.updated": "Branch updated",
+
   "branches.devices.empty": "No POS devices",
+
   "branches.devices.manage": "Manage devices",
-  "branches.mgmt.add": "Add branch",
-  "branches.mgmt.capacity": "Branch capacity",
-  "branches.mgmt.capacityLimit": "Your current plan supports up to {allowed} branches.",
-  "branches.mgmt.capacityOf": "{used} of {allowed} active branches",
+
+  "branches.mgmt.add": "Branch & Warehouse",
+
+  "branches.mgmt.capacity": "Location capacity",
+
+  "branches.mgmt.capacityLimit": "Your current plan supports up to {allowed} locations.",
+
+  "branches.mgmt.capacityOf": "{used} of {allowed} active locations",
+
   "branches.mgmt.delivery": "Delivery",
+
   "branches.mgmt.denied": "Only organization owners can manage branches.",
+
   "areas.title": "Mga Area",
+
   "areas.singular": "Area",
-  "areas.lede": "Grupuha ang mga sanga para sa access sang staff, pag-navigate, kag report.",
+
+  "areas.lede": "Ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
+
   "areas.groupingOnlyNote":
-    "Pang-grupo lang ang Area. Ang stock, register, shift, kag baligya nagapabilin sa kada sanga.",
+
+    "Inaayos ng Area ang mga retail branch at warehouse ayon sa rehiyon. Nanatili sa bawat lokasyon ang sariling inventory at operasyon.",
+
   "areas.add": "Magdugang sang area",
+
   "areas.open": "Buksi ang area",
+
   "areas.capacity": "Kapasidad sang area",
+
   "areas.capacityOf": "{used} sa {allowed} nga aktibo nga area",
+
   "areas.capacityLimit": "Tubtob {allowed} ka area lang ang nasakop sang imo plano subong.",
-  "areas.branchCount": "{count} ka sanga",
+
+  "areas.branchCount": "{count} lokasyon",
+
   "areas.unassigned": "Wala sang area",
-  "areas.unassignedCount": "{count} ka sanga ang wala sa bisan ano nga area.",
+
+  "areas.unassignedCount": "{count} lokasyon ang hindi naka-assign sa area",
+
   "areas.status.active": "Aktibo",
+
   "areas.status.archived": "Gin-archive",
+
   "areas.emptyTitle": "Wala pa sang area",
+
   "areas.emptyDetail":
-    "Magdugang sang area kon gusto mo grupuhon ang mga sanga para sa access sang staff.",
+
+    "Magdagdag ng area para ayusin ang mga retail branch at warehouse ayon sa rehiyon.",
+
   "areas.loadError": "Indi ma-load ang mga area.",
+
   "areas.createError": "Wala nahimo ang area.",
+
   "areas.saveError": "Wala na-save ang pagbag-o.",
+
   "areas.archiveError": "Wala na-archive ang area.",
+
   "areas.notFound": "Wala makita ini nga area.",
+
   "areas.nameRequired": "Isulat ang ngalan sang area.",
+
   "areas.denied": "Ang tag-iya lang sang organisasyon ang makadumala sang mga area.",
-  "areas.create.title": "Bag-o nga area",
+
+  "areas.entitlementRequired": "Area management requires Pro or Pro+. Upgrade your plan to enable areas.",
+
+  "areas.create.title": "Magdagdag ng area",
+
   "areas.create.name": "Ngalan sang area",
+
   "areas.create.code": "Code sang area (opsyonal)",
+
   "areas.create.codeHelper": "Malip-ot nga dalagko-letra nga code para sa sulod, halimbawa NCR-NORTH.",
+
   "areas.create.submit": "Maghimo sang area",
+
   "areas.rename": "Detalye sang area",
-  "areas.save": "Itipig ang area",
-  "areas.saving": "Ginatipig…",
+
+  "areas.save": "I-save ang mga pagbabago",
+
+  "areas.saving": "Ginatipig???",
+
   "areas.cancel": "Kanselahon",
+
   "areas.archive": "I-archive ini nga area",
+
   "areas.archiveConfirmTitle": "I-archive ini nga area?",
+
   "areas.archiveConfirmDetail":
-    "Kuhaa anay ang tanan nga sanga kag area access sang staff. Ang pag-archive wala nagakuha sang sanga ukon nagabalhin sang stock.",
+
+    "Alisin muna ang lahat ng lokasyon at area access ng staff. Hindi nagbubura ng lokasyon o naglilipat ng stock ang pag-archive.",
+
   "areas.archiveConfirmAction": "Padayon kag i-archive",
+
   "areas.detail.title": "Area",
+
   "areas.detail.lede":
-    "Mag-assign, magbalhin, ukon magkuha sang sanga. Wala sang operasyon nga nagasunod sa pagbalhin.",
-  "areas.detail.branches": "Mga sanga sa sini nga area",
-  "areas.detail.noBranches": "Wala pa sang sanga sa sini nga area.",
-  "areas.detail.availableBranches": "Iban nga sanga",
-  "areas.detail.assign": "Idugang",
-  "areas.detail.move": "Balhina diri",
+
+    "Mag-assign ng retail branch at warehouse sa area na ito. Nanatili sa bawat lokasyon ang operasyon.",
+
+  "areas.detail.branches": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noBranches": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.availableBranches": "Mga available na lokasyon",
+
+  "areas.detail.assign": "I-assign",
+
+  "areas.detail.move": "I-assign",
+
   "areas.detail.remove": "Kuhaa",
+
+  "areas.locationCount": "{count} lokasyon",
+
+  "areas.locationBreakdown": "{retail} Retail ? {warehouse} Warehouse",
+
+  "areas.edit": "I-edit",
+
+  "areas.detail.assigned": "Mga naka-assign na lokasyon",
+
+  "areas.detail.noLocations": "Wala pang naka-assign na lokasyon.",
+
+  "areas.detail.available": "Mga available na lokasyon",
+
   "branches.mgmt.devices": "POS devices",
+
   "branches.mgmt.devicesActive": "{count} active",
-  "branches.mgmt.emptyDetail": "Add a branch to manage locations and staff access.",
-  "branches.mgmt.emptyTitle": "No branches",
+
+  "branches.mgmt.emptyDetail": "Add a retail branch or warehouse to manage locations and staff access.",
+
+  "branches.mgmt.emptyTitle": "No locations",
+
   "branches.mgmt.filter.active": "Active",
-  "branches.mgmt.filter.all": "All branches",
+
+  "branches.mgmt.filter.all": "All",
+
   "branches.mgmt.filter.archived": "Archived",
+
   "branches.mgmt.filter.suspended": "Suspended",
-  "branches.mgmt.filterLabel": "Branch status filters",
-  "branches.mgmt.lede": "Manage your business locations and branch access.",
+
+  "branches.mgmt.filterLabel": "Branch filters",
+
+  "branches.mgmt.lede": "Manage retail branches and warehouses for your business.",
+
   "branches.mgmt.loadError": "Could not load branches.",
+
   "branches.mgmt.more": "More",
+
   "branches.mgmt.off": "Off",
+
   "branches.mgmt.on": "On",
+
   "branches.mgmt.open": "Open branch",
+
   "branches.mgmt.viewQr": "Tan-awa ang QR",
+
   "branches.mgmt.pickup": "Pickup",
+
   "branches.mgmt.primary": "Primary",
+
   "branches.mgmt.secondary": "Secondary",
+
   "branches.mgmt.staffAccess": "Staff access",
+
   "branches.mgmt.status.active": "Active",
+
   "branches.mgmt.status.archived": "Archived",
+
   "branches.mgmt.status.suspended": "Suspended",
-  "branches.mgmt.title": "Branches",
+
+  "branches.mgmt.title": "Branches & Warehouses",
+
   "branches.staff.add": "Add staff",
+
   "branches.staff.addFailed": "Could not add staff access.",
+
   "branches.staff.assigned": "Assigned staff",
+
   "branches.staff.atLeastOne": "At least one branch is required",
+
   "branches.staff.automaticAccess": "Organization Owner and Administrator have access to all active branches automatically.",
+
   "branches.staff.empty": "No staff assigned",
+
   "branches.staff.lastAssignment": "Assign another branch before removing access",
+
   "branches.staff.lede": "Control which staff can work in this branch.",
+
   "branches.staff.noAccess": "No access to this branch",
+
   "branches.staff.remove": "Remove access",
+
   "branches.staff.removeFailed": "Could not remove staff access.",
+
   "branches.staff.search": "Search staff",
+
   "org.more.branches": "Branches",
+  "branches.mgmt.addRetail": "Add retail branch",
+  "branches.mgmt.addWarehouse": "Add warehouse",
+  "branches.mgmt.addWarehouseLocked": "Available on Pro",
+  "branches.mgmt.addMenuLabel": "Add Branch & Warehouse",
+  "branches.mgmt.capacityBreakdown": "{retail} Retail ? {warehouse} Warehouses",
+  "branches.mgmt.filter.typeLabel": "Type",
+  "branches.mgmt.filter.statusLabel": "Status",
+  "branches.mgmt.filter.retail": "Retail",
+  "branches.mgmt.filter.warehouse": "Warehouse",
+  "branches.mgmt.warehouseHintTitle": "No warehouses yet",
+  "branches.mgmt.warehouseHintDetail": "Warehouses can receive and store stock, then transfer it to your retail branches.",
+  "branches.mgmt.warehouseHintAdd": "Add warehouse",
+  "branches.create.title.retail": "Add retail branch",
+  "branches.create.title.warehouse": "Add warehouse",
+  "branches.create.details.retail": "Retail branch details",
+  "branches.create.details.warehouse": "Warehouse details",
+  "branches.create.submit.retail": "Create retail branch",
+  "branches.create.submit.warehouse": "Create warehouse",
+  "branches.mgmt.openWarehouse": "Open warehouse",
+  "branches.mgmt.devicesShort": "Devices",
+  "branches.create.name.warehouse": "Warehouse name",
+  "branches.create.code.warehouse": "Warehouse code",
+  "branches.detail.overview.warehouse": "Warehouse overview",
+  "branches.detail.details.warehouse": "Warehouse details",
+  "branches.detail.codeReadonly.warehouse": "Warehouse code",
+  "branches.detail.lifecycleTitle.warehouse": "Warehouse lifecycle",
+  "branches.detail.updated.warehouse": "Warehouse updated",
+  "branches.detail.operations": "Warehouse operations",
+  "branches.detail.op.inventory": "Inventory",
+  "branches.detail.op.receive": "Receive stock",
+  "branches.detail.op.transfers": "Transfers",
+  "branches.detail.op.purchasing": "Purchasing",
+  "branches.detailsTitle.warehouse": "Warehouse details",
+  "branches.type.warehouseLabel": "Warehouse type",
+  "supplyRoutes.title": "Supply routes",
+  "supplyRoutes.lede": "Configure which locations can replenish other locations.",
+  "supplyRoutes.ledeWarehouseFirst": "Choose which locations each warehouse can replenish.",
+  "supplyRoutes.searchWarehouses": "Search warehouses...",
+  "supplyRoutes.searchLocations": "Search locations...",
+  "supplyRoutes.manageCoverage": "Manage coverage",
+  "supplyRoutes.coverageTitle": "Supply coverage for {name}",
+  "supplyRoutes.coverageLede":
+    "Choose the branches and warehouses that can request stock from this warehouse.",
+  "supplyRoutes.coverage": "Coverage",
+  "supplyRoutes.count.retailOne": "{count} Retail branch",
+  "supplyRoutes.count.retailMany": "{count} Retail branches",
+  "supplyRoutes.count.warehouseOne": "{count} Warehouse",
+  "supplyRoutes.count.warehouseMany": "{count} Warehouses",
+  "supplyRoutes.areasFullyCovered": "Areas fully covered",
+  "supplyRoutes.areasPartial": "Partial areas",
+  "supplyRoutes.areasHeading": "Areas",
+  "supplyRoutes.areaPartialCount": "{selected} of {total} connected",
+  "supplyRoutes.retailLocations": "Retail locations",
+  "supplyRoutes.unassigned": "Unassigned",
+  "supplyRoutes.preferredLabel": "Preferred",
+  "supplyRoutes.setThisWarehousePreferred": "Set this warehouse as preferred",
+  "supplyRoutes.otherWarehouses": "Warehouse replenishment",
+  "supplyRoutes.otherWarehousesEmpty": "No other warehouses available.",
+  "supplyRoutes.saveChanges": "Save changes",
+  "supplyRoutes.noWarehouses": "No warehouses yet",
+  "supplyRoutes.noWarehousesDetail": "Add a Warehouse under Branches and Warehouses to configure supply coverage.",
+  "supplyRoutes.needOrg": "Organization required",
+  "supplyRoutes.needOrgDetail": "Bind an organization workspace to manage supply routes.",
+  "supplyRoutes.loading": "Loading supply routes...",
+  "supplyRoutes.loadError": "Could not load supply routes.",
+  "supplyRoutes.empty": "No locations match",
+  "supplyRoutes.emptyDetail": "Adjust filters or add locations under Branches and Warehouses.",
+  "supplyRoutes.filter.area": "Area filter",
+  "supplyRoutes.filter.all": "All",
+  "supplyRoutes.filter.unassigned": "Unassigned",
+  "supplyRoutes.filter.type": "Type filter",
+  "supplyRoutes.filter.allTypes": "All types",
+  "supplyRoutes.filter.retail": "Retail",
+  "supplyRoutes.filter.warehouse": "Warehouse",
+  "supplyRoutes.search": "Search locations",
+  "supplyRoutes.preferred": "Preferred source",
+  "supplyRoutes.otherSources": "Other allowed sources",
+  "supplyRoutes.none": "None configured",
+  "supplyRoutes.manageSources": "Manage sources",
+  "supplyRoutes.manageTitle": "Supply locations for {name}",
+  "supplyRoutes.preferredBadge": "Preferred",
+  "supplyRoutes.setPreferred": "Set preferred",
+  "supplyRoutes.saveError": "Could not save supply routes.",
+  "supplyRoutes.backBranches": "Back to Branches and Warehouses",
+  "supplyRoutes.type.retail": "Retail",
+  "supplyRoutes.type.warehouse": "Warehouse",
+  "branches.mgmt.supplyRoutes": "Supply routes",
+  "inventory.openRequestStock": "Pangayo sang stock",
+  "inventory.openIncomingStockRequests": "Mga nagaabot nga stock request",
+  "inventory.openStockRequests": "Mga stock request",
+  "stockRequest.title": "Pangayo sang stock",
+  "stockRequest.lede": "Pangayo sang stock sa supply warehouse.",
+  "stockRequest.listTitle": "Mga stock request",
+  "stockRequest.listLede": "Nagaabot kag nagahalin nga internal stock request.",
+  "stockRequest.listLedeRetail": "Mga request nga ginpadala sang imo branch sa supply warehouse.",
+  "stockRequest.listLedeWarehouse": "Mga nagaabot nga request halin sa retail branch.",
+  "stockRequest.detailTitle": "Stock request",
+  "stockRequest.needBranch": "Pili anay sang location workspace.",
+  "stockRequest.denied": "Wala ka inventory permission para mangayo sang stock.",
+  "stockRequest.loading": "Nagaload sang stock request...",
+  "stockRequest.loadError": "Indi ma-load ang stock request.",
+  "stockRequest.noSource": "Wala naka-configure nga supply warehouse para sa sini nga location.",
+  "stockRequest.noSourceDetail": "Pangayo sa admin nga ikonekta ang warehouse sa Supply routes, ukon gamita ang purchasing kon may access ka.",
+  "stockRequest.createPo": "Himoa ang purchase order",
+  "stockRequest.receiveStock": "Batuna ang stock",
+  "stockRequest.forLocation": "Para sa",
+  "stockRequest.supplyFrom": "Kuhaa sa",
+  "stockRequest.preferred": "preferred",
+  "stockRequest.availableHere": "Available diri",
+  "stockRequest.notes": "Notes (opsyonal)",
+  "stockRequest.submit": "Isumite ang request",
+  "stockRequest.submitError": "Indi maisumite ang stock request.",
+  "stockRequest.direction": "Direksyon",
+  "stockRequest.incoming": "Nagaabot",
+  "stockRequest.outgoing": "Nagahalin",
+  "stockRequest.empty": "Wala stock request",
+  "stockRequest.emptyDetail": "Makita diri ang bag-o nga request.",
+  "stockRequest.emptyProducts": "Wala nagtugma nga produkto",
+  "stockRequest.emptyProductsDetail": "Tilawi ang iban nga search ukon stock filter.",
+  "stockRequest.items": "item",
+  "stockRequest.requested": "Ginpangayo",
+  "stockRequest.approved": "Ginaaprubahan",
+  "stockRequest.approvedQty": "Ginaaprubahan nga kadamuon",
+  "stockRequest.fulfilled": "Natuman",
+  "stockRequest.inProgress": "Nagapadayon",
+  "stockRequest.fulfillQty": "Kadamuon nga tumana",
+  "stockRequest.linkedTransfers": "Naka-link nga transfer",
+  "stockRequest.createTransfer": "Himoa ang transfer",
+  "stockRequest.reject": "Balibaran ang request",
+  "stockRequest.decline": "Balibaran",
+  "stockRequest.rejectReason": "Rason sang pagbalibad (kinahanglan)",
+  "stockRequest.rejectDefault": "Gibalibaran",
+  "stockRequest.declineReasonRequired": "Isulat ang rason antes magbalibad.",
+  "stockRequest.cancel": "Kanselahon ang request",
+  "stockRequest.requestStock": "Pangayo sang stock",
+  "stockRequest.tabs": "Mga filter sang stock request",
+  "stockRequest.tab.submitted": "Naisumite",
+  "stockRequest.tab.inProgress": "Nagapadayon",
+  "stockRequest.tab.inTransit": "Padulong",
+  "stockRequest.tab.completed": "Natapos",
+  "stockRequest.tab.all": "Tanan",
+  "stockRequest.tab.incoming": "Nagaabot",
+  "stockRequest.tab.preparing": "Ginaandam",
+  "stockRequest.tab.dispatched": "Ginpadala",
+  "stockRequest.tab.history": "Kasaysayan",
+  "stockRequest.search": "Pangita sang produkto",
+  "stockRequest.filterLabel": "Stock filter",
+  "stockRequest.filter.all": "Tanan",
+  "stockRequest.filter.lowStock": "Kulang ang stock",
+  "stockRequest.filter.outOfStock": "Wala stock",
+  "stockRequest.col.product": "Produkto",
+  "stockRequest.col.branchStock": "Stock sa branch",
+  "stockRequest.col.warehouseAvailable": "Available sa warehouse",
+  "stockRequest.col.requestQty": "Kadamuon sang request",
+  "stockRequest.approve": "Aprubahan",
+  "stockRequest.approveAndPrepare": "Aprubahan kag andama",
+  "stockRequest.startPreparing": "Sugodi ang pag-andam",
+  "stockRequest.dispatchStock": "Ipadala ang stock",
+  "stockRequest.receiveLinked": "Batuna ang stock",
+  "stockRequest.activity": "Aktibidad",
+  "stockRequest.activity.requested": "Ginpangayo",
+  "stockRequest.activity.approved": "Ginaaprubahan",
+  "stockRequest.activity.preparing": "Nagsugod ang pag-andam",
+  "stockRequest.activity.dispatched": "Ginpadala",
+  "stockRequest.activity.rejected": "Gibalibaran",
+  "stockRequest.activity.cancelled": "Ginkansela",
+  "stockRequest.actionError": "Indi ma-update ini nga stock request.",
+  "stockRequest.status.pending": "Nagahulat",
+  "stockRequest.status.approved": "Ginaaprubahan",
+  "stockRequest.status.preparing": "Ginaandam",
+  "stockRequest.status.inTransit": "Padulong",
+  "stockRequest.status.fulfilled": "Natuman",
+  "stockRequest.status.partiallyFulfilled": "Bahin nga natuman",
+  "stockRequest.status.rejected": "Gibalibaran",
+  "stockRequest.status.cancelled": "Ginkansela",
+  "retailWarehouse.title": "Warehouse",
+  "retailWarehouse.lede": "Pangayo sang stock sa supply warehouse kag bantayi ang mga delivery.",
+  "retailWarehouse.loading": "Nagaload ang warehouse?",
+  "retailWarehouse.loadError": "Indi ma-load ang warehouse workspace.",
+  "retailWarehouse.navLabel": "Mga seksyon sang warehouse",
+  "retailWarehouse.nav.overview": "Overview",
+  "retailWarehouse.nav.requestStock": "Pangayo sang stock",
+  "retailWarehouse.nav.myRequests": "Akon mga hangyo",
+  "retailWarehouse.nav.incoming": "Nagaabot nga stock",
+  "retailWarehouse.nav.history": "Kasaysayan",
+  "retailWarehouse.thisBranch": "ini nga branch",
+  "retailWarehouse.supplyCard.eyebrow": "Restock / Supply warehouse",
+  "retailWarehouse.supplyCard.preferred": "Preferred",
+  "retailWarehouse.supplyCard.connected": "Nakakonekta",
+  "retailWarehouse.supplyCard.requestStock": "Pangayo sang stock",
+  "retailWarehouse.needsAttention": "Kinahanglan sang pagtagad",
+  "retailWarehouse.metric.submitted": "Nasumite",
+  "retailWarehouse.metric.inProgress": "Ginapadayon",
+  "retailWarehouse.metric.inTransit": "Sa biyahe",
+  "retailWarehouse.recentRequests": "Bag-o nga mga hangyo",
+  "retailWarehouse.viewAll": "Tan-awa tanan",
+  "retailWarehouse.recentEmpty": "Wala sing bag-o nga hangyo",
+  "retailWarehouse.recentEmptyDetail": "Makita diri ang mga nasumite nga stock request.",
+  "retailWarehouse.request.supplyFrom": "Halin sa {name}",
+  "retailWarehouse.request.basket": "Basket sang hangyo",
+  "retailWarehouse.request.cartLabel": "Hangyo",
+  "retailWarehouse.request.cartEmptyDetail": "I-tap ang produkto para idugang sa sini nga hangyo.",
+  "retailWarehouse.request.addNote": "+ Magdugang sang nota",
+  "retailWarehouse.request.weightAdd": "Idugang sa hangyo",
+  "retailWarehouse.request.maximumAvailable": "Maximum available: {qty} {uom}",
+  "retailWarehouse.request.onlyAvailable": "Only {qty} {uom} is available.",
+  "retailWarehouse.request.onlyAvailableAtWarehouse":
+    "Only {qty} {uom} is currently available at {warehouse}.",
+  "retailWarehouse.request.warehouseAvailableHint": "Warehouse available: {qty} {uom}",
+  "retailWarehouse.request.remainingCompact": "Nabilin: {qty} {uom}",
+  "retailWarehouse.request.remainingTooltip": "Available pagkatapos sini nga request selection.",
+
+  "retailWarehouse.request.fixAvailabilityBeforeSubmit":
+    "Naglain ang warehouse stock. Ilain ang kantidad antes mag-submit.",
+  "retailWarehouse.request.revalidateFailed": "Indi ma-refresh ang warehouse availability. Tilawi liwat.",
+  "retailWarehouse.request.supplyWarehouse": "ang supply warehouse",
+  "retailWarehouse.request.cardBranch": "Sangay",
+  "retailWarehouse.request.cardWarehouse": "Bodega",
+  "retailWarehouse.request.cardCost": "Gasto",
+  "retailWarehouse.request.basketSummary": "{count} ka produkto",
+  "retailWarehouse.request.basketEmpty": "Wala sulod ang basket",
+  "retailWarehouse.request.basketEmptyDetail": "Magdugang sang produkto halin sa katalogo para maghimo sang hangyo.",
+  "retailWarehouse.request.add": "Idugang",
+  "retailWarehouse.request.added": "Naidugang",
+  "retailWarehouse.request.remove": "Kuhaa",
+  "retailWarehouse.request.lineNotes": "Nota sa linya (opsyonal)",
+  "retailWarehouse.request.category": "Kategorya",
+  "retailWarehouse.request.categoryAll": "Tanan nga kategorya",
+  "retailWarehouse.request.prev": "Nagligad",
+  "retailWarehouse.request.next": "Sunod",
+  "retailWarehouse.request.viewRequest": "Tan-awa ang hangyo ({count})",
+  "retailWarehouse.request.submitted": "Nasumite ang stock request.",
+  "retailWarehouse.request.increase": "Dugangi ang kadamuon",
+  "retailWarehouse.request.decrease": "Bawasan ang kadamuon",
+  "retailWarehouse.request.productsCount": "{count} ka produkto",
+  "retailWarehouse.request.estimatedCost": "Banabana nga gasto",
+  "retailWarehouse.request.estimatedWarehouseCost": "Banabana nga gasto sa bodega",
+  "retailWarehouse.request.potentialRetail": "Posibleng retail",
+  "retailWarehouse.request.potentialGross": "Posibleng kita",
+  "retailWarehouse.request.warehouseCost": "Gasto sa warehouse {amount}/{uom}",
+  "retailWarehouse.request.branchPrice": "Presyo sa branch {amount}/{uom}",
+  "retailWarehouse.request.warehouseOutOfStock": "Wala stock sa warehouse",
+  "retailWarehouse.request.costPerUom": "{amount}/{uom}",
+  "retailWarehouse.request.retailPerUom": "Retail {amount}/{uom}",
+  "retailWarehouse.request.lineEstimatedCost": "Banabana nga gasto",
+  "retailWarehouse.request.linePotentialRetail": "Posibleng retail",
+  "retailWarehouse.incoming.receiveHint": "Buksan para batunon ang stock",
+  "retailWarehouse.history.search": "Pangitaa ang request number",
+  "warehouse.toast.noWarehouse.title": "Wala pa warehouse",
+  "warehouse.toast.noWarehouse.description": "Magdugang anay sang warehouse branch antes mangayo sang stock.",
+  "warehouse.toast.noWarehouse.askAdmin": "Pangayo sa organization admin nga magdugang sang warehouse branch.",
+  "warehouse.toast.noWarehouse.action": "Manage-a ang mga branch",
+  "warehouse.toast.noAssignment.title": "Wala pa naka-assign nga warehouse",
+  "warehouse.toast.noAssignment.description":
+    "Wala sing supply warehouse route ang {branch}. I-configure ang supply routes para ikonekta ang warehouse.",
+  "warehouse.toast.noAssignment.askManager":
+    "Wala sing supply warehouse ang {branch}. Pangayo sa manager nga i-configure ang supply routes.",
+  "warehouse.toast.noAssignment.action": "I-configure ang warehouse",
+  "transfer.stockRequest": "Stock request",
+  "transfer.requestedBy": "Requested by",
+  "warehouseDashboard.title": "Dashboard",
+  "warehouseDashboard.lede": "Inventory, replenishment, transfers and receiving performance.",
+  "warehouseDashboard.typeBadge": "Warehouse",
+  "warehouseDashboard.needWarehouse": "Open a warehouse workspace to view this dashboard.",
+  "warehouseDashboard.loading": "Loading warehouse dashboard?",
+  "warehouseDashboard.currentLocationOnly": "Current warehouse only",
+  "warehouseDashboard.kpi.tracked": "Tracked products",
+  "warehouseDashboard.kpi.lowStock": "Low stock",
+  "warehouseDashboard.kpi.expiry": "Expiry alerts",
+  "warehouseDashboard.kpi.pendingRequests": "Pending requests",
+  "warehouseDashboard.needsAttention": "Needs attention",
+  "warehouseDashboard.healthy": "Warehouse operations look good.",
+  "warehouseDashboard.attention.lowStock": "Low-stock products",
+  "warehouseDashboard.attention.expiry": "Expiring / expired lots",
+  "warehouseDashboard.attention.dispatch": "Transfers awaiting dispatch",
+  "warehouseDashboard.attention.receiveTransfer": "Incoming transfers awaiting receiving",
+  "warehouseDashboard.attention.receivePo": "Purchase orders ready to receive",
+  "warehouseDashboard.attention.stockRequests": "Stock requests waiting",
+  "warehouseDashboard.currentStock": "Current stock",
+  "warehouseDashboard.currentStockNote": "Snapshot as of now ? not affected by the date preset.",
+  "warehouseDashboard.health.healthy": "Healthy",
+  "warehouseDashboard.health.lowStock": "Low stock",
+  "warehouseDashboard.health.outOfStock": "Out of stock",
+  "warehouseDashboard.health.nearExpiry": "Near expiry",
+  "warehouseDashboard.health.expired": "Expired",
+  "warehouseDashboard.activity": "Activity",
+  "warehouseDashboard.movement.received": "Received from suppliers",
+  "warehouseDashboard.movement.transferIn": "Transfer in",
+  "warehouseDashboard.movement.transferOut": "Transfer out",
+  "warehouseDashboard.movement.adjustments": "Adjustments",
+  "warehouseDashboard.movement.waste": "Waste / loss",
+  "warehouseDashboard.movementUnavailable": "Movement summary unavailable for this period.",
+  "warehouseDashboard.viewMovements": "View stock movements",
+  "warehouseDashboard.transfers": "Transfers",
+  "warehouseDashboard.transfers.awaitingDispatch": "Awaiting dispatch",
+  "warehouseDashboard.transfers.inTransit": "In transit",
+  "warehouseDashboard.transfers.incomingToReceive": "Incoming to receive",
+  "warehouseDashboard.transfers.partiallyReceived": "Partially received",
+  "warehouseDashboard.viewTransfers": "View transfers",
+  "warehouseDashboard.purchasing": "Purchasing and receiving",
+  "warehouseDashboard.purchasing.receivable": "Awaiting receiving",
+  "warehouseDashboard.purchasing.ordersPeriod": "Orders this period",
+  "warehouseDashboard.purchasing.receivedQty": "Received qty this period",
+  "warehouseDashboard.viewPurchasing": "View purchasing",
+  "warehouseDashboard.expiry": "Lots / expiry",
+  "warehouseDashboard.viewExpiry": "View expiring stock",
+  "warehouseDashboard.replenishment": "Replenishment",
+  "warehouseDashboard.requests.pending": "Pending",
+  "warehouseDashboard.requests.inProgress": "In progress",
+  "warehouseDashboard.requests.partial": "Partially fulfilled",
+  "warehouseDashboard.requests.fulfilled": "Fulfilled",
+  "warehouseDashboard.viewRequests": "View requests",
+  "warehouseDashboard.destinations": "Top destinations",
+  "warehouseDashboard.destinationsEmpty": "No transfer destinations in recent outgoing transfers.",
+  "warehouseDashboard.destinationsNote": "Based on outgoing transfer quantities ? destinations may be Retail or Warehouse.",
+  "warehouseDashboard.units": "units",
+  "warehouseDashboard.topMoved": "Most moved products",
+  "warehouseDashboard.topMovedEmpty": "No product movement in this period.",
+  "warehouseDashboard.outbound": "Outbound",
+  "warehouseDashboard.inbound": "Inbound",
+  "nav.backToWarehouseHome": "Back to Warehouse home",
+
+  "catalog.cancel": "Kanselahon",
+  "catalog.category.creating": "CreatingÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚Â¦",
+  "catalog.category.deactivateConfirm": "Deactivate this category? It will remain on historical products but cannot be assigned to new products.",
+  "catalog.categoryCreateFailed": "Could not create the category.",
+  "catalog.categoryDeactivateFailed": "Could not deactivate the category.",
+  "catalog.categoryReactivateFailed": "Could not reactivate the category.",
+  "catalog.categoryUpdateFailed": "Could not update the category.",
+  "catalog.createCategory": "Himoa ang kategorya",
+  "catalog.editCategory": "I-edit ang kategorya",
+  "catalog.validation.categoryNameRequired": "Category name is required.",
+  "production.recipes.estimatedCostPartialManual": "Estimated cost incomplete. Selling price must be entered manually.",
+  "production.recipes.estimatedGrossProfit": "Estimated gross profit",
+  "production.recipes.estimatedGrossProfitValue": "{amount} / {uom}",
+  "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
+  "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
+  "production.recipes.lowMarginWarning": "Low estimated gross margin.",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} ÃƒÆ’Ã‚â€šÃƒâ€šÃ‚Â· Selling price: {price} ÃƒÆ’Ã‚â€šÃƒâ€šÃ‚Â· Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
+  "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
+  "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
+  "production.recipes.suggestedPriceUnavailableReason": "Some ingredient costs are missing.",
+  "production.recipes.suggestedPriceValue": "{price} / {uom}",
+  "production.recipes.suggestedSellingPrice": "Suggested selling price",
+  "production.recipes.targetGrossMargin": "Target gross margin",
+  "production.recipes.targetMarginCustom": "Custom",
+  "production.recipes.useSuggestedPrice": "Use suggested price",
+  "catalog.offline": "Categories need a connection. Reconnect to manage product categories.",
+  "catalog.categoriesLoadFailed": "Could not load product categories.",
+  "catalog.emptyCategoriesReadonly": "No available categories.",
+  "checkout.badge.pending": "Pending",
+  "checkout.badge.active": "Active",
+  "checkout.businessFallback": "This business",
+  "checkout.pendingConnectionToast":
+    "Connection pending. Waiting for {name} to accept the business connection before it can be used for a B2B direct sale.",
+  "checkout.pendingNeedsApprovalToast":
+    "Connection needs approval. This business connection must be accepted by an Owner or Manager before it can be used for a B2B direct sale.",
+  "customers.orgSendConnectionRequest": "Send connection request",
+  "customers.orgInviteCatalogDefaultsNote": "After this business accepts, your eligible products will be shared using your standard selling prices. You can change product sharing and pricing afterward.",
+  "customers.orgInviteSent": "Connection request sent. Waiting for the business to accept.",
+  "customers.orgInviteAlreadyPending": "A connection request is already pending for this business.",
+  "customers.orgPendingBuyerRequest":
+    "This business already sent your business a connection request. Review it under Connection requests.",
+  "customers.orgReviewIncomingRequest": "Review request",
+  "customers.orgOpenPendingConnection": "Open pending connection",
+  "customers.business.waitingForAccept": "Waiting for {name} to accept.",
+  "customers.business.actionRequired": "Action required ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚â‚¬Ãƒâ€šÃ‚â€ {name} wants to connect.",
+  "customers.business.reviewRequest": "Review request",
+  "customers.badge.pending": "Pending",
+  "customers.badge.active": "Active",
+  "customers.listCard.relationship.Pending": "Pending",
+  "customers.listCard.relationship.Connected": "Connected",
+  "customers.listCard.relationship.Declined": "Declined",
+  "customers.listCard.relationship.Inactive": "Inactive",
+  "customers.listCard.account.Suspended": "Suspended",
+  "customers.listCard.account.Disabled": "Disabled",
+  "customers.listCard.personalSuspendedTitle": "This account is suspended.",
+  "customers.listCard.personalSuspendedDetail": "Connection actions are temporarily unavailable.",
+  "customers.listCard.businessSuspendedTitle": "Account suspended.",
+  "customers.listCard.businessSuspendedDetail": "New transactions are unavailable until the account is restored.",
+  "customers.listCard.personalDisabledTitle": "This account is disabled.",
+  "customers.listCard.personalDisabledDetail": "Connection actions are unavailable for this account.",
+  "customers.listCard.businessDisabledTitle": "Account disabled.",
+  "customers.listCard.businessDisabledDetail": "New transactions are unavailable for this account.",
+  "connected.connectionRequestsTitle": "Connection requests",
+  "connected.connectionRequestsHelp":
+    "Review pending B2B connection requests where your business must Accept or Decline.",
+  "connected.incomingBuyerRequestMessage": "{name} wants to connect and buy from your business.",
+  "connected.incomingSupplierInviteMessage":
+    "{name} wants to connect as a supplier to your business.",
+  "connected.incomingKindBuyerRequest": "Buyer request",
+  "connected.incomingKindSupplierInvite": "Supplier invitation",
+  "connected.reviewAndAccept": "Review & accept",
 };

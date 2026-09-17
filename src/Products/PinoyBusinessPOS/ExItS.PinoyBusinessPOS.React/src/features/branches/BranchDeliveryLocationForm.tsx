@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState } from "react";
+import { Notice } from "@/components/exits/Notice";
 import { Button } from "@/components/ui/button";
 import {
   formatCoordinateDisplay,
@@ -57,18 +58,13 @@ export function BranchDeliveryLocationForm({
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("branches.mapHint")}</p>
 
       {!mapProviderReady ? (
-        <div className="exits-alert" data-testid="branch-map-fallback" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("branches.mapUnavailable")}
-          </p>
-        </div>
+        <Notice tone="info" testId="branch-map-fallback">{t("branches.mapUnavailable")}</Notice>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant="outline"
-          className="min-h-11"
           disabled={gpsBusy || busy}
           onClick={onCaptureGps}
           data-testid="branch-gps-assist"
@@ -78,7 +74,6 @@ export function BranchDeliveryLocationForm({
         <Button
           type="button"
           variant="outline"
-          className="min-h-11"
           disabled={busy || !mapProviderReady}
           onClick={() => setPickerOpen(true)}
           data-testid="branch-choose-on-map"
@@ -104,7 +99,7 @@ export function BranchDeliveryLocationForm({
 
       {mapLinks ? (
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="min-h-11">
+          <Button asChild variant="outline">
             <a
               href={mapLinks.google}
               target="_blank"
@@ -114,7 +109,7 @@ export function BranchDeliveryLocationForm({
               {t("branches.openGoogleMaps")}
             </a>
           </Button>
-          <Button asChild variant="outline" className="min-h-11">
+          <Button asChild variant="outline">
             <a href={mapLinks.osm} target="_blank" rel="noreferrer" data-testid="branch-maps-osm">
               {t("branches.openOsm")}
             </a>
@@ -132,7 +127,7 @@ export function BranchDeliveryLocationForm({
             <input
               type="number"
               step="any"
-              className="catalog-form-select font-normal"
+              className="exits-input exits-input--no-spin font-normal"
               value={latitude}
               onChange={(e) => onLatitudeChange(e.target.value)}
               data-testid="branch-latitude"
@@ -143,7 +138,7 @@ export function BranchDeliveryLocationForm({
             <input
               type="number"
               step="any"
-              className="catalog-form-select font-normal"
+              className="exits-input exits-input--no-spin font-normal"
               value={longitude}
               onChange={(e) => onLongitudeChange(e.target.value)}
               data-testid="branch-longitude"

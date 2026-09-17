@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -8,6 +9,7 @@ namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 /// <summary>
 /// When a connection uses AllEligible, stage Default PO from SellingPrice (when missing)
 /// and sync exposures so buyer catalog + pricing can resolve without per-product Share clicks.
+/// Only inventory-tracked products are eligible.
 /// </summary>
 internal static class AllEligibleCatalogBootstrap
 {
@@ -18,7 +20,8 @@ internal static class AllEligibleCatalogBootstrap
         ICatalogProductRepository? products,
         ISupplierProductExposureRepository? exposures,
         DateTimeOffset utcNow,
-        CancellationToken ct)
+        CancellationToken ct,
+        IInventoryRepository? inventory = null)
     {
         if (products is null || exposures is null)
         {
@@ -48,6 +51,17 @@ internal static class AllEligibleCatalogBootstrap
                     continue;
                 }
 
+                if (inventory is not null)
+                {
+                    var tracked = await ConnectedBuyerSharingRules
+                        .IsTrackedAsync(inventory, supplier, product.Id, ct)
+                        .ConfigureAwait(false);
+                    if (!tracked)
+                    {
+                        continue;
+                    }
+                }
+
                 var baseline = product.DefaultConnectedPoPrice is > 0m
                     ? product.DefaultConnectedPoPrice.Value
                     : product.SellingPrice is > 0m
@@ -69,7 +83,7 @@ internal static class AllEligibleCatalogBootstrap
                 }
 
                 await products.UpdateAsync(product, ct).ConfigureAwait(false);
-                await ConnectedProductExposureSync.SyncAsync(product, exposures, utcNow, ct)
+                await ConnectedProductExposureSync.SyncAsync(product, exposures, utcNow, ct, inventory)
                     .ConfigureAwait(false);
             }
 

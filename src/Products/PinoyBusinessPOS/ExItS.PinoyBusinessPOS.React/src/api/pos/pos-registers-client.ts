@@ -26,6 +26,10 @@ export type PosRegisterDto = {
   hasOpenShift: boolean;
   /** Actor who owns the current Open shift on this register, when present. */
   openShiftActorId?: string | null;
+  /** Open shift id for this register, when present. */
+  openShiftId?: string | null;
+  /** When the open shift started (UTC ISO), when present. */
+  openShiftOpenedAtUtc?: string | null;
 };
 
 export type PosRegisterPagedResult = {
@@ -89,6 +93,22 @@ export function listRegisters(
   });
 }
 
+export type PosRegisterActivityDto = {
+  registerId: string;
+  registerCode: string;
+  name: string;
+  status: string;
+  openShiftCount: number;
+  closedShiftCount: number;
+  completedSaleCount: number;
+  grossSalesTotal: number;
+  activityFromUtc?: string | null;
+  activityToUtc?: string | null;
+  cashSalesTotal?: number;
+  manualGCashSalesTotal?: number;
+  utangSalesTotal?: number;
+};
+
 export function getRegister(
   workspace: PosWorkspaceScope,
   registerId: string,
@@ -102,10 +122,62 @@ export function getRegister(
   });
 }
 
+/** Register activity totals for a UTC window (ViewRegisters). */
+export function getRegisterActivity(
+  workspace: PosWorkspaceScope,
+  registerId: string,
+  options: {
+    fromUtc?: string;
+    toUtc?: string;
+  } = {},
+  signal?: AbortSignal,
+): Promise<PosRegisterActivityDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: appendQuery(`${REGISTERS_PATH}/${registerId}/activity`, {
+      fromUtc: options.fromUtc,
+      toUtc: options.toUtc,
+    }),
+  });
+}
+
 export type CreateRegisterBody = {
   name: string;
   description?: string | null;
 };
+
+const ENSURE_PWA_REGISTER_OPERATION = "pos.register.ensure_available_for_pwa_shift";
+
+/**
+ * Reuse any free Active register, or auto-create the next PWA-NNNN.
+ * Requires ManageShifts (cashiers allowed). Device enforcement must be disabled.
+ */
+export async function ensureAvailablePwaRegisterForShift(
+  workspace: PosWorkspaceScope,
+  signal?: AbortSignal,
+): Promise<PosRegisterDto> {
+  const operationId =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `00000000-0000-4000-8000-${Date.now().toString(16).padStart(12, "0").slice(-12)}`;
+  const payload = {};
+  const payloadJson = JSON.stringify(payload);
+  const headers = await buildPosMutationIdempotencyHeaders(
+    operationId,
+    payloadJson,
+    ENSURE_PWA_REGISTER_OPERATION,
+  );
+  return posRequest({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REGISTERS_PATH}/ensure-available-for-pwa-shift`,
+    body: payload,
+    headers,
+  });
+}
 
 /** Requires ManageRegisters. Server allocates REG-NNNNNN code. */
 export async function createRegister(

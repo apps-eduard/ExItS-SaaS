@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus } from "lucide-react";
+import { Building2, Plus, UserRound, Users } from "lucide-react";
 import { canCreateCustomer, canViewSuppliers } from "@/access/pos-capabilities";
 import {
   listBusinessCustomers,
-  type BusinessCustomer,
+  listRelationships,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listCustomers, type PosCustomerListItem } from "@/api/pos/pos-customers-client";
 import { listOrganizationBusinessCustomers } from "@/api/platform/business-customer-delivery-client";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -27,7 +29,17 @@ import {
 import { useOrganizationOfflineContext } from "@/offline/organization-offline-context";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
-import { CustomerListConnectionBadges } from "@/features/customers/CustomerListConnectionBadges";
+import {
+  CustomerListCard,
+  resolveBusinessRelationshipStatus,
+  resolvePeopleRelationshipStatus,
+} from "@/features/customers/CustomerListCard";
+import {
+  buildBusinessListRows,
+  isBusinessPosCustomer,
+  isPersonPosCustomer,
+} from "@/features/customers/customer-business-list";
+import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
 import { parseKindForTest, type KindFilter } from "@/features/customers/customers-kind";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 
@@ -54,20 +66,6 @@ const KIND_FILTERS: Array<{
   { value: "people", labelKey: "customers.kindPeople" },
   { value: "businesses", labelKey: "customers.kindBusinesses" },
 ];
-
-function customerStatusTone(status: string): "success" | "warning" {
-  return status.toLowerCase() === "active" ? "success" : "warning";
-}
-
-function discountLabel(
-  customer: BusinessCustomer,
-  discountTemplate: string,
-): string | null {
-  if (customer.customerDiscountPercent != null && customer.customerDiscountPercent > 0) {
-    return discountTemplate.replace("{percent}", String(customer.customerDiscountPercent));
-  }
-  return null;
-}
 
 export function CustomersListPage() {
   const { t } = useI18n();
@@ -100,7 +98,8 @@ export function CustomersListPage() {
   const showPeople = kind === "all" || kind === "people";
   const showBusinesses = allowBusiness && (kind === "all" || kind === "businesses");
   /** Status chips only on People tab — avoids two competing “All” filters on All. */
-  const showStatusFilter = kind === "people";
+  const showStatusFilter = showPeople;
+  const showAdd = allowCreate && (showPeople || kind === "businesses" || kind === "all");
 
   const peopleQuery = useQuery({
     queryKey: [
@@ -111,13 +110,13 @@ export function CustomersListPage() {
       debounced,
       status,
     ],
-    enabled: Boolean(workspace) && online && showPeople,
+    enabled: Boolean(workspace) && online && (showPeople || showBusinesses),
     queryFn: ({ signal }) =>
       listCustomers(
         workspace!,
         {
           search: debounced || undefined,
-          status: status || undefined,
+          status: showPeople ? status || undefined : undefined,
           pageSize: 50,
         },
         signal,
@@ -134,6 +133,12 @@ export function CustomersListPage() {
     enabled: Boolean(workspace) && online && showBusinesses,
     queryFn: ({ signal }) =>
       listBusinessCustomers(workspace!, { search: debounced || undefined }, signal),
+  });
+
+  const supplierRelationshipsQuery = useQuery({
+    queryKey: ["connected-suppliers", "buyer-view", workspace?.organizationId],
+    enabled: Boolean(workspace) && online && showBusinesses,
+    queryFn: ({ signal }) => listRelationships(workspace!, "buyer", signal),
   });
 
   const deliveryExceptionQuery = useQuery({
@@ -185,13 +190,61 @@ export function CustomersListPage() {
   }, [offlineContext, showCachedFallback]);
 
   const usingCache = showCachedFallback && cached !== null;
-  const peopleItems = usingCache
+  const allPosItems = usingCache
     ? filterCachedCustomers(cached, { search: debounced, status })
     : (peopleQuery.data?.items ?? []);
+  const peopleItems = allPosItems.filter(isPersonPosCustomer);
+  const posBusinessItems = (peopleQuery.data?.items ?? []).filter(isBusinessPosCustomer);
 
-  const businessItems = useMemo(() => businessQuery.data ?? [], [businessQuery.data]);
+  const activeSupplierOrganizationIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const rel of supplierRelationshipsQuery.data ?? []) {
+      if (rel.status === "Active") {
+        ids.add(rel.supplierOrganizationId.toLowerCase());
+      }
+    }
+    return ids;
+  }, [supplierRelationshipsQuery.data]);
+
+  const businessRows = useMemo(
+    () =>
+      buildBusinessListRows({
+        connections: businessQuery.data ?? [],
+        posBusinessCustomers: posBusinessItems,
+        activeSupplierOrganizationIds,
+      }).filter((row) => {
+        if (!debounced) return true;
+        const term = debounced.toLowerCase();
+        return (
+          row.displayName.toLowerCase().includes(term) ||
+          (row.publicOrganizationId?.toLowerCase().includes(term) ?? false)
+        );
+      }),
+    [activeSupplierOrganizationIds, businessQuery.data, debounced, posBusinessItems],
+  );
+
   const peopleReady = peopleQuery.isSuccess || usingCache;
-  const businessesReady = businessQuery.isSuccess;
+  const businessesReady = businessQuery.isSuccess && peopleQuery.isSuccess;
+  const peopleCount = peopleReady ? peopleItems.length : null;
+  const businessCount = businessesReady ? businessRows.length : null;
+  const allCount = !allowBusiness
+    ? peopleCount
+    : peopleCount != null && businessCount != null
+      ? peopleCount + businessCount
+      : null;
+
+  const searchPlaceholder =
+    kind === "people"
+      ? t("customers.searchPeople")
+      : kind === "businesses"
+        ? t("customers.business.search")
+        : t("customers.search");
+
+  const kindCount = (filter: (typeof KIND_FILTERS)[number]): number | null => {
+    if (filter.value === "all") return allCount;
+    if (filter.value === "people") return peopleCount;
+    return businessCount;
+  };
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -199,7 +252,7 @@ export function CustomersListPage() {
 
   return (
     <div
-      className="customers-page exits-page flex min-w-0 flex-col gap-3"
+      className="customers-page exits-page flex min-w-0 flex-col gap-2"
       data-testid="customers-list-page"
     >
       <PageHeader
@@ -208,8 +261,8 @@ export function CustomersListPage() {
         backTo={pageBackNav.managerHome.to}
         backLabel={t(pageBackNav.managerHome.labelKey)}
         backTestId="page-header-back-customers"
-        trailing={
-          allowCreate && showPeople ? (
+        actions={
+          showAdd ? (
             <Link
               to="/customers/new"
               className="customers-page__add"
@@ -223,65 +276,83 @@ export function CustomersListPage() {
         }
       />
 
-      <SearchField
-        label={t("customers.search")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={
-          kind === "businesses"
-            ? t("customers.business.search")
-            : t("customers.search")
-        }
-        data-testid="customers-search"
-        containerClassName="customers-page__search exits-page__search"
-      />
-
       {allowBusiness ? (
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("customers.kindFilter")}
-          testId="customers-kind-filters"
-          items={KIND_FILTERS.map((filter) => ({
-            key: filter.value,
-            label: t(filter.labelKey),
-            state: kind === filter.value ? "active" : "idle",
-            testId: `customers-kind-${filter.value}`,
-            onSelect: () => setKind(filter.value),
-          }))}
-        />
-      ) : null}
-
-      {showStatusFilter ? (
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("customers.statusFilter")}
-          testId="customers-status-filters"
-          items={STATUS_FILTERS.map((filter) => ({
-            key: filter.key,
-            label: t(filter.labelKey),
-            state: (status || "all") === filter.key ? "active" : "idle",
-            testId: `customers-status-${filter.key === "all" ? "all" : filter.key}`,
-            onSelect: () => setStatus(filter.value),
-          }))}
-        />
-      ) : null}
-
-      {usingCache ? (
-        <div className="exits-alert" data-testid="customers-cached-notice" role="status">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("offline.cachedCustomersNotice")}
-          </p>
+        <div className="customers-kind-tabs">
+          <ExitsChipBar
+            variant="filter"
+            ariaLabel={t("customers.kindFilter")}
+            testId="customers-kind-filters"
+            items={KIND_FILTERS.map((filter) => ({
+              key: filter.value,
+              label: t(filter.labelKey),
+              count: kindCount(filter),
+              state: kind === filter.value ? "active" : "idle",
+              testId: `customers-kind-${filter.value}`,
+              onSelect: () => setKind(filter.value),
+            }))}
+          />
         </div>
       ) : null}
 
+      <div className="customers-toolbar" data-testid="customers-toolbar">
+        <div className="customers-toolbar__search">
+          <SearchField
+            label={searchPlaceholder}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onClear={() => setSearch("")}
+            placeholder={searchPlaceholder}
+            data-testid="customers-search"
+            containerClassName="customers-page__search exits-page__search"
+          />
+        </div>
+
+        {showStatusFilter ? (
+          <label className="customers-status-control" data-testid="customers-status-filters">
+            <span className="customers-status-control__label">{t("customers.statusLabel")}</span>
+            <select
+              className="exits-select customers-status-control__select"
+              value={status === "" ? "all" : status}
+              aria-label={t("customers.statusFilter")}
+              onChange={(event) => {
+                const next = event.target.value;
+                setStatus(next === "all" ? "" : (next as StatusFilter));
+              }}
+            >
+              {STATUS_FILTERS.map((filter) => (
+                <option
+                  key={filter.key}
+                  value={filter.key === "all" ? "all" : filter.key}
+                  data-testid={`customers-status-${filter.key === "all" ? "all" : filter.key}`}
+                >
+                  {t(filter.labelKey)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {usingCache ? (
+        <Notice tone="info" testId="customers-cached-notice">
+          {t("offline.cachedCustomersNotice")}
+        </Notice>
+      ) : null}
+
       {showPeople ? (
-        <section className="customers-section" data-testid="customers-people-section">
+        <section
+          className="customers-section customers-section-panel"
+          data-testid="customers-people-section"
+        >
           {kind === "all" ? (
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindPeople")}</h2>
               {peopleReady ? (
-                <span className="customers-section__count">{peopleItems.length}</span>
+                <CountBadge
+                  count={peopleItems.length}
+                  tone="neutral"
+                  className="customers-section__count"
+                />
               ) : null}
             </div>
           ) : null}
@@ -291,51 +362,58 @@ export function CustomersListPage() {
           ) : null}
           {peopleReady && peopleItems.length === 0 ? (
             kind === "all" ? (
-              <p className="customers-section__empty-inline" data-testid="customers-people-empty">
-                {t("customers.peopleEmptyCompact")}
-              </p>
+              <div data-testid="customers-people-empty">
+                <EmptyState
+                  align="center"
+                  size="compact"
+                  icon={<UserRound className="size-5" strokeWidth={1.75} />}
+                  title={t("customers.peopleEmptyCompact")}
+                />
+              </div>
             ) : (
-              <EmptyState title={t("customers.empty")} detail={t("customers.emptyDetail")} />
+              <EmptyState
+                align="center"
+                variant={debounced || status ? "filtered" : "default"}
+                icon={<Users className="size-5" strokeWidth={1.75} />}
+                title={t("customers.empty")}
+                detail={t("customers.emptyDetail")}
+              />
             )
           ) : null}
-          <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="customers-list">
+          <ul
+            className="exits-list customers-people-list m-0 grid list-none gap-2 p-0"
+            data-testid="customers-list"
+          >
             {peopleItems.map((customer) => {
-              const phone = customer.mobileNumber?.trim() || "";
+              const exitsId = resolveDisplayedPersonalExItsId(customer);
+              const relationshipStatus = resolvePeopleRelationshipStatus(
+                customer,
+                customerLinkOverlay,
+              );
+              const distanceException =
+                customer.platformBusinessCustomerId &&
+                distanceExceptionIds?.has(customer.platformBusinessCustomerId);
               return (
                 <li key={customer.customerId}>
-                  <Link
-                    className="exits-list__card customer-row block min-w-0 text-foreground no-underline"
-                    to={`/customers/${customer.customerId}`}
-                    data-testid={`customer-row-${customer.customerId}`}
-                  >
-                    <span className="customer-row__main min-w-0">
-                      <span className="exits-list__name block truncate font-semibold">
-                        {customer.displayName}
-                      </span>
-                      {phone ? (
-                        <span className="customer-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                          {phone}
-                        </span>
-                      ) : null}
-                      <CustomerListConnectionBadges
-                        customer={customer}
-                        overlay={customerLinkOverlay}
-                        className="customer-row__badges"
-                      />
-                      {customer.platformBusinessCustomerId &&
-                      distanceExceptionIds?.has(customer.platformBusinessCustomerId) ? (
+                  <CustomerListCard
+                    href={`/customers/${customer.customerId}`}
+                    testId={`customer-row-${customer.customerId}`}
+                    name={customer.displayName}
+                    kind="personal"
+                    relationshipStatus={relationshipStatus}
+                    accountStatus={customer.status}
+                    exitsId={exitsId}
+                    exitsIdTestId={`customer-exits-id-${customer.customerId}`}
+                    extraKindBadges={
+                      distanceException ? (
                         <StatusChip tone="info">
                           <span data-testid={`customer-distance-exception-badge-${customer.customerId}`}>
                             {t("customers.delivery.distanceExceptionBadge")}
                           </span>
                         </StatusChip>
-                      ) : null}
-                    </span>
-                    <span className="customer-row__aside">
-                      <StatusChip tone={customerStatusTone(customer.status)}>{customer.status}</StatusChip>
-                      <ChevronRight className="customer-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-                    </span>
-                  </Link>
+                      ) : null
+                    }
+                  />
                 </li>
               );
             })}
@@ -344,16 +422,25 @@ export function CustomersListPage() {
       ) : null}
 
       {showBusinesses ? (
-        <section className="customers-section" data-testid="customers-business-section">
+        <section
+          className="customers-section customers-section-panel"
+          data-testid="customers-business-section"
+        >
           {kind === "all" ? (
             <div className="customers-section__head">
               <h2 className="customers-section__title">{t("customers.kindBusinesses")}</h2>
               {businessesReady ? (
-                <span className="customers-section__count">{businessItems.length}</span>
+                <CountBadge
+                  count={businessRows.length}
+                  tone="neutral"
+                  className="customers-section__count"
+                />
               ) : null}
             </div>
           ) : null}
-          {businessQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+          {businessQuery.isLoading || (showBusinesses && peopleQuery.isLoading) ? (
+            <LoadingState label={t("loading.label")} />
+          ) : null}
           {businessQuery.isError ? (
             <div className="flex flex-col gap-2" data-testid="business-customers-error">
               <ErrorState
@@ -372,8 +459,10 @@ export function CustomersListPage() {
               </button>
             </div>
           ) : null}
-          {businessesReady && businessItems.length === 0 ? (
+          {businessesReady && businessRows.length === 0 ? (
             <EmptyState
+              align="center"
+              icon={<Building2 className="size-5" strokeWidth={1.75} />}
               title={t("customers.business.empty")}
               detail={t("customers.business.emptyHelp")}
             />
@@ -382,58 +471,50 @@ export function CustomersListPage() {
             className="exits-list customers-business-list m-0 grid list-none gap-2 p-0"
             data-testid="business-customers-list"
           >
-            {businessItems.map((customer) => {
-              const name =
-                customer.organizationDisplayName.trim() || t("customers.business.unknown");
-              const pricing = discountLabel(
-                customer,
-                t("customers.business.discountShort"),
-              );
+            {businessRows.map((row) => {
+              const kind =
+                row.badges.includes("b2b") ? "b2b" : row.badges.includes("local") ? "local" : "b2b";
+              const relationshipStatus =
+                row.source === "connection"
+                  ? resolveBusinessRelationshipStatus(row.relationshipStatus)
+                  : resolveBusinessRelationshipStatus(
+                      row.badges.includes("b2b") ? "Active" : "Inactive",
+                    );
+              const accountStatus = row.source === "connection" ? null : row.status;
               return (
-                <li key={customer.connectionId}>
-                  <Link
-                    className="exits-list__card business-customer-row customer-row block min-w-0 text-foreground no-underline"
-                    to={`/customers/business/${customer.connectionId}`}
-                    data-testid={`business-customer-row-${customer.connectionId}`}
-                  >
-                    <span className="customer-row__main min-w-0">
-                      <span className="business-customer-row__title">
-                        <span
-                          className="exits-list__name truncate font-semibold"
-                          data-testid={`business-customer-name-${customer.connectionId}`}
-                        >
-                          {name}
-                        </span>
-                        <span className="business-customer-row__badge">
-                          {t("customers.business.badgeShort")}
-                        </span>
-                      </span>
-                      <span className="business-customer-row__facts">
-                        <span>
-                          {t("customers.business.sharedCountShort").replace(
-                            "{count}",
-                            String(customer.sharedCount),
-                          )}
-                        </span>
-                        {pricing ? <span>{pricing}</span> : null}
-                      </span>
-                    </span>
-                    <span className="customer-row__aside">
-                      <StatusChip
-                        tone={
-                          customer.relationshipStatus.toLowerCase() === "active"
-                            ? "success"
-                            : "warning"
-                        }
-                      >
-                        {customer.relationshipStatus}
-                      </StatusChip>
-                      <ChevronRight
-                        className="customer-row__chevron size-4 shrink-0 text-muted"
-                        aria-hidden
-                      />
-                    </span>
-                  </Link>
+                <li key={row.key}>
+                  <CustomerListCard
+                    className="business-customer-row"
+                    href={row.href}
+                    testId={
+                      row.source === "connection"
+                        ? `business-customer-row-${row.connection.connectionId}`
+                        : `business-pos-customer-row-${row.customer.customerId}`
+                    }
+                    name={row.displayName.trim() || t("customers.business.unknown")}
+                    nameTestId={
+                      row.source === "connection"
+                        ? `business-customer-name-${row.connection.connectionId}`
+                        : `business-pos-customer-name-${row.customer.customerId}`
+                    }
+                    kind={kind}
+                    relationshipStatus={relationshipStatus}
+                    accountStatus={accountStatus}
+                    exitsId={row.publicOrganizationId}
+                    exitsIdTestId={
+                      row.source === "connection"
+                        ? `business-customer-org-${row.connection.connectionId}`
+                        : `business-pos-customer-org-${row.customer.customerId}`
+                    }
+                    actionRequired={
+                      row.source === "connection" ? Boolean(row.connection.actionRequired) : false
+                    }
+                    extraKindBadges={
+                      row.alsoSupplier ? (
+                        <StatusChip tone="warning">{t("customers.badge.alsoSupplier")}</StatusChip>
+                      ) : null
+                    }
+                  />
                 </li>
               );
             })}

@@ -17,6 +17,11 @@ public interface IInventoryTransferRepository
         int take,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<InventoryTransfer>> ListByStockRequestIdAsync(
+        PosOrganizationId organizationId,
+        StockRequestId stockRequestId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
@@ -78,6 +83,15 @@ public interface IOrganizationBranchDirectory
         Guid branchId,
         CancellationToken cancellationToken = default) =>
         ExistsInOrganizationAsync(organizationId, branchId, cancellationToken);
+
+    /// <summary>
+    /// Platform branch type code (<c>Retail</c> / <c>Warehouse</c>). Defaults to Retail when unknown.
+    /// </summary>
+    Task<string> GetBranchTypeAsync(
+        Guid organizationId,
+        Guid branchId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult("Retail");
 }
 
 public interface IInventoryTransferAlertSink

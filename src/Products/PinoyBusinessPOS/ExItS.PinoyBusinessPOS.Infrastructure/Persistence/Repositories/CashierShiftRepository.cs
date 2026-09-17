@@ -285,6 +285,39 @@ internal sealed class CashierShiftRepository : ICashierShiftRepository
             completedUtang.Count);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, CashierShiftCompletedSalesRollup>> GetCompletedSalesRollupsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> shiftIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (shiftIds.Count == 0)
+        {
+            return new Dictionary<Guid, CashierShiftCompletedSalesRollup>();
+        }
+
+        var completed = nameof(SaleStatus.Completed);
+        var rows = await _db.Sales.AsNoTracking()
+            .Where(s => s.OrganizationId == organizationId.Value
+                        && s.CashierShiftId != null
+                        && shiftIds.Contains(s.CashierShiftId.Value)
+                        && s.Status == completed)
+            .GroupBy(s => s.CashierShiftId!.Value)
+            .Select(g => new
+            {
+                ShiftId = g.Key,
+                CompletedCount = g.Count(),
+                CompletedTotal = g.Sum(s => s.Total)
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(
+            r => r.ShiftId,
+            r => new CashierShiftCompletedSalesRollup(
+                r.CompletedCount,
+                SaleMoney.RoundMoney(r.CompletedTotal)));
+    }
+
     private async Task<CashierShift> ExecuteNumberedMutationAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

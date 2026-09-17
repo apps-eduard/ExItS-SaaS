@@ -123,7 +123,69 @@ public sealed class ConnectedPoLifecycleDomainTests
         Assert.Equal(ConnectedPoDisplayStatus.Preparing, ConnectedPoDisplayStatus.ForBuyer(po, order));
 
         order.MarkFulfilled(Now.AddMinutes(5));
-        Assert.Equal(ConnectedPoDisplayStatus.Ready, ConnectedPoDisplayStatus.ForBuyer(po, order));
+        Assert.Equal(ConnectedPoDisplayStatus.Shipped, ConnectedPoDisplayStatus.ForBuyer(po, order));
+        Assert.Equal(ConnectedPoDisplayStatus.AwaitingBuyerReceipt, ConnectedPoDisplayStatus.ForSupplier(order, po));
+    }
+
+    [Fact]
+    public void Seller_ready_does_not_complete_when_buyer_has_outstanding()
+    {
+        var order = NewOrder();
+        var po = BuyerPo(3);
+        order.Accept(Now.AddMinutes(3));
+        order.MarkFulfilled(Now.AddMinutes(4));
+
+        Assert.Equal(ConnectedPoDisplayStatus.AwaitingBuyerReceipt, ConnectedPoDisplayStatus.ForSupplier(order, po));
+        Assert.NotEqual(ConnectedPoDisplayStatus.Completed, ConnectedPoDisplayStatus.ForSupplier(order, po));
+
+        po.ApplyReceiptLines(
+            [new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.From(ProductA),
+                ReceiveQty: 2m,
+                DamagedQty: 1m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Damaged)],
+            Now.AddMinutes(10));
+
+        Assert.Equal(PurchaseOrderStatus.PartiallyReceived, po.Status);
+        Assert.Equal(1m, po.Lines[0].OutstandingQty);
+        Assert.Equal(ConnectedPoDisplayStatus.PartiallyReceived, ConnectedPoDisplayStatus.ForBuyer(po, order));
+        Assert.Equal(ConnectedPoDisplayStatus.PartiallyReceived, ConnectedPoDisplayStatus.ForSupplier(order, po));
+
+        order.ReopenForRemainingFulfillment(Now.AddMinutes(11));
+        Assert.Equal(ConnectedPurchaseOrderStatus.Accepted, order.Status);
+        Assert.False(order.CanBuyerReceive);
+
+        order.StartPreparing(Now.AddMinutes(12));
+        order.MarkFulfilled(Now.AddMinutes(13));
+        Assert.True(order.CanBuyerReceive);
+
+        po.ApplyReceiptLines(
+            [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), ReceiveQty: 1m)],
+            Now.AddMinutes(14));
+        Assert.Equal(PurchaseOrderStatus.Received, po.Status);
+        Assert.Equal(0m, po.Lines[0].OutstandingQty);
+        Assert.Equal(ConnectedPoDisplayStatus.Completed, ConnectedPoDisplayStatus.ForSupplier(order, po));
+    }
+
+    [Fact]
+    public void Cancel_remaining_short_closes_and_completes()
+    {
+        var po = BuyerPo(3);
+        po.ApplyReceiptLines(
+            [new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.From(ProductA),
+                ReceiveQty: 2m,
+                DamagedQty: 0m,
+                RejectedQty: 1m,
+                ShortClosedQty: 1m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Short)],
+            Now.AddMinutes(10));
+
+        Assert.Equal(PurchaseOrderStatus.Received, po.Status);
+        Assert.Equal(0m, po.Lines[0].OutstandingQty);
+        Assert.Equal(2m, po.Lines[0].ReceivedQty);
+        Assert.Equal(1m, po.Lines[0].ClosedShortQty);
+        Assert.True(po.HasReceivingIssues);
     }
 
     [Fact]
@@ -137,6 +199,10 @@ public sealed class ConnectedPoLifecycleDomainTests
             ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.ChangesProposed));
         Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
             ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Accepted));
+        Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
+            ConnectedPurchaseOrderStatus.Fulfilled, ConnectedPurchaseOrderStatus.Accepted));
+        Assert.True(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
+            ConnectedPurchaseOrderStatus.Fulfilled, ConnectedPurchaseOrderStatus.Preparing));
         Assert.False(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
             ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Withdrawn));
         Assert.False(ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(
@@ -214,16 +280,17 @@ public sealed class ConnectedPoLifecycleDomainTests
     }
 
     [Fact]
-    public void Buyer_rejection_closes_proposed_changes()
+    public void Buyer_rejection_returns_order_to_new_without_withdraw()
     {
         var order = NewOrder();
         order.ProposeLineChanges(
             [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 8m, false)],
             Now.AddMinutes(3));
         order.RejectProposedChanges(Now.AddMinutes(4));
-        Assert.Equal(ConnectedPurchaseOrderStatus.Withdrawn, order.Status);
+        Assert.Equal(ConnectedPurchaseOrderStatus.New, order.Status);
         Assert.Equal(10m, order.Lines[0].Qty);
-        Assert.False(order.CanBuyerWithdraw);
+        Assert.Null(order.Lines[0].ProposedQty);
+        Assert.True(order.CanBuyerWithdraw);
     }
 
     [Fact]
@@ -241,14 +308,33 @@ public sealed class ConnectedPoLifecycleDomainTests
     }
 
     [Fact]
-    public void Payment_terms_parse_gcash_as_manual()
+    public void Payment_terms_parse_aliases_and_labels()
     {
         Assert.Equal(ConnectedPoPaymentTerm.Cash, ConnectedPoPaymentTerms.Parse("Cash"));
+        Assert.Equal(ConnectedPoPaymentTerm.Cash, ConnectedPoPaymentTerms.Parse("COD"));
+        Assert.Equal(ConnectedPoPaymentTerm.BankTransfer, ConnectedPoPaymentTerms.Parse("BankTransfer"));
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("GCash"));
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("ManualGCash"));
         Assert.Equal(ConnectedPoPaymentTerm.Utang, ConnectedPoPaymentTerms.Parse("Utang"));
-        Assert.Equal("GCash", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Equal("COD / Pay on delivery", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.Cash));
+        Assert.Equal("GCash / Manual e-wallet", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Equal("Bank transfer", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.BankTransfer));
         Assert.Equal("ManualGCash", ConnectedPoPaymentTerms.ToApi(ConnectedPoPaymentTerm.ManualGCash));
+        Assert.Throws<DomainException>(() => ConnectedPoPaymentTerms.ParseRequired(null));
+    }
+
+    [Fact]
+    public void Payment_method_change_is_material_revision()
+    {
+        var order = NewOrder();
+        order.ProposeLineChanges(
+            [new ConnectedPoLineProposal(CatalogProductId.From(ProductA), 10m, false)],
+            Now.AddMinutes(3),
+            proposedPaymentTerm: ConnectedPoPaymentTerm.BankTransfer);
+        Assert.Equal(ConnectedPurchaseOrderStatus.ChangesProposed, order.Status);
+        Assert.True(order.HasProposedPaymentChange);
+        Assert.Equal(ConnectedPoPaymentTerm.BankTransfer, order.EffectivePaymentTerm);
+        Assert.Equal(ConnectedPoPaymentTerm.Cash, order.PaymentTerm);
     }
 
     [Fact]
@@ -292,6 +378,7 @@ public sealed class ConnectedPoLifecycleDomainTests
                 CatalogProductId.From(ProductA),
                 ReceiveQty: 18m,
                 DamagedQty: 0m,
+                RejectedQty: 2m,
                 ShortClosedQty: 2m,
                 DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Short)],
             Now.AddMinutes(10));
@@ -312,7 +399,11 @@ public sealed class ConnectedPoLifecycleDomainTests
     {
         var po = BuyerPo(20);
         po.ApplyReceiptLines(
-            [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 18m)],
+            [new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.From(ProductA),
+                ReceiveQty: 18m,
+                RejectedQty: 2m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Short)],
             Now.AddMinutes(10));
         Assert.Equal(PurchaseOrderStatus.PartiallyReceived, po.Status);
         Assert.Equal(2m, po.Lines[0].OutstandingQty);

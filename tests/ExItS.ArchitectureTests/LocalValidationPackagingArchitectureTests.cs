@@ -129,9 +129,11 @@ public sealed class LocalValidationPackagingArchitectureTests
         Assert.Contains("LocalValidation.stack.ps1", resetScript, StringComparison.Ordinal);
         Assert.Contains("Get-ExItSRepositoryWorktrees", stackScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationRuntimeProvenanceTable", stackScript, StringComparison.Ordinal);
+        Assert.Contains("Get-LocalValidationDockerComposeLabel", stackScript, StringComparison.Ordinal);
         Assert.Contains("Stop-LocalValidationCrossWorktreeHostApps", stackScript, StringComparison.Ordinal);
         Assert.Contains("Assert-LocalValidationPortsOwnedByExpectedWorktree", stackScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationRuntimeProvenanceTable", startScript, StringComparison.Ordinal);
+        Assert.Contains("Freeing $($svc.Label) port $port before partial start", startScript, StringComparison.Ordinal);
         Assert.Contains("Write-LocalValidationRuntimeSummary", startScript, StringComparison.Ordinal);
         Assert.Contains("Production", resetScript, StringComparison.Ordinal);
         Assert.DoesNotContain("docker compose down -v", resetScript, StringComparison.Ordinal);

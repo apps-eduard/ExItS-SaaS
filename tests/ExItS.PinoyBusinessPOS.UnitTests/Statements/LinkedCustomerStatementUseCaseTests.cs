@@ -784,7 +784,7 @@ public sealed class LinkedCustomerStatementUseCaseTests
                 c.OrganizationId == organizationId && c.PlatformBusinessCustomerId == platformBusinessCustomerId));
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListAsync(
-            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, CancellationToken cancellationToken = default)
+            PosOrganizationId organizationId, CustomerStatus? status, string? search, int skip, int take, IReadOnlyCollection<Guid>? restrictToCustomerIds = null, bool peopleOnly = false, CancellationToken cancellationToken = default)
         {
             var list = _items.Where(c => c.OrganizationId == organizationId).ToList();
             return Task.FromResult(((IReadOnlyList<POSCustomer>)list.Skip(skip).Take(take).ToList(), list.Count));
@@ -792,7 +792,7 @@ public sealed class LinkedCustomerStatementUseCaseTests
 
         public Task<(IReadOnlyList<POSCustomer> Items, int TotalCount)> ListUpdatedSinceAsync(
             PosOrganizationId organizationId, DateTimeOffset? sinceUtc, int skip, int take, CancellationToken cancellationToken = default) =>
-            ListAsync(organizationId, null, null, skip, take, null, cancellationToken);
+            ListAsync(organizationId, null, null, skip, take, null, false, cancellationToken);
 
         public Task<IReadOnlyList<POSCustomer>> ListByIdsAsync(
             PosOrganizationId organizationId, IReadOnlyCollection<POSCustomerId> customerIds, CancellationToken cancellationToken = default)
@@ -871,6 +871,8 @@ public sealed class LinkedCustomerStatementUseCaseTests
                 e.OrganizationId == organizationId && e.CustomerId == customerId && e.Status == CreditEntryStatus.Active));
     }
 
+
+
     private sealed class InMemoryRepayments : IRepaymentRepository
     {
         public List<Repayment> All { get; } = [];
@@ -916,6 +918,12 @@ public sealed class LinkedCustomerStatementUseCaseTests
             Task.FromResult(All.Where(r =>
                 r.OrganizationId == organizationId && r.CustomerId == customerId && r.Status == RepaymentStatus.Active)
                 .Sum(r => r.Amount));
+
+        public Task<decimal> SumPendingCheckAmountAsync(
+            PosOrganizationId organizationId,
+            POSCustomerId customerId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0m);
 
         public Task<IReadOnlyDictionary<Guid, decimal>> SumActiveAmountsByOrganizationAsync(
             PosOrganizationId organizationId,

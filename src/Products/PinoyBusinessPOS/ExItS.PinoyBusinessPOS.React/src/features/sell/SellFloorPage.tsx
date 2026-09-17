@@ -5,9 +5,11 @@ import { ShoppingCart, Banknote, Info, PackageX, X } from "lucide-react";
 import { resolveCatalogLookup } from "@/api/pos/catalog-lookup";
 import {
   CATALOG_BROWSE_PAGE_SIZE,
+  getCatalogProduct,
   listCatalogCategories,
   listCatalogProducts,
 } from "@/api/pos/pos-catalog-client";
+import { readPendingQuotationConvert } from "@/api/pos/pos-quotations-client";
 import type {
   PosCatalogProductDto,
   PosCatalogProductUnitDto,
@@ -29,6 +31,8 @@ import {
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
 import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { Button } from "@/components/ui/button";
+import { FilterChip } from "@/components/exits/FilterChip";
+import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { SellCartPanel } from "@/features/sell/SellCartPanel";
@@ -166,6 +170,7 @@ export function SellFloorPage() {
   const [flashedProductId, setFlashedProductId] = useState<string | null>(null);
   const lastExactScanRef = useRef<string | null>(null);
   const flashTimeoutRef = useRef<number | null>(null);
+  const quotationSeededRef = useRef(false);
 
   const flashProduct = useCallback((productId: string) => {
     setFlashedProductId(productId);
@@ -185,6 +190,36 @@ export function SellFloorPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (quotationSeededRef.current || !boundWorkspace?.organizationId) {
+      return;
+    }
+    const pending = readPendingQuotationConvert();
+    if (!pending || pending.lines.length === 0) {
+      return;
+    }
+    quotationSeededRef.current = true;
+    const workspace = {
+      organizationId: boundWorkspace.organizationId,
+      branchId: boundWorkspace.branchId ?? undefined,
+    };
+    void (async () => {
+      cart.clear();
+      for (const line of pending.lines) {
+        try {
+          const product = await getCatalogProduct(workspace, line.productId);
+          cart.addLine(product, {
+            quantity: line.quantity,
+            replaceQuantity: true,
+          });
+        } catch {
+          // Skip missing products; cashier can adjust before checkout.
+        }
+      }
+      setCartSheetOpen(true);
+    })();
+  }, [boundWorkspace?.branchId, boundWorkspace?.organizationId, cart]);
 
   useEffect(() => {
     const hideNav = cartSheetOpen && !sideCartLayout;
@@ -876,44 +911,47 @@ export function SellFloorPage() {
           testId="sell-online-required"
         />
       ) : null}
-      <header className="sell-floor-toolbar shrink-0">
-        <div className="sell-floor-toolbar__title">
-          <h1 className="sell-floor-toolbar__heading">{t("sell.title")}</h1>
-          <button
-            type="button"
-            data-testid="sell-info-toggle"
-            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
-            aria-label={t("sell.infoToggle")}
-            aria-expanded={infoOpen}
-            aria-controls="sell-info-panel"
-            onClick={() => setInfoOpen((open) => !open)}
-          >
-            <Info className="size-3.5" aria-hidden />
-            <span>{t("sell.infoChip")}</span>
-          </button>
-          <button
-            type="button"
-            data-testid="sell-out-of-stock-toggle"
-            className="sell-floor-toolbar__info sell-floor-toolbar__chip"
-            aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
-            aria-pressed={showOutOfStock}
-            onClick={() => setShowOutOfStock((open) => !open)}
-          >
-            <PackageX className="sell-floor-toolbar__chip-icon--oos" aria-hidden />
-            <span>{t("sell.stockOut")}</span>
-          </button>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          className="sell-floor-toolbar__exit"
-          onClick={() => {
-            exit();
-            navigate(returnRoute ?? "/");
-          }}
-        >
-          {t("sell.exitSelling")}
-        </Button>
+      <div className="sell-floor-toolbar shrink-0 flex min-w-0 flex-col gap-1.5">
+        <PageHeader
+          variant="compact"
+          title={t("sell.title")}
+          actions={
+            <div className="page-header__actions-cluster">
+              <FilterChip
+                data-testid="sell-info-toggle"
+                selected={infoOpen}
+                aria-label={t("sell.infoToggle")}
+                aria-expanded={infoOpen}
+                aria-controls="sell-info-panel"
+                onClick={() => setInfoOpen((open) => !open)}
+                icon={<Info className="size-3.5" aria-hidden />}
+              >
+                {t("sell.infoChip")}
+              </FilterChip>
+              <FilterChip
+                data-testid="sell-out-of-stock-toggle"
+                selected={showOutOfStock}
+                aria-label={showOutOfStock ? t("sell.hideOutOfStock") : t("sell.showOutOfStock")}
+                onClick={() => setShowOutOfStock((open) => !open)}
+                icon={<PackageX className="size-3.5" aria-hidden />}
+              >
+                {t("sell.stockOut")}
+              </FilterChip>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="sell-floor-toolbar__exit"
+                onClick={() => {
+                  exit();
+                  navigate(returnRoute ?? "/");
+                }}
+              >
+                {t("sell.exitSelling")}
+              </Button>
+            </div>
+          }
+        />
         {infoOpen ? (
           <div
             id="sell-info-panel"
@@ -921,7 +959,7 @@ export function SellFloorPage() {
             className="sell-info-panel sell-floor-toolbar__tips"
           >
             <div className="sell-info-panel__bar">
-              <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 pl-4 text-[length:var(--exits-text-xs)] text-muted">
+              <ul className="m-0 min-w-0 flex-1 list-disc space-y-1 ps-4 text-[length:var(--exits-text-xs)] text-muted">
                 <li>{t("sell.info.search")}</li>
                 <li>{t("sell.info.shift")}</li>
                 {deviceEnforcementEnabled !== false ? (
@@ -942,7 +980,7 @@ export function SellFloorPage() {
             </div>
           </div>
         ) : null}
-      </header>
+      </div>
 
       <SellReadinessStrip
         continuedOffline={continuedOffline}
@@ -964,10 +1002,11 @@ export function SellFloorPage() {
         </p>
       ) : null}
 
-      <div className="sell-floor-layout min-h-0 min-w-0 flex-1">
+      <div className="sell-floor-layout flex min-h-0 min-w-0 flex-1 flex-col">
         <section
+          data-testid="sell-floor-browse"
           className={cn(
-            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-col",
+            "sell-floor-workspace sell-floor-browse flex min-h-0 min-w-0 flex-1 flex-col",
             (showFloatingCart || showEmptyMobileCartBar) &&
               "pb-[calc(5.5rem+env(safe-area-inset-bottom))]",
           )}
@@ -1032,7 +1071,7 @@ export function SellFloorPage() {
           <div
             key={activeCategory}
             data-testid="sell-products"
-            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto"
+            className="sell-floor-product-pane sell-product-grid sell-product-grid--enter min-h-0 flex-1 content-start items-start overflow-y-auto overscroll-contain"
             aria-label={t("sell.productsLabel")}
           >
             {productsLoading ? (
@@ -1058,7 +1097,7 @@ export function SellFloorPage() {
                 allowManageCatalog ? (
                   <Link
                     to="/catalog/products/new"
-                    className="inline-flex min-h-11 items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
+                    className="inline-flex items-center justify-center text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline"
                     data-testid="sell-empty-add-product"
                   >
                     {t("sell.catalogEmptyAddProduct")}

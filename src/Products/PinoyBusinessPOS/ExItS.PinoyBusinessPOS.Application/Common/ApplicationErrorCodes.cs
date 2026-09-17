@@ -15,6 +15,23 @@ public static class ApplicationErrorCodes
     public const string SupplierBranchAccessForbidden = "pos.supplier.branch_access_forbidden";
     public const string PartyActingBranchRequired = "pos.party.acting_branch_required";
     public const string CreditEntryNotFound = "pos.credit_entry.not_found";
+    public const string CustomerCreditPolicyNotFound = "pos.customer_credit_policy.not_found";
+    public const string CustomerCreditPolicyConcurrencyConflict =
+        "pos.customer_credit_policy.concurrency_conflict";
+    public const string BusinessCustomerCreditPolicyNotFound =
+        "pos.business_customer_credit_policy.not_found";
+    public const string BusinessCustomerCreditPolicyConcurrencyConflict =
+        "pos.business_customer_credit_policy.concurrency_conflict";
+    public const string CustomerCreditNotApproved = "pos.customer_credit.not_approved";
+    public const string CustomerCreditLimitExceeded = "pos.customer_credit.limit_exceeded";
+    public const string BusinessCustomerCreditNotApproved =
+        "pos.business_customer_credit.not_approved";
+    public const string BusinessCustomerCreditLimitExceeded =
+        "pos.business_customer_credit.limit_exceeded";
+    public const string BusinessCreditEntryNotFound = "pos.business_credit_entry.not_found";
+    public const string BusinessRepaymentNotFound = "pos.business_repayment.not_found";
+    public const string CustomerCreditDueDateOverrideDenied =
+        "pos.customer_credit.due_date_override_denied";
     public const string RepaymentNotFound = "pos.repayment.not_found";
     public const string WriteOffNotFound = "pos.write_off.not_found";
     public const string ActorRequired = "pos.actor.required";
@@ -127,6 +144,9 @@ public static class ApplicationErrorCodes
     public const string ExpenseNotFound = "pos.expense.not_found";
     public const string ExpenseNumberConflict = "pos.expense.number.conflict";
     public const string ExpenseConcurrencyConflict = "pos.expense.concurrency_conflict";
+    public const string ExpenseBranchForbidden = "pos.expense.branch.forbidden";
+    public const string ExpenseScopeInvalid = "pos.expense.scope.invalid";
+    public const string ExpenseBranchRequired = "pos.expense.branch.required";
 
     public const string ReportInvalidDateRange = "pos.report.invalid_date_range";
     public const string ReportRangeTooLarge = "pos.report.range_too_large";
@@ -144,9 +164,22 @@ public static class ApplicationErrorCodes
     public const string PurchaseOrderNumberConflict = "pos.purchase_order.number.conflict";
     public const string GoodsReceiptNumberConflict = "pos.goods_receipt.number.conflict";
     public const string PurchaseOrderConcurrencyConflict = "pos.purchase_order.concurrency_conflict";
+    public const string PurchasingReceivingBranchMismatch = "pos.purchasing.receiving_branch_mismatch";
+    public const string PurchaseReceiptPaymentMethodMismatch = "pos.purchasing.receipt.payment_method_mismatch";
+    public const string PurchaseReceiptPaymentInvalid = "pos.purchasing.receipt.payment_invalid";
+    public const string PurchaseOrderNothingToCloseRemaining = "pos.purchasing.close_remaining.nothing_to_close";
+    public const string PurchaseOrderCloseRemainingReasonRequired =
+        "pos.purchasing.close_remaining.reason_required";
     public const string PurchaseSupplierNotActive = "pos.purchase_order.supplier.not_active";
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
+
+    public const string QuotationNotFound = "pos.quotation.not_found";
+    public const string QuotationNumberConflict = "pos.quotation.number.conflict";
+    public const string QuotationConcurrencyConflict = "pos.quotation.concurrency_conflict";
+    public const string QuotationProductNotFound = "pos.quotation.product.not_found";
+    public const string QuotationProductNotActive = "pos.quotation.product.not_active";
+    public const string QuotationNotConvertible = "pos.quotation.not_convertible";
 
     public const string SupplierPayableNotFound = "pos.supplier_payable.not_found";
     public const string SupplierPayableConcurrencyConflict = "pos.supplier_payable.concurrency_conflict";
@@ -188,6 +221,12 @@ public static class ApplicationErrorCodes
     public const string RegisterNameConflict = "pos.register.name.conflict";
     public const string RegisterCodeConflict = "pos.register.code.conflict";
     public const string RegisterConcurrencyConflict = "pos.register.concurrency_conflict";
+    /// <summary>
+    /// PWA auto-provision is only for pure React mode with device enforcement disabled.
+    /// </summary>
+    public const string PwaRegisterEnsureDeviceEnforcementEnabled =
+        "pos.register.pwa_ensure.device_enforcement_enabled";
+    public const string PwaRegisterEnsureExhausted = "pos.register.pwa_ensure.exhausted";
 
     public const string OperationalSetupConcurrencyConflict = "pos.operational_setup.concurrency_conflict";
     public const string TaxConfigurationNotEnabled = "pos.operational_setup.tax_configuration_not_enabled";
@@ -210,7 +249,11 @@ public static class ApplicationErrorCodes
     public const string ReportBranchNotFound = "pos.report.branch.not_found";
     public const string OperationalBranchSwitchBlocked = "pos.branch.switch.shift_open";
     public const string SaleBranchRequired = "pos.sale.branch_required";
+    public const string WarehouseBranchSalesForbidden = "pos.sale.warehouse_branch_forbidden";
     public const string InventoryBranchRequired = "pos.inventory.branch_required";
+    public const string InventoryReorderBulkEmpty = "pos.inventory.reorder.bulk_empty";
+    public const string InventoryReorderBulkValidation = "pos.inventory.reorder.bulk_validation";
+    public const string InventoryReorderBulkTooLarge = "pos.inventory.reorder.bulk_too_large";
     public const string InventoryBranchAuthorityMismatch = "pos.inventory.branch_authority_mismatch";
     public const string InventoryPrimaryUnavailable = "pos.inventory.primary_unavailable";
     public const string InventoryBranchReservationCutoverUnresolvedSaleBranch =

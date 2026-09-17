@@ -111,6 +111,7 @@ public static class PlatformAuditActions
 
     public const string MembershipAdded = "platform.membership.added";
     public const string MembershipRoleChanged = "platform.membership.role_changed";
+    public const string MembershipBusinessProfileUpdated = "platform.membership.business_profile_updated";
     public const string MembershipSuspended = "platform.membership.suspended";
     public const string MembershipReactivated = "platform.membership.reactivated";
     public const string MembershipRevoked = "platform.membership.revoked";
@@ -152,6 +153,12 @@ public static class PlatformAuditActions
         "platform.organization.tax_configuration_capability_enabled";
     public const string OrganizationTaxConfigurationCapabilityDisabled =
         "platform.organization.tax_configuration_capability_disabled";
+    public const string OrganizationOnlineSupplierPaymentsEnabled =
+        "platform.organization.online_supplier_payments.enabled";
+    public const string OrganizationOnlineSupplierPaymentsDisabled =
+        "platform.organization.online_supplier_payments.disabled";
+    public const string OrganizationOnlineSupplierPaymentsSuspended =
+        "platform.organization.online_supplier_payments.suspended";
 
     /// <summary>Never log full TIN — mask or omit.</summary>
     public const string OrganizationComplianceProfileUpdated =

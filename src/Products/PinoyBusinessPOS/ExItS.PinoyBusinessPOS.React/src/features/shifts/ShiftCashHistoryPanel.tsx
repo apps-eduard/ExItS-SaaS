@@ -3,14 +3,11 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   CheckCircle2,
-  MonitorSmartphone,
-  Receipt,
   Scale,
   Store,
   Wallet,
 } from "lucide-react";
 import type { PosCashierShiftDto, PosCashierShiftSummaryDto } from "@/api/pos/pos-shifts-client";
-import { Card } from "@/components/ui/card";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { cashCountModeMessageKey } from "@/features/shifts/cash-count-mode-label";
 import { CashCountHistoryBlock } from "@/features/shifts/CashCountHistoryBlock";
@@ -63,22 +60,19 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
   const varianceKind = varianceAmount == null ? null : classifyCashVariance(varianceAmount);
 
   return (
-    <Card className="flex flex-col gap-4" data-testid="shift-cash-history-panel">
-      <div className="flex items-start gap-2.5" data-testid="shift-register-label">
-        <MonitorSmartphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p className="m-0 text-[length:var(--exits-text-xs)] font-medium uppercase tracking-wide text-muted">
-            {t("shift.registerSection")}
-          </p>
-          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-sm)] font-semibold">
-            {shift.registerCode
-              ? `${shift.registerCode} — ${shift.registerName ?? ""}`
-              : t("shift.noRegisterOnShift")}
-          </p>
-        </div>
+    <div className="flex flex-col gap-2.5" data-testid="shift-cash-history-panel">
+      <div className="flex min-w-0 flex-col gap-0.5" data-testid="shift-register-label">
+        <p className="m-0 text-[length:var(--exits-text-xs)] font-medium text-muted">
+          {t("shift.registerSection")}
+        </p>
+        <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+          {shift.registerCode
+            ? `${shift.registerCode} · ${shift.registerName ?? ""}`.trim()
+            : t("shift.noRegisterOnShift")}
+        </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/20 p-3">
+      <div className="flex flex-col gap-1.5">
         <SummaryRow
           testId="shift-opening-policy"
           label={t("shift.openingCashCountPolicy")}
@@ -101,15 +95,14 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
 
       {closed ? (
         <>
-          <div className="flex items-center gap-2 pt-1" data-testid="shift-cash-summary-heading">
-            <Receipt className="size-5 shrink-0 text-primary" aria-hidden />
-            <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          <div className="flex items-center gap-2 border-t border-border pt-2" data-testid="shift-cash-summary-heading">
+            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               {t("shift.cashSummaryHeading")}
             </h2>
           </div>
 
           {summary ? (
-            <div className="flex flex-col gap-2.5 rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/20 p-3">
+            <div className="flex flex-col gap-1.5">
               <SummaryRow testId="shift-cash-sales" label={t("shift.cashSales")} icon={ArrowUpCircle}>
                 <MoneyDisplay amount={summary.cashSalesTotal} />
               </SummaryRow>
@@ -132,7 +125,7 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/20 p-3">
+          <div className="flex flex-col gap-1.5">
             <SummaryRow
               testId="shift-closing-policy"
               label={t("shift.closingCashCountPolicy")}
@@ -177,17 +170,14 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
           </div>
 
           {summary && (summary.gCashSalesTotal !== 0 || summary.utangSalesTotal !== 0) ? (
-            <div
-              className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-dashed border-border bg-surface-muted/10 p-3"
-              data-testid="shift-noncash-info"
-            >
+            <div className="flex flex-col gap-1.5" data-testid="shift-noncash-info">
               <SummaryRow testId="shift-gcash-sales" label={t("shift.gCashSales")} icon={Store}>
                 <MoneyDisplay amount={summary.gCashSalesTotal} />
               </SummaryRow>
               <SummaryRow testId="shift-utang-sales" label={t("shift.utangSales")} icon={Store}>
                 <MoneyDisplay amount={summary.utangSalesTotal} />
               </SummaryRow>
-              <p className="mb-0 text-[length:var(--exits-text-sm)] text-muted">
+              <p className="mb-0 text-[length:var(--exits-text-xs)] text-muted">
                 {t("shift.nonCashInfoHint")}
               </p>
             </div>
@@ -195,7 +185,7 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
 
           {shift.closingNotes ? (
             <p
-              className="mb-0 rounded-[var(--exits-radius-md)] border border-border bg-surface-muted/20 px-3 py-2 text-[length:var(--exits-text-sm)] text-muted"
+              className="mb-0 text-[length:var(--exits-text-sm)] text-muted"
               data-testid="shift-closing-notes-readonly"
             >
               {t("shift.closingNotesLabel")}: {shift.closingNotes}
@@ -211,6 +201,6 @@ export function ShiftCashHistoryPanel({ shift, summary, closed }: Props) {
           <MoneyDisplay amount={summary.expectedCashAmount} />
         </SummaryRow>
       ) : null}
-    </Card>
+    </div>
   );
 }

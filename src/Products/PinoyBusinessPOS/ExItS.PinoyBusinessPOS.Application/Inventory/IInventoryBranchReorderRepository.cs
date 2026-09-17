@@ -19,4 +19,16 @@ public interface IInventoryBranchReorderRepository
         CancellationToken cancellationToken = default);
 
     Task UpsertAsync(InventoryBranchReorderSetting setting, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteManyAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        CancellationToken cancellationToken = default);
 }

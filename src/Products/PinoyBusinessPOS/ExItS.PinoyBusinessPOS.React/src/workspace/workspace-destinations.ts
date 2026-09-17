@@ -5,6 +5,7 @@ import {
   canUseSellingExperience,
   type PosSessionGrantFacts,
 } from "@/access/pos-capabilities";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import type { AccessibleOrganizationWorkspace } from "@/workspace/types";
 import {
   isBranchRequiredExperience,
@@ -20,12 +21,17 @@ export type WorkspaceDestination = {
   experience: WorkingExperience;
   route: string;
   /** i18n message key for the action label */
-  labelKey: "experience.manageBusiness" | "experience.operations" | "experience.startSelling";
+  labelKey:
+    | "experience.manageBusiness"
+    | "experience.operations"
+    | "experience.warehouseOperations"
+    | "experience.startSelling";
 };
 
 /**
  * Build capability-gated destinations for one organization after an authoritative session grant.
  * Does not invent Main Branch. Manage Business is organization-level (branchId null).
+ * Warehouse locations never get Start selling; they use Warehouse operations when ops is allowed.
  */
 export function buildOrganizationDestinations(input: {
   workspace: AccessibleOrganizationWorkspace;
@@ -50,6 +56,7 @@ export function buildOrganizationDestinations(input: {
   const canSell = canUseSellingExperience(grant);
 
   for (const branch of workspace.branches) {
+    const warehouse = isWarehouseBranch(branch.branchType);
     if (canOps) {
       destinations.push({
         organizationId: workspace.organizationId,
@@ -57,11 +64,12 @@ export function buildOrganizationDestinations(input: {
         branchId: branch.branchId,
         branchName: branch.name,
         experience: "operations",
-        route: workingExperienceRoute("operations"),
-        labelKey: "experience.operations",
+        // Warehouse Operations lands on canonical warehouse home; retail ops keep role/manager.
+        route: warehouse ? "/warehouse" : workingExperienceRoute("operations"),
+        labelKey: warehouse ? "experience.warehouseOperations" : "experience.operations",
       });
     }
-    if (canSell) {
+    if (canSell && !warehouse) {
       destinations.push({
         organizationId: workspace.organizationId,
         organizationDisplayName: workspace.displayName,

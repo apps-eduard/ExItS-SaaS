@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Trash2 } from "lucide-react";
+import { ChevronRight, Package, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import { listWasteLosses } from "@/api/pos/pos-waste-loss-client";
 import { Button } from "@/components/ui/button";
@@ -101,7 +101,9 @@ export function WasteLossListPage() {
         <ErrorState title={t("wasteLoss.errorTitle")} detail={t("wasteLoss.loadFailed")} />
       ) : null}
       {query.isSuccess && items.length === 0 ? (
-        <EmptyState title={t("wasteLoss.empty")} detail={t("wasteLoss.emptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Package className="size-5" strokeWidth={1.75} />} title={t("wasteLoss.empty")} detail={t("wasteLoss.emptyDetail")} />
       ) : null}
 
       <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="waste-loss-list">
@@ -109,7 +111,7 @@ export function WasteLossListPage() {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.wasteLossId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/inventory/waste-loss/${item.wasteLossId}`}
                 className="exits-list__card waste-loss-row block min-w-0 text-foreground no-underline"
                 data-testid={`waste-loss-row-${item.wasteLossId}`}
@@ -132,7 +134,7 @@ export function WasteLossListPage() {
                   </StatusChip>
                   <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           );
         })}
@@ -143,7 +145,6 @@ export function WasteLossListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canPrev || query.isFetching}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
@@ -157,7 +158,6 @@ export function WasteLossListPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!canNext || query.isFetching}
             onClick={() => setPage((p) => p + 1)}
           >

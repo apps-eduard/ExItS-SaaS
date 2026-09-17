@@ -1,11 +1,15 @@
 using ExItS.PinoyBusinessPOS.Api.Common;
 using ExItS.PinoyBusinessPOS.Application.Abstractions;
+using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.CashierShifts;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Offline;
+using ExItS.PinoyBusinessPOS.Application.Reporting;
 using ExItS.PinoyBusinessPOS.Domain.CashierShifts;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.Permissions;
 
 namespace ExItS.PinoyBusinessPOS.Api.CashierShifts;
 
@@ -27,6 +31,7 @@ internal static class CashierShiftEndpoints
             string? shiftNumber,
             string? fromBusinessDate,
             string? toBusinessDate,
+            Guid? registerId,
             int? page,
             int? pageSize,
             CashierShiftQueryService queries,
@@ -45,10 +50,26 @@ internal static class CashierShiftEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var requestActorId, out problem))
+            {
+                return problem!;
+            }
+
+            // Cashiers may only list their own shifts (ignore client actorId override).
+            var effectiveActorId = OperationalReportService.RestrictShiftActor(
+                PosRoleRequestContext.CurrentRole,
+                requestActorId) ?? actorId;
+
             var result = await queries
                 .ListAsync(
                     organizationId,
-                    new CashierShiftFilter(parsedStatus, actorId, shiftNumber, parsedFrom, parsedTo),
+                    new CashierShiftFilter(
+                        parsedStatus,
+                        effectiveActorId,
+                        shiftNumber,
+                        parsedFrom,
+                        parsedTo,
+                        registerId),
                     page,
                     pageSize,
                     ct)
@@ -93,8 +114,23 @@ internal static class CashierShiftEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
             var shift = await queries.GetByIdAsync(organizationId, shiftId, ct).ConfigureAwait(false);
-            return shift is null ? Results.NotFound() : Results.Ok(shift);
+            if (shift is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (IsCashierDeniedOtherActorShift(shift.ActorId, actorId))
+            {
+                return Results.NotFound();
+            }
+
+            return Results.Ok(shift);
         });
 
         group.MapGet("/{shiftId:guid}/summary", async (
@@ -109,6 +145,17 @@ internal static class CashierShiftEndpoints
                 return problem!;
             }
 
+            if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
+            {
+                return problem!;
+            }
+
+            var shift = await queries.GetByIdAsync(organizationId, shiftId, ct).ConfigureAwait(false);
+            if (shift is null || IsCashierDeniedOtherActorShift(shift.ActorId, actorId))
+            {
+                return Results.NotFound();
+            }
+
             var summary = await queries.GetSummaryAsync(organizationId, shiftId, ct).ConfigureAwait(false);
             return summary is null ? Results.NotFound() : Results.Ok(summary);
         });
@@ -118,6 +165,7 @@ internal static class CashierShiftEndpoints
             OpenCashierShiftRequest body,
             OpenCashierShift useCase,
             IPosCommercialAccessAccessor access,
+            IOrganizationBranchDirectory branches,
             CancellationToken ct) =>
         {
             if (!TryAuthorize(request, access, UtangCapability.ManageShifts, out var organizationId, out var problem))
@@ -128,6 +176,21 @@ internal static class CashierShiftEndpoints
             if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
+            }
+
+            if (PosOrganizationScope.TryGetOptionalBranchId(request, out var branchId)
+                && branchId is Guid warehouseBranchId)
+            {
+                var warehouseBlock = await BranchRetailSalesGuard
+                    .RejectIfWarehouseAsync(branches, organizationId, warehouseBranchId, ct)
+                    .ConfigureAwait(false);
+                if (warehouseBlock is not null)
+                {
+                    return PosApiResults.Problem(
+                        warehouseBlock.ErrorCode!,
+                        warehouseBlock.ErrorMessage!,
+                        StatusCodes.Status409Conflict);
+                }
             }
 
             var result = await useCase
@@ -154,6 +217,7 @@ internal static class CashierShiftEndpoints
             Guid shiftId,
             CloseCashierShiftRequest body,
             CloseCashierShift useCase,
+            CashierShiftQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -165,6 +229,23 @@ internal static class CashierShiftEndpoints
             if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
+            }
+
+            var existing = await queries.GetByIdAsync(organizationId, shiftId, ct).ConfigureAwait(false);
+            if (existing is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CashierShiftNotFound,
+                    "Cashier shift was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (IsCashierDeniedOtherActorShift(existing.ActorId, actorId))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CashierShiftMismatch,
+                    "Cashiers may only close their own shift.",
+                    StatusCodes.Status403Forbidden);
             }
 
             var result = await useCase
@@ -184,6 +265,7 @@ internal static class CashierShiftEndpoints
             HttpRequest request,
             Guid shiftId,
             CancelCashierShift useCase,
+            CashierShiftQueryService queries,
             IPosCommercialAccessAccessor access,
             CancellationToken ct) =>
         {
@@ -195,6 +277,23 @@ internal static class CashierShiftEndpoints
             if (!PosOrganizationScope.TryGetActorId(request, out var actorId, out problem))
             {
                 return problem!;
+            }
+
+            var existing = await queries.GetByIdAsync(organizationId, shiftId, ct).ConfigureAwait(false);
+            if (existing is null)
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CashierShiftNotFound,
+                    "Cashier shift was not found.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            if (IsCashierDeniedOtherActorShift(existing.ActorId, actorId))
+            {
+                return PosApiResults.Problem(
+                    ApplicationErrorCodes.CashierShiftMismatch,
+                    "Cashiers may only cancel their own shift.",
+                    StatusCodes.Status403Forbidden);
             }
 
             var result = await useCase.ExecuteAsync(organizationId, shiftId, actorId, ct).ConfigureAwait(false);
@@ -256,6 +355,13 @@ internal static class CashierShiftEndpoints
 
         return PosCommercialScope.TryAuthorize(access, capability, out problem);
     }
+
+    /// <summary>
+    /// Cashiers may only read/mutate their own shifts. Managers/owners keep branch-wide access.
+    /// </summary>
+    private static bool IsCashierDeniedOtherActorShift(Guid shiftActorId, Guid requestActorId) =>
+        PosRoleRequestContext.CurrentRole is PosRole.Cashier
+        && shiftActorId != requestActorId;
 
     private static bool TryParseStatus(string? status, out CashierShiftStatus? parsed, out IResult? problem)
     {

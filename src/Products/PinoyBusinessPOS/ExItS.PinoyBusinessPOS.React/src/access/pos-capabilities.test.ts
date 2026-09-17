@@ -17,6 +17,9 @@ import {
   canManageShifts,
   canProcessReturn,
   canRecordRepayment,
+  canManageCustomerCreditPolicy,
+  canApproveCustomerCreditPolicy,
+  canMutateDueDate,
   canSelectExperienceMode,
   canUseAdminExperience,
   canUseOperationsExperience,
@@ -37,9 +40,15 @@ import {
   canManageInventory,
   canViewRegisters,
   canViewReturns,
+  canViewSales,
   canViewShifts,
   canViewStatement,
   canVoidSale,
+  canManageStoreAreas,
+  canUseWarehouseBranches,
+  FEATURE_STORE_AREA_MANAGEMENT,
+  FEATURE_STORE_WAREHOUSE,
+  FEATURE_CUSTOMER_CREDIT_CREATE,
   hasOrganizationManagementAuthority,
   isPosOperationsManager,
   resolveEffectivePosRoleCode,
@@ -81,6 +90,8 @@ describe("pos-capabilities", () => {
 
     expect(canEnterSellFloor(cashier)).toBe(true);
     expect(canCreateSale(cashier)).toBe(true);
+    expect(canCreateSale(cashier, "Retail")).toBe(true);
+    expect(canCreateSale(cashier, "Warehouse")).toBe(false);
     expect(canUseAdminExperience(cashier)).toBe(false);
     expect(canUseOperationsExperience(cashier)).toBe(false);
     expect(canInviteOrganizationStaff(cashier)).toBe(false);
@@ -132,6 +143,22 @@ describe("pos-capabilities", () => {
     expect(resolveRoleHomeRoute(owner)).toBe("/role/owner");
   });
 
+  it("owner with POS sell role keeps admin experience even when management flag was historically false", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      // Historical bug: CanOperate cleared this flag for owners who also sell.
+      organizationManagementAuthority: false,
+    });
+
+    expect(hasOrganizationManagementAuthority(owner)).toBe(true);
+    expect(canUseAdminExperience(owner)).toBe(true);
+    expect(canSelectExperienceMode(owner, "admin")).toBe(true);
+    expect(canSelectExperienceMode(owner, "operations")).toBe(true);
+    expect(canSelectExperienceMode(owner, "selling")).toBe(true);
+  });
+
   it("OrganizationAdministrator has admin experience without CreateSale", () => {
     const admin = grant({
       membershipRole: "OrganizationAdministrator",
@@ -147,6 +174,21 @@ describe("pos-capabilities", () => {
     expect(canCreateSale(admin)).toBe(false);
     expect(canManageCatalog(admin)).toBe(false);
     expect(canUseOperationsExperience(admin)).toBe(false);
+    expect(canEnterManagerRoleHome(admin)).toBe(false);
+  });
+
+  it("pure OrganizationAdministrator without product access cannot enter Manager", () => {
+    const admin = grant({
+      membershipRole: "OrganizationAdministrator",
+      organizationManagementAuthority: true,
+      mappedPosRoleCode: null,
+      productLocalRoleCode: null,
+      productAccessAllowed: false,
+    });
+    expect(canUseAdminExperience(admin)).toBe(true);
+    expect(canUseOperationsExperience(admin)).toBe(false);
+    expect(canEnterManagerRoleHome(admin)).toBe(false);
+    expect(canUseSellingExperience(admin)).toBe(false);
   });
 
   it("denies ManageCatalog for Cashier", () => {
@@ -292,6 +334,42 @@ describe("pos-capabilities", () => {
     expect(canCreateCredit(owner)).toBe(true);
     expect(canCreateCredit(manager)).toBe(true);
     expect(canCreateCredit(cashier)).toBe(true);
+
+    expect(canManageCustomerCreditPolicy(owner)).toBe(true);
+    expect(canManageCustomerCreditPolicy(manager)).toBe(true);
+    expect(canManageCustomerCreditPolicy(cashier)).toBe(false);
+    expect(canApproveCustomerCreditPolicy(owner)).toBe(true);
+    expect(canApproveCustomerCreditPolicy(manager)).toBe(true);
+    expect(canApproveCustomerCreditPolicy(cashier)).toBe(false);
+    expect(canMutateDueDate(owner)).toBe(true);
+    expect(canMutateDueDate(cashier)).toBe(false);
+
+    const cashierNoCreditFeature = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      featureCodes: [],
+      grantedFeatureCodes: ["store-sales-view"],
+    });
+    expect(canCreateCredit(cashierNoCreditFeature)).toBe(false);
+
+    const managerNoCreditFeature = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-sales-view"],
+      grantedFeatureCodes: [],
+    });
+    expect(canManageCustomerCreditPolicy(managerNoCreditFeature)).toBe(false);
+    expect(canApproveCustomerCreditPolicy(managerNoCreditFeature)).toBe(false);
+
+    const managerWithCreditFeature = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+      featureCodes: [FEATURE_CUSTOMER_CREDIT_CREATE],
+    });
+    expect(canManageCustomerCreditPolicy(managerWithCreditFeature)).toBe(true);
   });
 
   it("CreateCustomer / EditCustomer / RecordRepayment / ViewStatement mirror PosRoleMatrix", () => {
@@ -368,6 +446,49 @@ describe("pos-capabilities", () => {
     expect(canProcessReturn(manager)).toBe(true);
     expect(canProcessReturn(cashier)).toBe(false);
     expect(canProcessReturn(reporting)).toBe(false);
+  });
+
+  it("ViewSales includes Cashier/ReportingUser and respects store-sales-view denial", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      productLocalRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const manager = grant({
+      mappedPosRoleCode: "StoreManager",
+      productLocalRoleCode: "Manager",
+      membershipRole: "OrganizationMember",
+    });
+    const cashier = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+    });
+    const reporting = grant({
+      mappedPosRoleCode: "ReportingUser",
+      productLocalRoleCode: "ReportingUser",
+      membershipRole: "OrganizationMember",
+    });
+    const inventory = grant({
+      mappedPosRoleCode: "InventoryStaff",
+      productLocalRoleCode: "InventoryStaff",
+      membershipRole: "OrganizationMember",
+    });
+    const denied = grant({
+      mappedPosRoleCode: "Cashier",
+      productLocalRoleCode: "Cashier",
+      membershipRole: "OrganizationMember",
+      featureCodes: ["store-catalog-view"],
+      grantedFeatureCodes: ["store-catalog-view"],
+    });
+
+    expect(canViewSales(owner)).toBe(true);
+    expect(canViewSales(manager)).toBe(true);
+    expect(canViewSales(cashier)).toBe(true);
+    expect(canViewSales(reporting)).toBe(true);
+    expect(canViewSales(inventory)).toBe(false);
+    expect(canViewSales(denied)).toBe(false);
   });
 
   it("ViewSuppliers includes InventoryStaff/ReportingUser; ManageSuppliers is Owner/Manager only", () => {
@@ -490,5 +611,16 @@ describe("pos-capabilities", () => {
     expect(canManageCatalog(owner)).toBe(true);
     expect(canGovernOrganizationCatalog(manager)).toBe(false);
     expect(canManageCatalog(manager)).toBe(true);
+  });
+
+  it("gates Area and Warehouse on dedicated feature codes", () => {
+    expect(canManageStoreAreas(grant({ featureCodes: [] }))).toBe(false);
+    expect(
+      canManageStoreAreas(grant({ featureCodes: [FEATURE_STORE_AREA_MANAGEMENT] })),
+    ).toBe(true);
+    expect(canUseWarehouseBranches(grant({ featureCodes: [] }))).toBe(false);
+    expect(
+      canUseWarehouseBranches(grant({ grantedFeatureCodes: [FEATURE_STORE_WAREHOUSE] })),
+    ).toBe(true);
   });
 });

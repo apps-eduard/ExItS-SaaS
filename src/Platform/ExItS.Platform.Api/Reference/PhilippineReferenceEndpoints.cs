@@ -23,5 +23,30 @@ public static class PhilippineReferenceEndpoints
 
             return PlatformApiResults.FromResult(useCase.Execute(query, limit), Results.Ok);
         });
+
+        root.MapGet("/regions", (
+            ListPhilippineRegions useCase,
+            HttpContext http) =>
+        {
+            if (http.User.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            return PlatformApiResults.FromResult(useCase.Execute(), Results.Ok);
+        });
+
+        root.MapGet("/regions/{regionCode}/localities", (
+            string regionCode,
+            ListPhilippineLocalitiesByRegion useCase,
+            HttpContext http) =>
+        {
+            if (http.User.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            return PlatformApiResults.FromResult(useCase.Execute(regionCode), Results.Ok);
+        });
     }
 }

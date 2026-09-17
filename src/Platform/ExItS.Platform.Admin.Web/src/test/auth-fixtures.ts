@@ -112,6 +112,8 @@ export type AuthenticatedFetchOptions = {
     payments?: Array<Record<string, unknown>>;
     latestEntitlements?: Array<Record<string, unknown>>;
   };
+  onlineSupplierPayments?: Record<string, unknown>;
+  complianceStatus?: Record<string, unknown>;
   failBranches?: boolean;
   forbiddenBranches?: boolean;
   branchItems?: Array<Record<string, unknown>>;
@@ -622,6 +624,69 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         subscriptions: summary.subscriptions ?? [],
         payments: summary.payments ?? [],
         latestEntitlements: summary.latestEntitlements ?? [],
+      });
+    }
+    if (url.includes("/online-supplier-payments")) {
+      const orgMatch = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\//,
+      );
+      const organizationId = orgMatch?.[1] ?? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+      const current = {
+        organizationId,
+        status: "Disabled",
+        ...(options.onlineSupplierPayments ?? {}),
+      };
+      if (method === "POST" && url.includes("/transition")) {
+        const body = parseBody() as Record<string, unknown>;
+        return jsonResponse(200, {
+          ...current,
+          status: body.status ?? "Available",
+          reason: body.reason ?? null,
+          updatedAtUtc: "2026-09-17T08:00:00Z",
+          updatedByActorReference: "platform-admin",
+        });
+      }
+      return jsonResponse(200, current);
+    }
+    if (url.includes("/compliance-status") && (method === "GET" || !init?.method)) {
+      const orgMatch = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\//,
+      );
+      return jsonResponse(200, {
+        organizationId: orgMatch?.[1] ?? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        complianceEligibilityStatus: "NotRequested",
+        taxDocumentIssuanceEnabled: false,
+        taxDocumentIssuanceStatus: "NotEnabled",
+        taxConfigurationEnabled: false,
+        taxConfigurationStatus: "NotEnabled",
+        taxDocumentImplementationAvailable: false,
+        currentOwnerEducationAcknowledged: false,
+        educationVersion: "v1",
+        ...(options.complianceStatus ?? {}),
+      });
+    }
+    if (url.includes("/compliance/transition") && method === "POST") {
+      const orgMatch = path.match(
+        /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\//,
+      );
+      const body = parseBody() as Record<string, unknown>;
+      return jsonResponse(200, {
+        organizationId: orgMatch?.[1] ?? "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        taxDocumentIssuanceEnabled: false,
+        taxDocumentIssuanceStatus: "NotEnabled",
+        taxConfigurationEnabled: false,
+        taxConfigurationStatus: "NotEnabled",
+        taxDocumentImplementationAvailable: false,
+        currentOwnerEducationAcknowledged: false,
+        educationVersion: "v1",
+        updatedAtUtc: "2026-09-17T08:00:00Z",
+        updatedByActorReference: "platform-admin",
+        ...(options.complianceStatus ?? {}),
+        complianceEligibilityStatus:
+          (typeof body.targetStatus === "string" ? body.targetStatus : null)
+          ?? (typeof options.complianceStatus?.complianceEligibilityStatus === "string"
+            ? options.complianceStatus.complianceEligibilityStatus
+            : "UnderReview"),
       });
     }
     const branchesGet = path.match(
@@ -1168,6 +1233,30 @@ export function mockAuthenticatedFetch(options: AuthenticatedFetchOptions = {}) 
         return jsonResponse(404, { title: "Not Found", status: 404 });
       }
       return jsonResponse(200, { ...match, updatedAtUtc: new Date().toISOString() });
+    }
+    const complianceTransitionMatch = path.match(
+      /\/api\/v1\/platform\/organizations\/([0-9a-fA-F-]{36})\/compliance\/transition$/,
+    );
+    if (complianceTransitionMatch && method === "POST") {
+      const body = parseBody() as Record<string, unknown>;
+      return jsonResponse(200, {
+        organizationId: complianceTransitionMatch[1],
+        taxDocumentIssuanceEnabled: false,
+        taxDocumentIssuanceStatus: "NotEnabled",
+        taxConfigurationEnabled: false,
+        taxConfigurationStatus: "NotEnabled",
+        taxDocumentImplementationAvailable: false,
+        currentOwnerEducationAcknowledged: false,
+        educationVersion: "v1",
+        updatedAtUtc: "2026-09-17T08:00:00Z",
+        updatedByActorReference: "platform-admin",
+        ...(options.complianceStatus ?? {}),
+        complianceEligibilityStatus:
+          (typeof body.targetStatus === "string" ? body.targetStatus : null)
+          ?? (typeof options.complianceStatus?.complianceEligibilityStatus === "string"
+            ? options.complianceStatus.complianceEligibilityStatus
+            : "UnderReview"),
+      });
     }
     const organizationGet = path.match(
       /\/api\/v1\/platform\/organizations\/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/,

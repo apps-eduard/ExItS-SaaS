@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Smartphone, Truck, Wallet } from "lucide-react";
+import { Package, Smartphone, Truck, Users, Wallet } from "lucide-react";
 import { ensurePersonalBuyerPosToken } from "@/api/platform/personal-buyer-token";
 import { PosApiError } from "@/api/pos/pos-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
@@ -336,6 +336,9 @@ export function MerchantCheckoutPage() {
           backTestId="page-header-back-checkout"
         />
         <EmptyState
+              variant="setup"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("offline.internetRequiredTitle")}
           detail={t("offline.internetRequiredDetail")}
         />
@@ -352,7 +355,9 @@ export function MerchantCheckoutPage() {
           backLabel={t("orders.backToShop")}
           backTestId="page-header-back-checkout"
         />
-        <EmptyState title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("orders.cartEmptyTitle")} detail={t("orders.cartEmptyDetail")} />
       </div>
     );
   }
@@ -407,7 +412,7 @@ export function MerchantCheckoutPage() {
         />
         <Button
           type="button"
-          className="min-h-11 w-fit"
+          className="w-fit"
           onClick={() => void storefrontQuery.refetch()}
         >
           {t("orders.retry")}
@@ -442,7 +447,7 @@ export function MerchantCheckoutPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11 w-fit"
+              className="w-fit"
               data-testid="stock-conflict-refresh"
               onClick={() => void storefrontQuery.refetch()}
             >

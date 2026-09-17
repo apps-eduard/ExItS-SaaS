@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 
@@ -6,9 +7,14 @@ namespace ExItS.Platform.Domain.Organizations;
 /// <summary>
 /// Organization membership — Platform-level participation for one user in one organization.
 /// Does not grant product-local roles (Doctor, Cashier, etc.).
+/// Organization-specific business contact fields live here; Personal identity remains on <see cref="PlatformUser"/>.
 /// </summary>
 public sealed class OrganizationMembership
 {
+    private static readonly Regex PhonePattern = new(
+        @"^\+?[0-9][0-9 .\-()]{6,30}$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     public OrganizationMembershipId Id { get; }
     public PlatformOrganizationId OrganizationId { get; }
     public PlatformUserId UserId { get; }
@@ -18,6 +24,15 @@ public sealed class OrganizationMembership
     /// Ordinary-member branch scope. Owner/Administrator access does not depend on this value.
     /// </summary>
     public BranchAccessScope BranchAccessScope { get; private set; }
+    public string? Department { get; private set; }
+    public string? JobTitle { get; private set; }
+    public string? WorkPhone { get; private set; }
+    public string? WorkEmail { get; private set; }
+    /// <summary>
+    /// When true, Active members may appear in Connected B2B organization-contact pickers.
+    /// Owner defaults to true on create; other roles default to false.
+    /// </summary>
+    public bool IsBusinessContact { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     public DateTimeOffset? SuspendedAtUtc { get; private set; }
@@ -32,6 +47,11 @@ public sealed class OrganizationMembership
         MembershipStatus status,
         OrganizationRole role,
         BranchAccessScope branchAccessScope,
+        string? department,
+        string? jobTitle,
+        string? workPhone,
+        string? workEmail,
+        bool isBusinessContact,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
         DateTimeOffset? suspendedAtUtc,
@@ -45,6 +65,11 @@ public sealed class OrganizationMembership
         Status = status;
         Role = role;
         BranchAccessScope = branchAccessScope;
+        Department = department;
+        JobTitle = jobTitle;
+        WorkPhone = workPhone;
+        WorkEmail = workEmail;
+        IsBusinessContact = isBusinessContact;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         SuspendedAtUtc = suspendedAtUtc;
@@ -60,7 +85,12 @@ public sealed class OrganizationMembership
         DateTimeOffset utcNow,
         OrganizationMembershipId? id = null,
         string? actorReference = null,
-        BranchAccessScope branchAccessScope = BranchAccessScope.Explicit)
+        BranchAccessScope branchAccessScope = BranchAccessScope.Explicit,
+        string? department = null,
+        string? jobTitle = null,
+        string? workPhone = null,
+        string? workEmail = null,
+        bool? isBusinessContact = null)
     {
         ArgumentNullException.ThrowIfNull(organizationId);
         ArgumentNullException.ThrowIfNull(userId);
@@ -68,6 +98,7 @@ public sealed class OrganizationMembership
         EnsureDefinedRole(role);
         EnsureDefinedBranchAccessScope(branchAccessScope);
 
+        var defaultBusinessContact = role == OrganizationRole.OrganizationOwner;
         return new OrganizationMembership(
             id ?? OrganizationMembershipId.New(),
             organizationId,
@@ -75,6 +106,11 @@ public sealed class OrganizationMembership
             MembershipStatus.Active,
             role,
             branchAccessScope,
+            NormalizeOptionalText(department, 100),
+            NormalizeOptionalText(jobTitle, 100),
+            NormalizePhone(workPhone),
+            NormalizeWorkEmail(workEmail),
+            isBusinessContact ?? defaultBusinessContact,
             utcNow,
             utcNow,
             null,
@@ -95,7 +131,12 @@ public sealed class OrganizationMembership
         DateTimeOffset? suspendedAtUtc,
         DateTimeOffset? removedAtUtc,
         string? reason,
-        string? actorReference) =>
+        string? actorReference,
+        string? department = null,
+        string? jobTitle = null,
+        string? workPhone = null,
+        string? workEmail = null,
+        bool isBusinessContact = false) =>
         new(
             id,
             organizationId,
@@ -103,6 +144,11 @@ public sealed class OrganizationMembership
             status,
             role,
             branchAccessScope,
+            department,
+            jobTitle,
+            workPhone,
+            workEmail,
+            isBusinessContact,
             createdAtUtc,
             updatedAtUtc,
             suspendedAtUtc,
@@ -141,6 +187,48 @@ public sealed class OrganizationMembership
         }
 
         BranchAccessScope = scope;
+        ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Member self-service: work phone/email and business-contact visibility only.
+    /// Cannot change department or job title.
+    /// </summary>
+    public void UpdateOwnBusinessContact(
+        string? workPhone,
+        string? workEmail,
+        bool isBusinessContact,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsureActiveForProfileEdit();
+        WorkPhone = NormalizePhone(workPhone);
+        WorkEmail = NormalizeWorkEmail(workEmail);
+        IsBusinessContact = isBusinessContact;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Owner/Admin (staff-management) may set full organization-specific business profile.
+    /// Does not change Role or permissions.
+    /// </summary>
+    public void UpdateManagedBusinessProfile(
+        string? department,
+        string? jobTitle,
+        string? workPhone,
+        string? workEmail,
+        bool isBusinessContact,
+        DateTimeOffset utcNow,
+        string? actorReference = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActiveForProfileEdit();
+        Department = NormalizeOptionalText(department, 100);
+        JobTitle = NormalizeOptionalText(jobTitle, 100);
+        WorkPhone = NormalizePhone(workPhone);
+        WorkEmail = NormalizeWorkEmail(workEmail);
+        IsBusinessContact = isBusinessContact;
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
         UpdatedAtUtc = utcNow;
     }
@@ -187,6 +275,16 @@ public sealed class OrganizationMembership
         ActorReference = NormalizeOptional(actorReference) ?? ActorReference;
     }
 
+    private void EnsureActiveForProfileEdit()
+    {
+        if (Status != MembershipStatus.Active)
+        {
+            throw new DomainException(
+                DomainErrorCodes.MembershipNotActive,
+                "Only an Active membership can update business profile fields.");
+        }
+    }
+
     private void TransitionTo(MembershipStatus target, DateTimeOffset utcNow)
     {
         if (Status == target)
@@ -215,6 +313,54 @@ public sealed class OrganizationMembership
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? NormalizeOptionalText(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = Regex.Replace(value.Trim(), @"\s+", " ");
+        if (trimmed.Length > maxLength
+            || trimmed.Contains('<', StringComparison.Ordinal)
+            || trimmed.Contains('>', StringComparison.Ordinal))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidMembershipBusinessProfile,
+                $"Text field must be at most {maxLength} characters without markup.");
+        }
+
+        return trimmed;
+    }
+
+    private static string? NormalizePhone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return null;
+        }
+
+        var trimmed = phone.Trim();
+        if (!PhonePattern.IsMatch(trimmed))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidMembershipBusinessProfile,
+                "Work phone format is invalid.");
+        }
+
+        return trimmed;
+    }
+
+    private static string? NormalizeWorkEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        return PlatformUser.NormalizeEmail(email);
+    }
 
     private static void EnsureDefinedRole(OrganizationRole role)
     {

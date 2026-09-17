@@ -3,6 +3,7 @@ import { ShieldCheck } from "lucide-react";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -51,21 +52,23 @@ export function OrgRolesPage() {
       ) : null}
 
       {catalogQuery.isSuccess ? (
-        <ul className="org-roles-list m-0 grid list-none gap-2 p-0" data-testid="org-roles-list">
+        <ul className="org-roles-list m-0 grid list-none p-0" data-testid="org-roles-list">
           {catalogQuery.data.map((role) => (
-            <li key={role.code}>
-              <article className="exits-list__card org-role-card min-w-0" data-testid={`org-role-card-${role.code}`}>
+            <li key={role.code} className="min-w-0">
+              <article
+                className="exits-list__card org-role-card min-w-0"
+                data-testid={`org-role-card-${role.code}`}
+              >
                 <div className="org-role-card__header">
                   <div className="min-w-0">
-                    <h2 className="org-role-card__title m-0 font-semibold">{role.displayName}</h2>
+                    <h2 className="org-role-card__title m-0">{role.displayName}</h2>
                     <p className="org-role-card__desc m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                       {role.description}
                     </p>
                   </div>
-                  <span className="org-role-card__badge shrink-0">
-                    <ShieldCheck className="size-3.5" aria-hidden />
+                  <StatusChip tone="neutral" icon={<ShieldCheck aria-hidden />}>
                     {t("orgRoles.systemRole")}
-                  </span>
+                  </StatusChip>
                 </div>
                 <p className="org-role-card__count m-0 text-[length:var(--exits-text-sm)]">
                   {staffCountLabel(role.activeStaffCount, t)}

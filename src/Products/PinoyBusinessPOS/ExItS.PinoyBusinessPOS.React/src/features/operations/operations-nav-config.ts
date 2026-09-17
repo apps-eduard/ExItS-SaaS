@@ -1,0 +1,771 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ArrowUpDown,
+  Boxes,
+  CalendarClock,
+  ClipboardList,
+  Clock3,
+  FileText,
+  Gauge,
+  Handshake,
+  House,
+  LayoutDashboard,
+  LineChart,
+  MonitorSmartphone,
+  Package,
+  PackagePlus,
+  PieChart,
+  Receipt,
+  Settings,
+  ShoppingBag,
+  ShoppingBasket,
+  ShoppingCart,
+  Truck,
+  UserRound,
+  Wallet,
+  Warehouse,
+} from "lucide-react";
+import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
+import {
+  canAccessReportsHub,
+  canCreateSale,
+  canManageCatalog,
+  canManageInventory,
+  canManageRegisters,
+  canUseOperationsExperience,
+  canViewCustomerOrders,
+  canViewCustomers,
+  canViewDashboard,
+  canViewExpenses,
+  canViewInventory,
+  canViewPurchasing,
+  canViewRegisters,
+  canViewReturns,
+  canViewShifts,
+  canViewSuppliers,
+  isPosCashierRole,
+} from "@/access/pos-capabilities";
+import {
+  isWarehouseBranch,
+  type OrganizationBranchType,
+} from "@/features/branches/branch-type";
+import type { MessageKey } from "@/i18n/messages";
+import type {
+  OperationsNavWorkspace,
+  WorkingExperience,
+} from "@/workspace/working-experience";
+import {
+  resolveOperationsNavWorkspace,
+  workingExperienceRoute,
+} from "@/workspace/working-experience";
+
+/** Visible in Manager and Cashier presentation workspaces. */
+const NAV_BOTH: OperationsNavWorkspace[] = ["manager", "cashier"];
+/** Visible only in Manager presentation workspace (still permission-gated). */
+const NAV_MANAGER: OperationsNavWorkspace[] = ["manager"];
+
+export type OperationsNavTabId =
+  | "home"
+  | "sell"
+  | "inventory"
+  | "orders"
+  | "transfers"
+  | "purchasing"
+  | "more";
+
+export type OperationsNavTab = {
+  id: OperationsNavTabId;
+  to: string;
+  end: boolean;
+  labelKey: MessageKey;
+  testId: string;
+  primary?: boolean;
+};
+
+export type OperationsSidebarItemId = string;
+
+export type OperationsSidebarItem = {
+  id: OperationsSidebarItemId;
+  to: string;
+  labelKey: MessageKey;
+  icon: LucideIcon;
+  testId: string;
+  matchPrefixes: string[];
+  end?: boolean;
+};
+
+export type OperationsSidebarGroupId =
+  | "operations"
+  | "daily"
+  | "stock"
+  | "customers"
+  | "control"
+  | "insights"
+  | "utility";
+
+export type OperationsSidebarGroup = {
+  id: OperationsSidebarGroupId;
+  titleKey: MessageKey;
+  icon: LucideIcon;
+  items: OperationsSidebarItem[];
+};
+
+/**
+ * Operations shell when the principal has operations authority and is not in Manage Business.
+ * Pure organization administrators never qualify (canUseOperationsExperience = false).
+ */
+export function shouldUseOperationsShell(input: {
+  experience: WorkingExperience | null | undefined;
+  pathname: string;
+  grant: PosSessionGrantFacts | null | undefined;
+}): boolean {
+  if (!canUseOperationsExperience(input.grant)) {
+    return false;
+  }
+  if (input.experience === "manage_business") {
+    return false;
+  }
+  const path = input.pathname.split("?")[0] ?? input.pathname;
+  if (
+    path.startsWith("/personal") ||
+    path.startsWith("/onboarding") ||
+    path.startsWith("/workspace")
+  ) {
+    return false;
+  }
+  // Org notifications are shell chrome (bell), not Admin management IA — keep ops sidenav.
+  if (path === "/org/notifications" || path.startsWith("/org/notifications/")) {
+    return true;
+  }
+  if (path === "/org" || path.startsWith("/org/")) {
+    return false;
+  }
+  return true;
+}
+
+function retailHomeTo(experience: WorkingExperience): string {
+  if (experience === "start_selling") {
+    return "/role/cashier";
+  }
+  const route = workingExperienceRoute(experience);
+  if (route === "/sell") {
+    return "/role/cashier";
+  }
+  return route === "/org" ? "/role/manager" : route;
+}
+
+/**
+ * Retail mobile/tablet bottom nav (max 5).
+ * Sell is always placed in the center when present (primary POS action):
+ * Home · Inventory · Sell · Orders · More
+ */
+export function buildOperationsBottomNavTabs(input: {
+  grant: PosSessionGrantFacts | null | undefined;
+  experience: WorkingExperience;
+  branchType?: OrganizationBranchType | string | null;
+}): OperationsNavTab[] {
+  if (isWarehouseBranch(input.branchType)) {
+    return buildWarehouseOperationsBottomNavTabs(input.grant);
+  }
+
+  const homeTo = retailHomeTo(input.experience);
+  const left: OperationsNavTab[] = [
+    {
+      id: "home",
+      to: homeTo,
+      end: homeTo.startsWith("/role/"),
+      labelKey: "org.nav.home",
+      testId: "ops-nav-home",
+    },
+  ];
+  const right: OperationsNavTab[] = [];
+
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience);
+  // Inventory is Manager-workspace presentation only (permissions still apply there).
+  if (navWorkspace === "manager" && canViewInventory(input.grant)) {
+    left.push({
+      id: "inventory",
+      to: "/inventory",
+      end: false,
+      labelKey: "org.nav.inventory",
+      testId: "ops-nav-inventory",
+    });
+  }
+
+  if (canViewCustomerOrders(input.grant)) {
+    right.push({
+      id: "orders",
+      to: "/orders",
+      end: false,
+      labelKey: "org.nav.orders",
+      testId: "ops-nav-orders",
+    });
+  }
+
+  right.push({
+    id: "more",
+    to: "/more",
+    end: false,
+    labelKey: "org.nav.more",
+    testId: "ops-nav-more",
+  });
+
+  const sell: OperationsNavTab | null = canCreateSale(input.grant, input.branchType)
+    ? {
+        id: "sell",
+        to: "/sell",
+        end: false,
+        labelKey: "org.nav.sell",
+        testId: "ops-nav-sell",
+        primary: true,
+      }
+    : null;
+
+  if (sell) {
+    return [...left, sell, ...right].slice(0, 5);
+  }
+
+  return [...left, ...right].slice(0, 5);
+}
+
+/** Warehouse: Home · Inventory · Transfers · Purchasing · More — never Sell. */
+function buildWarehouseOperationsBottomNavTabs(
+  grant: PosSessionGrantFacts | null | undefined,
+): OperationsNavTab[] {
+  const tabs: OperationsNavTab[] = [
+    {
+      id: "home",
+      to: "/warehouse",
+      end: true,
+      labelKey: "org.nav.home",
+      testId: "ops-nav-home",
+    },
+  ];
+
+  if (canViewInventory(grant)) {
+    tabs.push({
+      id: "inventory",
+      to: "/inventory",
+      end: false,
+      labelKey: "org.nav.inventory",
+      testId: "ops-nav-inventory",
+    });
+    tabs.push({
+      id: "transfers",
+      to: "/inventory/transfers",
+      end: false,
+      labelKey: "org.nav.transfers",
+      testId: "ops-nav-transfers",
+    });
+  }
+
+  if (canViewPurchasing(grant)) {
+    tabs.push({
+      id: "purchasing",
+      to: "/purchasing",
+      end: false,
+      labelKey: "org.nav.purchasing",
+      testId: "ops-nav-purchasing",
+    });
+  }
+
+  tabs.push({
+    id: "more",
+    to: "/more",
+    end: false,
+    labelKey: "org.nav.more",
+    testId: "ops-nav-more",
+  });
+
+  return tabs.slice(0, 5);
+}
+
+/**
+ * Permission first, then workspace presentation.
+ * Workspace filtering can only reduce visibility — never grant beyond capability.
+ */
+function pushItem(
+  items: OperationsSidebarItem[],
+  item: OperationsSidebarItem,
+  allowed: boolean,
+  workspaces: ReadonlyArray<OperationsNavWorkspace>,
+  currentWorkspace: OperationsNavWorkspace,
+): void {
+  if (!allowed) {
+    return;
+  }
+  if (!workspaces.includes(currentWorkspace)) {
+    return;
+  }
+  items.push(item);
+}
+
+/** Desktop (>=1024) sidebar groups — Retail vs Warehouse, capability then workspace filtered. */
+export function buildOperationsSidebarGroups(input: {
+  grant: PosSessionGrantFacts | null | undefined;
+  branchType?: OrganizationBranchType | string | null;
+  experience?: WorkingExperience;
+}): OperationsSidebarGroup[] {
+  const warehouse = isWarehouseBranch(input.branchType);
+  const grant = input.grant;
+  const navWorkspace = resolveOperationsNavWorkspace(input.experience ?? "operations");
+  const homeTo = warehouse
+    ? "/warehouse"
+    : retailHomeTo(input.experience ?? "operations");
+
+  const groups: OperationsSidebarGroup[] = [];
+
+  groups.push({
+    id: "operations",
+    titleKey: "operations.nav.group.operations",
+    icon: House,
+    items: [
+      {
+        id: "home",
+        to: homeTo,
+        labelKey: "org.nav.home",
+        icon: House,
+        testId: "ops-sidebar-home",
+        matchPrefixes: warehouse ? ["/warehouse"] : ["/role/manager", "/role/owner", "/role/cashier"],
+        end: true,
+      },
+    ],
+  });
+
+  if (!warehouse) {
+    const daily: OperationsSidebarItem[] = [];
+    pushItem(
+      daily,
+      {
+        id: "sell",
+        to: "/sell",
+        labelKey: "org.nav.sell",
+        icon: ShoppingCart,
+        testId: "ops-sidebar-sell",
+        matchPrefixes: ["/sell"],
+      },
+      canCreateSale(grant, input.branchType),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    pushItem(
+      daily,
+      {
+        id: "orders",
+        to: "/orders",
+        labelKey: "org.nav.orders",
+        icon: ClipboardList,
+        testId: "ops-sidebar-orders",
+        matchPrefixes: ["/orders"],
+      },
+      canViewCustomerOrders(grant),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    if (daily.length > 0) {
+      groups.push({
+        id: "daily",
+        titleKey: "operations.nav.group.daily",
+        icon: ShoppingBag,
+        items: daily,
+      });
+    }
+  }
+
+  const stock: OperationsSidebarItem[] = [];
+  if (!warehouse) {
+    pushItem(
+      stock,
+      {
+        id: "catalog",
+        to: "/catalog",
+        labelKey: "org.nav.catalog",
+        icon: Package,
+        testId: "ops-sidebar-catalog",
+        matchPrefixes: ["/catalog"],
+      },
+      canManageCatalog(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
+  pushItem(
+    stock,
+    {
+      id: "inventory",
+      to: "/inventory",
+      labelKey: "org.nav.inventory",
+      icon: Warehouse,
+      testId: "ops-sidebar-inventory",
+      matchPrefixes: ["/inventory"],
+    },
+    canViewInventory(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  if (warehouse) {
+    pushItem(
+      stock,
+      {
+        id: "receive",
+        to: "/purchasing/receive-stock",
+        labelKey: "org.more.receiveStock",
+        icon: PackagePlus,
+        testId: "ops-sidebar-receive",
+        matchPrefixes: ["/purchasing/receive-stock"],
+      },
+      canManageInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      stock,
+      {
+        id: "transfers",
+        to: "/inventory/transfers",
+        labelKey: "org.nav.transfers",
+        icon: ArrowLeftRight,
+        testId: "ops-sidebar-transfers",
+        matchPrefixes: ["/inventory/transfers"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
+  pushItem(
+    stock,
+    {
+      id: "purchasing",
+      to: "/purchasing",
+      labelKey: "org.nav.purchasing",
+      icon: ShoppingBasket,
+      testId: "ops-sidebar-purchasing",
+      matchPrefixes: ["/purchasing"],
+    },
+    canViewPurchasing(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  if (!warehouse) {
+    pushItem(
+      stock,
+      {
+        id: "transfers",
+        to: "/inventory/transfers",
+        labelKey: "org.nav.transfers",
+        icon: ArrowLeftRight,
+        testId: "ops-sidebar-transfers",
+        matchPrefixes: ["/inventory/transfers"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
+  pushItem(
+    stock,
+    {
+      id: "suppliers",
+      to: "/suppliers",
+      labelKey: "org.more.suppliers",
+      icon: Truck,
+      testId: "ops-sidebar-suppliers",
+      matchPrefixes: ["/suppliers"],
+    },
+    canViewSuppliers(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  if (warehouse) {
+    pushItem(
+      stock,
+      {
+        id: "expiring",
+        to: "/inventory/expiration",
+        labelKey: "org.more.expiringLots",
+        icon: CalendarClock,
+        testId: "ops-sidebar-expiring",
+        matchPrefixes: ["/inventory/expiration"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      stock,
+      {
+        id: "movements",
+        to: "/inventory/stock-use",
+        labelKey: "org.more.stockMovements",
+        icon: ArrowUpDown,
+        testId: "ops-sidebar-movements",
+        matchPrefixes: ["/inventory/stock-use"],
+      },
+      canViewInventory(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+  }
+  if (stock.length > 0) {
+    groups.push({
+      id: "stock",
+      titleKey: "operations.nav.group.stock",
+      icon: Boxes,
+      items: stock,
+    });
+  }
+
+  if (!warehouse) {
+    const customers: OperationsSidebarItem[] = [];
+    pushItem(
+      customers,
+      {
+        id: "customers",
+        to: "/customers",
+        labelKey: "org.more.customers",
+        icon: UserRound,
+        testId: "ops-sidebar-customers",
+        matchPrefixes: ["/customers"],
+      },
+      canViewCustomers(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      customers,
+      {
+        id: "quotations",
+        to: "/quotations",
+        labelKey: "org.more.quotations",
+        icon: FileText,
+        testId: "ops-sidebar-quotations",
+        matchPrefixes: ["/quotations"],
+      },
+      canCreateSale(grant, input.branchType),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    if (customers.length > 0) {
+      groups.push({
+        id: "customers",
+        titleKey: "operations.nav.group.customers",
+        icon: Handshake,
+        items: customers,
+      });
+    }
+
+    const control: OperationsSidebarItem[] = [];
+    pushItem(
+      control,
+      {
+        id: "expenses",
+        to: "/expenses",
+        labelKey: "org.more.expenses",
+        icon: Wallet,
+        testId: "ops-sidebar-expenses",
+        matchPrefixes: ["/expenses"],
+      },
+      canViewExpenses(grant),
+      NAV_MANAGER,
+      navWorkspace,
+    );
+    pushItem(
+      control,
+      {
+        id: "returns",
+        to: "/returns",
+        labelKey: "org.more.returns",
+        icon: Receipt,
+        testId: "ops-sidebar-returns",
+        matchPrefixes: ["/returns"],
+      },
+      canViewReturns(grant),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    pushItem(
+      control,
+      {
+        id: "shifts",
+        to: "/shifts",
+        labelKey: isPosCashierRole(grant) ? "shift.myHubTitle" : "org.more.shifts",
+        icon: Clock3,
+        testId: "ops-sidebar-shifts",
+        matchPrefixes: ["/shifts"],
+      },
+      canViewShifts(grant),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    pushItem(
+      control,
+      {
+        id: "registers",
+        to: "/registers",
+        labelKey: isPosCashierRole(grant) ? "register.myTitle" : "register.listTitle",
+        icon: MonitorSmartphone,
+        testId: "ops-sidebar-registers",
+        matchPrefixes: ["/registers"],
+      },
+      canViewRegisters(grant) || canManageRegisters(grant),
+      NAV_BOTH,
+      navWorkspace,
+    );
+    if (control.length > 0) {
+      groups.push({
+        id: "control",
+        titleKey: "operations.nav.group.control",
+        icon: Gauge,
+        items: control,
+      });
+    }
+  }
+  /* Warehouse: Stock movements stays under STOCK only — no duplicate CONTROL group. */
+
+  const insights: OperationsSidebarItem[] = [];
+  pushItem(
+    insights,
+    {
+      id: "dashboard",
+      to: "/dashboard",
+      labelKey: "org.more.dashboard",
+      icon: PieChart,
+      testId: "ops-sidebar-dashboard",
+      matchPrefixes: ["/dashboard"],
+    },
+    canViewDashboard(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  pushItem(
+    insights,
+    {
+      id: "reports",
+      to: "/reports",
+      labelKey: "org.more.reports",
+      icon: LineChart,
+      testId: "ops-sidebar-reports",
+      matchPrefixes: ["/reports"],
+    },
+    canAccessReportsHub(grant),
+    NAV_MANAGER,
+    navWorkspace,
+  );
+  if (insights.length > 0) {
+    groups.push({
+      id: "insights",
+      titleKey: "operations.nav.group.insights",
+      icon: LayoutDashboard,
+      items: insights,
+    });
+  }
+
+  groups.push({
+    id: "utility",
+    titleKey: "operations.nav.group.utility",
+    icon: Settings,
+    items: [
+      {
+        id: "preferences",
+        to: "/settings/preferences",
+        labelKey: "org.more.preferences",
+        icon: Settings,
+        testId: "ops-sidebar-preferences",
+        matchPrefixes: ["/settings/preferences"],
+      },
+    ],
+  });
+
+  return groups.filter((g) => g.items.length > 0);
+}
+
+export function flattenOperationsSidebarItems(
+  groups: ReadonlyArray<OperationsSidebarGroup>,
+): OperationsSidebarItem[] {
+  return groups.flatMap((g) => g.items);
+}
+
+export function matchOperationsSidebarItem(
+  pathname: string,
+  items: ReadonlyArray<OperationsSidebarItem>,
+): OperationsSidebarItemId | null {
+  let best: OperationsSidebarItem | null = null;
+  for (const item of items) {
+    if (item.end) {
+      if (pathname === item.to) {
+        return item.id;
+      }
+      continue;
+    }
+    for (const prefix of item.matchPrefixes) {
+      if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+        if (!best || prefix.length > (best.matchPrefixes[0]?.length ?? 0)) {
+          best = item;
+        }
+      }
+    }
+  }
+  return best?.id ?? null;
+}
+
+export function matchOperationsNavTab(
+  pathname: string,
+  tabs: ReadonlyArray<OperationsNavTab>,
+): OperationsNavTabId | null {
+  if (pathname === "/more" || pathname.startsWith("/more/")) {
+    return tabs.some((t) => t.id === "more") ? "more" : null;
+  }
+  let best: OperationsNavTab | null = null;
+  for (const tab of tabs) {
+    if (tab.id === "home") {
+      continue;
+    }
+    if (pathname === tab.to || pathname.startsWith(`${tab.to}/`)) {
+      if (!best || tab.to.length > best.to.length) {
+        best = tab;
+      }
+    }
+  }
+  if (best) {
+    return best.id;
+  }
+  for (const tab of tabs) {
+    if (tab.id !== "home") {
+      continue;
+    }
+    if (tab.end ? pathname === tab.to : pathname === tab.to || pathname.startsWith(`${tab.to}/`)) {
+      return "home";
+    }
+  }
+  return null;
+}
+
+/** Admin-only path prefixes that must never appear in Operations navigation. */
+export const OPERATIONS_FORBIDDEN_ADMIN_PREFIXES = [
+  "/org/areas",
+  "/org/branches",
+  "/org/staff",
+  "/org/roles",
+  "/org/devices",
+  "/org/cash-handling",
+  "/org/business-qr",
+  "/org/manage",
+  "/org/ownership",
+  "/onboarding",
+] as const;
+
+export function isAdminOnlyOperationsPath(pathname: string): boolean {
+  const path = pathname.split("?")[0] ?? pathname;
+  if (path === "/org/notifications" || path.startsWith("/org/notifications/")) {
+    return false;
+  }
+  if (path === "/org" || path.startsWith("/org/")) {
+    // /org itself is Admin overview — forbidden in ops shell links
+    return true;
+  }
+  return OPERATIONS_FORBIDDEN_ADMIN_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+}

@@ -72,6 +72,7 @@ export type PosCatalogProductDto = {
   units?: PosCatalogProductUnitDto[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
+  canExposeToConnectedBuyers?: boolean;
   /** Mirrors inventory IsTracked when catalog list/detail includes stock snapshot. */
   isTracked?: boolean;
   /** Branch sale-eligible quantity when branch context is stamped; otherwise org snapshot. */
@@ -173,11 +174,15 @@ export type CreatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   businessUsage?: string | null;
+  canBeUsedAsIngredient?: boolean | null;
+  isProduced?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
   /** OrganizationStandard | BranchLocal. Origin branch is server-derived — do not send originBranchId. */
   scope?: CatalogProductScopeCode | string | null;
+  canExposeToConnectedBuyers?: boolean | null;
+  defaultConnectedPoPrice?: number | null;
 };
 
 export type UpdatePosCatalogProductRequest = {
@@ -193,9 +198,13 @@ export type UpdatePosCatalogProductRequest = {
   sellingMode?: PosSellingModeCode | string | null;
   canBeSold?: boolean | null;
   businessUsage?: string | null;
+  canBeUsedAsIngredient?: boolean | null;
+  isProduced?: boolean | null;
   units?: PosCatalogProductUnitInput[] | null;
   tracksExpiration?: boolean | null;
   expirationWarningDays?: number | null;
+  canExposeToConnectedBuyers?: boolean | null;
+  defaultConnectedPoPrice?: number | null;
 };
 
 export type UpdatePosCatalogProductPriceItem = {

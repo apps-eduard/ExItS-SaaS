@@ -1,11 +1,20 @@
-import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
+  Ban,
+  CheckCircle2,
   ClipboardList,
   FilePlus,
+  Inbox,
+  List,
+  Package,
   PackageCheck,
   PackagePlus,
+  ShoppingCart,
+  Store,
   Truck,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import {
   canManageInventory,
@@ -14,60 +23,288 @@ import {
   canViewPurchasing,
   canViewSuppliers,
 } from "@/access/pos-capabilities";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { listIncomingOrders } from "@/api/pos/pos-connected-suppliers-client";
+import { listDirectPurchases } from "@/api/pos/pos-direct-purchases-client";
+import {
+  isPurchaseOrderReceivable,
+  listPurchaseOrders,
+} from "@/api/pos/pos-purchase-orders-client";
+import { listSuppliers } from "@/api/pos/pos-suppliers-client";
+import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { Card } from "@/components/ui/card";
+import { useBrowserOnline } from "@/connectivity/browser-online";
+import { countIncomingOrdersByUiFilter } from "@/features/purchasing/incoming-orders-helpers";
+import {
+  purchasingHubDirectPurchasesQueryKey,
+  purchasingHubIncomingOrdersQueryKey,
+  purchasingHubPurchaseOrdersQueryKey,
+  purchasingHubSuppliersQueryKey,
+} from "@/features/purchasing/purchasing-nav-activity";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
+type BrowseKey =
+  | "orders"
+  | "incoming"
+  | "incoming-all"
+  | "incoming-accepted"
+  | "incoming-preparing"
+  | "incoming-completed"
+  | "incoming-declined"
+  | "receipts"
+  | "direct"
+  | "suppliers";
+
+type BrowseDef = {
+  key: BrowseKey;
+  label: string;
+  icon: LucideIcon;
+  href: string;
+  testId: string;
+  count: number;
+  emphasis?: ExitsChipItem["emphasis"];
+};
+
+function toChipItems(defs: BrowseDef[]): ExitsChipItem[] {
+  return defs.map((item) => {
+    const Icon = item.icon;
+    return {
+      key: item.key,
+      href: item.href,
+      testId: item.testId,
+      icon: <Icon />,
+      label: item.label,
+      count: item.count,
+      emphasis: item.emphasis,
+    };
+  });
+}
+
 export function PurchasingHubPage() {
   const { t } = useI18n();
-  const { sessionGrant } = useWorkspace();
+  const online = useBrowserOnline();
+  const { boundWorkspace, sessionGrant } = useWorkspace();
+
+  const workspace = useMemo(
+    () =>
+      boundWorkspace?.branchId
+        ? { organizationId: boundWorkspace.organizationId, branchId: boundWorkspace.branchId }
+        : null,
+    [boundWorkspace],
+  );
 
   const allowViewPurchasing = canViewPurchasing(sessionGrant);
   const allowManagePurchasing = canManagePurchasing(sessionGrant);
   const allowManageInventory = canManageInventory(sessionGrant);
   const allowViewInventory = canViewInventory(sessionGrant);
   const allowSuppliers = canViewSuppliers(sessionGrant);
+  const allowDirect = allowViewInventory || allowManageInventory;
 
-  const browseItems = [
-    allowViewPurchasing
-      ? {
-          key: "orders",
-          label: t("purchasing.orders"),
-          icon: <ClipboardList />,
-          href: "/purchasing/orders",
-          testId: "purchasing-orders",
-        }
-      : null,
-    allowViewPurchasing
-      ? {
-          key: "receipts",
-          label: t("purchasing.receipts"),
-          icon: <Truck />,
-          href: "/purchasing/receipts",
-          testId: "purchasing-receipts",
-        }
-      : null,
-    allowViewInventory || allowManageInventory
-      ? {
-          key: "direct",
-          label: t("purchasing.directPurchases"),
-          icon: <PackageCheck />,
-          href: "/purchasing/direct-purchases",
-          testId: "purchasing-direct",
-        }
-      : null,
-    allowSuppliers
-      ? {
-          key: "suppliers",
-          label: t("purchasing.suppliers"),
-          icon: <Users />,
-          href: "/suppliers",
-          testId: "purchasing-suppliers",
-        }
-      : null,
-  ].filter((item): item is NonNullable<typeof item> => item != null);
+  const purchaseOrdersQuery = useQuery({
+    queryKey: purchasingHubPurchaseOrdersQueryKey(
+      workspace?.organizationId,
+      workspace?.branchId,
+    ),
+    enabled: Boolean(workspace) && online && allowViewPurchasing,
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listPurchaseOrders(workspace!, { page: 1, pageSize: 40 }, signal),
+  });
+
+  const incomingOrdersQuery = useQuery({
+    queryKey: purchasingHubIncomingOrdersQueryKey(
+      workspace?.organizationId,
+      workspace?.branchId,
+    ),
+    enabled: Boolean(workspace) && online && allowViewPurchasing,
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listIncomingOrders(workspace!, {}, signal),
+  });
+
+  const directPurchasesQuery = useQuery({
+    queryKey: purchasingHubDirectPurchasesQueryKey(
+      workspace?.organizationId,
+      workspace?.branchId,
+    ),
+    enabled: Boolean(workspace) && online && allowDirect,
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listDirectPurchases(workspace!, { page: 1, pageSize: 1 }, signal),
+  });
+
+  const suppliersQuery = useQuery({
+    queryKey: purchasingHubSuppliersQueryKey(workspace?.organizationId, workspace?.branchId),
+    enabled: Boolean(workspace) && online && allowSuppliers,
+    staleTime: 30_000,
+    queryFn: ({ signal }) => listSuppliers(workspace!, { page: 1, pageSize: 1 }, signal),
+  });
+
+  const ordersTotal = purchaseOrdersQuery.data?.totalCount ?? 0;
+  const receivableCount = (purchaseOrdersQuery.data?.items ?? []).filter((po) =>
+    isPurchaseOrderReceivable(po),
+  ).length;
+  const incomingStatusCounts = useMemo(
+    () => countIncomingOrdersByUiFilter(incomingOrdersQuery.data ?? []),
+    [incomingOrdersQuery.data],
+  );
+  const incomingPendingCount = incomingStatusCounts.pending;
+  const directTotal = directPurchasesQuery.data?.totalCount ?? 0;
+  const suppliersTotal = suppliersQuery.data?.totalCount ?? 0;
+
+  const buyingPrimaryItems = useMemo(() => {
+    const items: ExitsChipItem[] = [];
+    if (allowManageInventory) {
+      items.push({
+        key: "receive",
+        label: t("purchasing.receiveStock"),
+        icon: <PackagePlus />,
+        href: "/purchasing/receive-stock",
+        testId: "purchasing-receive-stock",
+        emphasis: "primary",
+      });
+    }
+    if (allowManagePurchasing) {
+      items.push({
+        key: "new",
+        label: t("purchasing.newOrder"),
+        icon: <FilePlus />,
+        href: "/purchasing/new",
+        testId: "purchasing-new",
+        emphasis: "primary",
+      });
+    }
+    return items;
+  }, [allowManageInventory, allowManagePurchasing, t]);
+
+  const buyingManageDefs = useMemo(() => {
+    const items: BrowseDef[] = [];
+    if (allowViewPurchasing) {
+      items.push({
+        key: "orders",
+        label: t("purchasing.orders"),
+        icon: ClipboardList,
+        href: "/purchasing/orders",
+        testId: "purchasing-orders",
+        count: ordersTotal,
+      });
+      items.push({
+        key: "receipts",
+        label: t("purchasing.receipts"),
+        icon: Truck,
+        href: "/purchasing/receipts",
+        testId: "purchasing-receipts",
+        count: receivableCount,
+      });
+    }
+    if (allowDirect) {
+      items.push({
+        key: "direct",
+        label: t("purchasing.directPurchases"),
+        icon: PackageCheck,
+        href: "/purchasing/direct-purchases",
+        testId: "purchasing-direct",
+        count: directTotal,
+      });
+    }
+    if (allowSuppliers) {
+      items.push({
+        key: "suppliers",
+        label: t("purchasing.suppliers"),
+        icon: Users,
+        href: "/suppliers",
+        testId: "purchasing-suppliers",
+        count: suppliersTotal,
+      });
+    }
+    return items;
+  }, [
+    allowDirect,
+    allowSuppliers,
+    allowViewPurchasing,
+    directTotal,
+    ordersTotal,
+    receivableCount,
+    suppliersTotal,
+    t,
+  ]);
+
+  const sellingPrimaryDefs = useMemo(() => {
+    if (!allowViewPurchasing) {
+      return [] as BrowseDef[];
+    }
+    return [
+      {
+        key: "incoming" as const,
+        label: t("incomingOrders.title"),
+        icon: Inbox,
+        href: "/purchasing/incoming-orders",
+        testId: "purchasing-incoming-orders",
+        count: incomingPendingCount,
+        emphasis: "primary" as const,
+      },
+      {
+        key: "incoming-preparing" as const,
+        label: t("incomingOrders.filterPreparing"),
+        icon: Package,
+        href: "/purchasing/incoming-orders?status=preparing",
+        testId: "purchasing-incoming-preparing",
+        count: incomingStatusCounts.preparing,
+        emphasis: "primary" as const,
+      },
+    ];
+  }, [allowViewPurchasing, incomingPendingCount, incomingStatusCounts.preparing, t]);
+
+  const sellingStatusDefs = useMemo(() => {
+    if (!allowViewPurchasing) {
+      return [] as BrowseDef[];
+    }
+    const allCount =
+      incomingStatusCounts.pending +
+      incomingStatusCounts.accepted +
+      incomingStatusCounts.preparing +
+      incomingStatusCounts.completed +
+      incomingStatusCounts.declined;
+    return [
+      {
+        key: "incoming-all" as const,
+        label: t("incomingOrders.filterAll"),
+        icon: List,
+        href: "/purchasing/incoming-orders?status=all",
+        testId: "purchasing-incoming-all",
+        count: allCount,
+      },
+      {
+        key: "incoming-accepted" as const,
+        label: t("incomingOrders.filterAccepted"),
+        icon: CheckCircle2,
+        href: "/purchasing/incoming-orders?status=accepted",
+        testId: "purchasing-incoming-accepted",
+        count: incomingStatusCounts.accepted,
+      },
+      {
+        key: "incoming-completed" as const,
+        label: t("incomingOrders.filterCompleted"),
+        icon: PackageCheck,
+        href: "/purchasing/incoming-orders?status=completed",
+        testId: "purchasing-incoming-completed",
+        count: incomingStatusCounts.completed,
+      },
+      {
+        key: "incoming-declined" as const,
+        label: t("incomingOrders.filterDeclined"),
+        icon: Ban,
+        href: "/purchasing/incoming-orders?status=declined",
+        testId: "purchasing-incoming-declined",
+        count: incomingStatusCounts.declined,
+      },
+    ];
+  }, [allowViewPurchasing, incomingStatusCounts, t]);
+
+  const buyingManageItems = toChipItems(buyingManageDefs);
+  const sellingPrimaryItems = toChipItems(sellingPrimaryDefs);
+  const sellingStatusItems = toChipItems(sellingStatusDefs);
+  const showBuying = buyingPrimaryItems.length > 0 || buyingManageItems.length > 0;
+  const showSelling = sellingPrimaryItems.length > 0 || sellingStatusItems.length > 0;
 
   return (
     <div
@@ -82,47 +319,112 @@ export function PurchasingHubPage() {
         backTestId="page-header-back-purchasing"
       />
 
-      <div className="purchasing-hub-choices">
-        {allowManageInventory ? (
-          <Link
-            className="exits-list__card purchasing-hub-choice text-foreground no-underline"
-            to="/purchasing/receive-stock"
-            data-testid="purchasing-receive-stock"
-          >
-            <span className="purchasing-hub-choice__icon" aria-hidden>
-              <PackagePlus />
-            </span>
-            <span className="purchasing-hub-choice__copy min-w-0">
-              <span className="purchasing-hub-choice__title">{t("purchasing.receiveStock")}</span>
-              <span className="purchasing-hub-choice__lede">{t("purchasing.choiceReceive")}</span>
-            </span>
-          </Link>
-        ) : null}
-        {allowManagePurchasing ? (
-          <Link
-            className="exits-list__card purchasing-hub-choice text-foreground no-underline"
-            to="/purchasing/new"
-            data-testid="purchasing-new"
-          >
-            <span className="purchasing-hub-choice__icon" aria-hidden>
-              <FilePlus />
-            </span>
-            <span className="purchasing-hub-choice__copy min-w-0">
-              <span className="purchasing-hub-choice__title">{t("purchasing.newOrder")}</span>
-              <span className="purchasing-hub-choice__lede">{t("purchasing.choiceOrder")}</span>
-            </span>
-          </Link>
-        ) : null}
-      </div>
+      {showBuying || showSelling ? (
+        <div className="purchasing-hub-directions" data-testid="purchasing-directions">
+          {showBuying ? (
+            <Card
+              as="section"
+              padding="none"
+              className="purchasing-hub-direction"
+              data-testid="purchasing-buying"
+              aria-labelledby="purchasing-buying-title"
+            >
+              <div className="purchasing-hub-direction__header">
+                <span className="purchasing-hub-direction__icon" aria-hidden>
+                  <ShoppingCart />
+                </span>
+                <div className="purchasing-hub-direction__copy min-w-0">
+                  <h2 id="purchasing-buying-title" className="purchasing-hub-direction__title">
+                    {t("purchasing.buyingTitle")}
+                  </h2>
+                  <p className="purchasing-hub-direction__lede m-0">{t("purchasing.buyingLede")}</p>
+                </div>
+              </div>
 
-      {browseItems.length > 0 ? (
-        <ExitsChipBar
-          variant="actions"
-          ariaLabel={t("purchasing.title")}
-          testId="purchasing-toolbar"
-          className="exits-animate-toolbar"
-          items={browseItems}
-        />
+              {buyingPrimaryItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.buyingPrimary")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.buyingPrimary")}
+                    testId="purchasing-buying-primary"
+                    className="purchasing-hub-direction__actions purchasing-hub-direction__actions--primary exits-animate-toolbar"
+                    items={buyingPrimaryItems}
+                  />
+                </div>
+              ) : null}
+
+              {buyingManageItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.buyingManage")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.buyingManage")}
+                    testId="purchasing-buying-actions"
+                    className="purchasing-hub-direction__actions exits-animate-toolbar"
+                    items={buyingManageItems}
+                  />
+                </div>
+              ) : null}
+            </Card>
+          ) : null}
+
+          {showSelling ? (
+            <Card
+              as="section"
+              padding="none"
+              className="purchasing-hub-direction"
+              data-testid="purchasing-selling"
+              aria-labelledby="purchasing-selling-title"
+            >
+              <div className="purchasing-hub-direction__header">
+                <span className="purchasing-hub-direction__icon" aria-hidden>
+                  <Store />
+                </span>
+                <div className="purchasing-hub-direction__copy min-w-0">
+                  <h2 id="purchasing-selling-title" className="purchasing-hub-direction__title">
+                    {t("purchasing.sellingTitle")}
+                  </h2>
+                  <p className="purchasing-hub-direction__lede m-0">{t("purchasing.sellingLede")}</p>
+                </div>
+              </div>
+
+              {sellingPrimaryItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.sellingPrimary")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.sellingPrimary")}
+                    testId="purchasing-selling-primary"
+                    className="purchasing-hub-direction__actions purchasing-hub-direction__actions--primary exits-animate-toolbar"
+                    items={sellingPrimaryItems}
+                  />
+                </div>
+              ) : null}
+
+              {sellingStatusItems.length > 0 ? (
+                <div className="purchasing-hub-direction__group">
+                  <p className="purchasing-hub-direction__group-label m-0">
+                    {t("purchasing.sellingStatus")}
+                  </p>
+                  <ExitsChipBar
+                    variant="actions"
+                    ariaLabel={t("purchasing.sellingStatus")}
+                    testId="purchasing-selling-actions"
+                    className="purchasing-hub-direction__actions exits-animate-toolbar"
+                    items={sellingStatusItems}
+                  />
+                </div>
+              ) : null}
+            </Card>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

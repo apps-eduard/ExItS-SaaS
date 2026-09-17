@@ -130,6 +130,15 @@ public sealed record CreateProductionRunMaterialOverrideRequest(
     decimal ActualQuantity,
     Guid? ProductUnitId = null);
 
+/// <summary>
+/// Run-only extra material (not part of the saved ProductionDefinition).
+/// Expected quantity is recorded as 0; Actual drives consumption.
+/// </summary>
+public sealed record CreateProductionRunExtraMaterialRequest(
+    Guid MaterialProductId,
+    decimal ActualQuantity,
+    Guid? ProductUnitId = null);
+
 public sealed record CreateProductionRunRequest(
     Guid ProductionDefinitionId,
     decimal OutputQuantity,
@@ -141,6 +150,7 @@ public sealed record CreateProductionRunRequest(
     DateOnly? OutputExpirationDate = null,
     string? OutputLotNumber = null,
     IReadOnlyList<CreateProductionRunMaterialOverrideRequest>? MaterialOverrides = null,
+    IReadOnlyList<CreateProductionRunExtraMaterialRequest>? ExtraMaterials = null,
     Guid? ProductionRunId = null,
     string? IdempotencyKey = null);
 

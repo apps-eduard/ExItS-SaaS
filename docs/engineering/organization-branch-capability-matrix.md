@@ -178,7 +178,7 @@ Catalog/customer data is **organization-scoped**. Branch workspace does not dupl
 
 | Capability | Data owner | Scope | Required role | Branch access | Mobile | Web | Exact branch | Device match | Shift | Actor | Audit | Reason | Step-up | Lifecycle |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Select workspace (org+branch) | Session | — | Active membership | Resolver | Any | Yes | Sets context | No | Blocks if open shift switching away | Yes | Session | No | No | Update |
+| Select workspace (org+branch) | Session | — | Active membership | Resolver | Any | Yes | Sets context | No | Cashiers: blocks if open shift switching away; Owner/Admin may switch with open shift | Yes | Session | No | No | Update |
 | Switch organization (Web) | Platform session | OrgGov | Membership | — | No | Yes | No | No | No | Yes | Platform | No | No | Update |
 
 ---

@@ -1083,9 +1083,21 @@
     background-color var(--exits-motion-fast) ease;
 }
 
+.pc-activity-row--clickable {
+  cursor: pointer;
+}
+
 .pc-activity-row--clickable:hover {
   border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.pc-activity-row__action {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--exits-text-xs);
+  font-weight: 600;
+  color: var(--exits-primary);
 }
 
 .pc-activity-row__main {

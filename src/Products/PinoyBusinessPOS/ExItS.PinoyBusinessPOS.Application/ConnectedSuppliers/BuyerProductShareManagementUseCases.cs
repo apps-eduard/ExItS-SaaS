@@ -72,6 +72,7 @@ public sealed class QueryBuyerProductShares
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly IPosUnitOfWork? _uow;
+    private readonly Inventory.IInventoryRepository? _inventory;
 
     public QueryBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
@@ -79,7 +80,8 @@ public sealed class QueryBuyerProductShares
         IPosCommercialAccessAccessor access,
         ICatalogProductRepository? products = null,
         ISupplierProductExposureRepository? exposures = null,
-        IPosUnitOfWork? uow = null)
+        IPosUnitOfWork? uow = null,
+        Inventory.IInventoryRepository? inventory = null)
     {
         _relationships = relationships;
         _shares = shares;
@@ -87,6 +89,7 @@ public sealed class QueryBuyerProductShares
         _products = products;
         _exposures = exposures;
         _uow = uow;
+        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<BuyerProductShareQueryResultDto>> ExecuteAsync(
@@ -124,7 +127,8 @@ public sealed class QueryBuyerProductShares
                     _products,
                     _exposures,
                     DateTimeOffset.UtcNow,
-                    ct)
+                    ct,
+                    _inventory)
                 .ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
         }

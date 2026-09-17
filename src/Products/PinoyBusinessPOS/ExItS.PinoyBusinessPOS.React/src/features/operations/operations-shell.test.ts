@@ -1,0 +1,333 @@
+import { describe, expect, it } from "vitest";
+import {
+  canEnterManagerRoleHome,
+  canSelectExperienceMode,
+  canUseAdminExperience,
+  canUseOperationsExperience,
+  canUseSellingExperience,
+} from "@/access/pos-capabilities";
+import type { SessionGrantResponse } from "@/api/platform/platform-auth-client";
+import {
+  buildOperationsBottomNavTabs,
+  buildOperationsSidebarGroups,
+  flattenOperationsSidebarItems,
+  isAdminOnlyOperationsPath,
+  shouldUseOperationsShell,
+} from "@/features/operations/operations-nav-config";
+import { buildOrgMoreSections } from "@/features/shell/org-nav-config";
+
+function grant(partial: Partial<SessionGrantResponse>): SessionGrantResponse {
+  return {
+    accessToken: "token",
+    productAccessAllowed: true,
+    ...partial,
+  };
+}
+
+const pureOrgAdmin = grant({
+  membershipRole: "OrganizationAdministrator",
+  organizationManagementAuthority: true,
+  productAccessAllowed: false,
+  mappedPosRoleCode: null,
+  productLocalRoleCode: null,
+});
+
+const storeManager = grant({
+  membershipRole: "OrganizationMember",
+  organizationManagementAuthority: false,
+  mappedPosRoleCode: "StoreManager",
+  productLocalRoleCode: "Manager",
+});
+
+const owner = grant({
+  membershipRole: "OrganizationOwner",
+  organizationManagementAuthority: true,
+  mappedPosRoleCode: "Owner",
+  productLocalRoleCode: "Owner",
+});
+
+const cashier = grant({
+  membershipRole: "OrganizationMember",
+  organizationManagementAuthority: false,
+  mappedPosRoleCode: "Cashier",
+  productLocalRoleCode: "Cashier",
+});
+
+const reportingUser = grant({
+  membershipRole: "OrganizationMember",
+  organizationManagementAuthority: false,
+  mappedPosRoleCode: "ReportingUser",
+  productLocalRoleCode: "ReportingUser",
+});
+
+const inventoryStaff = grant({
+  membershipRole: "OrganizationMember",
+  organizationManagementAuthority: false,
+  mappedPosRoleCode: "InventoryStaff",
+  productLocalRoleCode: "InventoryStaff",
+});
+
+describe("POS-MANAGER-OPERATIONS-SHELL authority matrix", () => {
+  it("PURE_ORG_ADMIN: Admin allow, Operations deny, Sell deny", () => {
+    expect(canUseAdminExperience(pureOrgAdmin)).toBe(true);
+    expect(canUseOperationsExperience(pureOrgAdmin)).toBe(false);
+    expect(canEnterManagerRoleHome(pureOrgAdmin)).toBe(false);
+    expect(canUseSellingExperience(pureOrgAdmin)).toBe(false);
+    expect(canSelectExperienceMode(pureOrgAdmin, "operations")).toBe(false);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/role/manager",
+        grant: pureOrgAdmin,
+      }),
+    ).toBe(false);
+  });
+
+  it("STORE_MANAGER: Admin deny, Operations allow", () => {
+    expect(canUseAdminExperience(storeManager)).toBe(false);
+    expect(canUseOperationsExperience(storeManager)).toBe(true);
+    expect(canEnterManagerRoleHome(storeManager)).toBe(true);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/role/manager",
+        grant: storeManager,
+      }),
+    ).toBe(true);
+  });
+
+  it("OWNER: Admin + Operations allow; Sell by branch", () => {
+    expect(canUseAdminExperience(owner)).toBe(true);
+    expect(canUseOperationsExperience(owner)).toBe(true);
+    expect(canUseSellingExperience(owner, "Retail")).toBe(true);
+    expect(canUseSellingExperience(owner, "Warehouse")).toBe(false);
+  });
+
+  it("CASHIER: Admin deny, Operations deny", () => {
+    expect(canUseAdminExperience(cashier)).toBe(false);
+    expect(canUseOperationsExperience(cashier)).toBe(false);
+    expect(canEnterManagerRoleHome(cashier)).toBe(false);
+    expect(canUseSellingExperience(cashier, "Retail")).toBe(true);
+  });
+
+  it("REPORTING_USER and INVENTORY_STAFF do not get full Manager shell", () => {
+    expect(canUseOperationsExperience(reportingUser)).toBe(false);
+    expect(canUseOperationsExperience(inventoryStaff)).toBe(false);
+    expect(canEnterManagerRoleHome(reportingUser)).toBe(false);
+    expect(canEnterManagerRoleHome(inventoryStaff)).toBe(false);
+  });
+});
+
+describe("operations navigation", () => {
+  it("Retail bottom nav: Home Inventory Sell Orders More when permitted", () => {
+    const tabs = buildOperationsBottomNavTabs({
+      grant: storeManager,
+      experience: "operations",
+      branchType: "Retail",
+    });
+    expect(tabs.map((t) => t.id)).toEqual(["home", "inventory", "sell", "orders", "more"]);
+    expect(tabs[2]?.id).toBe("sell");
+    expect(tabs.find((t) => t.id === "sell")?.primary).toBe(true);
+    expect(tabs[0]?.to).toBe("/role/manager");
+    expect(tabs.some((t) => t.id === "sell")).toBe(true);
+    expect(tabs.some((t) => t.id === "inventory")).toBe(true);
+    expect(tabs.some((t) => t.id === "more")).toBe(true);
+    expect(tabs.length).toBeLessThanOrEqual(5);
+  });
+
+  it("Warehouse bottom nav has no Sell and emphasizes stock", () => {
+    const tabs = buildOperationsBottomNavTabs({
+      grant: storeManager,
+      experience: "operations",
+      branchType: "Warehouse",
+    });
+    expect(tabs.some((t) => t.id === "sell")).toBe(false);
+    expect(tabs.map((t) => t.id)).toContain("inventory");
+    expect(tabs.map((t) => t.id)).toContain("transfers");
+    expect(tabs.map((t) => t.id)).toContain("purchasing");
+    expect(tabs.map((t) => t.id)).toContain("more");
+    expect(tabs[0]?.to).toBe("/warehouse");
+  });
+
+  it("desktop sidebar omits Admin-only destinations", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Retail",
+      experience: "operations",
+    });
+    const paths = flattenOperationsSidebarItems(groups).map((i) => i.to);
+    expect(paths.some((p) => isAdminOnlyOperationsPath(p))).toBe(false);
+    expect(paths.some((p) => p.startsWith("/org"))).toBe(false);
+    expect(paths).toContain("/sell");
+  });
+
+  it("Warehouse sidebar never includes Sell", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    const paths = flattenOperationsSidebarItems(groups).map((i) => i.to);
+    expect(paths).not.toContain("/sell");
+  });
+
+  it("Warehouse sidebar has a single Stock movements entry and no CONTROL group", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Warehouse",
+      experience: "operations",
+    });
+    expect(groups.some((g) => g.id === "control")).toBe(false);
+    const movementItems = flattenOperationsSidebarItems(groups).filter(
+      (i) => i.to === "/inventory/stock-use",
+    );
+    expect(movementItems).toHaveLength(1);
+    expect(groups.some((g) => g.id === "stock")).toBe(true);
+  });
+
+  it("Manager More excludes Admin configuration links", () => {
+    const sections = buildOrgMoreSections(owner, {
+      branchType: "Retail",
+      excludeAdminDestinations: true,
+    });
+    const links = sections.flatMap((s) => s.links);
+    expect(links.some((l) => l.to.startsWith("/org"))).toBe(false);
+    expect(links.some((l) => l.testId === "org-more-staff")).toBe(false);
+    expect(links.some((l) => l.testId === "org-more-branches")).toBe(false);
+    expect(sections.some((s) => s.id === "organization")).toBe(false);
+  });
+
+  it("shouldUseOperationsShell respects experience and authority", () => {
+    expect(
+      shouldUseOperationsShell({
+        experience: "manage_business",
+        pathname: "/inventory",
+        grant: owner,
+      }),
+    ).toBe(false);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/org",
+        grant: owner,
+      }),
+    ).toBe(false);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/inventory",
+        grant: owner,
+      }),
+    ).toBe(true);
+    expect(
+      shouldUseOperationsShell({
+        experience: "operations",
+        pathname: "/org/notifications",
+        grant: owner,
+      }),
+    ).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/notifications")).toBe(false);
+    expect(isAdminOnlyOperationsPath("/org/branches")).toBe(true);
+  });
+});
+
+describe("POS-CASHIER-WORKSPACE-FOCUSED-SHELL-17 workspace nav", () => {
+  it("OWNER + Manager workspace shows management modules", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Retail",
+      experience: "operations",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("inventory");
+    expect(ids).toContain("purchasing");
+    expect(ids).toContain("dashboard");
+    expect(ids).toContain("reports");
+    expect(ids).toContain("sell");
+    expect(ids).toContain("shifts");
+  });
+
+  it("OWNER + Cashier workspace shows focused cashier nav only", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: owner,
+      branchType: "Retail",
+      experience: "start_selling",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).toContain("home");
+    expect(ids).toContain("sell");
+    expect(ids).toContain("orders");
+    expect(ids).toContain("shifts");
+    expect(ids).toContain("registers");
+    expect(ids).toContain("returns");
+    expect(ids).not.toContain("inventory");
+    expect(ids).not.toContain("purchasing");
+    expect(ids).not.toContain("suppliers");
+    expect(ids).not.toContain("dashboard");
+    expect(ids).not.toContain("reports");
+    expect(ids).not.toContain("catalog");
+    expect(ids).not.toContain("customers");
+    expect(ids).not.toContain("expenses");
+    // Home points at cashier role home in start_selling
+    expect(flattenOperationsSidebarItems(groups).find((i) => i.id === "home")?.to).toBe(
+      "/role/cashier",
+    );
+  });
+
+  it("switching Owner back to Manager restores management nav (same grant)", () => {
+    const cashierIds = flattenOperationsSidebarItems(
+      buildOperationsSidebarGroups({
+        grant: owner,
+        branchType: "Retail",
+        experience: "start_selling",
+      }),
+    ).map((i) => i.id);
+    const managerIds = flattenOperationsSidebarItems(
+      buildOperationsSidebarGroups({
+        grant: owner,
+        branchType: "Retail",
+        experience: "operations",
+      }),
+    ).map((i) => i.id);
+    expect(cashierIds).not.toContain("inventory");
+    expect(managerIds).toContain("inventory");
+    expect(managerIds).toContain("dashboard");
+  });
+
+  it("workspace never grants Returns beyond permission", () => {
+    const groups = buildOperationsSidebarGroups({
+      grant: inventoryStaff,
+      branchType: "Retail",
+      experience: "start_selling",
+    });
+    const ids = flattenOperationsSidebarItems(groups).map((i) => i.id);
+    expect(ids).not.toContain("returns");
+    expect(ids).not.toContain("inventory");
+  });
+
+  it("Cashier workspace bottom nav hides Inventory", () => {
+    const tabs = buildOperationsBottomNavTabs({
+      grant: owner,
+      experience: "start_selling",
+      branchType: "Retail",
+    });
+    expect(tabs.map((t) => t.id)).toEqual(["home", "sell", "orders", "more"]);
+    expect(tabs.some((t) => t.id === "inventory")).toBe(false);
+    expect(tabs[0]?.to).toBe("/role/cashier");
+  });
+
+  it("Cashier workspace More omits management launchers", () => {
+    const sections = buildOrgMoreSections(owner, {
+      branchType: "Retail",
+      excludeAdminDestinations: true,
+      experience: "start_selling",
+    });
+    const links = sections.flatMap((s) => s.links);
+    expect(links.some((l) => l.to === "/shifts")).toBe(true);
+    expect(links.some((l) => l.to === "/returns")).toBe(true);
+    expect(links.some((l) => l.to === "/inventory")).toBe(false);
+    expect(links.some((l) => l.to === "/purchasing")).toBe(false);
+    expect(links.some((l) => l.to === "/dashboard")).toBe(false);
+    expect(links.some((l) => l.to === "/reports")).toBe(false);
+  });
+});

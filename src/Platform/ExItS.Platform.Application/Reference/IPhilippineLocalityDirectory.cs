@@ -6,6 +6,10 @@ public interface IPhilippineLocalityDirectory
 
     IReadOnlyList<PhilippineLocality> Search(string query, int limit = 20);
 
+    IReadOnlyList<PhilippineRegion> ListRegions();
+
+    IReadOnlyList<PhilippineLocality> ListByRegionCode(string regionCode);
+
     PhilippineLocality? GetByPsgcCode(string psgcCode);
 
     bool Contains(string psgcCode);

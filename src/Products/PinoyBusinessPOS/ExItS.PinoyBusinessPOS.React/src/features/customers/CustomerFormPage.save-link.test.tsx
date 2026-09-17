@@ -59,9 +59,9 @@ const userIdentityId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 function renderCreate() {
   return render(
     <AppProviders>
-      <MemoryRouter initialEntries={["/customers/new"]}>
+      <MemoryRouter initialEntries={["/customers/new/person"]}>
         <Routes>
-          <Route path="/customers/new" element={<CustomerCreatePage />} />
+          <Route path="/customers/new/person" element={<CustomerCreatePage />} />
           <Route
             path="/customers/:customerId"
             element={<div data-testid="customer-detail-stub" />}
@@ -236,7 +236,7 @@ describe("CustomerFormPage save vs resolve link", () => {
     expect(screen.queryByTestId("customer-info-section")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-personal-link-confirm-btn")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-save")).not.toBeInTheDocument();
-    expect(screen.getByTestId("customer-already-in-contacts")).toHaveAttribute("role", "alert");
+    expect(screen.getByTestId("customer-already-in-contacts")).toHaveAttribute("role", "status");
     expect(screen.getByTestId("customer-already-in-contacts-open")).toHaveAttribute(
       "href",
       `/customers/${posCustomerId}`,

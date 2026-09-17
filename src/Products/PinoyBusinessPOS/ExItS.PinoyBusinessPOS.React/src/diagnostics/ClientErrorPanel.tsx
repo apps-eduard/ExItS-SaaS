@@ -67,7 +67,6 @@ export function ClientErrorPanel({ input, onReload, onDismiss, className }: Clie
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             data-testid="client-error-reload"
             onClick={onReload}
           >
@@ -79,7 +78,6 @@ export function ClientErrorPanel({ input, onReload, onDismiss, className }: Clie
           <Button
             type="button"
             variant="ghost"
-            className="min-h-11"
             data-testid="client-error-dismiss"
             onClick={onDismiss}
           >

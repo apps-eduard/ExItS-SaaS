@@ -67,7 +67,8 @@ internal sealed class LocalValidationPaymentProvider : IPaymentProvider
             SubscriptionId.From(request.SubscriptionId),
             result,
             request.Purpose,
-            _clock.UtcNow);
+            _clock.UtcNow,
+            charge: request);
 
         await _payments.AddAsync(record, ct).ConfigureAwait(false);
         return result;

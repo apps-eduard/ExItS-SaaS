@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as linkStatusClient from "@/api/platform/customer-link-status-client";
+import * as publicIdentityClient from "@/api/platform/public-identity-client";
 import * as customersClient from "@/api/pos/pos-customers-client";
 import { CustomerDetailPage } from "@/features/customers/CustomerDetailPage";
 
@@ -54,6 +55,34 @@ vi.mock("@/access/pos-capabilities", () => ({
   canEditCustomer: () => true,
   canRecordRepayment: () => true,
   canViewStatement: () => true,
+  canManageCustomerCreditPolicy: () => false,
+  canApproveCustomerCreditPolicy: () => false,
+  canManageCustomerBranchAccess: () => false,
+}));
+
+vi.mock("@/api/platform/public-identity-client", () => ({
+  resolvePublicUserId: vi.fn(),
+}));
+
+vi.mock("@/features/customers/CreditPolicySection", () => ({
+  CreditPolicySection: ({
+    canRecordPayment,
+  }: {
+    canRecordPayment?: boolean;
+  }) =>
+    canRecordPayment ? (
+      <a data-testid="customer-repay" href="/customers/repay">
+        Record payment
+      </a>
+    ) : null,
+}));
+
+vi.mock("@/features/customers/CustomerBranchVisibilitySection", () => ({
+  CustomerBranchVisibilitySection: () => null,
+}));
+
+vi.mock("@/features/customers/CustomerStoreDetailsEditDrawer", () => ({
+  CustomerStoreDetailsEditDrawer: () => null,
 }));
 
 const customerId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -132,11 +161,22 @@ describe("CustomerDetailPage Platform link status", () => {
       pageSize: 20,
     });
     vi.mocked(linkStatusClient.listCustomerLinkRequestHistory).mockResolvedValue([]);
+    vi.mocked(publicIdentityClient.resolvePublicUserId).mockResolvedValue({
+      publicUserId: "EX-1234-5678",
+      userIdentityId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      displayName: "Ana Personal",
+      maskedEmail: "a***@example.com",
+      status: "Active",
+      isSelf: false,
+    });
   });
 
   async function expectStatus(label: RegExp | string) {
     await waitFor(() => {
-      expect(screen.getByTestId("customer-link-status")).toHaveTextContent(label);
+      const inline = screen.queryByTestId("customer-connection-status-chip-inline");
+      const storeLabel = screen.queryByTestId("customer-link-status-label");
+      const text = inline?.textContent ?? storeLabel?.textContent ?? "";
+      expect(text).toMatch(label instanceof RegExp ? label : new RegExp(label));
     });
   }
 
@@ -149,7 +189,10 @@ describe("CustomerDetailPage Platform link status", () => {
     });
     renderDetail();
     await expectStatus(/Local customer/i);
-    expect(linkStatusClient.getCustomerLinkStatus).not.toHaveBeenCalled();
+    expect(linkStatusClient.getCustomerLinkStatus).not.toBeCalled();
+    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
   });
 
   it("shows Request sent from Platform even when EX-ID is stored", async () => {
@@ -163,8 +206,10 @@ describe("CustomerDetailPage Platform link status", () => {
     await expectStatus(/Request sent/i);
     expect(screen.getByTestId("customer-link-pending-banner")).toBeInTheDocument();
     expect(screen.getByTestId("customer-exits-id")).toHaveTextContent("EX-1234-5678");
-    expect(screen.getByTestId("customer-link-exits-id-panel")).toBeInTheDocument();
-    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Linked$/);
+    expect(screen.queryByTestId("customer-link-exits-id-panel")).not.toBeInTheDocument();
+    expect(screen.getByTestId("customer-connection-status-chip-inline")).not.toHaveTextContent(
+      /^Linked$/,
+    );
     expect(screen.queryByText(platformBusinessCustomerId)).not.toBeInTheDocument();
   });
 
@@ -192,11 +237,17 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail();
-    await expectStatus(/^Linked$/);
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    expect(screen.getByTestId("customer-edit-store-details")).toBeInTheDocument();
+    expect(screen.queryByTestId("customer-edit")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
   });
 
-  it("shows compact connection history when Platform returns link-requests", async () => {
+  it("shows Linked status and timestamp on Personal profile (not Connection history)", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status: "Linked",
@@ -221,11 +272,12 @@ describe("CustomerDetailPage Platform link status", () => {
     ]);
     renderDetail();
     await waitFor(() => {
-      expect(screen.getByTestId("customer-link-history")).toBeInTheDocument();
+      expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Connection history/i);
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Linked/i);
-    expect(screen.getByTestId("customer-link-history")).toHaveTextContent(/Request sent/i);
+    expect(screen.queryByTestId("customer-link-history")).not.toBeInTheDocument();
+    const linkRow = screen.getByTestId("customer-personal-profile-link-row");
+    expect(linkRow).toHaveTextContent(new Date("2026-08-18T08:00:00Z").toLocaleString());
+    expect(screen.getByTestId("customer-personal-profile-link-status")).toHaveTextContent(/Linked/i);
   });
 
   it("hides connection history when Platform returns an empty list", async () => {
@@ -240,7 +292,7 @@ describe("CustomerDetailPage Platform link status", () => {
     ["Declined", /Declined/i],
     ["Expired", /Expired/i],
     ["Revoked", /Revoked/i],
-  ] as const)("maps Platform %s without showing Linked", async (status, label) => {
+  ] as const)("maps Platform %s without showing Linked", async (status) => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockResolvedValue(
       linkStatus({
         status,
@@ -249,14 +301,22 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail();
-    await expectStatus(label);
-    expect(screen.getByTestId("customer-link-status")).not.toHaveTextContent(/^Linked$/);
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-invite-again-card")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
   });
 
   it("shows unavailable on Platform fetch error and does not invent Linked", async () => {
     vi.mocked(linkStatusClient.getCustomerLinkStatus).mockRejectedValue(new Error("boom"));
     renderDetail();
-    await expectStatus(/Unavailable/i);
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-store-details")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-personal-profile")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
   });
 
   it("shows Unavailable from Platform without saying blocked", async () => {
@@ -272,7 +332,7 @@ describe("CustomerDetailPage Platform link status", () => {
     await waitFor(() => {
       expect(screen.getByTestId("customer-link-unavailable-banner")).toBeInTheDocument();
     });
-    expect(screen.getByTestId("customer-link-status")).toHaveTextContent(/Unavailable/i);
+    expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
     expect(screen.queryByText(/blocked you/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-link-remind")).not.toBeInTheDocument();
     expect(screen.queryByTestId("customer-link-invite-again")).not.toBeInTheDocument();
@@ -288,8 +348,11 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail(`/customers/${customerId}?pendingLink=1`);
-    await expectStatus(/^Linked$/);
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-personal-profile")).toBeInTheDocument();
+    });
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("customer-connection-status-chip")).not.toBeInTheDocument();
   });
 
   it("lets Platform Declined win over pendingLink=1 query hint", async () => {
@@ -301,7 +364,9 @@ describe("CustomerDetailPage Platform link status", () => {
       }),
     );
     renderDetail(`/customers/${customerId}?pendingLink=1`);
-    await expectStatus(/Declined/i);
+    await waitFor(() => {
+      expect(screen.getByTestId("customer-link-invite-again-card")).toBeInTheDocument();
+    });
     expect(screen.queryByTestId("customer-link-pending-banner")).not.toBeInTheDocument();
   });
 

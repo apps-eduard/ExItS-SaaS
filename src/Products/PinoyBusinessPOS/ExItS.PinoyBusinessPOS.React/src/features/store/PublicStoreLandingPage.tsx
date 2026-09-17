@@ -213,7 +213,7 @@ export function PublicStoreLandingPage() {
             <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
               {t("store.landing.staffDetail")}
             </p>
-            <Button asChild className="min-h-11" data-testid="public-store-sign-in-personal">
+            <Button asChild data-testid="public-store-sign-in-personal">
               <Link to={buildSignInHrefForStore(store.publicOrganizationId, branchId)}>
                 {t("store.landing.signInPersonal")}
               </Link>
@@ -225,7 +225,6 @@ export function PublicStoreLandingPage() {
           <div className="flex flex-col gap-2">
             <Button
               type="button"
-              className="min-h-11"
               data-testid="public-store-continue"
               disabled={continuing || continueQuery.isPending || continueQuery.isError}
               onClick={() => void handleContinueToStore()}
@@ -267,7 +266,7 @@ export function PublicStoreLandingPage() {
             >
               {t("store.landing.newVisitorInvite").replace("{storeName}", store.displayName)}
             </p>
-            <Button asChild className="min-h-11 w-full" data-testid="public-store-create-account">
+            <Button asChild className="w-full" data-testid="public-store-create-account">
               <Link to={buildSignUpHrefForStore(store.publicOrganizationId, branchId)}>
                 {t("store.landing.createAccount")}
               </Link>
@@ -275,7 +274,7 @@ export function PublicStoreLandingPage() {
             <Button
               asChild
               variant="ghost"
-              className="min-h-11 w-full"
+              className="w-full"
               data-testid="public-store-sign-in"
             >
               <Link to={buildSignInHrefForStore(store.publicOrganizationId, branchId)}>

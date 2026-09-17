@@ -7,11 +7,13 @@ import {
 } from "@/api/pos/pos-operational-setup-client";
 
 describe("cash count policy helpers", () => {
-  it("defaults missing modes to optional (not required)", () => {
-    expect(resolveCashCountRequired(undefined)).toBe(false);
-    expect(resolveCashCountRequired("")).toBe(false);
+  it("defaults missing modes to required (both policies on)", () => {
+    expect(resolveCashCountRequired(undefined)).toBe(true);
+    expect(resolveCashCountRequired("")).toBe(true);
     expect(resolveCashCountRequired("Optional")).toBe(false);
     expect(resolveCashCountRequired("Required")).toBe(true);
+    expect(resolveOpeningCashCountMode(undefined)).toBe("Required");
+    expect(resolveClosingCashCountMode(undefined)).toBe("Required");
   });
 
   it("prefers opening/closing fields over legacy cashCountMode", () => {

@@ -82,7 +82,8 @@ public sealed class AddPosBasicInventoryMigrationTests(PosPostgreSqlFixture fixt
               AND tablename IN ('inventory_accounts', 'stock_movements')
             """);
         Assert.Contains("ux_inventory_accounts_org_product", indexes);
-        Assert.Contains("ux_stock_movements_opening_stock", indexes);
+        Assert.Contains("ux_stock_movements_opening_stock_branch", indexes);
+        Assert.Contains("ux_stock_movements_opening_stock_legacy", indexes);
         Assert.Contains("ux_stock_movements_sale_source", indexes);
 
         var constraints = await QueryNamesAsync(

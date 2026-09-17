@@ -9,7 +9,11 @@ public sealed record SaleFilter(
     SalePaymentMethod? PaymentMethod = null,
     DateOnly? FromDateUtc = null,
     DateOnly? ToDateUtc = null,
-    string? SaleNumber = null);
+    string? SaleNumber = null,
+    Guid? RegisterId = null,
+    Guid? CashierShiftId = null,
+    Guid? RecordedBy = null,
+    Guid? BranchId = null);
 
 /// <summary>Header totals for a reporting period without loading sale lines.</summary>
 /// <remarks>
@@ -120,6 +124,15 @@ public interface ISaleRepository
         SalePaymentMethod? paymentMethod = null,
         Guid? customerId = null,
         Guid? branchId = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Computes sale header totals for an arbitrary <see cref="SaleFilter"/> (no sale lines loaded).
+    /// Date bounds are optional; omit them to aggregate the full matching set.
+    /// </summary>
+    Task<SalePeriodAggregate> AggregateAsync(
+        PosOrganizationId organizationId,
+        SaleFilter filter,
         CancellationToken cancellationToken = default);
 
     /// <summary>

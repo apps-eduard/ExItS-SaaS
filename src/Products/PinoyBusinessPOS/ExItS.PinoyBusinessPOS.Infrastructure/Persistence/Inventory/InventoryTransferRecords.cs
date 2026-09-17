@@ -4,6 +4,7 @@ internal sealed class InventoryTransferRecord
 {
     public Guid Id { get; set; }
     public Guid OrganizationId { get; set; }
+    public Guid? StockRequestId { get; set; }
     public string? TransferNumber { get; set; }
     public Guid SourceBranchId { get; set; }
     public Guid DestinationBranchId { get; set; }
@@ -19,6 +20,67 @@ internal sealed class InventoryTransferRecord
     public DateTimeOffset? CancelledAtUtc { get; set; }
     public Guid? CancelledBy { get; set; }
     public uint Xmin { get; set; }
+}
+
+internal sealed class SupplyRouteRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid SourceLocationId { get; set; }
+    public Guid DestinationLocationId { get; set; }
+    public bool IsPreferred { get; set; }
+    public bool IsActive { get; set; }
+    public string? Notes { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public uint Xmin { get; set; }
+}
+
+internal sealed class StockRequestRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid DestinationLocationId { get; set; }
+    public Guid RequestedSourceLocationId { get; set; }
+    public string? RequestNumber { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+    public Guid RequestedBy { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public Guid? ApprovedBy { get; set; }
+    public DateTimeOffset? ApprovedAtUtc { get; set; }
+    public Guid? PreparingStartedBy { get; set; }
+    public DateTimeOffset? PreparingStartedAtUtc { get; set; }
+    public Guid? DispatchedBy { get; set; }
+    public DateTimeOffset? DispatchedAtUtc { get; set; }
+    public Guid? LinkedInventoryTransferId { get; set; }
+    public Guid? RejectedBy { get; set; }
+    public DateTimeOffset? RejectedAtUtc { get; set; }
+    public string? RejectionReason { get; set; }
+    public Guid? CancelledBy { get; set; }
+    public DateTimeOffset? CancelledAtUtc { get; set; }
+    public uint Xmin { get; set; }
+}
+
+internal sealed class StockRequestLineRecord
+{
+    public Guid Id { get; set; }
+    public Guid StockRequestId { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid ProductId { get; set; }
+    public int LineNumber { get; set; }
+    public decimal RequestedQuantity { get; set; }
+    public decimal? ApprovedQuantity { get; set; }
+    public string NameSnapshot { get; set; } = string.Empty;
+    public string UnitOfMeasure { get; set; } = string.Empty;
+}
+
+internal sealed class StockRequestNumberSequenceRecord
+{
+    public Guid OrganizationId { get; set; }
+    public DateOnly BusinessDate { get; set; }
+    public long LastValue { get; set; }
 }
 
 internal sealed class InventoryTransferLineRecord
@@ -37,6 +99,7 @@ internal sealed class InventoryTransferLineRecord
     public Guid? SourceLotId { get; set; }
     public string? LotNumber { get; set; }
     public DateOnly? ExpirationDate { get; set; }
+    public decimal? UnitCostSnapshot { get; set; }
 }
 
 internal sealed class InventoryTransferNumberSequenceRecord
@@ -61,6 +124,17 @@ internal sealed class InventoryBranchReorderSettingRecord
     public Guid OrganizationId { get; set; }
     public Guid BranchId { get; set; }
     public Guid ProductId { get; set; }
+    public decimal? ReorderLevel { get; set; }
+    public decimal? ReorderQuantity { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public Guid UpdatedBy { get; set; }
+    public uint Xmin { get; set; }
+}
+
+internal sealed class InventoryBranchReorderDefaultRecord
+{
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
     public decimal? ReorderLevel { get; set; }
     public decimal? ReorderQuantity { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

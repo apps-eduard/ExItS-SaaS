@@ -20,6 +20,8 @@ public static class SubscriptionBillingPeriods
         cycle switch
         {
             BillingCycle.Monthly => (periodStartUtc, periodStartUtc.AddMonths(1)),
+            BillingCycle.Quarterly => (periodStartUtc, periodStartUtc.AddMonths(3)),
+            BillingCycle.SixMonths => (periodStartUtc, periodStartUtc.AddMonths(6)),
             BillingCycle.Annual => (periodStartUtc, periodStartUtc.AddYears(1)),
             _ => throw new ArgumentOutOfRangeException(nameof(cycle))
         };
@@ -85,7 +87,8 @@ public sealed class ProcessSubscriptionInitialPayment
                 "Target plan is not active for new subscriptions.");
         }
 
-        var amount = plan.PriceForCycle(billingCycle);
+        var quote = SubscriptionBillingPricing.Quote(plan, billingCycle);
+        var amount = quote.FinalAmount;
 
         if (subscription.Status == SubscriptionStatus.Active
             && subscription.PlanId == plan.Id
@@ -115,7 +118,12 @@ public sealed class ProcessSubscriptionInitialPayment
             amount,
             plan.CurrencyCode,
             idempotencyKey,
-            Purpose: isTrialConversion ? "convert-trial" : "initial");
+            Purpose: isTrialConversion ? "convert-trial" : "initial",
+            PlanKey: quote.PlanKey,
+            BillingCycle: quote.BillingCycle.ToString(),
+            BaseAmount: quote.BaseAmount,
+            DiscountAmount: quote.DiscountAmount,
+            DiscountPercent: quote.DiscountPercent);
 
         PaymentProviderResult paymentResult;
         try
@@ -268,8 +276,11 @@ public sealed class ProcessSubscriptionRenewal
         }
 
         var cycle = subscription.BillingCycle.Value;
-        var amount = subscription.AgreedPrice ?? plan.PriceForCycle(cycle);
+        var quote = SubscriptionBillingPricing.Quote(plan, cycle);
+        var amount = subscription.AgreedPrice ?? quote.FinalAmount;
         var currency = subscription.CurrencyCode ?? plan.CurrencyCode;
+        var snapshotMatchesQuote = subscription.AgreedPrice is null
+            || subscription.AgreedPrice.Value == quote.FinalAmount;
 
         var chargeRequest = new PaymentChargeRequest(
             subscription.OrganizationId.Value,
@@ -277,7 +288,12 @@ public sealed class ProcessSubscriptionRenewal
             amount,
             currency,
             idempotencyKey,
-            Purpose: "renewal");
+            Purpose: "renewal",
+            PlanKey: quote.PlanKey,
+            BillingCycle: quote.BillingCycle.ToString(),
+            BaseAmount: snapshotMatchesQuote ? quote.BaseAmount : amount,
+            DiscountAmount: snapshotMatchesQuote ? quote.DiscountAmount : 0m,
+            DiscountPercent: snapshotMatchesQuote ? quote.DiscountPercent : 0m);
 
         PaymentProviderResult paymentResult;
         try

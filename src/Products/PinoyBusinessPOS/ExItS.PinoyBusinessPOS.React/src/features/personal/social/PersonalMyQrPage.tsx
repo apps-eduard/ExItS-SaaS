@@ -90,7 +90,6 @@ export function PersonalMyQrPage() {
         <div className="flex flex-wrap justify-center gap-2">
           <Button
             type="button"
-            className="min-h-11"
             data-testid="personal-qr-copy"
             onClick={() => void copyId()}
           >
@@ -101,7 +100,6 @@ export function PersonalMyQrPage() {
             <Button
               type="button"
               variant="ghost"
-              className="min-h-11"
               data-testid="personal-qr-share"
               onClick={() => void share()}
             >

@@ -1,0 +1,188 @@
+import { createElement } from "react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import { CountBadge, CountChip } from "@/components/exits/CountChip";
+import { FilterChip } from "@/components/exits/FilterChip";
+import { RemovableChip } from "@/components/exits/RemovableChip";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { TagChip } from "@/components/exits/TagChip";
+
+describe("ExItS chip visual pilot primitives", () => {
+  it("keeps StatusChip API compatible including primary tone", () => {
+    for (const tone of ["info", "success", "warning", "danger", "neutral", "primary"] as const) {
+      const { unmount } = render(createElement(StatusChip, { tone, children: tone }));
+      const el = screen.getByText(tone);
+      expect(el.className).toContain("exits-status-chip");
+      expect(el.className).toContain(`exits-status-chip--${tone}`);
+      expect(el.getAttribute("data-shape")).toBe("pill");
+      expect(el.getAttribute("data-appearance")).toBe("soft");
+      expect(el.tagName).toBe("SPAN");
+      unmount();
+    }
+  });
+
+  it("supports soft outline and solid appearance independent from shape", () => {
+    const { rerender } = render(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-appearance")).toBe("soft");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--appearance-");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "outline",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--appearance-outline");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "solid",
+        shape: "soft",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--appearance-solid");
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-soft");
+  });
+
+  it("supports auto and explicit Control Shape geometry on StatusChip", () => {
+    const { rerender } = render(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "auto",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("auto");
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-auto");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "standard",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").className).toContain("exits-status-chip--shape-standard");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--shape-auto");
+
+    rerender(
+      createElement(StatusChip, {
+        tone: "success",
+        appearance: "soft",
+        shape: "pill",
+        children: "Active",
+      }),
+    );
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("pill");
+    expect(screen.getByText("Active").className).not.toContain("exits-status-chip--shape-");
+  });
+
+  it("renders pill soft and square shapes without forcing family", () => {
+    const { rerender } = render(
+      createElement(StatusChip, { tone: "success", shape: "pill", children: "Published" }),
+    );
+    expect(screen.getByText("Published").getAttribute("data-shape")).toBe("pill");
+    expect(screen.getByText("Published").className).not.toContain("exits-status-chip--shape-");
+
+    rerender(
+      createElement(StatusChip, { tone: "success", shape: "soft", children: "Published" }),
+    );
+    expect(screen.getByText("Published").className).toContain("exits-status-chip--shape-soft");
+
+    rerender(
+      createElement(StatusChip, { tone: "success", shape: "square", children: "Published" }),
+    );
+    expect(screen.getByText("Published").className).toContain("exits-status-chip--shape-square");
+
+    rerender(createElement(TagChip, { tone: "info", shape: "square", children: "Beta" }));
+    expect(screen.getByText("Beta").closest("[data-shape]")?.getAttribute("data-shape")).toBe(
+      "square",
+    );
+  });
+
+  it("FilterChip toggles selection with button semantics and disabled state", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const { rerender } = render(
+      createElement(FilterChip, { selected: false, onClick, children: "Active" }),
+    );
+    const btn = screen.getByRole("button", { name: "Active" });
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+    await user.click(btn);
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    rerender(createElement(FilterChip, { selected: true, showCheck: true, children: "Active" }));
+    expect(screen.getByRole("button", { name: "Active" })).toHaveAttribute("aria-pressed", "true");
+
+    rerender(createElement(FilterChip, { disabled: true, children: "Inactive" }));
+    expect(screen.getByRole("button", { name: "Inactive" })).toBeDisabled();
+  });
+
+  it("TagChip and CountChip render tones and layouts", () => {
+    const { unmount } = render(createElement(TagChip, { tone: "info", children: "B2B" }));
+    expect(screen.getByText("B2B")).toBeInTheDocument();
+    unmount();
+
+    render(
+      createElement(CountChip, {
+        layout: "inline",
+        tone: "danger",
+        label: "Overdue",
+        count: 5,
+      }),
+    );
+    expect(screen.getByText("Overdue")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+
+    render(
+      createElement(CountChip, {
+        layout: "split",
+        tone: "warning",
+        label: "Low stock",
+        count: 12,
+      }),
+    );
+    expect(screen.getByText("Low stock")).toBeInTheDocument();
+    expect(screen.getByText("12")).toBeInTheDocument();
+
+    render(createElement(CountBadge, { tone: "primary", count: "99+" }));
+    expect(screen.getByText("99+")).toBeInTheDocument();
+  });
+
+  it("RemovableChip fires accessible remove action", async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    render(
+      createElement(RemovableChip, {
+        removeLabel: "Remove Branch: Main filter",
+        onRemove,
+        children: "Branch: Main",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Remove Branch: Main filter" }));
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it("TagChip defaults to square; StatusChip defaults to pill", () => {
+    const { unmount } = render(createElement(TagChip, { tone: "info", children: "B2B" }));
+    expect(screen.getByText("B2B").closest("[data-shape]")?.getAttribute("data-shape")).toBe(
+      "square",
+    );
+    unmount();
+
+    render(createElement(StatusChip, { tone: "success", children: "Active" }));
+    expect(screen.getByText("Active").getAttribute("data-shape")).toBe("pill");
+  });
+});

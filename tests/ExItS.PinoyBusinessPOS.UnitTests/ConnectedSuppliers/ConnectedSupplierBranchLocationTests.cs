@@ -67,6 +67,12 @@ public sealed class ConnectedSupplierBranchLocationTests
         public Task AddAsync(Supplier supplier, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task<Supplier?> FindByConnectedRelationshipIdAsync(
+            PosOrganizationId organizationId,
+            ConnectedSupplierRelationshipId relationshipId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Supplier?>(null);
+
         public Task<string> AllocateNextSupplierCodeAsync(
             PosOrganizationId organizationId,
             CancellationToken cancellationToken = default)

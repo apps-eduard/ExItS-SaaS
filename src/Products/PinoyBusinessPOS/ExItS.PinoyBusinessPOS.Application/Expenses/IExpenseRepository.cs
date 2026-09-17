@@ -3,13 +3,27 @@ using ExItS.PinoyBusinessPOS.Domain.Expenses;
 
 namespace ExItS.PinoyBusinessPOS.Application.Expenses;
 
+public enum ExpenseBranchScopeKind
+{
+    SingleBranch,
+    AllAuthorizedBranches,
+    OrganizationWide,
+    AllExpenses
+}
+
+public sealed record ExpenseBranchScopeCriteria(
+    ExpenseBranchScopeKind Kind,
+    Guid? BranchId = null,
+    IReadOnlyList<Guid>? AuthorizedBranchIds = null);
+
 public sealed record ExpenseFilter(
     ExpenseStatus? Status = null,
     ExpensePaymentMethod? PaymentMethod = null,
     ExpenseCategoryId? CategoryId = null,
     DateOnly? FromDate = null,
     DateOnly? ToDate = null,
-    string? ExpenseNumber = null);
+    string? ExpenseNumber = null,
+    ExpenseBranchScopeCriteria? BranchScope = null);
 
 public interface IExpenseRepository
 {
@@ -44,7 +58,6 @@ public interface IExpenseRepository
 
     Task<IReadOnlyList<Expense>> ListForSummaryAsync(
         PosOrganizationId organizationId,
-        DateOnly? fromDate,
-        DateOnly? toDate,
+        ExpenseFilter filter,
         CancellationToken cancellationToken = default);
 }

@@ -10,11 +10,19 @@ import {
 } from "@/api/platform/start-business-client";
 import { ensureOnboardingProgress } from "@/api/pos/pos-onboarding-client";
 import { writePendingPostSubscriptionOnboarding } from "@/features/onboarding/post-subscription-onboarding";
+import { writePendingSubscriptionCheckout } from "@/features/subscription-checkout/pending-subscription-checkout";
+import {
+  getPlanBillingQuote,
+  parsePlanBillingCycle,
+  PLAN_BILLING_CYCLES,
+  type PlanBillingCycle,
+} from "@/features/personal/start-business/plan-selection-meta";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { ensureOrganizationSlug } from "@/lib/organization-slug";
 import { personalPageBackNav } from "@/navigation/page-back-nav";
 import { useSession } from "@/session/SessionProvider";
@@ -40,8 +48,9 @@ export function PersonalStartBusinessPage() {
   const planKey = (searchParams.get("planKey") ?? "").trim();
   const startAsTrial = parseBoolFlag(searchParams.get("trial"), true);
   const payNow = parseBoolFlag(searchParams.get("payNow"), false);
-  const billingRaw = searchParams.get("billing");
-  const billingCycle = billingRaw === "Annual" || billingRaw === "Monthly" ? billingRaw : "Monthly";
+  const paidContinue = parseBoolFlag(searchParams.get("paid"), false);
+  const paidPaymentTransactionId = (searchParams.get("paymentId") ?? "").trim();
+  const billingCycle = parsePlanBillingCycle(searchParams.get("billing"));
 
   const [displayName, setDisplayName] = useState("");
   const [slugPreview, setSlugPreview] = useState("");
@@ -56,6 +65,41 @@ export function PersonalStartBusinessPage() {
   const [countryCode, setCountryCode] = useState("PH");
   const [formError, setFormError] = useState<string | null>(null);
   const displayNameInputRef = useRef<HTMLInputElement>(null);
+
+  // Legacy payNow deep-link: send user through pre-org checkout first.
+  useEffect(() => {
+    if (!payNow || paidContinue || !planKey || !billingCycle) {
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { createPersonalSubscriptionPayment } = await import(
+          "@/api/platform/subscription-payment-client"
+        );
+        const payment = await createPersonalSubscriptionPayment({
+          planKey,
+          billingCycle,
+        });
+        if (cancelled) {
+          return;
+        }
+        writePendingSubscriptionCheckout({
+          paymentId: payment.id,
+          planKey: payment.planKey,
+          billingCycle: payment.billingCycle,
+        });
+        navigate(`/subscription-checkout/${payment.id}`, { replace: true });
+      } catch (error) {
+        if (!cancelled) {
+          setFormError(error instanceof Error ? error.message : t("subscriptionCheckout.errorDetail"));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [billingCycle, navigate, paidContinue, payNow, planKey, t]);
 
   function selectPrimaryBusinessType(typeId: string) {
     setPrimaryBusinessTypeId(typeId);
@@ -117,14 +161,16 @@ export function PersonalStartBusinessPage() {
       }
 
       const slug = slugPreview || ensureOrganizationSlug(name);
+      const usingPaidPayment = paidContinue && paidPaymentTransactionId.length > 0;
       return startBusiness({
         displayName: name,
         slug,
         primaryBusinessTypeId,
         planKey,
         billingCycle,
-        startAsTrial: startAsTrial && !payNow,
-        payNow,
+        startAsTrial: startAsTrial && !usingPaidPayment,
+        payNow: usingPaidPayment,
+        paidPaymentTransactionId: usingPaidPayment ? paidPaymentTransactionId : null,
         useMyContactDetails,
         contactEmail: nullIfBlank(contactEmail),
         contactPhone: nullIfBlank(contactPhone),
@@ -147,6 +193,8 @@ export function PersonalStartBusinessPage() {
         businessTypeDescription: selectedType?.description ?? null,
       });
 
+      const nextRoute = "/onboarding";
+
       clearBoundWorkspace();
       const sessionStatus = await refreshSession();
       if (sessionStatus !== "authenticated") {
@@ -156,8 +204,7 @@ export function PersonalStartBusinessPage() {
 
       const workspace = { organizationId: orgId, branchId: result.primaryBranchId };
       const orgLabel = displayName.trim() || t("onboarding.ready.businessFallback");
-      // Leave Personal-only routes before bind awaits (session is now Organization).
-      navigate("/onboarding", { replace: true });
+      navigate(nextRoute, { replace: true });
 
       try {
         await refreshWorkspaces();
@@ -167,7 +214,7 @@ export function PersonalStartBusinessPage() {
           branchId: null,
           branchName: null,
           experience: "manage_business",
-          route: "/onboarding",
+          route: nextRoute,
           labelKey: "experience.manageBusiness",
         });
         if (bound) {
@@ -188,6 +235,17 @@ export function PersonalStartBusinessPage() {
     },
   });
 
+  if (payNow && !paidContinue) {
+    return (
+      <div data-testid="personal-start-business-redirect-checkout">
+        <LoadingSkeleton label={t("subscriptionCheckout.loading")} />
+        {formError ? (
+          <ErrorState title={t("subscriptionCheckout.errorTitle")} detail={formError} />
+        ) : null}
+      </div>
+    );
+  }
+
   if (!planKey) {
     return (
       <div
@@ -205,7 +263,7 @@ export function PersonalStartBusinessPage() {
           title={t("personal.startBusiness.planRequired")}
           detail={t("personal.startBusiness.planRequiredDetail")}
         />
-        <Button asChild className="min-h-11 w-fit" data-testid="start-business-go-explore">
+        <Button asChild className="w-fit" data-testid="start-business-go-explore">
           <Link to="/personal/explore-pos">{t("personal.explore.title")}</Link>
         </Button>
       </div>
@@ -232,14 +290,15 @@ export function PersonalStartBusinessPage() {
           title={t("personal.startBusiness.planLoadFailed")}
           detail={t("personal.startBusiness.planLoadFailedDetail")}
         />
-        <Button asChild className="min-h-11 w-fit">
+        <Button asChild className="w-fit">
           <Link to="/personal/explore-pos">{t("personal.explore.title")}</Link>
         </Button>
       </div>
     );
   }
 
-  const selectedPrice = billingCycle === "Annual" ? plan.annualPrice : plan.monthlyPrice;
+  const quote = getPlanBillingQuote(plan, billingCycle);
+  const selectedPrice = quote?.finalAmount ?? plan.monthlyPrice;
   const modeLabel =
     startAsTrial && !payNow
       ? t("personal.startBusiness.modeTrial")
@@ -285,7 +344,7 @@ export function PersonalStartBusinessPage() {
                   aria-selected={selected}
                   disabled={mutation.isPending}
                   data-testid={`start-business-type-${type.code}`}
-                  className={`min-h-11 rounded-[var(--exits-radius-md)] border px-3 py-2 text-left transition-colors ${
+                  className={` rounded-[var(--exits-radius-md)] border px-3 py-2 text-left transition-colors ${
                     selected
                       ? "border-primary bg-[var(--exits-surface-muted)]"
                       : "border-border bg-surface hover:bg-[var(--exits-surface-muted)]"
@@ -319,7 +378,7 @@ export function PersonalStartBusinessPage() {
           <input
             ref={displayNameInputRef}
             data-testid="start-business-display-name"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
             value={displayName}
             disabled={mutation.isPending}
             placeholder={t("personal.startBusiness.displayNamePlaceholder")}
@@ -333,7 +392,7 @@ export function PersonalStartBusinessPage() {
           </span>
           <input
             data-testid="start-business-slug"
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 text-muted"
+            className="rounded-[var(--exits-radius-md)] border border-border bg-[var(--exits-surface-muted)] px-3 text-muted"
             value={slugPreview}
             readOnly
             aria-readonly="true"
@@ -357,7 +416,7 @@ export function PersonalStartBusinessPage() {
         <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
           {t("personal.startBusiness.contactHelper")}
         </p>
-        <label className="mt-3 flex min-h-11 items-center gap-2">
+        <label className="mt-3 flex items-center gap-2">
           <input
             type="checkbox"
             checked={useMyContactDetails}
@@ -435,37 +494,81 @@ export function PersonalStartBusinessPage() {
           {plan.displayName}
         </h2>
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-          {modeLabel} ·{" "}
-          {billingCycle === "Annual"
-            ? t("personal.explore.billingYear")
-            : t("personal.explore.billingMonth")}
+          {modeLabel} · {billingCycleSummaryLabel(billingCycle, t)}
         </p>
         {startAsTrial && !payNow ? (
           <p className="m-0 mt-2 text-[length:var(--exits-text-sm)]">
             {t("personal.startBusiness.trialDays").replace("{days}", String(plan.defaultTrialDays))}
           </p>
         ) : null}
-        <p className="m-0 mt-2 text-[length:var(--exits-text-base)] font-semibold">
-          {selectedPrice.toLocaleString()} {plan.currencyCode}
-        </p>
+        {payNow && quote ? (
+          <dl
+            className="m-0 mt-3 grid gap-1 text-[length:var(--exits-text-sm)]"
+            data-testid="start-business-price-breakdown"
+          >
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t("personal.startBusiness.baseAmount")}</dt>
+              <dd className="m-0 font-medium">
+                {quote.baseAmount.toLocaleString()} {plan.currencyCode}
+              </dd>
+            </div>
+            {quote.discountAmount > 0 ? (
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted">
+                  {t("personal.startBusiness.discount")
+                    .replace("{percent}", String(Math.round(quote.discountPercent)))}
+                </dt>
+                <dd className="m-0 font-medium">
+                  −{quote.discountAmount.toLocaleString()} {plan.currencyCode}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex justify-between gap-3 border-t border-border pt-1">
+              <dt className="font-semibold">{t("personal.startBusiness.totalDueNow")}</dt>
+              <dd className="m-0 text-[length:var(--exits-text-base)] font-semibold">
+                {selectedPrice.toLocaleString()} {plan.currencyCode}
+              </dd>
+            </div>
+            {billingCycle !== "Monthly" ? (
+              <p className="m-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                {t("personal.explore.equivalentMonthly").replace(
+                  "{amount}",
+                  `${quote.equivalentMonthlyAmount.toLocaleString()} ${plan.currencyCode}`,
+                )}
+              </p>
+            ) : null}
+          </dl>
+        ) : (
+          <p className="m-0 mt-2 text-[length:var(--exits-text-base)] font-semibold">
+            {selectedPrice.toLocaleString()} {plan.currencyCode}
+          </p>
+        )}
+        {payNow ? (
+          <p className="m-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
+            {t("personal.startBusiness.paymentMethodsHint")}
+          </p>
+        ) : null}
         <label className="mt-3 flex flex-col gap-1">
           <span className="text-[length:var(--exits-text-sm)] font-medium">
             {t("personal.startBusiness.billingCycle")}
           </span>
           <select
-            className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+            className="exits-select"
             value={billingCycle}
             disabled={mutation.isPending}
             data-testid="start-business-billing"
             onChange={(e) => {
-              const next = e.target.value === "Annual" ? "Annual" : "Monthly";
+              const next = parsePlanBillingCycle(e.target.value);
               const params = new URLSearchParams(searchParams);
               params.set("billing", next);
               navigate(`/personal/start-business?${params.toString()}`, { replace: true });
             }}
           >
-            <option value="Monthly">{t("personal.explore.billingMonth")}</option>
-            <option value="Annual">{t("personal.explore.billingYear")}</option>
+            {PLAN_BILLING_CYCLES.map((cycle) => (
+              <option key={cycle} value={cycle}>
+                {billingCycleSummaryLabel(cycle, t)}
+              </option>
+            ))}
           </select>
         </label>
       </section>
@@ -481,7 +584,7 @@ export function PersonalStartBusinessPage() {
 
       <Button
         type="button"
-        className="min-h-11 w-fit"
+        className="w-fit"
         disabled={mutation.isPending}
         data-testid="start-business-submit"
         onClick={() => {
@@ -515,11 +618,27 @@ function Field({
       <span className="text-[length:var(--exits-text-sm)] font-medium">{label}</span>
       <input
         data-testid={testId}
-        className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
+        className="rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
   );
+}
+
+function billingCycleSummaryLabel(
+  cycle: PlanBillingCycle,
+  t: (key: MessageKey) => string,
+): string {
+  switch (cycle) {
+    case "Quarterly":
+      return t("personal.explore.billingQuarterly");
+    case "SixMonths":
+      return t("personal.explore.billingSixMonths");
+    case "Annual":
+      return t("personal.explore.billingAnnual");
+    default:
+      return t("personal.explore.billingMonthly");
+  }
 }

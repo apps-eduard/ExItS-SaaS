@@ -1,16 +1,23 @@
 import { Link, useParams } from "react-router-dom";
-import { Check, Minus } from "lucide-react";
+import { Check, Minus, Users } from "lucide-react";
 import { listProductLocalRoleDefinitions } from "@/api/platform/product-local-role-definitions-client";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function OrgRoleDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "/org/roles",
+    backLabel: t("orgRoles.backList"),
+    backTestId: "page-header-back-roles",
+  });
   const { roleCode = "" } = useParams();
   const { boundWorkspace } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -39,9 +46,15 @@ export function OrgRoleDetailPage() {
       <PageHeader
         title={detailQuery.data?.displayName ?? t("orgRoles.detailTitle")}
         description={detailQuery.data?.description ?? t("orgRoles.detailLede")}
-        backTo="/org/roles"
-        backLabel={t("orgRoles.backList")}
-        backTestId="page-header-back-roles"
+        {...smartBack}
+        trailing={
+          <Button asChild variant="outline" data-testid="org-role-manage-staff">
+            <Link to={pageBackNav.orgStaff.to}>
+              <Users className="size-4" aria-hidden />
+              {t("staffManage.title")}
+            </Link>
+          </Button>
+        }
       />
 
       {detailQuery.isLoading ? <LoadingSkeleton count={4} label={t("loading.label")} /> : null}
@@ -72,7 +85,7 @@ export function OrgRoleDetailPage() {
             ) : null}
           </section>
 
-          <div className="org-role-permissions flex flex-col gap-2" data-testid="org-role-permissions">
+          <div className="org-role-permissions" data-testid="org-role-permissions">
             {detailQuery.data.permissionGroups.map((group) => (
               <section
                 key={group.code}
@@ -84,7 +97,10 @@ export function OrgRoleDetailPage() {
                   {group.items.map((item) => (
                     <li key={item.code} className="org-role-permission-item">
                       {item.allowed ? (
-                        <Check className="org-role-permission-item__icon org-role-permission-item__icon--allowed" aria-hidden />
+                        <Check
+                          className="org-role-permission-item__icon org-role-permission-item__icon--allowed"
+                          aria-hidden
+                        />
                       ) : (
                         <Minus className="org-role-permission-item__icon" aria-hidden />
                       )}
@@ -97,12 +113,6 @@ export function OrgRoleDetailPage() {
                 </ul>
               </section>
             ))}
-          </div>
-
-          <div className="exits-animate-toolbar">
-            <Link className="exits-chip min-h-11" to={pageBackNav.orgStaff.to} data-testid="org-role-manage-staff">
-              {t("staffManage.title")}
-            </Link>
           </div>
         </>
       ) : null}

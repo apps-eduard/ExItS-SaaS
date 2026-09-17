@@ -12,6 +12,24 @@ const getBranchFulfillmentReadiness = vi.fn();
 
 vi.mock("@/access/pos-capabilities", () => ({
   canManageBranchFulfillment: () => true,
+  canUseWarehouseBranches: () => false,
+  canViewSuppliers: () => true,
+  hasOrganizationManagementAuthority: () => true,
+  isPosOwnerRole: () => true,
+}));
+
+vi.mock("@/api/pos/pos-payment-methods-client", () => ({
+  listPaymentMethods: vi.fn(async () => []),
+}));
+
+vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
+  listBusinessCustomers: vi.fn(async () => []),
+  getSupplierConnectedSupplierCommerceReadiness: vi.fn(async () => ({
+    relationshipId: "33333333-3333-3333-3333-333333333333",
+    isReady: false,
+    supportedFulfillmentMethods: [],
+    requirements: [],
+  })),
 }));
 
 vi.mock("@/i18n/I18nProvider", () => ({
@@ -185,6 +203,17 @@ describe("BranchFulfillmentEditPage section saves", () => {
     renderPage(undefined, `/org/branches/${branchId}/fulfillment?tab=location`);
     expect(await screen.findByTestId("branch-choose-on-map")).toBeInTheDocument();
     expect(screen.getByTestId("branch-tab-location")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("stacks overview panels: PO fulfillment then fulfillment readiness", async () => {
+    renderPage();
+    const grid = await screen.findByTestId("branch-fulfillment-overview-grid");
+    expect(grid).toBeInTheDocument();
+    expect(screen.getByTestId("branch-po-fulfillment-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("branch-readiness-panel")).toBeInTheDocument();
+    const po = screen.getByTestId("branch-po-fulfillment-panel");
+    const readiness = screen.getByTestId("branch-readiness-panel");
+    expect(po.compareDocumentPosition(readiness) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("renders after remount when query data is cached", async () => {

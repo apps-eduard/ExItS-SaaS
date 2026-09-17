@@ -8,6 +8,7 @@ using ExItS.Platform.Domain.Authorization;
 using ExItS.Platform.Domain.Common;
 using ExItS.Platform.Domain.Identity;
 using ExItS.Platform.Domain.Organizations;
+using System.Security.Claims;
 
 namespace ExItS.Platform.Api.Organizations;
 
@@ -73,6 +74,207 @@ internal static class MembershipEndpoints
             return PlatformApiResults.FromResult(
                 await useCase.ExecuteAsync(organizationId, request, ct).ConfigureAwait(false),
                 items => Results.Ok(new { items }));
+        });
+
+        // Privacy-safe B2B business contacts for Connected seller↔buyer flows (POS-gated).
+        // Auth: caller must be an Active member of requesterOrganizationId (seller).
+        // Does not return suspended/removed members or staff system logins.
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/b2b-business-contacts", async (
+            Guid organizationId,
+            Guid requesterOrganizationId,
+            string? search,
+            ListOrganizationB2bBusinessContacts useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            if (requesterOrganizationId == Guid.Empty)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "Requester organization is required.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            if (requesterOrganizationId == organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "Requester organization cannot match the target organization.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var denied = await membershipAuthz.EnsureActiveOrganizationMemberAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationMembership),
+                organizationId.ToString("D"),
+                requesterOrganizationId,
+                summary: "List B2B business contacts for connected buyer organization.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, search, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/b2b-business-contacts/{membershipId:guid}", async (
+            Guid organizationId,
+            Guid membershipId,
+            Guid requesterOrganizationId,
+            ListOrganizationB2bBusinessContacts useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            if (requesterOrganizationId == Guid.Empty || requesterOrganizationId == organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "Requester organization is required and must differ from the target organization.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var denied = await membershipAuthz.EnsureActiveOrganizationMemberAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(OrganizationMembership),
+                membershipId.ToString("D"),
+                requesterOrganizationId,
+                summary: "Resolve B2B business contact for connected buyer organization.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var single = await useCase.GetAsync(organizationId, membershipId, ct).ConfigureAwait(false);
+            if (!single.IsSuccess)
+            {
+                return PlatformApiResults.FromResult(single, _ => Results.Ok());
+            }
+
+            if (single.Value is null)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.MembershipNotFound,
+                    "Organization contact was not found or is not eligible.",
+                    StatusCodes.Status404NotFound);
+            }
+
+            return Results.Ok(single.Value);
+        });
+
+        // Public buyer organization profile for Connected seller (POS-gated Connected check).
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/b2b-public-profile", async (
+            Guid organizationId,
+            Guid requesterOrganizationId,
+            GetOrganizationB2bPublicProfile useCase,
+            PlatformMembershipAuthz membershipAuthz,
+            CancellationToken ct) =>
+        {
+            if (requesterOrganizationId == Guid.Empty || requesterOrganizationId == organizationId)
+            {
+                return PlatformApiResults.Problem(
+                    ApplicationErrorCodes.DomainViolation,
+                    "Requester organization is required and must differ from the target organization.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var denied = await membershipAuthz.EnsureActiveOrganizationMemberAsync(
+                PlatformAuditActions.PlatformAccessChecked,
+                nameof(PlatformOrganization),
+                organizationId.ToString("D"),
+                requesterOrganizationId,
+                summary: "View connected buyer organization public profile.",
+                cancellationToken: ct).ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase.ExecuteAsync(organizationId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        // Document-safe seller branding for Personal linked customers and org members.
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/document-public-identity", async (
+            HttpContext http,
+            Guid organizationId,
+            GetOrganizationDocumentPublicIdentity useCase,
+            CancellationToken ct) =>
+        {
+            if (!TryGetActorUserId(http, out var userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCase
+                    .ExecuteAsync(PlatformUserId.From(userId), organizationId, ct)
+                    .ConfigureAwait(false),
+                Results.Ok);
+        })
+        .RequireAuthorization();
+
+        // Membership business profile (organization-specific; not Personal identity).
+        app.MapGet("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/business-profile", async (
+            Guid organizationId,
+            Guid membershipId,
+            MembershipBusinessProfileUseCases useCases,
+            PlatformOrganizationAuthz organizationAuthz,
+            CancellationToken ct) =>
+        {
+            var denied = await organizationAuthz
+                .EnsureCanViewOrganizationAsync(organizationId, ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            return PlatformApiResults.FromResult(
+                await useCases.GetAsync(organizationId, membershipId, ct).ConfigureAwait(false),
+                Results.Ok);
+        });
+
+        app.MapPut("/api/v1/platform/organizations/{organizationId:guid}/members/{membershipId:guid}/business-profile", async (
+            Guid organizationId,
+            Guid membershipId,
+            UpdateMembershipBusinessProfileRequest body,
+            MembershipBusinessProfileUseCases useCases,
+            PlatformOrganizationAuthz organizationAuthz,
+            PlatformAuthz authz,
+            CancellationToken ct) =>
+        {
+            // Owner/Administrator (ManageProfile) or Platform ManageOrganizations — not normal Staff.
+            var (denied, _) = await organizationAuthz
+                .EnsureCanEditOrganizationProfileAsync(
+                    organizationId,
+                    PlatformAuditActions.MembershipBusinessProfileUpdated,
+                    ct)
+                .ConfigureAwait(false);
+            if (denied is not null)
+            {
+                return denied;
+            }
+
+            var actorReference = authz.CurrentActor.PlatformUserId?.Value.ToString("D");
+
+            return PlatformApiResults.FromResult(
+                await useCases.UpdateManagedAsync(
+                    organizationId,
+                    membershipId,
+                    new UpdateManagedMembershipBusinessProfileCommand(
+                        body.Department,
+                        body.JobTitle,
+                        body.WorkPhone,
+                        body.WorkEmail,
+                        body.IsBusinessContact),
+                    actorReference: actorReference,
+                    cancellationToken: ct).ConfigureAwait(false),
+                Results.Ok);
         });
 
         app.MapPost("/api/v1/platform/organizations/{organizationId:guid}/members", async (
@@ -646,11 +848,25 @@ internal static class MembershipEndpoints
         parsed = value;
         return true;
     }
+
+    private static bool TryGetActorUserId(HttpContext http, out Guid userId)
+    {
+        userId = Guid.Empty;
+        var raw = http.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? http.User.FindFirstValue("sub");
+        return Guid.TryParse(raw, out userId) && userId != Guid.Empty;
+    }
 }
 
 internal sealed record AddMemberRequest(Guid UserId, string Role, string? Reason = null);
 internal sealed record ChangeRoleRequest(string Role, string? ActorReference, string? StepUpToken);
 internal sealed record MembershipLifecycleRequest(string? Reason, string? ActorReference, string? StepUpToken);
+internal sealed record UpdateMembershipBusinessProfileRequest(
+    string? Department,
+    string? JobTitle,
+    string? WorkPhone,
+    string? WorkEmail,
+    bool IsBusinessContact);
 internal sealed record SetMembershipBranchAssignmentsRequest(
     string? Scope,
     IReadOnlyList<Guid>? BranchIds,

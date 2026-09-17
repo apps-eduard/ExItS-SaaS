@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -26,6 +27,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ProductionDefinitionDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "production",
+    backLabel: t("production.backSetups"),
+    backTestId: "page-header-back-production-setups",
+  });
   const online = useBrowserOnline();
   const { definitionId } = useParams<{ definitionId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -131,9 +137,7 @@ export function ProductionDefinitionDetailPage() {
       <PageHeader
         title={definition.name}
         description={t("production.setups.detailLede")}
-        backTo="/inventory/production/setups"
-        backLabel={t("production.backSetups")}
-        backTestId="page-header-back-production-setups"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("production.errorTitle")} detail={error} /> : null}
@@ -202,7 +206,7 @@ export function ProductionDefinitionDetailPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row">
         {allowManage ? (
-          <Button asChild className="min-h-11" disabled={!online}>
+          <Button asChild disabled={!online}>
             <Link to={`/inventory/production/setups/${definitionId}/edit`}>
               {t("production.setups.edit")}
             </Link>
@@ -212,7 +216,6 @@ export function ProductionDefinitionDetailPage() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
             disabled={!online || toggling}
             onClick={() => void onToggleActive()}
             data-testid="production-setup-toggle-active"
@@ -223,7 +226,7 @@ export function ProductionDefinitionDetailPage() {
           </Button>
         ) : null}
         {allowManage && definition.isActive ? (
-          <Button asChild variant="outline" className="min-h-11" disabled={!online}>
+          <Button asChild variant="outline" disabled={!online}>
             <Link to={`/inventory/production/produce?definitionId=${definitionId}`}>
               {t("production.homeProduce")}
             </Link>

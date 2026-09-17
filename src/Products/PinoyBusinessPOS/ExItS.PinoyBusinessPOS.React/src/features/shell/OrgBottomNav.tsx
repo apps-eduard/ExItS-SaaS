@@ -5,6 +5,8 @@ import {
   matchOrgNavTab,
   type OrgNavTabId,
 } from "@/features/shell/org-nav-config";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -19,25 +21,34 @@ const ICONS = {
 } as const;
 
 /**
- * Org bottom navigation (phone → desktop).
- * Hidden on Personal routes. Centered max-width keeps wide layouts balanced.
+ * Org bottom navigation — phone/tablet only.
+ * Unmounted at desktop (>=1024); `lg:hidden` remains as a CSS safety net.
  */
 export function OrgBottomNav() {
   const { t } = useI18n();
   const location = useLocation();
   const { status: sessionStatus } = useSession();
   const { sessionGrant, boundWorkspace } = useWorkspace();
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+
+  if (isDesktop) {
+    return null;
+  }
 
   if (!isAuthenticatedOrColdStartOffline(sessionStatus) || !boundWorkspace) {
     return null;
   }
 
-  if (location.pathname.startsWith("/onboarding")) {
+  if (location.pathname.startsWith("/onboarding") || location.pathname.startsWith("/subscription-checkout")) {
     return null;
   }
 
   const experience = boundWorkspace.experience ?? "operations";
-  const tabs = buildOrgBottomNavTabs({ grant: sessionGrant, experience });
+  const tabs = buildOrgBottomNavTabs({
+    grant: sessionGrant,
+    experience,
+    branchType: boundWorkspace.branchType,
+  });
   const activeId = matchOrgNavTab(location.pathname, tabs);
 
   if (tabs.length === 0) {
@@ -48,9 +59,9 @@ export function OrgBottomNav() {
     <nav
       data-testid="org-bottom-nav"
       aria-label={t("org.nav.aria")}
-      className="org-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)]"
+      className="org-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      <ul className="org-bottom-nav-inner mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1 sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
+      <ul className="org-bottom-nav-inner mx-auto flex w-full max-w-lg items-stretch justify-between gap-0.5 px-2 pt-1 sm:max-w-xl md:max-w-2xl">
         {tabs.map((tab) => {
           const Icon = ICONS[tab.id as OrgNavTabId];
           const isActive = activeId === tab.id;
@@ -63,8 +74,9 @@ export function OrgBottomNav() {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-[var(--exits-radius-md)] px-1 py-1 text-center text-[length:var(--exits-text-xs)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  isActive ? "font-semibold text-primary" : "text-muted hover:text-foreground",
-                  tab.primary && !isActive ? "font-medium text-foreground" : null,
+                  isActive
+                    ? "font-semibold text-primary"
+                    : "font-medium text-muted hover:text-foreground",
                 )}
               >
                 <Icon

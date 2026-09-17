@@ -29,6 +29,7 @@ export const posCustomerListItemSchema = z.object({
   linkedPersonalPublicUserId: z.string().nullable().optional(),
   linkedBuyerOrganizationId: guidSchema.nullable().optional(),
   linkedBuyerPublicOrganizationId: z.string().nullable().optional(),
+  partyKind: z.string().nullable().optional(),
 });
 
 export const posCustomerDetailSchema = posCustomerListItemSchema;
@@ -44,8 +45,23 @@ export const posCustomerCreditSummarySchema = z.object({
   customerId: guidSchema,
   organizationId: guidSchema,
   outstandingAmount: z.number(),
+  pendingCheckAmount: z.number().optional().default(0),
   activeEntryCount: z.number(),
   totalEntryCount: z.number(),
+});
+
+export const posCustomerUtangSummarySchema = z.object({
+  customerId: guidSchema,
+  organizationId: guidSchema,
+  outstandingAmount: z.number(),
+  activeCreditTotal: z.number().optional().default(0),
+  activeRepaymentTotal: z.number().optional().default(0),
+  pendingCheckAmount: z.number().optional().default(0),
+  activeCreditCount: z.number().optional().default(0),
+  activeRepaymentCount: z.number().optional().default(0),
+  totalLedgerEntryCount: z.number().optional().default(0),
+  overdueAmount: z.number().optional().default(0),
+  overdueCreditCount: z.number().optional().default(0),
 });
 
 export const posCreditEntrySchema = z.object({
@@ -75,9 +91,24 @@ export const posRepaymentSchema = z.object({
   customerId: guidSchema,
   amount: z.number(),
   remarks: z.string().nullable().optional(),
+  paymentMethod: z.string().optional().default("Cash"),
+  checkNumber: z.string().nullable().optional(),
+  bankName: z.string().nullable().optional(),
+  checkDate: z.string().nullable().optional(),
+  accountName: z.string().nullable().optional(),
+  reference: z.string().nullable().optional(),
+  checkClearingStatus: z.string().optional().default("None"),
   status: z.string(),
   recordedAtUtc: z.string(),
   recordedBy: guidSchema,
+  clearedAtUtc: z.string().nullable().optional(),
+  clearedBy: guidSchema.nullable().optional(),
+  bouncedAtUtc: z.string().nullable().optional(),
+  bouncedBy: guidSchema.nullable().optional(),
+  bounceReason: z.string().nullable().optional(),
+  cancelledAtUtc: z.string().nullable().optional(),
+  cancelledBy: guidSchema.nullable().optional(),
+  cancelReason: z.string().nullable().optional(),
   reversedAtUtc: z.string().nullable().optional(),
   reversalReason: z.string().nullable().optional(),
   reversedBy: guidSchema.nullable().optional(),
@@ -127,6 +158,7 @@ export const posCustomerStatementLineSchema = z.object({
   isOverdue: z.boolean(),
   isReversed: z.boolean(),
   runningBalance: z.number(),
+  sourceSaleId: guidSchema.nullable().optional(),
 });
 
 export const posCustomerStatementSchema = z.object({
@@ -155,6 +187,7 @@ export type PosCustomerListItem = z.infer<typeof posCustomerListItemSchema>;
 export type PosCustomerDetail = z.infer<typeof posCustomerDetailSchema>;
 export type PosCustomerPagedResult = z.infer<typeof posCustomerPagedResultSchema>;
 export type PosCustomerCreditSummary = z.infer<typeof posCustomerCreditSummarySchema>;
+export type PosCustomerUtangSummary = z.infer<typeof posCustomerUtangSummarySchema>;
 export type PosCreditEntry = z.infer<typeof posCreditEntrySchema>;
 export type PosCreditEntryPagedResult = z.infer<typeof posCreditEntryPagedResultSchema>;
 export type PosRepayment = z.infer<typeof posRepaymentSchema>;
@@ -174,6 +207,12 @@ export type CreatePosCustomerInput = {
   platformBusinessCustomerId?: string | null;
   /** POS-local Personal ExItS ID (EX-####-####). Required when creating with an ExItS identity. */
   linkedPersonalPublicUserId?: string | null;
+  /** Person (default) or Business party kind. */
+  partyKind?: "Person" | "Business" | string | null;
+  /** Linked ExItS buyer Organization Guid — Business customers only. */
+  linkedBuyerOrganizationId?: string | null;
+  /** Linked public ORG###### for the buyer organization. */
+  linkedBuyerPublicOrganizationId?: string | null;
 };
 
 export type UpdatePosCustomerInput = CreatePosCustomerInput & {
@@ -186,7 +225,20 @@ export type CreatePosRepaymentInput = {
   amount: number;
   remarks?: string | null;
   repaymentId?: string;
+  paymentMethod?: "Cash" | "ManualGCash" | "Check";
+  checkNumber?: string | null;
+  bankName?: string | null;
+  checkDate?: string | null;
+  accountName?: string | null;
+  reference?: string | null;
 };
+
+export type UtangRepaymentPaymentMethod = NonNullable<CreatePosRepaymentInput["paymentMethod"]>;
+export const UTANG_REPAYMENT_PAYMENT_METHODS: readonly UtangRepaymentPaymentMethod[] = [
+  "Cash",
+  "ManualGCash",
+  "Check",
+] as const;
 
 /**
  * Idempotency headers for a customer/credit mutation, mirroring MAUI
@@ -224,6 +276,13 @@ export function buildCreateCustomerPayload(input: CreatePosCustomerInput) {
     ...(input.linkedPersonalPublicUserId?.trim()
       ? { linkedPersonalPublicUserId: input.linkedPersonalPublicUserId.trim() }
       : {}),
+    ...(input.partyKind?.trim() ? { partyKind: input.partyKind.trim() } : {}),
+    ...(input.linkedBuyerOrganizationId?.trim()
+      ? { linkedBuyerOrganizationId: input.linkedBuyerOrganizationId.trim() }
+      : {}),
+    ...(input.linkedBuyerPublicOrganizationId?.trim()
+      ? { linkedBuyerPublicOrganizationId: input.linkedBuyerPublicOrganizationId.trim() }
+      : {}),
   };
 }
 
@@ -240,9 +299,16 @@ export function buildUpdateCustomerPayload(input: UpdatePosCustomerInput) {
 
 /** Payload the server expects for a repayment — shared by the online and offline paths. */
 export function buildCreateRepaymentPayload(input: CreatePosRepaymentInput) {
+  const method = input.paymentMethod ?? "Cash";
   return {
     amount: input.amount,
     remarks: input.remarks?.trim() || null,
+    paymentMethod: method,
+    checkNumber: method === "Check" ? (input.checkNumber?.trim() || null) : null,
+    bankName: method === "Check" ? (input.bankName?.trim() || null) : null,
+    checkDate: method === "Check" ? (input.checkDate?.trim() || null) : null,
+    accountName: method === "Check" ? (input.accountName?.trim() || null) : null,
+    reference: input.reference?.trim() || null,
     ...(input.repaymentId ? { repaymentId: input.repaymentId } : {}),
   };
 }
@@ -294,10 +360,25 @@ export async function listCustomers(
 }
 
 export const checkoutCustomerSearchItemSchema = z.object({
-  customerId: guidSchema,
+  kind: z.enum(["Customer", "Business"]).default("Customer"),
   displayName: z.string(),
-  mobileNumber: z.string().nullable().optional(),
   status: z.string(),
+  customerId: guidSchema.nullable().optional(),
+  mobileNumber: z.string().nullable().optional(),
+  connectionId: guidSchema.nullable().optional(),
+  buyerOrganizationId: guidSchema.nullable().optional(),
+  buyerPublicOrganizationId: z.string().nullable().optional(),
+  partyKind: z.string().nullable().optional(),
+  initiatedByParty: z.string().nullable().optional(),
+  /** Person or Business connection rows — NotConfigured | PendingApproval | Approved | Disabled */
+  creditStatus: z.string().nullable().optional(),
+  creditLimit: z.number().nullable().optional(),
+  outstandingAmount: z.number().nullable().optional(),
+  availableCredit: z.number().nullable().optional(),
+  defaultTermDays: z.number().int().nullable().optional(),
+  linkedPersonalPublicUserId: z.string().nullable().optional(),
+  /** Platform BusinessCustomer id — Personal Pending/Connected overlay match key. */
+  platformBusinessCustomerId: guidSchema.nullable().optional(),
 });
 
 export const checkoutCustomerSearchResultSchema = z.object({
@@ -311,30 +392,33 @@ export type CheckoutCustomerSearchItem = z.infer<typeof checkoutCustomerSearchIt
 export type CheckoutCustomerSearchResult = z.infer<typeof checkoutCustomerSearchResultSchema>;
 
 /**
- * Narrow Active-only checkout customer search.
- * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory.
- * Search term must be non-blank; pageSize capped at 20 server-side.
+ * Narrow checkout counterparty search (people + Active/Pending B2B businesses).
+ * Requires CreateSale (Cashier allowed). Does not require ViewCustomersAndHistory / ViewSuppliers.
+ * Blank search is valid for All / Customer / Business (first page of Active, checkout-visible rows).
+ * pageSize capped at 20 server-side. Shared by Cash, GCash, and Utang.
+ * Pending businesses are visible but not selectable for CreateSale (server also guards Active-only).
+ * Person rows may include credit projection for Utang eligibility overlay (not a hide filter).
  */
 export async function searchCheckoutCustomers(
   workspace: PosWorkspaceScope,
   options: {
-    search: string;
+    search?: string;
+    kind?: "All" | "Customer" | "Business";
     page?: number;
     pageSize?: number;
   },
   signal?: AbortSignal,
 ): Promise<CheckoutCustomerSearchResult> {
-  const search = options.search.trim();
-  if (!search) {
-    return { items: [], totalCount: 0, page: 1, pageSize: Math.min(options.pageSize ?? 20, 20) };
-  }
+  const search = options.search?.trim() ?? "";
+  const kind = options.kind ?? "All";
 
   const raw = await posRequest<unknown>({
     method: "GET",
     workspace,
     signal,
     path: appendQuery(`${CUSTOMERS_PATH}/checkout-search`, {
-      search,
+      search: search || undefined,
+      kind,
       page: options.page ?? 1,
       pageSize: Math.min(options.pageSize ?? 20, 20),
     }),
@@ -477,6 +561,20 @@ export async function getCustomerCreditSummary(
   return posCustomerCreditSummarySchema.parse(raw);
 }
 
+export async function getCustomerUtangSummary(
+  workspace: PosWorkspaceScope,
+  customerId: string,
+  signal?: AbortSignal,
+): Promise<PosCustomerUtangSummary> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: customerPath(customerId, "/utang-summary"),
+  });
+  return posCustomerUtangSummarySchema.parse(raw);
+}
+
 export async function listCustomerCreditEntries(
   workspace: PosWorkspaceScope,
   customerId: string,
@@ -549,6 +647,52 @@ export async function getRepayment(
     workspace,
     signal,
     path: `${REPAYMENTS_PATH}/${repaymentId}`,
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function clearCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/clear-check`,
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function bounceCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/bounce-check`,
+    body: { reason: input.reason?.trim() || null },
+  });
+  return posRepaymentSchema.parse(raw);
+}
+
+export async function cancelCheckRepayment(
+  workspace: PosWorkspaceScope,
+  repaymentId: string,
+  input: { reason?: string | null } = {},
+  signal?: AbortSignal,
+): Promise<PosRepayment> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${REPAYMENTS_PATH}/${repaymentId}/cancel-check`,
+    body: { reason: input.reason?.trim() || null },
   });
   return posRepaymentSchema.parse(raw);
 }

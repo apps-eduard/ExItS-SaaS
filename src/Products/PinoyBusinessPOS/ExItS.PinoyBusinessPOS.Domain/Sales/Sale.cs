@@ -99,8 +99,11 @@ public sealed class Sale
     /// </summary>
     public SaleBuyerParty BuyerParty { get; }
 
-    /// <summary>Linked credit entry for Product-Based Utang only; null for settled payment methods.</summary>
+    /// <summary>Linked credit entry for Product-Based Utang (Person) only; null for settled payment methods and Business Utang.</summary>
     public CreditEntryId? LinkedCreditEntryId { get; }
+
+    /// <summary>Linked business credit entry for Organization Utang only; null for Person Utang and settled payment methods.</summary>
+    public BusinessCreditEntryId? LinkedBusinessCreditEntryId { get; }
 
     /// <summary>Open cashier shift at checkout; null for legacy pre-migration sales.</summary>
     public CashierShiftId? CashierShiftId { get; }
@@ -128,6 +131,18 @@ public sealed class Sale
     /// <see cref="SaleStockReservationState.None"/>.
     /// </summary>
     public SaleStockReservationState StockReservationState { get; private set; }
+
+    /// <summary>
+    /// Seller branding/identity snapshotted at checkout for customer documents.
+    /// Null on legacy sales recorded before seller-document identity snapshots.
+    /// </summary>
+    public SaleSellerDocumentIdentity? SellerDocumentIdentity { get; }
+
+    /// <summary>
+    /// Optional quotation this sale was converted from. Null for ordinary walk-in checkouts
+    /// and legacy sales recorded before quotation conversion.
+    /// </summary>
+    public Guid? SourceQuotationId { get; }
 
     public IReadOnlyList<SaleLine> Lines => _lines;
 
@@ -163,6 +178,7 @@ public sealed class Sale
         POSCustomerId? customerId,
         SaleBuyerParty buyerParty,
         CreditEntryId? linkedCreditEntryId,
+        BusinessCreditEntryId? linkedBusinessCreditEntryId,
         CashierShiftId? cashierShiftId,
         RegisterId? registerId,
         PosBranchId? branchId,
@@ -175,7 +191,9 @@ public sealed class Sale
         List<SaleLine> lines,
         SaleStockReservationState stockReservationState,
         List<SaleCommercialDiscountAdjustment> commercialDiscounts,
-        List<SalePriceOverrideAdjustment> priceOverrides)
+        List<SalePriceOverrideAdjustment> priceOverrides,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -197,6 +215,7 @@ public sealed class Sale
         CustomerId = customerId;
         BuyerParty = buyerParty;
         LinkedCreditEntryId = linkedCreditEntryId;
+        LinkedBusinessCreditEntryId = linkedBusinessCreditEntryId;
         CashierShiftId = cashierShiftId;
         RegisterId = registerId;
         BranchId = branchId;
@@ -207,6 +226,10 @@ public sealed class Sale
         VoidReason = voidReason;
         UpdatedAtUtc = updatedAtUtc;
         StockReservationState = stockReservationState;
+        SellerDocumentIdentity = sellerDocumentIdentity;
+        SourceQuotationId = sourceQuotationId is null || sourceQuotationId == Guid.Empty
+            ? null
+            : sourceQuotationId;
         _lines = lines;
         _commercialDiscounts = commercialDiscounts;
         _priceOverrides = priceOverrides;
@@ -244,7 +267,10 @@ public sealed class Sale
         PosBranchId? branchId = null,
         IReadOnlyList<CommercialDiscountIntent>? commercialDiscounts = null,
         IReadOnlyList<SalePriceOverrideIntent>? priceOverrides = null,
-        bool allowUnlimitedSalePriceOverride = false)
+        bool allowUnlimitedSalePriceOverride = false,
+        BusinessCreditEntryId? linkedBusinessCreditEntryId = null,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(recordedBy);
@@ -341,9 +367,14 @@ public sealed class Sale
         // A 100% commercial discount can legitimately drive the total to zero. Cash accepts that
         // (tender 0, change 0); Utang still requires a positive total because a zero-peso credit
         // entry would be meaningless. That existing rule is deliberately left in place.
-        ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
-
         var resolvedBuyer = buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId);
+        ValidatePaymentLinkage(
+            paymentMethod,
+            customerId,
+            linkedCreditEntryId,
+            linkedBusinessCreditEntryId,
+            resolvedBuyer,
+            total);
         resolvedBuyer.EnsureConsistentWith(customerId);
 
         var (tendered, change) = NormalizeTender(paymentMethod, total, amountTendered);
@@ -374,6 +405,7 @@ public sealed class Sale
             customerId,
             resolvedBuyer,
             linkedCreditEntryId,
+            linkedBusinessCreditEntryId,
             cashierShiftId,
             registerId,
             branchId,
@@ -386,7 +418,9 @@ public sealed class Sale
             saleLines,
             SaleStockReservationState.None,
             discountAdjustments,
-            priceOverrideAdjustments);
+            priceOverrideAdjustments,
+            sellerDocumentIdentity,
+            sourceQuotationId);
     }
 
     /// <summary>
@@ -434,7 +468,13 @@ public sealed class Sale
             throw new DomainException(DomainErrorCodes.SaleTotalTooLarge, "The sale total is too large.");
         }
 
-        ValidatePaymentLinkage(paymentMethod, customerId, linkedCreditEntryId, total);
+        ValidatePaymentLinkage(
+            paymentMethod,
+            customerId,
+            linkedCreditEntryId,
+            linkedBusinessCreditEntryId: null,
+            buyerParty: null,
+            total);
 
         var resolvedBuyer = buyerParty
             ?? (customerId is not null
@@ -471,6 +511,7 @@ public sealed class Sale
             customerId,
             resolvedBuyer,
             linkedCreditEntryId,
+            linkedBusinessCreditEntryId: null,
             cashierShiftId: null,
             registerId: null,
             branchId,
@@ -702,7 +743,10 @@ public sealed class Sale
         IEnumerable<SaleCommercialDiscountAdjustment>? commercialDiscounts = null,
         IEnumerable<SalePriceOverrideAdjustment>? priceOverrides = null,
         ProductionCostStatus costStatus = ProductionCostStatus.Unavailable,
-        decimal? totalCostSnapshot = null) =>
+        decimal? totalCostSnapshot = null,
+        BusinessCreditEntryId? linkedBusinessCreditEntryId = null,
+        SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
+        Guid? sourceQuotationId = null) =>
         new(
             id,
             organizationId,
@@ -725,6 +769,7 @@ public sealed class Sale
             customerId,
             buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId),
             linkedCreditEntryId,
+            linkedBusinessCreditEntryId,
             cashierShiftId,
             registerId,
             branchId,
@@ -737,7 +782,9 @@ public sealed class Sale
             lines.OrderBy(l => l.LineNumber).ToList(),
             stockReservationState,
             commercialDiscounts?.ToList() ?? [],
-            priceOverrides?.ToList() ?? []);
+            priceOverrides?.ToList() ?? [],
+            sellerDocumentIdentity,
+            sourceQuotationId);
 
     /// <summary>
     /// Marks inventory as reserved for an electronic sale awaiting payment.
@@ -851,7 +898,10 @@ public sealed class Sale
         if (paymentMethod is SalePaymentMethod.ManualGCash
             or SalePaymentMethod.Utang
             or SalePaymentMethod.Card
-            or SalePaymentMethod.GCash)
+            or SalePaymentMethod.GCash
+            or SalePaymentMethod.BankTransfer
+            or SalePaymentMethod.Check
+            or SalePaymentMethod.ManualMaya)
         {
             if (amountTendered is not null)
             {
@@ -863,6 +913,8 @@ public sealed class Sale
                             "Utang sales are recorded for the exact total and must not carry a tendered amount.",
                         SalePaymentMethod.Card or SalePaymentMethod.GCash =>
                             "Card and GCash sales are recorded for the exact total and must not carry a tendered amount.",
+                        SalePaymentMethod.BankTransfer or SalePaymentMethod.Check or SalePaymentMethod.ManualMaya =>
+                            "Manual payment methods are recorded for the exact total and must not carry a tendered amount.",
                         _ => "Manual GCash sales are recorded for the exact total and must not carry a tendered amount."
                     });
             }
@@ -910,8 +962,8 @@ public sealed class Sale
     }
 
     /// <summary>
-    /// Trims an optional manual GCash reference. The reference is operator-typed evidence only and
-    /// is never validated against GCash.
+    /// Trims an optional operator-typed payment reference (manual GCash / Bank Transfer / Maya / Check).
+    /// Never validated against a payment provider.
     /// </summary>
     public static string? NormalizeGCashReference(SalePaymentMethod paymentMethod, string? gcashReference)
     {
@@ -920,11 +972,15 @@ public sealed class Sale
             return null;
         }
 
-        if (paymentMethod != SalePaymentMethod.ManualGCash)
+        if (paymentMethod is not (
+            SalePaymentMethod.ManualGCash
+            or SalePaymentMethod.BankTransfer
+            or SalePaymentMethod.ManualMaya
+            or SalePaymentMethod.Check))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidSaleGCashReference,
-                "A GCash reference can only be recorded on a manual GCash sale.");
+                "A payment reference can only be recorded on a manual payment method sale.");
         }
 
         var trimmed = gcashReference.Trim();
@@ -932,7 +988,7 @@ public sealed class Sale
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidSaleGCashReference,
-                $"GCash reference must be at most {GCashReferenceMaxLength} characters.");
+                $"Payment reference must be at most {GCashReferenceMaxLength} characters.");
         }
 
         return trimmed;
@@ -962,6 +1018,8 @@ public sealed class Sale
         SalePaymentMethod paymentMethod,
         POSCustomerId? customerId,
         CreditEntryId? linkedCreditEntryId,
+        BusinessCreditEntryId? linkedBusinessCreditEntryId,
+        SaleBuyerParty? buyerParty,
         decimal total)
     {
         // Provider-backed Card/GCash enter AwaitingPayment and create payment attempts with
@@ -978,20 +1036,6 @@ public sealed class Sale
 
         if (paymentMethod == SalePaymentMethod.Utang)
         {
-            if (customerId is null)
-            {
-                throw new DomainException(
-                    DomainErrorCodes.SaleUtangCustomerRequired,
-                    "Product-Based Utang requires a customer.");
-            }
-
-            if (linkedCreditEntryId is null)
-            {
-                throw new DomainException(
-                    DomainErrorCodes.SaleUtangLinkageInvalid,
-                    "Product-Based Utang requires a linked credit entry id.");
-            }
-
             if (total <= 0m)
             {
                 throw new DomainException(
@@ -999,12 +1043,56 @@ public sealed class Sale
                     "Product-Based Utang total must be greater than zero.");
             }
 
-            return;
+            var isOrganizationBuyer = buyerParty?.Kind == SaleBuyerPartyKind.Organization;
+            var personUtangOk = customerId is not null && linkedCreditEntryId is not null;
+            var organizationUtangOk = isOrganizationBuyer && linkedBusinessCreditEntryId is not null;
+
+            if (organizationUtangOk)
+            {
+                if (customerId is not null || linkedCreditEntryId is not null)
+                {
+                    throw new DomainException(
+                        DomainErrorCodes.SaleUtangLinkageInvalid,
+                        "Organization Utang must not link a POS customer or person credit entry.");
+                }
+
+                return;
+            }
+
+            if (personUtangOk)
+            {
+                if (linkedBusinessCreditEntryId is not null)
+                {
+                    throw new DomainException(
+                        DomainErrorCodes.SaleUtangLinkageInvalid,
+                        "Person Utang must not link a business credit entry.");
+                }
+
+                return;
+            }
+
+            if (customerId is null && !isOrganizationBuyer)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.SaleUtangCustomerRequired,
+                    "Product-Based Utang requires a customer.");
+            }
+
+            if (isOrganizationBuyer && linkedBusinessCreditEntryId is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.SaleUtangLinkageInvalid,
+                    "Organization Utang requires a linked business credit entry id.");
+            }
+
+            throw new DomainException(
+                DomainErrorCodes.SaleUtangLinkageInvalid,
+                "Product-Based Utang requires a linked credit entry id.");
         }
 
         // Settled payments may optionally attach a customer (linked-merchant receipts/activity).
         // They must never attach a credit entry / Utang linkage.
-        if (linkedCreditEntryId is not null)
+        if (linkedCreditEntryId is not null || linkedBusinessCreditEntryId is not null)
         {
             throw new DomainException(
                 DomainErrorCodes.SaleCashMustNotLinkCredit,

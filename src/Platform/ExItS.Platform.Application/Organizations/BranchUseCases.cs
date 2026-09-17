@@ -77,7 +77,9 @@ public sealed record OrganizationBranchDto(
     int DeliverySectionsTotal = BranchFulfillmentSetupSummary.DeliverySectionCount,
     IReadOnlyList<BranchDeliveryServiceAreaPublicDto>? ActiveDeliveryServiceAreas = null,
     Guid? AreaId = null,
-    string? AreaName = null);
+    string? AreaName = null,
+    /// <summary>Retail (default) or Warehouse.</summary>
+    string BranchType = nameof(OrganizationBranchType.Retail));
 
 public sealed record BranchDeliveryServiceAreaPublicDto(
     Guid Id,
@@ -108,7 +110,8 @@ public sealed record BranchManagementSummaryItemDto(
     int DeliverySectionsComplete,
     int DeliverySectionsTotal,
     Guid? AreaId = null,
-    string? AreaName = null);
+    string? AreaName = null,
+    string BranchType = nameof(OrganizationBranchType.Retail));
 
 public sealed record BranchStaffAccessItemDto(
     Guid MembershipId,
@@ -138,7 +141,8 @@ public sealed record CreateBranchCommand(
     bool DeliveryEnabled = false,
     bool CustomerOrderingEnabled = false,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    OrganizationBranchType BranchType = OrganizationBranchType.Retail);
 
 public sealed record UpdateBranchCommand(
     string Name,
@@ -153,7 +157,8 @@ public sealed record UpdateBranchCommand(
     decimal? Longitude = null,
     bool? ClearCoordinates = null,
     string? ContactPhone = null,
-    string? TimeZoneId = null);
+    string? TimeZoneId = null,
+    OrganizationBranchType? BranchType = null);
 
 public sealed record UpsertBranchDeliveryPolicyCommand(
     decimal MinimumOrderAmount,
@@ -232,13 +237,23 @@ public sealed class ListBranches(
     }
 
     /// <summary>
+    /// Full organization branch directory without staff branch-access filtering.
+    /// Used by Platform Admin portfolio reads (ViewPortfolio / ManageOrganizations) and by
+    /// linked Personal customers who need seller branch snapshots without org membership.
+    /// Still returns only branches owned by <paramref name="organizationId"/>.
+    /// </summary>
+    public Task<IReadOnlyList<OrganizationBranchDto>> ExecuteForOrganizationDirectoryAsync(
+        PlatformOrganizationId organizationId,
+        CancellationToken cancellationToken = default) =>
+        MapListFromOrganizationAsync(organizationId, cancellationToken);
+
+    /// <summary>
     /// Linked Personal customers need Active branch fulfillment snapshots without organization membership.
-    /// Skips staff branch-access filtering; still returns only org-owned branches for the seller.
     /// </summary>
     public Task<IReadOnlyList<OrganizationBranchDto>> ExecuteForLinkedCustomerAsync(
         PlatformOrganizationId organizationId,
         CancellationToken cancellationToken = default) =>
-        MapListFromOrganizationAsync(organizationId, cancellationToken);
+        ExecuteForOrganizationDirectoryAsync(organizationId, cancellationToken);
 
     private async Task<IReadOnlyList<OrganizationBranchDto>> MapListFromOrganizationAsync(
         PlatformOrganizationId organizationId,
@@ -351,6 +366,7 @@ public sealed class CreateBranch(
     IBranchDeliveryPolicyRepository policies,
     ISubscriptionRepository subscriptions,
     IPlanRepository plans,
+    EntitlementQueryService entitlements,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -371,6 +387,19 @@ public sealed class CreateBranch(
             return ApplicationResult<OrganizationBranchDto>.Failure(
                 ApplicationErrorCodes.BranchCapacityExceeded,
                 "The active POS plan branch limit has been reached.");
+        }
+
+        if (command.BranchType is OrganizationBranchType.Warehouse)
+        {
+            var warehouseGate = await PosWarehouseEntitlement
+                .EnsureAllowedAsync(organizationId, entitlements, cancellationToken)
+                .ConfigureAwait(false);
+            if (!warehouseGate.IsSuccess)
+            {
+                return ApplicationResult<OrganizationBranchDto>.Failure(
+                    warehouseGate.ErrorCode!,
+                    warehouseGate.ErrorMessage!);
+            }
         }
 
         OrganizationBranch branch;
@@ -401,7 +430,8 @@ public sealed class CreateBranch(
                 command.Longitude,
                 command.PickupEnabled,
                 command.DeliveryEnabled,
-                command.CustomerOrderingEnabled);
+                command.CustomerOrderingEnabled,
+                branchType: command.BranchType);
             if (!string.IsNullOrWhiteSpace(command.ContactPhone))
             {
                 branch.UpdateContactPhone(command.ContactPhone, clock.UtcNow);
@@ -429,6 +459,7 @@ public sealed class CreateBranch(
 public sealed class UpdateBranch(
     IOrganizationBranchRepository branches,
     IBranchDeliveryPolicyRepository policies,
+    EntitlementQueryService entitlements,
     IPlatformUnitOfWork unitOfWork,
     IClock clock)
 {
@@ -475,6 +506,25 @@ public sealed class UpdateBranch(
             if (command.TimeZoneId is not null)
             {
                 branch.UpdateTimeZone(command.TimeZoneId, clock.UtcNow);
+            }
+
+            if (command.BranchType is OrganizationBranchType branchType)
+            {
+                if (branchType is OrganizationBranchType.Warehouse
+                    && branch.BranchType is not OrganizationBranchType.Warehouse)
+                {
+                    var warehouseGate = await PosWarehouseEntitlement
+                        .EnsureAllowedAsync(organizationId, entitlements, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!warehouseGate.IsSuccess)
+                    {
+                        return ApplicationResult<OrganizationBranchDto>.Failure(
+                            warehouseGate.ErrorCode!,
+                            warehouseGate.ErrorMessage!);
+                    }
+                }
+
+                branch.SetBranchType(branchType, clock.UtcNow);
             }
 
             if (command.Status is not null)
@@ -737,7 +787,8 @@ public sealed class ListBranchManagementSummaries(
                 b.DeliverySectionsComplete,
                 b.DeliverySectionsTotal,
                 b.AreaId,
-                b.AreaName))
+                b.AreaName,
+                b.BranchType))
             .ToList();
 
         return ApplicationResult<IReadOnlyList<BranchManagementSummaryItemDto>>.Success(items);
@@ -1009,6 +1060,30 @@ public sealed class EnsureMainBranchExists(
     }
 }
 
+internal static class PosWarehouseEntitlement
+{
+    public static async Task<ApplicationResult<bool>> EnsureAllowedAsync(
+        PlatformOrganizationId organizationId,
+        EntitlementQueryService entitlements,
+        CancellationToken cancellationToken)
+    {
+        var snapshot = await entitlements
+            .GetLatestAsync(organizationId.Value, ProductCode.PinoyBusinessPos, cancellationToken)
+            .ConfigureAwait(false);
+        var allowed = snapshot?.Grants.Any(g =>
+            g.Enabled
+            && string.Equals(g.FeatureCode, FeatureCode.StoreWarehouse, StringComparison.Ordinal)) == true;
+        if (!allowed)
+        {
+            return ApplicationResult<bool>.Failure(
+                ApplicationErrorCodes.WarehouseEntitlementRequired,
+                "Warehouse branches require a Pro or Pro+ plan with warehouse entitlement.");
+        }
+
+        return ApplicationResult<bool>.Success(true);
+    }
+}
+
 internal sealed record PosPlanLimits(int MaxBranches, int MaxActivePosDevices, int MaxAreas);
 
 internal static class PosOrganizationPlanLimits
@@ -1096,7 +1171,8 @@ internal static class BranchMapper
             readiness?.SetupSummary.DeliverySectionsTotal ?? BranchFulfillmentSetupSummary.DeliverySectionCount,
             activeDeliveryServiceAreas,
             x.AreaId?.Value,
-            areaName);
+            areaName,
+            x.BranchType.ToString());
 
     public static BranchDeliveryPolicyDto ToDto(BranchDeliveryPolicy x) =>
         new(

@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Link, useParams } from "react-router-dom";
@@ -313,7 +314,9 @@ export function PersonDetailPage() {
 
     return (
 
-      <EmptyState title={t("people.detail.notFoundTitle")} detail={t("people.detail.notFoundBody")} />
+      <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.detail.notFoundTitle")} detail={t("people.detail.notFoundBody")} />
 
     );
 
@@ -414,7 +417,7 @@ export function PersonDetailPage() {
 
               onChange={(event) => setAmount(event.target.value)}
 
-              className="h-[var(--exits-control-height)] rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-focus-ring)]"
+              className="exits-input h-[var(--exits-control-height)] rounded-[var(--exits-field-radius)] border border-border bg-surface px-3 outline-none"
 
             />
 

@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ICatalogImportFileParser, CatalogImportFileParser>();
         services.AddScoped<IPlatformOrganizationRepository, PlatformOrganizationRepository>();
         services.AddScoped<IOrganizationSalesDocumentCapabilityRepository, OrganizationSalesDocumentCapabilityRepository>();
+        services.AddScoped<IOrganizationOnlineSupplierPaymentsCapabilityRepository, OrganizationOnlineSupplierPaymentsCapabilityRepository>();
         services.AddScoped<IOrganizationComplianceProfileRepository, OrganizationComplianceProfileRepository>();
         services.AddScoped<IBranchComplianceProfileRepository, BranchComplianceProfileRepository>();
         services.AddScoped<IComplianceRegistrationRecordRepository, ComplianceRegistrationRecordRepository>();
@@ -85,8 +86,8 @@ public static class DependencyInjection
         services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
         services.AddScoped<ISaaSPaymentRepository, SaaSPaymentRepository>();
         services.AddScoped<IProviderPaymentRepository, ProviderPaymentRepository>();
-        services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();
-        services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
+        services.AddScoped<ISubscriptionPaymentTransactionRepository, SubscriptionPaymentTransactionRepository>();
+        services.AddScoped<IFeatureOverrideRepository, FeatureOverrideRepository>();        services.AddScoped<IEntitlementSnapshotRepository, EntitlementSnapshotRepository>();
         services.AddScoped<IAdminPortfolioReadStore, AdminPortfolioReadStore>();
         services.AddScoped<IPlatformUserRepository, PlatformUserRepository>();
         services.AddScoped<IStaffNumberGenerator, EfStaffNumberGenerator>();

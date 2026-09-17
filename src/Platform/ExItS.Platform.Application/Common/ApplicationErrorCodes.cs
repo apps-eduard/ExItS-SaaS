@@ -29,6 +29,8 @@ public static class ApplicationErrorCodes
         "application.compliance.tax_configuration_precondition_failed";
     public const string TaxConfigurationNotEnabled =
         "application.compliance.tax_configuration_not_enabled";
+    public const string OnlineSupplierPaymentsInvalidTransition =
+        "application.online_supplier_payments.invalid_transition";
     public const string EmailConflict = "application.user.email_conflict";
     public const string UsernameConflict = "application.user.username_conflict";
     public const string SlugConflict = "application.organization.slug_conflict";
@@ -245,6 +247,14 @@ public static class ApplicationErrorCodes
         "application.business_type_activation.capacity_exceeded";
     public const string BusinessTypePrimaryCannotDeactivate =
         "application.business_type_activation.primary_locked";
+    public const string WarehouseEntitlementRequired = "application.branch.warehouse_entitlement_required";
+
+    public const string AreaManagementEntitlementRequired = "application.area.management_entitlement_required";
+
+    public const string PlanDowngradeBlockedByWarehouse = "application.subscription.plan_downgrade_blocked_by_warehouse";
+
+    public const string PlanDowngradeBlockedByAreaCapacity = "application.subscription.plan_downgrade_blocked_by_area_capacity";
+
     public const string PlanDowngradeBlockedByBusinessTypeCapacity =
         "application.plan_change.business_type_capacity_blocked";
     public const string PosDeviceNotAuthorized = "application.pos_device.not_authorized";

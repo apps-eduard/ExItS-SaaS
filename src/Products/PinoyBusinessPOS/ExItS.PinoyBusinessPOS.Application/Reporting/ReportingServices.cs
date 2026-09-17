@@ -138,7 +138,10 @@ public sealed class DashboardQueryService
                 cancellationToken)
             .ConfigureAwait(false);
         var expenses = await _expenses
-            .ListForSummaryAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+            .ListForSummaryAsync(
+                orgId,
+                new ExpenseFilter(FromDate: range.FromDate, ToDate: range.ToDate),
+                cancellationToken)
             .ConfigureAwait(false);
 
         var recordedExpenses = expenses.Where(e => e.Status == ExpenseStatus.Recorded).ToList();
@@ -180,7 +183,10 @@ public sealed class DashboardQueryService
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         var priorExpenses = await _expenses
-            .ListForSummaryAsync(orgId, prior.FromDate, prior.ToDate, cancellationToken)
+            .ListForSummaryAsync(
+                orgId,
+                new ExpenseFilter(FromDate: prior.FromDate, ToDate: prior.ToDate),
+                cancellationToken)
             .ConfigureAwait(false);
         var priorCompletedTotal = priorSaleTotals.CompletedTotal;
         var priorExpenseTotal = ReportMath.RoundMoney(
@@ -820,7 +826,10 @@ public sealed class ExpensesReportService
         var range = rangeResult.Value!;
         var orgId = PosOrganizationId.From(organizationId);
         var expenses = (await _expenses
-                .ListForSummaryAsync(orgId, range.FromDate, range.ToDate, cancellationToken)
+                .ListForSummaryAsync(
+                    orgId,
+                    new ExpenseFilter(FromDate: range.FromDate, ToDate: range.ToDate),
+                    cancellationToken)
                 .ConfigureAwait(false))
             .AsEnumerable();
 

@@ -3,11 +3,17 @@ import { AppTopBar } from "@/components/exits/AppTopBar";
 import { WorkspaceTransitionOverlay } from "@/components/exits/loading/WorkspaceTransitionOverlay";
 import { PersonalMerchantCartProvider } from "@/features/customer-ordering/PersonalMerchantCartProvider";
 import { isAccountContextSwitchPath } from "@/features/account/account-context-switch-route";
+import { AdminManagementShell } from "@/features/admin/AdminManagementShell";
+import { shouldUseAdminManagementShell } from "@/features/admin/admin-nav-config";
+import { OperationsShell } from "@/features/operations/OperationsShell";
+import { shouldUseOperationsShell } from "@/features/operations/operations-nav-config";
 import { OrgBottomNav } from "@/features/shell/OrgBottomNav";
+import { SHELL_DESKTOP_MIN_PX } from "@/features/shell/shell-breakpoints";
 import {
   isSellTransactionPath,
   useOrgBottomNavHidden,
 } from "@/features/sell/sell-org-bottom-nav-chrome";
+import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { AppShell } from "@/layouts/AppShell";
 import { isAuthenticatedOrColdStartOffline, useSession } from "@/session/SessionProvider";
@@ -21,16 +27,42 @@ export function RootLayout() {
   const isPersonal = location.pathname.startsWith("/personal") || isContextSwitch;
   const isOnboarding = location.pathname.startsWith("/onboarding");
   const { status: sessionStatus } = useSession();
-  const { status: workspaceStatus, boundWorkspace } = useWorkspace();
+  const { status: workspaceStatus, boundWorkspace, sessionGrant } = useWorkspace();
   const cartOverlayHidesNav = useOrgBottomNavHidden();
   const sellTransactionHidesNav = isSellTransactionPath(location.pathname);
+  const isDesktop = useMediaMin(SHELL_DESKTOP_MIN_PX);
+  const useAdminShell =
+    !isPersonal &&
+    !isOnboarding &&
+    isAuthenticatedOrColdStartOffline(sessionStatus) &&
+    boundWorkspace != null &&
+    shouldUseAdminManagementShell({
+      experience: boundWorkspace.experience,
+      pathname: location.pathname,
+    });
+  const useOpsShell =
+    !isPersonal &&
+    !isOnboarding &&
+    !useAdminShell &&
+    isAuthenticatedOrColdStartOffline(sessionStatus) &&
+    boundWorkspace != null &&
+    shouldUseOperationsShell({
+      experience: boundWorkspace.experience,
+      pathname: location.pathname,
+      grant: sessionGrant,
+    });
   const showOrgBottomNav =
     !isPersonal &&
     !isOnboarding &&
+    !useAdminShell &&
+    !useOpsShell &&
+    !isDesktop &&
     isAuthenticatedOrColdStartOffline(sessionStatus) &&
     boundWorkspace != null;
   const orgBottomNavVisible =
     showOrgBottomNav && !cartOverlayHidesNav && !sellTransactionHidesNav;
+  const operationsHideBottomNav =
+    isDesktop || cartOverlayHidesNav || sellTransactionHidesNav;
 
   const showWorkspaceTransition = workspaceStatus === "binding";
   const isSellFloor =
@@ -40,13 +72,27 @@ export function RootLayout() {
     <>
       <WorkspaceBootNavigator />
       <PersonalMerchantCartProvider>
-        <AppShell
-          header={isPersonal ? undefined : <AppTopBar />}
-          withOrgBottomNav={orgBottomNavVisible}
-          sellFloor={isSellFloor}
-        >
-          <Outlet />
-        </AppShell>
+        {useAdminShell ? (
+          <AdminManagementShell header={<AppTopBar hideDesktopBrand />}>
+            <Outlet />
+          </AdminManagementShell>
+        ) : useOpsShell ? (
+          <OperationsShell
+            header={<AppTopBar hideDesktopBrand />}
+            sellFloor={isSellFloor}
+            hideBottomNav={operationsHideBottomNav}
+          >
+            <Outlet />
+          </OperationsShell>
+        ) : (
+          <AppShell
+            header={isPersonal ? undefined : <AppTopBar />}
+            withOrgBottomNav={orgBottomNavVisible}
+            sellFloor={isSellFloor}
+          >
+            <Outlet />
+          </AppShell>
+        )}
         {orgBottomNavVisible ? <OrgBottomNav /> : null}
         <WorkspaceTransitionOverlay
           active={showWorkspaceTransition}

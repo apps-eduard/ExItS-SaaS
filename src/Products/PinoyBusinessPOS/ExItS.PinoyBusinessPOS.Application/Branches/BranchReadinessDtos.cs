@@ -40,3 +40,13 @@ public sealed record UpsertBranchSetupProgressRequest(
     bool MarkCompleted = false);
 
 public sealed record GrantPartyBranchAccessRequest(Guid BranchId);
+
+public sealed record CustomerBranchAccessItemDto(
+    Guid BranchId,
+    string GrantSource,
+    DateTimeOffset GrantedAtUtc);
+
+public sealed record CustomerBranchAccessListDto(
+    Guid CustomerId,
+    Guid? HomeBranchId,
+    IReadOnlyList<CustomerBranchAccessItemDto> Items);

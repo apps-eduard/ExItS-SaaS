@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CircleAlert, MonitorSmartphone } from "lucide-react";
+import { MonitorSmartphone } from "lucide-react";
 import { getPosDeviceCapacity, registerPosDevice } from "@/api/platform/pos-devices-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
 import { describePosApiError } from "@/access/pos-commercial-errors";
@@ -13,6 +13,7 @@ import { formatPosDeviceCapacity } from "@/features/devices/device-capacity";
 import { getDurableInstallationDeviceId } from "@/workspace/browser-installation-identity";
 import { Button } from "@/components/ui/button";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -164,21 +165,13 @@ export function DeviceRegisterPage() {
         ) : null}
 
         {capacityBlocked ? (
-          <div
-            role="alert"
-            className="exits-alert exits-alert--error"
-            data-testid="devices-register-capacity-blocked"
+          <Notice
+            tone="danger"
+            testId="devices-register-capacity-blocked"
+            title={t("devices.capacity.limitReached")}
           >
-            <div className="flex gap-3">
-              <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-              <div className="flex min-w-0 flex-col gap-1">
-                <p className="m-0 font-semibold">{t("devices.capacity.limitReached")}</p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("devices.capacity.limitReachedDetail")}
-                </p>
-              </div>
-            </div>
-          </div>
+            <p className="text-muted">{t("devices.capacity.limitReachedDetail")}</p>
+          </Notice>
         ) : null}
 
         <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)] font-semibold">
@@ -217,23 +210,16 @@ export function DeviceRegisterPage() {
         )}
 
         {error ? (
-          <div
-            role="alert"
-            className="exits-alert exits-alert--error"
-            data-testid="devices-register-error"
-          >
-            <div className="flex gap-3">
-              <CircleAlert className="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden />
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-destructive">{error}</p>
-            </div>
-          </div>
+          <Notice tone="danger" testId="devices-register-error">
+            {error}
+          </Notice>
         ) : null}
 
         <div className="device-register-actions">
           <Button
             type="button"
             variant="outline"
-            className="device-register-actions__cancel min-h-11"
+            className="device-register-actions__cancel"
             data-testid="devices-register-cancel"
             onClick={() => navigate(pageBackNav.orgDevices.to)}
           >
@@ -241,7 +227,7 @@ export function DeviceRegisterPage() {
           </Button>
           <Button
             type="button"
-            className="device-register-actions__submit min-h-11"
+            className="device-register-actions__submit"
             data-testid="devices-register-submit"
             disabled={registerMutation.isPending || capacityBlocked}
             onClick={() => registerMutation.mutate()}

@@ -1,4 +1,5 @@
 import type { AccessibleWorkspaceBranch } from "@/workspace/types";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 
 /**
  * `single` keeps the simple one-branch flow, `flat` keeps the current list, and `grouped`
@@ -12,6 +13,12 @@ export type WorkspaceAreaGroup = {
   areaName: string | null;
   isUnassigned: boolean;
   branches: AccessibleWorkspaceBranch[];
+};
+
+export type WorkspaceLocationBreakdown = {
+  total: number;
+  retail: number;
+  warehouse: number;
 };
 
 const UNASSIGNED_KEY = "unassigned";
@@ -64,4 +71,12 @@ export function groupWorkspaceBranchesByArea(
       sensitivity: "base",
     });
   });
+}
+
+export function summarizeWorkspaceLocations(
+  branches: readonly AccessibleWorkspaceBranch[],
+): WorkspaceLocationBreakdown {
+  const retail = branches.filter((branch) => !isWarehouseBranch(branch.branchType)).length;
+  const warehouse = branches.filter((branch) => isWarehouseBranch(branch.branchType)).length;
+  return { total: branches.length, retail, warehouse };
 }

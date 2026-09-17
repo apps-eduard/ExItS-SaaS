@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Platform;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -246,6 +247,14 @@ public sealed class MultiBranchCustomerCommerceTests
         CatalogProductId productId,
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
+
+    public Task<bool> HasConnectedPurchaseFulfillmentAsync(
+        PosOrganizationId organizationId,
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
 
         public Task<decimal?> GetLatestAcquisitionUnitCostAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult<decimal?>(null);

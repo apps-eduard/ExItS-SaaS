@@ -1,18 +1,9 @@
-import {
-  BriefcaseBusiness,
-  ChevronDown,
-  ChevronRight,
-  LayoutGrid,
-  ShoppingCart,
-} from "lucide-react";
+import { BriefcaseBusiness, ChevronDown, ChevronRight, Inbox, LayoutGrid, ShoppingCart, Warehouse } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   canUseAdminExperience,
-  isOrganizationAdministratorMembership,
-  isOrganizationOwnerMembership,
-  resolveEffectivePosRoleCode,
   type PosSessionGrantFacts,
 } from "@/access/pos-capabilities";
 import { listBranchManagementSummaries } from "@/api/platform/organization-branches-client";
@@ -23,16 +14,19 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
-import { resolveFriendlyPosRole } from "@/lib/user-display";
+import { resolveAuthenticatedRoleLabelKey } from "@/lib/authenticated-role-label";
 import { cn } from "@/lib/cn";
 import { normalizePosError } from "@/diagnostics/normalize-pos-error";
 import type { PosErrorReportInput } from "@/diagnostics/pos-error-report";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   groupWorkspaceBranchesByArea,
   resolveWorkspaceBranchGroupingMode,
+  summarizeWorkspaceLocations,
 } from "@/features/workspace/workspace-area-grouping";
 import { useWorkspace, type WorkspaceGrantProbeFailure } from "@/workspace/WorkspaceProvider";
 import { workspaceBindFailureTitleKey } from "@/workspace/workspace-bind-error";
@@ -44,14 +38,16 @@ import type {
   AccessibleOrganizationWorkspace,
   AccessibleWorkspaceBranch,
 } from "@/workspace/types";
-import type { WorkingExperience } from "@/workspace/working-experience";
 
-function destinationIcon(experience: WorkingExperience): LucideIcon {
-  if (experience === "manage_business") {
+function destinationIcon(destination: WorkspaceDestination): LucideIcon {
+  if (destination.experience === "manage_business") {
     return BriefcaseBusiness;
   }
-  if (experience === "start_selling") {
+  if (destination.experience === "start_selling") {
     return ShoppingCart;
+  }
+  if (destination.labelKey === "experience.warehouseOperations") {
+    return Warehouse;
   }
   return LayoutGrid;
 }
@@ -85,27 +81,29 @@ function staffCountLabel(count: number, t: (key: MessageKey) => string): string 
   return t("orgRoles.staffCountMany").replace("{count}", String(count));
 }
 
+function locationCountLabel(count: number, t: (key: MessageKey) => string): string {
+  if (count === 1) {
+    return t("workspace.locationCountOne");
+  }
+  return t("workspace.locationCountMany").replace("{count}", String(count));
+}
+
+function locationBreakdownLabel(
+  retail: number,
+  warehouse: number,
+  t: (key: MessageKey) => string,
+): string {
+  return t("workspace.locationTypeBreakdown")
+    .replace("{retail}", String(retail))
+    .replace("{warehouse}", String(warehouse));
+}
+
 function resolveOwnWorkspaceRoleLabel(
   grant: GrantFacts,
   t: (key: MessageKey) => string,
 ): string | null {
-  if (isOrganizationOwnerMembership(grant)) {
-    return t("account.role.owner");
-  }
-  if (isOrganizationAdministratorMembership(grant)) {
-    return t("account.role.admin");
-  }
-  const friendlyRole = resolveFriendlyPosRole(resolveEffectivePosRoleCode(grant));
-  if (friendlyRole === "owner") {
-    return t("account.role.owner");
-  }
-  if (friendlyRole === "manager") {
-    return t("account.role.manager");
-  }
-  if (friendlyRole === "cashier") {
-    return t("account.role.cashier");
-  }
-  return null;
+  const key = resolveAuthenticatedRoleLabelKey(null, grant);
+  return key ? t(key) : null;
 }
 
 function branchCardMetaLine(input: {
@@ -132,6 +130,7 @@ export function WorkspaceChooserPage() {
   const {
     status,
     workspaces,
+    boundWorkspace,
     accessDeniedDetail,
     bindFailureKind,
     failureDiagnostic,
@@ -141,6 +140,7 @@ export function WorkspaceChooserPage() {
     ensureOrganizationGrantHint,
     retryOrganizationGrantHint,
   } = useWorkspace();
+  const currentBranchId = boundWorkspace?.branchId ?? null;
   const canCollapseOrgs = workspaces.length > 1;
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(() =>
     workspaces.length === 1 ? (workspaces[0]?.organizationId ?? null) : null,
@@ -217,7 +217,9 @@ export function WorkspaceChooserPage() {
     return (
       <div className="flex min-w-0 flex-col gap-4">
         <PageHeader title={t("workspace.title")} description={t("workspace.lede")} />
-        <EmptyState title={t("noLocation.title")} detail={t("noLocation.detail")} />
+        <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />} title={t("noLocation.title")} detail={t("noLocation.detail")} />
       </div>
     );
   }
@@ -229,7 +231,7 @@ export function WorkspaceChooserPage() {
     const ok = await bindDestination(destination);
     setBindingKey(null);
     if (!ok) {
-      setLocalErrorKey("accessDenied.generic");
+      // denyBind already set a classified detail key; do not overwrite with generic.
       return;
     }
     navigate(destination.route, { replace: true });
@@ -239,6 +241,27 @@ export function WorkspaceChooserPage() {
     ? workspaceBindFailureTitleKey(bindFailureKind)
     : "accessDenied.title";
   const failureDetailKey = (accessDeniedDetail as MessageKey | null) ?? localErrorKey;
+  const openShiftBlocksSwitch = bindFailureKind === "open_shift_blocks_branch_switch";
+
+  function renderBindFailure() {
+    if (!failureDetailKey) {
+      return null;
+    }
+    return (
+      <div className="flex flex-col gap-3" data-testid="workspace-bind-failure">
+        <ErrorState
+          title={t(failureTitleKey)}
+          detail={t(failureDetailKey)}
+          diagnostic={failureDiagnostic ?? undefined}
+        />
+        {openShiftBlocksSwitch ? (
+          <Button asChild variant="outline" className="w-full sm:w-auto" data-testid="workspace-open-shift-cta">
+            <Link to="/shifts">{t("accessDenied.openShiftGoToShifts")}</Link>
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
 
   if (workspaces.length === 1) {
     const organization = workspaces[0];
@@ -277,7 +300,7 @@ export function WorkspaceChooserPage() {
             />
             <Button
               type="button"
-              className="min-h-11 w-full sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
             >
               {t("workspace.grantProbeRetry")}
@@ -300,6 +323,8 @@ export function WorkspaceChooserPage() {
         >
           <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
           <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />}
             title={t("workspace.noAuthorizedDestinationsTitle")}
             detail={t("workspace.noAuthorizedDestinationsDetail")}
           />
@@ -310,13 +335,7 @@ export function WorkspaceChooserPage() {
     return (
       <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
         <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
-        {failureDetailKey ? (
-          <ErrorState
-            title={t(failureTitleKey)}
-            detail={t(failureDetailKey)}
-            diagnostic={failureDiagnostic ?? undefined}
-          />
-        ) : null}
+        {renderBindFailure()}
         <OrganizationWorkspaceCard
           organization={organization}
           expanded
@@ -326,6 +345,7 @@ export function WorkspaceChooserPage() {
           grantResolved
           staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
           bindingKey={bindingKey}
+          currentBranchId={currentBranchId}
           onSelectDestination={(destination) => void selectDestination(destination)}
           t={t}
         />
@@ -336,13 +356,7 @@ export function WorkspaceChooserPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
       <PageHeader title={t("workspace.title")} description={t("workspace.experienceLede")} />
-      {failureDetailKey ? (
-        <ErrorState
-          title={t(failureTitleKey)}
-          detail={t(failureDetailKey)}
-          diagnostic={failureDiagnostic ?? undefined}
-        />
-      ) : null}
+      {renderBindFailure()}
       <div className="flex flex-col gap-3" role="list">
         {workspaces.map((organization) => {
           const expanded = canCollapseOrgs
@@ -381,7 +395,7 @@ export function WorkspaceChooserPage() {
                 />
                 <Button
                   type="button"
-                  className="min-h-11 w-full sm:w-auto"
+                  className="w-full sm:w-auto"
                   onClick={() => void retryOrganizationGrantHint(organization.organizationId)}
                 >
                   {t("workspace.grantProbeRetry")}
@@ -402,6 +416,8 @@ export function WorkspaceChooserPage() {
                 data-testid="workspace-no-authorized-destinations"
               >
                 <EmptyState
+              align="center"
+              icon={<Inbox className="size-5" strokeWidth={1.75} />}
                   title={t("workspace.noAuthorizedDestinationsTitle")}
                   detail={t("workspace.noAuthorizedDestinationsDetail")}
                 />
@@ -426,6 +442,7 @@ export function WorkspaceChooserPage() {
               grantResolved={Boolean(grantState.grant)}
               staffCountByBranch={staffCountByOrg.get(organization.organizationId) ?? null}
               bindingKey={bindingKey}
+              currentBranchId={currentBranchId}
               onSelectDestination={(destination) => void selectDestination(destination)}
               t={t}
             />
@@ -472,6 +489,7 @@ function OrganizationWorkspaceCard({
   grantResolved,
   staffCountByBranch,
   bindingKey,
+  currentBranchId,
   onSelectDestination,
   t,
 }: {
@@ -483,6 +501,7 @@ function OrganizationWorkspaceCard({
   grantResolved: boolean;
   staffCountByBranch: Map<string, number> | null;
   bindingKey: string | null;
+  currentBranchId: string | null;
   onSelectDestination: (destination: WorkspaceDestination) => void;
   t: (key: MessageKey) => string;
 }) {
@@ -491,11 +510,11 @@ function OrganizationWorkspaceCard({
     [grant, organization],
   );
   const manageBusiness = destinations.find((d) => d.experience === "manage_business");
-  const branchCount = organization.branches.length;
-  const branchesHeading =
-    branchCount === 0
-      ? t("workspace.branches")
-      : t("workspace.branchesWithCount").replace("{count}", String(branchCount));
+  const locationCount = organization.branches.length;
+  const locationsHeading =
+    locationCount === 0
+      ? t("workspace.locations")
+      : t("workspace.locationsWithCount").replace("{count}", String(locationCount));
   const groupingMode = useMemo(
     () => resolveWorkspaceBranchGroupingMode(organization.branches),
     [organization.branches],
@@ -507,6 +526,8 @@ function OrganizationWorkspaceCard({
   );
 
   function renderBranchTile(branch: AccessibleWorkspaceBranch) {
+    const warehouse = isWarehouseBranch(branch.branchType);
+    const isCurrent = Boolean(currentBranchId && currentBranchId === branch.branchId);
     const branchDestinations = destinations.filter((d) => d.branchId === branch.branchId);
     const meta = branchCardMetaLine({
       grant,
@@ -518,8 +539,25 @@ function OrganizationWorkspaceCard({
         key={branch.branchId}
         className="min-w-0 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-3"
         data-testid={`workspace-branch-${branch.branchId}`}
+        data-branch-type={warehouse ? "Warehouse" : "Retail"}
+        data-current={isCurrent ? "true" : "false"}
       >
-        <p className="m-0 truncate font-semibold">{branch.name}</p>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+          <p className="m-0 min-w-0 flex-1 truncate font-semibold">{branch.name}</p>
+          <div className="flex flex-wrap gap-1">
+            <StatusChip tone={warehouse ? "warning" : "info"}>
+              {warehouse ? t("branches.type.warehouse") : t("branches.type.retail")}
+            </StatusChip>
+            {isCurrent ? (
+              <span data-testid={`workspace-branch-current-${branch.branchId}`}>
+                <StatusChip tone="success">{t("workspace.current")}</StatusChip>
+              </span>
+            ) : null}
+            {!warehouse && branch.isPrimary ? (
+              <StatusChip tone="info">{t("branches.mgmt.primary")}</StatusChip>
+            ) : null}
+          </div>
+        </div>
         <p
           className="m-0 mt-1 truncate text-[length:var(--exits-text-sm)] text-muted"
           data-testid={`workspace-branch-meta-${branch.branchId}`}
@@ -535,7 +573,7 @@ function OrganizationWorkspaceCard({
           >
             {branchDestinations.map((destination) => (
               <DestinationTile
-                key={`${destination.experience}:${destination.branchId}`}
+                key={`${destination.experience}:${destination.branchId}:${destination.labelKey}`}
                 destination={destination}
                 bindingKey={bindingKey}
                 onSelect={onSelectDestination}
@@ -545,6 +583,17 @@ function OrganizationWorkspaceCard({
           </div>
         ) : null}
       </li>
+    );
+  }
+
+  function renderAreaGroupMeta(branches: AccessibleWorkspaceBranch[]) {
+    const breakdown = summarizeWorkspaceLocations(branches);
+    return (
+      <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+        {locationCountLabel(breakdown.total, t)}
+        <span aria-hidden> · </span>
+        {locationBreakdownLabel(breakdown.retail, breakdown.warehouse, t)}
+      </p>
     );
   }
 
@@ -561,7 +610,7 @@ function OrganizationWorkspaceCard({
       {canCollapse ? (
         <button
           type="button"
-          className="flex min-h-11 w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          className="flex w-full items-center justify-between gap-3 border-0 bg-transparent px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           aria-expanded={expanded}
           onClick={onToggle}
         >
@@ -598,13 +647,13 @@ function OrganizationWorkspaceCard({
             ) : null}
 
             {organization.branches.length > 0 ? (
-              <section aria-labelledby={`branches-${organization.organizationId}`}>
+              <section aria-labelledby={`locations-${organization.organizationId}`}>
                 <h3
-                  id={`branches-${organization.organizationId}`}
+                  id={`locations-${organization.organizationId}`}
                   className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-semibold uppercase tracking-wide text-muted"
-                  data-testid="workspace-branches-heading"
+                  data-testid="workspace-locations-heading"
                 >
-                  {branchesHeading}
+                  {locationsHeading}
                 </h3>
                 {groupingMode === "grouped" ? (
                   <div className="flex flex-col gap-4" data-testid="workspace-area-groups">
@@ -614,7 +663,7 @@ function OrganizationWorkspaceCard({
                         aria-labelledby={`area-${organization.organizationId}-${group.key}`}
                         data-testid={`workspace-area-group-${group.key}`}
                       >
-                        <div className="mb-2 flex min-w-0 flex-wrap items-baseline gap-x-2">
+                        <div className="mb-3 border-b border-border pb-2">
                           <h4
                             id={`area-${organization.organizationId}-${group.key}`}
                             className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
@@ -623,12 +672,9 @@ function OrganizationWorkspaceCard({
                               ? t("areas.unassigned")
                               : (group.areaName ?? t("areas.singular"))}
                           </h4>
-                          <span className="text-[length:var(--exits-text-xs)] text-muted">
-                            {t("areas.branchCount").replace(
-                              "{count}",
-                              String(group.branches.length),
-                            )}
-                          </span>
+                          <div data-testid={`workspace-area-meta-${group.key}`}>
+                            {renderAreaGroupMeta(group.branches)}
+                          </div>
                         </div>
                         <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
                           {group.branches.map(renderBranchTile)}
@@ -669,7 +715,7 @@ function DestinationTile({
 }) {
   const key = `${destination.organizationId}:${destination.experience}:${destination.branchId ?? "org"}`;
   const busy = bindingKey === key;
-  const Icon = destinationIcon(destination.experience);
+  const Icon = destinationIcon(destination);
   const label = busy ? t("workspace.opening") : t(destination.labelKey);
 
   if (primary) {
@@ -677,7 +723,7 @@ function DestinationTile({
       <Button
         type="button"
         variant="default"
-        className="min-h-11 w-full justify-center gap-2"
+        className="w-full justify-center gap-2"
         disabled={busy || bindingKey != null}
         onClick={() => onSelect(destination)}
         data-testid={`workspace-destination-${destination.experience}`}
@@ -694,9 +740,10 @@ function DestinationTile({
       disabled={busy || bindingKey != null}
       onClick={() => onSelect(destination)}
       data-testid={`workspace-destination-${destination.experience}`}
+      data-label-key={destination.labelKey}
       aria-label={label}
       className={cn(
-        "inline-flex min-h-11 w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
+        "inline-flex w-full items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2.5 text-left text-foreground transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60",
       )}
     >
       <Icon className="size-5 shrink-0 text-primary" aria-hidden />

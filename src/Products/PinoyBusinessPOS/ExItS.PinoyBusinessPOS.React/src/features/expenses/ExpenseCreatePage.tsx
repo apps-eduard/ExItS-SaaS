@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Banknote, Eye, Loader2, Plus, Receipt, Smartphone, Wallet } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
 import {
   EXPENSE_DESCRIPTION_MAX,
@@ -8,6 +9,7 @@ import {
   EXPENSE_PAYEE_MAX,
   EXPENSE_PAYMENT_METHODS,
   expenseWorkspaceScope,
+  getExpenseScopeOptions,
   listExpenseCategories,
   recordExpense,
   type ExpensePaymentMethodCode,
@@ -17,16 +19,39 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
 import { expensePaymentLabelKey, todayExpenseDateInput } from "@/features/expenses/expense-labels";
+import {
+  defaultExpenseCreateTarget,
+  expenseCreateTargetToBranchId,
+  shouldShowExpenseCreateScopeSelector,
+  type ExpenseCreateTarget,
+} from "@/features/expenses/expense-scope";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
+import {
+  formatMoneyAmountInput,
+  normalizeMoneyAmountTyping,
+  parseMoneyAmountInput,
+} from "@/lib/money-input";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+const EXPENSE_PAYMENT_ICONS = {
+  Cash: Banknote,
+  ManualGCash: Smartphone,
+} as const satisfies Record<ExpensePaymentMethodCode, typeof Banknote>;
+
+function initialAmountText(raw: string | null): string {
+  if (!raw?.trim()) {
+    return "";
+  }
+  const parsed = parseMoneyAmountInput(raw);
+  return parsed === null ? normalizeMoneyAmountTyping(raw) : formatMoneyAmountInput(parsed);
+}
 
 export function ExpenseCreatePage() {
   const { t } = useI18n();
@@ -37,9 +62,10 @@ export function ExpenseCreatePage() {
   const allowManage = canManageExpenses(sessionGrant);
 
   const organizationId = boundWorkspace?.organizationId ?? null;
+  const currentBranchId = boundWorkspace?.branchId ?? null;
   const workspace = useMemo(
-    () => (organizationId ? expenseWorkspaceScope(organizationId) : null),
-    [organizationId],
+    () => (organizationId ? expenseWorkspaceScope(organizationId, currentBranchId) : null),
+    [organizationId, currentBranchId],
   );
 
   const categoriesQuery = useQuery({
@@ -49,8 +75,16 @@ export function ExpenseCreatePage() {
       listExpenseCategories(workspace!, { status: "Active", page: 1, pageSize: 100 }, signal),
   });
 
+  const scopeOptionsQuery = useQuery({
+    queryKey: ["expenses-scope-options", organizationId],
+    enabled: Boolean(workspace) && online && allowManage,
+    queryFn: ({ signal }) => getExpenseScopeOptions(workspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const [createTarget, setCreateTarget] = useState<ExpenseCreateTarget | null>(null);
   const [categoryId, setCategoryId] = useState(searchParams.get("categoryId") ?? "");
-  const [amountText, setAmountText] = useState(searchParams.get("amount") ?? "");
+  const [amountText, setAmountText] = useState(() => initialAmountText(searchParams.get("amount")));
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethodCode>(
     (searchParams.get("paymentMethod") as ExpensePaymentMethodCode) || "Cash",
   );
@@ -66,6 +100,13 @@ export function ExpenseCreatePage() {
   const [recordedNumber, setRecordedNumber] = useState<string | null>(null);
   const [recordedAmount, setRecordedAmount] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (!scopeOptionsQuery.data || createTarget) {
+      return;
+    }
+    setCreateTarget(defaultExpenseCreateTarget(scopeOptionsQuery.data, currentBranchId));
+  }, [scopeOptionsQuery.data, currentBranchId, createTarget]);
+
   if (!allowManage) {
     return (
       <ErrorState title={t("expense.errorTitle")} detail={t("expense.manageDenied")} />
@@ -76,7 +117,7 @@ export function ExpenseCreatePage() {
   }
 
   const activeCategories = categoriesQuery.data?.items ?? [];
-  const amount = Number(amountText);
+  const amount = parseMoneyAmountInput(amountText);
 
   async function onSubmit() {
     if (!workspace || submitting || !online) {
@@ -87,7 +128,7 @@ export function ExpenseCreatePage() {
       setError(t("expense.validation.categoryRequired"));
       return;
     }
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (amount === null || amount <= 0) {
       setError(t("expense.validation.amountInvalid"));
       return;
     }
@@ -114,6 +155,10 @@ export function ExpenseCreatePage() {
       setError(t("expense.validation.dateRequired"));
       return;
     }
+    if (!createTarget) {
+      setError(t("expense.validation.scopeRequired"));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -131,6 +176,7 @@ export function ExpenseCreatePage() {
         expenseDate,
         payee: payee.trim() || null,
         gCashReference: paymentMethod === "ManualGCash" ? gCashReference.trim() || null : null,
+        branchId: expenseCreateTargetToBranchId(createTarget),
       });
       setRecordedId(created.expenseId);
       setRecordedNumber(created.expenseNumber);
@@ -159,22 +205,28 @@ export function ExpenseCreatePage() {
           backTo="/expenses"
           backLabel={t("expense.backList")}
         />
-        <Card className="flex flex-col gap-2 p-4">
-          <p className="m-0 font-semibold" data-testid="expense-recorded-number">
+        <Card className="expense-record-success-card flex flex-col gap-1.5 p-4 sm:p-5">
+          <p className="m-0 font-semibold tabular-nums" data-testid="expense-recorded-number">
             {recordedNumber}
           </p>
-          <p className="m-0" data-testid="expense-recorded-amount">
+          <p
+            className="m-0 text-[length:var(--exits-text-xl)] font-semibold tabular-nums"
+            data-testid="expense-recorded-amount"
+          >
             <MoneyDisplay amount={recordedAmount} />
           </p>
         </Card>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild className="min-h-11" data-testid="expense-view-recorded">
-            <Link to={`/expenses/${recordedId}`}>{t("expense.viewExpense")}</Link>
+        <div className="expense-record-success-actions flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button asChild className="w-full sm:w-fit" data-testid="expense-view-recorded">
+            <Link to={`/expenses/${recordedId}`}>
+              <Eye className="size-4 shrink-0" aria-hidden />
+              {t("expense.viewExpense")}
+            </Link>
           </Button>
           <Button
             type="button"
             variant="outline"
-            className="min-h-11"
+            className="supplier-form-cancel-btn w-full sm:w-fit"
             data-testid="expense-record-another"
             onClick={() => {
               setRecordedId(null);
@@ -187,10 +239,14 @@ export function ExpenseCreatePage() {
               setExpenseDate(todayExpenseDateInput());
             }}
           >
+            <Plus className="size-4 shrink-0" aria-hidden />
             {t("expense.recordAnother")}
           </Button>
-          <Button asChild variant="ghost" className="min-h-11">
-            <Link to="/expenses">{t("expense.backList")}</Link>
+          <Button asChild variant="ghost" className="w-full sm:w-fit" data-testid="expense-back-list">
+            <Link to="/expenses">
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              {t("expense.backList")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -198,7 +254,7 @@ export function ExpenseCreatePage() {
   }
 
   return (
-    <div className="exits-page flex min-w-0 flex-col gap-4 pb-24" data-testid="expense-create-page">
+    <div className="exits-page flex min-w-0 flex-col gap-4" data-testid="expense-create-page">
       <PageHeader
         title={t("expense.recordExpense")}
         description={t("expense.recordLede")}
@@ -222,11 +278,13 @@ export function ExpenseCreatePage() {
       {categoriesQuery.isSuccess && activeCategories.length === 0 ? (
         <div data-testid="expense-no-categories">
           <EmptyState
+              align="center"
+              icon={<Wallet className="size-5" strokeWidth={1.75} />}
             title={t("expense.noActiveCategories")}
             detail={t("expense.noActiveCategoriesDetail")}
           />
           <div className="mt-3">
-            <Button asChild className="min-h-11" data-testid="expense-create-category-cta">
+            <Button asChild data-testid="expense-create-category-cta">
               <Link to="/expenses/categories">{t("expense.createCategory")}</Link>
             </Button>
           </div>
@@ -236,106 +294,168 @@ export function ExpenseCreatePage() {
       {error ? <ErrorState title={t("expense.errorTitle")} detail={error} /> : null}
 
       {activeCategories.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="flex flex-col gap-3 p-3">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.category")}</span>
-              <select
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                data-testid="expense-category"
+        <Card className="flex flex-col gap-4 p-4" data-testid="expense-create-form-card">
+          <div className="flex flex-col gap-3">
+              <div
+                className={
+                  scopeOptionsQuery.data
+                  && createTarget
+                  && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data)
+                    ? "grid gap-3 sm:grid-cols-2"
+                    : "grid gap-3"
+                }
               >
-                <option value="">{t("expense.categoryPlaceholder")}</option>
-                {activeCategories.map((cat) => (
-                  <option key={cat.categoryId} value={cat.categoryId}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <fieldset className="m-0 border-0 p-0">
-              <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
-                {t("expense.paymentMethod")}
-              </legend>
-              <div className="flex flex-wrap gap-2" data-testid="expense-payment-method">
-                {EXPENSE_PAYMENT_METHODS.map((method) => (
-                  <Button
-                    key={method}
-                    type="button"
-                    variant={paymentMethod === method ? "default" : "outline"}
-                    className="min-h-11"
-                    data-testid={`expense-payment-${method}`}
-                    aria-pressed={paymentMethod === method}
-                    onClick={() => setPaymentMethod(method)}
+                {scopeOptionsQuery.data
+                && createTarget
+                && shouldShowExpenseCreateScopeSelector(scopeOptionsQuery.data) ? (
+                  <label
+                    className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                    data-testid="expense-create-scope"
                   >
-                    {t(expensePaymentLabelKey(method))}
-                  </Button>
-                ))}
+                    <span className="font-medium">{t("expense.scope.createLabel")}</span>
+                    <select
+                      className="exits-select"
+                      value={
+                        createTarget.kind === "organization"
+                          ? "organization"
+                          : `branch:${createTarget.branchId}`
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "organization") {
+                          setCreateTarget({ kind: "organization" });
+                          return;
+                        }
+                        if (value.startsWith("branch:")) {
+                          setCreateTarget({
+                            kind: "branch",
+                            branchId: value.slice("branch:".length),
+                          });
+                        }
+                      }}
+                      data-testid="expense-create-scope-select"
+                    >
+                      {scopeOptionsQuery.data.branches.map((branch) => (
+                        <option key={branch.branchId} value={`branch:${branch.branchId}`}>
+                          {branch.name}
+                        </option>
+                      ))}
+                      {scopeOptionsQuery.data.canCreateOrganizationWide ? (
+                        <option value="organization">{t("expense.scope.organization")}</option>
+                      ) : null}
+                    </select>
+                  </label>
+                ) : null}
+
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.category")}</span>
+                  <select
+                    className="exits-select"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    data-testid="expense-category"
+                  >
+                    <option value="">{t("expense.categoryPlaceholder")}</option>
+                    {activeCategories.map((cat) => (
+                      <option key={cat.categoryId} value={cat.categoryId}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-            </fieldset>
 
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.expenseDate")}</span>
-              <input
-                type="date"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
-                value={expenseDate}
-                onChange={(e) => setExpenseDate(e.target.value)}
-                data-testid="expense-date"
-              />
-            </label>
-          </Card>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">
+                    {t("expense.payee")}{" "}
+                    <span className="font-normal text-muted">({t("expense.optional")})</span>
+                  </span>
+                  <input
+                    className="exits-input"
+                    value={payee}
+                    maxLength={EXPENSE_PAYEE_MAX}
+                    onChange={(e) => setPayee(e.target.value)}
+                    data-testid="expense-payee"
+                  />
+                </label>
 
-          <Card className="flex flex-col gap-3 p-3">
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">{t("expense.amount")}</span>
-              <input
-                inputMode="decimal"
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
-                value={amountText}
-                onChange={(e) => setAmountText(e.target.value)}
-                placeholder="0.00"
-                data-testid="expense-amount"
-              />
-            </label>
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.amount")}</span>
+                  <input
+                    inputMode="decimal"
+                    className="exits-input tabular-nums"
+                    value={amountText}
+                    onChange={(e) => setAmountText(normalizeMoneyAmountTyping(e.target.value))}
+                    onBlur={() => {
+                      const parsed = parseMoneyAmountInput(amountText);
+                      if (parsed !== null) {
+                        setAmountText(formatMoneyAmountInput(parsed));
+                      }
+                    }}
+                    placeholder="0.00"
+                    data-testid="expense-amount"
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
 
-            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-              <span className="font-medium">
-                {t("expense.payee")}{" "}
-                <span className="font-normal text-muted">({t("expense.optional")})</span>
-              </span>
-              <input
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
-                value={payee}
-                maxLength={EXPENSE_PAYEE_MAX}
-                onChange={(e) => setPayee(e.target.value)}
-                data-testid="expense-payee"
-              />
-            </label>
+              <div className="grid gap-3 sm:grid-cols-2 sm:items-end">
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="mb-2 text-[length:var(--exits-text-sm)] font-medium">
+                    {t("expense.paymentMethod")}
+                  </legend>
+                  <div
+                    className="flex flex-wrap items-end gap-2"
+                    data-testid="expense-payment-method"
+                  >
+                    {EXPENSE_PAYMENT_METHODS.map((method) => {
+                      const Icon = EXPENSE_PAYMENT_ICONS[method];
+                      return (
+                        <Button
+                          key={method}
+                          type="button"
+                          variant={paymentMethod === method ? "default" : "outline"}
+                          data-testid={`expense-payment-${method}`}
+                          aria-pressed={paymentMethod === method}
+                          onClick={() => setPaymentMethod(method)}
+                        >
+                          <Icon className="size-4 shrink-0" aria-hidden />
+                          {t(expensePaymentLabelKey(method))}
+                        </Button>
+                      );
+                    })}
+                    {paymentMethod === "ManualGCash" ? (
+                      <input
+                        className="exits-input min-w-[12rem] flex-1"
+                        value={gCashReference}
+                        maxLength={EXPENSE_GCASH_REFERENCE_MAX}
+                        onChange={(e) => setGCashReference(e.target.value)}
+                        placeholder={`${t("expense.gCashReference")} (${t("expense.optional")})`}
+                        aria-label={`${t("expense.gCashReference")} (${t("expense.optional")})`}
+                        data-testid="expense-gcash-reference"
+                      />
+                    ) : null}
+                  </div>
+                </fieldset>
 
-            {paymentMethod === "ManualGCash" ? (
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                <span className="font-medium">
-                  {t("expense.gCashReference")}{" "}
-                  <span className="font-normal text-muted">({t("expense.optional")})</span>
-                </span>
-                <input
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-background px-3"
-                  value={gCashReference}
-                  maxLength={EXPENSE_GCASH_REFERENCE_MAX}
-                  onChange={(e) => setGCashReference(e.target.value)}
-                  data-testid="expense-gcash-reference"
-                />
-              </label>
-            ) : null}
-          </Card>
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span className="font-medium">{t("expense.expenseDate")}</span>
+                  <input
+                    type="date"
+                    className="exits-input"
+                    value={expenseDate}
+                    onChange={(e) => setExpenseDate(e.target.value)}
+                    data-testid="expense-date"
+                  />
+                </label>
+              </div>
+            </div>
 
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)] lg:col-span-2">
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             <span className="font-medium">{t("expense.description")}</span>
             <textarea
-              className="min-h-24 rounded-[var(--exits-radius-md)] border border-border bg-background px-3 py-2"
+              className="exits-input min-h-24"
               value={description}
               maxLength={EXPENSE_DESCRIPTION_MAX}
               onChange={(e) => setDescription(e.target.value)}
@@ -345,21 +465,24 @@ export function ExpenseCreatePage() {
               {description.trim().length}/{EXPENSE_DESCRIPTION_MAX}
             </span>
           </label>
-        </div>
-      ) : null}
 
-      {activeCategories.length > 0 ? (
-        <StickyActionBar>
-          <Button
-            type="button"
-            className="min-h-11 w-full sm:w-auto"
-            disabled={!online || submitting}
-            onClick={() => void onSubmit()}
-            data-testid="expense-submit"
-          >
-            {submitting ? t("expense.recording") : t("expense.recordExpense")}
-          </Button>
-        </StickyActionBar>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              disabled={!online || submitting}
+              onClick={() => void onSubmit()}
+              data-testid="expense-submit"
+            >
+              {submitting ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <Receipt className="size-4 shrink-0" aria-hidden />
+              )}
+              {submitting ? t("expense.recording") : t("expense.recordExpense")}
+            </Button>
+          </div>
+        </Card>
       ) : null}
     </div>
   );

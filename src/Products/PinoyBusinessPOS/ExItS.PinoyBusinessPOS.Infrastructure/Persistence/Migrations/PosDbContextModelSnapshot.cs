@@ -1783,6 +1783,90 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("connected_buyer_product_shares", "pos");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoInventoryReservationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid>("ConnectedPurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connected_purchase_order_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTimeOffset?>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<DateTimeOffset?>("ReleasedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("released_at_utc");
+
+                    b.Property<decimal>("RemainingQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("remaining_quantity");
+
+                    b.Property<int>("Revision")
+                        .HasColumnType("integer")
+                        .HasColumnName("revision");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectedPurchaseOrderId", "Status")
+                        .HasDatabaseName("ix_connected_po_inv_res_order_status");
+
+                    b.HasIndex("OrganizationId", "BranchId", "ProductId", "Status")
+                        .HasDatabaseName("ix_connected_po_inv_res_branch_product_status");
+
+                    b.ToTable("connected_po_inventory_reservations", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_connected_po_inv_res_qty_positive", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_connected_po_inv_res_remaining", "remaining_quantity >= 0 AND remaining_quantity <= quantity");
+
+                            t.HasCheckConstraint("ck_connected_po_inv_res_revision", "revision >= 1");
+
+                            t.HasCheckConstraint("ck_connected_po_inv_res_status", "status BETWEEN 0 AND 3");
+
+                            t.HasCheckConstraint("ck_connected_po_inv_res_type", "type BETWEEN 0 AND 1");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
                 {
                     b.Property<Guid>("ConnectedPurchaseOrderId")
@@ -1804,6 +1888,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("confirmed_qty");
 
+                    b.Property<decimal?>("ConfirmedUnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("confirmed_unit_price");
+
                     b.Property<decimal>("LineTotal")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
@@ -1823,6 +1912,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("proposed_qty");
+
+                    b.Property<decimal?>("ProposedUnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("proposed_unit_price");
 
                     b.Property<decimal>("Qty")
                         .HasPrecision(18, 3)
@@ -1897,9 +1991,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("changes_proposed_by_user_id");
 
+                    b.Property<int?>("ConfirmedPaymentTerm")
+                        .HasColumnType("integer")
+                        .HasColumnName("confirmed_payment_term");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<decimal>("CreditPostedAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("credit_posted_amount");
 
                     b.Property<string>("DeclineNote")
                         .HasMaxLength(280)
@@ -1917,6 +2022,22 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("FulfilledAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fulfilled_at_utc");
+
+                    b.Property<DateTimeOffset?>("InventoryReservationExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inventory_reservation_expires_at_utc");
+
+                    b.Property<int>("InventoryReservationRevision")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("inventory_reservation_revision");
+
+                    b.Property<int>("InventoryReservationState")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("inventory_reservation_state");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
@@ -1936,6 +2057,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("PreparingAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("preparing_at_utc");
+
+                    b.Property<int?>("ProposedPaymentTerm")
+                        .HasColumnType("integer")
+                        .HasColumnName("proposed_payment_term");
 
                     b.Property<Guid>("RelationshipId")
                         .HasColumnType("uuid")
@@ -1979,7 +2104,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("connected_purchase_orders", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+                            t.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 5");
 
                             t.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 6");
                         });
@@ -1991,6 +2116,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("BillingContactNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("billing_contact_notes");
 
                     b.Property<string>("BuyerDisplayNameSnapshot")
                         .HasMaxLength(128)
@@ -2012,18 +2142,79 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(0)
                         .HasColumnName("catalog_sharing_mode");
 
+                    b.Property<string>("ContactDepartment")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_department");
+
+                    b.Property<string>("ContactEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("contact_email");
+
+                    b.Property<string>("ContactPersonName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_person_name");
+
+                    b.Property<string>("ContactPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("contact_phone");
+
+                    b.Property<string>("ContactRole")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("contact_role");
+
+                    b.Property<int>("ContactSource")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("contact_source");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CustomerDeliveryOverride")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("customer_delivery_override");
 
                     b.Property<decimal?>("CustomerDiscountPercent")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("customer_discount_percent");
 
+                    b.Property<string>("DeliveryInstructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("delivery_instructions");
+
                     b.Property<DateTimeOffset?>("DisconnectedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("disconnected_at_utc");
+
+                    b.Property<int>("InitiatedByParty")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("initiated_by_party");
+
+                    b.Property<string>("InternalNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("internal_notes");
+
+                    b.Property<Guid?>("OrganizationMemberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_member_id");
+
+                    b.Property<string>("PreferredContactMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("preferred_contact_method");
 
                     b.Property<DateTimeOffset>("RequestedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -2041,14 +2232,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("responded_by_user_id");
 
+                    b.PrimitiveCollection<Guid[]>("SharedSupplierBranchIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("shared_supplier_branch_ids")
+                        .HasDefaultValueSql("'{}'::uuid[]");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
-
-                    b.Property<string>("SupplierDisplayNameSnapshot")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("supplier_display_name_snapshot");
 
                     b.Property<Guid?>("SupplierBranchId")
                         .HasColumnType("uuid")
@@ -2058,6 +2251,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("supplier_branch_name_snapshot");
+
+                    b.Property<string>("SupplierDisplayNameSnapshot")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("supplier_display_name_snapshot");
 
                     b.Property<Guid>("SupplierOrganizationId")
                         .HasColumnType("uuid")
@@ -2086,20 +2284,56 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("SupplierOrganizationId")
                         .HasDatabaseName("ix_connected_supplier_relationships_supplier");
 
-                    b.HasIndex("SupplierOrganizationId", "SupplierBranchId")
-                        .HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
-
                     b.HasIndex("BuyerOrganizationId", "SupplierOrganizationId")
                         .IsUnique()
                         .HasDatabaseName("ux_connected_supplier_relationships_open")
                         .HasFilter("status IN (0, 1)");
 
+                    b.HasIndex("SupplierOrganizationId", "SupplierBranchId")
+                        .HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
+
                     b.ToTable("connected_supplier_relationships", "pos", t =>
                         {
                             t.HasCheckConstraint("ck_connected_supplier_relationships_catalog_sharing_mode", "catalog_sharing_mode BETWEEN 0 AND 1");
 
+                            t.HasCheckConstraint("ck_connected_supplier_relationships_customer_delivery_override", "customer_delivery_override IS NULL OR customer_delivery_override IN ('allow', 'block')");
+
+                            t.HasCheckConstraint("ck_connected_supplier_relationships_initiated_by_party", "initiated_by_party BETWEEN 0 AND 1");
+
                             t.HasCheckConstraint("ck_connected_supplier_relationships_status", "status BETWEEN 0 AND 3");
                         });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.OrganizationFulfillmentSettingsRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("OfferDelivery")
+                        .HasColumnType("boolean")
+                        .HasColumnName("offer_delivery");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_organization_fulfillment_settings_org");
+
+                    b.ToTable("organization_fulfillment_settings", "pos");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.SupplierProductExposureRecord", b =>
@@ -2186,6 +2420,251 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_supplier_product_exposures_sync");
 
                     b.ToTable("supplier_product_exposures", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.BusinessCreditEntryRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<Guid?>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly?>("CurrentDueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("current_due_date");
+
+                    b.Property<string>("Remarks")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("remarks");
+
+                    b.Property<string>("ReversalReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reversal_reason");
+
+                    b.Property<DateTimeOffset?>("ReversedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at_utc");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.Property<Guid?>("SourceSaleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_sale_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId")
+                        .HasDatabaseName("ix_business_credit_entries_connection_id");
+
+                    b.HasIndex("SourceSaleId")
+                        .HasDatabaseName("ix_business_credit_entries_source_sale_id")
+                        .HasFilter("source_sale_id IS NOT NULL");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_business_credit_entries_seller_buyer_created");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId", "Status")
+                        .HasDatabaseName("ix_business_credit_entries_seller_buyer_status");
+
+                    b.ToTable("business_credit_entries", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_business_credit_entries_amount_positive", "amount > 0");
+
+                            t.HasCheckConstraint("ck_business_credit_entries_status", "status IN ('Active', 'Reversed')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.BusinessCustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<Guid>("BusinessCustomerCreditPolicyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_customer_credit_policy_id");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<DateTimeOffset>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<decimal?>("NewCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("new_credit_limit");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_status");
+
+                    b.Property<int?>("NewTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_term_days");
+
+                    b.Property<decimal?>("PreviousCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("previous_credit_limit");
+
+                    b.Property<int?>("PreviousStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_status");
+
+                    b.Property<int?>("PreviousTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_term_days");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessCustomerCreditPolicyId");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId", "ChangedAtUtc")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_business_customer_credit_policy_changes_seller_buyer_changed");
+
+                    b.ToTable("business_customer_credit_policy_changes", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.BusinessCustomerCreditPolicyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at_utc");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by_user_id");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<DateTimeOffset>("ConfiguredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("configured_at_utc");
+
+                    b.Property<Guid>("ConfiguredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configured_by_user_id");
+
+                    b.Property<Guid?>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("credit_limit");
+
+                    b.Property<int>("DefaultTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_term_days");
+
+                    b.Property<bool>("HasEverBeenApproved")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_ever_been_approved");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId")
+                        .HasDatabaseName("ix_business_customer_credit_policies_connection_id");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_business_customer_credit_policies_seller_buyer");
+
+                    b.ToTable("business_customer_credit_policies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_business_customer_credit_policies_credit_limit_non_negative", "credit_limit >= 0");
+
+                            t.HasCheckConstraint("ck_business_customer_credit_policies_status", "status BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("ck_business_customer_credit_policies_term_days", "default_term_days BETWEEN 1 AND 365");
+                        });
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CreditDueDateChangeRecord", b =>
@@ -2326,6 +2805,158 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_credit_entries_amount_positive", "amount > 0");
 
                             t.HasCheckConstraint("ck_credit_entries_status", "status IN ('Active', 'Reversed')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Action")
+                        .HasColumnType("integer")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTimeOffset>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at_utc");
+
+                    b.Property<Guid>("CustomerCreditPolicyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_credit_policy_id");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<decimal?>("NewCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("new_credit_limit");
+
+                    b.Property<int>("NewStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_status");
+
+                    b.Property<int?>("NewTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_term_days");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal?>("PreviousCreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("previous_credit_limit");
+
+                    b.Property<int?>("PreviousStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_status");
+
+                    b.Property<int?>("PreviousTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("previous_term_days");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerCreditPolicyId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "CustomerId", "ChangedAtUtc")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_customer_credit_policy_changes_org_customer_changed");
+
+                    b.ToTable("customer_credit_policy_changes", "pos");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at_utc");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by_user_id");
+
+                    b.Property<DateTimeOffset>("ConfiguredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("configured_at_utc");
+
+                    b.Property<Guid>("ConfiguredByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("configured_by_user_id");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("credit_limit");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<int>("DefaultTermDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("default_term_days");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_customer_credit_policies_org_customer");
+
+                    b.ToTable("customer_credit_policies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_customer_credit_policies_credit_limit_non_negative", "credit_limit >= 0");
+
+                            t.HasCheckConstraint("ck_customer_credit_policies_status", "status BETWEEN 1 AND 3");
+
+                            t.HasCheckConstraint("ck_customer_credit_policies_term_days", "default_term_days BETWEEN 1 AND 365");
                         });
                 });
 
@@ -2489,6 +3120,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<string>("PartyKind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Person")
+                        .HasColumnName("party_kind");
+
                     b.Property<Guid?>("PlatformBusinessCustomerId")
                         .HasColumnType("uuid")
                         .HasColumnName("platform_business_customer_id");
@@ -2542,6 +3181,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("customers", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_customers_party_kind", "party_kind IN ('Person', 'Business')");
+
                             t.HasCheckConstraint("ck_customers_status", "status IN ('Active', 'Inactive')");
                         });
                 });
@@ -2640,6 +3281,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount");
 
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
@@ -2720,6 +3365,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_expenses_org_branch_id");
 
                     b.HasIndex("OrganizationId", "CategoryId")
                         .HasDatabaseName("ix_expenses_org_category_id");
@@ -3192,6 +3840,46 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchReorderDefaultRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<decimal?>("ReorderLevel")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("reorder_level");
+
+                    b.Property<decimal?>("ReorderQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("reorder_quantity");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("OrganizationId", "BranchId")
+                        .HasName("pk_inventory_branch_reorder_defaults");
+
+                    b.ToTable("inventory_branch_reorder_defaults", "pos");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryBranchReorderSettingRecord", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -3516,6 +4204,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("transfer_id");
 
+                    b.Property<decimal?>("UnitCostSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_cost_snapshot");
+
                     b.Property<string>("UnitOfMeasure")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -3626,6 +4319,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("status");
 
+                    b.Property<Guid?>("StockRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stock_request_id");
+
                     b.Property<string>("TransferNumber")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -3643,6 +4340,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("StockRequestId");
+
                     b.HasIndex("OrganizationId", "DestinationBranchId")
                         .HasDatabaseName("ix_inventory_transfers_org_destination");
 
@@ -3651,6 +4350,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "Status")
                         .HasDatabaseName("ix_inventory_transfers_org_status");
+
+                    b.HasIndex("OrganizationId", "StockRequestId")
+                        .HasDatabaseName("ix_inventory_transfers_org_stock_request");
 
                     b.HasIndex("OrganizationId", "TransferNumber")
                         .IsUnique()
@@ -4387,11 +5089,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OrganizationId", "ProductId", "MovementType")
                         .IsUnique()
-                        .HasDatabaseName("ux_stock_movements_opening_stock")
-                        .HasFilter("movement_type = 'OpeningStock'");
+                        .HasDatabaseName("ux_stock_movements_opening_stock_legacy")
+                        .HasFilter("movement_type = 'OpeningStock' AND branch_id IS NULL");
 
                     b.HasIndex("OrganizationId", "ProductId", "RecordedAtUtc")
                         .HasDatabaseName("ix_stock_movements_org_product_recorded");
+
+                    b.HasIndex("OrganizationId", "ProductId", "BranchId", "MovementType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_stock_movements_opening_stock_branch")
+                        .HasFilter("movement_type = 'OpeningStock' AND branch_id IS NOT NULL");
 
                     b.HasIndex("OrganizationId", "SourceId", "InventoryLotId", "MovementType")
                         .IsUnique()
@@ -4405,11 +5112,224 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("stock_movements", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal')");
+                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal', 'ConnectedPurchaseFulfillment')");
 
                             t.HasCheckConstraint("ck_stock_movements_quantity_effect_nonzero", "quantity_effect <> 0");
 
-                            t.HasCheckConstraint("ck_stock_movements_source_type", "source_type IN ('None', 'Sale', 'Manual', 'Opening', 'PurchaseReceipt', 'StockCount', 'SaleReturn', 'InventoryTransfer', 'CustomerOrder', 'DirectPurchase', 'StockUse', 'Production', 'WasteLoss')");
+                            t.HasCheckConstraint("ck_stock_movements_source_type", "source_type IN ('None', 'Sale', 'Manual', 'Opening', 'PurchaseReceipt', 'StockCount', 'SaleReturn', 'InventoryTransfer', 'CustomerOrder', 'DirectPurchase', 'StockUse', 'Production', 'WasteLoss', 'ConnectedPurchaseOrder')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestLineRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("ApprovedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("approved_quantity");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("RequestedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("requested_quantity");
+
+                    b.Property<Guid>("StockRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("stock_request_id");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("unit_of_measure");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StockRequestId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_stock_request_lines_request_line_number");
+
+                    b.ToTable("stock_request_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_request_lines_approved_range", "approved_quantity IS NULL OR (approved_quantity > 0 AND approved_quantity <= requested_quantity)");
+
+                            t.HasCheckConstraint("ck_stock_request_lines_requested_positive", "requested_quantity > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_stock_request_number_sequences");
+
+                    b.ToTable("stock_request_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_request_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at_utc");
+
+                    b.Property<Guid?>("ApprovedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("DestinationLocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("destination_location_id");
+
+                    b.Property<DateTimeOffset?>("DispatchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("dispatched_at_utc");
+
+                    b.Property<Guid?>("DispatchedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dispatched_by");
+
+                    b.Property<Guid?>("LinkedInventoryTransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_inventory_transfer_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTimeOffset?>("PreparingStartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("preparing_started_at_utc");
+
+                    b.Property<Guid?>("PreparingStartedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("preparing_started_by");
+
+                    b.Property<DateTimeOffset?>("RejectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rejected_at_utc");
+
+                    b.Property<Guid?>("RejectedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rejected_by");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<string>("RequestNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("request_number");
+
+                    b.Property<Guid>("RequestedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by");
+
+                    b.Property<Guid>("RequestedSourceLocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_source_location_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LinkedInventoryTransferId")
+                        .HasDatabaseName("ix_stock_requests_linked_transfer");
+
+                    b.HasIndex("OrganizationId", "DestinationLocationId")
+                        .HasDatabaseName("ix_stock_requests_org_destination");
+
+                    b.HasIndex("OrganizationId", "RequestNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_stock_requests_org_request_number")
+                        .HasFilter("request_number IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "RequestedSourceLocationId")
+                        .HasDatabaseName("ix_stock_requests_org_source");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_stock_requests_org_status");
+
+                    b.ToTable("stock_requests", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_requests_distinct_locations", "requested_source_location_id <> destination_location_id");
+
+                            t.HasCheckConstraint("ck_stock_requests_status", "status IN ('Pending', 'Approved', 'Preparing', 'InTransit', 'PartiallyFulfilled', 'Fulfilled', 'Rejected', 'Cancelled', 'InProgress')");
                         });
                 });
 
@@ -4620,6 +5540,72 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_stock_uses_reason", "reason IN ('InternalOperations', 'StaffUse', 'SampleOrTesting', 'Other')");
 
                             t.HasCheckConstraint("ck_stock_uses_status", "status IN ('Posted', 'Voided')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.SupplyRouteRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("DestinationLocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("destination_location_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsPreferred")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_preferred");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("SourceLocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_location_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "DestinationLocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_supply_routes_org_destination_preferred")
+                        .HasFilter("is_preferred = TRUE AND is_active = TRUE");
+
+                    b.HasIndex("OrganizationId", "DestinationLocationId", "IsActive")
+                        .HasDatabaseName("ix_supply_routes_org_destination_active");
+
+                    b.HasIndex("OrganizationId", "SourceLocationId", "DestinationLocationId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_supply_routes_org_source_destination");
+
+                    b.ToTable("supply_routes", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_supply_routes_distinct_locations", "source_location_id <> destination_location_id");
                         });
                 });
 
@@ -4924,7 +5910,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Optional")
+                        .HasDefaultValue("Required")
                         .HasColumnName("cash_count_mode");
 
                     b.Property<string>("ClosingCashCountMode")
@@ -4932,7 +5918,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Optional")
+                        .HasDefaultValue("Required")
                         .HasColumnName("closing_cash_count_mode");
 
                     b.Property<DateTimeOffset?>("CompletedAtUtc")
@@ -4971,7 +5957,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Optional")
+                        .HasDefaultValue("Required")
                         .HasColumnName("opening_cash_count_mode");
 
                     b.Property<string>("ReceiptFooter")
@@ -5171,6 +6157,278 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments.BusinessRepaymentAllocationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreditEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("credit_entry_id");
+
+                    b.Property<Guid>("RepaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("repayment_id");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RepaymentId", "CreditEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_business_repayment_allocations_repayment_credit");
+
+                    b.HasIndex("SellerOrganizationId", "CreditEntryId")
+                        .HasDatabaseName("ix_business_repayment_allocations_credit");
+
+                    b.HasIndex("SellerOrganizationId", "RepaymentId")
+                        .HasDatabaseName("ix_business_repayment_allocations_repayment");
+
+                    b.ToTable("business_repayment_allocations", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_business_repayment_allocations_amount_positive", "amount > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments.BusinessRepaymentRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("account_name");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("bank_name");
+
+                    b.Property<string>("BounceReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("bounce_reason");
+
+                    b.Property<DateTimeOffset?>("BouncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bounced_at_utc");
+
+                    b.Property<Guid?>("BouncedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bounced_by");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<string>("CheckClearingStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("check_clearing_status");
+
+                    b.Property<DateOnly?>("CheckDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_date");
+
+                    b.Property<string>("CheckNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("check_number");
+
+                    b.Property<DateTimeOffset?>("ClearedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cleared_at_utc");
+
+                    b.Property<Guid?>("ClearedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cleared_by");
+
+                    b.Property<Guid>("ConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connection_id");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("payment_method");
+
+                    b.Property<DateTimeOffset>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at_utc");
+
+                    b.Property<Guid>("RecordedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recorded_by");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("remarks");
+
+                    b.Property<string>("ReversalReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("reversal_reason");
+
+                    b.Property<DateTimeOffset?>("ReversedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reversed_at_utc");
+
+                    b.Property<Guid?>("ReversedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reversed_by");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId")
+                        .HasDatabaseName("ix_business_repayments_connection_id");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId", "RecordedAtUtc")
+                        .HasDatabaseName("ix_business_repayments_seller_buyer_recorded");
+
+                    b.HasIndex("SellerOrganizationId", "BuyerOrganizationId", "Status", "CheckClearingStatus")
+                        .HasDatabaseName("ix_business_repayments_seller_buyer_status");
+
+                    b.ToTable("business_repayments", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_business_repayments_amount_positive", "amount > 0");
+
+                            t.HasCheckConstraint("ck_business_repayments_check_clearing_status", "check_clearing_status IN ('None', 'PendingClearing', 'Cleared', 'Bounced', 'Cancelled')");
+
+                            t.HasCheckConstraint("ck_business_repayments_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Check')");
+
+                            t.HasCheckConstraint("ck_business_repayments_status", "status IN ('Active', 'Reversed')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments.OrganizationPaymentMethodSettingRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccountHint")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("account_hint");
+
+                    b.Property<string>("BranchScope")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("branch_scope");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("display_name");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("instructions");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("MethodCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("method_code");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<bool>("RequireReference")
+                        .HasColumnType("boolean")
+                        .HasColumnName("require_reference");
+
+                    b.PrimitiveCollection<Guid[]>("SelectedBranchIds")
+                        .IsRequired()
+                        .HasColumnType("uuid[]")
+                        .HasColumnName("selected_branch_ids");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId", "MethodCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_org_payment_method_settings_org_method");
+
+                    b.ToTable("organization_payment_method_settings", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_org_payment_method_branch_scope", "branch_scope IN ('AllBranches', 'SelectedBranches')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Payments.PaymentAttemptRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5346,10 +6604,69 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccountName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("account_name");
+
                     b.Property<decimal>("Amount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("bank_name");
+
+                    b.Property<string>("BounceReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("bounce_reason");
+
+                    b.Property<DateTimeOffset?>("BouncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bounced_at_utc");
+
+                    b.Property<Guid?>("BouncedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bounced_by");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("cancel_reason");
+
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by");
+
+                    b.Property<string>("CheckClearingStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("check_clearing_status");
+
+                    b.Property<DateOnly?>("CheckDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_date");
+
+                    b.Property<string>("CheckNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("check_number");
+
+                    b.Property<DateTimeOffset?>("ClearedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cleared_at_utc");
+
+                    b.Property<Guid?>("ClearedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cleared_by");
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid")
@@ -5359,6 +6676,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("payment_method");
+
                     b.Property<DateTimeOffset>("RecordedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("recorded_at_utc");
@@ -5366,6 +6689,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("RecordedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("recorded_by");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(512)
@@ -5413,6 +6741,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("repayments", "pos", t =>
                         {
                             t.HasCheckConstraint("ck_repayments_amount_positive", "amount > 0");
+
+                            t.HasCheckConstraint("ck_repayments_check_clearing_status", "check_clearing_status IN ('None', 'PendingClearing', 'Cleared', 'Bounced', 'Cancelled')");
+
+                            t.HasCheckConstraint("ck_repayments_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Check')");
 
                             t.HasCheckConstraint("ck_repayments_reversal_consistency", "(status = 'Active' AND reversed_at_utc IS NULL AND reversal_reason IS NULL AND reversed_by IS NULL) OR (status = 'Reversed' AND reversed_at_utc IS NOT NULL AND reversal_reason IS NOT NULL AND reversed_by IS NOT NULL)");
 
@@ -5765,10 +7097,34 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BankName")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("bank_name");
+
+                    b.Property<DateOnly?>("CheckDate")
+                        .HasColumnType("date")
+                        .HasColumnName("check_date");
+
+                    b.Property<string>("CheckClearingStatus")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("check_clearing_status");
+
+                    b.Property<string>("CheckNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("check_number");
+
                     b.Property<string>("DeliveryReference")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("delivery_reference");
+
+                    b.Property<string>("GCashReference")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("gcash_reference");
 
                     b.Property<string>("GrnNumber")
                         .IsRequired()
@@ -5805,6 +7161,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("receiving_branch_id");
 
+                    b.Property<DateOnly?>("SettlementDate")
+                        .HasColumnType("date")
+                        .HasColumnName("settlement_date");
+
+                    b.Property<string>("SettlementNotes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("settlement_notes");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -5816,6 +7181,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
+
+                    b.Property<string>("TransferOrDepositReference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("transfer_or_deposit_reference");
 
                     b.Property<string>("VoidReason")
                         .HasMaxLength(512)
@@ -6003,6 +7373,19 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTimeOffset?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("cancelled_at_utc");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cancelled_by_user_id");
+
+                    b.Property<decimal?>("CancelledRemainingValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("cancelled_remaining_value");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -6010,6 +7393,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("ExpectedDeliveryDate")
                         .HasColumnType("date")
                         .HasColumnName("expected_delivery_date");
+
+                    b.Property<decimal?>("FinalAcceptedValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("final_accepted_value");
+
+                    b.Property<Guid?>("IntendedReceivingBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("intended_receiving_branch_id");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
@@ -6043,15 +7435,36 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("po_number");
 
+                    b.Property<decimal?>("AmountPaidSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_paid_snapshot");
+
+                    b.Property<decimal>("RefundDueAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("refund_due_amount");
+
+                    b.Property<DateTimeOffset?>("RemainingClosedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("remaining_closed_at_utc");
+
+                    b.Property<Guid?>("RemainingClosedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("remaining_closed_by_user_id");
+
+                    b.Property<string>("RemainingClosedReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("remaining_closed_reason");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("status");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
 
                     b.Property<Guid?>("SupplierBranchId")
                         .HasColumnType("uuid")
@@ -6061,6 +7474,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("supplier_branch_name_snapshot");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
 
                     b.Property<string>("SupplierReference")
                         .HasMaxLength(128)
@@ -6097,9 +7514,236 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("purchase_orders", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 2");
+                            t.HasCheckConstraint("ck_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 5");
 
                             t.HasCheckConstraint("ck_purchase_orders_status", "status IN ('Draft', 'Ordered', 'PartiallyReceived', 'Received', 'Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationLineRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("discount_amount");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_number");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_total");
+
+                    b.Property<string>("NameSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<string>("SkuSnapshot")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sku_snapshot");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_price");
+
+                    b.Property<string>("UomSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("uom_snapshot");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuotationId", "LineNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotation_lines_quotation_line_number");
+
+                    b.HasIndex("QuotationId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotation_lines_quotation_product");
+
+                    b.ToTable("quotation_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotation_lines_discount_nonnegative", "discount_amount IS NULL OR discount_amount >= 0");
+
+                            t.HasCheckConstraint("ck_quotation_lines_quantity_positive", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_quotation_lines_unit_price_nonnegative", "unit_price >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationNumberSequenceRecord", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_value");
+
+                    b.HasKey("OrganizationId", "BusinessDate")
+                        .HasName("pk_quotation_number_sequences");
+
+                    b.ToTable("quotation_number_sequences", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotation_number_sequences_last_value_positive", "last_value > 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("ConvertedSaleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("converted_sale_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CustomerAddressSnapshot")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("customer_address_snapshot");
+
+                    b.Property<string>("CustomerDisplayNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("customer_display_name_snapshot");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("CustomerMobileNumberSnapshot")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("customer_mobile_number_snapshot");
+
+                    b.Property<string>("CustomerNotesSnapshot")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("customer_notes_snapshot");
+
+                    b.Property<bool>("IsCustomerVisible")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_customer_visible");
+
+                    b.Property<DateTimeOffset?>("IssuedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at_utc");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PreparedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("prepared_by");
+
+                    b.Property<string>("QuotationNumber")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("quotation_number");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Terms")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("terms");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<DateOnly?>("ValidUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("valid_until");
+
+                    b.Property<uint>("Xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("OrganizationId", "BranchId")
+                        .HasDatabaseName("ix_quotations_org_branch");
+
+                    b.HasIndex("OrganizationId", "CustomerId")
+                        .HasDatabaseName("ix_quotations_org_customer");
+
+                    b.HasIndex("OrganizationId", "QuotationNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quotations_org_quotation_number")
+                        .HasFilter("quotation_number IS NOT NULL");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_quotations_org_status");
+
+                    b.ToTable("quotations", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_quotations_status", "status IN ('Draft', 'Sent', 'Accepted', 'Declined', 'Expired', 'Converted', 'Cancelled')");
                         });
                 });
 
@@ -6824,6 +8468,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("line_discount_total");
 
+                    b.Property<Guid?>("LinkedBusinessCreditEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_business_credit_entry_id");
+
                     b.Property<Guid?>("LinkedCreditEntryId")
                         .HasColumnType("uuid")
                         .HasColumnName("linked_credit_entry_id");
@@ -6860,6 +8508,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("sale_number");
+
+                    b.Property<string>("SellerDocumentIdentityJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("seller_document_identity_json");
+
+                    b.Property<Guid?>("SourceQuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_quotation_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -6924,6 +8581,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("CustomerId")
                         .HasDatabaseName("ix_sales_customer_id");
 
+                    b.HasIndex("LinkedBusinessCreditEntryId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_sales_linked_business_credit_entry_id")
+                        .HasFilter("linked_business_credit_entry_id IS NOT NULL");
+
                     b.HasIndex("LinkedCreditEntryId")
                         .IsUnique()
                         .HasDatabaseName("ux_sales_linked_credit_entry_id")
@@ -6960,6 +8622,10 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.HasIndex("OrganizationId", "Status")
                         .HasDatabaseName("ix_sales_org_status");
 
+                    b.HasIndex("BuyerOrganizationId", "BuyerPartyKind", "RecordedAtUtc")
+                        .HasDatabaseName("ix_sales_buyer_organization_party_recorded")
+                        .HasFilter("buyer_organization_id IS NOT NULL");
+
                     b.HasIndex("OrganizationId", "CustomerId", "RecordedAtUtc")
                         .HasDatabaseName("ix_sales_org_customer_recorded_at")
                         .HasFilter("customer_id IS NOT NULL");
@@ -6974,13 +8640,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_sales_discount_totals_non_negative", "gross_subtotal >= 0 AND line_discount_total >= 0 AND sale_discount_total >= 0 AND discount_total >= 0");
 
-                            t.HasCheckConstraint("ck_sales_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang', 'Card', 'GCash')");
+                            t.HasCheckConstraint("ck_sales_payment_method", "payment_method IN ('Cash', 'ManualGCash', 'Utang', 'Card', 'GCash', 'BankTransfer', 'Check', 'ManualMaya')");
 
                             t.HasCheckConstraint("ck_sales_status", "status IN ('Completed', 'Voided', 'AwaitingPayment')");
 
                             t.HasCheckConstraint("ck_sales_stock_reservation", "stock_reservation_state IN ('None', 'Reserved', 'Released', 'Consumed')");
 
-                            t.HasCheckConstraint("ck_sales_tender_consistency", "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'ManualGCash' AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND total > 0)");
+                            t.HasCheckConstraint("ck_sales_tender_consistency", "(payment_method = 'Cash' AND amount_tendered IS NOT NULL AND change_amount IS NOT NULL AND amount_tendered >= total AND gcash_reference IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method IN ('ManualGCash', 'BankTransfer', 'Check', 'ManualMaya') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method IN ('Card', 'GCash') AND amount_tendered IS NULL AND change_amount IS NULL AND linked_credit_entry_id IS NULL AND linked_business_credit_entry_id IS NULL) OR (payment_method = 'Utang' AND amount_tendered IS NULL AND change_amount IS NULL AND gcash_reference IS NULL AND total > 0 AND ((customer_id IS NOT NULL AND linked_credit_entry_id IS NOT NULL AND linked_business_credit_entry_id IS NULL) OR (buyer_party_kind = 'Organization' AND linked_business_credit_entry_id IS NOT NULL AND customer_id IS NULL AND linked_credit_entry_id IS NULL)))");
 
                             t.HasCheckConstraint("ck_sales_totals_non_negative", "subtotal >= 0 AND total >= 0 AND tax_amount >= 0");
 
@@ -7047,7 +8713,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_supplier_payable_payments_amount_positive", "amount > 0");
 
-                            t.HasCheckConstraint("ck_supplier_payable_payments_payment_method", "payment_method IN ('Cash', 'BankTransfer', 'GCash', 'Other')");
+                            t.HasCheckConstraint("ck_supplier_payable_payments_payment_method", "payment_method IN ('Cash', 'BankTransfer', 'GCash', 'Other', 'BankDeposit', 'Check')");
                         });
                 });
 
@@ -7167,9 +8833,9 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_supplier_payables_paid_at_receipt_le_original", "paid_at_receipt_amount <= original_amount");
 
-                            t.HasCheckConstraint("ck_supplier_payables_payment_method_at_receipt", "payment_method_at_receipt IS NULL OR payment_method_at_receipt IN ('Cash', 'BankTransfer', 'GCash', 'Other')");
+                            t.HasCheckConstraint("ck_supplier_payables_payment_method_at_receipt", "payment_method_at_receipt IS NULL OR payment_method_at_receipt IN ('Cash', 'BankTransfer', 'GCash', 'Other', 'BankDeposit', 'Check')");
 
-                            t.HasCheckConstraint("ck_supplier_payables_source_type", "source_type IN ('GoodsReceipt', 'DirectPurchaseReceipt')");
+                            t.HasCheckConstraint("ck_supplier_payables_source_type", "source_type IN ('GoodsReceipt', 'DirectPurchaseReceipt', 'Sale')");
 
                             t.HasCheckConstraint("ck_supplier_payables_status", "status IN ('Open', 'PartiallyPaid', 'Paid', 'Voided')");
 
@@ -7328,6 +8994,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrganizationId", "ConnectedRelationshipId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_suppliers_org_connected_relationship")
+                        .HasFilter("connected_relationship_id IS NOT NULL");
+
                     b.HasIndex("OrganizationId", "NormalizedEmail")
                         .HasDatabaseName("ix_suppliers_org_normalized_email")
                         .HasFilter("normalized_email IS NOT NULL");
@@ -7466,6 +9137,16 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.BusinessCustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.BusinessCustomerCreditPolicyRecord", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessCustomerCreditPolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_business_customer_credit_policy_changes_policies");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CreditDueDateChangeRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CreditEntryRecord", null)
@@ -7497,6 +9178,33 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SourceSaleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_credit_entries_source_sale");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyChangeRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerCreditPolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policy_changes_policies");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policy_changes_customers");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Credit.CustomerCreditPolicyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_customer_credit_policies_customers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering.CustomerOrderLineRecord", b =>
@@ -7637,6 +9345,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_inventory_transfer_lines_transfers");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StockRequestId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_inventory_transfers_stock_requests");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.ProductionComponentRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -7736,6 +9453,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_stock_movements_products");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_request_lines_products");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestRecord", null)
+                        .WithMany()
+                        .HasForeignKey("StockRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_stock_request_lines_requests");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockUseLineRecord", b =>
@@ -7885,6 +9619,26 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_purchase_orders_suppliers");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", null)
+                        .WithMany()
+                        .HasForeignKey("QuotationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotation_lines_quotations");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Quotations.QuotationRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Customers.POSCustomerRecord", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_quotations_customers");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Returns.SaleReturnLineRecord", b =>

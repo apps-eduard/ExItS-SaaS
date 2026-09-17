@@ -11,13 +11,22 @@ public enum PaymentProviderResultStatus
     RenewalFailed = 6
 }
 
+/// <summary>
+/// Charge request. <see cref="Amount"/> is the server-computed final payable.
+/// Optional pricing snapshot fields are persisted on the simulated/provider payment row.
+/// </summary>
 public sealed record PaymentChargeRequest(
     Guid OrganizationId,
     Guid SubscriptionId,
     decimal Amount,
     string CurrencyCode,
     string IdempotencyKey,
-    string? Purpose);
+    string? Purpose,
+    string? PlanKey = null,
+    string? BillingCycle = null,
+    decimal? BaseAmount = null,
+    decimal? DiscountAmount = null,
+    decimal? DiscountPercent = null);
 
 public sealed record PaymentProviderResult(
     PaymentProviderResultStatus Status,

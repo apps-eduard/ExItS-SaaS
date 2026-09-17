@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
@@ -11,6 +12,8 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public int Status { get; set; } public DateTimeOffset RequestedAtUtc { get; set; } public Guid? RequestedByUserId { get; set; }
     public DateTimeOffset? RespondedAtUtc { get; set; } public Guid? RespondedByUserId { get; set; }
     public DateTimeOffset? DisconnectedAtUtc { get; set; }
+    /// <summary>0 = Buyer (legacy default), 1 = Supplier (Business Customer invitation).</summary>
+    public int InitiatedByParty { get; set; }
     public string? BuyerDisplayNameSnapshot { get; set; }
     public string? BuyerPublicOrganizationIdSnapshot { get; set; }
     public string? SupplierDisplayNameSnapshot { get; set; }
@@ -20,6 +23,21 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public decimal? CustomerDiscountPercent { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
+    public Guid[] SharedSupplierBranchIds { get; set; } = [];
+    /// <summary>0 = Custom, 1 = OrganizationMember.</summary>
+    public int ContactSource { get; set; }
+    public Guid? OrganizationMemberId { get; set; }
+    public string? ContactPersonName { get; set; }
+    public string? ContactDepartment { get; set; }
+    public string? ContactRole { get; set; }
+    public string? ContactPhone { get; set; }
+    public string? ContactEmail { get; set; }
+    public string? PreferredContactMethod { get; set; }
+    public string? DeliveryInstructions { get; set; }
+    /// <summary>null = inherit, "allow", or "block".</summary>
+    public string? CustomerDeliveryOverride { get; set; }
+    public string? BillingContactNotes { get; set; }
+    public string? InternalNotes { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
 }
@@ -72,10 +90,16 @@ internal sealed class ConnectedPurchaseOrderRecord
     public int? DeclineReason { get; set; }
     public string? DeclineNote { get; set; }
     public int PaymentTerm { get; set; }
+    public int? ProposedPaymentTerm { get; set; }
+    public int? ConfirmedPaymentTerm { get; set; }
+    public decimal CreditPostedAmount { get; set; }
     public DateTimeOffset? ChangesProposedAtUtc { get; set; }
     public Guid? ChangesProposedByUserId { get; set; }
     public DateTimeOffset? BuyerRespondedAtUtc { get; set; }
     public Guid? BuyerRespondedByUserId { get; set; }
+    public int InventoryReservationState { get; set; }
+    public DateTimeOffset? InventoryReservationExpiresAtUtc { get; set; }
+    public int InventoryReservationRevision { get; set; }
     public List<ConnectedPurchaseOrderLineRecord> Lines { get; set; }=[]; public uint Xmin { get; set; }
 }
 internal sealed class ConnectedPurchaseOrderLineRecord
@@ -86,6 +110,26 @@ internal sealed class ConnectedPurchaseOrderLineRecord
     public decimal? ConfirmedQty { get; set; }
     public int Availability { get; set; }
     public decimal UnitPriceSnapshot { get; set; } public decimal LineTotal { get; set; } public string UnitOfMeasureCode { get; set; }=string.Empty;
+    public decimal? ProposedUnitPrice { get; set; }
+    public decimal? ConfirmedUnitPrice { get; set; }
+}
+
+internal sealed class ConnectedPoInventoryReservationRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
+    public Guid ProductId { get; set; }
+    public Guid ConnectedPurchaseOrderId { get; set; }
+    public int Revision { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal RemainingQuantity { get; set; }
+    public int Type { get; set; }
+    public int Status { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? ExpiresAtUtc { get; set; }
+    public DateTimeOffset? ReleasedAtUtc { get; set; }
+    public int Version { get; set; }
 }
 
 internal static class ConnectedSupplierEntityMapper
@@ -99,24 +143,53 @@ internal static class ConnectedSupplierEntityMapper
         (CatalogSharingMode)r.CatalogSharingMode,
         r.CustomerDiscountPercent,
         r.SupplierBranchId,
-        r.SupplierBranchNameSnapshot);
+        r.SupplierBranchNameSnapshot,
+        (ConnectionInitiatedByParty)r.InitiatedByParty,
+        r.SharedSupplierBranchIds,
+        (RelationshipContactSource)r.ContactSource,
+        r.OrganizationMemberId,
+        r.ContactPersonName,
+        r.ContactDepartment,
+        r.ContactRole,
+        r.ContactPhone,
+        r.ContactEmail,
+        r.PreferredContactMethod,
+        r.DeliveryInstructions,
+        r.BillingContactNotes,
+        r.InternalNotes,
+        EffectiveDeliveryAllowance.ParseOverride(r.CustomerDeliveryOverride));
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
         RespondedByUserId=x.RespondedByUserId,DisconnectedAtUtc=x.DisconnectedAtUtc,
+        InitiatedByParty=(int)x.InitiatedByParty,
         BuyerDisplayNameSnapshot=x.BuyerDisplayNameSnapshot,BuyerPublicOrganizationIdSnapshot=x.BuyerPublicOrganizationIdSnapshot,
         SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode=(int)x.CatalogSharingMode,CustomerDiscountPercent=x.CustomerDiscountPercent,
         SupplierBranchId=x.SupplierBranchId,SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot,
+        SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray(),
+        ContactSource=(int)x.ContactSource,OrganizationMemberId=x.OrganizationMemberId,
+        ContactPersonName=x.ContactPersonName,ContactDepartment=x.ContactDepartment,ContactRole=x.ContactRole,ContactPhone=x.ContactPhone,ContactEmail=x.ContactEmail,
+        PreferredContactMethod=x.PreferredContactMethod,DeliveryInstructions=x.DeliveryInstructions,
+        CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride),
+        BillingContactNotes=x.BillingContactNotes,InternalNotes=x.InternalNotes,
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;
+     r.InitiatedByParty=(int)x.InitiatedByParty;
      r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;
-     r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;r.UpdatedAtUtc=x.UpdatedAtUtc;}
+     r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;
+     r.SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray();
+     r.ContactSource=(int)x.ContactSource;r.OrganizationMemberId=x.OrganizationMemberId;
+     r.ContactPersonName=x.ContactPersonName;r.ContactDepartment=x.ContactDepartment;r.ContactRole=x.ContactRole;r.ContactPhone=x.ContactPhone;r.ContactEmail=x.ContactEmail;
+     r.PreferredContactMethod=x.PreferredContactMethod;r.DeliveryInstructions=x.DeliveryInstructions;
+     r.CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride);
+     r.BillingContactNotes=x.BillingContactNotes;r.InternalNotes=x.InternalNotes;
+     r.UpdatedAtUtc=x.UpdatedAtUtc;}
 
-    public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r)=>SupplierProductExposure.Rehydrate(
+    public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r, string? categoryNameOverride = null)=>SupplierProductExposure.Rehydrate(
         SupplierProductExposureId.From(r.Id),PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.ProductId),
-        r.SkuSnapshot,r.NameSnapshot,r.CategoryNameSnapshot,r.UnitOfMeasureCode,r.SupplierOrderPrice,r.IsOrderable,r.IsExposed,
+        r.SkuSnapshot,r.NameSnapshot,categoryNameOverride ?? r.CategoryNameSnapshot,r.UnitOfMeasureCode,r.SupplierOrderPrice,r.IsOrderable,r.IsExposed,
         r.SyncVersion,r.CreatedAtUtc,r.UpdatedAtUtc);
     public static SupplierProductExposureRecord ToRecord(SupplierProductExposure x)=>new(){Id=x.Id.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,
         ProductId=x.ProductId.Value,SkuSnapshot=x.SkuSnapshot,NameSnapshot=x.NameSnapshot,CategoryNameSnapshot=x.CategoryNameSnapshot,
@@ -196,7 +269,9 @@ internal static class ConnectedSupplierEntityMapper
                 x.UnitOfMeasureCode,
                 x.ProposedQty,
                 confirmed,
-                availability);
+                availability,
+                x.ProposedUnitPrice,
+                x.ConfirmedUnitPrice);
         }).ToList();
 
         return ConnectedPurchaseOrder.Rehydrate(
@@ -224,7 +299,13 @@ internal static class ConnectedSupplierEntityMapper
             r.ChangesProposedAtUtc,
             r.ChangesProposedByUserId,
             r.BuyerRespondedAtUtc,
-            r.BuyerRespondedByUserId);
+            r.BuyerRespondedByUserId,
+            r.ProposedPaymentTerm is int ppt ? (ConnectedPoPaymentTerm)ppt : null,
+            r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null,
+            r.CreditPostedAmount,
+            (ConnectedPoInventoryReservationState)r.InventoryReservationState,
+            r.InventoryReservationExpiresAtUtc,
+            r.InventoryReservationRevision);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -233,28 +314,94 @@ internal static class ConnectedSupplierEntityMapper
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc,AcceptedAtUtc=x.AcceptedAtUtc,DeclinedAtUtc=x.DeclinedAtUtc,
         PreparingAtUtc=x.PreparingAtUtc,FulfilledAtUtc=x.FulfilledAtUtc,WithdrawnAtUtc=x.WithdrawnAtUtc,
         DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
-        PaymentTerm=(int)x.PaymentTerm,ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
+        PaymentTerm=(int)x.PaymentTerm,
+        ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value,
+        ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value,
+        CreditPostedAmount=x.CreditPostedAmount,
+        ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
         BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
+        InventoryReservationState=(int)x.InventoryReservationState,
+        InventoryReservationExpiresAtUtc=x.InventoryReservationExpiresAtUtc,
+        InventoryReservationRevision=x.InventoryReservationRevision,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
             NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,ProposedQty=l.ProposedQty,ConfirmedQty=l.ConfirmedQty,
             Availability=(int)l.Availability,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
-            UnitOfMeasureCode=l.UnitOfMeasureCode}).ToList()};
+            UnitOfMeasureCode=l.UnitOfMeasureCode,
+            ProposedUnitPrice=l.ProposedUnitPrice,ConfirmedUnitPrice=l.ConfirmedUnitPrice}).ToList()};
     public static void Apply(ConnectedPurchaseOrder x,ConnectedPurchaseOrderRecord r)
     {
         r.Status=(int)x.Status;r.UpdatedAtUtc=x.UpdatedAtUtc;r.AcceptedAtUtc=x.AcceptedAtUtc;r.DeclinedAtUtc=x.DeclinedAtUtc;
         r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
         r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;
-        r.PaymentTerm=(int)x.PaymentTerm;r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
+        r.PaymentTerm=(int)x.PaymentTerm;
+        r.ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value;
+        r.ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value;
+        r.CreditPostedAmount=x.CreditPostedAmount;
+        r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
         r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;
-        var domainLines=x.Lines.ToList();
+        r.InventoryReservationState=(int)x.InventoryReservationState;
+        r.InventoryReservationExpiresAtUtc=x.InventoryReservationExpiresAtUtc;
+        r.InventoryReservationRevision=x.InventoryReservationRevision;
+        var domainByProduct=x.Lines.ToDictionary(l => l.ProductId.Value);
         foreach(var lineRecord in r.Lines)
         {
-            var index=lineRecord.LineNumber-1;
-            if(index<0||index>=domainLines.Count) continue;
-            var line=domainLines[index];
+            if(!domainByProduct.TryGetValue(lineRecord.ProductId, out var line))
+            {
+                continue;
+            }
+
             lineRecord.ProposedQty=line.ProposedQty;
             lineRecord.ConfirmedQty=line.ConfirmedQty;
             lineRecord.Availability=(int)line.Availability;
+            lineRecord.ProposedUnitPrice=line.ProposedUnitPrice;
+            lineRecord.ConfirmedUnitPrice=line.ConfirmedUnitPrice;
         }
+    }
+
+    public static ConnectedPoInventoryReservation ToDomain(ConnectedPoInventoryReservationRecord r) =>
+        ConnectedPoInventoryReservation.Rehydrate(
+            ConnectedPoInventoryReservationId.From(r.Id),
+            PosOrganizationId.From(r.OrganizationId),
+            PosBranchId.From(r.BranchId),
+            CatalogProductId.From(r.ProductId),
+            ConnectedPurchaseOrderId.From(r.ConnectedPurchaseOrderId),
+            r.Revision,
+            r.Quantity,
+            r.RemainingQuantity,
+            (ConnectedPoReservationType)r.Type,
+            (ConnectedPoReservationStatus)r.Status,
+            r.CreatedAtUtc,
+            r.ExpiresAtUtc,
+            r.ReleasedAtUtc,
+            r.Version);
+
+    public static ConnectedPoInventoryReservationRecord ToRecord(ConnectedPoInventoryReservation x) => new()
+    {
+        Id = x.Id.Value,
+        OrganizationId = x.OrganizationId.Value,
+        BranchId = x.BranchId.Value,
+        ProductId = x.ProductId.Value,
+        ConnectedPurchaseOrderId = x.ConnectedPurchaseOrderId.Value,
+        Revision = x.Revision,
+        Quantity = x.Quantity,
+        RemainingQuantity = x.RemainingQuantity,
+        Type = (int)x.Type,
+        Status = (int)x.Status,
+        CreatedAtUtc = x.CreatedAtUtc,
+        ExpiresAtUtc = x.ExpiresAtUtc,
+        ReleasedAtUtc = x.ReleasedAtUtc,
+        Version = x.Version
+    };
+
+    public static void Apply(ConnectedPoInventoryReservation x, ConnectedPoInventoryReservationRecord r)
+    {
+        r.Revision = x.Revision;
+        r.Quantity = x.Quantity;
+        r.RemainingQuantity = x.RemainingQuantity;
+        r.Type = (int)x.Type;
+        r.Status = (int)x.Status;
+        r.ExpiresAtUtc = x.ExpiresAtUtc;
+        r.ReleasedAtUtc = x.ReleasedAtUtc;
+        r.Version = x.Version;
     }
 }

@@ -105,6 +105,21 @@ public sealed partial class FeatureCode : IEquatable<FeatureCode>
     /// <summary>POS delivery-order fulfillment capability (paired with customer ordering).</summary>
     public const string StoreDeliveryOrders = "store-delivery-orders";
 
+    /// <summary>POS Area management (grouping / navigation). Capacity uses plan-max-areas.</summary>
+    public const string StoreAreaManagement = "store-area-management";
+
+    /// <summary>POS Warehouse branch type. Warehouse branches still consume plan-max-branches.</summary>
+    public const string StoreWarehouse = "store-warehouse";
+
+    /// <summary>POS basic retail tenders: Cash, manual GCash, and Utang.</summary>
+    public const string StoreBasicPayments = "store-basic-payments";
+
+    /// <summary>POS payment method management (manual Bank Transfer, Check, Maya, etc.).</summary>
+    public const string StorePaymentManagement = "store-payment-management";
+
+    /// <summary>POS online payment provider integrations (foundation; providers may be Coming soon).</summary>
+    public const string StoreOnlinePayments = "store-online-payments";
+
     private static readonly Regex ValidPattern = CreateValidPattern();
 
     public string Value { get; }

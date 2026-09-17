@@ -300,6 +300,7 @@ public sealed class CreateCatalogProduct
     private readonly ICatalogProductUnitRepository _units;
     private readonly IProductCategoryRepository _categories;
     private readonly IProductBrandRepository _brands;
+    private readonly IInventoryRepository? _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly CatalogProductGovernanceAuthority _governance;
@@ -317,7 +318,8 @@ public sealed class CreateCatalogProduct
         CatalogProductGovernanceAuthority governance,
         ICatalogGovernanceActorAccessor actorAccessor,
         ISupplierProductExposureRepository? exposures = null,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IInventoryRepository? inventory = null)
     {
         _products = products;
         _units = units;
@@ -329,6 +331,7 @@ public sealed class CreateCatalogProduct
         _actorAccessor = actorAccessor;
         _exposures = exposures;
         _branches = branches;
+        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<CatalogProduct>> ExecuteAsync(
@@ -422,7 +425,56 @@ public sealed class CreateCatalogProduct
             }
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-            return ApplicationResult<CatalogProduct>.Success(staged.Value!);
+
+            var created = staged.Value!;
+            if (created.CanBeUsedAsIngredient)
+            {
+                if (_inventory is null)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        DomainErrorCodes.IngredientRequiresTrackedInventory,
+                        IngredientInventoryTracking.RequiresTrackedMessage);
+                }
+
+                var ensured = await IngredientInventoryTracking
+                    .EnsureTrackedAsync(
+                        _inventory,
+                        created.OrganizationId,
+                        created.Id,
+                        created.UnitOfMeasure,
+                        created.SellingMode,
+                        _clock.UtcNow,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!ensured.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(ensured.ErrorCode!, ensured.ErrorMessage!);
+                }
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            // Honor create-time share intent only when inventory is already tracked (e.g. ingredient ensure).
+            if (canExposeToConnectedBuyers
+                && created.CanBeSold
+                && created.Scope != CatalogProductScope.BranchLocal
+                && _inventory is not null)
+            {
+                var tracked = await ConnectedBuyerSharingRules
+                    .IsTrackedAsync(_inventory, created.OrganizationId, created.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                if (tracked)
+                {
+                    created.EnableConnectedBuyerAvailability(_clock.UtcNow);
+                    await _products.UpdateAsync(created, cancellationToken).ConfigureAwait(false);
+                    await ConnectedProductExposureSync
+                        .SyncAsync(created, _exposures, _clock.UtcNow, cancellationToken, _inventory, _categories)
+                        .ConfigureAwait(false);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            return ApplicationResult<CatalogProduct>.Success(created);
         }
         catch (DomainException ex)
         {
@@ -688,6 +740,17 @@ public sealed class UpdateCatalogProduct
                         "Only sell-as-is products can be shared with connected business customers.");
                 }
 
+                var tracked = await ConnectedBuyerSharingRules
+                    .IsTrackedAsync(_inventory, orgId, product.Id, cancellationToken)
+                    .ConfigureAwait(false);
+                var shareGate = ConnectedBuyerSharingRules.ValidateCanEnableSharing(tracked);
+                if (!shareGate.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        shareGate.ErrorCode!,
+                        shareGate.ErrorMessage!);
+                }
+
                 product.EnableConnectedBuyerAvailability(now);
                 if (defaultConnectedPoPrice is not null)
                 {
@@ -748,7 +811,33 @@ public sealed class UpdateCatalogProduct
             }
 
             await _products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
-            await ConnectedProductExposureSync.SyncAsync(product, _exposures, now, cancellationToken).ConfigureAwait(false);
+            await ConnectedProductExposureSync.SyncAsync(
+                    product,
+                    _exposures,
+                    now,
+                    cancellationToken,
+                    _inventory,
+                    _categories)
+                .ConfigureAwait(false);
+
+            if (product.CanBeUsedAsIngredient)
+            {
+                var ensured = await IngredientInventoryTracking
+                    .EnsureTrackedAsync(
+                        _inventory,
+                        orgId,
+                        product.Id,
+                        product.UnitOfMeasure,
+                        product.SellingMode,
+                        now,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (!ensured.IsSuccess)
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(ensured.ErrorCode!, ensured.ErrorMessage!);
+                }
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<CatalogProduct>.Success(product);
         }
@@ -769,14 +858,27 @@ internal static class ConnectedProductExposureSync
         CatalogProduct product,
         ISupplierProductExposureRepository? exposures,
         DateTimeOffset utcNow,
-        CancellationToken ct)
+        CancellationToken ct,
+        IInventoryRepository? inventory = null,
+        IProductCategoryRepository? categories = null)
     {
         if (exposures is null) return;
+
+        var trackedOk = true;
+        if (inventory is not null)
+        {
+            trackedOk = await ConnectedBuyerSharingRules
+                .IsTrackedAsync(inventory, product.OrganizationId, product.Id, ct)
+                .ConfigureAwait(false);
+        }
+
         // BranchLocal is origin-only in V1 — never participate in org-level Connected Buyer sharing.
+        // Untracked products must never remain actively exposed (legacy Shared+Untracked guard).
         if (product.Scope == CatalogProductScope.BranchLocal
             || product.IsBlockedFromConnectedBuyers
             || !product.CanExposeToConnectedBuyers
-            || !product.CanBeSold)
+            || !product.CanBeSold
+            || !trackedOk)
         {
             var existingLocal = await exposures.GetByProductAsync(product.OrganizationId, product.Id, ct).ConfigureAwait(false);
             if (existingLocal is not null && existingLocal.IsExposed)
@@ -800,18 +902,59 @@ internal static class ConnectedProductExposureSync
             return;
         }
 
+        var categoryName = await ResolveSupplierCategoryNameAsync(
+                product, categories, existing, ct)
+            .ConfigureAwait(false);
+
         var price = product.DefaultConnectedPoPrice.Value;
         if (existing is null)
         {
             existing = SupplierProductExposure.Expose(
-                product.OrganizationId, product.Id, product.Name, product.UnitOfMeasure.ToString(), price, utcNow, product.Sku);
+                product.OrganizationId,
+                product.Id,
+                product.Name,
+                product.UnitOfMeasure.ToString(),
+                price,
+                utcNow,
+                product.Sku,
+                categoryName);
             await exposures.AddAsync(existing, ct).ConfigureAwait(false);
         }
         else
         {
-            existing.UpdateOffer(product.Name, product.UnitOfMeasure.ToString(), price, true, utcNow, product.Sku);
+            existing.UpdateOffer(
+                product.Name,
+                product.UnitOfMeasure.ToString(),
+                price,
+                true,
+                utcNow,
+                product.Sku,
+                categoryName);
             await exposures.UpdateAsync(existing, ct).ConfigureAwait(false);
         }
+    }
+
+    private static async Task<string?> ResolveSupplierCategoryNameAsync(
+        CatalogProduct product,
+        IProductCategoryRepository? categories,
+        SupplierProductExposure? existing,
+        CancellationToken ct)
+    {
+        if (categories is not null)
+        {
+            if (product.CategoryId is null)
+            {
+                return null;
+            }
+
+            var category = await categories
+                .GetByIdAsync(product.OrganizationId, product.CategoryId, ct)
+                .ConfigureAwait(false);
+            return category?.Name;
+        }
+
+        // Without a category repository, preserve any existing snapshot instead of wiping it.
+        return existing?.CategoryNameSnapshot;
     }
 }
 
@@ -1269,15 +1412,9 @@ internal static class CatalogProductCreateCore
             await products.UpdateAsync(product, cancellationToken).ConfigureAwait(false);
         }
 
-        if (canExposeToConnectedBuyers && usage.CanBeSold && scope != CatalogProductScope.BranchLocal)
-        {
-            product.EnableConnectedBuyerAvailability(now);
-        }
-        else
-        {
-            // Explicit false, non-resale, or BranchLocal V1: do not org-share Connected Buyer.
-            product.DisableConnectedBuyerAvailability(now);
-        }
+        // Connected Buyer sharing requires tracked inventory. Create always stages Shared=false;
+        // CreateCatalogProduct / Update / bulk enable may turn sharing on after tracking exists.
+        product.DisableConnectedBuyerAvailability(now);
 
         // Product create defaults Default PO to retail. An explicit value wins.
         // Later retail edits do not rewrite a stored Default PO (update path).
@@ -1290,7 +1427,9 @@ internal static class CatalogProductCreateCore
             await units.AddAsync(seed, cancellationToken).ConfigureAwait(false);
         }
 
-        await ConnectedProductExposureSync.SyncAsync(product, exposures, now, cancellationToken).ConfigureAwait(false);
+        await ConnectedProductExposureSync
+            .SyncAsync(product, exposures, now, cancellationToken, inventory: null, categories)
+            .ConfigureAwait(false);
         return ApplicationResult<CatalogProduct>.Success(product);
     }
 }

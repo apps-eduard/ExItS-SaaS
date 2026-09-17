@@ -23,7 +23,8 @@ public sealed record PosSupplierPayableDto(
     Guid? VoidedBy,
     string? VoidReason,
     bool HasPostedPayments,
-    bool IsOverdue);
+    bool IsOverdue,
+    string? SourceReference = null);
 
 public sealed record PosSupplierPayablePaymentDto(
     Guid PaymentId,
@@ -71,7 +72,8 @@ public sealed record PosSupplierPayableReportRowDto(
     string Status,
     DateOnly? DueDate,
     bool IsOverdue,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    string? SourceReference = null);
 
 public sealed record PosSupplierPayableReportDto(
     DateOnly AsOfDate,
@@ -91,7 +93,8 @@ public static class SupplierPayableMapper
     public static PosSupplierPayableDto Map(
         SupplierPayable payable,
         string? supplierName = null,
-        DateOnly? asOfDate = null)
+        DateOnly? asOfDate = null,
+        string? sourceReference = null)
     {
         var asOf = asOfDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
         return new(
@@ -117,7 +120,8 @@ public static class SupplierPayableMapper
             payable.VoidedBy,
             payable.VoidReason,
             payable.HasPostedPayments,
-            IsOverdue(payable, asOf));
+            IsOverdue(payable, asOf),
+            sourceReference ?? FormatFallbackSourceReference(payable.SourceType));
     }
 
     public static PosSupplierPayablePaymentDto MapPayment(SupplierPayablePayment payment) =>
@@ -135,7 +139,8 @@ public static class SupplierPayableMapper
     public static PosSupplierPayableReportRowDto MapReportRow(
         SupplierPayable payable,
         string? supplierName,
-        DateOnly asOfDate) =>
+        DateOnly asOfDate,
+        string? sourceReference = null) =>
         new(
             payable.Id.Value,
             payable.SupplierId.Value,
@@ -149,11 +154,20 @@ public static class SupplierPayableMapper
             payable.Status.ToString(),
             payable.DueDate,
             IsOverdue(payable, asOfDate),
-            payable.CreatedAtUtc);
+            payable.CreatedAtUtc,
+            sourceReference ?? FormatFallbackSourceReference(payable.SourceType));
 
     public static bool IsOverdue(SupplierPayable payable, DateOnly asOfDate) =>
         payable.Status is SupplierPayableStatus.Open or SupplierPayableStatus.PartiallyPaid
         && payable.Balance > 0m
         && payable.DueDate is DateOnly due
         && due < asOfDate;
+
+    public static string FormatFallbackSourceReference(SupplierPayableSourceType sourceType) =>
+        sourceType switch
+        {
+            SupplierPayableSourceType.DirectPurchaseReceipt => "Direct purchase",
+            SupplierPayableSourceType.Sale => "Sale",
+            _ => "PO"
+        };
 }

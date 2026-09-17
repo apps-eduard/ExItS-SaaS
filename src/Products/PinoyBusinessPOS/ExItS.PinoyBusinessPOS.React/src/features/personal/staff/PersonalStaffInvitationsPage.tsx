@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import {
   acceptStaffInvitationById,
   declineStaffInvitationById,
@@ -134,13 +134,13 @@ export function PersonalStaffInvitationsPage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             type="button"
-            className="min-h-11 w-full"
+            className="w-full"
             data-testid="personal-staff-accepted-open"
             onClick={() => void openWorkplace(success.staffLogin)}
           >
             {t("personal.workplaces.openNamed").replace("{org}", success.organizationDisplayName)}
           </Button>
-          <Button asChild type="button" variant="outline" className="min-h-11 w-full">
+          <Button asChild type="button" variant="outline" className="w-full">
             <Link to="/personal/workplaces" data-testid="personal-staff-accepted-workplaces">
               {t("personal.workplaces.viewMine")}
             </Link>
@@ -177,6 +177,8 @@ export function PersonalStaffInvitationsPage() {
 
       {pendingQuery.isSuccess && rows.length === 0 ? (
         <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />}
           title={t("staffInvite.personalEmptyTitle")}
           detail={t("staffInvite.personalEmptyDetail")}
         />

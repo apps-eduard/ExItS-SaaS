@@ -1,11 +1,15 @@
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Expenses;
 
 /// <summary>
 /// Organization-owned store expense. Recorded once and immutable afterwards: the only permitted
 /// transition is an explicit void with a reason and actor. Corrections are void + replacement.
+///
+/// <see cref="BranchId"/> null = organization-wide expense; non-null = branch-attributed expense
+/// (opaque Platform OrganizationBranchId — not a POS FK).
 ///
 /// Payment methods: Cash and ManualGCash only. Out of scope: suppliers, AP, wages, GL, tax/VAT,
 /// OCR/attachments, split payments, gateways, and offline capture.
@@ -19,6 +23,8 @@ public sealed class Expense
 
     public ExpenseId Id { get; }
     public PosOrganizationId OrganizationId { get; }
+    /// <summary>Null = organization-wide; set = branch expense.</summary>
+    public PosBranchId? BranchId { get; }
     public string ExpenseNumber { get; }
     public ExpenseCategoryId CategoryId { get; }
     public ExpenseStatus Status { get; private set; }
@@ -38,6 +44,7 @@ public sealed class Expense
     private Expense(
         ExpenseId id,
         PosOrganizationId organizationId,
+        PosBranchId? branchId,
         string expenseNumber,
         ExpenseCategoryId categoryId,
         ExpenseStatus status,
@@ -56,6 +63,7 @@ public sealed class Expense
     {
         Id = id;
         OrganizationId = organizationId;
+        BranchId = branchId;
         ExpenseNumber = expenseNumber;
         CategoryId = categoryId;
         Status = status;
@@ -89,7 +97,8 @@ public sealed class Expense
         DateTimeOffset utcNow,
         string? payee = null,
         string? gcashReference = null,
-        ExpenseId? id = null)
+        ExpenseId? id = null,
+        PosBranchId? branchId = null)
     {
         ExpenseMoney.EnsureUtc(utcNow);
         ExpenseMoney.EnsureActor(recordedBy);
@@ -103,6 +112,7 @@ public sealed class Expense
         return new Expense(
             id ?? ExpenseId.New(),
             organizationId,
+            branchId,
             normalizedNumber,
             categoryId,
             ExpenseStatus.Recorded,
@@ -137,10 +147,12 @@ public sealed class Expense
         DateTimeOffset? voidedAtUtc,
         Guid? voidedBy,
         string? voidReason,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        PosBranchId? branchId = null) =>
         new(
             id,
             organizationId,
+            branchId,
             expenseNumber,
             categoryId,
             status,

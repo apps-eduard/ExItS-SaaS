@@ -1,6 +1,7 @@
-import { ChevronRight, Link2 } from "lucide-react";
+import { ChevronRight, Link2, Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { PersonAvatar } from "@/components/exits/PersonAvatar";
@@ -203,7 +204,7 @@ export function PeopleListSection({
           </p>
         </div>
         {summary.total > 0 ? (
-          <StatusChip tone="neutral">{String(summary.total)}</StatusChip>
+          <CountBadge count={summary.total} tone="neutral" />
         ) : null}
       </div>
 
@@ -224,7 +225,8 @@ export function PeopleListSection({
         className="exits-animate-toolbar"
         items={FILTERS.map((item) => ({
           key: item.key,
-          label: `${t(item.labelKey)}${filterCounts[item.key] > 0 ? ` (${filterCounts[item.key]})` : ""}`,
+          label: t(item.labelKey),
+          count: filterCounts[item.key],
           state: filter === item.key ? "active" : "idle",
           testId: `people-filter-${item.key}`,
           onSelect: () => setFilter(item.key),
@@ -232,9 +234,14 @@ export function PeopleListSection({
       />
 
       {rows.length === 0 ? (
-        <EmptyState title={t("people.emptyTitle")} detail={t("people.emptyBody")} />
+        <EmptyState
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.emptyTitle")} detail={t("people.emptyBody")} />
       ) : filteredRows.length === 0 ? (
-        <EmptyState title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
+        <EmptyState
+              variant="filtered"
+              align="center"
+              icon={<Users className="size-5" strokeWidth={1.75} />} title={t("people.noResultsTitle")} detail={t("people.noResultsBody")} />
       ) : (
         <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="people-list">
           {filteredRows.map((row) => (

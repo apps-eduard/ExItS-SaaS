@@ -57,13 +57,15 @@ function branch(
   name: string,
   areaId: string | null,
   areaName: string | null,
+  branchType: "Retail" | "Warehouse" = "Retail",
 ) {
   return {
     id,
     organizationId: ORG_ID,
     code,
     name,
-    isPrimary: id === MAIN_ID,
+    branchType,
+    isPrimary: id === MAIN_ID && branchType === "Retail",
     status: "Active",
     areaId,
     areaName,
@@ -194,6 +196,7 @@ describe("workspace chooser area grouping", () => {
     // The heading carries no destination: only a branch card offers Operations / Start selling.
     expect(screen.queryByTestId(`workspace-branch-${PANAY_ID}`)).not.toBeInTheDocument();
     expect(within(groups).getAllByTestId("workspace-destination-start_selling")).toHaveLength(4);
+    expect(screen.getByTestId("workspace-locations-heading")).toHaveTextContent("Locations (4)");
   });
 
   it("AREA02 chooser hides unassigned when no area-less branch is authorized", async () => {
@@ -225,6 +228,7 @@ describe("workspace chooser area grouping", () => {
     });
     expect(screen.queryByTestId("workspace-area-groups")).not.toBeInTheDocument();
     expect(screen.getByTestId(`workspace-branch-${ILOILO_ID}`)).toBeInTheDocument();
+    expect(screen.getByTestId("workspace-locations-heading")).toHaveTextContent("Locations (2)");
   });
 
   it("AREA02 chooser reads the branch list once for grouping", async () => {
@@ -234,5 +238,37 @@ describe("workspace chooser area grouping", () => {
       expect(screen.getByTestId("workspace-area-groups")).toBeInTheDocument();
     });
     expect(listOrganizationBranches).toHaveBeenCalledTimes(1);
+  });
+
+  it("warehouse cards never offer Start selling and use Warehouse operations", async () => {
+    const warehouseId = "bbbb5555-5555-5555-5555-555555555555";
+    listOrganizationBranches.mockResolvedValue({
+      ok: true,
+      branches: [
+        branch(MAIN_ID, "MAIN", "Main Branch", PANAY_ID, "Pacifica North", "Retail"),
+        branch(warehouseId, "WH1", "Iloilo Jaro Warehouse", PANAY_ID, "Pacifica North", "Warehouse"),
+      ],
+    });
+    renderWorkspaceChooser();
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`workspace-branch-${warehouseId}`)).toBeInTheDocument();
+    });
+
+    const warehouseCard = screen.getByTestId(`workspace-branch-${warehouseId}`);
+    expect(warehouseCard).toHaveAttribute("data-branch-type", "Warehouse");
+    expect(within(warehouseCard).getByText("Warehouse")).toBeInTheDocument();
+    expect(within(warehouseCard).queryByText("Primary")).not.toBeInTheDocument();
+    expect(
+      within(warehouseCard).queryByTestId("workspace-destination-start_selling"),
+    ).not.toBeInTheDocument();
+    expect(within(warehouseCard).getByTestId("workspace-destination-operations")).toHaveAttribute(
+      "data-label-key",
+      "experience.warehouseOperations",
+    );
+
+    const retailCard = screen.getByTestId(`workspace-branch-${MAIN_ID}`);
+    expect(within(retailCard).getByText("Retail")).toBeInTheDocument();
+    expect(within(retailCard).getByTestId("workspace-destination-start_selling")).toBeInTheDocument();
   });
 });

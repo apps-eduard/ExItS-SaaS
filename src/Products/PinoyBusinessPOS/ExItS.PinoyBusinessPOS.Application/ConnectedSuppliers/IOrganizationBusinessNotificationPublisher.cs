@@ -49,6 +49,21 @@ public static class SupplierConnectionNotificationTypes
         || string.Equals(relatedType, DeclinedConfirmation, StringComparison.Ordinal);
 }
 
+/// <summary>Seller-initiated Business Customer invitation lifecycle (supplier → buyer).</summary>
+public static class BusinessCustomerConnectionNotificationTypes
+{
+    public const string Requested = "BusinessCustomerConnectionRequested";
+    public const string Accepted = "BusinessCustomerConnectionAccepted";
+    public const string Declined = "BusinessCustomerConnectionDeclined";
+    public const string Cancelled = "BusinessCustomerConnectionCancelled";
+
+    public static bool IsKnown(string? relatedType) =>
+        string.Equals(relatedType, Requested, StringComparison.Ordinal)
+        || string.Equals(relatedType, Accepted, StringComparison.Ordinal)
+        || string.Equals(relatedType, Declined, StringComparison.Ordinal)
+        || string.Equals(relatedType, Cancelled, StringComparison.Ordinal);
+}
+
 /// <summary>No-op publisher for unit tests and hosts without Platform wiring.</summary>
 public sealed class NoOpOrganizationBusinessNotificationPublisher : IOrganizationBusinessNotificationPublisher
 {

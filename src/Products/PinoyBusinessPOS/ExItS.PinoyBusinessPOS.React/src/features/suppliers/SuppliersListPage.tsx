@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { canManageSuppliers, canViewSuppliers } from "@/access/pos-capabilities";
-import { listRelationships } from "@/api/pos/pos-connected-suppliers-client";
-import { listSuppliers, resolveSupplierSearchParams } from "@/api/pos/pos-suppliers-client";
+import { PackageSearch } from "lucide-react";
+import { canManageSuppliers, canViewPurchasing, canViewSuppliers } from "@/access/pos-capabilities";
+import {
+  isRelationshipActive,
+  isRelationshipPending,
+  listIncomingOrders,
+  listRelationships,
+} from "@/api/pos/pos-connected-suppliers-client";
+import {
+  listSuppliers,
+  resolveSupplierSearchParams,
+  type PosSupplier,
+} from "@/api/pos/pos-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -11,10 +20,12 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { SearchField } from "@/components/exits/SearchField";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 
@@ -82,13 +93,37 @@ export function SuppliersListPage() {
   });
 
   const incomingQuery = useQuery({
-    queryKey: ["connected-suppliers", "incoming-count", workspace?.organizationId],
+    queryKey: ["connected-suppliers", "incoming-count", workspace?.organizationId, workspace?.branchId],
     enabled: Boolean(workspace) && allowView,
     queryFn: async ({ signal }) => {
       const rows = await listRelationships(workspace!, "supplier", signal);
       return rows.filter((row) => row.status.toLowerCase() === "pending").length;
     },
   });
+
+  const allowViewPurchasing = canViewPurchasing(sessionGrant);
+  const pendingIncomingOrdersQuery = useQuery({
+    queryKey: ["connected-suppliers", "incoming-orders-pending-count", workspace?.organizationId],
+    enabled: Boolean(workspace) && allowViewPurchasing,
+    queryFn: async ({ signal }) => {
+      const rows = await listIncomingOrders(workspace!, { status: "New" }, signal);
+      return rows.length;
+    },
+  });
+
+  const buyerRelationshipsQuery = useQuery({
+    queryKey: ["connected-suppliers", "buyer-list", workspace?.organizationId],
+    enabled: Boolean(workspace) && allowView,
+    queryFn: ({ signal }) => listRelationships(workspace!, "buyer", signal),
+  });
+
+  const relationshipStatusById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of buyerRelationshipsQuery.data ?? []) {
+      map.set(row.relationshipId, row.status);
+    }
+    return map;
+  }, [buyerRelationshipsQuery.data]);
 
   if (!workspace) {
     return <BranchRequiredPanel title={t("suppliers.title")} />;
@@ -99,6 +134,7 @@ export function SuppliersListPage() {
   const canPrev = page > 1;
   const canNext = page < totalPages && totalCount > 0;
   const incomingCount = incomingQuery.data ?? 0;
+  const pendingIncomingOrders = pendingIncomingOrdersQuery.data ?? 0;
 
   return (
     <div className="suppliers-page exits-page flex min-w-0 flex-col gap-3" data-testid="suppliers-list-page">
@@ -144,6 +180,22 @@ export function SuppliersListPage() {
                   href: "/suppliers/connected/requests",
                   testId: "suppliers-incoming",
                 },
+                ...(allowViewPurchasing
+                  ? [
+                      {
+                        key: "incoming-orders",
+                        label:
+                          pendingIncomingOrders > 0
+                            ? t("incomingOrders.compact").replace(
+                                "{count}",
+                                String(pendingIncomingOrders),
+                              )
+                            : t("incomingOrders.title"),
+                        href: "/purchasing/incoming-orders",
+                        testId: "suppliers-incoming-orders",
+                      },
+                    ]
+                  : []),
                 {
                   key: "buyers",
                   label: t("connected.buyersTitle"),
@@ -155,28 +207,33 @@ export function SuppliersListPage() {
         ]}
       />
 
-      <SearchField
-        label={t("suppliers.search")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("suppliers.search")}
-        data-testid="suppliers-search"
-        containerClassName="suppliers-page__search exits-page__search"
-      />
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("suppliers.statusFilter")}
-        testId="suppliers-status-filters"
-        items={STATUS_FILTERS.map((filter) => ({
-          key: filter.key,
-          label: t(filter.labelKey),
-          state: (status || "all") === filter.key ? "active" : "idle",
-          testId: `suppliers-status-${filter.key === "all" ? "all" : filter.key}`,
-          onSelect: () => setStatus(filter.value),
-        }))}
-      />
+      <div
+        className="suppliers-page__filters-search flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center"
+        data-testid="suppliers-filters-search"
+      >
+        <ExitsChipBar
+          variant="filter"
+          ariaLabel={t("suppliers.statusFilter")}
+          testId="suppliers-status-filters"
+          className="shrink-0"
+          items={STATUS_FILTERS.map((filter) => ({
+            key: filter.key,
+            label: t(filter.labelKey),
+            state: (status || "all") === filter.key ? "active" : "idle",
+            testId: `suppliers-status-${filter.key === "all" ? "all" : filter.key}`,
+            onSelect: () => setStatus(filter.value),
+          }))}
+        />
+        <SearchField
+          label={t("suppliers.search")}
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          onClear={() => setSearch("")}
+          placeholder={t("suppliers.search")}
+          data-testid="suppliers-search"
+          containerClassName="suppliers-page__search exits-page__search min-w-0 flex-1"
+        />
+      </div>
 
       {query.isLoading ? <LoadingState label={t("loading.label")} /> : null}
       {query.isFetching && !query.isLoading && query.data ? (
@@ -186,13 +243,20 @@ export function SuppliersListPage() {
         <ErrorState title={t("error.title")} detail={(query.error as Error).message} />
       ) : null}
       {query.isSuccess && query.data.items.length === 0 ? (
-        <EmptyState title={t("suppliers.empty")} detail={t("suppliers.emptyDetail")} />
+        <EmptyState
+          align="center"
+          icon={<PackageSearch className="size-5" strokeWidth={1.75} />}
+          title={t("suppliers.empty")}
+          detail={t("suppliers.emptyDetail")}
+        />
       ) : null}
 
       <ul className="exits-list suppliers-list m-0 grid list-none gap-2 p-0" data-testid="suppliers-list">
-        {query.data?.items.map((supplier) => (
+        {query.data?.items.map((supplier) => {
+          const connectionChip = connectionRequestChip(supplier, relationshipStatusById, t);
+          return (
           <li key={supplier.supplierId}>
-            <Link
+            <AppLinkWithReturn
               className="exits-list__card suppliers-list__card block min-w-0 text-foreground no-underline"
               to={`/suppliers/${supplier.supplierId}`}
               data-testid={`supplier-row-${supplier.supplierId}`}
@@ -207,6 +271,11 @@ export function SuppliersListPage() {
                 >
                   {supplier.status}
                 </StatusChip>
+                {connectionChip ? (
+                  <span data-testid={`supplier-connection-status-${supplier.supplierId}`}>
+                    <StatusChip tone={connectionChip.tone}>{connectionChip.label}</StatusChip>
+                  </span>
+                ) : null}
               </span>
               {supplier.connectedBusinessPublicId || supplier.supplierBranchName ? (
                 <span
@@ -231,9 +300,10 @@ export function SuppliersListPage() {
                   ) : null}
                 </span>
               ) : null}
-            </Link>
+            </AppLinkWithReturn>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       {query.isSuccess && totalCount > 0 ? (
@@ -272,4 +342,20 @@ export function SuppliersListPage() {
       ) : null}
     </div>
   );
+}
+
+function connectionRequestChip(
+  supplier: PosSupplier,
+  relationshipStatusById: Map<string, string>,
+  t: (key: MessageKey) => string,
+): { label: string; tone: "info" | "warning" } | null {
+  const relationshipId = supplier.connectedRelationshipId;
+  const status = relationshipId ? relationshipStatusById.get(relationshipId) : undefined;
+  if (status && isRelationshipPending({ status })) {
+    return { label: t("connected.requestPending"), tone: "warning" };
+  }
+  if (status && isRelationshipActive({ status })) {
+    return { label: t("suppliers.connectionConnected"), tone: "info" };
+  }
+  return null;
 }

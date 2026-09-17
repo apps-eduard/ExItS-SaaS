@@ -1,26 +1,56 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, WalletCards } from "lucide-react";
 import {
   canApplyCommercialDiscount,
   canCreateCredit,
   canCreateCustomer,
   canCreateSale,
   canOverrideSalePrice,
-  canViewCustomers,
 } from "@/access/pos-capabilities";
-import { listCustomers, searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
+import { searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
+import { getCustomerCreditPolicy } from "@/api/pos/pos-credit-policy-client";
+import { getBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-policy-client";
+import {
+  computeCreditPolicyDueDate,
+  creditPolicyCheckoutBlockMessageKey,
+  creditPolicyStatusTone,
+  resolveUtangCreditPolicyBlock,
+} from "@/features/customers/credit-policy";
+import {
+  checkoutCreditStatusLabelKey,
+  formatCreditDueDateLabel,
+  isPendingRelationshipCustomer,
+  resolveUtangDirectorySelectBlock,
+  utangDirectorySelectToastMessage,
+} from "@/features/checkout/checkout-utang-credit";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Banknote, Check, Percent, Plus, UserRound, UserRoundX, WalletCards } from "lucide-react";
+import {
+  listCheckoutPaymentMethods,
+  listPaymentMethods,
+} from "@/api/pos/pos-payment-methods-client";
 import {
   checkoutSale,
   GCASH_REFERENCE_MAX_LENGTH,
   getSale,
   quoteSale,
-  type CheckoutPaymentMethod,
   type CommercialDiscountIntentRequest,
   type PosSaleQuoteDto,
   type SalePriceOverrideIntentRequest,
 } from "@/api/pos/pos-sales-client";
+import {
+  DEFAULT_CHECKOUT_METHOD_CODES,
+  filterCheckoutUiChoices,
+  isDebtCreatingPaymentChoice,
+  isManualReferencePaymentChoice,
+  toApiPaymentMethod,
+} from "@/features/checkout/checkout-payment-method-options";
+import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
+import {
+  isCheckoutBusiness,
+  mapCheckoutSearchItemToOption,
+} from "@/features/checkout/checkout-customer-option";
+import type { KindFilter } from "@/features/customers/customers-kind";
 import { roundMoney } from "@/cart/sell-cart-helpers";
 import { lineAmount, useSessionCart } from "@/cart/SessionCartProvider";
 import { Button } from "@/components/ui/button";
@@ -29,18 +59,25 @@ import { OnlineRequiredCard } from "@/components/exits/OnlineRequiredCard";
 import { OnlineRequiredPageState } from "@/components/exits/OnlineRequiredBoot";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { StatusChip } from "@/components/exits/StatusChip";
+import { useToast } from "@/components/exits/ToastProvider";
 import { isLikelyNetworkFailure } from "@/connectivity/network-failure";
+import {
+  clearPendingQuotationConvert,
+  readPendingQuotationConvert,
+} from "@/api/pos/pos-quotations-client";
 import { describeCheckoutSaleError } from "@/features/checkout/checkout-sale-errors";
 import { invalidatePosStockQueries } from "@/features/catalog/invalidate-pos-stock-queries";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { readOrganizationDocumentSettings } from "@/features/documents/document-settings";
+import { formatPeso } from "@/lib/format-money";
 import { CheckoutCollapsibleSection } from "@/features/checkout/CheckoutCollapsibleSection";
-import type { CheckoutCustomerOption } from "@/features/checkout/checkout-customer-option";
 import {
   CheckoutCustomerDirectory,
   CheckoutCustomerSelectedCard,
 } from "@/features/checkout/CheckoutCustomerDirectory";
 import { CheckoutPersonalCustomerPicker } from "@/features/checkout/CheckoutPersonalCustomerPicker";
 import { checkoutCustomerTitle } from "@/features/customers/format-pos-customer-label";
-import { resolveDisplayedPersonalExItsId } from "@/features/customers/customer-link-status";
 import { useOrganizationCustomerLinkOverlay } from "@/features/customers/use-organization-customer-link-overlay";
 import {
   CHECKOUT_PAYMENT_ICONS,
@@ -101,20 +138,16 @@ function parseDiscountValue(raw: string): number | null {
   return value;
 }
 
-function toApiPaymentMethod(choice: UiPaymentChoice): CheckoutPaymentMethod {
-  if (choice === "GCash") {
-    return "ManualGCash";
-  }
-  return choice;
-}
-
-/** Checkout page — Cash / GCash (ManualGCash) / Utang. File kept as CheckoutCashPage for route stability. */
+/** Checkout page — Cash / manual methods / Utang. File kept as CheckoutCashPage for route stability. */
 export function CheckoutCashPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const location = useLocation();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, deviceEnforcementEnabled } = useWorkspace();
+  const { identity: sellerDocumentIdentityPreview, isLoading: sellerIdentityLoading } =
+    useBusinessDocumentIdentity(boundWorkspace?.organizationId);
   const cart = useSessionCart();
   const { readiness, currentShift, refresh } = useShiftContext();
   const sellReadiness = useSellOfflineReadiness();
@@ -127,11 +160,14 @@ export function CheckoutCashPage() {
   const [cashReceived, setCashReceived] = useState("");
   const [gcashReference, setGcashReference] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [customerKindFilter, setCustomerKindFilter] = useState<KindFilter>("all");
   const [customers, setCustomers] = useState<CheckoutCustomerOption[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [customersError, setCustomersError] = useState(false);
+  const [customersReloadToken, setCustomersReloadToken] = useState(0);
   const [selectedCustomer, setSelectedCustomer] = useState<CheckoutCustomerOption | null>(null);
+  const pendingQuotationIdRef = useRef<string | null>(null);
   const [customerPanelOpen, setCustomerPanelOpen] = useState(false);
-  const [dueDate, setDueDate] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [appliedDiscounts, setAppliedDiscounts] = useState<AppliedDiscount[]>([]);
@@ -153,6 +189,18 @@ export function CheckoutCashPage() {
   const lastSeededTotalRef = useRef<number | null>(null);
   const tenderEditedRef = useRef(false);
 
+  useEffect(() => {
+    const pending = readPendingQuotationConvert();
+    if (!pending) return;
+    pendingQuotationIdRef.current = pending.quotationId;
+    setSelectedCustomer({
+      kind: "Customer",
+      customerId: pending.customerId,
+      displayName: pending.customerDisplayName,
+      status: "Active",
+    });
+  }, []);
+
   const workspaceScope = useMemo(() => {
     if (!boundWorkspace?.branchId) {
       return null;
@@ -166,10 +214,9 @@ export function CheckoutCashPage() {
   const allowSale = canCreateSale(sessionGrant);
   const allowDiscount = canApplyCommercialDiscount(sessionGrant);
   const allowOverride = canOverrideSalePrice(sessionGrant);
-  const allowViewCustomers = canViewCustomers(sessionGrant);
   const allowCreateCredit = canCreateCredit(sessionGrant);
   const allowCreateCustomer = canCreateCustomer(sessionGrant);
-  /** Cashier Utang may use narrow checkout-search; management list still requires ViewCustomers. */
+  /** Cashier checkout uses CreateSale + checkout-search — not ViewCustomersAndHistory. */
   const allowCheckoutCustomerSearch = allowSale;
   const moneyReady = sellReadiness.moneyPostReady === true;
   const deviceReady = sellReadiness.deviceReady;
@@ -225,6 +272,61 @@ export function CheckoutCashPage() {
   const showDiscountPanel = allowDiscount && online;
   const offlineContext = sellReadiness.offlineContext;
   const offlineDb = offlineContext?.db ?? null;
+
+  const checkoutMethodsQuery = useQuery({
+    queryKey: [
+      "pos-checkout-payment-methods",
+      boundWorkspace?.organizationId,
+      boundWorkspace?.branchId,
+    ],
+    enabled: online && !!boundWorkspace,
+    queryFn: ({ signal }) =>
+      listCheckoutPaymentMethods(boundWorkspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const paymentSettingsQuery = useQuery({
+    queryKey: ["pos-payment-method-settings", boundWorkspace?.organizationId],
+    enabled: online && !!boundWorkspace,
+    queryFn: ({ signal }) => listPaymentMethods(boundWorkspace!, signal),
+    staleTime: 60_000,
+  });
+
+  const entitledUiChoices = useMemo(() => {
+    if (!online) {
+      return ["Cash"] as UiPaymentChoice[];
+    }
+    const codes = checkoutMethodsQuery.data ?? [...DEFAULT_CHECKOUT_METHOD_CODES];
+    return filterCheckoutUiChoices(codes);
+  }, [checkoutMethodsQuery.data, online]);
+
+  const requireReferenceByChoice = useMemo(() => {
+    const map = new Map<UiPaymentChoice, boolean>();
+    map.set("GCash", true);
+    map.set("BankTransfer", true);
+    map.set("Check", true);
+    map.set("ManualMaya", false);
+    for (const row of paymentSettingsQuery.data ?? []) {
+      const ui =
+        row.methodCode === "ManualGCash"
+          ? "GCash"
+          : row.methodCode === "BankTransfer" ||
+              row.methodCode === "Check" ||
+              row.methodCode === "ManualMaya"
+            ? (row.methodCode as UiPaymentChoice)
+            : null;
+      if (ui) {
+        map.set(ui, row.requireReference);
+      }
+    }
+    return map;
+  }, [paymentSettingsQuery.data]);
+
+  useEffect(() => {
+    if (!entitledUiChoices.includes(paymentChoice)) {
+      setPaymentChoice(entitledUiChoices[0] ?? "Cash");
+    }
+  }, [entitledUiChoices, paymentChoice]);
 
   /**
    * Offline price leases (RMAP-21 Review Repair 01). While offline the cart is priced by leases the
@@ -282,18 +384,106 @@ export function CheckoutCashPage() {
         : null;
 
   const gcashRefTrimmed = gcashReference.trim();
+  const manualReferenceRequired =
+    isManualReferencePaymentChoice(paymentChoice) &&
+    (requireReferenceByChoice.get(paymentChoice) ?? paymentChoice === "GCash");
   const gcashRefOk =
-    paymentChoice !== "GCash" ||
+    !manualReferenceRequired ||
     zeroTotal ||
     (gcashRefTrimmed.length > 0 && gcashRefTrimmed.length <= GCASH_REFERENCE_MAX_LENGTH);
 
   const utangBlockedZero = paymentChoice === "Utang" && zeroTotal;
+  const b2bSelected = isCheckoutBusiness(selectedCustomer);
+  const personCustomerSelected =
+    selectedCustomer != null &&
+    selectedCustomer.kind === "Customer" &&
+    !b2bSelected;
+  const pendingRelationshipSelected = isPendingRelationshipCustomer(
+    selectedCustomer,
+    customerLinkOverlay,
+  );
+  const utangBlockedByPendingRelationship = pendingRelationshipSelected;
+  const utangPersonCustomerId =
+    paymentChoice === "Utang" && personCustomerSelected
+      ? selectedCustomer!.customerId
+      : null;
+  const utangBusinessConnectionId =
+    paymentChoice === "Utang" && b2bSelected ? selectedCustomer!.connectionId : null;
+  const utangBuyerSelected = Boolean(utangPersonCustomerId || utangBusinessConnectionId);
+
+  useEffect(() => {
+    if (utangBlockedByPendingRelationship && isDebtCreatingPaymentChoice(paymentChoice)) {
+      const fallback =
+        entitledUiChoices.find((choice) => !isDebtCreatingPaymentChoice(choice)) ?? "Cash";
+      setPaymentChoice(fallback);
+    }
+  }, [utangBlockedByPendingRelationship, paymentChoice, entitledUiChoices]);
+
+  const personCreditPolicyQuery = useQuery({
+    queryKey: [
+      "checkout",
+      "credit-policy",
+      workspaceScope?.organizationId,
+      utangPersonCustomerId,
+    ],
+    enabled: Boolean(workspaceScope && utangPersonCustomerId && online),
+    queryFn: ({ signal }) =>
+      getCustomerCreditPolicy(workspaceScope!, utangPersonCustomerId!, signal),
+  });
+
+  const businessCreditPolicyQuery = useQuery({
+    queryKey: [
+      "checkout",
+      "business-credit-policy",
+      workspaceScope?.organizationId,
+      utangBusinessConnectionId,
+    ],
+    enabled: Boolean(workspaceScope && utangBusinessConnectionId && online),
+    queryFn: ({ signal }) =>
+      getBusinessCustomerCreditPolicy(workspaceScope!, utangBusinessConnectionId!, signal),
+  });
+
+  const creditPolicy = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.data
+    : personCreditPolicyQuery.data;
+  const creditPolicyLoading = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.isLoading
+    : Boolean(utangPersonCustomerId) && personCreditPolicyQuery.isLoading;
+  const creditPolicyError = utangBusinessConnectionId
+    ? businessCreditPolicyQuery.isError
+    : Boolean(utangPersonCustomerId) && personCreditPolicyQuery.isError;
+
+  const creditPolicyBlock = resolveUtangCreditPolicyBlock({
+    paymentIsUtang: paymentChoice === "Utang",
+    utangBuyerSelected,
+    policy: creditPolicy,
+    policyLoading: creditPolicyLoading,
+    policyError: creditPolicyError,
+    thisSaleAmount: amountToPay,
+  });
+  const creditPolicyBlockMessageKey = creditPolicyCheckoutBlockMessageKey(creditPolicyBlock);
+  const creditPolicyBlockMessage = creditPolicyBlockMessageKey
+    ? creditPolicyBlockMessageKey === "checkout.creditPolicy.overLimit"
+      ? t(creditPolicyBlockMessageKey).replace(
+          "{amount}",
+          formatPeso(creditPolicy?.availableCredit ?? 0),
+        )
+      : t(creditPolicyBlockMessageKey)
+    : null;
+  const policyDueDate =
+    creditPolicy?.status === "Approved" && creditPolicy.defaultTermDays != null
+      ? computeCreditPolicyDueDate(new Date(), creditPolicy.defaultTermDays)
+      : null;
+  const availableAfterSale =
+    creditPolicy != null ? creditPolicy.availableCredit - amountToPay : null;
+
   const utangNeedsCustomerLookup =
     paymentChoice === "Utang" && !(allowCheckoutCustomerSearch && allowCreateCredit);
   const utangCustomerOk =
     paymentChoice !== "Utang" ||
     (allowCheckoutCustomerSearch && allowCreateCredit && selectedCustomer != null);
   const utangCreditOk = paymentChoice !== "Utang" || allowCreateCredit;
+  const utangPolicyOk = creditPolicyBlock === null;
 
   useEffect(() => {
     if (!moneyReady || !deviceReady || !shiftGateReady) {
@@ -422,8 +612,10 @@ export function CheckoutCashPage() {
       return;
     }
     const isUtang = paymentChoice === "Utang";
+    // Cash/GCash/Utang share one checkout-safe directory (CreateSale → checkout-search).
     const isOptionalCashCustomer =
-      (paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers;
+      (paymentChoice === "Cash" || isManualReferencePaymentChoice(paymentChoice)) &&
+      allowCheckoutCustomerSearch;
     if (!isUtang && !isOptionalCashCustomer) {
       return;
     }
@@ -437,49 +629,47 @@ export function CheckoutCashPage() {
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       const trimmed = customerSearch.trim();
-      // Checkout-search requires non-blank search; Owner/Manager full list may load without search.
-      if (isUtang && !allowViewCustomers && !trimmed) {
-        setCustomers([]);
-        setCustomersLoading(false);
-        return;
-      }
+      // Same All/People/Businesses filter for every payment method — payment changes eligibility, not discoverability.
+      const kindFilter: KindFilter = customerKindFilter;
 
       setCustomersLoading(true);
-      const load = allowViewCustomers
-        ? listCustomers(
-            workspaceScope,
-            { status: "Active", search: trimmed || undefined, pageSize: 20 },
-            controller.signal,
-          ).then((page) =>
-            page.items.map((c) => ({
-              customerId: c.customerId,
-              displayName: c.displayName,
-              mobileNumber: c.mobileNumber,
-              status: c.status,
-              linkedPersonalPublicUserId: resolveDisplayedPersonalExItsId({
-                linkedPersonalPublicUserId: c.linkedPersonalPublicUserId,
-                notes: c.notes,
-              }),
-              platformBusinessCustomerId: c.platformBusinessCustomerId ?? null,
-            })),
-          )
-        : searchCheckoutCustomers(
-            workspaceScope,
-            { search: trimmed, pageSize: 20 },
-            controller.signal,
-          ).then((page) => page.items);
+      setCustomersError(false);
+
+      const loadSearch = (kind: "All" | "Customer" | "Business") =>
+        searchCheckoutCustomers(
+          workspaceScope,
+          {
+            search: trimmed || undefined,
+            kind,
+            pageSize: 20,
+          },
+          controller.signal,
+        ).then((page) =>
+          page.items
+            .map((item) => mapCheckoutSearchItemToOption(item))
+            .filter((x): x is CheckoutCustomerOption => x != null),
+        );
+
+      const load =
+        kindFilter === "businesses"
+          ? loadSearch("Business")
+          : kindFilter === "people"
+            ? loadSearch("Customer")
+            : loadSearch("All");
 
       void load
         .then((items) => {
           if (!controller.signal.aborted) {
             setCustomers(items);
             setCustomersLoading(false);
+            setCustomersError(false);
           }
         })
         .catch(() => {
           if (!controller.signal.aborted) {
             setCustomers([]);
             setCustomersLoading(false);
+            setCustomersError(true);
           }
         });
     }, 250);
@@ -491,14 +681,23 @@ export function CheckoutCashPage() {
   }, [
     allowCheckoutCustomerSearch,
     allowCreateCredit,
-    allowViewCustomers,
+    customerKindFilter,
     customerSearch,
+    customersReloadToken,
     online,
     paymentChoice,
     selectedCustomer,
     workspaceScope,
   ]);
 
+  useEffect(() => {
+    if (!online && isCheckoutBusiness(selectedCustomer)) {
+      setSelectedCustomer(null);
+    }
+  }, [online, selectedCustomer]);
+
+  // Keep selectedCustomer across Cash ↔ GCash ↔ Utang. B2B stays selected on Utang so the
+  // cashier sees why confirm is blocked (utang policy / customer) instead of a mysterious clear.
   function addDiscount() {
     setDiscountFormError(null);
     const reason = discountReason.trim();
@@ -543,7 +742,13 @@ export function CheckoutCashPage() {
       ? t("checkout.paymentGCashManual")
       : paymentChoice === "Utang"
         ? t("checkout.paymentUtang")
-        : t("checkout.paymentCash");
+        : paymentChoice === "BankTransfer"
+          ? t("checkout.paymentBankTransfer")
+          : paymentChoice === "Check"
+            ? t("checkout.paymentCheck")
+            : paymentChoice === "ManualMaya"
+              ? t("checkout.paymentManualMaya")
+              : t("checkout.paymentCash");
 
   function removeDiscount(localId: string) {
     setAppliedDiscounts((prev) => prev.filter((item) => item.localId !== localId));
@@ -553,7 +758,7 @@ export function CheckoutCashPage() {
     return (
       <div data-testid="checkout-denied" className="flex flex-col gap-3">
         <PageHeader title={t("checkout.title")} description={t("checkout.deniedDetail")} />
-        <Button asChild variant="ghost" className="min-h-11 w-fit">
+        <Button asChild variant="ghost" className="w-fit">
           <Link to="/">{t("notFound.home")}</Link>
         </Button>
       </div>
@@ -590,16 +795,16 @@ export function CheckoutCashPage() {
           <div className="mt-3 flex flex-wrap gap-2">
             {online ? (
               deviceBlocked ? (
-                <Button asChild className="min-h-11" data-testid="checkout-register-device">
+                <Button asChild data-testid="checkout-register-device">
                   <Link to="/devices/register">{t("checkout.registerDevice")}</Link>
                 </Button>
               ) : (
-                <Button asChild className="min-h-11" data-testid="checkout-open-shift">
+                <Button asChild data-testid="checkout-open-shift">
                   <Link to="/shifts/open">{t("shift.openTitle")}</Link>
                 </Button>
               )
             ) : null}
-            <Button asChild variant="ghost" className="min-h-11">
+            <Button asChild variant="ghost">
               <Link to="/sell">{t("checkout.backToCart")}</Link>
             </Button>
           </div>
@@ -640,7 +845,7 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.tenderInvalid"));
       return;
     }
-    if (paymentChoice === "GCash" && !zeroTotal && !gcashRefOk) {
+    if (manualReferenceRequired && !zeroTotal && !gcashRefOk) {
       setSubmitError(t("checkout.gcashReferenceRequired"));
       return;
     }
@@ -652,8 +857,26 @@ export function CheckoutCashPage() {
       setSubmitError(t("checkout.utangCustomerDenied"));
       return;
     }
+    if (paymentChoice === "Utang" && utangBlockedByPendingRelationship) {
+      setSubmitError(t("checkout.utangSelect.connectionPending"));
+      return;
+    }
     if (paymentChoice === "Utang" && !utangCustomerOk) {
       setSubmitError(t("checkout.utangCustomerRequired"));
+      return;
+    }
+    if (paymentChoice === "Utang" && creditPolicyBlockMessage) {
+      setSubmitError(creditPolicyBlockMessage);
+      return;
+    }
+    // Avoid persisting a branch-only seller snapshot while org profile is still loading.
+    if (
+      sellerIdentityLoading &&
+      !boundWorkspace?.organizationDisplayName?.trim() &&
+      (!sellerDocumentIdentityPreview.businessName ||
+        sellerDocumentIdentityPreview.businessName === "Business")
+    ) {
+      setSubmitError(t("loading.label"));
       return;
     }
 
@@ -719,6 +942,9 @@ export function CheckoutCashPage() {
 
     try {
       await refresh();
+      const documentSettings = boundWorkspace?.organizationId
+        ? readOrganizationDocumentSettings(boundWorkspace.organizationId)
+        : null;
       const sale = await checkoutSale(workspaceScope, {
         lines,
         paymentMethod: apiPaymentMethod,
@@ -727,23 +953,78 @@ export function CheckoutCashPage() {
         ...(paymentChoice === "Cash"
           ? { amountTendered: zeroTotal ? 0 : Number((parsedTender as number).toFixed(2)) }
           : {}),
-        ...(paymentChoice === "GCash" && !zeroTotal && gcashRefTrimmed
+        ...(isManualReferencePaymentChoice(paymentChoice) &&
+        !zeroTotal &&
+        gcashRefTrimmed
           ? { gCashReference: gcashRefTrimmed.slice(0, GCASH_REFERENCE_MAX_LENGTH) }
           : {}),
-        ...(selectedCustomer && (paymentChoice === "Utang" || allowViewCustomers)
+        ...(selectedCustomer && isCheckoutBusiness(selectedCustomer) && online
           ? {
-              customerId: selectedCustomer.customerId,
-              ...(paymentChoice === "Utang" && dueDate.trim() ? { dueDate: dueDate.trim() } : {}),
+              buyerPartyKind: "Organization" as const,
+              buyerConnectionId: selectedCustomer.connectionId,
+              buyerOrganizationId: selectedCustomer.buyerOrganizationId,
+              buyerPublicOrganizationId:
+                selectedCustomer.buyerPublicOrganizationId ?? undefined,
+              buyerDisplayNameSnapshot: selectedCustomer.displayName,
+              ...(paymentChoice === "Utang" && policyDueDate
+                ? {
+                    dueDate: policyDueDate,
+                  }
+                : {}),
             }
-          : {}),
+          : selectedCustomer &&
+              selectedCustomer.kind === "Customer" &&
+              (paymentChoice === "Utang" || allowCheckoutCustomerSearch)
+            ? {
+                customerId: selectedCustomer.customerId,
+                ...(paymentChoice === "Utang" && policyDueDate
+                  ? {
+                      dueDate: policyDueDate,
+                    }
+                  : {}),
+              }
+            : {}),
         discounts: allowDiscount && discountIntents.length > 0 ? discountIntents : undefined,
         priceOverrides:
           allowOverride && priceOverrideIntents.length > 0 ? priceOverrideIntents : undefined,
+        sellerDocumentIdentity: (() => {
+          const fromProfile =
+            sellerDocumentIdentityPreview.businessName &&
+            sellerDocumentIdentityPreview.businessName !== "Business"
+              ? sellerDocumentIdentityPreview.businessName.trim()
+              : null;
+          const fromWorkspace = boundWorkspace?.organizationDisplayName?.trim() || null;
+          const businessName = fromProfile || fromWorkspace;
+          return {
+            ...(businessName ? { businessName } : {}),
+            logoUrl: sellerDocumentIdentityPreview.logoUrl ?? undefined,
+            address: sellerDocumentIdentityPreview.address ?? undefined,
+            phone: sellerDocumentIdentityPreview.phone ?? undefined,
+            email: sellerDocumentIdentityPreview.email ?? undefined,
+            branchName:
+              sellerDocumentIdentityPreview.branchName ??
+              boundWorkspace?.branchName ??
+              undefined,
+            branchAddress: sellerDocumentIdentityPreview.branchAddress ?? undefined,
+            showLogo: documentSettings?.header.showLogo,
+            showBusinessAddress: documentSettings?.header.showBusinessAddress,
+            showBusinessPhone: documentSettings?.header.showBusinessPhone,
+            showBusinessEmail: documentSettings?.header.showBusinessEmail,
+            showBranchName: documentSettings?.header.showBranchName,
+            showBranchAddress: documentSettings?.header.showBranchAddress,
+          };
+        })(),
+        ...(pendingQuotationIdRef.current
+          ? { quotationId: pendingQuotationIdRef.current }
+          : {}),
       });
       completedRef.current = true;
       cart.clear();
+      clearPendingQuotationConvert();
+      pendingQuotationIdRef.current = null;
       attemptSaleIdRef.current = allocateSecureId();
       await invalidatePosStockQueries(queryClient);
+      showToast(t("summary.paidSuccess"), "success");
       navigate(`/sell/sales/${sale.saleId}/summary`, { replace: true });
     } catch (error) {
       if (isLikelyNetworkFailure(error) && workspaceScope) {
@@ -756,6 +1037,7 @@ export function CheckoutCashPage() {
           cart.clear();
           attemptSaleIdRef.current = allocateSecureId();
           await invalidatePosStockQueries(queryClient);
+          showToast(t("summary.paidSuccess"), "success");
           navigate(`/sell/sales/${confirmed.saleId}/summary`, { replace: true });
           return;
         } catch (lookupError) {
@@ -789,10 +1071,12 @@ export function CheckoutCashPage() {
     utangBlockedZero ||
     utangNeedsCustomerLookup ||
     !utangCustomerOk ||
-    !utangCreditOk;
+    !utangCreditOk ||
+    !utangPolicyOk;
 
   return (
-    <div data-testid="checkout-cash-page" className="flex min-w-0 flex-col gap-4">
+    <div data-testid="checkout-cash-page" className="checkout-cash-page">
+      <div className="checkout-cash-page__scroll">
       <PageHeader
         title={t("checkout.title")}
         description={t("checkout.cashLede")}
@@ -850,7 +1134,7 @@ export function CheckoutCashPage() {
         <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
           {t("checkout.orderPreview")}
         </h2>
-        <ul className="mb-0 mt-2 list-none space-y-2 p-0">
+        <ul className="checkout-sale-preview__lines">
           {cart.lines.map((line, index) => (
             <li
               key={line.lineKey}
@@ -910,7 +1194,7 @@ export function CheckoutCashPage() {
           </p>
           <p
             data-testid="checkout-discount-total"
-            className="m-0 mt-1 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
+            className="m-0 flex justify-between gap-2 text-[length:var(--exits-text-sm)]"
           >
             <span className="text-muted">{t("checkout.discount")}</span>
             <span>
@@ -920,7 +1204,7 @@ export function CheckoutCashPage() {
           </p>
           <p
             data-testid="checkout-amount-to-pay"
-            className="mb-0 mt-2 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
+            className="mb-0 flex justify-between gap-2 text-[length:var(--exits-text-md)] font-semibold"
           >
             <span>{t("checkout.amountToPay")}</span>
             <MoneyDisplay amount={amountToPay} />
@@ -966,31 +1250,72 @@ export function CheckoutCashPage() {
               setSubmitError(null);
               setPaymentMethodOpen(false);
             }}
-            options={[
-              {
-                value: "Cash",
-                label: t("checkout.paymentCash"),
-                Icon: CHECKOUT_PAYMENT_ICONS.Cash,
-                testId: "checkout-pay-cash",
-                disabled: saving,
-              },
-              {
-                value: "GCash",
-                label: t("checkout.paymentGCashManual"),
-                Icon: CHECKOUT_PAYMENT_ICONS.GCash,
-                testId: "checkout-pay-gcash",
-                disabled: saving || !online,
-              },
-              {
-                value: "Utang",
-                label: t("checkout.paymentUtang"),
-                Icon: CHECKOUT_PAYMENT_ICONS.Utang,
-                testId: "checkout-pay-utang",
-                disabled: saving || !online,
-              },
-            ]}
+            options={entitledUiChoices.map((choice) => {
+              const debtBlocked =
+                isDebtCreatingPaymentChoice(choice) && utangBlockedByPendingRelationship;
+              const base = {
+                value: choice,
+                disabled: saving || (!online && choice !== "Cash") || debtBlocked,
+                hint: debtBlocked
+                  ? t("checkout.utangPendingUnavailableHint")
+                  : undefined,
+              };
+              switch (choice) {
+                case "GCash":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentGCashManual"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.GCash,
+                    testId: "checkout-pay-gcash",
+                  };
+                case "Utang":
+                  return {
+                    ...base,
+                    label: debtBlocked
+                      ? t("checkout.paymentUtangUnavailable")
+                      : t("checkout.paymentUtang"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Utang,
+                    testId: "checkout-pay-utang",
+                  };
+                case "BankTransfer":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentBankTransfer"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.BankTransfer,
+                    testId: "checkout-pay-bank-transfer",
+                  };
+                case "Check":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentCheck"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Check,
+                    testId: "checkout-pay-check",
+                  };
+                case "ManualMaya":
+                  return {
+                    ...base,
+                    label: t("checkout.paymentManualMaya"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.ManualMaya,
+                    testId: "checkout-pay-maya",
+                  };
+                default:
+                  return {
+                    ...base,
+                    label: t("checkout.paymentCash"),
+                    Icon: CHECKOUT_PAYMENT_ICONS.Cash,
+                    testId: "checkout-pay-cash",
+                  };
+              }
+            })}
           />
-          {!online ? (
+          {utangBlockedByPendingRelationship ? (
+            <p
+              data-testid="checkout-pending-utang-helper"
+              className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
+            >
+              {t("checkout.utangPendingRelationshipHelper")}
+            </p>
+          ) : null}          {!online ? (
             <p
               data-testid="checkout-offline-method-hint"
               className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted"
@@ -999,7 +1324,7 @@ export function CheckoutCashPage() {
             </p>
           ) : null}
         </CheckoutCollapsibleSection>
-        {paymentChoice === "GCash" && !zeroTotal ? (
+        {isManualReferencePaymentChoice(paymentChoice) && !zeroTotal ? (
           <div
             data-testid="checkout-gcash-panel"
             className="checkout-gcash-under-method exits-animate-panel"
@@ -1009,26 +1334,32 @@ export function CheckoutCashPage() {
               htmlFor="checkout-gcash-reference"
             >
               <span className="inline-flex flex-wrap items-baseline gap-1">
-                {t("checkout.gcashReference")}
-                <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
-                  {t("checkout.fieldRequired")}
-                </span>
+                {t("checkout.paymentReference")}
+                {manualReferenceRequired ? (
+                  <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+                    {t("checkout.fieldRequired")}
+                  </span>
+                ) : (
+                  <span className="text-[length:var(--exits-text-xs)] text-muted">
+                    {t("checkout.fieldOptional")}
+                  </span>
+                )}
               </span>
               <input
                 id="checkout-gcash-reference"
                 data-testid="checkout-gcash-reference"
                 type="text"
-                required
-                aria-required="true"
+                required={manualReferenceRequired}
+                aria-required={manualReferenceRequired}
                 maxLength={GCASH_REFERENCE_MAX_LENGTH}
                 value={gcashReference}
                 disabled={saving}
-                className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
                 onChange={(event) => setGcashReference(event.target.value)}
               />
             </label>
-            <p className="mb-0 mt-2 text-[length:var(--exits-text-xs)] text-muted">
-              {t("checkout.gcashReferenceHint")}
+            <p className="mb-0 mt-1.5 text-[length:var(--exits-text-xs)] text-muted">
+              {t("checkout.paymentReferenceHint")}
             </p>
           </div>
         ) : null}
@@ -1077,7 +1408,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountScope")}
                 <select
                   data-testid="checkout-discount-scope"
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="exits-select"
                   value={discountScope}
                   disabled={saving}
                   onChange={(event) => setDiscountScope(event.target.value as DiscountScope)}
@@ -1090,7 +1421,7 @@ export function CheckoutCashPage() {
                 {t("checkout.discountMethod")}
                 <select
                   data-testid="checkout-discount-method"
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="exits-select"
                   value={discountMethod}
                   disabled={saving}
                   onChange={(event) => setDiscountMethod(event.target.value as DiscountMethod)}
@@ -1104,7 +1435,7 @@ export function CheckoutCashPage() {
                   {t("checkout.discountLine")}
                   <select
                     data-testid="checkout-discount-line"
-                    className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                    className="exits-select"
                     value={discountLineNumber}
                     disabled={saving}
                     onChange={(event) => setDiscountLineNumber(Number(event.target.value))}
@@ -1127,7 +1458,7 @@ export function CheckoutCashPage() {
                   step="0.01"
                   value={discountValue}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => setDiscountValue(event.target.value)}
                 />
               </label>
@@ -1138,7 +1469,7 @@ export function CheckoutCashPage() {
                   type="text"
                   value={discountReason}
                   disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
+                  className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => setDiscountReason(event.target.value)}
                 />
               </label>
@@ -1154,7 +1485,7 @@ export function CheckoutCashPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 type="button"
-                className="checkout-discount-apply min-h-11 flex-1 sm:flex-none"
+                className="checkout-discount-apply flex-1 sm:flex-none"
                 data-testid="checkout-discount-add"
                 disabled={saving}
                 onClick={addDiscount}
@@ -1165,7 +1496,6 @@ export function CheckoutCashPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="min-h-11"
                 data-testid="checkout-discount-cancel"
                 disabled={saving}
                 onClick={() => {
@@ -1181,7 +1511,7 @@ export function CheckoutCashPage() {
           {appliedDiscounts.length === 0 && !discountFormOpen ? (
             <p
               data-testid="checkout-discount-empty"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)] text-muted"
             >
               {t("checkout.discountEmpty")}
             </p>
@@ -1218,7 +1548,9 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
-      {(paymentChoice === "Cash" || paymentChoice === "GCash") && allowViewCustomers && online ? (
+      {(paymentChoice === "Cash" || isManualReferencePaymentChoice(paymentChoice)) &&
+      allowCheckoutCustomerSearch &&
+      online ? (
         <Card data-testid="checkout-optional-customer-panel" className="checkout-section-card">
           <CheckoutCollapsibleSection
             testId="checkout-optional-customer-collapse"
@@ -1237,12 +1569,13 @@ export function CheckoutCashPage() {
               selectedCustomer && !customerPanelOpen ? (
                 <Button
                   type="button"
-                  variant="ghost"
-                  className="min-h-9"
+                  variant="outline"
+                  className="checkout-customer-clear"
                   data-testid="checkout-customer-clear"
                   disabled={saving}
                   onClick={() => setSelectedCustomer(null)}
                 >
+                  <UserRoundX className="size-3.5 shrink-0" aria-hidden />
                   {t("checkout.customerClear")}
                 </Button>
               ) : null
@@ -1282,10 +1615,16 @@ export function CheckoutCashPage() {
                 onSearchChange={setCustomerSearch}
                 customers={customers}
                 customersLoading={customersLoading}
+                customersError={customersError}
+                onRetryLoad={() => setCustomersReloadToken((n) => n + 1)}
                 selectedCustomer={selectedCustomer}
                 overlay={customerLinkOverlay}
                 disabled={saving}
+                kindFilter={customerKindFilter}
+                onKindFilterChange={setCustomerKindFilter}
                 onSelect={(customer) => {
+                  // Pending relationships may complete immediate (non-debt) sales.
+                  // Utang remains blocked via payment-method disable + directory select.
                   setSelectedCustomer(customer);
                   setCustomerPanelOpen(false);
                 }}
@@ -1295,6 +1634,185 @@ export function CheckoutCashPage() {
         </Card>
       ) : null}
 
+      {paymentChoice === "Utang" ? (
+        <Card
+          data-testid="checkout-utang-panel"
+          className="checkout-section-card checkout-detail-panel exits-animate-panel"
+        >
+          <h2 className="m-0 inline-flex flex-wrap items-baseline gap-1.5 text-[length:var(--exits-text-md)] font-semibold">
+            {t("checkout.customerSection")}
+            <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
+              {t("checkout.fieldRequired")}
+            </span>
+          </h2>
+          <p className="checkout-utang-panel__lede text-[length:var(--exits-text-xs)] text-muted">
+            {t("checkout.utangDebtHint")} {t("checkout.utangCustomerRequired")}
+          </p>
+          {utangNeedsCustomerLookup ? (
+            <p
+              data-testid="checkout-utang-customer-denied"
+              className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+            >
+              {t("checkout.utangCustomerDenied")}
+            </p>
+          ) : (
+            <>
+              {selectedCustomer && (personCustomerSelected || b2bSelected) ? (
+                <div
+                  className="checkout-utang-credit-summary"
+                  data-testid="checkout-utang-credit-summary"
+                >
+                  <div className="checkout-utang-credit-summary__header">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <p
+                        className="checkout-utang-credit-summary__name"
+                        data-testid="checkout-utang-credit-summary-name"
+                      >
+                        {checkoutCustomerTitle(selectedCustomer, t("checkout.walkInCustomer"))}
+                      </p>
+                      {creditPolicy ? (
+                        <StatusChip tone={creditPolicyStatusTone(creditPolicy.status)}>
+                          {t(checkoutCreditStatusLabelKey(creditPolicy.status))}
+                        </StatusChip>
+                      ) : null}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="checkout-customer-clear shrink-0"
+                      data-testid="checkout-customer-clear"
+                      disabled={saving}
+                      onClick={() => setSelectedCustomer(null)}
+                    >
+                      <UserRoundX className="size-3.5 shrink-0" aria-hidden />
+                      {t("checkout.customerClear")}
+                    </Button>
+                  </div>
+                  {creditPolicyLoading ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("checkout.creditPolicy.loading")}
+                    </p>
+                  ) : null}
+                  {creditPolicyBlockMessage ? (
+                    <p
+                      className="mb-0 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
+                      data-testid="checkout-credit-policy-block"
+                    >
+                      {creditPolicyBlockMessage}
+                    </p>
+                  ) : null}
+                  {creditPolicy?.status === "Approved" ? (
+                    <dl
+                      className="checkout-utang-credit-summary__metrics"
+                      data-testid="checkout-credit-policy-panel"
+                    >
+                      <div>
+                        <dt>{t("checkout.creditPolicy.available")}</dt>
+                        <dd data-testid="checkout-credit-available">
+                          <MoneyDisplay amount={creditPolicy.availableCredit} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{t("checkout.creditPolicy.thisSale")}</dt>
+                        <dd>
+                          <MoneyDisplay amount={amountToPay} />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{t("checkout.creditPolicy.afterSale")}</dt>
+                        <dd>
+                          {availableAfterSale == null ? (
+                            "—"
+                          ) : (
+                            <MoneyDisplay amount={Math.max(0, availableAfterSale)} />
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="sr-only">{t("checkout.creditPolicy.due")}</dt>
+                        <dd data-testid="checkout-credit-policy-due">
+                          {policyDueDate
+                            ? t("checkout.creditPolicy.dueWithDate").replace(
+                                "{date}",
+                                formatCreditDueDateLabel(policyDueDate),
+                              )
+                            : "—"}
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : null}
+                </div>
+              ) : selectedCustomer ? (
+                <div className="mt-2">
+                  <CheckoutCustomerSelectedCard
+                    customer={selectedCustomer}
+                    overlay={customerLinkOverlay}
+                    disabled={saving}
+                    onClear={() => setSelectedCustomer(null)}
+                  />
+                </div>
+              ) : null}
+              {workspaceScope && !selectedCustomer ? (
+                <CheckoutPersonalCustomerPicker
+                  workspace={workspaceScope}
+                  disabled={saving}
+                  canLinkCustomer={allowCreateCustomer}
+                  returnTo={location.pathname}
+                  onCustomerSelected={(customer) => {
+                    const block = resolveUtangDirectorySelectBlock({
+                      customer,
+                      thisSaleAmount: amountToPay,
+                      overlay: customerLinkOverlay,
+                    });
+                    if (block) {
+                      showToast(utangDirectorySelectToastMessage(block, t), "error");
+                      return;
+                    }
+                    setSelectedCustomer(customer);
+                  }}
+                />
+              ) : null}
+              {!selectedCustomer ? (
+                <CheckoutCustomerDirectory
+                  searchId="checkout-customer-search"
+                  searchTestId="checkout-customer-search"
+                  searchLabel={t("checkout.utangCustomerSearch")}
+                  searchValue={customerSearch}
+                  onSearchChange={setCustomerSearch}
+                  customers={customers}
+                  customersLoading={customersLoading}
+                  customersError={customersError}
+                  onRetryLoad={() => setCustomersReloadToken((n) => n + 1)}
+                  selectedCustomer={selectedCustomer}
+                  overlay={customerLinkOverlay}
+                  disabled={saving}
+                  kindFilter={customerKindFilter}
+                  onKindFilterChange={setCustomerKindFilter}
+                  includeWalkInsWhenIdle
+                  showCreditStatus
+                  idleEmptyMessage={t("checkout.utangCustomerIdleEmpty")}
+                  onSelect={(customer) => {
+                    const block = resolveUtangDirectorySelectBlock({
+                      customer,
+                      thisSaleAmount: amountToPay,
+                      overlay: customerLinkOverlay,
+                    });
+                    if (block) {
+                      showToast(utangDirectorySelectToastMessage(block, t), "error");
+                      return;
+                    }
+                    setSelectedCustomer(customer);
+                  }}
+                />
+              ) : null}
+            </>
+          )}
+        </Card>
+      ) : null}
+
+      </div>
+
+      <div className="checkout-tender-dock" data-testid="checkout-tender-dock">
       {paymentChoice === "Cash" ? (
         !zeroTotal ? (
           <Card className="checkout-detail-panel exits-animate-panel" key="checkout-cash-tender">
@@ -1318,7 +1836,7 @@ export function CheckoutCashPage() {
                   step="0.01"
                   value={cashReceived}
                   disabled={saving}
-                  className="checkout-cash-received-row__input min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
+                  className="checkout-cash-received-row__input rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 tabular-nums"
                   onChange={(event) => {
                     tenderEditedRef.current = true;
                     setCashReceived(event.target.value);
@@ -1327,7 +1845,7 @@ export function CheckoutCashPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="checkout-cash-received-row__exact min-h-11 shrink-0"
+                  className="checkout-cash-received-row__exact shrink-0"
                   data-testid="checkout-cash-exact"
                   disabled={saving}
                   onClick={() => {
@@ -1341,7 +1859,7 @@ export function CheckoutCashPage() {
             </label>
             <p
               data-testid="checkout-change"
-              className="mb-0 mt-3 text-[length:var(--exits-text-sm)]"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)]"
             >
               {t("checkout.change")}:{" "}
               {changeAdvisory === null ? (
@@ -1350,7 +1868,7 @@ export function CheckoutCashPage() {
                 <MoneyDisplay amount={changeAdvisory} />
               )}
             </p>
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
+            <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
               {t("checkout.changeAdvisory")}
             </p>
           </Card>
@@ -1370,89 +1888,12 @@ export function CheckoutCashPage() {
             </p>
             <p
               data-testid="checkout-change"
-              className="mb-0 mt-2 text-[length:var(--exits-text-sm)]"
+              className="mb-0 mt-1.5 text-[length:var(--exits-text-sm)]"
             >
               {t("checkout.change")}: <MoneyDisplay amount={0} />
             </p>
           </Card>
         )
-      ) : null}
-
-      {paymentChoice === "Utang" ? (
-        <Card
-          data-testid="checkout-utang-panel"
-          className="checkout-section-card checkout-detail-panel exits-animate-panel"
-        >
-          <h2 className="m-0 inline-flex flex-wrap items-baseline gap-1.5 text-[length:var(--exits-text-md)] font-semibold">
-            {t("checkout.customerSection")}
-            <span className="text-[length:var(--exits-text-xs)] font-semibold text-[var(--exits-danger)]">
-              {t("checkout.fieldRequired")}
-            </span>
-          </h2>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-            {t("checkout.utangDebtHint")} {t("checkout.utangCustomerRequired")}
-          </p>
-          {utangNeedsCustomerLookup ? (
-            <p
-              data-testid="checkout-utang-customer-denied"
-              className="mb-0 mt-3 text-[length:var(--exits-text-sm)] text-[var(--exits-danger)]"
-            >
-              {t("checkout.utangCustomerDenied")}
-            </p>
-          ) : (
-            <>
-              {selectedCustomer ? (
-                <div className="mt-3">
-                  <CheckoutCustomerSelectedCard
-                    customer={selectedCustomer}
-                    overlay={customerLinkOverlay}
-                    disabled={saving}
-                    onClear={() => setSelectedCustomer(null)}
-                  />
-                </div>
-              ) : null}
-              {workspaceScope && !selectedCustomer ? (
-                <CheckoutPersonalCustomerPicker
-                  workspace={workspaceScope}
-                  disabled={saving}
-                  canLinkCustomer={allowCreateCustomer}
-                  returnTo={location.pathname}
-                  onCustomerSelected={setSelectedCustomer}
-                />
-              ) : null}
-              {!selectedCustomer ? (
-                <CheckoutCustomerDirectory
-                  searchId="checkout-customer-search"
-                  searchTestId="checkout-customer-search"
-                  searchLabel={t("checkout.utangCustomerSearch")}
-                  searchValue={customerSearch}
-                  onSearchChange={setCustomerSearch}
-                  customers={customers}
-                  customersLoading={customersLoading}
-                  selectedCustomer={selectedCustomer}
-                  overlay={customerLinkOverlay}
-                  disabled={saving}
-                  onSelect={setSelectedCustomer}
-                />
-              ) : null}
-              <label
-                className="mt-3 flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
-                htmlFor="checkout-utang-due-date"
-              >
-                {t("checkout.utangDueDate")}
-                <input
-                  id="checkout-utang-due-date"
-                  data-testid="checkout-utang-due-date"
-                  type="date"
-                  value={dueDate}
-                  disabled={saving}
-                  className="min-h-11 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-                  onChange={(event) => setDueDate(event.target.value)}
-                />
-              </label>
-            </>
-          )}
-        </Card>
       ) : null}
 
       <div className="checkout-actions">
@@ -1478,6 +1919,7 @@ export function CheckoutCashPage() {
             {t("checkout.backToCart")}
           </Link>
         </Button>
+      </div>
       </div>
     </div>
   );

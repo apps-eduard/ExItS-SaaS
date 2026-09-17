@@ -240,4 +240,32 @@ public sealed class GoodsReceiptLine
         var (display, _) = InventoryLot.NormalizeLotNumber(lotNumber);
         return display;
     }
+
+    /// <summary>Sum of good-quantity line totals for a receive draft (excludes damaged/rejected).</summary>
+    public static decimal SumGoodLineTotals(
+        PurchaseOrder purchaseOrder,
+        IReadOnlyList<PurchaseOrderReceiveLineDraft> receiveLines)
+    {
+        var poLineByProduct = purchaseOrder.Lines
+            .Where(l => l.ProductId is not null)
+            .ToDictionary(l => l.ProductId!.Value);
+        decimal sum = 0m;
+        foreach (var receive in receiveLines)
+        {
+            if (!poLineByProduct.TryGetValue(receive.ProductId.Value, out var poLine))
+            {
+                continue;
+            }
+
+            var good = receive.ReceiveQty <= 0m
+                ? 0m
+                : PurchaseOrderLine.NormalizeQuantity(
+                    receive.ReceiveQty,
+                    poLine.UomSnapshot!.Value,
+                    receive.SellingMode);
+            sum += SaleMoney.RoundMoney(good * poLine.UnitPurchaseCost);
+        }
+
+        return SaleMoney.RoundMoney(sum);
+    }
 }
