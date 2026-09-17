@@ -878,23 +878,6 @@ if (Test-ShouldStartLocalValidationService 'personal-web') {
     Write-Ok 'Personal Web READY'
 }
 
-if (Test-ShouldStartLocalValidationService 'react-admin') {
-    Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
-    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
-    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
-    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
-    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
-    Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
-    $reactUpArgs = @(
-        'compose', '-p', $LocalValidationStack.ComposeProjectName,
-        '-f', $composeFile, '--env-file', $envFile,
-        '--profile', 'apps', 'up', '-d', 'admin-web-react'
-    )
-    $reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
-    if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
-    Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
-}
-
 if (Test-ShouldStartLocalValidationService 'react-pos') {
     $reactPosClientDir = Join-Path $repoRoot 'src\Products\PinoyBusinessPOS\ExItS.PinoyBusinessPOS.React'
     if (-not (Test-Path -LiteralPath (Join-Path $reactPosClientDir 'package.json'))) {
@@ -919,6 +902,47 @@ if (Test-ShouldStartLocalValidationService 'react-pos') {
         -NpmScript 'dev'
     Wait-TcpPort -Label 'React POS' -HostName '127.0.0.1' -Port $reactPosPort -TimeoutSeconds $PortWaitSeconds
     Write-Ok 'React POS Vite READY (HMR preserved)'
+}
+
+if (Test-ShouldStartLocalValidationService 'react-admin') {
+    Write-Step 'Starting React Platform Admin (Docker production build on 8095)...'
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PUBLIC_URL' -Value $publicPlatformApiUrl
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_ADMIN_WEB_REACT_ORIGIN' -Value $publicAdminWebReactUrl
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_SAME_ORIGIN' -Value 'true'
+    Set-Item -LiteralPath 'Env:LOCAL_VALIDATION_PLATFORM_API_PROXY_TARGET' -Value $reactApiProxyTarget
+    Set-Item -LiteralPath 'Env:EXITS_GIT_SHA' -Value $gitSha
+    # Proactively clear orphaned exited containers that block compose create by name.
+    # docker inspect writes "no such object" to stderr; under $ErrorActionPreference=Stop that throws.
+    $adminReactStatus = $null
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $inspectOut = & docker inspect -f '{{.State.Status}}' $LocalValidationStack.AdminWebReactContainer 2>$null
+        if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace([string]$inspectOut)) {
+            $adminReactStatus = ([string]$inspectOut).Trim()
+        }
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+    if ($adminReactStatus -and $adminReactStatus -ne 'running') {
+        Write-Note "Removing non-running React Admin container (status=$adminReactStatus) before compose up..."
+        $ErrorActionPreference = 'Continue'
+        try { & docker rm -f $LocalValidationStack.AdminWebReactContainer 2>$null | Out-Null } finally { $ErrorActionPreference = $prevEap }
+    }
+    $reactUpArgs = @(
+        'compose', '-p', $LocalValidationStack.ComposeProjectName,
+        '-f', $composeFile, '--env-file', $envFile,
+        '--profile', 'apps', 'up', '-d', 'admin-web-react'
+    )
+    $reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
+    if ($reactExit -ne 0) {
+        # Stale exited container with the same name orphans from compose and blocks create.
+        Write-Note 'React Admin compose up failed; removing stale container and retrying once...'
+        docker rm -f $LocalValidationStack.AdminWebReactContainer 2>$null | Out-Null
+        $reactExit = Invoke-LocalValidationDocker -DockerArgs $reactUpArgs
+    }
+    if ($reactExit -ne 0) { throw "React Platform Admin container startup failed ($reactExit)." }
+    Wait-TcpPort -Label 'React Platform Admin' -HostName '127.0.0.1' -Port $adminWebReactPort -TimeoutSeconds $PortWaitSeconds
 }
 
 # Mailpit is part of infra up; explicit start covers OnlyServices=mailpit restarts.

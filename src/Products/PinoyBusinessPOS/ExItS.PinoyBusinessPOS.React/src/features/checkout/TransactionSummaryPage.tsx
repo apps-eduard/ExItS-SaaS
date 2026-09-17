@@ -23,6 +23,7 @@ import { printBusinessDocument } from "@/features/documents/print-business-docum
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -48,6 +49,11 @@ export function TransactionSummaryPage() {
   const { saleId } = useParams<{ saleId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
+  const smartBack = usePageSmartBack({
+    fallback: "sell",
+    backLabel: t("summary.backToSell"),
+    backTestId: "summary-back-to-sell",
+  });
   const organizationId = boundWorkspace?.organizationId ?? null;
   const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
   const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
@@ -267,9 +273,7 @@ export function TransactionSummaryPage() {
       <PageHeader
         title={t("summary.title")}
         description={`${t("summary.subtitle")} · ${sale.saleNumber}`}
-        backTo="/sell"
-        backLabel={t("summary.backToSell")}
-        backTestId="summary-back-to-sell"
+        {...smartBack}
         trailing={headerActions}
       />
       <div ref={stickyGateRef} className="h-px w-full shrink-0" aria-hidden data-testid="summary-sticky-gate" />

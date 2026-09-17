@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, ChevronRight, Plus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -149,7 +150,7 @@ export function StockRequestListPage() {
               : (item.requestedSourceLocationName ?? item.requestedSourceLocationId);
             return (
               <li key={item.stockRequestId}>
-                <Link
+                <AppLinkWithReturn
                   to={`/inventory/stock-requests/${item.stockRequestId}`}
                   className="flex items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border p-3 no-underline"
                   data-testid={`stock-request-row-${item.stockRequestId}`}
@@ -173,7 +174,7 @@ export function StockRequestListPage() {
                     </div>
                   </div>
                   <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-                </Link>
+                </AppLinkWithReturn>
               </li>
             );
           })}

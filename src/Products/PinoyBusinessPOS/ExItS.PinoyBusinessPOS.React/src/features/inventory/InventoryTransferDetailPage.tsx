@@ -19,6 +19,7 @@ import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { useToast } from "@/components/exits/ToastProvider";
@@ -67,6 +68,11 @@ export function InventoryTransferDetailPage() {
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "transfers",
+    backLabel: t("transfer.backList"),
+    backTestId: "page-header-back-transfers",
+  });
 
   const [localError, setLocalError] = useState<LocalError | null>(null);
   const [busy, setBusy] = useState(false);
@@ -279,9 +285,7 @@ export function InventoryTransferDetailPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="transfer-detail-missing">
         <PageHeader
           title={t("transfer.title")}
-          backTo="/inventory/transfers"
-          backLabel={t("transfer.backList")}
-          backTestId="page-header-back-transfers"
+          {...smartBack}
         />
         <ErrorState title={t("transfer.errorTitle")} detail={t("transfer.notFound")} />
       </div>
@@ -668,9 +672,7 @@ export function InventoryTransferDetailPage() {
             {t(inventoryTransferStatusLabelKey(transfer.status))}
           </StatusChip>
         }
-        backTo="/inventory/transfers"
-        backLabel={t("transfer.backList")}
-        backTestId="page-header-back-transfers"
+        {...smartBack}
       />
 
       {!online ? (

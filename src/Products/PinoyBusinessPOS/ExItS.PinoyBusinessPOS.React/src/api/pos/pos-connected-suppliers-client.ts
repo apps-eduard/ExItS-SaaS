@@ -1550,6 +1550,48 @@ export const connectedPurchaseOrderLineSchema = z.object({
   availability: z.string().optional().default("Pending"),
   proposedLineTotal: z.number().optional().default(0),
   confirmedLineTotal: z.number().optional().default(0),
+  proposedUnitPrice: z.number().nullable().optional(),
+  confirmedUnitPrice: z.number().nullable().optional(),
+  onHandQuantity: z.number().nullable().optional(),
+  reservedQuantity: z.number().nullable().optional(),
+  availableToPromise: z.number().nullable().optional(),
+  confirmQty: z.number().nullable().optional(),
+  shortageWarning: z.boolean().nullable().optional(),
+  orderedQty: z.number().nullable().optional(),
+  goodReceivedQty: z.number().nullable().optional(),
+  damagedQty: z.number().nullable().optional(),
+  missingQty: z.number().nullable().optional(),
+  cancelledRemainingQty: z.number().nullable().optional(),
+  outstandingQty: z.number().nullable().optional(),
+  remainingValue: z.number().nullable().optional(),
+});
+
+export const incomingOrderBuyerReceiptLineSchema = z.object({
+  productId: guidSchema,
+  nameSnapshot: z.string(),
+  uomSnapshot: z.string(),
+  goodQty: z.number(),
+  damagedQty: z.number(),
+  missingQty: z.number(),
+  cancelledRemainingQty: z.number(),
+  discrepancyKind: z.string().nullable().optional(),
+  discrepancyNote: z.string().nullable().optional(),
+  remainingAction: z.string().nullable().optional(),
+});
+
+export const incomingOrderBuyerReceiptSchema = z.object({
+  goodsReceiptId: guidSchema,
+  grnNumber: z.string(),
+  receivedDate: z.string(),
+  receivedAtUtc: isoDateSchema,
+  deliveryReference: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  status: z.string(),
+  goodQtyTotal: z.number(),
+  damagedQtyTotal: z.number(),
+  missingQtyTotal: z.number(),
+  cancelledRemainingTotal: z.number(),
+  lines: z.array(incomingOrderBuyerReceiptLineSchema),
 });
 
 export const connectedPurchaseOrderSchema = z.object({
@@ -1584,9 +1626,23 @@ export const connectedPurchaseOrderSchema = z.object({
   buyerRespondedAtUtc: isoDateSchema.nullable().optional(),
   supplierBranchId: guidSchema.nullable().optional(),
   supplierBranchName: z.string().nullable().optional(),
+  inventoryReservationState: z.string().optional().default("None"),
+  inventoryReservationExpiresAtUtc: isoDateSchema.nullable().optional(),
+  buyerOutstandingQty: z.number().nullable().optional(),
+  buyerReceipts: z.array(incomingOrderBuyerReceiptSchema).nullable().optional(),
+  remainingClosedAtUtc: isoDateSchema.nullable().optional(),
+  remainingClosedByUserId: guidSchema.nullable().optional(),
+  remainingClosedReason: z.string().nullable().optional(),
+  finalAcceptedValue: z.number().nullable().optional(),
+  cancelledRemainingValue: z.number().nullable().optional(),
+  refundDueAmount: z.number().optional().default(0),
+  amountPaid: z.number().optional().default(0),
+  balanceDue: z.number().optional().default(0),
 });
 
 export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
+export type IncomingOrderBuyerReceipt = z.infer<typeof incomingOrderBuyerReceiptSchema>;
+export type IncomingOrderBuyerReceiptLine = z.infer<typeof incomingOrderBuyerReceiptLineSchema>;
 export type ConnectedPurchaseOrder = z.infer<typeof connectedPurchaseOrderSchema>;
 
 export type IncomingOrderStatusFilter =
@@ -1690,6 +1746,69 @@ export async function fulfillIncomingOrder(
 ): Promise<ConnectedPurchaseOrder> {
   // Fulfill mutates supplier stock — do not assertNotInventoryMutationUrl here.
   const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/fulfill`;
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function closeIncomingOrderRemaining(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: { reason: string },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/close-remaining`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: { reason: input.reason },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function proposeIncomingOrderChanges(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    lines: Array<{
+      productId: string;
+      proposedQty: number;
+      unavailable?: boolean;
+      proposedUnitPrice?: number | null;
+    }>;
+    proposedPaymentTerm?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/propose-changes`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      lines: input.lines,
+      proposedPaymentTerm: input.proposedPaymentTerm ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function withdrawIncomingOrderProposal(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/withdraw-proposal`;
+  assertNotInventoryMutationUrl(path);
   const raw = await posRequest<unknown>({
     method: "POST",
     workspace,

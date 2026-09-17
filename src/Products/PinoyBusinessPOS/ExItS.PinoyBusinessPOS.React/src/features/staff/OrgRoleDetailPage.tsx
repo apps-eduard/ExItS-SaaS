@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
@@ -12,6 +13,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function OrgRoleDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "/org/roles",
+    backLabel: t("orgRoles.backList"),
+    backTestId: "page-header-back-roles",
+  });
   const { roleCode = "" } = useParams();
   const { boundWorkspace } = useWorkspace();
   const organizationId = boundWorkspace?.organizationId ?? null;
@@ -40,9 +46,7 @@ export function OrgRoleDetailPage() {
       <PageHeader
         title={detailQuery.data?.displayName ?? t("orgRoles.detailTitle")}
         description={detailQuery.data?.description ?? t("orgRoles.detailLede")}
-        backTo="/org/roles"
-        backLabel={t("orgRoles.backList")}
-        backTestId="page-header-back-roles"
+        {...smartBack}
         trailing={
           <Button asChild variant="outline" data-testid="org-role-manage-staff">
             <Link to={pageBackNav.orgStaff.to}>

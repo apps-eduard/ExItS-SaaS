@@ -35,6 +35,12 @@ export type PageHeaderProps = {
   backLabel?: string;
   backTestId?: string;
   /**
+   * When set (e.g. from useSmartBack.goBack), left-click runs this instead of
+   * a plain Link navigation so returnTo storage can be cleared. Href still
+   * supports middle-click / open-in-new-tab via `backTo`.
+   */
+  onBack?: () => void;
+  /**
    * `default` — application pages (Reports, Shifts, …).
    * `compact` — operational POS workspaces (Sell) — single dense row, no lede.
    */
@@ -57,6 +63,7 @@ export function PageHeader({
   backTo,
   backLabel,
   backTestId = "page-header-back",
+  onBack,
   variant = "default",
 }: PageHeaderProps) {
   const { t } = useI18n();
@@ -96,6 +103,22 @@ export function PageHeader({
                   ? "-ms-0.5 size-8 min-h-8 min-w-8"
                   : "-ms-1 size-[var(--exits-control-height)] min-h-[var(--exits-control-height)] min-w-[var(--exits-control-height)]",
               )}
+              onClick={
+                onBack
+                  ? (event) => {
+                      if (
+                        event.button === 0 &&
+                        !event.metaKey &&
+                        !event.ctrlKey &&
+                        !event.shiftKey &&
+                        !event.altKey
+                      ) {
+                        event.preventDefault();
+                        onBack();
+                      }
+                    }
+                  : undefined
+              }
             >
               <ArrowLeft className={cn("shrink-0 rtl:rotate-180", compact ? "size-4" : "size-5")} aria-hidden />
             </Link>

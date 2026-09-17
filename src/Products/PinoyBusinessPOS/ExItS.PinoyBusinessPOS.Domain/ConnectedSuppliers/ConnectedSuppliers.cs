@@ -71,7 +71,9 @@ public enum ConnectedPoPaymentTerm
     Cash = 0,
     ManualGCash = 1,
     Utang = 2,
-    BankTransfer = 3
+    BankTransfer = 3,
+    BankDeposit = 4,
+    Check = 5
 }
 
 public enum ConnectedPoLineAvailability
@@ -1065,7 +1067,7 @@ public static class ConnectedPoPaymentTerms
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidOrder,
-                "Payment term must be COD, Cash, BankTransfer, GCash, or Utang.");
+                "Payment term must be COD, Cash, BankTransfer, BankDeposit, Check, GCash, or Utang.");
         }
 
         return term;
@@ -1085,7 +1087,7 @@ public static class ConnectedPoPaymentTerms
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidOrder,
-                "Payment term must be COD, Cash, BankTransfer, GCash, or Utang.");
+                "Payment term must be COD, Cash, BankTransfer, BankDeposit, Check, GCash, or Utang.");
         }
 
         return term;
@@ -1113,6 +1115,21 @@ public static class ConnectedPoPaymentTerms
             || trimmed.Equals("Bank transfer", StringComparison.OrdinalIgnoreCase))
         {
             term = ConnectedPoPaymentTerm.BankTransfer;
+            return true;
+        }
+
+        if (trimmed.Equals("BankDeposit", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Bank deposit", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Bank Deposit", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.BankDeposit;
+            return true;
+        }
+
+        if (trimmed.Equals("Check", StringComparison.OrdinalIgnoreCase)
+            || trimmed.Equals("Cheque", StringComparison.OrdinalIgnoreCase))
+        {
+            term = ConnectedPoPaymentTerm.Check;
             return true;
         }
 
@@ -1144,6 +1161,8 @@ public static class ConnectedPoPaymentTerms
             ConnectedPoPaymentTerm.Cash => "COD / Pay on delivery",
             ConnectedPoPaymentTerm.ManualGCash => "GCash / Manual e-wallet",
             ConnectedPoPaymentTerm.BankTransfer => "Bank transfer",
+            ConnectedPoPaymentTerm.BankDeposit => "Bank deposit",
+            ConnectedPoPaymentTerm.Check => "Check",
             ConnectedPoPaymentTerm.Utang => "Utang / Credit",
             _ => term.ToString(),
         };
@@ -1345,6 +1364,9 @@ public sealed class ConnectedPurchaseOrder
     /// Active reservation = reservation base − this value.
     /// </summary>
     public decimal CreditPostedAmount { get; private set; }
+    public ConnectedPoInventoryReservationState InventoryReservationState { get; private set; }
+    public DateTimeOffset? InventoryReservationExpiresAtUtc { get; private set; }
+    public int InventoryReservationRevision { get; private set; }
     public IReadOnlyList<ConnectedPurchaseOrderLine> Lines => _lines;
     public decimal ProposedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ProposedLineTotal));
     public decimal ConfirmedTotalAmount => SaleMoney.RoundMoney(_lines.Sum(x => x.ConfirmedLineTotal));
@@ -1378,7 +1400,10 @@ public sealed class ConnectedPurchaseOrder
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
         ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
-        decimal creditPostedAmount = 0m)
+        decimal creditPostedAmount = 0m,
+        ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
+        DateTimeOffset? inventoryReservationExpiresAtUtc = null,
+        int inventoryReservationRevision = 0)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -1407,6 +1432,9 @@ public sealed class ConnectedPurchaseOrder
         BuyerRespondedAtUtc = buyerRespondedAtUtc;
         BuyerRespondedByUserId = buyerRespondedByUserId;
         CreditPostedAmount = creditPostedAmount < 0m ? 0m : SaleMoney.RoundMoney(creditPostedAmount);
+        InventoryReservationState = inventoryReservationState;
+        InventoryReservationExpiresAtUtc = inventoryReservationExpiresAtUtc;
+        InventoryReservationRevision = inventoryReservationRevision < 0 ? 0 : inventoryReservationRevision;
         _lines = lines;
     }
 
@@ -1533,6 +1561,67 @@ public sealed class ConnectedPurchaseOrder
         Status = ConnectedPurchaseOrderStatus.ChangesProposed;
         ChangesProposedAtUtc = utcNow;
         ChangesProposedByUserId = actorId;
+        BeginNewProposalRevision();
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Bumps the reservation revision so a new temporary hold can replace a prior proposal hold.
+    /// </summary>
+    public void BeginNewProposalRevision()
+    {
+        InventoryReservationRevision++;
+    }
+
+    public void MarkInventoryTemporaryHold(DateTimeOffset expiresAtUtc, DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        ConnectedSupplierRelationship.EnsureUtc(expiresAtUtc);
+        InventoryReservationState = ConnectedPoInventoryReservationState.TemporaryProposal;
+        InventoryReservationExpiresAtUtc = expiresAtUtc;
+        if (InventoryReservationRevision < 1)
+        {
+            InventoryReservationRevision = 1;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryConfirmed(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        InventoryReservationState = ConnectedPoInventoryReservationState.Confirmed;
+        InventoryReservationExpiresAtUtc = null;
+        if (InventoryReservationRevision < 1)
+        {
+            InventoryReservationRevision = 1;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryReleased(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (InventoryReservationState is ConnectedPoInventoryReservationState.None
+            or ConnectedPoInventoryReservationState.Released
+            or ConnectedPoInventoryReservationState.Consumed)
+        {
+            InventoryReservationExpiresAtUtc = null;
+            UpdatedAtUtc = utcNow;
+            return;
+        }
+
+        InventoryReservationState = ConnectedPoInventoryReservationState.Released;
+        InventoryReservationExpiresAtUtc = null;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void MarkInventoryConsumed(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        InventoryReservationState = ConnectedPoInventoryReservationState.Consumed;
+        InventoryReservationExpiresAtUtc = null;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1589,6 +1678,32 @@ public sealed class ConnectedPurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Supplier withdraws an active proposal — returns the order to New for a fresh response.
+    /// Releases temporary reservation state separately via application services.
+    /// </summary>
+    public void WithdrawProposedChanges(DateTimeOffset utcNow, Guid? actorId = null)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.ChangesProposed)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only an active proposal can be withdrawn by the supplier.");
+        }
+
+        ReplaceLines(_lines.Select(x => x.ClearProposal()).ToList());
+        ProposedPaymentTerm = null;
+        ConfirmedPaymentTerm = null;
+        Status = ConnectedPurchaseOrderStatus.New;
+        ChangesProposedAtUtc = null;
+        ChangesProposedByUserId = null;
+        BuyerRespondedAtUtc = null;
+        BuyerRespondedByUserId = null;
+        UpdatedAtUtc = utcNow;
+        _ = actorId;
+    }
+
     public void Decline(DateTimeOffset utcNow, ConnectedPoDeclineReason? reason = null, string? note = null)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
@@ -1603,15 +1718,35 @@ public sealed class ConnectedPurchaseOrder
     public void StartPreparing(DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
-        if (Status != ConnectedPurchaseOrderStatus.Accepted)
+        // Accepted → first prepare; Fulfilled → prepare remaining after partial buyer receipt.
+        if (Status is not (ConnectedPurchaseOrderStatus.Accepted or ConnectedPurchaseOrderStatus.Fulfilled))
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidTransition,
-                "Only an accepted order can move to preparing.");
+                "Only an accepted or partially fulfilled order can move to preparing.");
         }
 
         Status = ConnectedPurchaseOrderStatus.Preparing;
         PreparingAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// After buyer partial receipt with outstanding qty, reopen so seller must prepare/ship remaining
+    /// before the buyer can receive again. Does not clear prior FulfilledAtUtc history.
+    /// </summary>
+    public void ReopenForRemainingFulfillment(DateTimeOffset utcNow)
+    {
+        ConnectedSupplierRelationship.EnsureUtc(utcNow);
+        if (Status != ConnectedPurchaseOrderStatus.Fulfilled)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                "Only a shipped/ready order can reopen for remaining fulfillment.");
+        }
+
+        Status = ConnectedPurchaseOrderStatus.Accepted;
+        InventoryReservationRevision++;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1780,7 +1915,10 @@ public sealed class ConnectedPurchaseOrder
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
         ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
-        decimal creditPostedAmount = 0m) =>
+        decimal creditPostedAmount = 0m,
+        ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
+        DateTimeOffset? inventoryReservationExpiresAtUtc = null,
+        int inventoryReservationRevision = 0) =>
         new(
             id,
             relationshipId,
@@ -1809,5 +1947,8 @@ public sealed class ConnectedPurchaseOrder
             buyerRespondedByUserId,
             proposedPaymentTerm,
             confirmedPaymentTerm,
-            creditPostedAmount);
+            creditPostedAmount,
+            inventoryReservationState,
+            inventoryReservationExpiresAtUtc,
+            inventoryReservationRevision);
 }

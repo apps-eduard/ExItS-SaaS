@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useState,
   type ButtonHTMLAttributes,
   type HTMLAttributes,
@@ -575,12 +576,17 @@ export type ExitsTableEditMenuProps = {
   editAllLabel?: string;
   /** Dense tables: icon pencil. Less-dense comparison: labeled button. */
   trigger?: "icon" | "button";
+  /** When true, pencil is inactive (e.g. another row is already editing). */
+  disabled?: boolean;
   className?: string;
+  /** Optional class on the Pencil / Edit trigger button (e.g. text-primary). */
+  triggerClassName?: string;
   "data-testid"?: string;
 };
 
 /**
  * Pencil → field picker dropdown.
+ * When exactly one field is editable, pencil opens that field directly (no menu).
  * Menu items come from page-configured editable columns — never hardcode domain fields here.
  */
 export function ExitsTableEditMenu({
@@ -591,20 +597,77 @@ export function ExitsTableEditMenu({
   menuHeader = "Edit field",
   editAllLabel = "Edit all",
   trigger = "icon",
+  disabled = false,
   className,
+  triggerClassName,
   "data-testid": testId,
 }: ExitsTableEditMenuProps) {
   const menu = useDismissibleOpen(false);
+  const singleField = fields.length === 1 ? fields[0] : null;
+
+  useEffect(() => {
+    if (disabled) {
+      menu.setOpen(false);
+    }
+  }, [disabled, menu.setOpen]);
 
   if (fields.length === 0) {
     return null;
   }
 
+  if (singleField) {
+    return trigger === "button" ? (
+      <Button
+        type="button"
+        variant="ghost"
+        shape="soft"
+        disabled={disabled}
+        aria-label={ariaLabel}
+        title={ariaLabel}
+        className={cn(className, triggerClassName)}
+        data-testid={testId}
+        onClick={() => {
+          if (!disabled) {
+            onSelectField(singleField.key);
+          }
+        }}
+      >
+        <Pencil className="size-4" aria-hidden />
+        Edit
+      </Button>
+    ) : (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        shape="round"
+        disabled={disabled}
+        aria-label={ariaLabel}
+        title="Edit"
+        className={cn(className, triggerClassName)}
+        data-testid={testId}
+        onClick={() => {
+          if (!disabled) {
+            onSelectField(singleField.key);
+          }
+        }}
+      >
+        <Pencil className="size-4" aria-hidden />
+      </Button>
+    );
+  }
+
   return (
     <DropdownMenu
       align="end"
-      open={menu.open}
-      onOpenChange={menu.setOpen}
+      open={disabled ? false : menu.open}
+      onOpenChange={(next) => {
+        if (disabled) {
+          menu.close();
+          return;
+        }
+        menu.setOpen(next);
+      }}
       menuLabel={ariaLabel}
       className={className}
       menuClassName="w-[12.5rem] min-w-[11.25rem] max-w-[13.75rem]"
@@ -617,11 +680,13 @@ export function ExitsTableEditMenu({
             variant="ghost"
             shape="soft"
             id={triggerProps.id}
+            disabled={disabled}
             aria-haspopup="menu"
             aria-expanded={triggerProps.expanded}
             aria-controls={triggerProps.controls}
             aria-label={ariaLabel}
             title={ariaLabel}
+            className={triggerClassName}
             data-testid={testId}
             onClick={triggerProps.onClick}
             onKeyDown={triggerProps.onKeyDown}
@@ -637,11 +702,13 @@ export function ExitsTableEditMenu({
             size="icon"
             shape="round"
             id={triggerProps.id}
+            disabled={disabled}
             aria-haspopup="menu"
             aria-expanded={triggerProps.expanded}
             aria-controls={triggerProps.controls}
             aria-label={ariaLabel}
             title="Edit"
+            className={triggerClassName}
             data-testid={testId}
             onClick={triggerProps.onClick}
             onKeyDown={triggerProps.onKeyDown}

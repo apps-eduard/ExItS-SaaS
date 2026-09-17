@@ -10,7 +10,9 @@ public enum SupplierPayablePaymentMethod
     Cash = 0,
     BankTransfer = 1,
     GCash = 2,
-    Other = 3
+    Other = 3,
+    BankDeposit = 4,
+    Check = 5
 }
 
 public static class SupplierPayablePaymentMethods
@@ -22,7 +24,9 @@ public static class SupplierPayablePaymentMethods
         nameof(SupplierPayablePaymentMethod.Cash),
         nameof(SupplierPayablePaymentMethod.BankTransfer),
         nameof(SupplierPayablePaymentMethod.GCash),
-        nameof(SupplierPayablePaymentMethod.Other)
+        nameof(SupplierPayablePaymentMethod.Other),
+        nameof(SupplierPayablePaymentMethod.BankDeposit),
+        nameof(SupplierPayablePaymentMethod.Check)
     ];
 
     public static string ToCode(SupplierPayablePaymentMethod method) => method.ToString();

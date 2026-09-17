@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ClipboardList, Package } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -183,7 +184,7 @@ export function StockCountListPage() {
             const diffs = differenceProductCount(item.lines);
             return (
               <li key={item.stockCountId}>
-                <Link
+                <AppLinkWithReturn
                   to={`/inventory/stock-counts/${item.stockCountId}`}
                   className="exits-list__card stock-count-row block min-w-0 text-foreground no-underline"
                   data-testid={`stock-count-row-${item.stockCountId}`}
@@ -219,7 +220,7 @@ export function StockCountListPage() {
                   <span className="stock-count-row__aside flex shrink-0 items-center gap-2">
                     <ChevronRight className="size-5 text-muted" aria-hidden />
                   </span>
-                </Link>
+                </AppLinkWithReturn>
               </li>
             );
           })}

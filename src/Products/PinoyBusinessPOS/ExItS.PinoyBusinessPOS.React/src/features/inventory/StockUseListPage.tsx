@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Package, PackageMinus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -111,7 +111,7 @@ export function StockUseListPage() {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.stockUseId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/inventory/stock-use/${item.stockUseId}`}
                 className="exits-list__card stock-use-row block min-w-0 text-foreground no-underline"
                 data-testid={`stock-use-row-${item.stockUseId}`}
@@ -137,7 +137,7 @@ export function StockUseListPage() {
                     aria-hidden
                   />
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           );
         })}

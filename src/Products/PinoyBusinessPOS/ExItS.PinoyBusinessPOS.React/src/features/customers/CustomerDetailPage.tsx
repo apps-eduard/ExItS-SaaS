@@ -48,6 +48,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import {
@@ -84,6 +85,11 @@ export function CustomerDetailPage() {
   const queryClient = useQueryClient();
   const online = useBrowserOnline();
   const offlineContext = useOrganizationOfflineContext();
+  const smartBack = usePageSmartBack({
+    fallback: "customers",
+    backLabel: t(pageBackNav.customers.labelKey),
+    backTestId: "page-header-back-customers",
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -465,9 +471,7 @@ export function CustomerDetailPage() {
       <PageHeader
         title={headerTitle}
         description={t("customers.detailLede")}
-        backTo={pageBackNav.customers.to}
-        backLabel={t(pageBackNav.customers.labelKey)}
-        backTestId="page-header-back-customers"
+        {...smartBack}
       />
       {!isActive ? (
         <div className="flex flex-wrap items-center gap-2">

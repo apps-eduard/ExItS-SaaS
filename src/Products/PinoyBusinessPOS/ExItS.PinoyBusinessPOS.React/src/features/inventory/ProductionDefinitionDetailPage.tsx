@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -26,6 +27,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ProductionDefinitionDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "production",
+    backLabel: t("production.backSetups"),
+    backTestId: "page-header-back-production-setups",
+  });
   const online = useBrowserOnline();
   const { definitionId } = useParams<{ definitionId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -131,9 +137,7 @@ export function ProductionDefinitionDetailPage() {
       <PageHeader
         title={definition.name}
         description={t("production.setups.detailLede")}
-        backTo="/inventory/production/setups"
-        backLabel={t("production.backSetups")}
-        backTestId="page-header-back-production-setups"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("production.errorTitle")} detail={error} /> : null}

@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using Microsoft.EntityFrameworkCore;
 
@@ -439,7 +440,9 @@ internal sealed class ConnectedPurchaseOrderRepository(PosDbContext db) : IConne
     public Task AddAsync(ConnectedPurchaseOrder x,CancellationToken ct=default){db.ConnectedPurchaseOrders.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
     public async Task UpdateAsync(ConnectedPurchaseOrder x,CancellationToken ct=default)
     {
-        var r=await db.ConnectedPurchaseOrders.SingleAsync(y=>y.Id==x.Id.Value,ct);
+        var r=await db.ConnectedPurchaseOrders
+            .Include(y => y.Lines)
+            .SingleAsync(y=>y.Id==x.Id.Value,ct);
         var dbStatus=(ConnectedPurchaseOrderStatus)r.Status;
         if(!ConnectedPoDisplayStatus.IsValidConnectedStatusTransition(dbStatus,x.Status))
         {
@@ -449,5 +452,99 @@ internal sealed class ConnectedPurchaseOrderRepository(PosDbContext db) : IConne
         }
 
         ConnectedSupplierEntityMapper.Apply(x,r);
+    }
+}
+
+internal sealed class ConnectedPoInventoryReservationRepository(PosDbContext db) : IConnectedPoInventoryReservationRepository
+{
+    public async Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListActiveByOrderAsync(
+        ConnectedPurchaseOrderId orderId,
+        CancellationToken ct = default) =>
+        (await db.ConnectedPoInventoryReservations.AsNoTracking()
+            .Where(x => x.ConnectedPurchaseOrderId == orderId.Value && x.Status == (int)ConnectedPoReservationStatus.Active)
+            .OrderBy(x => x.ProductId)
+            .ToListAsync(ct))
+        .Select(ConnectedSupplierEntityMapper.ToDomain)
+        .ToList();
+
+    public async Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListByOrderAsync(
+        ConnectedPurchaseOrderId orderId,
+        CancellationToken ct = default) =>
+        (await db.ConnectedPoInventoryReservations.AsNoTracking()
+            .Where(x => x.ConnectedPurchaseOrderId == orderId.Value)
+            .OrderBy(x => x.CreatedAtUtc)
+            .ToListAsync(ct))
+        .Select(ConnectedSupplierEntityMapper.ToDomain)
+        .ToList();
+
+    public async Task<IReadOnlyList<ConnectedPoInventoryReservation>> ListByProductBranchAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        PosBranchId branchId,
+        CancellationToken ct = default) =>
+        (await db.ConnectedPoInventoryReservations.AsNoTracking()
+            .Where(x =>
+                x.OrganizationId == organizationId.Value
+                && x.ProductId == productId.Value
+                && x.BranchId == branchId.Value
+                && x.Status == (int)ConnectedPoReservationStatus.Active
+                && x.RemainingQuantity > 0m)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(ct))
+        .Select(ConnectedSupplierEntityMapper.ToDomain)
+        .ToList();
+
+    public async Task<IReadOnlyDictionary<Guid, decimal>> SumExpiredStillActiveRemainingByProductAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId> productIds,
+        DateTimeOffset utcNow,
+        CancellationToken ct = default)
+    {
+        if (productIds.Count == 0)
+        {
+            return new Dictionary<Guid, decimal>();
+        }
+
+        var ids = productIds.Select(p => p.Value).Distinct().ToList();
+        var activeStatus = (int)ConnectedPoReservationStatus.Active;
+        var rows = await db.ConnectedPoInventoryReservations.AsNoTracking()
+            .Where(x =>
+                x.OrganizationId == organizationId.Value
+                && x.BranchId == branchId.Value
+                && ids.Contains(x.ProductId)
+                && x.Status == activeStatus
+                && x.RemainingQuantity > 0m
+                && x.ExpiresAtUtc != null
+                && x.ExpiresAtUtc <= utcNow)
+            .GroupBy(x => x.ProductId)
+            .Select(g => new { ProductId = g.Key, Qty = g.Sum(x => x.RemainingQuantity) })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(x => x.ProductId, x => x.Qty);
+    }
+
+    public Task AddAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default)
+    {
+        db.ConnectedPoInventoryReservations.Add(ConnectedSupplierEntityMapper.ToRecord(reservation));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoInventoryReservations.SingleAsync(x => x.Id == reservation.Id.Value, ct);
+        if (row.Version != reservation.Version - 1 && row.Version != reservation.Version)
+        {
+            // Allow same version (idempotent) or expected bump; reject stale concurrent writers.
+            if (row.Version > reservation.Version)
+            {
+                throw new PersistenceConflictException(
+                    ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                    "Connected PO inventory reservation changed concurrently. Refresh and try again.");
+            }
+        }
+
+        ConnectedSupplierEntityMapper.Apply(reservation, row);
     }
 }

@@ -8,8 +8,44 @@ import {
 
 export type ReceivePaymentMode = "paidInFull" | "supplierCredit";
 
-export const RECEIVE_PAYMENT_METHODS = ["Cash", "BankTransfer", "GCash", "Other"] as const;
+export const RECEIVE_PAYMENT_METHODS = [
+  "Cash",
+  "BankTransfer",
+  "BankDeposit",
+  "GCash",
+  "Check",
+  "Other",
+] as const;
 export type ReceivePaymentMethodCode = (typeof RECEIVE_PAYMENT_METHODS)[number];
+
+export type ReceiveSettlementFields = {
+  gCashReference: string;
+  bankName: string;
+  transferOrDepositReference: string;
+  settlementDate: string;
+  checkNumber: string;
+  checkDate: string;
+  settlementNotes: string;
+};
+
+export const EMPTY_RECEIVE_SETTLEMENT: ReceiveSettlementFields = {
+  gCashReference: "",
+  bankName: "",
+  transferOrDepositReference: "",
+  settlementDate: "",
+  checkNumber: "",
+  checkDate: "",
+  settlementNotes: "",
+};
+
+export type LockedReceivePaymentConfig = {
+  lockedFromPo: true;
+  mode: ReceivePaymentMode;
+  paymentMethod: ReceivePaymentMethodCode | null;
+  paymentTerm: string;
+  paidNow: number;
+  requiresSettlement: boolean;
+};
 
 export function roundMoney(value: number): number {
   return roundMoneyAmount(value);
@@ -33,17 +69,187 @@ export function formatMoneyInput(value: number): string {
   return formatMoneyAmountInput(value);
 }
 
-/**
- * Connected PO Utang terms must default to supplier credit (PaidNow = 0).
- * Reservation converts to payable/receivable only for the unpaid received portion.
- */
+function normalizePaymentTerm(paymentTerm?: string | null): string {
+  return (paymentTerm ?? "Cash").trim();
+}
+
 export function isConnectedUtangPaymentTerm(paymentTerm?: string | null): boolean {
-  const normalized = (paymentTerm ?? "").trim().toLowerCase();
+  const normalized = normalizePaymentTerm(paymentTerm).toLowerCase();
   return (
     normalized === "utang" ||
     normalized === "utang / credit" ||
     normalized === "utang/credit"
   );
+}
+
+export function mapPoPaymentTermToReceiveMethod(
+  paymentTerm?: string | null,
+): ReceivePaymentMethodCode | null {
+  const normalized = normalizePaymentTerm(paymentTerm);
+  switch (normalized) {
+    case "Cash":
+    case "COD":
+      return "Cash";
+    case "BankTransfer":
+      return "BankTransfer";
+    case "BankDeposit":
+      return "BankDeposit";
+    case "ManualGCash":
+    case "GCash":
+      return "GCash";
+    case "Check":
+      return "Check";
+    case "Utang":
+      return null;
+    default:
+      return "Cash";
+  }
+}
+
+/**
+ * Locked receive payment derived from PO payment term (Receive Goods).
+ */
+export function resolveLockedReceivePaymentFromPo(
+  paymentTerm: string | null | undefined,
+  estimatedTotal: number,
+): LockedReceivePaymentConfig {
+  const term = normalizePaymentTerm(paymentTerm);
+  if (isConnectedUtangPaymentTerm(term)) {
+    return {
+      lockedFromPo: true,
+      mode: "supplierCredit",
+      paymentMethod: null,
+      paymentTerm: term,
+      paidNow: 0,
+      requiresSettlement: false,
+    };
+  }
+  if (term === "Check") {
+    return {
+      lockedFromPo: true,
+      mode: "supplierCredit",
+      paymentMethod: "Check",
+      paymentTerm: term,
+      paidNow: 0,
+      requiresSettlement: true,
+    };
+  }
+  const method = mapPoPaymentTermToReceiveMethod(term);
+  const requiresSettlement =
+    method === "GCash" || method === "BankTransfer" || method === "BankDeposit";
+  return {
+    lockedFromPo: true,
+    mode: "paidInFull",
+    paymentMethod: method,
+    paymentTerm: term,
+    paidNow: estimatedTotal,
+    requiresSettlement,
+  };
+}
+
+export function clearStaleSettlementFields(
+  method: ReceivePaymentMethodCode | null,
+  fields: ReceiveSettlementFields,
+): ReceiveSettlementFields {
+  if (method === "GCash") {
+    return {
+      ...EMPTY_RECEIVE_SETTLEMENT,
+      gCashReference: fields.gCashReference,
+      settlementNotes: fields.settlementNotes,
+    };
+  }
+  if (method === "BankTransfer" || method === "BankDeposit") {
+    return {
+      ...EMPTY_RECEIVE_SETTLEMENT,
+      bankName: fields.bankName,
+      transferOrDepositReference: fields.transferOrDepositReference,
+      settlementDate: fields.settlementDate,
+      settlementNotes: fields.settlementNotes,
+    };
+  }
+  if (method === "Check") {
+    return {
+      ...EMPTY_RECEIVE_SETTLEMENT,
+      bankName: fields.bankName,
+      checkNumber: fields.checkNumber,
+      checkDate: fields.checkDate,
+      settlementNotes: fields.settlementNotes,
+    };
+  }
+  return { ...EMPTY_RECEIVE_SETTLEMENT };
+}
+
+export function buildReceiveSettlementPayload(
+  method: ReceivePaymentMethodCode | null,
+  fields: ReceiveSettlementFields,
+): {
+  gCashReference?: string | null;
+  bankName?: string | null;
+  transferOrDepositReference?: string | null;
+  settlementDate?: string | null;
+  checkNumber?: string | null;
+  checkDate?: string | null;
+  settlementNotes?: string | null;
+  checkClearingStatus?: string | null;
+} {
+  const trimmedNotes = fields.settlementNotes.trim();
+  const notes = trimmedNotes ? trimmedNotes : null;
+  if (method === "GCash") {
+    return {
+      gCashReference: fields.gCashReference.trim() || null,
+      settlementNotes: notes,
+    };
+  }
+  if (method === "BankTransfer" || method === "BankDeposit") {
+    return {
+      bankName: fields.bankName.trim() || null,
+      transferOrDepositReference: fields.transferOrDepositReference.trim() || null,
+      settlementDate: fields.settlementDate.trim() || null,
+      settlementNotes: notes,
+    };
+  }
+  if (method === "Check") {
+    return {
+      bankName: fields.bankName.trim() || null,
+      checkNumber: fields.checkNumber.trim() || null,
+      checkDate: fields.checkDate.trim() || null,
+      settlementNotes: notes,
+      checkClearingStatus: "PendingClearing",
+    };
+  }
+  return {};
+}
+
+export function validateLockedSettlementFields(
+  method: ReceivePaymentMethodCode | null,
+  fields: ReceiveSettlementFields,
+): string | null {
+  if (method === "GCash" && !fields.gCashReference.trim()) {
+    return "purchasing.gcashReferenceRequired";
+  }
+  if (method === "BankTransfer" || method === "BankDeposit") {
+    if (!fields.bankName.trim()) {
+      return "purchasing.bankNameRequired";
+    }
+    if (!fields.transferOrDepositReference.trim()) {
+      return "purchasing.transferReferenceRequired";
+    }
+    if (!fields.settlementDate.trim()) {
+      return "purchasing.settlementDateRequired";
+    }
+  }
+  if (method === "Check") {
+    if (!fields.checkNumber.trim()) {
+      return "purchasing.checkNumberRequired";
+    }
+    if (!fields.bankName.trim()) {
+      return "purchasing.bankNameRequired";
+    }
+    if (!fields.checkDate.trim()) {
+      return "purchasing.checkDateRequired";
+    }
+  }
+  return null;
 }
 
 /**

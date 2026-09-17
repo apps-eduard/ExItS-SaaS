@@ -48,10 +48,26 @@ export const connectedPurchaseOrderLineDtoSchema = z
     lineNumber: z.number().optional(),
     productId: guidSchema.optional(),
     nameSnapshot: z.string().nullable().optional(),
-    orderedQty: z.number().optional(),
+    skuSnapshot: z.string().nullable().optional(),
+    qty: z.number().optional(),
+    orderedQty: z.number().nullable().optional(),
+    unitPriceSnapshot: z.number().optional(),
     unitPurchaseCost: z.number().optional(),
+    lineTotal: z.number().optional(),
+    unitOfMeasureCode: z.string().optional(),
+    proposedQty: z.number().nullable().optional(),
     proposedOrderedQty: z.number().nullable().optional(),
+    proposedUnitPrice: z.number().nullable().optional(),
     proposedUnitPurchaseCost: z.number().nullable().optional(),
+    proposedLineTotal: z.number().optional(),
+    availability: z.string().optional(),
+    confirmedQty: z.number().nullable().optional(),
+    goodReceivedQty: z.number().nullable().optional(),
+    damagedQty: z.number().nullable().optional(),
+    missingQty: z.number().nullable().optional(),
+    cancelledRemainingQty: z.number().nullable().optional(),
+    outstandingQty: z.number().nullable().optional(),
+    remainingValue: z.number().nullable().optional(),
   })
   .passthrough();
 
@@ -96,6 +112,15 @@ export const posPurchaseOrderDtoSchema = z.object({
   productSetupRequiredCount: z.number().optional().default(0),
   supplierBranchId: guidSchema.nullable().optional(),
   supplierBranchName: z.string().nullable().optional(),
+  inventoryReservationState: z.string().nullable().optional(),
+  inventoryReservationExpiresAtUtc: z.string().nullable().optional(),
+  remainingClosedAtUtc: z.string().nullable().optional(),
+  remainingClosedByUserId: guidSchema.nullable().optional(),
+  remainingClosedReason: z.string().nullable().optional(),
+  finalAcceptedValue: z.number().nullable().optional(),
+  cancelledRemainingValue: z.number().nullable().optional(),
+  refundDueAmount: z.number().optional().default(0),
+  amountPaidSnapshot: z.number().nullable().optional(),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
@@ -209,6 +234,14 @@ export type ReceivePurchaseOrderRequest = {
   paymentMethodAtReceipt?: string | null;
   /** When true, enable inventory tracking on untracked lines being received. */
   enableTrackingIfNeeded?: boolean;
+  gCashReference?: string | null;
+  bankName?: string | null;
+  transferOrDepositReference?: string | null;
+  settlementDate?: string | null;
+  checkNumber?: string | null;
+  checkDate?: string | null;
+  settlementNotes?: string | null;
+  checkClearingStatus?: string | null;
 };
 
 export type ListPurchaseOrdersOptions = {
@@ -351,6 +384,38 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
   }
   if (body.enableTrackingIfNeeded === true) {
     payload.enableTrackingIfNeeded = true;
+  }
+  const gCashReference = trimOrUndef(body.gCashReference);
+  if (gCashReference) {
+    payload.gCashReference = gCashReference;
+  }
+  const bankName = trimOrUndef(body.bankName);
+  if (bankName) {
+    payload.bankName = bankName;
+  }
+  const transferRef = trimOrUndef(body.transferOrDepositReference);
+  if (transferRef) {
+    payload.transferOrDepositReference = transferRef;
+  }
+  const settlementDate = trimOrUndef(body.settlementDate);
+  if (settlementDate) {
+    payload.settlementDate = settlementDate;
+  }
+  const checkNumber = trimOrUndef(body.checkNumber);
+  if (checkNumber) {
+    payload.checkNumber = checkNumber;
+  }
+  const checkDate = trimOrUndef(body.checkDate);
+  if (checkDate) {
+    payload.checkDate = checkDate;
+  }
+  const settlementNotes = trimOrUndef(body.settlementNotes);
+  if (settlementNotes) {
+    payload.settlementNotes = settlementNotes;
+  }
+  const checkClearingStatus = trimOrUndef(body.checkClearingStatus);
+  if (checkClearingStatus) {
+    payload.checkClearingStatus = checkClearingStatus;
   }
   return payload;
 }

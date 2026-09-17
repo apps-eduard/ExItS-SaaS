@@ -5,6 +5,7 @@ import {
   remainingCredit,
   type ReceivePaymentMethodCode,
   type ReceivePaymentMode,
+  type ReceiveSettlementFields,
 } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -13,8 +14,12 @@ function methodLabelKey(method: string): MessageKey {
   switch (method) {
     case "BankTransfer":
       return "supplierPayables.method.bankTransfer";
+    case "BankDeposit":
+      return "supplierPayables.method.bankDeposit";
     case "GCash":
       return "supplierPayables.method.gcash";
+    case "Check":
+      return "supplierPayables.method.check";
     case "Other":
       return "supplierPayables.method.other";
     default:
@@ -37,6 +42,11 @@ type ReceivePaymentSectionProps = {
   /** When false, hide supplier-credit mode (e.g. direct purchase with no supplier). */
   allowSupplierCredit?: boolean;
   testIdPrefix?: string;
+  /** PO receive: payment method locked from purchase order term. */
+  lockedFromPo?: boolean;
+  lockedPaymentMethodLabel?: string;
+  settlementFields?: ReceiveSettlementFields;
+  onSettlementFieldsChange?: (fields: ReceiveSettlementFields) => void;
 };
 
 /**
@@ -57,13 +67,36 @@ export function ReceivePaymentSection({
   disabled = false,
   allowSupplierCredit = true,
   testIdPrefix = "receive-payment",
+  lockedFromPo = false,
+  lockedPaymentMethodLabel,
+  settlementFields,
+  onSettlementFieldsChange,
 }: ReceivePaymentSectionProps) {
   const { t } = useI18n();
   const paid = paidNowValue ?? 0;
   const remaining = remainingCredit(estimatedTotal, paid);
   const creditMode = mode === "supplierCredit";
-  const showDueDate = creditMode && remaining > 0;
-  const showMethod = paid > 0;
+  const showDueDate = creditMode && remaining > 0 && !lockedFromPo;
+  const showMethodDropdown = !lockedFromPo && paid > 0;
+  const showLockedMethod = lockedFromPo && Boolean(lockedPaymentMethodLabel ?? paymentMethod);
+  const settlement = settlementFields ?? {
+    gCashReference: "",
+    bankName: "",
+    transferOrDepositReference: "",
+    settlementDate: "",
+    checkNumber: "",
+    checkDate: "",
+    settlementNotes: "",
+  };
+
+  function patchSettlement(patch: Partial<ReceiveSettlementFields>) {
+    onSettlementFieldsChange?.({ ...settlement, ...patch });
+  }
+
+  const showGCashFields = lockedFromPo && paymentMethod === "GCash";
+  const showBankFields =
+    lockedFromPo && (paymentMethod === "BankTransfer" || paymentMethod === "BankDeposit");
+  const showCheckFields = lockedFromPo && paymentMethod === "Check";
 
   return (
     <Card data-testid={`${testIdPrefix}-section`}>
@@ -71,50 +104,70 @@ export function ReceivePaymentSection({
         {t("purchasing.paymentAtReceipt")}
       </h2>
       <div className="grid gap-3">
-        <div
-          className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
-          role="group"
-          aria-label={t("purchasing.paymentStatus")}
-          data-testid={`${testIdPrefix}-mode`}
-        >
-          <button
-            type="button"
-            className={` rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
-              mode === "paidInFull"
-                ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_12%,transparent)] font-medium"
-                : "border-border bg-background"
-            }`}
-            disabled={disabled}
-            aria-pressed={mode === "paidInFull"}
-            onClick={() => onModeChange("paidInFull")}
-            data-testid={`${testIdPrefix}-mode-full`}
+        {!lockedFromPo ? (
+          <div
+            className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
+            role="group"
+            aria-label={t("purchasing.paymentStatus")}
+            data-testid={`${testIdPrefix}-mode`}
           >
-            {t("purchasing.paidInFull")}
-          </button>
-          {allowSupplierCredit ? (
             <button
               type="button"
               className={` rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
-                creditMode
+                mode === "paidInFull"
                   ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_12%,transparent)] font-medium"
                   : "border-border bg-background"
               }`}
               disabled={disabled}
-              aria-pressed={creditMode}
-              onClick={() => onModeChange("supplierCredit")}
-              data-testid={`${testIdPrefix}-mode-credit`}
+              aria-pressed={mode === "paidInFull"}
+              onClick={() => onModeChange("paidInFull")}
+              data-testid={`${testIdPrefix}-mode-full`}
             >
-              {t("purchasing.supplierCredit")}
+              {t("purchasing.paidInFull")}
             </button>
-          ) : null}
-        </div>
+            {allowSupplierCredit ? (
+              <button
+                type="button"
+                className={` rounded-md border px-3 text-[length:var(--exits-text-sm)] ${
+                  creditMode
+                    ? "border-[var(--exits-primary)] bg-[color-mix(in_srgb,var(--exits-primary)_12%,transparent)] font-medium"
+                    : "border-border bg-background"
+                }`}
+                disabled={disabled}
+                aria-pressed={creditMode}
+                onClick={() => onModeChange("supplierCredit")}
+                data-testid={`${testIdPrefix}-mode-credit`}
+              >
+                {t("purchasing.supplierCredit")}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showLockedMethod ? (
+          <div
+            className="text-[length:var(--exits-text-sm)]"
+            data-testid={`${testIdPrefix}-locked-method`}
+          >
+            <p className="m-0">
+              <span className="text-muted">{t("purchasing.paymentMethod")}: </span>
+              <span className="font-medium">
+                {lockedPaymentMethodLabel ??
+                  t(methodLabelKey(paymentMethod))}
+              </span>
+            </p>
+            <p className="m-0 mt-1 text-muted" data-testid={`${testIdPrefix}-locked-hint`}>
+              {t("purchasing.paymentLockedFromPo")}
+            </p>
+          </div>
+        ) : null}
 
         <dl
           className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3"
           data-testid={`${testIdPrefix}-preview`}
         >
           <div>
-            <dt className="text-muted">{t("purchasing.purchaseTotal")}</dt>
+            <dt className="text-muted">{t("purchasing.receiptValue")}</dt>
             <dd className="m-0">
               <MoneyDisplay amount={estimatedTotal} testId={`${testIdPrefix}-total`} />
             </dd>
@@ -133,7 +186,7 @@ export function ReceivePaymentSection({
           </div>
         </dl>
 
-        {creditMode ? (
+        {creditMode && !lockedFromPo ? (
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.paidNow")}
             <input
@@ -148,7 +201,7 @@ export function ReceivePaymentSection({
           </label>
         ) : null}
 
-        {showMethod ? (
+        {showMethodDropdown ? (
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
             {t("purchasing.paymentMethodAtReceipt")}
             <select
@@ -166,6 +219,115 @@ export function ReceivePaymentSection({
                 </option>
               ))}
             </select>
+          </label>
+        ) : null}
+
+        {showGCashFields ? (
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("purchasing.gcashReference")}
+            <input
+              type="text"
+              className="rounded-md border border-border bg-background px-3"
+              value={settlement.gCashReference}
+              disabled={disabled}
+              onChange={(e) => patchSettlement({ gCashReference: e.target.value })}
+              data-testid={`${testIdPrefix}-gcash-ref`}
+            />
+          </label>
+        ) : null}
+
+        {showBankFields ? (
+          <>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("customers.bankName")}
+              <input
+                type="text"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.bankName}
+                disabled={disabled}
+                onChange={(e) => patchSettlement({ bankName: e.target.value })}
+                data-testid={`${testIdPrefix}-bank-name`}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.transferOrDepositReference")}
+              <input
+                type="text"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.transferOrDepositReference}
+                disabled={disabled}
+                onChange={(e) =>
+                  patchSettlement({ transferOrDepositReference: e.target.value })
+                }
+                data-testid={`${testIdPrefix}-bank-ref`}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.settlementDate")}
+              <input
+                type="date"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.settlementDate}
+                disabled={disabled}
+                onChange={(e) => patchSettlement({ settlementDate: e.target.value })}
+                data-testid={`${testIdPrefix}-settlement-date`}
+              />
+            </label>
+          </>
+        ) : null}
+
+        {showCheckFields ? (
+          <>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.checkNumber")}
+              <input
+                type="text"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.checkNumber}
+                disabled={disabled}
+                onChange={(e) => patchSettlement({ checkNumber: e.target.value })}
+                data-testid={`${testIdPrefix}-check-number`}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("customers.bankName")}
+              <input
+                type="text"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.bankName}
+                disabled={disabled}
+                onChange={(e) => patchSettlement({ bankName: e.target.value })}
+                data-testid={`${testIdPrefix}-check-bank`}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              {t("purchasing.checkDate")}
+              <input
+                type="date"
+                className="rounded-md border border-border bg-background px-3"
+                value={settlement.checkDate}
+                disabled={disabled}
+                onChange={(e) => patchSettlement({ checkDate: e.target.value })}
+                data-testid={`${testIdPrefix}-check-date`}
+              />
+            </label>
+            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+              {t("purchasing.checkPendingClearingHint")}
+            </p>
+          </>
+        ) : null}
+
+        {(showGCashFields || showBankFields || showCheckFields) && onSettlementFieldsChange ? (
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("purchasing.settlementNotesOptional")}
+            <input
+              type="text"
+              className="rounded-md border border-border bg-background px-3"
+              value={settlement.settlementNotes}
+              disabled={disabled}
+              onChange={(e) => patchSettlement({ settlementNotes: e.target.value })}
+              data-testid={`${testIdPrefix}-settlement-notes`}
+            />
           </label>
         ) : null}
 

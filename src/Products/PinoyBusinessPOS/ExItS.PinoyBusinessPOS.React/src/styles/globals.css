@@ -1283,10 +1283,43 @@ html {
 }
 
 .exits-table__row-validation {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.2rem var(--exits-table-cell-x) 0.45rem;
   color: var(--exits-danger);
   font-size: calc(var(--exits-table-font-size) * 0.9);
   line-height: 1.3;
+}
+
+.exits-table__row-validation-message {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.exits-table__row-validation-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -0.15rem -0.25rem 0 0;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: var(--exits-radius-sm, 0.25rem);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.exits-table__row-validation-close:hover {
+  background: color-mix(in srgb, var(--exits-danger) 12%, transparent);
+}
+
+.exits-table__row-validation-close:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--exits-danger) 55%, transparent);
+  outline-offset: 1px;
 }
 
 .exits-table__qty-edit {
@@ -1312,9 +1345,13 @@ html {
   display: inline-flex;
   align-items: center;
   color: var(--exits-muted, #5b6b60);
-  font-size: var(--exits-table-font-size);
+  font-size: var(--exits-text-xs);
   line-height: 1;
   white-space: nowrap;
+}
+
+.exits-table .exits-table__uom {
+  font-size: var(--exits-text-xs);
 }
 
 .exits-table__money-edit {
@@ -2132,6 +2169,10 @@ html {
   background: var(--exits-surface);
 }
 
+.incoming-order-fulfillment-row--outstanding {
+  background: color-mix(in srgb, var(--exits-warning, #b45309) 8%, transparent);
+}
+
 .po-document-lines__mobile-title-row {
   display: flex;
   flex-wrap: wrap;
@@ -2274,6 +2315,66 @@ html {
   .po-document-actions button {
     flex: 1 1 auto;
   }
+}
+
+.incoming-order-stock-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface, #fff);
+}
+
+.incoming-order-stock-summary--adjustment {
+  border-color: color-mix(in srgb, var(--exits-warning) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 8%, var(--exits-surface, #fff));
+}
+
+.incoming-order-stock-summary--available {
+  border-color: color-mix(in srgb, var(--exits-success, #16a34a) 35%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-success, #16a34a) 6%, var(--exits-surface, #fff));
+}
+
+.incoming-order-stock-summary__title {
+  font-size: var(--exits-text-md);
+  font-weight: 600;
+  color: var(--exits-foreground);
+}
+
+.incoming-order-stock-summary__detail,
+.incoming-order-stock-summary__hint {
+  font-size: var(--exits-text-sm);
+  color: var(--exits-text-muted);
+}
+
+.incoming-order-stock-qty--warning {
+  color: var(--exits-warning);
+  font-weight: 600;
+}
+
+.incoming-order-stock-line--shortage {
+  background: color-mix(in srgb, var(--exits-warning) 5%, transparent);
+}
+
+.incoming-order-confirm-qty {
+  display: inline-flex;
+  justify-content: flex-end;
+  max-width: 12rem;
+  margin-inline-start: auto;
+}
+
+.incoming-order-stock-lines__table {
+  min-width: 0;
+}
+
+.po-proposal-diff--down .po-document-totals__value {
+  color: var(--exits-warning);
+}
+
+.po-proposal-diff--up .po-document-totals__value {
+  color: var(--exits-success, #16a34a);
 }
 
 .incoming-order-print-root {
@@ -17817,12 +17918,6 @@ a.exits-chip--primary:hover {
 /* Sticky footer must not cover last content row */
 .receive-stock-workspace {
   padding-bottom: 0.5rem;
-}
-
-.purchase-order-receive-page .receive-qty-input {
-  width: 100%;
-  min-width: 5.5rem;
-  max-width: 7.5rem;
 }
 
 .po-activity-timeline {

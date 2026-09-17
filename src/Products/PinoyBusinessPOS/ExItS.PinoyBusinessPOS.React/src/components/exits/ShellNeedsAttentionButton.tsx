@@ -1,5 +1,4 @@
 import { AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
 import { BottomSheet } from "@/components/exits/SheetDialog";
 import { DropdownMenu, useDismissibleOpen } from "@/components/ui/dropdown-menu";
 import { type NeedsAttentionGroup } from "@/features/shell/needs-attention";
@@ -7,6 +6,7 @@ import { useNeedsAttentionAlerts } from "@/features/shell/useNeedsAttentionAlert
 import { useMediaMin } from "@/hooks/useMediaQuery";
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 
 export type ShellNeedsAttentionButtonProps = {
   testId?: string;
@@ -46,7 +46,7 @@ function AlertRows({
               const reason = t(alert.reasonKey);
               return (
                 <li key={alert.id}>
-                  <Link
+                  <AppLinkWithReturn
                     to={alert.href}
                     data-testid={alert.testId}
                     data-tone="warning"
@@ -75,7 +75,7 @@ function AlertRows({
                     >
                       <ChevronRight className="size-4" />
                     </span>
-                  </Link>
+                  </AppLinkWithReturn>
                 </li>
               );
             })}

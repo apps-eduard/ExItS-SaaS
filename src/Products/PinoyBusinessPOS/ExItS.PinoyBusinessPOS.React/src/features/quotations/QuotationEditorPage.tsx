@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileDown, Printer, Plus } from "lucide-react";
 import { searchCheckoutCustomers } from "@/api/pos/pos-customers-client";
@@ -30,6 +30,8 @@ import { QuotationBusinessDocument } from "@/features/quotations/QuotationBusine
 import { QuotationManualCustomerDrawer } from "@/features/quotations/QuotationManualCustomerDrawer";
 import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type DraftLine = CreateQuotationLineInput & { name: string };
@@ -47,6 +49,10 @@ export function QuotationEditorPage() {
   const branchId = boundWorkspace?.branchId ?? null;
   const { settings } = useOrganizationDocumentSettings(organizationId);
   const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
+  const smartBack = usePageSmartBack({
+    fallback: "quotations",
+    backLabel: t("quotations.title"),
+  });
 
   const workspace = organizationId
     ? { organizationId, branchId: branchId ?? undefined }
@@ -216,7 +222,7 @@ export function QuotationEditorPage() {
   if (!online) {
     return (
       <div className="exits-page p-4" data-testid="quotation-editor-page">
-        <PageHeader title={t("quotations.title")} backTo="/quotations" />
+        <PageHeader title={t("quotations.title")} {...smartBack} />
         <ErrorState title={t("offline.internetRequiredTitle")} detail={t("quotations.offline")} />
       </div>
     );
@@ -229,7 +235,7 @@ export function QuotationEditorPage() {
   if (!isNew && (existingQuery.isError || !quotation)) {
     return (
       <div className="exits-page p-4" data-testid="quotation-editor-page">
-        <PageHeader title={t("quotations.title")} backTo="/quotations" />
+        <PageHeader title={t("quotations.title")} {...smartBack} />
         <ErrorState title={t("quotations.missing")} detail={t("quotations.missingDetail")} />
       </div>
     );
@@ -240,8 +246,7 @@ export function QuotationEditorPage() {
       <PageHeader
         title={isNew ? t("quotations.new") : quotation?.quotationNumber ?? t("quotations.draftLabel")}
         description={quotation?.status}
-        backTo="/quotations"
-        backLabel={t("quotations.title")}
+        {...smartBack}
         trailing={
           issued ? (
             <div className="flex flex-wrap gap-2 print:hidden">
@@ -440,9 +445,9 @@ export function QuotationEditorPage() {
               </Button>
               {quotation.convertedSaleId ? (
                 <Button asChild variant="outline">
-                  <Link to={`/sell/sales/${quotation.convertedSaleId}`}>
+                  <AppLinkWithReturn to={`/sell/sales/${quotation.convertedSaleId}`}>
                     {t("quotations.viewSale")}
-                  </Link>
+                  </AppLinkWithReturn>
                 </Button>
               ) : null}
             </div>

@@ -63,6 +63,7 @@ import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 
 import { ONLINE_REQUIRED_CODES } from "@/offline/online-required";
 
@@ -339,6 +340,11 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
   const workspace = usePosWorkspaceScope();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canGovern = canGovernOrganizationCatalog(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "catalog",
+    backLabel: t(pageBackNav.catalog.labelKey),
+    backTestId: "page-header-back-catalog",
+  });
 
   const [createScope, setCreateScope] = useState<CatalogProductScopeCode>(
     canGovern ? "OrganizationStandard" : "BranchLocal",
@@ -1123,11 +1129,7 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
         description={t("catalog.productFormLede")}
 
-        backTo={pageBackNav.catalog.to}
-
-        backLabel={t(pageBackNav.catalog.labelKey)}
-
-        backTestId="page-header-back-catalog"
+        {...smartBack}
 
         trailing={
           mode === "edit" && productStatus ? (

@@ -30,6 +30,7 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
@@ -50,8 +51,11 @@ import { useOrganizationDocumentSettings } from "@/features/documents/use-organi
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { buildProposalRevisionFromBuyerPo } from "@/features/purchasing/po-proposal-revision";
+import { PoProposalRevisionPanel } from "@/features/purchasing/PoProposalRevisionPanel";
 
 const RECEIPT_VOID_REASON_MAX = 512;
 
@@ -60,11 +64,16 @@ function buyerStatusTone(status: string, displayStatus: string): "success" | "wa
   switch (key) {
     case "Ordered":
     case "Received":
+    case "Completed":
+    case "CompletedRemainingCancelled":
     case "Ready":
+    case "Shipped":
+    case "AwaitingBuyerReceipt":
       return "success";
     case "PartiallyReceived":
     case "ChangesNeedApproval":
     case "New":
+    case "ReceivedWithIssues":
       return "warning";
     case "Cancelled":
     case "Declined":
@@ -76,7 +85,11 @@ function buyerStatusTone(status: string, displayStatus: string): "success" | "wa
 }
 
 /** Map raw API/display status to human labels (e.g. New → Pending). */
-function buyerStatusLabel(status: string, displayStatus: string): string {
+function buyerStatusLabel(
+  t: (key: MessageKey) => string,
+  status: string,
+  displayStatus: string,
+): string {
   const key = displayStatus || status;
   switch (key) {
     case "New":
@@ -84,9 +97,22 @@ function buyerStatusLabel(status: string, displayStatus: string): string {
     case "PartiallyReceived":
       return "Partially received";
     case "Received":
+    case "Completed":
       return "Fully received";
+    case "CompletedRemainingCancelled":
+      return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedWithIssues":
+      return t("incomingOrders.statusReceivedWithIssues");
+    case "Shipped":
+    case "AwaitingBuyerReceipt":
+      return "Shipped — awaiting receipt";
+    case "Ready":
+      return "Ready for pickup";
+    case "ChangesNeedApproval":
+    case "ChangesProposed":
+      return t("incomingOrders.statusChangesProposed");
     default:
-      return key;
+      return key === "ChangesProposed" ? t("incomingOrders.statusChangesProposed") : key;
   }
 }
 
@@ -392,6 +418,11 @@ export function PurchaseOrderDetailPage() {
   const { settings: documentSettings } = useOrganizationDocumentSettings(organizationId);
   const { identity, headerVisibility } = useBusinessDocumentIdentity(organizationId);
   const allowManage = canManagePurchasing(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "purchaseOrders",
+    backLabel: t("purchasing.backOrders"),
+    backTestId: "page-header-back-purchasing",
+  });
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -456,6 +487,7 @@ export function PurchaseOrderDetailPage() {
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
     po?.cancelledByUserId,
+    po?.remainingClosedByUserId,
     ...receipts.map((receipt) => receipt.receivedBy),
     ...receipts.map((receipt) => receipt.voidedByUserId),
   ]);
@@ -566,17 +598,55 @@ export function PurchaseOrderDetailPage() {
     return <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.notFound")} />;
   }
 
-  const resolvedStatusLabel = buyerStatusLabel(po.status, displayStatus);
+  const resolvedStatusLabel = buyerStatusLabel(t, po.status, displayStatus);
   const statusTone = buyerStatusTone(po.status, displayStatus);
   const sellerName = po.supplierBranchName
     ? `${po.supplierName ?? t("purchasing.unknownSupplier")} — ${po.supplierBranchName}`
     : (po.supplierName ?? t("purchasing.unknownSupplier"));
   const documentLines = toBuyerDocumentLines(po);
+  const proposalRevision = needsApproval ? buildProposalRevisionFromBuyerPo(po) : null;
   const showReceiveProgress =
     po.status === "Ordered" ||
     po.status === "PartiallyReceived" ||
     po.status === "Received" ||
-    displayStatus === "Ready";
+    displayStatus === "Ready" ||
+    displayStatus === "Shipped" ||
+    displayStatus === "AwaitingBuyerReceipt";
+  const isShortClosed =
+    Boolean(po.remainingClosedAtUtc) ||
+    displayStatus === "CompletedRemainingCancelled" ||
+    po.lines.some((line) => (line.closedShortQty ?? 0) > 0);
+  const shortCloseSummary = (() => {
+    const posted = receipts.filter((r) => (r.status ?? "Posted") === "Posted");
+    const goodQty = po.lines.reduce((sum, line) => sum + line.receivedQty, 0);
+    const orderedQty = po.lines.reduce((sum, line) => sum + line.orderedQty, 0);
+    const cancelledQty = po.lines.reduce((sum, line) => sum + (line.closedShortQty ?? 0), 0);
+    const damagedQty = posted.reduce(
+      (sum, r) => sum + r.lines.reduce((lineSum, line) => lineSum + (line.damagedQty ?? 0), 0),
+      0,
+    );
+    const notDeliveredQty = posted.reduce(
+      (sum, r) => sum + r.lines.reduce((lineSum, line) => lineSum + (line.rejectedQty ?? 0), 0),
+      0,
+    );
+    const finalAccepted =
+      po.finalAcceptedValue ??
+      po.lines.reduce((sum, line) => sum + line.receivedQty * line.unitPurchaseCost, 0);
+    const paid = po.amountPaidSnapshot ?? 0;
+    const refundDue = po.refundDueAmount ?? Math.max(0, paid - finalAccepted);
+    const balanceDue = Math.max(0, finalAccepted - paid);
+    return {
+      orderedQty,
+      goodQty,
+      damagedQty,
+      notDeliveredQty,
+      cancelledQty,
+      finalAccepted,
+      paid,
+      refundDue,
+      balanceDue,
+    };
+  })();
 
   const purchaseOrderDocument = (
     <PurchaseOrderBusinessDocument
@@ -594,9 +664,7 @@ export function PurchaseOrderDetailPage() {
     <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-detail-page">
       <PageHeader
         title={po.poNumber ?? t("purchasing.detailTitle")}
-        backTo="/purchasing/orders"
-        backLabel={t("purchasing.backOrders")}
-        backTestId="page-header-back-purchasing"
+        {...smartBack}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
@@ -636,7 +704,16 @@ export function PurchaseOrderDetailPage() {
       ) : null}
       {needsApproval ? (
         <Notice tone="warning" testId="po-needs-approval">
-          {t("purchasing.changesNeedApproval")}
+          <span className="font-medium">{t("incomingOrders.changesProposedTitle")}</span>
+          <span className="mt-1 block">{t("incomingOrders.awaitingBuyerReview")}</span>
+          {po.inventoryReservationExpiresAtUtc ? (
+            <span className="mt-1 block" data-testid="po-reserved-until">
+              {t("purchasing.reservedUntil").replace(
+                "{datetime}",
+                new Date(po.inventoryReservationExpiresAtUtc).toLocaleString(),
+              )}
+            </span>
+          ) : null}
         </Notice>
       ) : null}
       {needsProductSetup ? (
@@ -655,7 +732,10 @@ export function PurchaseOrderDetailPage() {
           </Button>
         </Card>
       ) : null}
-      {canReceive && displayStatus === "Ready" ? (
+      {canReceive &&
+      (displayStatus === "Ready" ||
+        displayStatus === "Shipped" ||
+        displayStatus === "AwaitingBuyerReceipt") ? (
         <Notice tone="success" testId="po-ready-receive">
           {t("purchasing.readyToReceive")}
         </Notice>
@@ -721,6 +801,81 @@ export function PurchaseOrderDetailPage() {
         }
       />
 
+      {isShortClosed ? (
+        <Card className="flex flex-col gap-3 p-3" data-testid="po-short-close-summary">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="m-0 font-medium">{t("incomingOrders.shortClosed")}</p>
+            <StatusChip tone="success">
+              {t("incomingOrders.statusCompletedRemainingCancelled")}
+            </StatusChip>
+          </div>
+          <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.ordered")}</dt>
+              <dd className="m-0">{shortCloseSummary.orderedQty}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.colGoodReceived")}</dt>
+              <dd className="m-0">{shortCloseSummary.goodQty}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.colDamaged")}</dt>
+              <dd className="m-0">{shortCloseSummary.damagedQty}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.colMissing")}</dt>
+              <dd className="m-0">{shortCloseSummary.notDeliveredQty}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.cancelledRemaining")}</dt>
+              <dd className="m-0">{shortCloseSummary.cancelledQty}</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.finalAcceptedValue")}</dt>
+              <dd className="m-0 font-medium">
+                <MoneyDisplay amount={shortCloseSummary.finalAccepted} />
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.paymentReceived")}</dt>
+              <dd className="m-0">
+                <MoneyDisplay amount={shortCloseSummary.paid} />
+              </dd>
+            </div>
+            {shortCloseSummary.refundDue > 0 ? (
+              <div className="flex justify-between gap-2">
+                <dt>{t("incomingOrders.refundDue")}</dt>
+                <dd className="m-0 font-medium" data-testid="po-short-close-refund-due">
+                  <MoneyDisplay amount={shortCloseSummary.refundDue} />
+                </dd>
+              </div>
+            ) : shortCloseSummary.balanceDue > 0 ? (
+              <div className="flex justify-between gap-2">
+                <dt>{t("incomingOrders.balanceDue")}</dt>
+                <dd className="m-0 font-medium" data-testid="po-short-close-balance-due">
+                  <MoneyDisplay amount={shortCloseSummary.balanceDue} />
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+          {po.remainingClosedReason?.trim() ? (
+            <p className="m-0 border-t border-border pt-2 text-[length:var(--exits-text-sm)] text-muted">
+              {t("incomingOrders.closeRemainingReason")}: {po.remainingClosedReason.trim()}
+            </p>
+          ) : null}
+          {po.remainingClosedAtUtc && po.remainingClosedByUserId ? (
+            <ActorAttribution
+              labelKey="common.closedBy"
+              actorId={po.remainingClosedByUserId}
+              occurredAtUtc={po.remainingClosedAtUtc}
+              resolved={actors.resolve(po.remainingClosedByUserId)}
+              isLoading={actors.isResolving}
+              testId="po-remaining-closed-by"
+            />
+          ) : null}
+        </Card>
+      ) : null}
+
       {/* Preserve supplier display test id for existing tests */}
       <span className="sr-only" data-testid="po-supplier-display">
         {sellerName}
@@ -729,36 +884,46 @@ export function PurchaseOrderDetailPage() {
         {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
       </span>
 
-      <PoDocumentLineItems
-        title={t("purchasing.orderItems")}
-        emptyTitle={t("purchasing.linesEmpty")}
-        emptyDetail={t("purchasing.linesRequired")}
-        lines={documentLines}
-        showReceiveProgress={showReceiveProgress}
-        productColLabel={t("purchasing.colProduct")}
-        skuColLabel={t("purchasing.colSku")}
-        qtyColLabel={t("purchasing.ordered")}
-        unitCostColLabel={t("purchasing.unitPurchaseCost")}
-        lineTotalColLabel={t("purchasing.orderedValue")}
-        receivedColLabel={t("purchasing.received")}
-        outstandingColLabel={t("purchasing.outstanding")}
-        testId="po-lines-table"
-        lineTestIdPrefix="po-line"
-      />
-
-      {orderTotal ? (
-        <PoDocumentTotals
-          rows={[
-            {
-              key: "orderTotal",
-              label: t(orderTotal.labelKey),
-              amount: orderTotal.amount,
-              emphasis: "strong",
-              testId: "po-order-total",
-            },
-          ]}
+      {proposalRevision ? (
+        <PoProposalRevisionPanel
+          revision={proposalRevision}
+          audience="buyer"
+          testId="po-proposal-revision"
         />
-      ) : null}
+      ) : (
+        <>
+          <PoDocumentLineItems
+            title={t("purchasing.orderItems")}
+            emptyTitle={t("purchasing.linesEmpty")}
+            emptyDetail={t("purchasing.linesRequired")}
+            lines={documentLines}
+            showReceiveProgress={showReceiveProgress}
+            productColLabel={t("purchasing.colProduct")}
+            skuColLabel={t("purchasing.colSku")}
+            qtyColLabel={t("purchasing.ordered")}
+            unitCostColLabel={t("purchasing.unitPurchaseCost")}
+            lineTotalColLabel={t("purchasing.orderedValue")}
+            receivedColLabel={t("purchasing.received")}
+            outstandingColLabel={t("purchasing.outstanding")}
+            testId="po-lines-table"
+            lineTestIdPrefix="po-line"
+          />
+
+          {orderTotal ? (
+            <PoDocumentTotals
+              rows={[
+                {
+                  key: "orderTotal",
+                  label: t(orderTotal.labelKey),
+                  amount: orderTotal.amount,
+                  emphasis: "strong",
+                  testId: "po-order-total",
+                },
+              ]}
+            />
+          ) : null}
+        </>
+      )}
 
       <PurchaseOrderTimelineDrawer
         open={timelineOpen}

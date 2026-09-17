@@ -307,6 +307,40 @@ describe("ExitsTable foundation", () => {
     expect(onEditAll).toHaveBeenCalledTimes(1);
   });
 
+  it("disables the edit pencil when another row is editing", () => {
+    render(
+      <ExitsTableEditMenu
+        fields={[{ key: "quantity", label: "Quantity" }]}
+        ariaLabel="Edit Banana"
+        disabled
+        onSelectField={() => undefined}
+        onEditAll={() => undefined}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Edit Banana" })).toBeDisabled();
+  });
+
+  it("opens the single editable field directly without a dropdown", async () => {
+    const user = userEvent.setup();
+    const onSelectField = vi.fn();
+    const onEditAll = vi.fn();
+
+    render(
+      <ExitsTableEditMenu
+        fields={[{ key: "receiveNow", label: "Receive now" }]}
+        ariaLabel="Edit Apple"
+        onSelectField={onSelectField}
+        onEditAll={onEditAll}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Edit Apple" }));
+    expect(onSelectField).toHaveBeenCalledWith("receiveNow");
+    expect(onEditAll).not.toHaveBeenCalled();
+    expect(screen.queryByText("Edit field")).not.toBeInTheDocument();
+  });
+
   it("portals the edit field menu outside the table scroll viewport", async () => {
     const user = userEvent.setup();
 

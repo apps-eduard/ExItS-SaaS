@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ClipboardList, PackagePlus } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -17,6 +16,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -403,14 +403,14 @@ export function DirectPurchasesListPage() {
                         </StatusChip>
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[length:var(--exits-text-xs)]">
-                        <Link
+                        <AppLinkWithReturn
                           to={rowHref(item)}
                           className="font-mono font-semibold text-primary underline-offset-2 hover:underline"
                           data-testid={`direct-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
                           aria-label={`${t("purchasing.directColReference")}: ${item.referenceNumber}`}
                         >
                           {item.referenceNumber}
-                        </Link>
+                        </AppLinkWithReturn>
                       </td>
                       <td className="px-3 py-2.5">{item.lineCount}</td>
                       <td className="whitespace-nowrap px-3 py-2.5 font-medium">
@@ -449,7 +449,7 @@ export function DirectPurchasesListPage() {
 
               return (
                 <li key={`${item.sourceType}-${item.sourceId}`}>
-                  <Link
+                  <AppLinkWithReturn
                     to={rowHref(item)}
                     className="exits-list__card purchasing-row block min-w-0 text-foreground no-underline"
                     data-testid={`direct-mobile-row-${item.sourceType.toLowerCase()}-${item.sourceId}`}
@@ -477,7 +477,7 @@ export function DirectPurchasesListPage() {
                         aria-hidden
                       />
                     </span>
-                  </Link>
+                  </AppLinkWithReturn>
                 </li>
               );
             })}

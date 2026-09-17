@@ -273,7 +273,8 @@ public sealed class PosGoodsReceiptReversalApiTests(PosPostgreSqlFixture fixture
         var grnId = Guid.NewGuid();
         var receiveBody = new ReceivePurchaseOrderRequest(
             [new ReceivePurchaseOrderLineRequest(productId, receiveQty)],
-            grnId);
+            grnId,
+            PaymentMethodAtReceipt: "Cash");
         using var receive = Scoped(HttpMethod.Post, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}/receive", org);
         receive.Content = JsonContent.Create(receiveBody, options: JsonOptions);
         var receiveJson = JsonSerializer.Serialize(receiveBody, JsonOptions);

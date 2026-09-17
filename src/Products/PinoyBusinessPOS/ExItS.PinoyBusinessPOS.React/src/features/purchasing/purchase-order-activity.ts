@@ -2,17 +2,29 @@ import type {
   PosGoodsReceiptDto,
   PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
+import {
+  buildProposalRevisionFromBuyerPo,
+  formatProposalChangeSummary,
+} from "@/features/purchasing/po-proposal-revision";
 
 export type PurchaseOrderActivityKind =
   | "created"
   | "submitted"
   | "supplier_accepted"
   | "supplier_declined"
+  | "supplier_preparing"
+  | "supplier_ready"
   | "changes_proposed"
+  | "stock_reserved"
+  | "proposal_reservation"
+  | "reservation_confirmed"
+  | "reservation_released"
+  | "reservation_expired"
   | "withdrawn"
   | "cancelled"
   | "receipt"
   | "receipt_reversed"
+  | "remaining_closed"
   | "completed";
 
 export type PurchaseOrderActivityReceiptLine = {
@@ -36,6 +48,13 @@ export type PurchaseOrderActivityEvent = {
   lines?: PurchaseOrderActivityReceiptLine[];
   /** Partial vs fully received for this receipt relative to PO after posting. */
   receiptResult?: "partial" | "fully_received" | "reversed";
+  /** Proposal revision details for changes_proposed / proposal_reservation. */
+  proposalSummary?: {
+    changedLines: Array<{ productName: string; detail: string }>;
+    originalTotal: number | null;
+    proposedTotal: number | null;
+    reservationExpiresAtUtc: string | null;
+  };
 };
 
 function compareUtc(a: string, b: string): number {
@@ -91,11 +110,92 @@ export function buildPurchaseOrderActivityEvents(input: {
     });
   }
 
+  if (po.supplierPreparingAtUtc?.trim()) {
+    events.push({
+      id: `preparing:${po.purchaseOrderId}:${po.supplierPreparingAtUtc}`,
+      kind: "supplier_preparing",
+      atUtc: po.supplierPreparingAtUtc,
+    });
+  }
+
+  if (po.supplierFulfilledAtUtc?.trim()) {
+    events.push({
+      id: `fulfilled:${po.purchaseOrderId}:${po.supplierFulfilledAtUtc}`,
+      kind: "supplier_ready",
+      atUtc: po.supplierFulfilledAtUtc,
+    });
+  }
+
   if (po.changesProposedAtUtc?.trim()) {
+    const revision = buildProposalRevisionFromBuyerPo(po);
+    const changedLines =
+      revision?.lines
+        .filter((line) => line.changed)
+        .map((line) => ({
+          productName: line.productName,
+          detail: formatProposalChangeSummary(line),
+        })) ?? [];
     events.push({
       id: `changes:${po.purchaseOrderId}`,
       kind: "changes_proposed",
       atUtc: po.changesProposedAtUtc,
+      proposalSummary: {
+        changedLines,
+        originalTotal: revision?.originalTotal ?? null,
+        proposedTotal: revision?.proposedTotal ?? po.proposedTotalAmount ?? null,
+        reservationExpiresAtUtc: po.inventoryReservationExpiresAtUtc?.trim() || null,
+      },
+    });
+  }
+
+  const reservationState = po.inventoryReservationState ?? null;
+  const reservationExpires = po.inventoryReservationExpiresAtUtc?.trim() || null;
+  if (reservationState === "TemporaryProposal" && (po.changesProposedAtUtc?.trim() || reservationExpires)) {
+    events.push({
+      id: `proposal-reservation:${po.purchaseOrderId}`,
+      kind: "proposal_reservation",
+      atUtc: po.changesProposedAtUtc?.trim() || reservationExpires!,
+    });
+  }
+  if (reservationState === "Confirmed" && po.supplierAcceptedAtUtc?.trim()) {
+    events.push({
+      id: `stock-reserved:${po.purchaseOrderId}`,
+      kind: "stock_reserved",
+      atUtc: po.supplierAcceptedAtUtc,
+    });
+    if (po.changesProposedAtUtc?.trim()) {
+      events.push({
+        id: `reservation-confirmed:${po.purchaseOrderId}`,
+        kind: "reservation_confirmed",
+        atUtc: po.supplierAcceptedAtUtc,
+      });
+    }
+  }
+  if (reservationState === "Released") {
+    const releasedAt =
+      po.supplierDeclinedAtUtc?.trim() ||
+      po.withdrawnAtUtc?.trim() ||
+      po.cancelledAtUtc?.trim() ||
+      po.updatedAtUtc?.trim();
+    if (releasedAt) {
+      events.push({
+        id: `reservation-released:${po.purchaseOrderId}`,
+        kind: "reservation_released",
+        atUtc: releasedAt,
+      });
+    }
+  }
+  if (
+    reservationState === "Released" &&
+    reservationExpires &&
+    po.displayStatus !== "ChangesNeedApproval" &&
+    !po.supplierDeclinedAtUtc &&
+    !po.withdrawnAtUtc
+  ) {
+    events.push({
+      id: `reservation-expired:${po.purchaseOrderId}`,
+      kind: "reservation_expired",
+      atUtc: reservationExpires,
     });
   }
 
@@ -157,7 +257,14 @@ export function buildPurchaseOrderActivityEvents(input: {
   }
 
   // Completion: only when PO is fully received; timestamp = last posted (non-void) receipt.
-  if (po.status === "Received") {
+  if (po.remainingClosedAtUtc?.trim()) {
+    events.push({
+      id: `remaining-closed:${po.purchaseOrderId}`,
+      kind: "remaining_closed",
+      atUtc: po.remainingClosedAtUtc,
+      actorId: po.remainingClosedByUserId ?? null,
+    });
+  } else if (po.status === "Received") {
     const lastPosted = [...postedReceipts]
       .filter((r) => (r.status ?? "Posted") === "Posted")
       .sort((a, b) => compareUtc(a.receivedAtUtc, b.receivedAtUtc))
@@ -202,11 +309,19 @@ export function buildPurchaseOrderActivityEvents(input: {
       submitted: 1,
       supplier_accepted: 2,
       supplier_declined: 2,
+      supplier_preparing: 3,
+      supplier_ready: 4,
       changes_proposed: 2,
+      stock_reserved: 2,
+      proposal_reservation: 2,
+      reservation_confirmed: 2,
+      reservation_released: 2,
+      reservation_expired: 2,
       withdrawn: 2,
       cancelled: 2,
       receipt: 3,
       receipt_reversed: 4,
+      remaining_closed: 5,
       completed: 5,
     };
     return order[a.kind] - order[b.kind];

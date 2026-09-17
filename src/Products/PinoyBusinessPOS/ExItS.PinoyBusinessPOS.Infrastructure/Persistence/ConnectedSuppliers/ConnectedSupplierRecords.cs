@@ -1,6 +1,7 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
+using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
@@ -96,6 +97,9 @@ internal sealed class ConnectedPurchaseOrderRecord
     public Guid? ChangesProposedByUserId { get; set; }
     public DateTimeOffset? BuyerRespondedAtUtc { get; set; }
     public Guid? BuyerRespondedByUserId { get; set; }
+    public int InventoryReservationState { get; set; }
+    public DateTimeOffset? InventoryReservationExpiresAtUtc { get; set; }
+    public int InventoryReservationRevision { get; set; }
     public List<ConnectedPurchaseOrderLineRecord> Lines { get; set; }=[]; public uint Xmin { get; set; }
 }
 internal sealed class ConnectedPurchaseOrderLineRecord
@@ -108,6 +112,24 @@ internal sealed class ConnectedPurchaseOrderLineRecord
     public decimal UnitPriceSnapshot { get; set; } public decimal LineTotal { get; set; } public string UnitOfMeasureCode { get; set; }=string.Empty;
     public decimal? ProposedUnitPrice { get; set; }
     public decimal? ConfirmedUnitPrice { get; set; }
+}
+
+internal sealed class ConnectedPoInventoryReservationRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid BranchId { get; set; }
+    public Guid ProductId { get; set; }
+    public Guid ConnectedPurchaseOrderId { get; set; }
+    public int Revision { get; set; }
+    public decimal Quantity { get; set; }
+    public decimal RemainingQuantity { get; set; }
+    public int Type { get; set; }
+    public int Status { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset? ExpiresAtUtc { get; set; }
+    public DateTimeOffset? ReleasedAtUtc { get; set; }
+    public int Version { get; set; }
 }
 
 internal static class ConnectedSupplierEntityMapper
@@ -280,7 +302,10 @@ internal static class ConnectedSupplierEntityMapper
             r.BuyerRespondedByUserId,
             r.ProposedPaymentTerm is int ppt ? (ConnectedPoPaymentTerm)ppt : null,
             r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null,
-            r.CreditPostedAmount);
+            r.CreditPostedAmount,
+            (ConnectedPoInventoryReservationState)r.InventoryReservationState,
+            r.InventoryReservationExpiresAtUtc,
+            r.InventoryReservationRevision);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -295,6 +320,9 @@ internal static class ConnectedSupplierEntityMapper
         CreditPostedAmount=x.CreditPostedAmount,
         ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
         BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
+        InventoryReservationState=(int)x.InventoryReservationState,
+        InventoryReservationExpiresAtUtc=x.InventoryReservationExpiresAtUtc,
+        InventoryReservationRevision=x.InventoryReservationRevision,
         Lines=x.Lines.Select((l,i)=>new ConnectedPurchaseOrderLineRecord{ConnectedPurchaseOrderId=x.Id.Value,LineNumber=i+1,ProductId=l.ProductId.Value,
             NameSnapshot=l.NameSnapshot,SkuSnapshot=l.SkuSnapshot,Qty=l.Qty,ProposedQty=l.ProposedQty,ConfirmedQty=l.ConfirmedQty,
             Availability=(int)l.Availability,UnitPriceSnapshot=l.UnitPriceSnapshot,LineTotal=l.LineTotal,
@@ -311,17 +339,69 @@ internal static class ConnectedSupplierEntityMapper
         r.CreditPostedAmount=x.CreditPostedAmount;
         r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
         r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;
-        var domainLines=x.Lines.ToList();
+        r.InventoryReservationState=(int)x.InventoryReservationState;
+        r.InventoryReservationExpiresAtUtc=x.InventoryReservationExpiresAtUtc;
+        r.InventoryReservationRevision=x.InventoryReservationRevision;
+        var domainByProduct=x.Lines.ToDictionary(l => l.ProductId.Value);
         foreach(var lineRecord in r.Lines)
         {
-            var index=lineRecord.LineNumber-1;
-            if(index<0||index>=domainLines.Count) continue;
-            var line=domainLines[index];
+            if(!domainByProduct.TryGetValue(lineRecord.ProductId, out var line))
+            {
+                continue;
+            }
+
             lineRecord.ProposedQty=line.ProposedQty;
             lineRecord.ConfirmedQty=line.ConfirmedQty;
             lineRecord.Availability=(int)line.Availability;
             lineRecord.ProposedUnitPrice=line.ProposedUnitPrice;
             lineRecord.ConfirmedUnitPrice=line.ConfirmedUnitPrice;
         }
+    }
+
+    public static ConnectedPoInventoryReservation ToDomain(ConnectedPoInventoryReservationRecord r) =>
+        ConnectedPoInventoryReservation.Rehydrate(
+            ConnectedPoInventoryReservationId.From(r.Id),
+            PosOrganizationId.From(r.OrganizationId),
+            PosBranchId.From(r.BranchId),
+            CatalogProductId.From(r.ProductId),
+            ConnectedPurchaseOrderId.From(r.ConnectedPurchaseOrderId),
+            r.Revision,
+            r.Quantity,
+            r.RemainingQuantity,
+            (ConnectedPoReservationType)r.Type,
+            (ConnectedPoReservationStatus)r.Status,
+            r.CreatedAtUtc,
+            r.ExpiresAtUtc,
+            r.ReleasedAtUtc,
+            r.Version);
+
+    public static ConnectedPoInventoryReservationRecord ToRecord(ConnectedPoInventoryReservation x) => new()
+    {
+        Id = x.Id.Value,
+        OrganizationId = x.OrganizationId.Value,
+        BranchId = x.BranchId.Value,
+        ProductId = x.ProductId.Value,
+        ConnectedPurchaseOrderId = x.ConnectedPurchaseOrderId.Value,
+        Revision = x.Revision,
+        Quantity = x.Quantity,
+        RemainingQuantity = x.RemainingQuantity,
+        Type = (int)x.Type,
+        Status = (int)x.Status,
+        CreatedAtUtc = x.CreatedAtUtc,
+        ExpiresAtUtc = x.ExpiresAtUtc,
+        ReleasedAtUtc = x.ReleasedAtUtc,
+        Version = x.Version
+    };
+
+    public static void Apply(ConnectedPoInventoryReservation x, ConnectedPoInventoryReservationRecord r)
+    {
+        r.Revision = x.Revision;
+        r.Quantity = x.Quantity;
+        r.RemainingQuantity = x.RemainingQuantity;
+        r.Type = (int)x.Type;
+        r.Status = (int)x.Status;
+        r.ExpiresAtUtc = x.ExpiresAtUtc;
+        r.ReleasedAtUtc = x.ReleasedAtUtc;
+        r.Version = x.Version;
     }
 }

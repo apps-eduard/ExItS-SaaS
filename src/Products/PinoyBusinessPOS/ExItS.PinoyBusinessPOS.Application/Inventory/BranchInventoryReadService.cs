@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
@@ -7,21 +8,28 @@ namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 /// <summary>
 /// Central bulk branch inventory resolver for read paths (MB2-02A). Uses <see cref="BranchStockResolver"/>
 /// and branch reorder settings without per-product repository round-trips.
+/// Adjusts reserved/available for time-expired temporary holds before ledger cleanup.
 /// </summary>
 public sealed class BranchInventoryReadService
 {
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly IInventoryBranchReorderRepository _reorder;
     private readonly IInventoryBranchReorderDefaultRepository? _branchDefaults;
+    private readonly IConnectedPoInventoryReservationRepository? _reservations;
+    private readonly TimeProvider _clock;
 
     public BranchInventoryReadService(
         IInventoryBranchBalanceRepository balances,
         IInventoryBranchReorderRepository reorder,
-        IInventoryBranchReorderDefaultRepository? branchDefaults = null)
+        IInventoryBranchReorderDefaultRepository? branchDefaults = null,
+        IConnectedPoInventoryReservationRepository? reservations = null,
+        TimeProvider? clock = null)
     {
         _balances = balances;
         _reorder = reorder;
         _branchDefaults = branchDefaults;
+        _reservations = reservations;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public async Task<IReadOnlyDictionary<Guid, BranchInventoryProductRead>> ResolveAsync(
@@ -53,6 +61,19 @@ public sealed class BranchInventoryReadService
             .GroupBy(b => b.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        IReadOnlyDictionary<Guid, decimal> expiredStillActive = new Dictionary<Guid, decimal>();
+        if (_reservations is not null)
+        {
+            expiredStillActive = await _reservations
+                .SumExpiredStillActiveRemainingByProductAsync(
+                    orgId,
+                    branchId,
+                    productIds,
+                    _clock.GetUtcNow(),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var result = new Dictionary<Guid, BranchInventoryProductRead>(accounts.Count);
         foreach (var account in accounts)
         {
@@ -67,10 +88,12 @@ public sealed class BranchInventoryReadService
                 productBalances,
                 account.ProductId);
 
-            var branchReserved = BranchStockResolver.ResolveReserved(
+            var branchReservedRaw = BranchStockResolver.ResolveReserved(
                 branchId,
                 productBalances,
                 account.ProductId);
+            expiredStillActive.TryGetValue(account.ProductId.Value, out var expiredQty);
+            var branchReserved = Math.Max(0m, branchReservedRaw - expiredQty);
             var branchAvailable = BranchStockResolver.ResolveAvailable(branchOnHand, branchReserved);
 
             var (reorderLevel, reorderQuantity) = ResolveReorderConfiguration(
@@ -81,12 +104,12 @@ public sealed class BranchInventoryReadService
 
             var isLow = account.IsTracked
                 && reorderLevel is not null
-                && branchOnHand > 0m
-                && branchOnHand <= reorderLevel.Value;
+                && branchAvailable > 0m
+                && branchAvailable <= reorderLevel.Value;
             var isSuggested = account.IsTracked
-                && InventoryStockStatuses.IsReorderSuggested(branchOnHand, reorderLevel);
+                && InventoryStockStatuses.IsReorderSuggested(branchAvailable, reorderLevel);
             var suggested = account.IsTracked
-                ? InventoryStockStatuses.SuggestedOrderQuantity(branchOnHand, reorderLevel, reorderQuantity)
+                ? InventoryStockStatuses.SuggestedOrderQuantity(branchAvailable, reorderLevel, reorderQuantity)
                 : null;
 
             result[account.ProductId.Value] = new BranchInventoryProductRead(

@@ -6,6 +6,7 @@ using ExItS.PinoyBusinessPOS.Application.Identity;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Parties;
 using ExItS.PinoyBusinessPOS.Application.Purchasing;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -15,6 +16,7 @@ using ExItS.PinoyBusinessPOS.Domain.Parties;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
+using Microsoft.Extensions.Logging;
 
 namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
@@ -38,6 +40,9 @@ public static class ConnectedSupplierErrorCodes
     /// <summary>Seller invite blocked because the buyer already has a Pending request to this supplier.</summary>
     public const string PendingBuyerRequestExists = "pos.connected_supplier.pending_buyer_request_exists";
     public const string InsufficientSupplierStock = "pos.connected_supplier.insufficient_stock";
+    public const string RemainingAlreadyClosed = "pos.connected_supplier.remaining_already_closed";
+    public const string FulfillmentBlockedAfterShortClose =
+        "pos.connected_supplier.fulfillment_blocked_after_short_close";
     public const string ConcurrencyConflict = "pos.connected_supplier.concurrency_conflict";
     /// <summary>Staff directory / Organization contact only when Connected (Active).</summary>
     public const string OrganizationContactNotConnected =
@@ -138,7 +143,46 @@ public sealed record ConnectedPurchaseOrderLineDto(
     decimal ProposedLineTotal = 0m,
     decimal ConfirmedLineTotal = 0m,
     decimal? ProposedUnitPrice = null,
-    decimal? ConfirmedUnitPrice = null);
+    decimal? ConfirmedUnitPrice = null,
+    decimal? OnHandQuantity = null,
+    decimal? ReservedQuantity = null,
+    decimal? AvailableToPromise = null,
+    decimal? ConfirmQty = null,
+    bool? ShortageWarning = null,
+    decimal? OrderedQty = null,
+    decimal? GoodReceivedQty = null,
+    decimal? DamagedQty = null,
+    decimal? MissingQty = null,
+    decimal? CancelledRemainingQty = null,
+    decimal? OutstandingQty = null,
+    decimal? RemainingValue = null);
+
+public sealed record IncomingOrderBuyerReceiptLineDto(
+    Guid ProductId,
+    string NameSnapshot,
+    string UomSnapshot,
+    decimal GoodQty,
+    decimal DamagedQty,
+    decimal MissingQty,
+    decimal CancelledRemainingQty,
+    string? DiscrepancyKind = null,
+    string? DiscrepancyNote = null,
+    string? RemainingAction = null);
+
+public sealed record IncomingOrderBuyerReceiptDto(
+    Guid GoodsReceiptId,
+    string GrnNumber,
+    DateOnly ReceivedDate,
+    DateTimeOffset ReceivedAtUtc,
+    string? DeliveryReference,
+    string? Notes,
+    string Status,
+    decimal GoodQtyTotal,
+    decimal DamagedQtyTotal,
+    decimal MissingQtyTotal,
+    decimal CancelledRemainingTotal,
+    IReadOnlyList<IncomingOrderBuyerReceiptLineDto> Lines);
+
 public sealed record ConnectedPurchaseOrderDto(
     Guid ConnectedPurchaseOrderId,
     Guid RelationshipId,
@@ -174,8 +218,21 @@ public sealed record ConnectedPurchaseOrderDto(
     DateTimeOffset? ChangesProposedAtUtc = null,
     DateTimeOffset? BuyerRespondedAtUtc = null,
     Guid? SupplierBranchId = null,
-    string? SupplierBranchName = null);
+    string? SupplierBranchName = null,
+    string InventoryReservationState = "None",
+    DateTimeOffset? InventoryReservationExpiresAtUtc = null,
+    decimal? BuyerOutstandingQty = null,
+    IReadOnlyList<IncomingOrderBuyerReceiptDto>? BuyerReceipts = null,
+    DateTimeOffset? RemainingClosedAtUtc = null,
+    Guid? RemainingClosedByUserId = null,
+    string? RemainingClosedReason = null,
+    decimal? FinalAcceptedValue = null,
+    decimal? CancelledRemainingValue = null,
+    decimal RefundDueAmount = 0m,
+    decimal AmountPaid = 0m,
+    decimal BalanceDue = 0m);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
+public sealed record CloseIncomingOrderRemainingRequest(string Reason);
 public sealed record ProposeIncomingOrderLineRequest(
     Guid ProductId,
     decimal ProposedQty,
@@ -362,58 +419,169 @@ public static class ConnectedSupplierMapper
         string? buyerDisplayName = null,
         string? buyerReceivingStatus = null,
         Guid? supplierBranchId = null,
-        string? supplierBranchName = null) => new(
-        x.Id.Value,
-        x.RelationshipId.Value,
-        x.BuyerOrganizationId.Value,
-        x.SupplierOrganizationId.Value,
-        x.BuyerPurchaseOrderId.Value,
-        x.BuyerPoNumber,
-        x.OrderDate,
-        x.Notes,
-        x.Status.ToString(),
-        x.TotalAmount,
-        x.CreatedAtUtc,
-        x.UpdatedAtUtc,
-        x.AcceptedAtUtc,
-        x.DeclinedAtUtc,
-        x.Lines.Select(MapLine).ToList(),
-        x.PreparingAtUtc,
-        x.FulfilledAtUtc,
-        x.WithdrawnAtUtc,
-        x.DeclineReason?.ToString(),
-        x.DeclineNote,
-        ConnectedPoDisplayStatus.ForSupplier(x),
-        buyerDisplayName,
-        buyerReceivingStatus,
-        ConnectedPoPaymentTerms.ToApi(x.EffectivePaymentTerm),
-        ConnectedPoPaymentTerms.ToUiLabel(x.EffectivePaymentTerm),
-        ConnectedPoPaymentTerms.ToApi(x.PaymentTerm),
-        ConnectedPoPaymentTerms.ToUiLabel(x.PaymentTerm),
-        x.ProposedPaymentTerm is { } ppt ? ConnectedPoPaymentTerms.ToApi(ppt) : null,
-        x.ProposedPaymentTerm is { } ppt2 ? ConnectedPoPaymentTerms.ToUiLabel(ppt2) : null,
-        x.ProposedTotalAmount,
-        x.ConfirmedTotalAmount,
-        x.ChangesProposedAtUtc,
-        x.BuyerRespondedAtUtc,
-        supplierBranchId,
-        supplierBranchName);
+        string? supplierBranchName = null,
+        IReadOnlyDictionary<Guid, ConnectedPurchaseOrderSupplierStock.StockSnapshot>? stockByProduct = null,
+        PurchaseOrder? buyerPo = null,
+        IReadOnlyList<GoodsReceipt>? buyerReceipts = null,
+        ConnectedPoShortCloseSettlement.Snapshot? settlementPreview = null)
+    {
+        var display = ConnectedPoDisplayStatus.ForSupplier(x, buyerPo);
+        var receiving = buyerReceivingStatus ?? (buyerPo is null ? null : display);
+        decimal? outstanding = buyerPo is null
+            ? null
+            : buyerPo.Lines.Sum(l => l.OutstandingQty);
 
-    public static ConnectedPurchaseOrderLineDto MapLine(ConnectedPurchaseOrderLine l) => new(
-        l.ProductId.Value,
-        l.NameSnapshot,
-        l.SkuSnapshot,
-        l.Qty,
-        l.UnitPriceSnapshot,
-        l.LineTotal,
-        l.UnitOfMeasureCode,
-        l.ProposedQty,
-        l.ConfirmedQty,
-        l.Availability.ToString(),
-        l.ProposedLineTotal,
-        l.ConfirmedLineTotal,
-        l.ProposedUnitPrice,
-        l.ConfirmedUnitPrice);
+        IReadOnlyDictionary<Guid, ConnectedIncomingOrderFulfillmentProjection.LineProgress>? progress = null;
+        IReadOnlyList<IncomingOrderBuyerReceiptDto>? receiptDtos = null;
+        if (buyerPo is not null && buyerReceipts is not null)
+        {
+            progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(x, buyerPo, buyerReceipts);
+            receiptDtos = ConnectedIncomingOrderFulfillmentProjection
+                .ProjectReceipts(buyerReceipts, outstanding ?? 0m)
+                .Select(r => new IncomingOrderBuyerReceiptDto(
+                    r.GoodsReceiptId,
+                    r.GrnNumber,
+                    r.ReceivedDate,
+                    r.ReceivedAtUtc,
+                    r.DeliveryReference,
+                    r.Notes,
+                    r.Status,
+                    r.GoodQtyTotal,
+                    r.DamagedQtyTotal,
+                    r.MissingQtyTotal,
+                    r.CancelledRemainingTotal,
+                    r.Lines.Select(l => new IncomingOrderBuyerReceiptLineDto(
+                        l.ProductId,
+                        l.NameSnapshot,
+                        l.UomSnapshot,
+                        l.GoodQty,
+                        l.DamagedQty,
+                        l.MissingQty,
+                        l.CancelledRemainingQty,
+                        l.DiscrepancyKind,
+                        l.DiscrepancyNote,
+                        l.RemainingAction)).ToList()))
+                .ToList();
+        }
+        else if (buyerPo is not null)
+        {
+            progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(
+                x,
+                buyerPo,
+                Array.Empty<GoodsReceipt>());
+        }
+
+        return new(
+            x.Id.Value,
+            x.RelationshipId.Value,
+            x.BuyerOrganizationId.Value,
+            x.SupplierOrganizationId.Value,
+            x.BuyerPurchaseOrderId.Value,
+            x.BuyerPoNumber,
+            x.OrderDate,
+            x.Notes,
+            x.Status.ToString(),
+            x.TotalAmount,
+            x.CreatedAtUtc,
+            x.UpdatedAtUtc,
+            x.AcceptedAtUtc,
+            x.DeclinedAtUtc,
+            x.Lines.Select(l => MapLine(l, stockByProduct, progress)).ToList(),
+            x.PreparingAtUtc,
+            x.FulfilledAtUtc,
+            x.WithdrawnAtUtc,
+            x.DeclineReason?.ToString(),
+            x.DeclineNote,
+            display,
+            buyerDisplayName,
+            receiving,
+            ConnectedPoPaymentTerms.ToApi(x.EffectivePaymentTerm),
+            ConnectedPoPaymentTerms.ToUiLabel(x.EffectivePaymentTerm),
+            ConnectedPoPaymentTerms.ToApi(x.PaymentTerm),
+            ConnectedPoPaymentTerms.ToUiLabel(x.PaymentTerm),
+            x.ProposedPaymentTerm is { } ppt ? ConnectedPoPaymentTerms.ToApi(ppt) : null,
+            x.ProposedPaymentTerm is { } ppt2 ? ConnectedPoPaymentTerms.ToUiLabel(ppt2) : null,
+            x.ProposedTotalAmount,
+            x.ConfirmedTotalAmount,
+            x.ChangesProposedAtUtc,
+            x.BuyerRespondedAtUtc,
+            supplierBranchId,
+            supplierBranchName,
+            x.InventoryReservationState.ToString(),
+            x.InventoryReservationExpiresAtUtc,
+            outstanding,
+            receiptDtos,
+            buyerPo?.RemainingClosedAtUtc,
+            buyerPo?.RemainingClosedByUserId,
+            buyerPo?.RemainingClosedReason,
+            buyerPo?.FinalAcceptedValue ?? settlementPreview?.FinalAcceptedValue,
+            buyerPo?.CancelledRemainingValue ?? settlementPreview?.CancelledRemainingValue,
+            buyerPo?.RemainingClosedAtUtc is not null
+                ? (buyerPo.RefundDueAmount)
+                : (settlementPreview?.RefundDue ?? buyerPo?.RefundDueAmount ?? 0m),
+            buyerPo?.AmountPaidSnapshot ?? settlementPreview?.AmountPaid ?? 0m,
+            buyerPo is null
+                ? 0m
+                : buyerPo.RemainingClosedAtUtc is not null
+                    ? Math.Max(0m, (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m))
+                    : (settlementPreview?.BalanceDue
+                        ?? Math.Max(
+                            0m,
+                            (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m))));
+    }
+
+    public static ConnectedPurchaseOrderLineDto MapLine(
+        ConnectedPurchaseOrderLine l,
+        IReadOnlyDictionary<Guid, ConnectedPurchaseOrderSupplierStock.StockSnapshot>? stockByProduct = null,
+        IReadOnlyDictionary<Guid, ConnectedIncomingOrderFulfillmentProjection.LineProgress>? progressByProduct = null)
+    {
+        decimal? onHand = null;
+        decimal? reserved = null;
+        decimal? atp = null;
+        bool? shortage = null;
+        var confirmQty = l.ConfirmedQty
+            ?? (l.Availability == ConnectedPoLineAvailability.Unavailable ? 0m : l.EffectiveProposedQty);
+        if (stockByProduct is not null
+            && stockByProduct.TryGetValue(l.ProductId.Value, out var snap)
+            && snap.IsTracked)
+        {
+            onHand = snap.OnHandBaseQuantity;
+            reserved = snap.ReservedBaseQuantity;
+            atp = snap.AvailableBaseQuantity;
+            shortage = l.Qty > snap.AvailableBaseQuantity;
+        }
+
+        ConnectedIncomingOrderFulfillmentProjection.LineProgress? progress = null;
+        progressByProduct?.TryGetValue(l.ProductId.Value, out progress);
+
+        return new(
+            l.ProductId.Value,
+            l.NameSnapshot,
+            l.SkuSnapshot,
+            l.Qty,
+            l.UnitPriceSnapshot,
+            l.LineTotal,
+            l.UnitOfMeasureCode,
+            l.ProposedQty,
+            l.ConfirmedQty,
+            l.Availability.ToString(),
+            l.ProposedLineTotal,
+            l.ConfirmedLineTotal,
+            l.ProposedUnitPrice,
+            l.ConfirmedUnitPrice,
+            onHand,
+            reserved,
+            atp,
+            confirmQty,
+            shortage,
+            progress?.OrderedQty,
+            progress?.GoodReceivedQty,
+            progress?.DamagedQty,
+            progress?.MissingQty,
+            progress?.CancelledRemainingQty,
+            progress?.OutstandingQty,
+            progress?.RemainingValue);
+    }
 }
 
 internal static class ConnectedSupplierUseCaseGuard
@@ -1915,9 +2083,10 @@ public sealed class SupplierIncomingOrderQuery
 
             Guid? supplierBranchId = null;
             string? supplierBranchName = null;
+            PurchaseOrder? buyerPo = null;
             if (_buyerOrders is not null)
             {
-                var buyerPo = await _buyerOrders
+                buyerPo = await _buyerOrders
                     .GetByIdAsync(order.BuyerOrganizationId, order.BuyerPurchaseOrderId, ct)
                     .ConfigureAwait(false);
                 supplierBranchId = buyerPo?.SupplierBranchId;
@@ -1928,7 +2097,8 @@ public sealed class SupplierIncomingOrderQuery
                 order,
                 buyerName,
                 supplierBranchId: supplierBranchId,
-                supplierBranchName: supplierBranchName));
+                supplierBranchName: supplierBranchName,
+                buyerPo: buyerPo));
         }
 
         return ApplicationResult<IReadOnlyList<ConnectedPurchaseOrderDto>>.Success(mapped);
@@ -1940,18 +2110,39 @@ public sealed class GetIncomingOrder
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IPurchaseOrderRepository? _buyerOrders;
+    private readonly ISupplierPayableRepository? _payables;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly IInventoryRepository? _inventory;
+    private readonly IInventoryBranchBalanceRepository? _balances;
+    private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
+    private readonly IPosUnitOfWork? _uow;
+    private readonly TimeProvider _clock;
 
     public GetIncomingOrder(
         IConnectedPurchaseOrderRepository orders,
         IPosCommercialAccessAccessor access,
         IConnectedSupplierRelationshipRepository relationships,
-        IPurchaseOrderRepository? buyerOrders = null)
+        IPurchaseOrderRepository? buyerOrders = null,
+        IInventoryRepository? inventory = null,
+        IInventoryBranchBalanceRepository? balances = null,
+        IOrganizationBranchDirectory? branches = null,
+        ConnectedPoInventoryReservationService? reservations = null,
+        IPosUnitOfWork? uow = null,
+        ISupplierPayableRepository? payables = null,
+        TimeProvider? clock = null)
     {
         _orders = orders;
         _access = access;
         _relationships = relationships;
         _buyerOrders = buyerOrders;
+        _inventory = inventory;
+        _balances = balances;
+        _branches = branches;
+        _reservations = reservations;
+        _uow = uow;
+        _payables = payables;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(Guid orgId, Guid id, CancellationToken ct = default)
@@ -1969,13 +2160,29 @@ public sealed class GetIncomingOrder
                 ConnectedSupplierErrorCodes.IncomingOrderNotFound, "Incoming order was not found.");
         }
 
+        if (_reservations is not null)
+        {
+            var beforeState = order.InventoryReservationState;
+            var beforeStatus = order.Status;
+            await _reservations.ExpireIfNeededAsync(order, _clock.GetUtcNow(), ct).ConfigureAwait(false);
+            if (order.InventoryReservationState != beforeState || order.Status != beforeStatus)
+            {
+                await _orders.UpdateAsync(order, ct).ConfigureAwait(false);
+                if (_uow is not null)
+                {
+                    await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+                }
+            }
+        }
+
         var rel = await _relationships.GetAsync(order.RelationshipId, ct).ConfigureAwait(false);
         string? receiving = null;
         Guid? supplierBranchId = null;
         string? supplierBranchName = null;
+        PurchaseOrder? buyerPo = null;
         if (_buyerOrders is not null)
         {
-            var buyerPo = await _buyerOrders
+            buyerPo = await _buyerOrders
                 .GetByIdAsync(order.BuyerOrganizationId, order.BuyerPurchaseOrderId, ct)
                 .ConfigureAwait(false);
             if (buyerPo is not null)
@@ -1986,13 +2193,74 @@ public sealed class GetIncomingOrder
             }
         }
 
+        supplierBranchId ??= rel?.SupplierBranchId;
+        supplierBranchName ??= rel?.SupplierBranchNameSnapshot;
+
+        IReadOnlyDictionary<Guid, ConnectedPurchaseOrderSupplierStock.StockSnapshot>? stock = null;
+        if (_inventory is not null && _balances is not null)
+        {
+            stock = await ConnectedPurchaseOrderSupplierStock
+                .LoadSnapshotsAsync(
+                    order.SupplierOrganizationId,
+                    supplierBranchId ?? rel?.SupplierBranchId,
+                    order.Lines.Select(l => l.ProductId.Value).ToList(),
+                    _inventory,
+                    _balances,
+                    _branches,
+                    ct)
+                .ConfigureAwait(false);
+        }
+
+        IReadOnlyList<GoodsReceipt>? buyerReceipts = null;
+        if (buyerPo is not null && _buyerOrders is not null)
+        {
+            buyerReceipts = await _buyerOrders
+                .ListGoodsReceiptsForPurchaseOrderAsync(
+                    order.BuyerOrganizationId,
+                    order.BuyerPurchaseOrderId,
+                    ct)
+                .ConfigureAwait(false);
+        }
+
+        ConnectedPoShortCloseSettlement.Snapshot? settlementPreview = null;
+        if (buyerPo is not null && buyerPo.RemainingClosedAtUtc is null)
+        {
+            var payables = new List<Domain.SupplierPayables.SupplierPayable>();
+            if (_payables is not null && buyerReceipts is not null)
+            {
+                foreach (var receipt in buyerReceipts.Where(r => r.Status == GoodsReceiptStatus.Posted))
+                {
+                    var payable = await _payables
+                        .FindBySourceAsync(
+                            order.BuyerOrganizationId,
+                            Domain.SupplierPayables.SupplierPayableSourceType.GoodsReceipt,
+                            receipt.Id.Value,
+                            ct)
+                        .ConfigureAwait(false);
+                    if (payable is not null)
+                    {
+                        payables.Add(payable);
+                    }
+                }
+            }
+
+            settlementPreview = ConnectedPoShortCloseSettlement.Compute(
+                buyerPo,
+                payables,
+                treatOutstandingAsCancelled: true);
+        }
+
         return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
             ConnectedSupplierMapper.Map(
                 order,
                 rel?.BuyerDisplayNameSnapshot,
                 receiving,
                 supplierBranchId,
-                supplierBranchName));
+                supplierBranchName,
+                stock,
+                buyerPo,
+                buyerReceipts,
+                settlementPreview));
     }
 }
 
@@ -2007,6 +2275,7 @@ public sealed class RespondIncomingOrder
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
     private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
 
     public RespondIncomingOrder(
         IConnectedPurchaseOrderRepository o,
@@ -2017,7 +2286,8 @@ public sealed class RespondIncomingOrder
         IConnectedSupplierRelationshipRepository? relationships = null,
         IPurchaseOrderRepository? buyerOrders = null,
         IBuyerSupplierProductLinkRepository? links = null,
-        ConnectedSupplierCommerceReadinessService? commerceReadiness = null)
+        ConnectedSupplierCommerceReadinessService? commerceReadiness = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = o;
         _uow = u;
@@ -2028,6 +2298,7 @@ public sealed class RespondIncomingOrder
         _buyerOrders = buyerOrders;
         _links = links;
         _commerceReadiness = commerceReadiness;
+        _reservations = reservations;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2053,6 +2324,17 @@ public sealed class RespondIncomingOrder
         try
         {
             var now = _clock.GetUtcNow();
+            if (_reservations is not null)
+            {
+                await _reservations.ExpireIfNeededAsync(o, now, ct).ConfigureAwait(false);
+            }
+
+            ConnectedSupplierRelationship? relForReserve = null;
+            if (_relationships is not null)
+            {
+                relForReserve = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+            }
+
             if (accept)
             {
                 if (o.Status == ConnectedPurchaseOrderStatus.Accepted)
@@ -2060,24 +2342,34 @@ public sealed class RespondIncomingOrder
                     return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
                 }
 
-                if (_commerceReadiness is not null && _relationships is not null)
+                if (_commerceReadiness is not null && relForReserve is not null)
                 {
-                    var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
-                    if (rel is not null)
+                    var readiness = await _commerceReadiness
+                        .EnsureReadyAsync(relForReserve, forBuyerMessage: false, ct)
+                        .ConfigureAwait(false);
+                    if (!readiness.IsSuccess)
                     {
-                        var readiness = await _commerceReadiness
-                            .EnsureReadyAsync(rel, forBuyerMessage: false, ct)
-                            .ConfigureAwait(false);
-                        if (!readiness.IsSuccess)
-                        {
-                            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
-                                readiness.ErrorCode!,
-                                readiness.ErrorMessage!);
-                        }
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                            readiness.ErrorCode!,
+                            readiness.ErrorMessage!);
                     }
                 }
 
                 o.Accept(now);
+                if (_reservations is not null)
+                {
+                    if (relForReserve is null)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                            ConnectedSupplierErrorCodes.NotFound,
+                            "Relationship was not found.");
+                    }
+
+                    await _reservations
+                        .ReserveConfirmedOnAcceptAsync(o, relForReserve, Guid.Empty, now, ct)
+                        .ConfigureAwait(false);
+                }
+
                 if (_buyerOrders is not null && _links is not null)
                 {
                     var buyerPo = await _buyerOrders
@@ -2107,18 +2399,17 @@ public sealed class RespondIncomingOrder
                 }
 
                 o.Decline(now, reason, decline?.DeclineNote);
+                if (_reservations is not null)
+                {
+                    await _reservations.ReleaseActiveAsync(o, now, ct).ConfigureAwait(false);
+                }
             }
 
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
             var poLabel = o.BuyerPoNumber ?? o.BuyerPurchaseOrderId.Value.ToString("D");
-            string? supplierName = null;
-            if (_relationships is not null)
-            {
-                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
-                supplierName = rel?.SupplierDisplayNameSnapshot;
-            }
+            string? supplierName = relForReserve?.SupplierDisplayNameSnapshot;
 
             await _notifications.PublishAsync(
                 orgId,
@@ -2170,6 +2461,7 @@ public sealed class ProposeIncomingOrderChanges
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
 
     public ProposeIncomingOrderChanges(
         IConnectedPurchaseOrderRepository orders,
@@ -2177,7 +2469,8 @@ public sealed class ProposeIncomingOrderChanges
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2185,6 +2478,7 @@ public sealed class ProposeIncomingOrderChanges
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
+        _reservations = reservations;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2209,9 +2503,17 @@ public sealed class ProposeIncomingOrderChanges
 
         try
         {
+            var now = _clock.GetUtcNow();
+            if (_reservations is not null)
+            {
+                await _reservations.ExpireIfNeededAsync(o, now, ct).ConfigureAwait(false);
+            }
+
             if (o.Status == ConnectedPurchaseOrderStatus.ChangesProposed)
             {
-                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                    "Changes are already proposed. Withdraw the proposal before proposing again.");
             }
 
             var proposals = (request.Lines ?? [])
@@ -2227,7 +2529,30 @@ public sealed class ProposeIncomingOrderChanges
                 proposedPayment = ConnectedPoPaymentTerms.ParseRequired(request.ProposedPaymentTerm);
             }
 
-            o.ProposeLineChanges(proposals, _clock.GetUtcNow(), actorId, proposedPayment);
+            o.ProposeLineChanges(proposals, now, actorId, proposedPayment);
+
+            if (_reservations is not null)
+            {
+                if (_relationships is null)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                        ConnectedSupplierErrorCodes.NotFound,
+                        "Relationship was not found.");
+                }
+
+                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+                if (rel is null)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                        ConnectedSupplierErrorCodes.NotFound,
+                        "Relationship was not found.");
+                }
+
+                await _reservations
+                    .ReserveTemporaryOnProposeAsync(o, rel, actorId ?? Guid.Empty, now, ct)
+                    .ConfigureAwait(false);
+            }
+
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
@@ -2261,11 +2586,108 @@ public sealed class ProposeIncomingOrderChanges
     }
 }
 
+public sealed class WithdrawIncomingOrderProposal
+{
+    private readonly IConnectedPurchaseOrderRepository _orders;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IConnectedSupplierRelationshipRepository? _relationships;
+
+    public WithdrawIncomingOrderProposal(
+        IConnectedPurchaseOrderRepository orders,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        TimeProvider? clock = null,
+        ConnectedPoInventoryReservationService? reservations = null,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        IConnectedSupplierRelationshipRepository? relationships = null)
+    {
+        _orders = orders;
+        _uow = uow;
+        _access = access;
+        _clock = clock ?? TimeProvider.System;
+        _reservations = reservations;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _relationships = relationships;
+    }
+
+    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
+        Guid orgId,
+        Guid id,
+        Guid? actorId = null,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var o = await _orders.GetAsync(ConnectedPurchaseOrderId.From(id), ct).ConfigureAwait(false);
+        if (o is null || o.SupplierOrganizationId != PosOrganizationId.From(orgId))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierErrorCodes.IncomingOrderNotFound, "Incoming order was not found.");
+        }
+
+        try
+        {
+            var now = _clock.GetUtcNow();
+            if (o.Status == ConnectedPurchaseOrderStatus.New)
+            {
+                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+            }
+
+            o.WithdrawProposedChanges(now, actorId);
+            if (_reservations is not null)
+            {
+                await _reservations.ReleaseActiveAsync(o, now, ct).ConfigureAwait(false);
+            }
+
+            await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            var poLabel = o.BuyerPoNumber ?? o.BuyerPurchaseOrderId.Value.ToString("D");
+            string? supplierName = null;
+            if (_relationships is not null)
+            {
+                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+                supplierName = rel?.SupplierDisplayNameSnapshot;
+            }
+
+            await _notifications.PublishAsync(
+                orgId,
+                o.BuyerOrganizationId.Value,
+                ConnectedPurchaseOrderNotificationTypes.ChangesRejected,
+                o.BuyerPurchaseOrderId.Value.ToString("D"),
+                "Purchase order proposal withdrawn",
+                $"{supplierName ?? "Supplier"} withdrew proposed changes for PO {poLabel}.",
+                ct).ConfigureAwait(false);
+
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
 public sealed class StartPreparingIncomingOrder
 {
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPurchaseOrderRepository? _buyerOrders;
+    private readonly IBuyerSupplierProductLinkRepository? _links;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2276,7 +2698,10 @@ public sealed class StartPreparingIncomingOrder
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        IPurchaseOrderRepository? buyerOrders = null,
+        ConnectedPoInventoryReservationService? reservations = null,
+        IBuyerSupplierProductLinkRepository? links = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2284,6 +2709,9 @@ public sealed class StartPreparingIncomingOrder
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
+        _buyerOrders = buyerOrders;
+        _reservations = reservations;
+        _links = links;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(Guid orgId, Guid id, CancellationToken ct = default)
@@ -2308,7 +2736,50 @@ public sealed class StartPreparingIncomingOrder
                 return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
             }
 
+            PurchaseOrder? buyerPo = null;
+            if (_buyerOrders is not null)
+            {
+                buyerPo = await _buyerOrders
+                    .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                    .ConfigureAwait(false);
+            }
+
+            if (o.Status == ConnectedPurchaseOrderStatus.Fulfilled)
+            {
+                var outstanding = buyerPo?.Lines.Sum(l => l.OutstandingQty) ?? 0m;
+                if (outstanding <= 0m)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                        ConnectedSupplierDomainErrorCodes.InvalidTransition,
+                        "There is no outstanding quantity left to prepare.");
+                }
+
+                o.ReopenForRemainingFulfillment(_clock.GetUtcNow());
+            }
+
             o.StartPreparing(_clock.GetUtcNow());
+
+            if (_reservations is not null
+                && _relationships is not null
+                && buyerPo is not null
+                && o.FulfilledAtUtc is not null)
+            {
+                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+                if (rel is not null)
+                {
+                    await _reservations
+                        .ReserveOutstandingRemainingAsync(
+                            o,
+                            rel,
+                            buyerPo,
+                            Guid.Empty,
+                            _clock.GetUtcNow(),
+                            ct,
+                            _links)
+                        .ConfigureAwait(false);
+                }
+            }
+
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
 
@@ -2329,7 +2800,8 @@ public sealed class StartPreparingIncomingOrder
                 $"{supplierName ?? "Supplier"} is preparing PO {poLabel}.",
                 ct).ConfigureAwait(false);
 
-            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                ConnectedSupplierMapper.Map(o, buyerPo: buyerPo));
         }
         catch (DomainException ex)
         {
@@ -2347,6 +2819,8 @@ public sealed class MarkIncomingOrderFulfilled
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPurchaseOrderRepository? _buyerOrders;
+    private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ConnectedPurchaseOrderFulfillStock _fulfillStock;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
@@ -2359,7 +2833,9 @@ public sealed class MarkIncomingOrderFulfilled
         ConnectedPurchaseOrderFulfillStock fulfillStock,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        IPurchaseOrderRepository? buyerOrders = null,
+        IBuyerSupplierProductLinkRepository? links = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2368,6 +2844,8 @@ public sealed class MarkIncomingOrderFulfilled
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
+        _buyerOrders = buyerOrders;
+        _links = links;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2398,9 +2876,26 @@ public sealed class MarkIncomingOrderFulfilled
 
         try
         {
+            PurchaseOrder? buyerPo = null;
+            if (_buyerOrders is not null)
+            {
+                buyerPo = await _buyerOrders
+                    .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                    .ConfigureAwait(false);
+            }
+
             if (o.Status == ConnectedPurchaseOrderStatus.Fulfilled)
             {
-                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                    ConnectedSupplierMapper.Map(o, buyerPo: buyerPo));
+            }
+
+            if (buyerPo is not null
+                && (buyerPo.RemainingClosedAtUtc is not null || buyerPo.Lines.All(l => l.OutstandingQty <= 0m)))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierErrorCodes.FulfillmentBlockedAfterShortClose,
+                    "Remaining quantity was cancelled; further fulfillment is not allowed.");
             }
 
             if (_relationships is null)
@@ -2419,7 +2914,18 @@ public sealed class MarkIncomingOrderFulfilled
             }
 
             var utcNow = _clock.GetUtcNow();
-            await _fulfillStock.ApplyAsync(o, rel, actorId, utcNow, ct).ConfigureAwait(false);
+            IReadOnlyDictionary<Guid, decimal>? shipByProduct = null;
+            if (buyerPo is not null && o.FulfilledAtUtc is not null)
+            {
+                // Remaining wave: ship only buyer outstanding (good-received already fulfilled).
+                shipByProduct = await ConnectedPurchaseOrderFulfillStock
+                    .ResolveOutstandingShipQuantitiesAsync(o, buyerPo, _links, ct)
+                    .ConfigureAwait(false);
+            }
+
+            await _fulfillStock
+                .ApplyAsync(o, rel, actorId, utcNow, ct, shipQtyBySupplierProduct: shipByProduct)
+                .ConfigureAwait(false);
             o.MarkFulfilled(utcNow);
             await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
             await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -2435,7 +2941,185 @@ public sealed class MarkIncomingOrderFulfilled
                 $"PO {poLabel} is ready to receive.",
                 ct).ConfigureAwait(false);
 
-            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(ConnectedSupplierMapper.Map(o));
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                ConnectedSupplierMapper.Map(o, buyerPo: buyerPo));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed class CloseIncomingOrderRemaining
+{
+    private readonly IConnectedPurchaseOrderRepository _orders;
+    private readonly IConnectedSupplierRelationshipRepository _relationships;
+    private readonly IPurchaseOrderRepository _buyerOrders;
+    private readonly ISupplierPayableRepository? _payables;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+    private readonly ILogger<CloseIncomingOrderRemaining>? _logger;
+
+    public CloseIncomingOrderRemaining(
+        IConnectedPurchaseOrderRepository orders,
+        IConnectedSupplierRelationshipRepository relationships,
+        IPurchaseOrderRepository buyerOrders,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        ConnectedPoInventoryReservationService? reservations = null,
+        ISupplierPayableRepository? payables = null,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        TimeProvider? clock = null,
+        ILogger<CloseIncomingOrderRemaining>? logger = null)
+    {
+        _orders = orders;
+        _relationships = relationships;
+        _buyerOrders = buyerOrders;
+        _uow = uow;
+        _access = access;
+        _reservations = reservations;
+        _payables = payables;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _clock = clock ?? TimeProvider.System;
+        _logger = logger;
+    }
+
+    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
+        Guid orgId,
+        Guid id,
+        Guid actorId,
+        CloseIncomingOrderRemainingRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        if (actorId == Guid.Empty)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to close remaining quantity.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ApplicationErrorCodes.PurchaseOrderCloseRemainingReasonRequired,
+                "A reason is required to close remaining quantity.");
+        }
+
+        var o = await _orders.GetAsync(ConnectedPurchaseOrderId.From(id), ct).ConfigureAwait(false);
+        if (o is null || o.SupplierOrganizationId != PosOrganizationId.From(orgId))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierErrorCodes.IncomingOrderNotFound, "Incoming order was not found.");
+        }
+
+        try
+        {
+            var buyerPo = await _buyerOrders
+                .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                .ConfigureAwait(false);
+            if (buyerPo is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Buyer purchase order was not found.");
+            }
+
+            if (buyerPo.RemainingClosedAtUtc is not null)
+            {
+                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                    ConnectedSupplierMapper.Map(o, buyerPo: buyerPo));
+            }
+
+            if (buyerPo.Lines.All(l => l.OutstandingQty <= 0m))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderNothingToCloseRemaining,
+                    "There is no remaining quantity to close.");
+            }
+
+            var receipts = await _buyerOrders
+                .ListGoodsReceiptsForPurchaseOrderAsync(
+                    o.BuyerOrganizationId,
+                    o.BuyerPurchaseOrderId,
+                    ct)
+                .ConfigureAwait(false);
+
+            var payables = new List<Domain.SupplierPayables.SupplierPayable>();
+            if (_payables is not null)
+            {
+                foreach (var receipt in receipts.Where(r => r.Status == GoodsReceiptStatus.Posted))
+                {
+                    var payable = await _payables
+                        .FindBySourceAsync(
+                            o.BuyerOrganizationId,
+                            Domain.SupplierPayables.SupplierPayableSourceType.GoodsReceipt,
+                            receipt.Id.Value,
+                            ct)
+                        .ConfigureAwait(false);
+                    if (payable is not null)
+                    {
+                        payables.Add(payable);
+                    }
+                }
+            }
+
+            var preview = ConnectedPoShortCloseSettlement.Compute(
+                buyerPo,
+                payables,
+                treatOutstandingAsCancelled: true);
+
+            var utcNow = _clock.GetUtcNow();
+            buyerPo.CloseAllRemaining(
+                request.Reason,
+                actorId,
+                utcNow,
+                preview.RefundDue,
+                preview.AmountPaid);
+
+            if (_reservations is not null)
+            {
+                await _reservations.ReleaseActiveAsync(o, utcNow, ct).ConfigureAwait(false);
+            }
+
+            await _buyerOrders.UpdateAsync(buyerPo, ct).ConfigureAwait(false);
+            await _orders.UpdateAsync(o, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            _logger?.LogInformation(
+                "Connected PO remaining closed. CpoId={ConnectedPurchaseOrderId} PoId={PurchaseOrderId} Actor={ActorId} Accepted={FinalAccepted} Cancelled={CancelledValue} RefundDue={RefundDue}",
+                o.Id.Value,
+                buyerPo.Id.Value,
+                actorId,
+                buyerPo.FinalAcceptedValue,
+                buyerPo.CancelledRemainingValue,
+                buyerPo.RefundDueAmount);
+
+            var poLabel = o.BuyerPoNumber ?? o.BuyerPurchaseOrderId.Value.ToString("D");
+            await _notifications.PublishAsync(
+                orgId,
+                o.BuyerOrganizationId.Value,
+                ConnectedPurchaseOrderNotificationTypes.RemainingClosed,
+                o.BuyerPurchaseOrderId.Value.ToString("D"),
+                "Remaining quantity cancelled",
+                $"PO {poLabel} remaining quantity was cancelled. Settlement is based on goods actually received.",
+                ct).ConfigureAwait(false);
+
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                ConnectedSupplierMapper.Map(o, buyerPo: buyerPo, buyerReceipts: receipts));
         }
         catch (DomainException ex)
         {

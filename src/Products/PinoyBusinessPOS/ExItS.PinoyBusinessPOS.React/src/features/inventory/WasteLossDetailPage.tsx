@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -26,6 +27,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function WasteLossDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "wasteLoss",
+    backLabel: t("wasteLoss.backList"),
+    backTestId: "page-header-back-waste-loss",
+  });
   const online = useBrowserOnline();
   const { wasteLossId } = useParams<{ wasteLossId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -103,9 +109,7 @@ export function WasteLossDetailPage() {
       <PageHeader
         title={entry.wasteLossNumber}
         description={t("wasteLoss.detailLede")}
-        backTo="/inventory/waste-loss"
-        backLabel={t("wasteLoss.backList")}
-        backTestId="page-header-back-waste-loss"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("wasteLoss.errorTitle")} detail={error} /> : null}

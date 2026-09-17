@@ -15,6 +15,7 @@ public sealed class PurchaseOrder
 {
     public const int SupplierReferenceMaxLength = 128;
     public const int NotesMaxLength = 512;
+    public const int RemainingClosedReasonMaxLength = 512;
     public const int MaxLineCount = 200;
 
     private readonly List<PurchaseOrderLine> _lines;
@@ -50,6 +51,18 @@ public sealed class PurchaseOrder
     /// Null preserves legacy / connected-supplier behavior (receive at acting branch).
     /// </summary>
     public Guid? IntendedReceivingBranchId { get; private set; }
+    /// <summary>When remaining outstanding was explicitly short-closed (seller Close remaining).</summary>
+    public DateTimeOffset? RemainingClosedAtUtc { get; private set; }
+    public Guid? RemainingClosedByUserId { get; private set; }
+    public string? RemainingClosedReason { get; private set; }
+    /// <summary>Good-received value snapshot at short-close (authoritative settlement base).</summary>
+    public decimal? FinalAcceptedValue { get; private set; }
+    /// <summary>Cancelled remaining value snapshot at short-close (not charged).</summary>
+    public decimal? CancelledRemainingValue { get; private set; }
+    /// <summary>Explicit refund-due when amount paid exceeds final accepted value. Never silently reduces payment history.</summary>
+    public decimal RefundDueAmount { get; private set; }
+    /// <summary>Total paid across receipt payables at short-close time.</summary>
+    public decimal? AmountPaidSnapshot { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -73,7 +86,14 @@ public sealed class PurchaseOrder
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
         DateTimeOffset? cancelledAtUtc = null,
-        Guid? cancelledByUserId = null)
+        Guid? cancelledByUserId = null,
+        DateTimeOffset? remainingClosedAtUtc = null,
+        Guid? remainingClosedByUserId = null,
+        string? remainingClosedReason = null,
+        decimal? finalAcceptedValue = null,
+        decimal? cancelledRemainingValue = null,
+        decimal refundDueAmount = 0m,
+        decimal? amountPaidSnapshot = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -94,6 +114,15 @@ public sealed class PurchaseOrder
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchNameSnapshot);
         IntendedReceivingBranchId = NormalizeBranchId(intendedReceivingBranchId);
+        RemainingClosedAtUtc = remainingClosedAtUtc;
+        RemainingClosedByUserId = remainingClosedByUserId;
+        RemainingClosedReason = remainingClosedReason;
+        FinalAcceptedValue = finalAcceptedValue;
+        CancelledRemainingValue = cancelledRemainingValue;
+        RefundDueAmount = refundDueAmount < 0m ? 0m : SaleMoney.RoundMoney(refundDueAmount);
+        AmountPaidSnapshot = amountPaidSnapshot is null
+            ? null
+            : SaleMoney.RoundMoney(amountPaidSnapshot.Value);
         _lines = lines;
     }
 
@@ -297,6 +326,19 @@ public sealed class PurchaseOrder
                     "Product setup is required before goods can be received.");
             }
 
+            if (line.UomSnapshot is null)
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidPurchaseOrderLine,
+                    "Cannot receive against an unordered line.");
+            }
+
+            PurchaseOrderReceiveDiscrepancy.EnsureValid(
+                line.OutstandingQty,
+                receive,
+                line.UomSnapshot.Value,
+                receive.SellingMode);
+
             if (receive.ReceiveQty > 0m)
             {
                 line.ApplyReceipt(receive.ReceiveQty, receive.SellingMode);
@@ -444,6 +486,92 @@ public sealed class PurchaseOrder
     /// <summary>True when any line has buyer-closed shortages (Received With Issues signal).</summary>
     public bool HasReceivingIssues => _lines.Any(l => l.HasReceivingIssues);
 
+    /// <summary>
+    /// Explicitly cancels all outstanding quantity (seller Close remaining). Does not change OrderedQty
+    /// or ReceivedQty. Settlement snapshots are recorded for refund/charge projection.
+    /// </summary>
+    public void CloseAllRemaining(
+        string reason,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        decimal refundDueAmount,
+        decimal amountPaid)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (actorId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "An actor identifier is required to close remaining quantity.");
+        }
+
+        if (RemainingClosedAtUtc is not null)
+        {
+            return;
+        }
+
+        if (Status is not (PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Only ordered purchase orders can close remaining quantity.");
+        }
+
+        if (_lines.All(l => l.OutstandingQty <= 0m))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                "There is no remaining quantity to close.");
+        }
+
+        var normalizedReason = NormalizeRemainingClosedReason(reason);
+        foreach (var line in _lines)
+        {
+            if (line.OutstandingQty > 0m)
+            {
+                line.ApplyShortClose(line.OutstandingQty);
+            }
+        }
+
+        var finalAccepted = 0m;
+        var cancelledValue = 0m;
+        foreach (var line in _lines)
+        {
+            finalAccepted += SaleMoney.RoundMoney(line.ReceivedQty * line.UnitPurchaseCost);
+            cancelledValue += SaleMoney.RoundMoney(line.ClosedShortQty * line.UnitPurchaseCost);
+        }
+
+        RemainingClosedAtUtc = utcNow;
+        RemainingClosedByUserId = actorId;
+        RemainingClosedReason = normalizedReason;
+        FinalAcceptedValue = SaleMoney.RoundMoney(finalAccepted);
+        CancelledRemainingValue = SaleMoney.RoundMoney(cancelledValue);
+        RefundDueAmount = refundDueAmount < 0m ? 0m : SaleMoney.RoundMoney(refundDueAmount);
+        AmountPaidSnapshot = SaleMoney.RoundMoney(amountPaid);
+        Status = PurchaseOrderStatus.Received;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public static string NormalizeRemainingClosedReason(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderNotes,
+                "A reason is required to close remaining quantity.");
+        }
+
+        var trimmed = reason.Trim();
+        if (trimmed.Length > RemainingClosedReasonMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderNotes,
+                $"Close remaining reason must be at most {RemainingClosedReasonMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
     public static PurchaseOrder Rehydrate(
         PurchaseOrderId id,
         PosOrganizationId organizationId,
@@ -464,7 +592,14 @@ public sealed class PurchaseOrder
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
         DateTimeOffset? cancelledAtUtc = null,
-        Guid? cancelledByUserId = null) =>
+        Guid? cancelledByUserId = null,
+        DateTimeOffset? remainingClosedAtUtc = null,
+        Guid? remainingClosedByUserId = null,
+        string? remainingClosedReason = null,
+        decimal? finalAcceptedValue = null,
+        decimal? cancelledRemainingValue = null,
+        decimal refundDueAmount = 0m,
+        decimal? amountPaidSnapshot = null) =>
         new(
             id,
             organizationId,
@@ -485,7 +620,14 @@ public sealed class PurchaseOrder
             supplierBranchNameSnapshot,
             intendedReceivingBranchId,
             cancelledAtUtc,
-            cancelledByUserId);
+            cancelledByUserId,
+            remainingClosedAtUtc,
+            remainingClosedByUserId,
+            remainingClosedReason,
+            finalAcceptedValue,
+            cancelledRemainingValue,
+            refundDueAmount,
+            amountPaidSnapshot);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { canCreateSale } from "@/access/pos-capabilities";
 
@@ -80,7 +81,7 @@ export function QuotationsListPage() {
         <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="quotations-list">
           {items.map((q) => (
             <li key={q.quotationId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/quotations/${q.quotationId}`}
                 className="flex flex-col gap-0.5 rounded-md border border-border px-3 py-2 no-underline"
                 data-testid={`quotation-row-${q.quotationId}`}
@@ -91,7 +92,7 @@ export function QuotationsListPage() {
                 <span className="text-sm text-muted">
                   {q.customerDisplayName} · {q.status} · {formatPeso(q.subtotal)}
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           ))}
         </ul>

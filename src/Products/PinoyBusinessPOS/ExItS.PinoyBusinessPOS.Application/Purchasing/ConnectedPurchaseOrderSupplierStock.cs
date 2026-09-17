@@ -21,7 +21,11 @@ public static class ConnectedPurchaseOrderSupplierStock
         decimal MultiplierToBase,
         string ProductName);
 
-    public sealed record StockSnapshot(bool IsTracked, decimal AvailableBaseQuantity);
+    public sealed record StockSnapshot(
+        bool IsTracked,
+        decimal AvailableBaseQuantity,
+        decimal OnHandBaseQuantity = 0m,
+        decimal ReservedBaseQuantity = 0m);
 
     public static async Task<IReadOnlyDictionary<Guid, StockSnapshot>> LoadSnapshotsAsync(
         PosOrganizationId supplierOrganizationId,
@@ -57,14 +61,22 @@ public static class ConnectedPurchaseOrderSupplierStock
         {
             if (!byProduct.TryGetValue(productId, out var account) || !account.IsTracked)
             {
-                result[productId] = new StockSnapshot(IsTracked: false, AvailableBaseQuantity: 0m);
+                result[productId] = new StockSnapshot(
+                    IsTracked: false,
+                    AvailableBaseQuantity: 0m,
+                    OnHandBaseQuantity: 0m,
+                    ReservedBaseQuantity: 0m);
                 continue;
             }
 
             if (supplierBranchId is not Guid branchGuid || branchGuid == Guid.Empty)
             {
                 // Fail closed for tracked stock when the relationship has no supplier branch.
-                result[productId] = new StockSnapshot(IsTracked: true, AvailableBaseQuantity: 0m);
+                result[productId] = new StockSnapshot(
+                    IsTracked: true,
+                    AvailableBaseQuantity: 0m,
+                    OnHandBaseQuantity: 0m,
+                    ReservedBaseQuantity: 0m);
                 continue;
             }
 
@@ -78,7 +90,11 @@ public static class ConnectedPurchaseOrderSupplierStock
                 catalogProductId);
             var reserved = BranchStockResolver.ResolveReserved(branchId, balanceRows, catalogProductId);
             var available = BranchStockResolver.ResolveAvailable(onHand, reserved);
-            result[productId] = new StockSnapshot(IsTracked: true, AvailableBaseQuantity: available);
+            result[productId] = new StockSnapshot(
+                IsTracked: true,
+                AvailableBaseQuantity: available,
+                OnHandBaseQuantity: onHand,
+                ReservedBaseQuantity: reserved);
         }
 
         return result;

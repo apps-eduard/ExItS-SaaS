@@ -309,10 +309,18 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
          return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId,ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/close-remaining",async(HttpRequest req,Guid id,CloseIncomingOrderRemainingRequest body,CloseIncomingOrderRemaining use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId,body,ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/propose-changes",async(HttpRequest req,Guid id,ProposeIncomingOrderChangesRequest body,ProposeIncomingOrderChanges use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          PosOrganizationScope.TryGetActorId(req,out var actorId,out _);
          return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,actorId==Guid.Empty?null:actorId,ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/withdraw-proposal",async(HttpRequest req,Guid id,WithdrawIncomingOrderProposal use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         PosOrganizationScope.TryGetActorId(req,out var actorId,out _);
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId==Guid.Empty?null:actorId,ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/revalidate-draft",async(HttpRequest req,Guid id,RevalidateConnectedPoDraftRequest body,RevalidateConnectedPoDraft use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         return app;

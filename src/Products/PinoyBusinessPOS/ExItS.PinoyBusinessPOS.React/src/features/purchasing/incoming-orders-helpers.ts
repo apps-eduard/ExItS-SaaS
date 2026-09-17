@@ -9,6 +9,42 @@ export type IncomingOrdersUiFilter =
   | "completed"
   | "declined";
 
+/** Canonical supplier completion: buyer outstanding is zero. */
+export function isIncomingOrderCompleted(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status">,
+): boolean {
+  const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
+  return (
+    key === "Completed" ||
+    key === "CompletedRemainingCancelled" ||
+    key === "ReceivedByBuyer" ||
+    key === "ReceivedWithIssues" ||
+    key === "Received"
+  );
+}
+
+export function isIncomingOrderPartiallyReceived(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus">,
+): boolean {
+  const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
+  return key === "PartiallyReceived";
+}
+
+export function isIncomingOrderAwaitingBuyerReceipt(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status">,
+): boolean {
+  if (isIncomingOrderCompleted(order) || isIncomingOrderPartiallyReceived(order)) {
+    return false;
+  }
+  const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
+  return (
+    key === "AwaitingBuyerReceipt" ||
+    key === "Shipped" ||
+    key === "Ready" ||
+    order.status === "Fulfilled"
+  );
+}
+
 export function uiFilterToApiStatus(filter: IncomingOrdersUiFilter): string | undefined {
   switch (filter) {
     case "pending":
@@ -18,7 +54,8 @@ export function uiFilterToApiStatus(filter: IncomingOrdersUiFilter): string | un
     case "preparing":
       return "Preparing";
     case "completed":
-      return "Fulfilled";
+      // Completion is buyer-outstanding-driven; fetch Fulfilled+Accepted and filter client-side.
+      return undefined;
     case "declined":
       return "Declined";
     case "all":
@@ -34,7 +71,9 @@ export type IncomingOrdersStatusCounts = Record<
 >;
 
 export function countIncomingOrdersByUiFilter(
-  orders: ReadonlyArray<Pick<ConnectedPurchaseOrder, "status">>,
+  orders: ReadonlyArray<
+    Pick<ConnectedPurchaseOrder, "status" | "displayStatus" | "buyerReceivingStatus">
+  >,
 ): IncomingOrdersStatusCounts {
   const counts: IncomingOrdersStatusCounts = {
     pending: 0,
@@ -44,6 +83,10 @@ export function countIncomingOrdersByUiFilter(
     declined: 0,
   };
   for (const order of orders) {
+    if (isIncomingOrderCompleted(order)) {
+      counts.completed += 1;
+      continue;
+    }
     switch (order.status) {
       case "New":
         counts.pending += 1;
@@ -55,7 +98,7 @@ export function countIncomingOrdersByUiFilter(
         counts.preparing += 1;
         break;
       case "Fulfilled":
-        counts.completed += 1;
+        // Awaiting buyer receipt — not completed.
         break;
       case "Declined":
         counts.declined += 1;
@@ -71,16 +114,38 @@ export function filterIncomingOrdersByUiStatus(
   orders: ReadonlyArray<ConnectedPurchaseOrder>,
   filter: IncomingOrdersUiFilter,
 ): ConnectedPurchaseOrder[] {
+  if (filter === "all") {
+    return [...orders];
+  }
+  if (filter === "completed") {
+    return orders.filter((order) => isIncomingOrderCompleted(order));
+  }
   const apiStatus = uiFilterToApiStatus(filter);
   if (!apiStatus) {
     return [...orders];
   }
-  return orders.filter((order) => order.status === apiStatus);
+  return orders.filter(
+    (order) => order.status === apiStatus && !isIncomingOrderCompleted(order),
+  );
 }
 
 export function incomingOrderStatusTone(
   status: string,
+  displayStatus?: string,
 ): "success" | "warning" | "info" | "danger" {
+  const key = (displayStatus || status || "").trim();
+  if (
+    key === "Completed" ||
+    key === "CompletedRemainingCancelled" ||
+    key === "ReceivedByBuyer" ||
+    key === "Received" ||
+    key === "ReceivedWithIssues"
+  ) {
+    return "success";
+  }
+  if (key === "PartiallyReceived") {
+    return "warning";
+  }
   switch (status) {
     case "New":
       return "warning";
@@ -88,7 +153,7 @@ export function incomingOrderStatusTone(
     case "Preparing":
       return "info";
     case "Fulfilled":
-      return "success";
+      return "info";
     case "Declined":
       return "danger";
     case "Withdrawn":

@@ -20,6 +20,11 @@ public static class ConnectedPoDisplayStatus
     public const string PartiallyReceived = "PartiallyReceived";
     public const string Received = "Received";
     public const string ReceivedWithIssues = "ReceivedWithIssues";
+    /// <summary>Supplier-facing: buyer outstanding is zero (good received and/or cancelled remaining).</summary>
+    public const string Completed = "Completed";
+    /// <summary>User-facing short-close completion (remaining quantity cancelled).</summary>
+    public const string CompletedRemainingCancelled = "CompletedRemainingCancelled";
+    public const string AwaitingBuyerReceipt = "AwaitingBuyerReceipt";
     public const string Withdrawn = "Withdrawn";
     public const string Cancelled = "Cancelled";
     public const string ChangesNeedApproval = "ChangesNeedApproval";
@@ -69,7 +74,17 @@ public static class ConnectedPoDisplayStatus
 
         if (po.Status == PurchaseOrderStatus.Received)
         {
-            return po.HasReceivingIssues ? ReceivedWithIssues : Received;
+            if (po.RemainingClosedAtUtc is not null)
+            {
+                return CompletedRemainingCancelled;
+            }
+
+            if (po.HasReceivingIssues)
+            {
+                return ReceivedWithIssues;
+            }
+
+            return Received;
         }
 
         return connected.Status switch
@@ -78,6 +93,7 @@ public static class ConnectedPoDisplayStatus
             ConnectedPurchaseOrderStatus.ChangesProposed => ChangesNeedApproval,
             ConnectedPurchaseOrderStatus.Accepted => SupplierAccepted,
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
+            // Ready/Shipped = awaiting buyer receipt; never treat as Completed.
             ConnectedPurchaseOrderStatus.Fulfilled => Shipped,
             _ => WaitingForSupplier
         };
@@ -104,7 +120,18 @@ public static class ConnectedPoDisplayStatus
 
             if (buyerPo.Status == PurchaseOrderStatus.Received)
             {
-                return buyerPo.HasReceivingIssues ? ReceivedWithIssues : "ReceivedByBuyer";
+                // Completion is buyer-outstanding-driven, not seller Ready/Ship.
+                if (buyerPo.RemainingClosedAtUtc is not null)
+                {
+                    return CompletedRemainingCancelled;
+                }
+
+                if (buyerPo.HasReceivingIssues)
+                {
+                    return ReceivedWithIssues;
+                }
+
+                return Completed;
             }
         }
 
@@ -112,9 +139,10 @@ public static class ConnectedPoDisplayStatus
         {
             ConnectedPurchaseOrderStatus.New => "New",
             ConnectedPurchaseOrderStatus.ChangesProposed => "ChangesProposed",
-            ConnectedPurchaseOrderStatus.Accepted => "Accepted",
+            ConnectedPurchaseOrderStatus.Accepted =>
+                connected.FulfilledAtUtc is not null ? PartiallyReceived : "Accepted",
             ConnectedPurchaseOrderStatus.Preparing => Preparing,
-            ConnectedPurchaseOrderStatus.Fulfilled => Shipped,
+            ConnectedPurchaseOrderStatus.Fulfilled => AwaitingBuyerReceipt,
             _ => connected.Status.ToString()
         };
     }
@@ -135,10 +163,14 @@ public static class ConnectedPoDisplayStatus
             (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.Withdrawn) => true,
             (ConnectedPurchaseOrderStatus.New, ConnectedPurchaseOrderStatus.ChangesProposed) => true,
             (ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Accepted) => true,
+            (ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.New) => true,
             (ConnectedPurchaseOrderStatus.ChangesProposed, ConnectedPurchaseOrderStatus.Withdrawn) => true,
             (ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Preparing) => true,
             (ConnectedPurchaseOrderStatus.Accepted, ConnectedPurchaseOrderStatus.Fulfilled) => true,
             (ConnectedPurchaseOrderStatus.Preparing, ConnectedPurchaseOrderStatus.Fulfilled) => true,
+            // Remaining fulfillment after partial buyer receipt.
+            (ConnectedPurchaseOrderStatus.Fulfilled, ConnectedPurchaseOrderStatus.Accepted) => true,
+            (ConnectedPurchaseOrderStatus.Fulfilled, ConnectedPurchaseOrderStatus.Preparing) => true,
             _ => false
         };
     }
@@ -158,6 +190,7 @@ public static class ConnectedPurchaseOrderNotificationTypes
     public const string ChangesProposed = "ConnectedPurchaseOrderChangesProposed";
     public const string ChangesAccepted = "ConnectedPurchaseOrderChangesAccepted";
     public const string ChangesRejected = "ConnectedPurchaseOrderChangesRejected";
+    public const string RemainingClosed = "ConnectedPurchaseOrderRemainingClosed";
 
     public static bool IsKnown(string? relatedType) =>
         string.Equals(relatedType, Submitted, StringComparison.Ordinal)
@@ -171,14 +204,16 @@ public static class ConnectedPurchaseOrderNotificationTypes
         || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
-        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal)
+        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal);
 
     public static bool IsBuyerFacing(string? relatedType) =>
         string.Equals(relatedType, Accepted, StringComparison.Ordinal)
         || string.Equals(relatedType, Declined, StringComparison.Ordinal)
         || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
         || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
-        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal);
+        || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
+        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal);
 
     public static bool IsSupplierFacing(string? relatedType) =>
         string.Equals(relatedType, Submitted, StringComparison.Ordinal)

@@ -18,6 +18,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { Notice } from "@/components/exits/Notice";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
@@ -32,6 +33,11 @@ type PendingLocationAction =
 
 export function OrgAreaDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "areas",
+    backLabel: t("areas.title"),
+    backTestId: "page-header-back-areas",
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { areaId } = useParams<{ areaId: string }>();
@@ -222,9 +228,7 @@ export function OrgAreaDetailPage() {
         <PageHeader
           title={t("areas.detail.title")}
           description={t("areas.denied")}
-          backTo="/org/areas"
-          backLabel={t("areas.title")}
-          backTestId="page-header-back-areas"
+          {...smartBack}
         />
       </div>
     );
@@ -238,9 +242,7 @@ export function OrgAreaDetailPage() {
       <PageHeader
         title={area?.name ?? t("areas.detail.title")}
         description={t("areas.detail.lede")}
-        backTo="/org/areas"
-        backLabel={t("areas.title")}
-        backTestId="page-header-back-areas"
+        {...smartBack}
         trailing={
           area ? (
             <StatusChip tone={area.status === "Active" ? "success" : "info"}>

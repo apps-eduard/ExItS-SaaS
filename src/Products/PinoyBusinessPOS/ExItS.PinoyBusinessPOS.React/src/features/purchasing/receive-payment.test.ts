@@ -1,15 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildReceiveSettlementPayload,
+  clearStaleSettlementFields,
   defaultPaidNowForMode,
   defaultReceivePaymentMode,
   directPurchaseCreditValidationKey,
   formatMoneyInput,
   isConnectedUtangPaymentTerm,
   laterPaymentsAmount,
+  mapPoPaymentTermToReceiveMethod,
   parseMoneyInput,
   receiptReverseErrorMessage,
   remainingCredit,
+  resolveLockedReceivePaymentFromPo,
   roundMoney,
+  validateLockedSettlementFields,
   validateReceivePaidNow,
 } from "@/features/purchasing/receive-payment";
 
@@ -78,6 +83,40 @@ describe("receive-payment helpers", () => {
     ).toBe("paidInFull");
     expect(defaultPaidNowForMode("supplierCredit", 643)).toBe(0);
     expect(defaultPaidNowForMode("paidInFull", 643)).toBe(643);
+  });
+
+  it("locks receive payment from PO payment term", () => {
+    expect(mapPoPaymentTermToReceiveMethod("ManualGCash")).toBe("GCash");
+    expect(mapPoPaymentTermToReceiveMethod("BankDeposit")).toBe("BankDeposit");
+    const utang = resolveLockedReceivePaymentFromPo("Utang", 643);
+    expect(utang.paidNow).toBe(0);
+    expect(utang.paymentMethod).toBeNull();
+    const cash = resolveLockedReceivePaymentFromPo("Cash", 100);
+    expect(cash.paidNow).toBe(100);
+    expect(cash.paymentMethod).toBe("Cash");
+    const check = resolveLockedReceivePaymentFromPo("Check", 250);
+    expect(check.paidNow).toBe(0);
+    expect(check.paymentMethod).toBe("Check");
+  });
+
+  it("clears stale settlement fields and validates locked settlement", () => {
+    const fields = {
+      gCashReference: "GCASH-1",
+      bankName: "BDO",
+      transferOrDepositReference: "REF",
+      settlementDate: "2026-09-17",
+      checkNumber: "100",
+      checkDate: "2026-09-17",
+      settlementNotes: "note",
+    };
+    const gcashOnly = clearStaleSettlementFields("GCash", fields);
+    expect(gcashOnly.gCashReference).toBe("GCASH-1");
+    expect(gcashOnly.bankName).toBe("");
+    expect(
+      validateLockedSettlementFields("GCash", { ...gcashOnly, gCashReference: "" }),
+    ).toBe("purchasing.gcashReferenceRequired");
+    const payload = buildReceiveSettlementPayload("Check", fields);
+    expect(payload.checkClearingStatus).toBe("PendingClearing");
   });
 
   it("maps receipt reverse blocked-by-payments to friendly message", () => {

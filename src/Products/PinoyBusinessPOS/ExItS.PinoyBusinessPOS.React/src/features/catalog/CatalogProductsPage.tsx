@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Award,
@@ -59,6 +59,8 @@ import { useMediaMin } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/cn";
 import { formatPeso } from "@/lib/format-money";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
+import { navigateWithReturn } from "@/navigation/smart-back";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 
@@ -125,11 +127,16 @@ const SCOPE_FILTERS: Array<{
 export function CatalogProductsPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const isDesktopFilters = useMediaMin(768);
   const workspace = usePosWorkspaceScope();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const canGovern = canGovernOrganizationCatalog(sessionGrant);
   const [search, setSearch] = useState("");
+
+  function openProductEdit(productId: string) {
+    navigateWithReturn(navigate, `/catalog/products/${productId}/edit`, location);
+  }
   const [debounced, setDebounced] = useState("");
   const [status, setStatus] = useState<StatusFilter>("Active");
   const [usageFilter, setUsageFilter] = useState<UsageFilter>("all");
@@ -600,7 +607,7 @@ export function CatalogProductsPage() {
 
               return (
                 <li key={product.productId}>
-                  <Link
+                  <AppLinkWithReturn
                     className="exits-list__card catalog-product-row catalog-products-card block min-w-0 text-foreground no-underline"
                     to={`/catalog/products/${product.productId}/edit`}
                     data-testid={`catalog-product-row-${product.productId}`}
@@ -677,7 +684,7 @@ export function CatalogProductsPage() {
                         {product.status}
                       </StatusChip>
                     </span>
-                  </Link>
+                  </AppLinkWithReturn>
                 </li>
               );
             })}
@@ -730,7 +737,6 @@ export function CatalogProductsPage() {
                       currentBranchName,
                       t,
                     });
-                    const editPath = `/catalog/products/${product.productId}/edit`;
                     return (
                       <tr
                         key={product.productId}
@@ -739,11 +745,11 @@ export function CatalogProductsPage() {
                         className="catalog-products-table__row cursor-pointer border-b border-border transition-colors focus-visible:outline-none"
                         data-testid={`catalog-product-table-row-${product.productId}`}
                         aria-label={`${product.name}. ${t("catalog.editProduct")}`}
-                        onClick={() => navigate(editPath)}
+                        onClick={() => openProductEdit(product.productId)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            navigate(editPath);
+                            openProductEdit(product.productId);
                           }
                         }}
                       >

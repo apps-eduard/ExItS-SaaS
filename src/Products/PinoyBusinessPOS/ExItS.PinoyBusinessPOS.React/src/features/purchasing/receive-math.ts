@@ -1,8 +1,10 @@
 /**
- * Partial receive math / over-receipt denial — UI helpers only.
- * Server remains authoritative for inventory quantities.
+ * Partial receive math — UI helpers only. Server remains authoritative.
  *
- * cancelRemaining maps to domain short-close. Deliver-later leaves remaining outstanding.
+ * Discrepancy = Outstanding − Good received.
+ * Damaged + Not delivered must equal Discrepancy.
+ * Cancel remaining short-closes the full discrepancy; deliver later leaves it outstanding.
+ * Damaged / not-delivered do not reduce outstanding by themselves.
  */
 
 export type RemainingDisposition = "deliver_later" | "cancel_remaining";
@@ -12,7 +14,9 @@ export type ReceiveLineInput = {
   outstandingQty: number;
   goodQty: number;
   damagedQty: number;
-  /** When remaining after good+damaged > 0: cancel maps to shortClosedQty. */
+  /** Not delivered / missing qty (maps to RejectedQty). */
+  notDeliveredQty: number;
+  /** When discrepancy > 0: cancel maps to shortClosedQty = discrepancy. */
   cancelRemaining: boolean;
 };
 
@@ -20,14 +24,27 @@ export type ReceiveLinePlan = {
   productId: string;
   receiveQty: number;
   damagedQty: number;
+  rejectedQty: number;
   shortClosedQty: number;
+  discrepancyQty: number;
   remainingAfter: number;
-  discrepancyKind: "Damaged" | "Short" | null;
+  remainingAction: RemainingDisposition | null;
+  discrepancyKind: "Damaged" | "Short" | "Other" | null;
 };
 
 export type BuildReceivePlanResult =
   | { ok: true; lines: ReceiveLinePlan[] }
-  | { ok: false; error: "invalid_qty" | "over_receive" | "no_activity" };
+  | {
+      ok: false;
+      error:
+        | "invalid_qty"
+        | "over_receive"
+        | "no_activity"
+        | "classification_incomplete"
+        | "classification_mismatch";
+    };
+
+const QTY_EPS = 1e-9;
 
 export function parseNonNegativeQty(value: string): number | null {
   const trimmed = value.trim();
@@ -45,13 +62,44 @@ export function outstandingAfterPrior(orderedQty: number, receivedQty: number): 
   return Math.max(0, orderedQty - receivedQty);
 }
 
-/** Remaining after this receipt's good + damaged (before cancel decision). */
-export function remainingAfterReceive(
-  outstandingQty: number,
-  goodQty: number,
+/** Discrepancy when good received is below outstanding. */
+export function receiveDiscrepancyQty(outstandingQty: number, goodQty: number): number {
+  return Math.max(0, outstandingQty - goodQty);
+}
+
+export function classificationRemaining(
+  discrepancyQty: number,
   damagedQty: number,
+  notDeliveredQty: number,
 ): number {
-  return Math.max(0, outstandingQty - goodQty - damagedQty);
+  return Math.max(0, discrepancyQty - damagedQty - notDeliveredQty);
+}
+
+export function isClassificationComplete(
+  discrepancyQty: number,
+  damagedQty: number,
+  notDeliveredQty: number,
+): boolean {
+  if (discrepancyQty <= QTY_EPS) {
+    return damagedQty <= QTY_EPS && notDeliveredQty <= QTY_EPS;
+  }
+  return Math.abs(damagedQty + notDeliveredQty - discrepancyQty) <= QTY_EPS;
+}
+
+export function resolveDiscrepancyKind(
+  damagedQty: number,
+  notDeliveredQty: number,
+): "Damaged" | "Short" | "Other" | null {
+  if (damagedQty > QTY_EPS && notDeliveredQty > QTY_EPS) {
+    return "Other";
+  }
+  if (damagedQty > QTY_EPS) {
+    return "Damaged";
+  }
+  if (notDeliveredQty > QTY_EPS) {
+    return "Short";
+  }
+  return null;
 }
 
 export function buildReceivePlan(lines: ReceiveLineInput[]): BuildReceivePlanResult {
@@ -61,31 +109,63 @@ export function buildReceivePlan(lines: ReceiveLineInput[]): BuildReceivePlanRes
     if (
       !Number.isFinite(line.goodQty) ||
       !Number.isFinite(line.damagedQty) ||
+      !Number.isFinite(line.notDeliveredQty) ||
       line.goodQty < 0 ||
-      line.damagedQty < 0
+      line.damagedQty < 0 ||
+      line.notDeliveredQty < 0
     ) {
       return { ok: false, error: "invalid_qty" };
     }
 
-    if (line.goodQty + line.damagedQty > line.outstandingQty + 1e-9) {
+    if (line.goodQty > line.outstandingQty + QTY_EPS) {
       return { ok: false, error: "over_receive" };
     }
 
-    const remaining = remainingAfterReceive(line.outstandingQty, line.goodQty, line.damagedQty);
-    const shortClosed = line.cancelRemaining && remaining > 1e-9 ? remaining : 0;
-    if (line.goodQty + line.damagedQty + shortClosed <= 0) {
+    const discrepancy = receiveDiscrepancyQty(line.outstandingQty, line.goodQty);
+
+    if (discrepancy <= QTY_EPS) {
+      if (line.damagedQty > QTY_EPS || line.notDeliveredQty > QTY_EPS) {
+        return { ok: false, error: "classification_mismatch" };
+      }
+      if (line.goodQty <= QTY_EPS) {
+        continue;
+      }
+      planned.push({
+        productId: line.productId,
+        receiveQty: line.goodQty,
+        damagedQty: 0,
+        rejectedQty: 0,
+        shortClosedQty: 0,
+        discrepancyQty: 0,
+        remainingAfter: 0,
+        remainingAction: null,
+        discrepancyKind: null,
+      });
       continue;
     }
 
-    const discrepancyKind = line.damagedQty > 0 ? "Damaged" : shortClosed > 0 ? "Short" : null;
+    if (!isClassificationComplete(discrepancy, line.damagedQty, line.notDeliveredQty)) {
+      return { ok: false, error: "classification_incomplete" };
+    }
+
+    const classified = line.damagedQty + line.notDeliveredQty;
+    if (Math.abs(classified - discrepancy) > QTY_EPS) {
+      return { ok: false, error: "classification_mismatch" };
+    }
+
+    const shortClosed = line.cancelRemaining ? discrepancy : 0;
+    const remainingAfter = discrepancy - shortClosed;
 
     planned.push({
       productId: line.productId,
       receiveQty: line.goodQty,
       damagedQty: line.damagedQty,
+      rejectedQty: line.notDeliveredQty,
       shortClosedQty: shortClosed,
-      remainingAfter: remaining - shortClosed,
-      discrepancyKind,
+      discrepancyQty: discrepancy,
+      remainingAfter,
+      remainingAction: line.cancelRemaining ? "cancel_remaining" : "deliver_later",
+      discrepancyKind: resolveDiscrepancyKind(line.damagedQty, line.notDeliveredQty),
     });
   }
 

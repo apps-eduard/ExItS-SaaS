@@ -22,6 +22,7 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { cn } from "@/lib/cn";
 import { OrganizationQueryGate } from "@/runtime/OrganizationQueryGate";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -35,6 +36,21 @@ type EditMode = "BranchDefault" | "Custom" | "NotMonitored";
 function formatQty(value: number | null | undefined): string {
   if (value == null) return "—";
   return Number.isInteger(value) ? String(value) : String(value);
+}
+
+function availableQty(item: {
+  onHandQuantity: number;
+  availableQuantity?: number | null;
+  reservedQuantity?: number | null;
+}): number {
+  if (item.availableQuantity != null && Number.isFinite(item.availableQuantity)) {
+    return item.availableQuantity;
+  }
+  const reserved =
+    item.reservedQuantity != null && Number.isFinite(item.reservedQuantity)
+      ? Math.max(0, item.reservedQuantity)
+      : 0;
+  return Math.max(0, item.onHandQuantity - reserved);
 }
 
 function monitoringLabel(
@@ -53,6 +69,11 @@ function statusLabel(item: PosInventoryAccountDto): string {
 
 export function LowStockSettingsPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "inventory",
+    backLabel: t("inventory.open"),
+    backTestId: "page-header-back-inventory",
+  });
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const allowManage = canManageInventory(sessionGrant);
@@ -298,8 +319,7 @@ export function LowStockSettingsPage() {
             "{branch}",
             boundWorkspace.branchName ?? boundWorkspace.branchId,
           )}
-          backTo="/inventory"
-          backLabel={t("inventory.open")}
+          {...smartBack}
         />
 
         {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
@@ -525,7 +545,7 @@ export function LowStockSettingsPage() {
                   <th className="p-2 font-semibold">{t("lowStockSettings.product")}</th>
                   <th className="p-2 font-semibold">{t("lowStockSettings.skuBarcode")}</th>
                   <th className="p-2 font-semibold">{t("lowStockSettings.category")}</th>
-                  <th className="p-2 font-semibold">{t("lowStockSettings.onHand")}</th>
+                  <th className="p-2 font-semibold">{t("inventory.available")}</th>
                   <th className="p-2 font-semibold">{t("lowStockSettings.lowStockAt")}</th>
                   <th className="p-2 font-semibold">{t("lowStockSettings.reorderQty")}</th>
                   <th className="p-2 font-semibold">{t("lowStockSettings.status")}</th>
@@ -557,7 +577,7 @@ export function LowStockSettingsPage() {
                       {[item.sku, item.barcode].filter(Boolean).join(" · ") || "—"}
                     </td>
                     <td className="p-2">{item.categoryName || "—"}</td>
-                    <td className="p-2">{formatQty(item.onHandQuantity)}</td>
+                    <td className="p-2">{formatQty(availableQty(item))}</td>
                     <td className="p-2">
                       {item.monitoringMode === "NotMonitored" ? "—" : formatQty(item.reorderLevel)}
                     </td>
@@ -597,7 +617,7 @@ export function LowStockSettingsPage() {
                     <input type="checkbox" checked={allPageSelected} onChange={togglePageSelection} />
                   </th>
                   <th className="p-2">{t("lowStockSettings.product")}</th>
-                  <th className="p-2">{t("lowStockSettings.onHand")}</th>
+                  <th className="p-2">{t("inventory.available")}</th>
                   <th className="p-2">{t("lowStockSettings.lowStockAt")}</th>
                   <th className="p-2">{t("lowStockSettings.status")}</th>
                   <th className="p-2">{t("lowStockSettings.monitoring")}</th>
@@ -628,7 +648,7 @@ export function LowStockSettingsPage() {
                         {[item.sku, item.categoryName].filter(Boolean).join(" · ")}
                       </div>
                     </td>
-                    <td className="p-2">{formatQty(item.onHandQuantity)}</td>
+                    <td className="p-2">{formatQty(availableQty(item))}</td>
                     <td className="p-2">
                       {item.monitoringMode === "NotMonitored" ? "—" : formatQty(item.reorderLevel)}
                     </td>
@@ -679,7 +699,7 @@ export function LowStockSettingsPage() {
                     <div className="font-semibold">{item.name}</div>
                     <div className="mt-1 grid grid-cols-3 gap-1 text-[length:var(--exits-text-xs)]">
                       <span>
-                        {t("lowStockSettings.onHand")}: {formatQty(item.onHandQuantity)}
+                        {t("inventory.available")}: {formatQty(availableQty(item))}
                       </span>
                       <span>
                         {t("lowStockSettings.lowStockAt")}:{" "}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Package, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -111,7 +111,7 @@ export function WasteLossListPage() {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.wasteLossId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/inventory/waste-loss/${item.wasteLossId}`}
                 className="exits-list__card waste-loss-row block min-w-0 text-foreground no-underline"
                 data-testid={`waste-loss-row-${item.wasteLossId}`}
@@ -134,7 +134,7 @@ export function WasteLossListPage() {
                   </StatusChip>
                   <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           );
         })}

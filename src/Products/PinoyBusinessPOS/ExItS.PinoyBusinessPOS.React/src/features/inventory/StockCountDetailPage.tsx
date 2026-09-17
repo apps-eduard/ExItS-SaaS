@@ -21,6 +21,7 @@ import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -54,6 +55,11 @@ function countedMapFromServer(count: StockCountDto): Record<string, string> {
 
 export function StockCountDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "stockCounts",
+    backLabel: t("stockCount.backList"),
+    backTestId: "page-header-back-stock-counts",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const { stockCountId = "" } = useParams();
@@ -298,9 +304,7 @@ export function StockCountDetailPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="stock-count-detail-missing">
         <PageHeader
           title={t("stockCount.title")}
-          backTo="/inventory/stock-counts"
-          backLabel={t("stockCount.backList")}
-          backTestId="page-header-back-stock-counts"
+          {...smartBack}
         />
         <ErrorState title={t("stockCount.errorTitle")} detail={t("stockCount.notFound")} />
       </div>
@@ -429,9 +433,7 @@ export function StockCountDetailPage() {
             ? `${t("stockCount.countNumber")}: ${count.countNumber}`
             : t("stockCount.draftNumber")
         }
-        backTo="/inventory/stock-counts"
-        backLabel={t("stockCount.backList")}
-        backTestId="page-header-back-stock-counts"
+        {...smartBack}
       />
 
       {!online ? (

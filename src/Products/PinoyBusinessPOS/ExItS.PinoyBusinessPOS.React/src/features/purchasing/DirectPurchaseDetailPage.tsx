@@ -36,6 +36,8 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
+import type { SmartBackLocationState } from "@/navigation/smart-back";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useBrowserOnline } from "@/connectivity/browser-online";
@@ -99,10 +101,17 @@ export function DirectPurchaseDetailPage() {
   const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const smartBack = usePageSmartBack({
+    fallback: "directPurchases",
+    backLabel: t("purchasing.backDirect"),
+    backTestId: "page-header-back-purchasing",
+  });
 
   useEffect(() => {
-    const flash = (location.state as { receiveMarginWarning?: ReceiveMarginWarningFlash } | null)
-      ?.receiveMarginWarning;
+    const state = location.state as
+      | (SmartBackLocationState & { receiveMarginWarning?: ReceiveMarginWarningFlash })
+      | null;
+    const flash = state?.receiveMarginWarning;
     if (!flash || !(flash.count > 0)) {
       return;
     }
@@ -117,7 +126,10 @@ export function DirectPurchaseDetailPage() {
         reviewPrices: t("purchasing.reviewPrices"),
       }),
     );
-    navigate(location.pathname, { replace: true, state: {} });
+    const preserved: SmartBackLocationState | Record<string, never> = state?.returnTo
+      ? { returnTo: state.returnTo, smartBack: true }
+      : {};
+    navigate(location.pathname, { replace: true, state: preserved });
   }, [location.pathname, location.state, navigate, showToast, t]);
 
   useEffect(() => {
@@ -359,9 +371,7 @@ export function DirectPurchaseDetailPage() {
       <PageHeader
         title={receipt.receiptNumber}
         description={t("purchasing.directDetailLede")}
-        backTo="/purchasing/direct-purchases"
-        backLabel={t("purchasing.backDirect")}
-        backTestId="page-header-back-purchasing"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("purchasing.errorTitle")} detail={error} /> : null}

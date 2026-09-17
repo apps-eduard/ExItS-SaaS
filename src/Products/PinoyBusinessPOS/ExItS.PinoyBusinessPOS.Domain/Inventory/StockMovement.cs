@@ -1005,11 +1005,19 @@ public sealed class StockMovement
         DateTimeOffset utcNow,
         StockMovementId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
-        Guid? branchId = null)
+        Guid? branchId = null,
+        Guid? fulfillmentSourceId = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
         EnsureConnectedPurchaseOrderId(connectedPurchaseOrderId);
+        if (fulfillmentSourceId is Guid waveSource && waveSource == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidStockMovementId,
+                "Fulfillment source id must not be empty.");
+        }
+
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
         return new StockMovement(
             id ?? StockMovementId.New(),
@@ -1020,7 +1028,7 @@ public sealed class StockMovement
             -absolute,
             ConnectedPurchaseFulfillmentReason,
             StockMovementSourceType.ConnectedPurchaseOrder,
-            connectedPurchaseOrderId,
+            fulfillmentSourceId ?? connectedPurchaseOrderId,
             utcNow,
             actorId,
             branchId);

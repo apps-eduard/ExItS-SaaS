@@ -319,6 +319,7 @@ public sealed class InventoryQueryService
 
     private static PosInventoryAccountDto MapFromBranchRow(BranchInventoryListRow row)
     {
+        var available = row.BranchAvailable;
         var stockStatus = string.Equals(
                 row.MonitoringMode,
                 InventoryReorderMonitoringModes.NotMonitored,
@@ -326,7 +327,7 @@ public sealed class InventoryQueryService
             ? "—"
             : row.IsTracked
                 ? InventoryStockStatuses.ToCode(
-                    InventoryStockStatuses.Derive(row.IsTracked, row.BranchOnHand, row.ReorderLevel))
+                    InventoryStockStatuses.Derive(row.IsTracked, available, row.ReorderLevel))
                 : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
@@ -358,7 +359,9 @@ public sealed class InventoryQueryService
             row.Barcode,
             row.CategoryId,
             row.CategoryName,
-            row.MonitoringMode);
+            row.MonitoringMode,
+            row.BranchReserved,
+            available);
     }
 
     public static PosInventoryAccountDto Map(
@@ -374,13 +377,20 @@ public sealed class InventoryQueryService
     {
         var isTracked = account?.IsTracked ?? false;
         var onHand = branchRead?.BranchOnHand ?? account?.OnHandQuantity ?? 0m;
+        var reserved = branchRead?.BranchReserved ?? account?.ReservedQuantity ?? 0m;
+        var available = branchRead?.BranchAvailable ?? account?.AvailableQuantity ?? onHand - reserved;
+        if (available < 0m)
+        {
+            available = 0m;
+        }
+
         var reorder = branchRead?.ReorderLevel ?? account?.ReorderLevel;
         var reorderQty = branchRead?.ReorderQuantity ?? account?.ReorderQuantity;
         var isLow = branchRead?.IsLowStock ?? account?.IsLowStock ?? false;
         var isReorderSuggested = branchRead?.IsReorderSuggested ?? account?.IsReorderSuggested ?? false;
         var suggestedQty = branchRead?.SuggestedOrderQuantity ?? account?.SuggestedOrderQuantity;
         var stockStatus = isTracked
-            ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, onHand, reorder))
+            ? InventoryStockStatuses.ToCode(InventoryStockStatuses.Derive(isTracked, available, reorder))
             : InventoryStockStatuses.ToCode(InventoryStockStatus.InStock);
 
         return new PosInventoryAccountDto(
@@ -407,7 +417,14 @@ public sealed class InventoryQueryService
             expiredQuantity,
             nearExpiryQuantity,
             hasOpeningStock,
-            branchRead?.OrganizationOnHand ?? account?.OnHandQuantity);
+            branchRead?.OrganizationOnHand ?? account?.OnHandQuantity,
+            product.Sku,
+            product.Barcode,
+            product.CategoryId?.Value,
+            null,
+            "BranchDefault",
+            reserved,
+            available);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)

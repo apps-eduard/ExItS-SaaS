@@ -72,7 +72,8 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         var grnId = Guid.NewGuid();
         var partialBody = new ReceivePurchaseOrderRequest(
             [new ReceivePurchaseOrderLineRequest(product.ProductId, 4m)],
-            grnId);
+            grnId,
+            PaymentMethodAtReceipt: "Cash");
         using var partial = Scoped(HttpMethod.Post, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}/receive", org);
         partial.Content = JsonContent.Create(partialBody, options: JsonOptions);
         AddReceiveIdempotencyHeaders(partial, grnId, partialBody);
@@ -101,7 +102,8 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
         complete.Content = JsonContent.Create(
             new ReceivePurchaseOrderRequest(
                 [new ReceivePurchaseOrderLineRequest(product.ProductId, 6m)],
-                grn2Id),
+                grn2Id,
+                PaymentMethodAtReceipt: "Cash"),
             options: JsonOptions);
         using var completeResponse = await client.SendAsync(complete);
         completeResponse.EnsureSuccessStatusCode();

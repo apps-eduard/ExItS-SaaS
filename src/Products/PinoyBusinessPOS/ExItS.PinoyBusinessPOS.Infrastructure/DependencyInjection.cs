@@ -108,6 +108,7 @@ public static class DependencyInjection
         services.AddScoped<IConnectedBuyerProductShareRepository, ConnectedBuyerProductShareRepository>();
         services.AddScoped<IBuyerSupplierProductLinkRepository, BuyerSupplierProductLinkRepository>();
         services.AddScoped<IConnectedPurchaseOrderRepository, ConnectedPurchaseOrderRepository>();
+        services.AddScoped<IConnectedPoInventoryReservationRepository, ConnectedPoInventoryReservationRepository>();
         services.AddScoped<IRegisterRepository, RegisterRepository>();
         services.AddScoped<IPosOperationalSetupRepository, OperationalSetupRepository>();
         services.AddScoped<IOrganizationOnboardingProgressRepository, OrganizationOnboardingProgressRepository>();

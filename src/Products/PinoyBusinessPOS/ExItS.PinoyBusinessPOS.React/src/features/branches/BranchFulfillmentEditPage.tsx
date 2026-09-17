@@ -38,6 +38,7 @@ import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import {
   formatCoordinate,
   isMapProviderConfigured,
@@ -125,6 +126,19 @@ export function BranchFulfillmentEditPage() {
       const branch = branches.find((b) => b.id === branchId) ?? null;
       return { branch, readiness, hours, areas, branchCount: branches.length };
     },
+  });
+
+  const branchFallbackPath = !canAccess
+    ? pageBackNav.org.to
+    : branchFulfillmentBackPath(branchId);
+  const branchFallbackLabel =
+    !canAccess || detailQuery.data?.branchCount === 1
+      ? t(pageBackNav.org.labelKey)
+      : t(pageBackNav.orgBranches.labelKey);
+  const smartBack = usePageSmartBack({
+    fallback: branchFallbackPath,
+    backLabel: branchFallbackLabel,
+    backTestId: "page-header-back-org",
   });
 
   const supplierSummaryQuery = useQuery({
@@ -260,9 +274,7 @@ export function BranchFulfillmentEditPage() {
         <PageHeader
           title={t("branches.editTitle")}
           description={t("branches.denied")}
-          backTo={pageBackNav.org.to}
-          backLabel={t(pageBackNav.org.labelKey)}
-          backTestId="page-header-back-org"
+          {...smartBack}
         />
       </div>
     );
@@ -281,9 +293,7 @@ export function BranchFulfillmentEditPage() {
         <PageHeader
           title={t("branches.editTitle")}
           description={t("branches.editLede")}
-          backTo={pageBackNav.orgBranches.to}
-          backLabel={t(pageBackNav.orgBranches.labelKey)}
-          backTestId="page-header-back-org"
+          {...smartBack}
         />
         <ErrorState title={t("branches.notFound")} detail={t("branches.editLede")} />
       </div>
@@ -299,11 +309,6 @@ export function BranchFulfillmentEditPage() {
     return <Navigate to={`/org/branches/${branch.id}`} replace />;
   }
   const currentReadiness = readiness ?? detailQuery.data.readiness;
-  const branchBackPath = branchFulfillmentBackPath(branchId);
-  const branchBackLabel =
-    detailQuery.data.branchCount === 1
-      ? t(pageBackNav.org.labelKey)
-      : t(pageBackNav.orgBranches.labelKey);
 
   async function refreshAreasAndReadiness() {
     if (!organizationId) return;
@@ -612,9 +617,7 @@ export function BranchFulfillmentEditPage() {
       <PageHeader
         title={branch.name}
         description={t("branches.editLede")}
-        backTo={branchBackPath}
-        backLabel={branchBackLabel}
-        backTestId="page-header-back-org"
+        {...smartBack}
       />
 
       {error ? (

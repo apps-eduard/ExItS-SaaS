@@ -350,20 +350,20 @@ public sealed class InventoryAccount
     }
 
     public InventoryStockStatus StockStatus =>
-        InventoryStockStatuses.Derive(IsTracked, OnHandQuantity, ReorderLevel);
+        InventoryStockStatuses.Derive(IsTracked, AvailableQuantity, ReorderLevel);
 
     public bool IsLowStock =>
         IsTracked
         && ReorderLevel is not null
-        && OnHandQuantity > 0m
-        && OnHandQuantity <= ReorderLevel.Value;
+        && AvailableQuantity > 0m
+        && AvailableQuantity <= ReorderLevel.Value;
 
     public bool IsReorderSuggested =>
-        IsTracked && InventoryStockStatuses.IsReorderSuggested(OnHandQuantity, ReorderLevel);
+        IsTracked && InventoryStockStatuses.IsReorderSuggested(AvailableQuantity, ReorderLevel);
 
     public decimal? SuggestedOrderQuantity =>
         IsTracked
-            ? InventoryStockStatuses.SuggestedOrderQuantity(OnHandQuantity, ReorderLevel, ReorderQuantity)
+            ? InventoryStockStatuses.SuggestedOrderQuantity(AvailableQuantity, ReorderLevel, ReorderQuantity)
             : null;
 
     public static decimal? NormalizeReorderLevel(decimal? reorderLevel, UnitOfMeasure unitOfMeasure)

@@ -2,6 +2,8 @@
 export type ConnectedPoPaymentMethodCode =
   | "Cash"
   | "BankTransfer"
+  | "BankDeposit"
+  | "Check"
   | "ManualGCash"
   | "Utang";
 
@@ -23,6 +25,16 @@ export const CONNECTED_PO_PAYMENT_OPTIONS: readonly ConnectedPoPaymentOption[] =
     code: "BankTransfer",
     labelKey: "purchasing.paymentMethod.bankTransfer",
     helpKey: "purchasing.paymentHelp.bankTransfer",
+  },
+  {
+    code: "BankDeposit",
+    labelKey: "purchasing.paymentMethod.bankDeposit",
+    helpKey: "purchasing.paymentHelp.bankDeposit",
+  },
+  {
+    code: "Check",
+    labelKey: "purchasing.paymentMethod.check",
+    helpKey: "purchasing.paymentHelp.check",
   },
   {
     code: "ManualGCash",

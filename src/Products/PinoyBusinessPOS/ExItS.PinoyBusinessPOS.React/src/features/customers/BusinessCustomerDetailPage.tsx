@@ -41,7 +41,7 @@ import {
 import { usePreferences } from "@/hooks/usePreferences";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
-import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -117,6 +117,11 @@ export function BusinessCustomerDetailPage() {
   const allowApproveCredit = canApproveCustomerCreditPolicy(sessionGrant);
   const allowManageBranchAccess = canManageCustomerBranchAccess(sessionGrant);
   const allowRepay = canRecordRepayment(sessionGrant);
+  const smartBack = usePageSmartBack({
+    fallback: "/customers?kind=businesses",
+    backLabel: t("customers.business.back"),
+    backTestId: "page-header-back-customers",
+  });
   const allowStatement = canViewStatement(sessionGrant);
   const [relationshipEditOpen, setRelationshipEditOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
@@ -249,9 +254,7 @@ export function BusinessCustomerDetailPage() {
       <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="business-customer-detail-error">
         <PageHeader
           title={t("customers.business.detailTitle")}
-          backTo={pageBackNav.customers.to}
-          backLabel={t(pageBackNav.customers.labelKey)}
-          backTestId="page-header-back-customers"
+          {...smartBack}
         />
         <ErrorState
           title={t("customers.business.loadFailed")}
@@ -355,9 +358,7 @@ export function BusinessCustomerDetailPage() {
       <PageHeader
         title={t("customers.business.detailTitle")}
         description={name}
-        backTo="/customers?kind=businesses"
-        backLabel={t("customers.business.back")}
-        backTestId="page-header-back-customers"
+        {...smartBack}
       />
 
       <Card className="customer-ownership-section p-4" data-testid="business-org-information">

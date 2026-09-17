@@ -82,7 +82,16 @@ public sealed record PosPurchaseOrderDto(
     string? SupplierBranchName = null,
     Guid? IntendedReceivingBranchId = null,
     DateTimeOffset? CancelledAtUtc = null,
-    Guid? CancelledByUserId = null);
+    Guid? CancelledByUserId = null,
+    string? InventoryReservationState = null,
+    DateTimeOffset? InventoryReservationExpiresAtUtc = null,
+    DateTimeOffset? RemainingClosedAtUtc = null,
+    Guid? RemainingClosedByUserId = null,
+    string? RemainingClosedReason = null,
+    decimal? FinalAcceptedValue = null,
+    decimal? CancelledRemainingValue = null,
+    decimal RefundDueAmount = 0m,
+    decimal? AmountPaidSnapshot = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -180,7 +189,15 @@ public sealed record ReceivePurchaseOrderRequest(
     decimal? PaidNow = null,
     DateOnly? DueDate = null,
     string? PaymentMethodAtReceipt = null,
-    bool EnableTrackingIfNeeded = false);
+    bool EnableTrackingIfNeeded = false,
+    string? GCashReference = null,
+    string? BankName = null,
+    string? TransferOrDepositReference = null,
+    DateOnly? SettlementDate = null,
+    string? CheckNumber = null,
+    DateOnly? CheckDate = null,
+    string? SettlementNotes = null,
+    string? CheckClearingStatus = null);
 
 public static class PurchaseMapper
 {
@@ -227,7 +244,7 @@ public static class PurchaseMapper
             PaymentTermLabel: ConnectedPoPaymentTerms.ToUiLabel(connected?.EffectivePaymentTerm ?? po.PaymentTerm),
             ProposedTotalAmount: connected?.ProposedTotalAmount,
             ConfirmedTotalAmount: connected is null ? null : connected.ConfirmedTotalAmount,
-            ConnectedLines: connected?.Lines.Select(ConnectedSupplierMapper.MapLine).ToList(),
+            ConnectedLines: connected?.Lines.Select(l => ConnectedSupplierMapper.MapLine(l)).ToList(),
             ChangesProposedAtUtc: connected?.ChangesProposedAtUtc,
             SupplierName: supplierName,
             NeedsProductSetup: po.Lines.Any(l => l.NeedsBuyerProductSetup),
@@ -236,7 +253,16 @@ public static class PurchaseMapper
             SupplierBranchName: po.SupplierBranchNameSnapshot,
             IntendedReceivingBranchId: po.IntendedReceivingBranchId,
             CancelledAtUtc: po.CancelledAtUtc,
-            CancelledByUserId: po.CancelledByUserId);
+            CancelledByUserId: po.CancelledByUserId,
+            InventoryReservationState: connected?.InventoryReservationState.ToString(),
+            InventoryReservationExpiresAtUtc: connected?.InventoryReservationExpiresAtUtc,
+            RemainingClosedAtUtc: po.RemainingClosedAtUtc,
+            RemainingClosedByUserId: po.RemainingClosedByUserId,
+            RemainingClosedReason: po.RemainingClosedReason,
+            FinalAcceptedValue: po.FinalAcceptedValue,
+            CancelledRemainingValue: po.CancelledRemainingValue,
+            RefundDueAmount: po.RefundDueAmount,
+            AmountPaidSnapshot: po.AmountPaidSnapshot);
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -1721,6 +1747,7 @@ public sealed class CancelPurchaseOrder
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
 
     public CancelPurchaseOrder(
         IPurchaseOrderRepository orders,
@@ -1728,7 +1755,8 @@ public sealed class CancelPurchaseOrder
         IPosCommercialAccessAccessor access,
         IConnectedPurchaseOrderRepository connectedOrders,
         TimeProvider? clock = null,
-        IOrganizationBusinessNotificationPublisher? notifications = null)
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
@@ -1736,6 +1764,7 @@ public sealed class CancelPurchaseOrder
         _unitOfWork = unitOfWork;
         _access = access;
         _clock = clock ?? TimeProvider.System;
+        _reservations = reservations;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -1784,6 +1813,11 @@ public sealed class CancelPurchaseOrder
 
                 // Explicit cancel/withdraw — never treat proposal decline as cancel.
                 connected.WithdrawByBuyer(utcNow);
+                if (_reservations is not null)
+                {
+                    await _reservations.ReleaseActiveAsync(connected, utcNow, cancellationToken).ConfigureAwait(false);
+                }
+
                 await _connectedOrders.UpdateAsync(connected, cancellationToken).ConfigureAwait(false);
             }
 
@@ -1828,6 +1862,7 @@ public sealed class AcceptConnectedPoChanges
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
     private readonly BusinessCustomerCreditAuthorizationService? _businessCreditAuthorization;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
 
     public AcceptConnectedPoChanges(
         IPurchaseOrderRepository orders,
@@ -1838,7 +1873,8 @@ public sealed class AcceptConnectedPoChanges
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IConnectedSupplierRelationshipRepository? relationships = null,
-        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null)
+        BusinessCustomerCreditAuthorizationService? businessCreditAuthorization = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
@@ -1849,6 +1885,7 @@ public sealed class AcceptConnectedPoChanges
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
         _businessCreditAuthorization = businessCreditAuthorization;
+        _reservations = reservations;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -1886,6 +1923,11 @@ public sealed class AcceptConnectedPoChanges
             }
 
             var utcNow = _clock.GetUtcNow();
+            if (_reservations is not null)
+            {
+                await _reservations.ExpireIfNeededAsync(connected, utcNow, cancellationToken).ConfigureAwait(false);
+            }
+
             if (connected.Status == ConnectedPurchaseOrderStatus.Accepted)
             {
                 return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));
@@ -1915,6 +1957,13 @@ public sealed class AcceptConnectedPoChanges
             }
 
             connected.AcceptProposedChanges(utcNow, actorId == Guid.Empty ? null : actorId);
+            if (_reservations is not null)
+            {
+                await _reservations
+                    .ConfirmTemporaryOnBuyerAcceptAsync(connected, actorId, utcNow, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             await ConnectedPoConfirmation
                 .AlignBuyerOutstandingAsync(existing, connected, _links, utcNow, cancellationToken)
                 .ConfigureAwait(false);
@@ -1966,6 +2015,7 @@ public sealed class DeclineConnectedPoChanges
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
 
     public DeclineConnectedPoChanges(
         IPurchaseOrderRepository orders,
@@ -1974,7 +2024,8 @@ public sealed class DeclineConnectedPoChanges
         IPosCommercialAccessAccessor access,
         TimeProvider? clock = null,
         IOrganizationBusinessNotificationPublisher? notifications = null,
-        IConnectedSupplierRelationshipRepository? relationships = null)
+        IConnectedSupplierRelationshipRepository? relationships = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = orders;
         _connectedOrders = connectedOrders;
@@ -1983,6 +2034,7 @@ public sealed class DeclineConnectedPoChanges
         _clock = clock ?? TimeProvider.System;
         _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
         _relationships = relationships!;
+        _reservations = reservations;
     }
 
     public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
@@ -2026,6 +2078,11 @@ public sealed class DeclineConnectedPoChanges
             }
 
             connected.RejectProposedChanges(utcNow, actorId == Guid.Empty ? null : actorId);
+            if (_reservations is not null)
+            {
+                await _reservations.ReleaseActiveAsync(connected, utcNow, cancellationToken).ConfigureAwait(false);
+            }
+
             await _connectedOrders.UpdateAsync(connected, cancellationToken).ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -2071,6 +2128,7 @@ public sealed class ReceivePurchaseOrder
     private readonly CreateSupplierPayableFromReceipt _createPayable;
     private readonly PartyBranchAccessService? _branchAccess;
     private readonly IBusinessCreditEntryRepository? _businessCredits;
+    private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -2084,7 +2142,8 @@ public sealed class ReceivePurchaseOrder
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IBuyerSupplierProductLinkRepository? links = null,
         PartyBranchAccessService? branchAccess = null,
-        IBusinessCreditEntryRepository? businessCredits = null)
+        IBusinessCreditEntryRepository? businessCredits = null,
+        ConnectedPoInventoryReservationService? reservations = null)
     {
         _orders = orders;
         _products = products;
@@ -2096,6 +2155,7 @@ public sealed class ReceivePurchaseOrder
         _createPayable = createPayable;
         _branchAccess = branchAccess;
         _businessCredits = businessCredits;
+        _reservations = reservations;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2223,6 +2283,10 @@ public sealed class ReceivePurchaseOrder
                     {
                         kind = parsed;
                     }
+                    else if (l.DamagedQty > 0m || l.RejectedQty > 0m)
+                    {
+                        kind = PurchaseOrderReceiveDiscrepancy.ResolveKind(l.DamagedQty, l.RejectedQty);
+                    }
 
                     if (product.TracksExpiration && l.ReceiveQty > 0m && l.ExpiryDate is null)
                     {
@@ -2245,6 +2309,20 @@ public sealed class ReceivePurchaseOrder
                 })
                 .ToList();
 
+            var effectivePaymentTerm = connected?.EffectivePaymentTerm ?? existing.PaymentTerm;
+            var receivedAmountPreview = GoodsReceiptLine.SumGoodLineTotals(existing, receiveLines);
+            var paymentResolution = PoReceiptPaymentMethodLock.Validate(
+                effectivePaymentTerm,
+                receivedAmountPreview,
+                request);
+            if (!paymentResolution.IsSuccess)
+            {
+                return ApplicationResult<PosGoodsReceiptDto>.Failure(
+                    paymentResolution.ErrorCode!,
+                    paymentResolution.ErrorMessage!);
+            }
+
+            var receiptPayment = paymentResolution.Value!;
             var utcNow = _clock.GetUtcNow();
             var businessDate = GoodsReceiptNumbers.BusinessDateOf(utcNow);
             var receivingBranch = PosBranchId.From(receivingBranchId);
@@ -2271,7 +2349,8 @@ public sealed class ReceivePurchaseOrder
                             receivingBranchId: receivingBranch,
                             id: request.GoodsReceiptId is Guid grnId && grnId != Guid.Empty
                                 ? GoodsReceiptId.From(grnId)
-                                : null);
+                                : null,
+                            settlement: receiptPayment.Settlement);
                         return (existing, grn);
                     },
                     async (grn, po, ct) =>
@@ -2292,16 +2371,16 @@ public sealed class ReceivePurchaseOrder
                         var receivedAmount = SaleMoney.RoundMoney(
                             grn.Lines.Sum(l => SaleMoney.RoundMoney(l.ReceivedQty * l.UnitPurchaseCostSnapshot)));
                         var paidAtReceipt = ConnectedPoUtangObligationProjection.ResolvePaidAtReceipt(
-                            connected?.EffectivePaymentTerm ?? ConnectedPoPaymentTerm.Cash,
+                            effectivePaymentTerm,
                             receivedAmount,
-                            request.PaidNow);
+                            receiptPayment.PaidNow);
 
                         await _createPayable
                             .CreateFromGoodsReceiptAsync(
                                 grn,
                                 paidAtReceipt,
                                 request.DueDate,
-                                request.PaymentMethodAtReceipt,
+                                receiptPayment.PaymentMethodAtReceipt,
                                 actorId,
                                 utcNow,
                                 ct)
@@ -2345,6 +2424,26 @@ public sealed class ReceivePurchaseOrder
                                     persistChanges: false,
                                     cancellationToken: ct)
                                 .ConfigureAwait(false);
+                        }
+
+                        if (connected is not null)
+                        {
+                            if (po.Status == PurchaseOrderStatus.PartiallyReceived
+                                && connected.Status == ConnectedPurchaseOrderStatus.Fulfilled)
+                            {
+                                // Outstanding remains — reopen so seller must prepare/ship remaining.
+                                connected.ReopenForRemainingFulfillment(utcNow);
+                                await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
+                            }
+                            else if (po.Status == PurchaseOrderStatus.Received
+                                && _reservations is not null)
+                            {
+                                // OutstandingQty == 0 (all good-received and/or cancelled remaining).
+                                await _reservations
+                                    .ReleaseActiveAsync(connected, utcNow, ct)
+                                    .ConfigureAwait(false);
+                                await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
+                            }
                         }
                     },
                     cancellationToken)

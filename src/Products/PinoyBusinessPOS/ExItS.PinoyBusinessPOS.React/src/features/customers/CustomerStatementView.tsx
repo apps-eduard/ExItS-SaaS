@@ -1,6 +1,5 @@
 import { Banknote, CircleDollarSign, Receipt, Users, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -19,6 +18,7 @@ import {
   type StatementEntryFilter,
 } from "@/features/customers/customer-statement-view";
 import { useI18n } from "@/i18n/I18nProvider";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 
 export type CustomerStatementViewProps = {
   testId: string;
@@ -249,13 +249,13 @@ export function CustomerStatementView({
                           </td>
                           <td className="max-w-[24rem] px-3 py-2.5 align-middle text-muted">
                             {line.sourceSaleId ? (
-                              <Link
+                              <AppLinkWithReturn
                                 to={`/sell/sales/${line.sourceSaleId}/summary`}
                                 className="line-clamp-2 font-medium text-[var(--exits-primary)] underline-offset-2 hover:underline"
                                 data-testid={`statement-sale-link-${line.entryId}`}
                               >
                                 {description}
-                              </Link>
+                              </AppLinkWithReturn>
                             ) : (
                               <span className="line-clamp-2">{description}</span>
                             )}

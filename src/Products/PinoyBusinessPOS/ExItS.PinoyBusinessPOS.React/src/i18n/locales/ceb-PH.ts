@@ -3840,6 +3840,40 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "inventory.onHand": "Naay stock",
 
+  "inventory.reserved": "Reserved",
+
+  "inventory.available": "Available",
+
+  "inventory.availableQty": "{qty} {uom} available",
+
+  "inventory.reservedBadge": "{qty} reserved",
+
+  "inventory.viewReservations": "Tan-awa ang reservations",
+
+  "inventory.reservationsTitle": "Stock reservations",
+
+  "inventory.reservationsClose": "Close",
+
+  "inventory.reservationsLoading": "Loading reservations…",
+
+  "inventory.reservationsEmpty": "Walay active reservations",
+
+  "inventory.reservationsEmptyDetail": "Reserved stock mo-appear dinhi kung ang purchase orders mag-hold og inventory.",
+
+  "inventory.reservationTypeTemporary": "Temporary proposal",
+
+  "inventory.reservationTypeConfirmed": "Confirmed order",
+
+  "inventory.reservationStatusTemporary": "Temporary",
+
+  "inventory.reservationStatusConfirmed": "Confirmed",
+
+  "inventory.reservationExpires": "Expires {when}",
+
+  "inventory.reservationCreated": "Created {when}",
+
+  "inventory.viewPurchaseOrder": "Tan-awa ang purchase order",
+
   "inventory.onHandAtBranch": "Stock sa {branch}: {qty} {uom}",
 
   "inventory.organizationInventory": "Organization inventory",
@@ -5217,7 +5251,33 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.deliverTo": "Ihatud / tumanon gikan sa",
 
   "incomingOrders.detailLede": "Susiha ang order snapshot gikan sa buyer. Ang pagdawat dili mag-usab sa inventory.",
-
+  "incomingOrders.shortageWarning": "Requested quantity exceeds available stock.",
+  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} — confirm {confirm} or propose changes.",
+  "incomingOrders.acceptBlockedShortage": "Exact accept is blocked while any line exceeds available stock. Propose changes instead.",
+  "incomingOrders.proposeChanges": "Propose changes",
+  "incomingOrders.proposeNoMaterialChanges": "Adjust at least one confirmed quantity before proposing changes.",
+  "incomingOrders.stockAdjustmentRequired": "Stock adjustment required",
+  "incomingOrders.stockAdjustmentDetail": "{shortageCount} of {totalCount} items does not have enough available stock.",
+  "incomingOrders.stockAdjustmentHint": "Review the highlighted quantities and adjust the confirmed quantity before proposing changes.",
+  "incomingOrders.stockAvailable": "Stock available",
+  "incomingOrders.stockAvailableDetail": "All requested quantities are currently available.",
+  "incomingOrders.stockAvailableHint": "Accepting the order will reserve these quantities.",
+  "incomingOrders.colRequestedQty": "Requested qty",
+  "incomingOrders.colOnHand": "On hand",
+  "incomingOrders.colReserved": "Reserved",
+  "incomingOrders.colAvailableStock": "Available stock",
+  "incomingOrders.colConfirmQty": "Confirm qty",
+  "incomingOrders.colProposedQty": "Proposed qty",
+  "incomingOrders.colProposedLineTotal": "Proposed line total",
+  "incomingOrders.changesProposedTitle": "Changes proposed",
+  "incomingOrders.awaitingBuyerReview": "Awaiting buyer review",
+  "incomingOrders.supplierProposedChanges": "Supplier proposed changes",
+  "incomingOrders.buyerMustReviewProposal": "Buyer must review and accept these changes before the order is confirmed.",
+  "incomingOrders.originalOrderTotal": "Original order total",
+  "incomingOrders.proposedOrderTotal": "Proposed order total",
+  "incomingOrders.proposalDifference": "Difference",
+  "incomingOrders.withdrawProposal": "Withdraw proposal",
+  "incomingOrders.unavailable": "Unavailable",
   "incomingOrders.detailTitle": "Incoming order",
 
   "incomingOrders.empty": "Wala pay incoming orders",
@@ -5241,6 +5301,41 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.loadFailed": "Dili ma-load ang incoming orders.",
 
   "incomingOrders.markReady": "Markahi nga andam",
+  "incomingOrders.markReadyRemaining": "Markahi ang nahabilin nga andam",
+  "incomingOrders.prepareRemaining": "Andamon ang nahabilin",
+  "incomingOrders.prepareRemainingItems": "Prepare remaining items",
+  "incomingOrders.closeRemaining": "Close remaining",
+  "incomingOrders.closeRemainingTitle": "Close remaining quantity?",
+  "incomingOrders.closeRemainingBody":
+    "The remaining items will be cancelled and this purchase order will be completed based on goods actually received.",
+  "incomingOrders.closeRemainingReason": "Reason",
+  "incomingOrders.closeRemainingConfirm": "Close remaining",
+  "incomingOrders.goodReceivedValue": "Good received value",
+  "incomingOrders.remainingCancelledValue": "Remaining qty/value being cancelled",
+  "incomingOrders.paymentReceived": "Payment received",
+  "incomingOrders.refundDue": "Refund due",
+  "incomingOrders.statusCompletedRemainingCancelled": "Completed · Remaining quantity cancelled",
+  "incomingOrders.shortClosed": "Short closed",
+  "incomingOrders.finalAcceptedValue": "Final accepted value",
+  "incomingOrders.balanceDue": "Balance due",
+  "incomingOrders.ordered": "Ordered",
+  "incomingOrders.cancelledRemaining": "Cancelled remaining",
+  "incomingOrders.totalRemaining": "Total remaining",
+  "incomingOrders.fulfillmentProgress": "Fulfillment progress",
+  "incomingOrders.latestReceipt": "Latest goods receipt",
+  "incomingOrders.receiptHistory": "Receipt history",
+  "incomingOrders.viewReceiptDetails": "View receipt details",
+  "incomingOrders.receiptDetailTitle": "Goods receipt",
+  "incomingOrders.receiptNotFound": "Goods receipt was not found.",
+  "incomingOrders.noBuyerReceipts": "No buyer goods receipts yet.",
+  "incomingOrders.loadMoreReceipts": "Load more",
+  "incomingOrders.receiptPosted": "Posted",
+  "incomingOrders.receiptVoided": "Voided",
+  "incomingOrders.colOrdered": "Ordered",
+  "incomingOrders.colGoodReceived": "Good received",
+  "incomingOrders.colDamaged": "Damaged",
+  "incomingOrders.colMissing": "Missing / not delivered",
+  "incomingOrders.colRemainingValue": "Remaining value",
 
   "incomingOrders.noMatch": "Walay nahiuyon nga order",
 
@@ -5259,6 +5354,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.statusAccepted": "Gidawat",
 
+  "incomingOrders.statusAwaitingReceipt": "Naghulat sa receipt sa buyer",
+
   "incomingOrders.statusChangesProposed": "May gisugyot nga kausaban",
 
   "incomingOrders.statusCompleted": "Nahuman",
@@ -5267,9 +5364,15 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.statusFilter": "Status sa incoming order",
 
+  "incomingOrders.statusPartiallyReceived": "Bahin nga nadawat",
+
   "incomingOrders.statusPending": "Naghulat",
 
   "incomingOrders.statusPreparing": "Giandam",
+
+  "incomingOrders.statusReady": "Andam para sa pickup",
+
+  "incomingOrders.statusReceivedWithIssues": "Nadawat nga may isyu",
 
   "incomingOrders.statusWithdrawn": "Gibawi",
 
@@ -9399,6 +9502,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.changesAccepted": "Supplier changes accepted.",
 
   "purchasing.changesNeedApproval": "Supplier proposed changes. Accept them before receiving.",
+  "purchasing.reservedUntil": "Reserved until {datetime}",
 
   "purchasing.choiceOrder": "Create a purchase order when you will receive later ? ordering alone does not add stock.",
 
@@ -9505,13 +9609,29 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.receiveNow": "Receive now",
 
-  "purchasing.deliverLater": "Deliver later",
+  "purchasing.editReceiveNow": "Edit receive quantity",
+
+  "purchasing.deliverLater": "Deliver / replace later",
 
   "purchasing.cancelRemaining": "Cancel remaining",
 
   "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
 
   "purchasing.remainingDecisionTitle": "Remaining quantity",
+  "purchasing.discrepancyClassifyTitle": "Classify discrepancy",
+  "purchasing.discrepancyClassifyHint": "Classify the remaining quantity.",
+  "purchasing.notAcceptedQty": "{qty} was not accepted",
+  "purchasing.allDamaged": "All damaged",
+  "purchasing.allNotDelivered": "All not delivered",
+  "purchasing.notDelivered": "Not delivered",
+  "purchasing.remainingToClassify": "Remaining to classify: {qty}",
+  "purchasing.discrepancyNoteRequired": "Add a note for each discrepancy before continuing.",
+  "purchasing.discrepancyClassificationRequired": "Classify damaged and not delivered quantities before continuing.",
+  "purchasing.saveClassification": "Save classification",
+  "purchasing.classifyBeforeReview": "Classify all receipt discrepancies before reviewing the receipt.",
+  "purchasing.needsClassification": "Needs classification",
+  "purchasing.remainingActionDeliverLater": "Deliver / replace later",
+  "purchasing.remainingActionCancel": "Cancel remaining",
 
   "purchasing.activity.created": "Purchase order created",
 
@@ -9519,9 +9639,18 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.supplierAccepted": "Supplier accepted",
 
+  "purchasing.activity.supplierPreparing": "Supplier preparing",
+
+  "purchasing.activity.supplierReady": "Supplier marked ready / shipped",
+
   "purchasing.activity.supplierDeclined": "Supplier declined",
 
   "purchasing.activity.changesProposed": "Supplier proposed changes",
+  "purchasing.activity.stockReserved": "Stock reserved",
+  "purchasing.activity.proposalReservation": "Proposal stock hold",
+  "purchasing.activity.reservationConfirmed": "Reservation confirmed",
+  "purchasing.activity.reservationReleased": "Reservation released",
+  "purchasing.activity.reservationExpired": "Reservation expired",
 
   "purchasing.activity.withdrawn": "Withdrawn",
 
@@ -9532,6 +9661,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.activity.receiptReversed": "Receipt {grn} reversed",
 
   "purchasing.activity.completed": "Fully received",
+  "purchasing.activity.remainingClosed": "Remaining quantity cancelled",
 
   "purchasing.activity.empty": "No activity yet.",
 
@@ -9665,6 +9795,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.paymentMethod.cod": "COD / Pay on delivery",
 
   "purchasing.paymentMethod.bankTransfer": "Bank transfer",
+  "purchasing.paymentMethod.bankDeposit": "Bank deposit",
+  "purchasing.paymentMethod.check": "Check",
 
   "purchasing.paymentMethod.gcash": "GCash / Manual e-wallet",
 

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { StatusChip, type StatusChipTone } from "@/components/exits/StatusChip";
 import {
@@ -10,6 +9,7 @@ import {
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { cn } from "@/lib/cn";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 
 export type CustomerListCardKind = "personal" | "b2b" | "local";
 
@@ -191,7 +191,7 @@ export function CustomerListCard({
   });
 
   return (
-    <Link
+    <AppLinkWithReturn
       className={cn(
         "exits-list__card customer-row customers-card customer-list-card block min-w-0 text-foreground no-underline",
         className,
@@ -261,7 +261,7 @@ export function CustomerListCard({
         className="customer-list-card__chevron customer-row__chevron size-4 shrink-0 text-muted"
         aria-hidden
       />
-    </Link>
+    </AppLinkWithReturn>
   );
 }
 

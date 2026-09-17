@@ -38,8 +38,22 @@ function eventTitle(
       return t("purchasing.activity.supplierAccepted");
     case "supplier_declined":
       return t("purchasing.activity.supplierDeclined");
+    case "supplier_preparing":
+      return t("purchasing.activity.supplierPreparing");
+    case "supplier_ready":
+      return t("purchasing.activity.supplierReady");
     case "changes_proposed":
       return t("purchasing.activity.changesProposed");
+    case "stock_reserved":
+      return t("purchasing.activity.stockReserved");
+    case "proposal_reservation":
+      return t("purchasing.activity.proposalReservation");
+    case "reservation_confirmed":
+      return t("purchasing.activity.reservationConfirmed");
+    case "reservation_released":
+      return t("purchasing.activity.reservationReleased");
+    case "reservation_expired":
+      return t("purchasing.activity.reservationExpired");
     case "withdrawn":
       return t("purchasing.activity.withdrawn");
     case "cancelled":
@@ -48,6 +62,8 @@ function eventTitle(
       return t("purchasing.activity.receipt").replace("{grn}", event.grnNumber ?? "");
     case "receipt_reversed":
       return t("purchasing.activity.receiptReversed").replace("{grn}", event.grnNumber ?? "");
+    case "remaining_closed":
+      return t("purchasing.activity.remainingClosed");
     case "completed":
       return t("purchasing.activity.completed");
   }
@@ -124,6 +140,38 @@ export function PurchaseOrderActivityTimeline({
                     isLoading={isResolving}
                     testId={`po-activity-actor-${event.id}`}
                   />
+                </div>
+              ) : null}
+
+              {event.kind === "changes_proposed" && event.proposalSummary ? (
+                <div
+                  className="mt-2 space-y-1 text-[length:var(--exits-text-sm)]"
+                  data-testid={`po-activity-proposal-summary-${event.id}`}
+                >
+                  {event.proposalSummary.changedLines.map((line) => (
+                    <p key={`${event.id}-${line.productName}`} className="m-0">
+                      <span className="font-medium">{line.productName}</span>
+                      <span className="text-muted"> — {line.detail}</span>
+                    </p>
+                  ))}
+                  {event.proposalSummary.originalTotal != null &&
+                  event.proposalSummary.proposedTotal != null ? (
+                    <p className="m-0 text-muted">
+                      {t("incomingOrders.originalOrderTotal")}: ₱
+                      {event.proposalSummary.originalTotal.toFixed(2)}
+                      {" · "}
+                      {t("incomingOrders.proposedOrderTotal")}: ₱
+                      {event.proposalSummary.proposedTotal.toFixed(2)}
+                    </p>
+                  ) : null}
+                  {event.proposalSummary.reservationExpiresAtUtc ? (
+                    <p className="m-0 text-muted">
+                      {t("purchasing.reservedUntil").replace(
+                        "{datetime}",
+                        new Date(event.proposalSummary.reservationExpiresAtUtc).toLocaleString(),
+                      )}
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
 

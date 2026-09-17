@@ -105,13 +105,13 @@ public sealed class LowStockSettingsDomainTests
     {
         Assert.Equal(
             InventoryStockStatus.OutOfStock,
-            InventoryStockStatuses.Derive(isTracked: true, onHand: 0m, reorderLevel: 10m));
+            InventoryStockStatuses.Derive(isTracked: true, availableQuantity: 0m, reorderLevel: 10m));
         Assert.Equal(
             InventoryStockStatus.LowStock,
-            InventoryStockStatuses.Derive(isTracked: true, onHand: 5m, reorderLevel: 10m));
+            InventoryStockStatuses.Derive(isTracked: true, availableQuantity: 5m, reorderLevel: 10m));
         Assert.Equal(
             InventoryStockStatus.InStock,
-            InventoryStockStatuses.Derive(isTracked: true, onHand: 11m, reorderLevel: 10m));
+            InventoryStockStatuses.Derive(isTracked: true, availableQuantity: 11m, reorderLevel: 10m));
     }
 
     [Fact]

@@ -78,6 +78,20 @@ public sealed class InventoryReservationTests
     }
 
     [Fact]
+    public void Low_stock_uses_available_not_raw_on_hand()
+    {
+        var account = TrackedWithOnHand(3m);
+        account.SetReorderLevel(2m, UnitOfMeasure.Piece, Utc.AddMinutes(1));
+        Assert.False(account.IsLowStock);
+
+        account.Reserve(2m);
+        Assert.Equal(3m, account.OnHandQuantity);
+        Assert.Equal(1m, account.AvailableQuantity);
+        Assert.True(account.IsLowStock);
+        Assert.Equal(InventoryStockStatus.LowStock, account.StockStatus);
+    }
+
+    [Fact]
     public void Rehydrate_includes_reserved_quantity()
     {
         var id = InventoryAccountId.New();

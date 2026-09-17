@@ -4,19 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { AppProviders } from "@/app/providers";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
-import type {
-  ReceivePaymentMethodCode,
-  ReceivePaymentMode,
+import {
+  EMPTY_RECEIVE_SETTLEMENT,
+  type ReceivePaymentMethodCode,
+  type ReceivePaymentMode,
 } from "@/features/purchasing/receive-payment";
 
 function Harness({
   total = 10000,
   allowSupplierCredit = true,
   initialMode = "paidInFull" as ReceivePaymentMode,
+  lockedFromPo = false,
 }: {
   total?: number;
   allowSupplierCredit?: boolean;
   initialMode?: ReceivePaymentMode;
+  lockedFromPo?: boolean;
 }) {
   const [mode, setMode] = useState<ReceivePaymentMode>(initialMode);
   const [paidNowText, setPaidNowText] = useState(String(total));
@@ -45,6 +48,10 @@ function Harness({
         onDueDateChange={setDueDate}
         paidNowValue={paidNowValue}
         allowSupplierCredit={allowSupplierCredit}
+        lockedFromPo={lockedFromPo}
+        lockedPaymentMethodLabel={lockedFromPo ? "COD / Pay on delivery" : undefined}
+        settlementFields={EMPTY_RECEIVE_SETTLEMENT}
+        onSettlementFieldsChange={vi.fn()}
       />
     </AppProviders>
   );
@@ -105,6 +112,16 @@ describe("ReceivePaymentSection", () => {
     expect(select).toHaveValue("GCash");
     await user.selectOptions(select, "Other");
     expect(select).toHaveValue("Other");
+  });
+
+  it("locked from PO hides mode toggles and method dropdown", () => {
+    render(<Harness total={500} lockedFromPo />);
+    expect(screen.queryByTestId("receive-payment-mode")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("receive-payment-method")).not.toBeInTheDocument();
+    expect(screen.getByTestId("receive-payment-locked-method")).toHaveTextContent(
+      "COD / Pay on delivery",
+    );
+    expect(screen.getByTestId("receive-payment-locked-hint")).toBeInTheDocument();
   });
 });
 

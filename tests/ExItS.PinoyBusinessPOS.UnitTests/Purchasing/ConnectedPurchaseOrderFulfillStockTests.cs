@@ -81,6 +81,71 @@ public sealed class ConnectedPurchaseOrderFulfillStockTests
     }
 
     [Fact]
+    public async Task Remaining_wave_deducts_again_with_distinct_source_id()
+    {
+        var productId = CatalogProductId.New();
+        var (order, relationship, inventory, balances, _, _, service) =
+            Build(productId, trackedOnHand: 20m, fulfillmentQty: 10m);
+
+        await service.ApplyAsync(order, relationship, Actor, Now);
+        order.StartPreparing(Now.AddMinutes(1));
+        order.MarkFulfilled(Now.AddMinutes(2));
+        order.ReopenForRemainingFulfillment(Now.AddMinutes(3));
+        order.StartPreparing(Now.AddMinutes(4));
+
+        var remainingShip = new Dictionary<Guid, decimal> { [productId.Value] = 4m };
+        await service.ApplyAsync(
+            order,
+            relationship,
+            Actor,
+            Now.AddMinutes(5),
+            shipQtyBySupplierProduct: remainingShip);
+
+        Assert.Equal(6m, inventory.Account.OnHandQuantity);
+        Assert.Equal(2, inventory.Movements.Count);
+        Assert.Equal(order.Id.Value, inventory.Movements[0].SourceId);
+        Assert.Equal(
+            ConnectedPurchaseOrderFulfillStock.WaveFulfillmentSourceId(
+                order.Id.Value,
+                order.InventoryReservationRevision),
+            inventory.Movements[1].SourceId);
+        Assert.Equal(-10m, inventory.Movements[0].QuantityEffect);
+        Assert.Equal(-4m, inventory.Movements[1].QuantityEffect);
+        Assert.Equal(6m, balances.Get(SupplierBranchId, productId)!.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task Remaining_wave_retry_is_idempotent_for_same_revision()
+    {
+        var productId = CatalogProductId.New();
+        var (order, relationship, inventory, _, _, _, service) =
+            Build(productId, trackedOnHand: 20m, fulfillmentQty: 10m);
+
+        await service.ApplyAsync(order, relationship, Actor, Now);
+        order.StartPreparing(Now.AddMinutes(1));
+        order.MarkFulfilled(Now.AddMinutes(2));
+        order.ReopenForRemainingFulfillment(Now.AddMinutes(3));
+        order.StartPreparing(Now.AddMinutes(4));
+
+        var remainingShip = new Dictionary<Guid, decimal> { [productId.Value] = 4m };
+        await service.ApplyAsync(
+            order,
+            relationship,
+            Actor,
+            Now.AddMinutes(5),
+            shipQtyBySupplierProduct: remainingShip);
+        await service.ApplyAsync(
+            order,
+            relationship,
+            Actor,
+            Now.AddMinutes(6),
+            shipQtyBySupplierProduct: remainingShip);
+
+        Assert.Equal(6m, inventory.Account.OnHandQuantity);
+        Assert.Equal(2, inventory.Movements.Count);
+    }
+
+    [Fact]
     public void Accept_and_prepare_domain_still_do_not_mutate_inventory()
     {
         var relationship = ConnectedSupplierRelationship.Request(

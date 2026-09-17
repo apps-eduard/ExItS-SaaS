@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Plus } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
@@ -37,6 +37,7 @@ import {
 } from "@/features/purchasing/purchase-orders-list-output";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { navigateWithReturn } from "@/navigation/smart-back";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
@@ -111,6 +112,7 @@ export function PurchaseOrdersListPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [page, setPage] = useState(1);
@@ -118,6 +120,10 @@ export function PurchaseOrdersListPage() {
   const [status, setStatus] = useState<StatusFilter>("");
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  function openPurchaseOrder(purchaseOrderId: string) {
+    navigateWithReturn(navigate, `/purchasing/${purchaseOrderId}`, location);
+  }
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 200);
@@ -354,7 +360,7 @@ export function PurchaseOrdersListPage() {
                     key={po.purchaseOrderId}
                     interactive
                     data-testid={`po-row-${po.purchaseOrderId}`}
-                    onClick={() => navigate(`/purchasing/${po.purchaseOrderId}`)}
+                    onClick={() => openPurchaseOrder(po.purchaseOrderId)}
                   >
                     <ExitsTableCell cellAlign="text" className="font-medium">
                       {po.poNumber ?? t("purchasing.unnamedPo")}
@@ -385,7 +391,7 @@ export function PurchaseOrdersListPage() {
                 <ExitsTableMobileRow
                   key={po.purchaseOrderId}
                   data-testid={`po-row-mobile-${po.purchaseOrderId}`}
-                  onClick={() => navigate(`/purchasing/${po.purchaseOrderId}`)}
+                  onClick={() => openPurchaseOrder(po.purchaseOrderId)}
                 >
                   <div className="exits-table-mobile__title-row">
                     <p className="exits-table-mobile__title">

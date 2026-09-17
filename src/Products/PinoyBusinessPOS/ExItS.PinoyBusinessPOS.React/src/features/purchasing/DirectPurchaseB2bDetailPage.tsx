@@ -18,6 +18,7 @@ import {
 import { resolveCustomerSellerIdentityParts } from "@/features/documents/resolve-customer-seller-identity";
 import { CustomerPurchaseSummaryDocument } from "@/features/documents/SaleBusinessDocument";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function DirectPurchaseB2bDetailPage() {
@@ -25,6 +26,11 @@ export function DirectPurchaseB2bDetailPage() {
   const online = useBrowserOnline();
   const { saleId = "" } = useParams<{ saleId: string }>();
   const { boundWorkspace } = useWorkspace();
+  const smartBack = usePageSmartBack({
+    fallback: "directPurchases",
+    backLabel: t("purchasing.directPurchases"),
+    backTestId: "page-header-back-direct-purchases",
+  });
 
   const workspace = useMemo(
     () =>
@@ -73,12 +79,7 @@ export function DirectPurchaseB2bDetailPage() {
   if (!online) {
     return (
       <div className={pageShell} data-testid="direct-purchase-b2b-detail-page">
-        <PageHeader
-          title={t("purchasing.b2bDetailTitle")}
-          backTo="/purchasing/direct-purchases"
-          backLabel={t("purchasing.directPurchases")}
-          backTestId="page-header-back-direct-purchases"
-        />
+        <PageHeader title={t("purchasing.b2bDetailTitle")} {...smartBack} />
         <ErrorState title={t("offline.internetRequiredTitle")} detail={t("purchasing.offline")} />
       </div>
     );
@@ -91,12 +92,7 @@ export function DirectPurchaseB2bDetailPage() {
   if (query.isError || !query.data) {
     return (
       <div className={pageShell} data-testid="direct-purchase-b2b-detail-page">
-        <PageHeader
-          title={t("purchasing.b2bDetailTitle")}
-          backTo="/purchasing/direct-purchases"
-          backLabel={t("purchasing.directPurchases")}
-          backTestId="page-header-back-direct-purchases"
-        />
+        <PageHeader title={t("purchasing.b2bDetailTitle")} {...smartBack} />
         <ErrorState
           title={t("purchasing.directNotFound")}
           detail={t("purchasing.b2bDetailMissing")}
@@ -170,9 +166,7 @@ export function DirectPurchaseB2bDetailPage() {
       <PageHeader
         title={t("purchasing.b2bDetailTitle")}
         description={detail.saleNumber}
-        backTo="/purchasing/direct-purchases"
-        backLabel={t("purchasing.directPurchases")}
-        backTestId="page-header-back-direct-purchases"
+        {...smartBack}
         trailing={headerActions}
       />
 

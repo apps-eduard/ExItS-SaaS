@@ -29,7 +29,9 @@ public sealed record PosInventoryAccountDto(
     string? Barcode = null,
     Guid? CategoryId = null,
     string? CategoryName = null,
-    string MonitoringMode = "BranchDefault");
+    string MonitoringMode = "BranchDefault",
+    decimal ReservedQuantity = 0m,
+    decimal AvailableQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

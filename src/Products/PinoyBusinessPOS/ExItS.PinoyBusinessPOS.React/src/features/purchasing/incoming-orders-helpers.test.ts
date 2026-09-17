@@ -7,6 +7,7 @@ import {
   filterIncomingOrdersBySearch,
   filterIncomingOrdersByUiStatus,
   formatIncomingLineMath,
+  isIncomingOrderCompleted,
   uiFilterToApiStatus,
 } from "@/features/purchasing/incoming-orders-helpers";
 
@@ -63,7 +64,7 @@ function order(overrides: Partial<ConnectedPurchaseOrder> = {}): ConnectedPurcha
 describe("incoming-orders-helpers", () => {
   it("maps UI filters to domain statuses", () => {
     expect(uiFilterToApiStatus("pending")).toBe("New");
-    expect(uiFilterToApiStatus("completed")).toBe("Fulfilled");
+    expect(uiFilterToApiStatus("completed")).toBeUndefined();
     expect(uiFilterToApiStatus("all")).toBeUndefined();
   });
 
@@ -88,6 +89,32 @@ describe("incoming-orders-helpers", () => {
     expect(filterIncomingOrdersBySearch(rows, "missing")).toHaveLength(0);
   });
 
+  it("does not treat seller Fulfilled/ready as completed", () => {
+    const awaiting = order({
+      status: "Fulfilled",
+      displayStatus: "AwaitingBuyerReceipt",
+    });
+    const partial = order({
+      connectedPurchaseOrderId: "11111111-1111-4111-8111-111111111111",
+      status: "Accepted",
+      displayStatus: "PartiallyReceived",
+      buyerOutstandingQty: 1,
+      fulfilledAtUtc: "2026-09-04T01:00:00Z",
+    });
+    const completed = order({
+      connectedPurchaseOrderId: "22222222-2222-4222-8222-222222222222",
+      status: "Fulfilled",
+      displayStatus: "Completed",
+    });
+
+    expect(isIncomingOrderCompleted(awaiting)).toBe(false);
+    expect(isIncomingOrderCompleted(partial)).toBe(false);
+    expect(isIncomingOrderCompleted(completed)).toBe(true);
+    expect(filterIncomingOrdersByUiStatus([awaiting, partial, completed], "completed")).toEqual([
+      completed,
+    ]);
+  });
+
   it("counts status tabs and filters by UI status", () => {
     const rows = [
       order({ status: "New" }),
@@ -106,6 +133,12 @@ describe("incoming-orders-helpers", () => {
       order({
         connectedPurchaseOrderId: "44444444-4444-4444-8444-444444444444",
         status: "Fulfilled",
+        displayStatus: "AwaitingBuyerReceipt",
+      }),
+      order({
+        connectedPurchaseOrderId: "77777777-7777-4777-8777-777777777777",
+        status: "Fulfilled",
+        displayStatus: "Completed",
       }),
       order({
         connectedPurchaseOrderId: "55555555-5555-4555-8555-555555555555",
@@ -124,6 +157,7 @@ describe("incoming-orders-helpers", () => {
       declined: 1,
     });
     expect(filterIncomingOrdersByUiStatus(rows, "pending")).toHaveLength(2);
-    expect(filterIncomingOrdersByUiStatus(rows, "all")).toHaveLength(7);
+    expect(filterIncomingOrdersByUiStatus(rows, "all")).toHaveLength(8);
+    expect(filterIncomingOrdersByUiStatus(rows, "completed")).toHaveLength(1);
   });
 });

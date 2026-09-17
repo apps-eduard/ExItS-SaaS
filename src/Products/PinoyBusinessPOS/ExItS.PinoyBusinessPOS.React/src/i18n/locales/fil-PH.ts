@@ -3793,6 +3793,40 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.onHand": "On hand",
 
+  "inventory.reserved": "Reserved",
+
+  "inventory.available": "Available",
+
+  "inventory.availableQty": "{qty} {uom} available",
+
+  "inventory.reservedBadge": "{qty} reserved",
+
+  "inventory.viewReservations": "View reservations",
+
+  "inventory.reservationsTitle": "Stock reservations",
+
+  "inventory.reservationsClose": "Close",
+
+  "inventory.reservationsLoading": "Loading reservations…",
+
+  "inventory.reservationsEmpty": "No active reservations",
+
+  "inventory.reservationsEmptyDetail": "Reserved stock will appear here when purchase orders hold inventory.",
+
+  "inventory.reservationTypeTemporary": "Temporary proposal",
+
+  "inventory.reservationTypeConfirmed": "Confirmed order",
+
+  "inventory.reservationStatusTemporary": "Temporary",
+
+  "inventory.reservationStatusConfirmed": "Confirmed",
+
+  "inventory.reservationExpires": "Expires {when}",
+
+  "inventory.reservationCreated": "Created {when}",
+
+  "inventory.viewPurchaseOrder": "View purchase order",
+
   "inventory.onHandAtBranch": "On hand sa {branch}: {qty} {uom}",
 
   "inventory.organizationInventory": "Organization inventory",
@@ -5170,7 +5204,33 @@ export const filPH: Record<keyof typeof en, string> = {
   "incomingOrders.deliverTo": "Ihatid / tuparin mula sa",
 
   "incomingOrders.detailLede": "Suriin ang order snapshot mula sa buyer. Ang pagtanggap ay hindi nagbabago ng inventory.",
-
+  "incomingOrders.shortageWarning": "Requested quantity exceeds available stock.",
+  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} — confirm {confirm} or propose changes.",
+  "incomingOrders.acceptBlockedShortage": "Exact accept is blocked while any line exceeds available stock. Propose changes instead.",
+  "incomingOrders.proposeChanges": "Propose changes",
+  "incomingOrders.proposeNoMaterialChanges": "Adjust at least one confirmed quantity before proposing changes.",
+  "incomingOrders.stockAdjustmentRequired": "Stock adjustment required",
+  "incomingOrders.stockAdjustmentDetail": "{shortageCount} of {totalCount} items does not have enough available stock.",
+  "incomingOrders.stockAdjustmentHint": "Review the highlighted quantities and adjust the confirmed quantity before proposing changes.",
+  "incomingOrders.stockAvailable": "Stock available",
+  "incomingOrders.stockAvailableDetail": "All requested quantities are currently available.",
+  "incomingOrders.stockAvailableHint": "Accepting the order will reserve these quantities.",
+  "incomingOrders.colRequestedQty": "Requested qty",
+  "incomingOrders.colOnHand": "On hand",
+  "incomingOrders.colReserved": "Reserved",
+  "incomingOrders.colAvailableStock": "Available stock",
+  "incomingOrders.colConfirmQty": "Confirm qty",
+  "incomingOrders.colProposedQty": "Proposed qty",
+  "incomingOrders.colProposedLineTotal": "Proposed line total",
+  "incomingOrders.changesProposedTitle": "Changes proposed",
+  "incomingOrders.awaitingBuyerReview": "Awaiting buyer review",
+  "incomingOrders.supplierProposedChanges": "Supplier proposed changes",
+  "incomingOrders.buyerMustReviewProposal": "Buyer must review and accept these changes before the order is confirmed.",
+  "incomingOrders.originalOrderTotal": "Original order total",
+  "incomingOrders.proposedOrderTotal": "Proposed order total",
+  "incomingOrders.proposalDifference": "Difference",
+  "incomingOrders.withdrawProposal": "Withdraw proposal",
+  "incomingOrders.unavailable": "Unavailable",
   "incomingOrders.detailTitle": "Incoming order",
 
   "incomingOrders.empty": "Wala pang incoming orders",
@@ -5194,6 +5254,41 @@ export const filPH: Record<keyof typeof en, string> = {
   "incomingOrders.loadFailed": "Hindi ma-load ang incoming orders.",
 
   "incomingOrders.markReady": "Markahan bilang handa",
+  "incomingOrders.markReadyRemaining": "Markahan ang natitira bilang handa",
+  "incomingOrders.prepareRemaining": "Ihanda ang natitira",
+  "incomingOrders.prepareRemainingItems": "Ihanda ang natitirang items",
+  "incomingOrders.closeRemaining": "Isara ang natitira",
+  "incomingOrders.closeRemainingTitle": "Isara ang natitirang dami?",
+  "incomingOrders.closeRemainingBody":
+    "Kakanselahin ang natitirang items at tatapusin ang purchase order base sa mga goods na talagang natanggap.",
+  "incomingOrders.closeRemainingReason": "Dahilan",
+  "incomingOrders.closeRemainingConfirm": "Isara ang natitira",
+  "incomingOrders.goodReceivedValue": "Halaga ng good received",
+  "incomingOrders.remainingCancelledValue": "Natitirang qty/halaga na kakanselahin",
+  "incomingOrders.paymentReceived": "Natanggap na bayad",
+  "incomingOrders.refundDue": "Refund due",
+  "incomingOrders.statusCompletedRemainingCancelled": "Tapos · Kinansela ang natitirang dami",
+  "incomingOrders.shortClosed": "Short closed",
+  "incomingOrders.finalAcceptedValue": "Pinal na tinanggap na halaga",
+  "incomingOrders.balanceDue": "Balance due",
+  "incomingOrders.ordered": "In-order",
+  "incomingOrders.cancelledRemaining": "Kinanselang natitira",
+  "incomingOrders.totalRemaining": "Kabuuang natitira",
+  "incomingOrders.fulfillmentProgress": "Progreso ng fulfillment",
+  "incomingOrders.latestReceipt": "Pinakabagong goods receipt",
+  "incomingOrders.receiptHistory": "Kasaysayan ng receipt",
+  "incomingOrders.viewReceiptDetails": "Tingnan ang detalye ng receipt",
+  "incomingOrders.receiptDetailTitle": "Goods receipt",
+  "incomingOrders.receiptNotFound": "Hindi nahanap ang goods receipt.",
+  "incomingOrders.noBuyerReceipts": "Wala pang goods receipt ang buyer.",
+  "incomingOrders.loadMoreReceipts": "Mag-load pa",
+  "incomingOrders.receiptPosted": "Nai-post",
+  "incomingOrders.receiptVoided": "Na-void",
+  "incomingOrders.colOrdered": "Na-order",
+  "incomingOrders.colGoodReceived": "Good received",
+  "incomingOrders.colDamaged": "Sira / damaged",
+  "incomingOrders.colMissing": "Missing / hindi na-deliver",
+  "incomingOrders.colRemainingValue": "Natitirang value",
 
   "incomingOrders.noMatch": "Walang tumugmang order",
 
@@ -5212,6 +5307,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.statusAccepted": "Tinanggap",
 
+  "incomingOrders.statusAwaitingReceipt": "Naghihintay ng receipt ng buyer",
+
   "incomingOrders.statusChangesProposed": "May iminungkahing pagbabago",
 
   "incomingOrders.statusCompleted": "Tapos na",
@@ -5220,9 +5317,15 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.statusFilter": "Status ng incoming order",
 
+  "incomingOrders.statusPartiallyReceived": "Bahagyang natanggap",
+
   "incomingOrders.statusPending": "Nakabinbin",
 
   "incomingOrders.statusPreparing": "Inihahanda",
+
+  "incomingOrders.statusReady": "Handa para sa pickup",
+
+  "incomingOrders.statusReceivedWithIssues": "Natanggap na may isyu",
 
   "incomingOrders.statusWithdrawn": "Binawi",
 
@@ -9350,6 +9453,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.changesAccepted": "Tinanggap ang pagbabago ng supplier.",
 
   "purchasing.changesNeedApproval": "May iminungkahing pagbabago ang supplier. Tanggapin muna bago tumanggap.",
+  "purchasing.reservedUntil": "Reserved until {datetime}",
 
   "purchasing.choiceOrder": "Gumawa ng purchase order kung tatanggap ka mamaya ? ang pag-order lang ay hindi nagdadagdag ng stock.",
 
@@ -9456,13 +9560,29 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.receiveNow": "Tanggapin ngayon",
 
-  "purchasing.deliverLater": "Ihatid mamaya",
+  "purchasing.editReceiveNow": "I-edit ang receive quantity",
+
+  "purchasing.deliverLater": "Ihatid / palitan mamaya",
 
   "purchasing.cancelRemaining": "Kanselahin ang natitira",
 
   "purchasing.remainingQuestion": "Ano ang gagawin sa natitirang {qty}?",
 
   "purchasing.remainingDecisionTitle": "Natitirang dami",
+  "purchasing.discrepancyClassifyTitle": "Uriin ang discrepancy",
+  "purchasing.discrepancyClassifyHint": "Uriin ang natitirang dami.",
+  "purchasing.notAcceptedQty": "Hindi tinanggap ang {qty}",
+  "purchasing.allDamaged": "Lahat damaged",
+  "purchasing.allNotDelivered": "Lahat hindi na-deliver",
+  "purchasing.notDelivered": "Hindi na-deliver",
+  "purchasing.remainingToClassify": "Natitira pang uriin: {qty}",
+  "purchasing.discrepancyNoteRequired": "Magdagdag ng note para sa bawat discrepancy bago magpatuloy.",
+  "purchasing.discrepancyClassificationRequired": "Uriin muna ang damaged at hindi na-deliver bago magpatuloy.",
+  "purchasing.saveClassification": "I-save ang classification",
+  "purchasing.classifyBeforeReview": "Uriin ang lahat ng receipt discrepancy bago i-review ang receipt.",
+  "purchasing.needsClassification": "Kailangan uriin",
+  "purchasing.remainingActionDeliverLater": "Ihatid / palitan mamaya",
+  "purchasing.remainingActionCancel": "Kanselahin ang natitira",
 
   "purchasing.activity.created": "Nagawa ang purchase order",
 
@@ -9470,9 +9590,18 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.supplierAccepted": "Tinanggap ng supplier",
 
+  "purchasing.activity.supplierPreparing": "Inihahanda ng supplier",
+
+  "purchasing.activity.supplierReady": "Minarkahan ng supplier bilang handa / na-ship",
+
   "purchasing.activity.supplierDeclined": "Tinanggihan ng supplier",
 
   "purchasing.activity.changesProposed": "May iminungkahing pagbabago ang supplier",
+  "purchasing.activity.stockReserved": "Stock reserved",
+  "purchasing.activity.proposalReservation": "Proposal stock hold",
+  "purchasing.activity.reservationConfirmed": "Reservation confirmed",
+  "purchasing.activity.reservationReleased": "Reservation released",
+  "purchasing.activity.reservationExpired": "Reservation expired",
 
   "purchasing.activity.withdrawn": "Binawi",
 
@@ -9483,6 +9612,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.activity.receiptReversed": "Binawi ang receipt {grn}",
 
   "purchasing.activity.completed": "Ganap na natanggap",
+  "purchasing.activity.remainingClosed": "Kinansela ang natitirang dami",
 
   "purchasing.activity.empty": "Wala pang aktibidad.",
 
@@ -9624,6 +9754,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.paymentMethod.cod": "COD / Pay on delivery",
 
   "purchasing.paymentMethod.bankTransfer": "Bank transfer",
+  "purchasing.paymentMethod.bankDeposit": "Bank deposit",
+  "purchasing.paymentMethod.check": "Check",
 
   "purchasing.paymentMethod.gcash": "GCash / Manual e-wallet",
 

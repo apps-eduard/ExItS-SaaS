@@ -42,6 +42,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import { describeSupplierError } from "@/features/suppliers/supplier-errors";
@@ -96,6 +97,11 @@ export function SupplierDetailPage() {
   const { supplierId } = useParams<{ supplierId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const queryClient = useQueryClient();
+  const smartBack = usePageSmartBack({
+    fallback: "suppliers",
+    backLabel: t(pageBackNav.suppliers.labelKey),
+    backTestId: "page-header-back-suppliers",
+  });
   const [actionError, setActionError] = useState<string | null>(null);
   const [acting, setActing] = useState(false);
   const [changingLocation, setChangingLocation] = useState(false);
@@ -350,9 +356,7 @@ export function SupplierDetailPage() {
       <PageHeader
         title={supplier.name}
         description={t("suppliers.detailLede")}
-        backTo={pageBackNav.suppliers.to}
-        backLabel={t(pageBackNav.suppliers.labelKey)}
-        backTestId="page-header-back-suppliers"
+        {...smartBack}
         trailing={
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusChip tone={isActive ? "success" : "warning"}>{supplier.status}</StatusChip>

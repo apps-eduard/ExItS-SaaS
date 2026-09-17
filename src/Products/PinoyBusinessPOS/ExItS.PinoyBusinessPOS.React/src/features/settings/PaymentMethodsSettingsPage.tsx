@@ -23,6 +23,7 @@ import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -196,6 +197,11 @@ function ConfigurableMethodCard({
 
 export function PaymentMethodsSettingsPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: pageBackNav.org.to,
+    backLabel: t(pageBackNav.org.labelKey),
+    backTestId: "page-header-back-payment-methods",
+  });
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const { sessionGrant } = useWorkspace();
@@ -264,8 +270,7 @@ export function PaymentMethodsSettingsPage() {
       <div className="exits-page flex flex-col gap-3" data-testid="payment-methods-missing-org">
         <PageHeader
           title={t("paymentMethods.title")}
-          backTo={pageBackNav.org.to}
-          backLabel={t(pageBackNav.org.labelKey)}
+          {...smartBack}
         />
         <ErrorState title={t("paymentMethods.errorTitle")} detail={t("paymentMethods.orgRequired")} />
       </div>
@@ -281,8 +286,7 @@ export function PaymentMethodsSettingsPage() {
       <div className="exits-page flex flex-col gap-3" data-testid="payment-methods-error">
         <PageHeader
           title={t("paymentMethods.title")}
-          backTo={pageBackNav.org.to}
-          backLabel={t(pageBackNav.org.labelKey)}
+          {...smartBack}
         />
         <ErrorState title={t("paymentMethods.errorTitle")} detail={(query.error as Error)?.message} />
       </div>
@@ -298,9 +302,7 @@ export function PaymentMethodsSettingsPage() {
       <PageHeader
         title={t("paymentMethods.title")}
         description={t("paymentMethods.lede")}
-        backTo={pageBackNav.org.to}
-        backLabel={t(pageBackNav.org.labelKey)}
-        backTestId="page-header-back-payment-methods"
+        {...smartBack}
       />
 
       {!canManage ? (

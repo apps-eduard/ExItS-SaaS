@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { PackageSearch } from "lucide-react";
 import { canManageSuppliers, canViewPurchasing, canViewSuppliers } from "@/access/pos-capabilities";
@@ -21,6 +20,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { SearchField } from "@/components/exits/SearchField";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { StatusChip } from "@/components/exits/StatusChip";
@@ -256,7 +256,7 @@ export function SuppliersListPage() {
           const connectionChip = connectionRequestChip(supplier, relationshipStatusById, t);
           return (
           <li key={supplier.supplierId}>
-            <Link
+            <AppLinkWithReturn
               className="exits-list__card suppliers-list__card block min-w-0 text-foreground no-underline"
               to={`/suppliers/${supplier.supplierId}`}
               data-testid={`supplier-row-${supplier.supplierId}`}
@@ -300,7 +300,7 @@ export function SuppliersListPage() {
                   ) : null}
                 </span>
               ) : null}
-            </Link>
+            </AppLinkWithReturn>
           </li>
           );
         })}

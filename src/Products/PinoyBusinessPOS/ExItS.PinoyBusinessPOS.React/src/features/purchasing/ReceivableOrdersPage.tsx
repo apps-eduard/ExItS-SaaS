@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, ClipboardList } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 import {
   isPurchaseOrderReceivable,
   listPurchaseOrders,
@@ -10,28 +10,30 @@ import {
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTablePagination,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { SearchField } from "@/components/exits/SearchField";
-import { pageBackNav } from "@/navigation/page-back-nav";
-import { StatusChip } from "@/components/exits/StatusChip";
+import { StatusChip, type StatusChipTone } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useI18n } from "@/i18n/I18nProvider";
+import { pageBackNav } from "@/navigation/page-back-nav";
+import { navigateWithReturn } from "@/navigation/smart-back";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
-type ReceiptStatusFilter = "all" | "Ordered" | "PartiallyReceived";
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 
-const RECEIPT_FILTERS: Array<{
-  value: ReceiptStatusFilter;
-  key: string;
-  labelKey: "purchasing.statusAll" | "purchasing.statusOrdered" | "purchasing.statusPartial";
-}> = [
-  { value: "all", key: "all", labelKey: "purchasing.statusAll" },
-  { value: "Ordered", key: "Ordered", labelKey: "purchasing.statusOrdered" },
-  { value: "PartiallyReceived", key: "PartiallyReceived", labelKey: "purchasing.statusPartial" },
-];
-
-function statusTone(status: string): "success" | "warning" | "info" | "danger" {
+function statusTone(status: string): StatusChipTone {
   switch (status) {
     case "Ordered":
       return "success";
@@ -48,33 +50,14 @@ function poOutstandingSummary(po: PosPurchaseOrderDto) {
   return { totalOutstanding, lineCount: outstandingLines.length };
 }
 
-function matchesReceiptSearch(po: PosPurchaseOrderDto, query: string): boolean {
-  if (!query) return true;
-  const haystack = [
-    po.poNumber,
-    po.supplierName,
-    po.displayStatus,
-    po.status,
-    po.supplierReference,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query.toLowerCase());
-}
-
 export function ReceivableOrdersPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
   const online = useBrowserOnline();
   const { boundWorkspace } = useWorkspace();
-  const [search, setSearch] = useState("");
-  const [debounced, setDebounced] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ReceiptStatusFilter>("all");
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
-    return () => window.clearTimeout(handle);
-  }, [search]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const workspace = useMemo(
     () =>
@@ -102,22 +85,19 @@ export function ReceivableOrdersPage() {
     },
   });
 
-  const items = useMemo(() => {
-    const all = query.data ?? [];
-    return all.filter((po) => {
-      if (statusFilter !== "all" && po.status !== statusFilter) return false;
-      return matchesReceiptSearch(po, debounced);
-    });
-  }, [query.data, statusFilter, debounced]);
+  const items = query.data ?? [];
+  const pagedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  }, [items, page, pageSize]);
+
+  function openReceive(purchaseOrderId: string) {
+    navigateWithReturn(navigate, `/purchasing/${purchaseOrderId}/receive`, location);
+  }
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
-
-  const hasLoaded = query.isSuccess;
-  const totalReceivable = query.data?.length ?? 0;
-  const showFilteredEmpty = hasLoaded && totalReceivable > 0 && items.length === 0;
-  const showTrueEmpty = hasLoaded && totalReceivable === 0;
 
   return (
     <div
@@ -154,85 +134,112 @@ export function ReceivableOrdersPage() {
         ]}
       />
 
-      <SearchField
-        label={t("purchasing.searchReceipts")}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        onClear={() => setSearch("")}
-        placeholder={t("purchasing.searchReceipts")}
-        data-testid="receivable-search"
-        containerClassName="purchasing-receipts-page__search exits-page__search"
-      />
-
-      <ExitsChipBar
-        variant="filter"
-        ariaLabel={t("purchasing.receiptsFilter")}
-        testId="receivable-status-filter"
-        items={RECEIPT_FILTERS.map((filter) => ({
-          key: filter.key,
-          label: t(filter.labelKey),
-          state: statusFilter === filter.value ? "active" : "idle",
-          testId: `receivable-status-${filter.key}`,
-          onSelect: () => setStatusFilter(filter.value),
-        }))}
-      />
-
       {query.isLoading ? <LoadingState label={t("purchasing.loading")} /> : null}
       {query.isError ? (
         <ErrorState title={t("purchasing.errorTitle")} detail={t("purchasing.loadFailed")} />
       ) : null}
-      {showTrueEmpty ? (
+
+      {!query.isLoading && !query.isError && items.length === 0 ? (
         <EmptyState
-              align="center"
-              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
+          align="center"
+          icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
           title={t("purchasing.receiptsEmpty")}
           detail={t("purchasing.receiptsEmptyDetail")}
         />
       ) : null}
-      {showFilteredEmpty ? (
-        <EmptyState
-              variant="filtered"
-              align="center"
-              icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
-          title={t("purchasing.receiptsNoMatch")}
-          detail={t("purchasing.receiptsNoMatchDetail")}
-        />
-      ) : null}
 
-      <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="receivable-orders-list">
-        {items.map((po) => {
-          const { totalOutstanding, lineCount } = poOutstandingSummary(po);
-          return (
-            <li key={po.purchaseOrderId}>
-              <Link
-                to={`/purchasing/${po.purchaseOrderId}/receive`}
-                className="exits-list__card purchasing-row block min-w-0 text-foreground no-underline"
-                data-testid={`receivable-row-${po.purchaseOrderId}`}
-              >
-                <span className="purchasing-row__main min-w-0">
-                  <span className="exits-list__name block truncate font-semibold">
-                    {po.poNumber ?? t("purchasing.unnamedPo")}
-                  </span>
-                  <span className="purchasing-row__meta mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
-                    {po.supplierName ?? t("purchasing.unknownSupplier")} · {po.orderDate} ·{" "}
+      {!query.isLoading && !query.isError && items.length > 0 ? (
+        <ExitsTableContainer data-testid="receivable-orders-table">
+          <ExitsTable>
+            <ExitsTableHeader>
+              <ExitsTableRow>
+                <ExitsTableHead cellAlign="text">{t("purchasing.poNumber")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.supplier")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.orderDate")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="numeric">{t("purchasing.outstanding")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="text">{t("purchasing.fieldStatus")}</ExitsTableHead>
+              </ExitsTableRow>
+            </ExitsTableHeader>
+            <ExitsTableBody>
+              {pagedItems.map((po) => {
+                const { totalOutstanding } = poOutstandingSummary(po);
+                return (
+                  <ExitsTableRow
+                    key={po.purchaseOrderId}
+                    interactive
+                    data-testid={`receivable-row-${po.purchaseOrderId}`}
+                    onClick={() => openReceive(po.purchaseOrderId)}
+                  >
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {po.poNumber ?? t("purchasing.unnamedPo")}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">
+                      {po.supplierName ?? t("purchasing.unknownSupplier")}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">{po.orderDate}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                      {totalOutstanding}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">
+                      <StatusChip tone={statusTone(po.status)}>
+                        {po.displayStatus || po.status}
+                      </StatusChip>
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                );
+              })}
+            </ExitsTableBody>
+          </ExitsTable>
+
+          <ExitsTableMobile data-testid="receivable-orders-mobile">
+            {pagedItems.map((po) => {
+              const { totalOutstanding, lineCount } = poOutstandingSummary(po);
+              return (
+                <ExitsTableMobileRow
+                  key={po.purchaseOrderId}
+                  data-testid={`receivable-row-mobile-${po.purchaseOrderId}`}
+                  onClick={() => openReceive(po.purchaseOrderId)}
+                >
+                  <div className="exits-table-mobile__title-row">
+                    <p className="exits-table-mobile__title">
+                      {po.poNumber ?? t("purchasing.unnamedPo")}
+                    </p>
+                    <StatusChip tone={statusTone(po.status)}>
+                      {po.displayStatus || po.status}
+                    </StatusChip>
+                  </div>
+                  <p className="exits-table-mobile__meta">
+                    {po.supplierName ?? t("purchasing.unknownSupplier")} · {po.orderDate}
+                  </p>
+                  <p className="exits-table-mobile__math">
                     {t("purchasing.outstandingSummary")
                       .replace("{qty}", String(totalOutstanding))
                       .replace("{count}", String(lineCount))}
-                  </span>
-                </span>
-                <span className="purchasing-row__aside">
-                  <span className="purchasing-row__qty">
-                    {totalOutstanding}
-                    <span className="purchasing-row__uom">{t("purchasing.outstanding")}</span>
-                  </span>
-                  <StatusChip tone={statusTone(po.status)}>{po.displayStatus || po.status}</StatusChip>
-                  <ChevronRight className="purchasing-row__chevron size-4 shrink-0 text-muted" aria-hidden />
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                  </p>
+                </ExitsTableMobileRow>
+              );
+            })}
+          </ExitsTableMobile>
+
+          {items.length > 10 ? (
+            <ExitsTablePagination
+              page={page}
+              pageSize={pageSize}
+              total={items.length}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+              rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+              previousLabel={t("exitsTable.previous")}
+              nextLabel={t("exitsTable.next")}
+              rangeLabel={t("exitsTable.range")}
+            />
+          ) : null}
+        </ExitsTableContainer>
+      ) : null}
     </div>
   );
 }

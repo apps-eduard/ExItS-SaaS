@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
@@ -54,13 +55,13 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             openingFlags.TryGetValue(row.ProductId, out var hasOpening);
             var isLow = row.IsTracked
                 && row.ReorderLevel is not null
-                && row.BranchOnHand > 0m
-                && row.BranchOnHand <= row.ReorderLevel.Value;
+                && row.BranchAvailable > 0m
+                && row.BranchAvailable <= row.ReorderLevel.Value;
             var isSuggested = row.IsTracked
-                && InventoryStockStatuses.IsReorderSuggested(row.BranchOnHand, row.ReorderLevel);
+                && InventoryStockStatuses.IsReorderSuggested(row.BranchAvailable, row.ReorderLevel);
             var suggested = row.IsTracked
                 ? InventoryStockStatuses.SuggestedOrderQuantity(
-                    row.BranchOnHand,
+                    row.BranchAvailable,
                     row.ReorderLevel,
                     row.ReorderQuantity)
                 : null;
@@ -90,7 +91,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.Barcode,
                 row.CategoryId,
                 row.CategoryName,
-                row.MonitoringMode);
+                row.MonitoringMode,
+                row.BranchReserved,
+                row.BranchAvailable);
         }).ToList();
 
         return (items, total);
@@ -165,6 +168,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         var branchReorder = _db.InventoryBranchReorderSettings.AsNoTracking()
             .Where(r => r.OrganizationId == orgId && r.BranchId == branchId);
 
+        var utcNow = DateTimeOffset.UtcNow;
+        var activeReservationStatus = (int)ConnectedPoReservationStatus.Active;
+
         // Anonymous projection keeps EF Core translation reliable (same pattern as pre-low-stock list).
         var query =
             from p in products
@@ -188,6 +194,22 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             let branchOnHand = explicitBal != null
                 ? explicitBal.OnHandQuantity
                 : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
+            let branchReservedRaw = explicitBal != null ? explicitBal.ReservedQuantity : 0m
+            let expiredStillActive = _db.ConnectedPoInventoryReservations
+                .Where(r =>
+                    r.OrganizationId == orgId
+                    && r.BranchId == branchId
+                    && r.ProductId == p.Id
+                    && r.Status == activeReservationStatus
+                    && r.RemainingQuantity > 0m
+                    && r.ExpiresAtUtc != null
+                    && r.ExpiresAtUtc <= utcNow)
+                .Select(r => (decimal?)r.RemainingQuantity)
+                .Sum() ?? 0m
+            let branchReserved = branchReservedRaw - expiredStillActive < 0m
+                ? 0m
+                : branchReservedRaw - expiredStillActive
+            let branchAvailable = branchOnHand - branchReserved < 0m ? 0m : branchOnHand - branchReserved
             let monitoringMode = reorder != null
                 ? (reorder.ReorderLevel == null
                     ? InventoryReorderMonitoringModes.NotMonitored
@@ -217,6 +239,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 ProductStatus = p.Status,
                 IsTracked = isTracked,
                 BranchOnHand = branchOnHand,
+                BranchReserved = branchReserved,
+                BranchAvailable = branchAvailable,
                 OrgOnHand = orgOnHand,
                 ReorderLevel = reorderLevel,
                 ReorderQuantity = reorderQuantity,
@@ -246,8 +270,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 x.IsTracked
                 && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
                 && x.ReorderLevel != null
-                && x.BranchOnHand > 0m
-                && x.BranchOnHand <= x.ReorderLevel);
+                && x.BranchAvailable > 0m
+                && x.BranchAvailable <= x.ReorderLevel);
         }
 
         if (filter.ReorderSuggestedOnly == true)
@@ -258,7 +282,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 && x.ReorderLevel != null
                 && x.ReorderQuantity != null
                 && x.ReorderQuantity > 0m
-                && x.BranchOnHand <= x.ReorderLevel);
+                && x.BranchAvailable <= x.ReorderLevel);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.MonitoringMode)
@@ -277,7 +301,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 query = query.Where(x =>
                     x.IsTracked
                     && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
-                    && x.BranchOnHand == 0m);
+                    && x.BranchAvailable <= 0m);
             }
             else if (string.Equals(stockStatus, nameof(InventoryStockStatus.LowStock), StringComparison.OrdinalIgnoreCase))
             {
@@ -285,16 +309,16 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                     x.IsTracked
                     && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
                     && x.ReorderLevel != null
-                    && x.BranchOnHand > 0m
-                    && x.BranchOnHand <= x.ReorderLevel);
+                    && x.BranchAvailable > 0m
+                    && x.BranchAvailable <= x.ReorderLevel);
             }
             else if (string.Equals(stockStatus, nameof(InventoryStockStatus.InStock), StringComparison.OrdinalIgnoreCase))
             {
                 query = query.Where(x =>
                     x.IsTracked
                     && x.MonitoringMode != InventoryReorderMonitoringModes.NotMonitored
-                    && x.BranchOnHand > 0m
-                    && (x.ReorderLevel == null || x.BranchOnHand > x.ReorderLevel));
+                    && x.BranchAvailable > 0m
+                    && (x.ReorderLevel == null || x.BranchAvailable > x.ReorderLevel));
             }
         }
 
@@ -356,6 +380,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         public string ProductStatus { get; set; } = string.Empty;
         public bool IsTracked { get; set; }
         public decimal BranchOnHand { get; set; }
+        public decimal BranchReserved { get; set; }
+        public decimal BranchAvailable { get; set; }
         public decimal OrgOnHand { get; set; }
         public decimal? ReorderLevel { get; set; }
         public decimal? ReorderQuantity { get; set; }

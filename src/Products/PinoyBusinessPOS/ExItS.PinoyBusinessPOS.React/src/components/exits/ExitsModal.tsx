@@ -140,7 +140,7 @@ export function ExitsModal({
 
   const body = (
     <>
-      <div className="flex shrink-0 items-start justify-between gap-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border pb-3">
         <div className="min-w-0">
           <h2
             id={titleId}

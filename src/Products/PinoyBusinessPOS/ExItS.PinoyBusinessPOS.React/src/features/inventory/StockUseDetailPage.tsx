@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -25,6 +26,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function StockUseDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "stockUse",
+    backLabel: t("stockUse.backList"),
+    backTestId: "page-header-back-stock-use",
+  });
   const online = useBrowserOnline();
   const { stockUseId } = useParams<{ stockUseId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -101,9 +107,7 @@ export function StockUseDetailPage() {
       <PageHeader
         title={entry.stockUseNumber}
         description={t("stockUse.detailLede")}
-        backTo="/inventory/stock-use"
-        backLabel={t("stockUse.backList")}
-        backTestId="page-header-back-stock-use"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("stockUse.errorTitle")} detail={error} /> : null}

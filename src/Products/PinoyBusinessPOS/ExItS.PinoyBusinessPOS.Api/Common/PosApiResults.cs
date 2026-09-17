@@ -123,6 +123,10 @@ internal static class PosApiResults
             or ApplicationErrorCodes.InsufficientStock
             or ConnectedSupplierErrorCodes.OutOfStockSupplierProduct
             or ConnectedSupplierErrorCodes.InsufficientSupplierStock
+            or ConnectedSupplierErrorCodes.RemainingAlreadyClosed
+            or ConnectedSupplierErrorCodes.FulfillmentBlockedAfterShortClose
+            or ApplicationErrorCodes.PurchaseOrderNothingToCloseRemaining
+            or ApplicationErrorCodes.PurchaseOrderCloseRemainingReasonRequired
             or ApplicationErrorCodes.InventoryConcurrencyConflict
             or ApplicationErrorCodes.InventoryTransferAlreadyReceived
             or ApplicationErrorCodes.InventoryTransferNumberConflict

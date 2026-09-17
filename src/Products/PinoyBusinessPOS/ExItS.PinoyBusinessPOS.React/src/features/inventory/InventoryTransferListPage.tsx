@@ -24,6 +24,7 @@ import {
   inventoryTransferStatusTone,
 } from "@/features/inventory/inventory-transfer-labels";
 import { useI18n } from "@/i18n/I18nProvider";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -286,7 +287,7 @@ export function InventoryTransferListPage() {
                       : t("common.notAvailable");
                 return (
                   <li key={item.transferId} className="min-w-0">
-                    <Link
+                    <AppLinkWithReturn
                       to={`/inventory/transfers/${item.transferId}`}
                       className="exits-list__card transfer-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
                       data-testid={`transfer-row-${item.transferId}`}
@@ -336,7 +337,7 @@ export function InventoryTransferListPage() {
                         </span>
                       </span>
                       <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
-                    </Link>
+                    </AppLinkWithReturn>
                   </li>
                 );
               })}

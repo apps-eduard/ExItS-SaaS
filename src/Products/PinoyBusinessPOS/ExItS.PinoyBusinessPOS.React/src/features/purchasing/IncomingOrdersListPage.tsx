@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList } from "lucide-react";
 import { canViewPurchasing } from "@/access/pos-capabilities";
@@ -38,6 +38,7 @@ import {
   incomingOrderStatusTone,
   type IncomingOrdersUiFilter,
 } from "@/features/purchasing/incoming-orders-helpers";
+import { navigateWithReturn } from "@/navigation/smart-back";
 import {
   buildIncomingOrderListExportModel,
   downloadIncomingOrderListCsv,
@@ -85,6 +86,38 @@ function parseIncomingStatusParam(raw: string | null): IncomingOrdersUiFilter | 
 }
 
 function statusLabel(t: (key: MessageKey) => string, status: string, displayStatus: string): string {
+  const key = displayStatus || status;
+  switch (key) {
+    case "Completed":
+    case "ReceivedByBuyer":
+    case "Received":
+      return t("incomingOrders.statusCompleted");
+    case "CompletedRemainingCancelled":
+      return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedWithIssues":
+      return t("incomingOrders.statusReceivedWithIssues");
+    case "PartiallyReceived":
+      return t("incomingOrders.statusPartiallyReceived");
+    case "AwaitingBuyerReceipt":
+    case "Shipped":
+      return t("incomingOrders.statusAwaitingReceipt");
+    case "Ready":
+      return t("incomingOrders.statusReady");
+    case "Preparing":
+      return t("incomingOrders.statusPreparing");
+    case "Accepted":
+      return t("incomingOrders.statusAccepted");
+    case "New":
+      return t("incomingOrders.statusPending");
+    case "Declined":
+      return t("incomingOrders.statusDeclined");
+    case "Withdrawn":
+      return t("incomingOrders.statusWithdrawn");
+    case "ChangesProposed":
+      return t("incomingOrders.statusChangesProposed");
+    default:
+      break;
+  }
   switch (status) {
     case "New":
       return t("incomingOrders.statusPending");
@@ -93,7 +126,7 @@ function statusLabel(t: (key: MessageKey) => string, status: string, displayStat
     case "Preparing":
       return t("incomingOrders.statusPreparing");
     case "Fulfilled":
-      return t("incomingOrders.statusCompleted");
+      return t("incomingOrders.statusAwaitingReceipt");
     case "Declined":
       return t("incomingOrders.statusDeclined");
     case "Withdrawn":
@@ -109,6 +142,7 @@ export function IncomingOrdersListPage() {
   const { t } = useI18n();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const online = useBrowserOnline();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -118,6 +152,14 @@ export function IncomingOrdersListPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  const openIncomingOrder = (connectedPurchaseOrderId: string) => {
+    navigateWithReturn(
+      navigate,
+      `/purchasing/incoming-orders/${connectedPurchaseOrderId}`,
+      location,
+    );
+  };
 
   const workspace = useMemo(
     () =>
@@ -351,9 +393,7 @@ export function IncomingOrdersListPage() {
                     key={order.connectedPurchaseOrderId}
                     interactive
                     data-testid={`incoming-order-row-${order.connectedPurchaseOrderId}`}
-                    onClick={() =>
-                      navigate(`/purchasing/incoming-orders/${order.connectedPurchaseOrderId}`)
-                    }
+                    onClick={() => openIncomingOrder(order.connectedPurchaseOrderId)}
                   >
                     <ExitsTableCell cellAlign="text" className="font-medium">
                       {order.buyerPoNumber ?? t("incomingOrders.unnamedPo")}
@@ -370,7 +410,14 @@ export function IncomingOrdersListPage() {
                       <MoneyDisplay amount={order.totalAmount} />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">
-                      <StatusChip tone={incomingOrderStatusTone(order.status)}>{label}</StatusChip>
+                      <StatusChip tone={incomingOrderStatusTone(order.status, order.displayStatus)}>
+                        {label}
+                        {order.displayStatus === "PartiallyReceived" &&
+                        order.buyerOutstandingQty != null &&
+                        order.buyerOutstandingQty > 0
+                          ? ` · ${t("purchasing.outstanding")}: ${order.buyerOutstandingQty}`
+                          : ""}
+                      </StatusChip>
                     </ExitsTableCell>
                   </ExitsTableRow>
                 );
@@ -389,15 +436,20 @@ export function IncomingOrdersListPage() {
                 <ExitsTableMobileRow
                   key={order.connectedPurchaseOrderId}
                   data-testid={`incoming-order-row-mobile-${order.connectedPurchaseOrderId}`}
-                  onClick={() =>
-                    navigate(`/purchasing/incoming-orders/${order.connectedPurchaseOrderId}`)
-                  }
+                  onClick={() => openIncomingOrder(order.connectedPurchaseOrderId)}
                 >
                   <div className="exits-table-mobile__title-row">
                     <p className="exits-table-mobile__title">
                       {order.buyerPoNumber ?? t("incomingOrders.unnamedPo")}
                     </p>
-                    <StatusChip tone={incomingOrderStatusTone(order.status)}>{label}</StatusChip>
+                    <StatusChip tone={incomingOrderStatusTone(order.status, order.displayStatus)}>
+                      {label}
+                      {order.displayStatus === "PartiallyReceived" &&
+                      order.buyerOutstandingQty != null &&
+                      order.buyerOutstandingQty > 0
+                        ? ` · ${t("purchasing.outstanding")}: ${order.buyerOutstandingQty}`
+                        : ""}
+                    </StatusChip>
                   </div>
                   <p className="exits-table-mobile__meta">
                     {buyer}

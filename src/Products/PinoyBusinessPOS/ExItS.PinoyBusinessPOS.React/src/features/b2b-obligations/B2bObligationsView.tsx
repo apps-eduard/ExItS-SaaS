@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { Eye, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +19,7 @@ import {
 } from "@/features/b2b-obligations/b2b-obligations-model";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 
 function statusTone(
   status: string,
@@ -182,10 +182,13 @@ function ObligationActions({
 
       {sourceHref ? (
         <Button type="button" variant="outline" className={btnClass} asChild>
-          <Link to={sourceHref} data-testid={`${testIdPrefix}-view-details-${item.id}`}>
+          <AppLinkWithReturn
+            to={sourceHref}
+            data-testid={`${testIdPrefix}-view-details-${item.id}`}
+          >
             <Eye className="size-4 shrink-0" aria-hidden />
             {t("b2bObligations.viewDetails")}
-          </Link>
+          </AppLinkWithReturn>
         </Button>
       ) : (
         <Button

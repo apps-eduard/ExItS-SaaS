@@ -46,6 +46,13 @@ import { expirationSettingsPath } from "@/features/inventory/expiration-settings
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
 import {
+  formatInventoryQty,
+  InventoryReservedBadge,
+  resolveAvailableQuantity,
+  resolveReservedQuantity,
+} from "@/features/inventory/inventory-reservation-display";
+import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
+import {
   requiresOpeningExpirationDate,
   resolveLotExpiryLabel,
   hasMissingExpiry,
@@ -56,6 +63,7 @@ import { formatPeso } from "@/lib/format-money";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -85,6 +93,11 @@ export function InventoryDetailPage() {
   const { productId } = useParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
+  const smartBack = usePageSmartBack({
+    fallback: pageBackNav.inventory.to,
+    backLabel: t(pageBackNav.inventory.labelKey),
+    backTestId: "page-header-back-inventory",
+  });
   const allowManageInventory = canManageInventory(sessionGrant);
   const [openingQty, setOpeningQty] = useState("0");
   const [openingUnitCost, setOpeningUnitCost] = useState("");
@@ -101,6 +114,7 @@ export function InventoryDetailPage() {
   const [adjusting, setAdjusting] = useState(false);
   const [statusLocked, setStatusLocked] = useState(false);
   const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
+  const [reservationsOpen, setReservationsOpen] = useState(false);
   const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
@@ -645,9 +659,7 @@ export function InventoryDetailPage() {
       <PageHeader
         title={account.name}
         description={t("inventory.detailLede")}
-        backTo={pageBackNav.inventory.to}
-        backLabel={t(pageBackNav.inventory.labelKey)}
-        backTestId="page-header-back-inventory"
+        {...smartBack}
       />
 
       {error ? <ErrorState title={t("error.title")} detail={error} /> : null}
@@ -655,28 +667,44 @@ export function InventoryDetailPage() {
       <Card className="overflow-hidden p-0" data-testid="inventory-status">
         {account.isTracked ? (
           <>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-[var(--exits-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-              aria-expanded={statusDetailsOpen}
-              aria-controls={statusDetailsId}
-              onClick={() => setStatusDetailsOpen((open) => !open)}
-              data-testid="inventory-status-toggle"
-            >
-              <span className="min-w-0 font-semibold leading-snug" data-testid="inventory-on-hand">
-                {t("inventory.onHandAtBranch")
-                  .replace("{branch}", branchLabel)
-                  .replace("{qty}", String(account.onHandQuantity))
-                  .replace("{uom}", account.unitOfMeasure)}
-              </span>
-              <ChevronDown
-                aria-hidden
-                className={cn(
-                  "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
-                  statusDetailsOpen && "rotate-180",
-                )}
-              />
-            </button>
+            <div className="flex w-full items-start justify-between gap-3 px-3 py-3">
+              <button
+                type="button"
+                className="min-w-0 flex-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                aria-expanded={statusDetailsOpen}
+                aria-controls={statusDetailsId}
+                onClick={() => setStatusDetailsOpen((open) => !open)}
+                data-testid="inventory-status-toggle"
+              >
+                <span className="flex flex-col gap-1">
+                  <span className="font-semibold leading-snug" data-testid="inventory-available">
+                    {t("inventory.availableQty")
+                      .replace("{qty}", formatInventoryQty(resolveAvailableQuantity(account)))
+                      .replace("{uom}", account.unitOfMeasure)}
+                  </span>
+                  <span className="text-[length:var(--exits-text-sm)] text-muted" data-testid="inventory-on-hand">
+                    {t("inventory.onHandAtBranch")
+                      .replace("{branch}", branchLabel)
+                      .replace("{qty}", formatInventoryQty(account.onHandQuantity))
+                      .replace("{uom}", account.unitOfMeasure)}
+                  </span>
+                </span>
+              </button>
+              <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+                <InventoryReservedBadge
+                  reservedQuantity={resolveReservedQuantity(account)}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-reserved-badge"
+                />
+                <ChevronDown
+                  aria-hidden
+                  className={cn(
+                    "size-5 shrink-0 text-muted transition-transform duration-[var(--exits-motion-fast)]",
+                    statusDetailsOpen && "rotate-180",
+                  )}
+                />
+              </div>
+            </div>
 
             {statusDetailsOpen ? (
               <div
@@ -684,6 +712,33 @@ export function InventoryDetailPage() {
                 className="flex flex-col gap-3 border-t border-border px-3 pt-3 pb-3"
                 data-testid="inventory-status-details"
               >
+                <dl
+                  className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
+                  data-testid="inventory-stock-breakdown"
+                >
+                  <dt className="text-muted">{t("inventory.onHand")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                    {formatInventoryQty(account.onHandQuantity)} {account.unitOfMeasure}
+                  </dd>
+                  <dt className="text-muted">{t("inventory.reserved")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-medium">
+                    {formatInventoryQty(resolveReservedQuantity(account))} {account.unitOfMeasure}
+                  </dd>
+                  <dt className="font-semibold">{t("inventory.available")}</dt>
+                  <dd className="m-0 justify-self-end tabular-nums font-semibold">
+                    {formatInventoryQty(resolveAvailableQuantity(account))} {account.unitOfMeasure}
+                  </dd>
+                </dl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-fit"
+                  onClick={() => setReservationsOpen(true)}
+                  data-testid="inventory-view-reservations"
+                >
+                  {t("inventory.viewReservations")}
+                </Button>
                 {rollup?.isTracked ? (
                   <div
                     className="flex flex-col gap-2"
@@ -1388,6 +1443,16 @@ export function InventoryDetailPage() {
           actorsLoading={actors.isResolving}
         />
       </div>
+
+      {workspace && productId ? (
+        <InventoryReservationsDrawer
+          open={reservationsOpen}
+          onOpenChange={setReservationsOpen}
+          workspace={workspace}
+          productId={productId}
+          productNameFallback={account.name}
+        />
+      ) : null}
     </div>
   );
 }

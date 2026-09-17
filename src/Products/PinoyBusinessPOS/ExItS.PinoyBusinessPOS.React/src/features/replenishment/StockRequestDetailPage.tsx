@@ -16,6 +16,7 @@ import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { formatTransferTimestamp } from "@/features/inventory/inventory-transfer-labels";
@@ -31,6 +32,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 export function StockRequestDetailPage() {
   const { stockRequestId = "" } = useParams();
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "stockRequests",
+    backLabel: t("stockRequest.listTitle"),
+    backTestId: "page-header-back-stock-requests",
+  });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -193,8 +199,7 @@ export function StockRequestDetailPage() {
       <PageHeader
         title={dto.requestNumber ?? t("stockRequest.detailTitle")}
         description={`${dto.destinationLocationName ?? dto.destinationLocationId} ← ${dto.requestedSourceLocationName ?? dto.requestedSourceLocationId}`}
-        backTo="/inventory/stock-requests"
-        backLabel={t("stockRequest.listTitle")}
+        {...smartBack}
         trailing={
           <StatusChip tone={stockRequestStatusTone(dto.status)}>
             {t(stockRequestStatusLabelKey(dto.status) as MessageKey)}

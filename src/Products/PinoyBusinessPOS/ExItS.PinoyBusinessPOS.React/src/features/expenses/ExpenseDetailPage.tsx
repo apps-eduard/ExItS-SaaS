@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
@@ -29,6 +30,11 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function ExpenseDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "expenses",
+    backLabel: t("expense.backList"),
+    backTestId: "page-header-back-expenses",
+  });
   const online = useBrowserOnline();
   const { expenseId } = useParams<{ expenseId: string }>();
   const { boundWorkspace, sessionGrant } = useWorkspace();
@@ -115,9 +121,7 @@ export function ExpenseDetailPage() {
       <PageHeader
         title={entry.expenseNumber}
         description={t("expense.detailLede")}
-        backTo="/expenses"
-        backLabel={t("expense.backList")}
-        backTestId="page-header-back-expenses"
+        {...smartBack}
       />
 
       <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="expense-no-edit">

@@ -116,7 +116,10 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
         var wrong = await receive.ExecuteAsync(
             Org.Value,
             po.Id.Value,
-            new ReceivePurchaseOrderRequest([new ReceivePurchaseOrderLineRequest(product.Id.Value, 5m)]),
+            new ReceivePurchaseOrderRequest(
+                [new ReceivePurchaseOrderLineRequest(product.Id.Value, 5m)],
+                PaymentMethodAtReceipt: "Cash",
+                PaidNow: 350m),
             Actor,
             Retail);
         Assert.False(wrong.IsSuccess);
@@ -130,7 +133,10 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
         var ok = await receiveIntended.ExecuteAsync(
             Org.Value,
             poIntended.Id.Value,
-            new ReceivePurchaseOrderRequest([new ReceivePurchaseOrderLineRequest(productIntended.Id.Value, 5m)]),
+            new ReceivePurchaseOrderRequest(
+                [new ReceivePurchaseOrderLineRequest(productIntended.Id.Value, 5m)],
+                PaymentMethodAtReceipt: "Cash",
+                PaidNow: 350m),
             Actor,
             Warehouse);
         Assert.True(ok.IsSuccess, $"{ok.ErrorCode}: {ok.ErrorMessage}");
@@ -139,7 +145,10 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
         var legacy = await receiveNull.ExecuteAsync(
             Org.Value,
             poNull.Id.Value,
-            new ReceivePurchaseOrderRequest([new ReceivePurchaseOrderLineRequest(productNull.Id.Value, 3m)]),
+            new ReceivePurchaseOrderRequest(
+                [new ReceivePurchaseOrderLineRequest(productNull.Id.Value, 3m)],
+                PaymentMethodAtReceipt: "Cash",
+                PaidNow: 210m),
             Actor,
             Retail);
         Assert.True(legacy.IsSuccess, $"{legacy.ErrorCode}: {legacy.ErrorMessage}");

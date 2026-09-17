@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, RotateCcw, X } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -14,42 +15,42 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
-import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import {
-  cycleExitsTableSort,
   ExitsTable,
+  ExitsTableActions,
   ExitsTableBody,
   ExitsTableCell,
   ExitsTableContainer,
+  ExitsTableEditMenu,
   ExitsTableFooter,
   ExitsTableHead,
   ExitsTableHeader,
+  ExitsTableInlineEditor,
   ExitsTableMobile,
   ExitsTableMobileRow,
-  ExitsTableOutputActions,
   ExitsTablePagination,
   ExitsTableRow,
-  ExitsTableToolbar,
-  type ExitsTableSortDirection,
+  type ExitsTableEditableField,
 } from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { QuantityInput } from "@/components/exits/MoneyQuantityInputs";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { SearchField } from "@/components/exits/SearchField";
-import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
-  defaultPaidNowForMode,
-  defaultReceivePaymentMode,
+  buildReceiveSettlementPayload,
+  EMPTY_RECEIVE_SETTLEMENT,
   formatMoneyInput,
   parseMoneyInput,
-  remainingCredit,
+  resolveLockedReceivePaymentFromPo,
   roundMoney,
+  validateLockedSettlementFields,
   validateReceivePaidNow,
   type ReceivePaymentMethodCode,
   type ReceivePaymentMode,
+  type ReceiveSettlementFields,
 } from "@/features/purchasing/receive-payment";
 import { DocumentActions } from "@/features/documents/DocumentActions";
 import { GoodsReceiptBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
@@ -57,16 +58,20 @@ import { useBusinessDocumentIdentity } from "@/features/documents/use-business-d
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import {
   buildPurchaseOrderReceiveExportModel,
-  downloadPurchaseOrderReceiveCsv,
-  downloadPurchaseOrderReceivePdf,
-  downloadPurchaseOrderReceiveXlsx,
-  printPurchaseOrderReceiveDocument,
 } from "@/features/purchasing/purchase-order-receive-output";
 import {
   buildReceivePlan,
   parseNonNegativeQty,
-  remainingAfterReceive,
+  receiveDiscrepancyQty,
 } from "@/features/purchasing/receive-math";
+import {
+  formatReceiveDiscrepancySummary,
+  isReceiveDiscrepancyClassified,
+  lineHasReceiveDiscrepancy,
+  lineNeedsReceiveDiscrepancyClassification,
+} from "@/features/purchasing/receive-discrepancy-display";
+import { ReceiveDiscrepancyDialog } from "@/features/purchasing/ReceiveDiscrepancyDialog";
+import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import { selectUntrackedReceivingLines } from "@/features/purchasing/receive-tracking";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
@@ -74,6 +79,50 @@ import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-ou
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+type ReceiveEditFieldKey = "receiveNow";
+
+type ReceiveEditBaseline = {
+  goodText: string;
+};
+
+type ReceiveEditErrors = {
+  receiveNow?: string;
+};
+
+function ReceiveIconAction({
+  label,
+  variant = "ghost",
+  children,
+  onClick,
+  className,
+  title,
+  "data-testid": testId,
+}: {
+  label: string;
+  variant?: "ghost" | "destructive" | "success" | "info";
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+  title?: string;
+  "data-testid"?: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size="icon"
+      shape="round"
+      title={title ?? label}
+      aria-label={label}
+      className={className}
+      data-testid={testId}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
 
 type LineEdit = {
   productId: string;
@@ -87,18 +136,16 @@ type LineEdit = {
   isInventoryTracked: boolean;
   goodText: string;
   damagedText: string;
+  notDeliveredText: string;
+  remarksText: string;
   /** false = Deliver later; true = Cancel remaining (maps to shortClosedQty). */
   cancelRemaining: boolean;
   expiryDate: string;
   lotNumber: string;
 };
 
-type LineFilter = "all" | "outstanding";
-type SortKey = "name" | "ordered" | "received" | "outstanding";
-
 export function PurchaseOrderReceivePage() {
   const { t } = useI18n();
-  const { showToast } = useToast();
   const navigate = useNavigate();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
@@ -121,15 +168,21 @@ export function PurchaseOrderReceivePage() {
   const [dueDate, setDueDate] = useState("");
   const [paymentMode, setPaymentMode] = useState<ReceivePaymentMode>("paidInFull");
   const [paymentMethod, setPaymentMethod] = useState<ReceivePaymentMethodCode>("Cash");
-  const [paidNowTouched, setPaidNowTouched] = useState(false);
-  const [utangDefaultsApplied, setUtangDefaultsApplied] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [lineFilter, setLineFilter] = useState<LineFilter>("outstanding");
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDirection, setSortDirection] = useState<ExitsTableSortDirection>(null);
+  const [settlementFields, setSettlementFields] =
+    useState<ReceiveSettlementFields>(EMPTY_RECEIVE_SETTLEMENT);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editingFields, setEditingFields] = useState<Set<ReceiveEditFieldKey>>(new Set());
+  const [mobileEditingProductId, setMobileEditingProductId] = useState<string | null>(null);
+  const [mobileEditingFields, setMobileEditingFields] = useState<Set<ReceiveEditFieldKey>>(
+    new Set(),
+  );
+  const [editBaseline, setEditBaseline] = useState<ReceiveEditBaseline | null>(null);
+  const [editErrors, setEditErrors] = useState<ReceiveEditErrors>({});
+  const [discrepancyOpen, setDiscrepancyOpen] = useState(false);
+  const [discrepancyTargetProductId, setDiscrepancyTargetProductId] = useState<string | null>(null);
+  const [highlightUnclassified, setHighlightUnclassified] = useState(false);
   const goodsReceiptIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
@@ -143,13 +196,8 @@ export function PurchaseOrderReceivePage() {
   const branchName = boundWorkspace?.branchName?.trim() || boundWorkspace?.branchId || "";
 
   useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 200);
-    return () => window.clearTimeout(handle);
-  }, [searchInput]);
-
-  useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, lineFilter, pageSize, sortKey, sortDirection]);
+  }, [pageSize]);
 
   const query = useQuery({
     queryKey: ["purchase-order", workspace?.organizationId, purchaseOrderId],
@@ -169,7 +217,9 @@ export function PurchaseOrderReceivePage() {
           // Only explicit false is untracked; undefined/true skip enable-tracking confirmation.
           isInventoryTracked: line.isInventoryTracked !== false,
           goodText: line.outstandingQty > 0 ? String(line.outstandingQty) : "",
-          damagedText: "",
+          damagedText: "0",
+          notDeliveredText: "0",
+          remarksText: "",
           cancelRemaining: false,
           expiryDate: "",
           lotNumber: "",
@@ -210,48 +260,19 @@ export function PurchaseOrderReceivePage() {
     );
   }, [lines]);
 
-  const filteredSortedLines = useMemo(() => {
-    if (!lines) {
-      return [];
+  const lockedReceivePayment = useMemo(() => {
+    if (!po?.paymentTerm) {
+      return null;
     }
-    const q = debouncedSearch.toLowerCase();
-    let next = lines.filter((line) => {
-      if (lineFilter === "outstanding" && !(line.outstandingQty > 0)) {
-        return false;
-      }
-      if (!q) {
-        return true;
-      }
-      return [line.name, line.uom, line.productId].some((token) =>
-        token.toLowerCase().includes(q),
-      );
-    });
-    if (sortKey && sortDirection) {
-      const dir = sortDirection === "asc" ? 1 : -1;
-      next = [...next].sort((a, b) => {
-        const av =
-          sortKey === "name"
-            ? a.name.toLowerCase()
-            : sortKey === "ordered"
-              ? a.orderedQty
-              : sortKey === "received"
-                ? a.receivedQty
-                : a.outstandingQty;
-        const bv =
-          sortKey === "name"
-            ? b.name.toLowerCase()
-            : sortKey === "ordered"
-              ? b.orderedQty
-              : sortKey === "received"
-                ? b.receivedQty
-                : b.outstandingQty;
-        if (av < bv) return -1 * dir;
-        if (av > bv) return 1 * dir;
-        return 0;
-      });
-    }
-    return next;
-  }, [debouncedSearch, lineFilter, lines, sortDirection, sortKey]);
+    return resolveLockedReceivePaymentFromPo(po.paymentTerm, estimatedTotal);
+  }, [estimatedTotal, po?.paymentTerm]);
+
+  const filteredSortedLines = useMemo(() => lines ?? [], [lines]);
+
+  const receiveEditableFields = useMemo<ReadonlyArray<ExitsTableEditableField>>(
+    () => [{ key: "receiveNow", label: t("purchasing.receiveNow") }],
+    [t],
+  );
 
   const pagedLines = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -265,56 +286,103 @@ export function PurchaseOrderReceivePage() {
     return lines
       .map((line) => {
         const good = parseNonNegativeQty(line.goodText) ?? 0;
-        const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
-        const remaining = remainingAfterReceive(line.outstandingQty, good, damaged);
+        const remaining = receiveDiscrepancyQty(line.outstandingQty, good);
         return { line, remaining };
       })
       .filter((entry) => entry.remaining > 1e-9);
   }, [lines, reviewing]);
 
-  useEffect(() => {
-    if (paymentMode === "paidInFull") {
-      setPaidNowText(formatMoneyInput(estimatedTotal));
-      setDueDate("");
-      return;
+  const discrepancyLines = useMemo(() => {
+    if (!lines) {
+      return [];
     }
-    if (!paidNowTouched) {
-      setPaidNowText(formatMoneyInput(defaultPaidNowForMode(paymentMode, estimatedTotal)));
+    return lines
+      .map((line) => {
+        const good = parseNonNegativeQty(line.goodText) ?? 0;
+        const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
+        return { line, good, discrepancy };
+      })
+      .filter((entry) => entry.discrepancy > 1e-9)
+      .filter((entry) =>
+        discrepancyTargetProductId
+          ? entry.line.productId === discrepancyTargetProductId
+          : true,
+      )
+      .map(({ line, good }) => ({
+        productId: line.productId,
+        name: line.name,
+        uom: line.uom,
+        outstandingQty: line.outstandingQty,
+        goodQty: good,
+        damagedText: line.damagedText,
+        notDeliveredText: line.notDeliveredText,
+        remarksText: line.remarksText,
+      }));
+  }, [lines, discrepancyTargetProductId]);
+
+  const unclassifiedProductIds = useMemo(() => {
+    if (!lines) {
+      return new Set<string>();
     }
-  }, [estimatedTotal, paidNowTouched, paymentMode]);
+    return new Set(
+      lines
+        .filter((line) => lineNeedsReceiveDiscrepancyClassification(line))
+        .map((line) => line.productId),
+    );
+  }, [lines]);
+
+  function openDiscrepancyForProduct(productId: string) {
+    setError(null);
+    setTrackingConfirm(false);
+    setHighlightUnclassified(false);
+    setDiscrepancyTargetProductId(productId);
+    setDiscrepancyOpen(true);
+  }
+
+  function closeDiscrepancyDialog() {
+    setDiscrepancyOpen(false);
+    setDiscrepancyTargetProductId(null);
+  }
 
   useEffect(() => {
-    if (!po || utangDefaultsApplied) {
+    if (!lockedReceivePayment) {
       return;
     }
-    const mode = defaultReceivePaymentMode({
-      connectedPurchaseOrderId: po.connectedPurchaseOrderId,
-      paymentTerm: po.paymentTerm,
-    });
-    if (mode === "supplierCredit") {
-      setPaymentMode("supplierCredit");
-      setPaidNowText(formatMoneyInput(0));
-      setPaidNowTouched(true);
+    setPaymentMode(lockedReceivePayment.mode);
+    if (lockedReceivePayment.paymentMethod) {
+      setPaymentMethod(lockedReceivePayment.paymentMethod);
     }
-    setUtangDefaultsApplied(true);
-  }, [po, utangDefaultsApplied]);
+    setPaidNowText(formatMoneyInput(lockedReceivePayment.paidNow));
+    setDueDate("");
+  }, [lockedReceivePayment]);
 
-  const paidNowValue = parseMoneyInput(paidNowText);
-  const filterLabel =
-    lineFilter === "outstanding"
-      ? t("purchasing.receiveFilterOutstanding")
-      : t("purchasing.receiveFilterAll");
+  const paidNowValue = lockedReceivePayment?.paidNow ?? parseMoneyInput(paidNowText);
 
-  function onSort(nextKey: SortKey) {
-    const next = cycleExitsTableSort(sortKey, sortDirection, nextKey);
-    setSortKey(next.key as SortKey | null);
-    setSortDirection(next.direction);
+  function validateLockedReceiptPayment(): boolean {
+    if (!lockedReceivePayment) {
+      return true;
+    }
+    const paidNow = lockedReceivePayment.paidNow;
+    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
+    if (paidError) {
+      setError(t(paidError));
+      return false;
+    }
+    const settlementError = validateLockedSettlementFields(
+      lockedReceivePayment.paymentMethod,
+      settlementFields,
+    );
+    if (settlementError) {
+      setError(t(settlementError));
+      return false;
+    }
+    return true;
   }
 
   function buildExportModel() {
     return buildPurchaseOrderReceiveExportModel({
       poNumber: po?.poNumber ?? purchaseOrderId ?? "purchase-order",
-      filterLabel,
+      filterLabel: t("purchasing.receiveFilterAll"),
       rows: filteredSortedLines.map((line) => ({
         product: line.name,
         uom: line.uom,
@@ -329,57 +397,197 @@ export function PurchaseOrderReceivePage() {
     });
   }
 
-  async function runOutput(action: "csv" | "xlsx" | "pdf" | "print") {
-    try {
-      const model = buildExportModel();
-      if (action === "csv") {
-        downloadPurchaseOrderReceiveCsv(model);
-        return;
-      }
-      if (action === "xlsx") {
-        downloadPurchaseOrderReceiveXlsx(model);
-        return;
-      }
-      if (action === "pdf") {
-        downloadPurchaseOrderReceivePdf(model);
-        return;
-      }
-      printPurchaseOrderReceiveDocument();
-    } catch {
-      showToast({
-        title: t("exitsTable.outputFailed"),
-        tone: "error",
-      });
-    }
-  }
-
-  function onPaymentModeChange(mode: ReceivePaymentMode) {
-    setPaymentMode(mode);
-    setPaidNowTouched(false);
-    if (mode === "paidInFull") {
-      setPaidNowText(formatMoneyInput(estimatedTotal));
-      setDueDate("");
-    } else {
-      setPaidNowText(formatMoneyInput(0));
-    }
-  }
-
   function updateLine(productId: string, patch: Partial<LineEdit>) {
     setLines((prev) =>
       (prev ?? []).map((line) => (line.productId === productId ? { ...line, ...patch } : line)),
     );
   }
 
-  function tryPlan() {
+  function loadReceiveEditBaseline(line: LineEdit) {
+    setEditBaseline({ goodText: line.goodText });
+    setEditErrors({});
+  }
+
+  function cancelReceiveRowEdit() {
+    setEditingProductId(null);
+    setEditingFields(new Set());
+    setEditBaseline(null);
+    setEditErrors({});
+  }
+
+  function cancelReceiveMobileEdit() {
+    setMobileEditingProductId(null);
+    setMobileEditingFields(new Set());
+    setEditBaseline(null);
+    setEditErrors({});
+  }
+
+  function validateReceiveLineFields(line: LineEdit): ReceiveEditErrors {
+    const errors: ReceiveEditErrors = {};
+    const good = parseNonNegativeQty(line.goodText);
+    if (good === null) {
+      errors.receiveNow = t("purchasing.invalidReceiveQty");
+    } else if (good > line.outstandingQty + 1e-9) {
+      errors.receiveNow = t("purchasing.overReceive");
+    }
+    return errors;
+  }
+
+  function receiveEditErrorMessages(errors: ReceiveEditErrors): string[] {
+    const messages = [errors.receiveNow].filter(Boolean) as string[];
+    return [...new Set(messages)];
+  }
+
+  function onReceiveQtyBlur(line: LineEdit) {
+    setEditErrors(validateReceiveLineFields(line));
+  }
+
+  function dismissReceiveEditErrors() {
+    setEditErrors({});
+  }
+
+  function startReceiveFieldEdit(line: LineEdit, fieldKey: string, mobile = false) {
+    const key = fieldKey as ReceiveEditFieldKey;
+    if (key !== "receiveNow") return;
+    if (mobile) {
+      setEditingProductId(null);
+      setEditingFields(new Set());
+      setMobileEditingProductId(line.productId);
+      setMobileEditingFields(new Set([key]));
+    } else {
+      setMobileEditingProductId(null);
+      setMobileEditingFields(new Set());
+      setEditingProductId(line.productId);
+      setEditingFields(new Set([key]));
+    }
+    loadReceiveEditBaseline(line);
+  }
+
+  function startReceiveEditAll(line: LineEdit, mobile = false) {
+    const all = new Set<ReceiveEditFieldKey>(["receiveNow"]);
+    if (mobile) {
+      setEditingProductId(null);
+      setEditingFields(new Set());
+      setMobileEditingProductId(line.productId);
+      setMobileEditingFields(all);
+    } else {
+      setMobileEditingProductId(null);
+      setMobileEditingFields(new Set());
+      setEditingProductId(line.productId);
+      setEditingFields(all);
+    }
+    loadReceiveEditBaseline(line);
+  }
+
+  function finishReceiveEdit(line: LineEdit, mobile = false) {
+    const current = (lines ?? []).find((entry) => entry.productId === line.productId) ?? line;
+    const errors = validateReceiveLineFields(current);
+    if (receiveEditErrorMessages(errors).length > 0) {
+      setEditErrors(errors);
+      return;
+    }
+    const good = parseNonNegativeQty(current.goodText) ?? 0;
+    const hasDiscrepancy = receiveDiscrepancyQty(current.outstandingQty, good) > 1e-9;
+    if (!hasDiscrepancy) {
+      updateLine(current.productId, {
+        damagedText: "0",
+        notDeliveredText: "0",
+        remarksText: "",
+        cancelRemaining: false,
+      });
+    }
+    if (mobile) cancelReceiveMobileEdit();
+    else cancelReceiveRowEdit();
+    if (hasDiscrepancy) {
+      openDiscrepancyForProduct(current.productId);
+    }
+  }
+
+  function resetReceiveEdit(line: LineEdit, mobile = false) {
+    if (!editBaseline) {
+      if (mobile) cancelReceiveMobileEdit();
+      else cancelReceiveRowEdit();
+      return;
+    }
+    const alreadyOriginal = line.goodText === editBaseline.goodText;
+    if (alreadyOriginal) {
+      if (mobile) cancelReceiveMobileEdit();
+      else cancelReceiveRowEdit();
+      return;
+    }
+    updateLine(line.productId, {
+      goodText: editBaseline.goodText,
+    });
+    setEditErrors({});
+  }
+
+  useEffect(() => {
+    if (!editingProductId && !mobileEditingProductId) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      const activeId = editingProductId ?? mobileEditingProductId;
+      if (!activeId || !editBaseline) {
+        cancelReceiveRowEdit();
+        cancelReceiveMobileEdit();
+        return;
+      }
+      updateLine(activeId, {
+        goodText: editBaseline.goodText,
+      });
+      cancelReceiveRowEdit();
+      cancelReceiveMobileEdit();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [editingProductId, mobileEditingProductId, editBaseline]);
+
+  useEffect(() => {
+    if (!editingProductId) return;
+    const focusTestId = editingFields.has("receiveNow")
+      ? `receive-good-${editingProductId}`
+      : null;
+    if (!focusTestId) return;
+    const timer = window.setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>(`[data-testid="${focusTestId}"]`);
+      el?.focus();
+      el?.select?.();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [editingProductId, editingFields]);
+
+  useEffect(() => {
+    if (!mobileEditingProductId) return;
+    const focusTestId = mobileEditingFields.has("receiveNow")
+      ? `receive-good-mobile-${mobileEditingProductId}`
+      : null;
+    if (!focusTestId) return;
+    const timer = window.setTimeout(() => {
+      const el = document.querySelector<HTMLInputElement>(`[data-testid="${focusTestId}"]`);
+      el?.focus();
+      el?.select?.();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [mobileEditingProductId, mobileEditingFields]);
+
+  useEffect(() => {
+    if (reviewing) {
+      cancelReceiveRowEdit();
+      cancelReceiveMobileEdit();
+    }
+  }, [reviewing]);
+
+  function tryPlan(options?: { requireClassification?: boolean }) {
     if (!lines) {
       return null;
     }
+    const requireClassification = options?.requireClassification !== false;
     const parsed = lines.map((line) => {
       const good = parseNonNegativeQty(line.goodText);
       const damaged = parseNonNegativeQty(line.damagedText);
-      return { line, good, damaged };
+      const notDelivered = parseNonNegativeQty(line.notDeliveredText);
+      return { line, good, damaged, notDelivered };
     });
-    if (parsed.some((p) => p.good === null || p.damaged === null)) {
+    if (parsed.some((p) => p.good === null || p.damaged === null || p.notDelivered === null)) {
       setError(t("purchasing.invalidReceiveQty"));
       return null;
     }
@@ -390,12 +598,44 @@ export function PurchaseOrderReceivePage() {
       setError(t("purchasing.expiryRequired"));
       return null;
     }
+
+    if (requireClassification) {
+      const needsClassification = parsed.some(
+        ({ line, good }) => receiveDiscrepancyQty(line.outstandingQty, good ?? 0) > 1e-9,
+      );
+      if (needsClassification) {
+        const incomplete = parsed.some(({ line, good, damaged, notDelivered }) => {
+          const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good ?? 0);
+          if (discrepancy <= 1e-9) {
+            return false;
+          }
+          return Math.abs((damaged ?? 0) + (notDelivered ?? 0) - discrepancy) > 1e-9;
+        });
+        if (incomplete) {
+          setError(t("purchasing.discrepancyClassificationRequired"));
+          return null;
+        }
+        const missingNote = parsed.some(({ line, good }) => {
+          const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good ?? 0);
+          if (discrepancy <= 1e-9) {
+            return false;
+          }
+          return !line.remarksText.trim();
+        });
+        if (missingNote) {
+          setError(t("purchasing.discrepancyNoteRequired"));
+          return null;
+        }
+      }
+    }
+
     const result = buildReceivePlan(
-      parsed.map(({ line, good, damaged }) => ({
+      parsed.map(({ line, good, damaged, notDelivered }) => ({
         productId: line.productId,
         outstandingQty: line.outstandingQty,
         goodQty: good!,
         damagedQty: damaged!,
+        notDeliveredQty: notDelivered!,
         cancelRemaining: line.cancelRemaining,
       })),
     );
@@ -404,6 +644,11 @@ export function PurchaseOrderReceivePage() {
         setError(t("purchasing.overReceive"));
       } else if (result.error === "no_activity") {
         setError(t("purchasing.receiveRequiresLines"));
+      } else if (
+        result.error === "classification_incomplete" ||
+        result.error === "classification_mismatch"
+      ) {
+        setError(t("purchasing.discrepancyClassificationRequired"));
       } else {
         setError(t("purchasing.invalidReceiveQty"));
       }
@@ -414,23 +659,66 @@ export function PurchaseOrderReceivePage() {
   }
 
   function onReview() {
-    if (!tryPlan()) {
+    if (!lines) {
       return;
     }
-    const paidNow =
-      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
-    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
-    if (paidError) {
-      setError(t(paidError));
+    const parsedOk = lines.every((line) => parseNonNegativeQty(line.goodText) !== null);
+    if (!parsedOk) {
+      setError(t("purchasing.invalidReceiveQty"));
       return;
     }
-    if (paidNow! > 0 && !paymentMethod) {
-      setError(t("purchasing.paymentMethodRequired"));
+    const over = lines.some((line) => {
+      const good = parseNonNegativeQty(line.goodText) ?? 0;
+      return good > line.outstandingQty + 1e-9;
+    });
+    if (over) {
+      setError(t("purchasing.overReceive"));
+      return;
+    }
+    const missingExpiry = lines.find((line) => {
+      const good = parseNonNegativeQty(line.goodText) ?? 0;
+      return line.tracksExpiration && good > 0 && !line.expiryDate.trim();
+    });
+    if (missingExpiry) {
+      setError(t("purchasing.expiryRequired"));
+      return;
+    }
+    if (!validateLockedReceiptPayment()) {
+      return;
+    }
+
+    if (unclassifiedProductIds.size > 0) {
+      setHighlightUnclassified(true);
+      setError(t("purchasing.classifyBeforeReview"));
+      setTrackingConfirm(false);
+      return;
+    }
+
+    if (!tryPlan({ requireClassification: true })) {
       return;
     }
     setError(null);
+    setHighlightUnclassified(false);
     setTrackingConfirm(false);
     setReviewing(true);
+  }
+
+  function onDiscrepancyConfirmed() {
+    if (!lines || !discrepancyTargetProductId) {
+      return;
+    }
+    const target = lines.find((line) => line.productId === discrepancyTargetProductId);
+    if (!target || !isReceiveDiscrepancyClassified(target)) {
+      setError(t("purchasing.discrepancyClassificationRequired"));
+      return;
+    }
+    if (!target.remarksText.trim()) {
+      setError(t("purchasing.discrepancyNoteRequired"));
+      return;
+    }
+    setError(null);
+    setHighlightUnclassified(false);
+    closeDiscrepancyDialog();
   }
 
   function onReviewConfirmClick() {
@@ -440,15 +728,7 @@ export function PurchaseOrderReceivePage() {
     if (!tryPlan()) {
       return;
     }
-    const paidNow =
-      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
-    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
-    if (paidError) {
-      setError(t(paidError));
-      return;
-    }
-    if (paidNow! > 0 && !paymentMethod) {
-      setError(t("purchasing.paymentMethodRequired"));
+    if (!validateLockedReceiptPayment()) {
       return;
     }
     const untracked = selectUntrackedReceivingLines(lines);
@@ -468,17 +748,12 @@ export function PurchaseOrderReceivePage() {
     if (!planned) {
       return;
     }
-    const paidNow =
-      paymentMode === "paidInFull" ? estimatedTotal : parseMoneyInput(paidNowText);
-    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
-    if (paidError) {
-      setError(t(paidError));
+    if (!validateLockedReceiptPayment()) {
       return;
     }
-    if (paidNow! > 0 && !paymentMethod) {
-      setError(t("purchasing.paymentMethodRequired"));
-      return;
-    }
+    const paidNow = lockedReceivePayment?.paidNow ?? 0;
+    const methodAtReceipt = lockedReceivePayment?.paymentMethod ?? null;
+    const settlementPayload = buildReceiveSettlementPayload(methodAtReceipt, settlementFields);
     if (!goodsReceiptIdRef.current) {
       const generated = createSecureMutationId();
       if (!generated.ok) {
@@ -496,22 +771,22 @@ export function PurchaseOrderReceivePage() {
         deliveryReference: deliveryReference.trim() || null,
         notes: notes.trim() || null,
         paidNow,
-        dueDate:
-          remainingCredit(estimatedTotal, paidNow!) > 0 && dueDate.trim()
-            ? dueDate.trim()
-            : null,
-        paymentMethodAtReceipt: paidNow! > 0 ? paymentMethod : null,
+        dueDate: null,
+        paymentMethodAtReceipt: methodAtReceipt,
+        ...settlementPayload,
         enableTrackingIfNeeded: enableTrackingIfNeeded ? true : undefined,
         lines: planned.map((line) => {
           const edit = lines.find((l) => l.productId === line.productId);
           const goodQty = line.receiveQty;
+          const note = edit?.remarksText.trim() || null;
           return {
             productId: line.productId,
             receiveQty: line.receiveQty,
             damagedQty: line.damagedQty,
+            rejectedQty: line.rejectedQty,
             shortClosedQty: line.shortClosedQty,
             discrepancyKind: line.discrepancyKind,
-            discrepancyNote: line.discrepancyKind && notes.trim() ? notes.trim() : null,
+            discrepancyNote: line.discrepancyKind && note ? note : null,
             expiryDate:
               edit?.tracksExpiration && goodQty > 0 && edit.expiryDate.trim()
                 ? edit.expiryDate.trim()
@@ -850,68 +1125,14 @@ export function PurchaseOrderReceivePage() {
         </Card>
       ) : (
         <>
+          {!reviewing ? (
           <ExitsTableContainer data-testid="receive-lines-table">
-            <ExitsTableToolbar
-              search={
-                <SearchField
-                  label={t("purchasing.searchReceiveLines")}
-                  value={searchInput}
-                  placeholder={t("purchasing.searchReceiveLines")}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onClear={() => setSearchInput("")}
-                  data-testid="receive-lines-search"
-                />
-              }
-              filter={
-                <ExitsChipBar
-                  variant="filter"
-                  ariaLabel={t("purchasing.receiveLineFilter")}
-                  testId="receive-lines-filter"
-                  items={[
-                    {
-                      key: "outstanding",
-                      label: t("purchasing.receiveFilterOutstanding"),
-                      state: lineFilter === "outstanding" ? "active" : "idle",
-                      onSelect: () => setLineFilter("outstanding"),
-                    },
-                    {
-                      key: "all",
-                      label: t("purchasing.receiveFilterAll"),
-                      state: lineFilter === "all" ? "active" : "idle",
-                      onSelect: () => setLineFilter("all"),
-                    },
-                  ]}
-                />
-              }
-              output={
-                <ExitsTableOutputActions
-                  csvLabel={t("exitsTable.exportCsv")}
-                  xlsxLabel={t("exitsTable.exportExcel")}
-                  pdfLabel={t("exitsTable.exportPdf")}
-                  printLabel={t("exitsTable.print")}
-                  menuLabel={t("exitsTable.exportPrintMenu")}
-                  onCsv={() => void runOutput("csv")}
-                  onXlsx={() => void runOutput("xlsx")}
-                  onPdf={() => void runOutput("pdf")}
-                  onPrint={() => void runOutput("print")}
-                />
-              }
-            />
-
             {filteredSortedLines.length === 0 ? (
               <EmptyState
                 align="center"
                 size="compact"
-                title={
-                  debouncedSearch || lineFilter === "outstanding"
-                    ? t("purchasing.receiveLinesNoMatch")
-                    : t("purchasing.receiveLinesEmpty")
-                }
-                detail={
-                  debouncedSearch || lineFilter === "outstanding"
-                    ? t("purchasing.receiveLinesNoMatchDetail")
-                    : t("purchasing.receiveLinesEmptyDetail")
-                }
+                title={t("purchasing.receiveLinesEmpty")}
+                detail={t("purchasing.receiveLinesEmptyDetail")}
                 testId="receive-lines-empty"
               />
             ) : (
@@ -919,59 +1140,74 @@ export function PurchaseOrderReceivePage() {
                 <ExitsTable>
                   <ExitsTableHeader>
                     <ExitsTableRow>
-                      <ExitsTableHead
-                        cellAlign="text"
-                        sortable
-                        sortDirection={sortKey === "name" ? sortDirection : null}
-                        onSort={() => onSort("name")}
-                      >
+                      <ExitsTableHead cellAlign="text">
                         {t("purchasing.receiveProduct")}
                       </ExitsTableHead>
-                      <ExitsTableHead
-                        cellAlign="numeric"
-                        sortable
-                        sortDirection={sortKey === "ordered" ? sortDirection : null}
-                        onSort={() => onSort("ordered")}
-                      >
-                        {t("purchasing.ordered")}
-                      </ExitsTableHead>
-                      <ExitsTableHead
-                        cellAlign="numeric"
-                        sortable
-                        sortDirection={sortKey === "received" ? sortDirection : null}
-                        onSort={() => onSort("received")}
-                      >
+                      <ExitsTableHead cellAlign="numeric">{t("purchasing.ordered")}</ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">
                         {t("purchasing.receivedBefore")}
                       </ExitsTableHead>
-                      <ExitsTableHead
-                        cellAlign="numeric"
-                        sortable
-                        sortDirection={sortKey === "outstanding" ? sortDirection : null}
-                        onSort={() => onSort("outstanding")}
-                      >
-                        {t("purchasing.outstanding")}
+                      <ExitsTableHead cellAlign="numeric">{t("purchasing.outstanding")}</ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric">{t("purchasing.receiveNow")}</ExitsTableHead>
+                      <ExitsTableHead cellAlign="actions" colSize="actions">
+                        {t("purchasing.action")}
                       </ExitsTableHead>
-                      <ExitsTableHead cellAlign="text">{t("purchasing.receiveNow")}</ExitsTableHead>
-                      <ExitsTableHead cellAlign="text">{t("purchasing.damaged")}</ExitsTableHead>
                     </ExitsTableRow>
                   </ExitsTableHeader>
                   <ExitsTableBody>
                     {pagedLines.map((line) => {
                       const goodQty = parseNonNegativeQty(line.goodText) ?? 0;
                       const showExpiry = line.tracksExpiration && goodQty > 0;
-                      const editable = !reviewing && canReceive && line.outstandingQty > 0;
+                      const canEdit = !reviewing && canReceive && line.outstandingQty > 0;
+                      const editing = editingProductId === line.productId;
+                      const editLocked =
+                        (editingProductId !== null && editingProductId !== line.productId) ||
+                        (mobileEditingProductId !== null && mobileEditingProductId !== line.productId);
+                      const editReceiveNow = editing && editingFields.has("receiveNow");
+                      const needsClassification = unclassifiedProductIds.has(line.productId);
+                      const discrepancySummary = formatReceiveDiscrepancySummary(line, {
+                        damaged: t("purchasing.damaged"),
+                        notDelivered: t("purchasing.notDelivered"),
+                      });
+                      const rowErrorMessages = editing
+                        ? receiveEditErrorMessages(editErrors)
+                        : [];
+                      const showRowValidation = rowErrorMessages.length > 0;
+                      const rowValidationId = `receive-line-validation-${line.productId}`;
                       return (
+                        <Fragment key={line.productId}>
                         <ExitsTableRow
-                          key={line.productId}
+                          editing={editing}
+                          error={highlightUnclassified && needsClassification}
                           data-testid={`receive-line-${line.productId}`}
                         >
                           <ExitsTableCell cellAlign="text" className="font-medium">
                             <div>{line.name}</div>
-                            <div className="text-[length:var(--exits-text-xs)] text-muted">
-                              {line.uom}
-                              {showExpiry ? ` · ${t("purchasing.expiryDate")}` : ""}
-                            </div>
-                            {editable && showExpiry ? (
+                            {!editing && lineHasReceiveDiscrepancy(line) ? (
+                              <button
+                                type="button"
+                                className="mt-1 block max-w-full truncate border-0 bg-transparent p-0 text-left text-[length:var(--exits-text-xs)] font-normal underline-offset-2 hover:underline"
+                                data-testid={`receive-discrepancy-summary-${line.productId}`}
+                                disabled={!canEdit || editLocked}
+                                onClick={() => openDiscrepancyForProduct(line.productId)}
+                              >
+                                {needsClassification ? (
+                                  <span className="text-[var(--exits-warning)]">
+                                    {t("purchasing.discrepancy")}: {t("purchasing.needsClassification")} ⚠
+                                  </span>
+                                ) : discrepancySummary ? (
+                                  <span className="text-muted">
+                                    {t("purchasing.discrepancy")}: {discrepancySummary} ✓
+                                  </span>
+                                ) : null}
+                              </button>
+                            ) : null}
+                            {showExpiry ? (
+                              <div className="text-[length:var(--exits-text-xs)] text-muted">
+                                {t("purchasing.expiryDate")}
+                              </div>
+                            ) : null}
+                            {editing && showExpiry ? (
                               <div className="mt-2 flex min-w-[12rem] flex-col gap-1.5">
                                 <input
                                   type="date"
@@ -995,7 +1231,7 @@ export function PurchaseOrderReceivePage() {
                                 />
                               </div>
                             ) : null}
-                            {reviewing && showExpiry ? (
+                            {!editing && showExpiry && (line.expiryDate || line.lotNumber.trim()) ? (
                               <div className="mt-1 text-[length:var(--exits-text-xs)] text-muted">
                                 {line.expiryDate || "—"}
                                 {line.lotNumber.trim() ? ` · ${line.lotNumber}` : ""}
@@ -1011,41 +1247,118 @@ export function PurchaseOrderReceivePage() {
                           <ExitsTableCell cellAlign="numeric" className="tabular-nums">
                             {line.outstandingQty}
                           </ExitsTableCell>
-                          <ExitsTableCell cellAlign="text">
-                            {editable ? (
-                              <input
-                                className="exits-input receive-qty-input"
-                                value={line.goodText}
-                                onChange={(e) =>
-                                  updateLine(line.productId, { goodText: e.target.value })
-                                }
-                                inputMode="decimal"
-                                aria-label={t("purchasing.receiveNow")}
-                                data-testid={`receive-good-${line.productId}`}
-                              />
+                          <ExitsTableCell cellAlign="numeric">
+                            {editReceiveNow ? (
+                              <div className="exits-table__qty-edit">
+                                <ExitsTableInlineEditor
+                                  invalid={Boolean(editErrors.receiveNow)}
+                                  errorId={
+                                    editErrors.receiveNow ? rowValidationId : undefined
+                                  }
+                                >
+                                  <QuantityInput
+                                    label={t("purchasing.receiveNow")}
+                                    value={line.goodText}
+                                    onChange={(e) => {
+                                      updateLine(line.productId, {
+                                        goodText: e.target.value,
+                                        // Reset classification when good qty changes.
+                                        damagedText: "0",
+                                        notDeliveredText: "0",
+                                        remarksText: "",
+                                      });
+                                      setEditErrors((prev) => ({
+                                        ...prev,
+                                        receiveNow: undefined,
+                                      }));
+                                    }}
+                                    onBlur={(e) =>
+                                      onReceiveQtyBlur({
+                                        ...line,
+                                        goodText: e.currentTarget.value,
+                                      })
+                                    }
+                                    aria-invalid={Boolean(editErrors.receiveNow)}
+                                    aria-describedby={
+                                      editErrors.receiveNow ? rowValidationId : undefined
+                                    }
+                                    data-testid={`receive-good-${line.productId}`}
+                                  />
+                                </ExitsTableInlineEditor>
+                                <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
+                              </div>
                             ) : (
-                              <span className="tabular-nums">
-                                {line.goodText || "0"} {line.uom}
+                              <span className="inline-flex items-center justify-end gap-1 tabular-nums">
+                                {line.goodText || "0"}
+                                <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
                               </span>
                             )}
                           </ExitsTableCell>
-                          <ExitsTableCell cellAlign="text">
-                            {editable ? (
-                              <input
-                                className="exits-input receive-qty-input"
-                                value={line.damagedText}
-                                onChange={(e) =>
-                                  updateLine(line.productId, { damagedText: e.target.value })
-                                }
-                                inputMode="decimal"
-                                aria-label={t("purchasing.damaged")}
-                                data-testid={`receive-damaged-${line.productId}`}
-                              />
-                            ) : (
-                              <span className="tabular-nums">{line.damagedText || "0"}</span>
-                            )}
+                          <ExitsTableCell cellAlign="actions" colSize="actions">
+                            {canEdit ? (
+                              <ExitsTableActions
+                                data-testid={`receive-line-actions-${line.productId}`}
+                              >
+                                {editing ? (
+                                  <>
+                                    <ReceiveIconAction
+                                      label={`Save ${line.name} changes`}
+                                      variant="success"
+                                      data-testid={`receive-good-edit-save-${line.productId}`}
+                                      onClick={() => finishReceiveEdit(line)}
+                                    >
+                                      <Check className="size-4" aria-hidden />
+                                    </ReceiveIconAction>
+                                    <ReceiveIconAction
+                                      label={`Reset ${line.name} to original`}
+                                      title="Reset"
+                                      className="exits-table__action-reset"
+                                      data-testid={`receive-good-edit-reset-${line.productId}`}
+                                      onClick={() => resetReceiveEdit(line)}
+                                    >
+                                      <RotateCcw className="size-4" aria-hidden />
+                                    </ReceiveIconAction>
+                                  </>
+                                ) : (
+                                  <ExitsTableEditMenu
+                                    fields={receiveEditableFields}
+                                    ariaLabel={`Edit ${line.name}`}
+                                    disabled={editLocked}
+                                    data-testid={`receive-line-edit-menu-${line.productId}`}
+                                    onSelectField={(key) => startReceiveFieldEdit(line, key)}
+                                    onEditAll={() => startReceiveEditAll(line)}
+                                  />
+                                )}
+                              </ExitsTableActions>
+                            ) : null}
                           </ExitsTableCell>
                         </ExitsTableRow>
+                        {showRowValidation ? (
+                          <ExitsTableRow error>
+                            <ExitsTableCell colSpan={6}>
+                              <div
+                                id={rowValidationId}
+                                className="exits-table__row-validation"
+                                role="alert"
+                                data-testid={`receive-line-validation-${line.productId}`}
+                              >
+                                <span className="exits-table__row-validation-message">
+                                  {rowErrorMessages.join(" ")}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="exits-table__row-validation-close"
+                                  aria-label={t("diagnostics.dismiss")}
+                                  data-testid={`receive-line-validation-close-${line.productId}`}
+                                  onClick={dismissReceiveEditErrors}
+                                >
+                                  <X className="size-3.5" aria-hidden strokeWidth={2} />
+                                </button>
+                              </div>
+                            </ExitsTableCell>
+                          </ExitsTableRow>
+                        ) : null}
+                        </Fragment>
                       );
                     })}
                   </ExitsTableBody>
@@ -1054,11 +1367,12 @@ export function PurchaseOrderReceivePage() {
                       <ExitsTableCell cellAlign="text" colSpan={4}>
                         {t("purchasing.receiptTotal")}
                       </ExitsTableCell>
-                      <ExitsTableCell cellAlign="numeric" colSpan={2}>
+                      <ExitsTableCell cellAlign="numeric">
                         <span className="font-semibold tabular-nums" data-testid="receive-estimated-total">
                           <MoneyDisplay amount={estimatedTotal} />
                         </span>
                       </ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions" colSize="actions" aria-hidden />
                     </ExitsTableRow>
                   </ExitsTableFooter>
                 </ExitsTable>
@@ -1067,76 +1381,145 @@ export function PurchaseOrderReceivePage() {
                   {pagedLines.map((line) => {
                     const goodQty = parseNonNegativeQty(line.goodText) ?? 0;
                     const showExpiry = line.tracksExpiration && goodQty > 0;
-                    const editable = !reviewing && canReceive && line.outstandingQty > 0;
+                    const canEdit = !reviewing && canReceive && line.outstandingQty > 0;
+                    const mobileEditing = mobileEditingProductId === line.productId;
+                    const editLocked =
+                      (mobileEditingProductId !== null && mobileEditingProductId !== line.productId) ||
+                      (editingProductId !== null && editingProductId !== line.productId);
+                    const editReceiveNow = mobileEditing && mobileEditingFields.has("receiveNow");
                     return (
                       <ExitsTableMobileRow
                         key={line.productId}
+                        editing={mobileEditing}
                         data-testid={`receive-line-mobile-${line.productId}`}
                       >
                         <div className="exits-table-mobile__title-row">
                           <p className="exits-table-mobile__title">{line.name}</p>
+                          {canEdit ? (
+                            <div className="exits-table-mobile__actions">
+                              {mobileEditing ? (
+                                <>
+                                  <ReceiveIconAction
+                                    label={`Save ${line.name} changes`}
+                                    variant="success"
+                                    data-testid={`receive-good-edit-save-mobile-${line.productId}`}
+                                    onClick={() => finishReceiveEdit(line, true)}
+                                  >
+                                    <Check className="size-4" aria-hidden />
+                                  </ReceiveIconAction>
+                                  <ReceiveIconAction
+                                    label={`Reset ${line.name} to original`}
+                                    title="Reset"
+                                    className="exits-table__action-reset"
+                                    data-testid={`receive-good-edit-reset-mobile-${line.productId}`}
+                                    onClick={() => resetReceiveEdit(line, true)}
+                                  >
+                                    <RotateCcw className="size-4" aria-hidden />
+                                  </ReceiveIconAction>
+                                </>
+                              ) : (
+                                <ExitsTableEditMenu
+                                  fields={receiveEditableFields}
+                                  ariaLabel={`Edit ${line.name}`}
+                                  disabled={editLocked}
+                                  data-testid={`receive-line-edit-menu-mobile-${line.productId}`}
+                                  onSelectField={(key) => startReceiveFieldEdit(line, key, true)}
+                                  onEditAll={() => startReceiveEditAll(line, true)}
+                                />
+                              )}
+                            </div>
+                          ) : null}
                         </div>
+                        {(() => {
+                          const needsClassification = unclassifiedProductIds.has(line.productId);
+                          const discrepancySummary = formatReceiveDiscrepancySummary(line, {
+                            damaged: t("purchasing.damaged"),
+                            notDelivered: t("purchasing.notDelivered"),
+                          });
+                          if (!lineHasReceiveDiscrepancy(line) || mobileEditing) {
+                            return null;
+                          }
+                          return (
+                            <button
+                              type="button"
+                              className="mt-1 block max-w-full truncate border-0 bg-transparent p-0 text-left text-[length:var(--exits-text-xs)] underline-offset-2 hover:underline"
+                              data-testid={`receive-discrepancy-summary-mobile-${line.productId}`}
+                              disabled={!canEdit || editLocked}
+                              onClick={() => openDiscrepancyForProduct(line.productId)}
+                            >
+                              {needsClassification ? (
+                                <span className="text-[var(--exits-warning)]">
+                                  {t("purchasing.discrepancy")}: {t("purchasing.needsClassification")} ⚠
+                                </span>
+                              ) : discrepancySummary ? (
+                                <span className="text-muted">
+                                  {t("purchasing.discrepancy")}: {discrepancySummary} ✓
+                                </span>
+                              ) : null}
+                            </button>
+                          );
+                        })()}
                         <p className="exits-table-mobile__meta">
                           {t("purchasing.ordered")}: {line.orderedQty} ·{" "}
                           {t("purchasing.receivedBefore")}: {line.receivedQty} ·{" "}
-                          {t("purchasing.outstanding")}: {line.outstandingQty} {line.uom}
+                          {t("purchasing.outstanding")}: {line.outstandingQty}{" "}
+                          <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
                         </p>
-                        {editable ? (
+                        {editReceiveNow ? (
                           <div className="mt-2 grid gap-2">
-                            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                              {t("purchasing.receiveNow")}
-                              <input
-                                className="exits-input"
-                                value={line.goodText}
-                                onChange={(e) =>
-                                  updateLine(line.productId, { goodText: e.target.value })
-                                }
-                                data-testid={`receive-good-mobile-${line.productId}`}
-                              />
-                            </label>
-                            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                              {t("purchasing.damaged")}
-                              <input
-                                className="exits-input"
-                                value={line.damagedText}
-                                onChange={(e) =>
-                                  updateLine(line.productId, { damagedText: e.target.value })
-                                }
-                                data-testid={`receive-damaged-mobile-${line.productId}`}
-                              />
-                            </label>
+                            <div className="exits-table__qty-edit">
+                              <ExitsTableInlineEditor align="start">
+                                <QuantityInput
+                                  label={t("purchasing.receiveNow")}
+                                  value={line.goodText}
+                                  onChange={(e) =>
+                                    updateLine(line.productId, {
+                                      goodText: e.target.value,
+                                      damagedText: "0",
+                                      notDeliveredText: "0",
+                                      remarksText: "",
+                                    })
+                                  }
+                                  onBlur={(e) =>
+                                    onReceiveQtyBlur({
+                                      ...line,
+                                      goodText: e.currentTarget.value,
+                                    })
+                                  }
+                                  data-testid={`receive-good-mobile-${line.productId}`}
+                                />
+                              </ExitsTableInlineEditor>
+                              <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
+                            </div>
                             {showExpiry ? (
                               <>
-                                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                                  {t("purchasing.expiryDate")} *
-                                  <input
-                                    type="date"
-                                    className="exits-input"
-                                    value={line.expiryDate}
-                                    onChange={(e) =>
-                                      updateLine(line.productId, { expiryDate: e.target.value })
-                                    }
-                                    data-testid={`receive-expiry-mobile-${line.productId}`}
-                                  />
-                                </label>
-                                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                                  {t("purchasing.lotNumber")}
-                                  <input
-                                    className="exits-input"
-                                    value={line.lotNumber}
-                                    onChange={(e) =>
-                                      updateLine(line.productId, { lotNumber: e.target.value })
-                                    }
-                                    data-testid={`receive-lot-mobile-${line.productId}`}
-                                  />
-                                </label>
+                                <input
+                                  type="date"
+                                  className="exits-input"
+                                  value={line.expiryDate}
+                                  onChange={(e) =>
+                                    updateLine(line.productId, { expiryDate: e.target.value })
+                                  }
+                                  aria-label={t("purchasing.expiryDate")}
+                                  data-testid={`receive-expiry-mobile-${line.productId}`}
+                                />
+                                <input
+                                  className="exits-input"
+                                  value={line.lotNumber}
+                                  onChange={(e) =>
+                                    updateLine(line.productId, { lotNumber: e.target.value })
+                                  }
+                                  placeholder={t("purchasing.lotNumber")}
+                                  aria-label={t("purchasing.lotNumber")}
+                                  data-testid={`receive-lot-mobile-${line.productId}`}
+                                />
                               </>
                             ) : null}
                           </div>
                         ) : (
-                          <p className="exits-table-mobile__math">
-                            {t("purchasing.receiveNow")}: {line.goodText || "0"} ·{" "}
-                            {t("purchasing.damaged")}: {line.damagedText || "0"}
+                          <p className="exits-table-mobile__math mt-2">
+                            {t("purchasing.receiveNow")}: {line.goodText || "0"}{" "}
+                            <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
                           </p>
                         )}
                       </ExitsTableMobileRow>
@@ -1144,24 +1527,126 @@ export function PurchaseOrderReceivePage() {
                   })}
                 </ExitsTableMobile>
 
-                <ExitsTablePagination
-                  page={page}
-                  pageSize={pageSize}
-                  total={filteredSortedLines.length}
-                  pageSizeOptions={PAGE_SIZE_OPTIONS}
-                  onPageChange={setPage}
-                  onPageSizeChange={(size) => {
-                    setPageSize(size);
-                    setPage(1);
-                  }}
-                  rowsPerPageLabel={t("exitsTable.rowsPerPage")}
-                  previousLabel={t("exitsTable.previous")}
-                  nextLabel={t("exitsTable.next")}
-                  rangeLabel={t("exitsTable.range")}
-                />
+                {filteredSortedLines.length > 10 ? (
+                  <ExitsTablePagination
+                    page={page}
+                    pageSize={pageSize}
+                    total={filteredSortedLines.length}
+                    pageSizeOptions={PAGE_SIZE_OPTIONS}
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size);
+                      setPage(1);
+                    }}
+                    rowsPerPageLabel={t("exitsTable.rowsPerPage")}
+                    previousLabel={t("exitsTable.previous")}
+                    nextLabel={t("exitsTable.next")}
+                    rangeLabel={t("exitsTable.range")}
+                  />
+                ) : null}
               </>
             )}
           </ExitsTableContainer>
+          ) : (
+            <Card data-testid="receive-review-summary">
+              <h2 className="m-0 mb-3 text-[length:var(--exits-text-md)] font-medium">
+                {t("purchasing.reviewReceipt")}
+              </h2>
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {(lines ?? []).map((line) => {
+                  const good = parseNonNegativeQty(line.goodText) ?? 0;
+                  const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
+                  const notDelivered = parseNonNegativeQty(line.notDeliveredText) ?? 0;
+                  const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
+                  return (
+                    <li
+                      key={line.productId}
+                      className="rounded-md border border-border p-3"
+                      data-testid={`receive-review-line-${line.productId}`}
+                    >
+                      <p className="m-0 font-medium">{line.name}</p>
+                      <dl className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]">
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="text-muted">{t("purchasing.ordered")}:</dt>
+                          <dd className="m-0 tabular-nums">
+                            {formatStockQtyLabel(line.orderedQty, line.uom)}
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="text-muted">{t("purchasing.outstanding")}:</dt>
+                          <dd className="m-0 tabular-nums">
+                            {formatStockQtyLabel(line.outstandingQty, line.uom)}
+                          </dd>
+                        </div>
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="text-muted">{t("purchasing.goodReceived")}:</dt>
+                          <dd className="m-0 tabular-nums">
+                            {formatStockQtyLabel(good, line.uom)}
+                          </dd>
+                        </div>
+                        {discrepancy > 1e-9 ? (
+                          <>
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="text-muted">{t("purchasing.damaged")}:</dt>
+                              <dd className="m-0 tabular-nums">
+                                {formatStockQtyLabel(damaged, line.uom)}
+                              </dd>
+                            </div>
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="text-muted">{t("purchasing.notDelivered")}:</dt>
+                              <dd className="m-0 tabular-nums">
+                                {formatStockQtyLabel(notDelivered, line.uom)}
+                              </dd>
+                            </div>
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="text-muted">{t("purchasing.remainingDecisionTitle")}:</dt>
+                              <dd className="m-0">
+                                {line.cancelRemaining
+                                  ? t("purchasing.cancelRemaining")
+                                  : t("purchasing.deliverLater")}
+                              </dd>
+                            </div>
+                            {line.remarksText.trim() ? (
+                              <div className="flex flex-wrap gap-x-2">
+                                <dt className="text-muted">{t("purchasing.discrepancyNote")}:</dt>
+                                <dd className="m-0">{line.remarksText.trim()}</dd>
+                              </div>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </dl>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="mt-4 grid gap-2 border-t border-border pt-3 text-[length:var(--exits-text-sm)]">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-muted">{t("purchasing.receiptTotal")}</span>
+                  <span className="font-semibold tabular-nums" data-testid="receive-review-estimated-total">
+                    <MoneyDisplay amount={estimatedTotal} />
+                  </span>
+                </div>
+                {po.paymentTermLabel ? (
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="text-muted">{t("purchasing.paymentMethod")}</span>
+                    <span>{po.paymentTermLabel}</span>
+                  </div>
+                ) : null}
+                {deliveryReference.trim() ? (
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="text-muted">{t("purchasing.deliveryReference")}</span>
+                    <span>{deliveryReference.trim()}</span>
+                  </div>
+                ) : null}
+                {notes.trim() ? (
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="text-muted">{t("purchasing.receiveNotes")}</span>
+                    <span className="text-right">{notes.trim()}</span>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          )}
 
           {reviewing && remainingDecisionLines.length > 0 ? (
             <Card data-testid="receive-remaining-decisions">
@@ -1237,19 +1722,18 @@ export function PurchaseOrderReceivePage() {
               <ReceivePaymentSection
                 estimatedTotal={estimatedTotal}
                 mode={paymentMode}
-                onModeChange={onPaymentModeChange}
+                onModeChange={() => {}}
+                lockedFromPo
+                lockedPaymentMethodLabel={po?.paymentTermLabel}
+                settlementFields={settlementFields}
+                onSettlementFieldsChange={setSettlementFields}
                 paidNowText={paidNowText}
-                onPaidNowChange={(value) => {
-                  setPaidNowTouched(true);
-                  setPaidNowText(value);
-                }}
+                onPaidNowChange={setPaidNowText}
                 paymentMethod={paymentMethod}
                 onPaymentMethodChange={setPaymentMethod}
                 dueDate={dueDate}
                 onDueDateChange={setDueDate}
-                paidNowValue={
-                  paymentMode === "paidInFull" ? estimatedTotal : paidNowValue
-                }
+                paidNowValue={paidNowValue}
               />
             </div>
           ) : null}
@@ -1258,19 +1742,18 @@ export function PurchaseOrderReceivePage() {
             <ReceivePaymentSection
               estimatedTotal={estimatedTotal}
               mode={paymentMode}
-              onModeChange={onPaymentModeChange}
+              onModeChange={() => {}}
+              lockedFromPo
+              lockedPaymentMethodLabel={po?.paymentTermLabel}
+              settlementFields={settlementFields}
+              onSettlementFieldsChange={setSettlementFields}
               paidNowText={paidNowText}
-              onPaidNowChange={(value) => {
-                setPaidNowTouched(true);
-                setPaidNowText(value);
-              }}
+              onPaidNowChange={setPaidNowText}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={setPaymentMethod}
               dueDate={dueDate}
               onDueDateChange={setDueDate}
-              paidNowValue={
-                paymentMode === "paidInFull" ? estimatedTotal : paidNowValue
-              }
+              paidNowValue={paidNowValue}
               disabled={busy || statusLocked}
             />
           ) : null}
@@ -1307,6 +1790,32 @@ export function PurchaseOrderReceivePage() {
           </div>
         </>
       )}
+
+      <ReceiveDiscrepancyDialog
+        open={discrepancyOpen}
+        lines={discrepancyLines}
+        onChangeLine={(productId, patch) => {
+          const next: Partial<LineEdit> = {};
+          if (patch.damagedText !== undefined) next.damagedText = patch.damagedText;
+          if (patch.notDeliveredText !== undefined) next.notDeliveredText = patch.notDeliveredText;
+          if (patch.remarksText !== undefined) next.remarksText = patch.remarksText;
+          updateLine(productId, next);
+        }}
+        onCancel={closeDiscrepancyDialog}
+        onConfirm={onDiscrepancyConfirmed}
+        title={t("purchasing.discrepancyClassifyTitle")}
+        classifyHint={t("purchasing.discrepancyClassifyHint")}
+        allDamagedLabel={t("purchasing.allDamaged")}
+        allNotDeliveredLabel={t("purchasing.allNotDelivered")}
+        damagedLabel={t("purchasing.damaged")}
+        notDeliveredLabel={t("purchasing.notDelivered")}
+        remarksLabel={t("purchasing.discrepancyNote")}
+        remarksRequiredLabel={t("checkout.fieldRequired")}
+        remainingToClassifyLabel={t("purchasing.remainingToClassify")}
+        cancelLabel={t("purchasing.cancel")}
+        confirmLabel={t("purchasing.saveClassification")}
+        notAcceptedTemplate={t("purchasing.notAcceptedQty")}
+      />
     </div>
   );
 }

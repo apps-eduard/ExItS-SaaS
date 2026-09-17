@@ -43,6 +43,7 @@ import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
@@ -122,6 +123,11 @@ function stepUpMessage(reason: GovernanceStepUpFailureReason, t: (key: MessageKe
 
 export function BranchManagementDetailPage() {
   const { t } = useI18n();
+  const smartBack = usePageSmartBack({
+    fallback: "branches",
+    backLabel: t("branches.backList"),
+    backTestId: "page-header-back-branches",
+  });
   const { branchId = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -407,9 +413,7 @@ export function BranchManagementDetailPage() {
         <PageHeader
           title={t("branches.mgmt.title")}
           description={t("branches.mgmt.denied")}
-          backTo="/org/branches"
-          backLabel={t("branches.backList")}
-          backTestId="page-header-back-branches"
+          {...smartBack}
         />
       </div>
     );
@@ -425,9 +429,7 @@ export function BranchManagementDetailPage() {
         <PageHeader
           title={t("branches.mgmt.title")}
           description={t("branches.mgmt.lede")}
-          backTo="/org/branches"
-          backLabel={t("branches.backList")}
-          backTestId="page-header-back-branches"
+          {...smartBack}
         />
         <ErrorState
           title={t("branches.notFound")}
@@ -488,9 +490,7 @@ export function BranchManagementDetailPage() {
       <PageHeader
         title={branch.name}
         description={t("branches.mgmt.lede")}
-        backTo="/org/branches"
-        backLabel={t("branches.backList")}
-        backTestId="page-header-back-branches"
+        {...smartBack}
       />
 
       <div className="branch-mgmt-card__badges flex flex-wrap gap-2">

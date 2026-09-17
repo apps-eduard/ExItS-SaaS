@@ -2,6 +2,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 
@@ -56,7 +57,14 @@ internal static class PurchaseEntityMapper
             record.SupplierBranchNameSnapshot,
             record.IntendedReceivingBranchId,
             record.CancelledAtUtc,
-            record.CancelledByUserId);
+            record.CancelledByUserId,
+            record.RemainingClosedAtUtc,
+            record.RemainingClosedByUserId,
+            record.RemainingClosedReason,
+            record.FinalAcceptedValue,
+            record.CancelledRemainingValue,
+            record.RefundDueAmount,
+            record.AmountPaidSnapshot);
     }
 
     public static PurchaseOrderRecord ToRecord(PurchaseOrder po) =>
@@ -80,7 +88,14 @@ internal static class PurchaseEntityMapper
             PaymentTerm = (int)po.PaymentTerm,
             SupplierBranchId = po.SupplierBranchId,
             SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot,
-            IntendedReceivingBranchId = po.IntendedReceivingBranchId
+            IntendedReceivingBranchId = po.IntendedReceivingBranchId,
+            RemainingClosedAtUtc = po.RemainingClosedAtUtc,
+            RemainingClosedByUserId = po.RemainingClosedByUserId,
+            RemainingClosedReason = po.RemainingClosedReason,
+            FinalAcceptedValue = po.FinalAcceptedValue,
+            CancelledRemainingValue = po.CancelledRemainingValue,
+            RefundDueAmount = po.RefundDueAmount,
+            AmountPaidSnapshot = po.AmountPaidSnapshot
         };
 
     public static void ApplyToRecord(PurchaseOrder po, PurchaseOrderRecord record)
@@ -101,6 +116,13 @@ internal static class PurchaseEntityMapper
         record.SupplierBranchId = po.SupplierBranchId;
         record.SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot;
         record.IntendedReceivingBranchId = po.IntendedReceivingBranchId;
+        record.RemainingClosedAtUtc = po.RemainingClosedAtUtc;
+        record.RemainingClosedByUserId = po.RemainingClosedByUserId;
+        record.RemainingClosedReason = po.RemainingClosedReason;
+        record.FinalAcceptedValue = po.FinalAcceptedValue;
+        record.CancelledRemainingValue = po.CancelledRemainingValue;
+        record.RefundDueAmount = po.RefundDueAmount;
+        record.AmountPaidSnapshot = po.AmountPaidSnapshot;
     }
 
     public static PurchaseOrderLineRecord ToRecord(PurchaseOrderLine line) =>
@@ -157,6 +179,23 @@ internal static class PurchaseEntityMapper
                 l.LotNumber))
             .ToList();
 
+        UtangCheckClearingStatus? clearing = null;
+        if (!string.IsNullOrWhiteSpace(record.CheckClearingStatus)
+            && UtangCheckClearingStatuses.TryParse(record.CheckClearingStatus, out var parsedClearing))
+        {
+            clearing = parsedClearing;
+        }
+
+        var settlement = new GoodsReceiptSettlement(
+            record.GCashReference,
+            record.BankName,
+            record.TransferOrDepositReference,
+            record.SettlementDate,
+            record.CheckNumber,
+            record.CheckDate,
+            record.SettlementNotes,
+            clearing);
+
         return GoodsReceipt.Rehydrate(
             grnId,
             orgId,
@@ -170,6 +209,7 @@ internal static class PurchaseEntityMapper
             record.ReceivedBy,
             record.ReceivingBranchId is null ? null : PosBranchId.From(record.ReceivingBranchId.Value),
             lines,
+            settlement,
             GoodsReceiptStatuses.Parse(record.Status),
             record.VoidedAtUtc,
             record.VoidedByUserId,
@@ -193,7 +233,15 @@ internal static class PurchaseEntityMapper
             Status = GoodsReceiptStatuses.ToCode(receipt.Status),
             VoidedAtUtc = receipt.VoidedAtUtc,
             VoidedByUserId = receipt.VoidedByUserId,
-            VoidReason = receipt.VoidReason
+            VoidReason = receipt.VoidReason,
+            GCashReference = receipt.Settlement.GCashReference,
+            BankName = receipt.Settlement.BankName,
+            TransferOrDepositReference = receipt.Settlement.TransferOrDepositReference,
+            SettlementDate = receipt.Settlement.SettlementDate,
+            CheckNumber = receipt.Settlement.CheckNumber,
+            CheckDate = receipt.Settlement.CheckDate,
+            SettlementNotes = receipt.Settlement.SettlementNotes,
+            CheckClearingStatus = receipt.Settlement.CheckClearingStatus?.ToString()
         };
 
     public static void ApplyToRecord(GoodsReceipt receipt, GoodsReceiptRecord record)

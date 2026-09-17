@@ -30,6 +30,7 @@ internal static class InventoryEndpoints
         StockRequestEndpoints.Map(group);
 
         group.MapGet("/{productId:guid}", GetByProduct);
+        group.MapGet("/{productId:guid}/reservations", GetProductReservations);
         group.MapPut("/{productId:guid}/reorder", SetReorder);
         group.MapDelete("/{productId:guid}/reorder", ClearReorderOverride);
         group.MapGet("/{productId:guid}/reconciliation", GetReconciliation);
@@ -317,6 +318,36 @@ internal static class InventoryEndpoints
                 "Product was not found.",
                 StatusCodes.Status404NotFound)
             : Results.Ok(dto);
+    }
+
+    private static async Task<IResult> GetProductReservations(
+        HttpRequest request,
+        Guid productId,
+        InventoryProductReservationsQuery query,
+        BranchInventoryContextResolver branchResolver,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ViewInventory, out var organizationId, out var problem))
+        {
+            return problem!;
+        }
+
+        var branchResolved = await ResolveInventoryBranchAsync(request, organizationId, branchResolver, ct).ConfigureAwait(false);
+        if (!branchResolved.Success)
+        {
+            return branchResolved.Problem!;
+        }
+
+        var result = await query
+            .ExecuteAsync(organizationId, productId, branchResolved.Context!, ct)
+            .ConfigureAwait(false);
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : PosApiResults.Problem(
+                result.ErrorCode!,
+                result.ErrorMessage!,
+                PosApiResults.MapStatusCode(result.ErrorCode!));
     }
 
     private static async Task<IResult> ListExpiringLots(

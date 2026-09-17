@@ -464,9 +464,12 @@ function Stop-LocalValidationDockerAppServices {
         [Parameter(Mandatory)][string]$EnvFile
     )
 
+    # admin-web-react (and other apps) live under profile "apps". Without --profile,
+    # compose stop skips them and :8095 stays occupied across host-mode restarts.
     $args = @(
         'compose', '-p', $LocalValidationStack.ComposeProjectName,
         '-f', $ComposeFile, '--env-file', $EnvFile,
+        '--profile', 'apps',
         'stop'
     ) + $LocalValidationStack.AppComposeServices
     $exitCode = Invoke-LocalValidationDocker -DockerArgs $args

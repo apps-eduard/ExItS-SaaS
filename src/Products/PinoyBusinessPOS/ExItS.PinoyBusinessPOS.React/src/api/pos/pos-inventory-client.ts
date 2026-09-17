@@ -35,6 +35,34 @@ export type PosInventoryAccountDto = {
   categoryId?: string | null;
   categoryName?: string | null;
   monitoringMode?: "BranchDefault" | "Custom" | "NotMonitored" | string;
+  reservedQuantity?: number;
+  availableQuantity?: number;
+};
+
+export type PosInventoryReservationItemDto = {
+  reservationId: string;
+  sourceType: string;
+  connectedPurchaseOrderId: string;
+  buyerPurchaseOrderId?: string | null;
+  referenceNumber?: string | null;
+  counterpartyName?: string | null;
+  reservedQuantity: number;
+  reservationType: string;
+  status: string;
+  expiresAtUtc?: string | null;
+  branchId: string;
+  branchName?: string | null;
+  createdAtUtc: string;
+};
+
+export type PosInventoryReservationsDto = {
+  productId: string;
+  productName: string;
+  unitOfMeasure: string;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  reservations: PosInventoryReservationItemDto[];
 };
 
 export type PosInventoryBranchReorderDefaultDto = {
@@ -288,6 +316,19 @@ export function getInventoryProduct(
     workspace,
     signal,
     path: `${INVENTORY_PATH}/${productId}`,
+  });
+}
+
+export function getInventoryProductReservations(
+  workspace: PosWorkspaceScope,
+  productId: string,
+  signal?: AbortSignal,
+): Promise<PosInventoryReservationsDto> {
+  return posRequest({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${INVENTORY_PATH}/${productId}/reservations`,
   });
 }
 

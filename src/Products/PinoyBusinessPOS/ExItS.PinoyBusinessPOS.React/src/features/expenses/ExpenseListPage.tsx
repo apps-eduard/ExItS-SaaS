@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Plus, Tags, Wallet } from "lucide-react";
 import { canManageExpenses } from "@/access/pos-capabilities";
@@ -505,7 +505,7 @@ export function ExpenseListPage() {
           const isVoided = item.status === "Voided";
           return (
             <li key={item.expenseId}>
-              <Link
+              <AppLinkWithReturn
                 to={`/expenses/${item.expenseId}`}
                 className="exits-list__card expense-row flex h-full w-full min-w-0 items-center gap-3 text-foreground no-underline"
                 data-testid={`expense-row-${item.expenseId}`}
@@ -537,7 +537,7 @@ export function ExpenseListPage() {
                   </span>
                   <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
                 </span>
-              </Link>
+              </AppLinkWithReturn>
             </li>
           );
         })}
