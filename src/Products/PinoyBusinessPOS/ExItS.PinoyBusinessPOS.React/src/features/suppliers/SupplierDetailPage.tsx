@@ -305,6 +305,9 @@ export function SupplierDetailPage() {
       await updateSupplierLocation(workspace, relationshipId, selectedBranchId);
       await queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
+      });
       resetLocationEditor();
     } catch (err) {
       if (err instanceof PosApiError) {
@@ -364,7 +367,10 @@ export function SupplierDetailPage() {
       />
 
       {showSupplierNotReady ? (
-        <SupplierNotReadyForPoBanner testId="supplier-not-ready-for-po-banner" />
+        <SupplierNotReadyForPoBanner
+          testId="supplier-not-ready-for-po-banner"
+          blockerCategories={commerceReadinessQuery.data?.blockerCategories}
+        />
       ) : null}
 
       {actionError ? (

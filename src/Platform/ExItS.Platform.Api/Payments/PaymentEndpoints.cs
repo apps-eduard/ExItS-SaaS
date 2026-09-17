@@ -462,20 +462,31 @@ internal static class PaymentEndpoints
             int? page,
             int? pageSize,
             SaaSPaymentQueryService queries,
+            PlatformOrganizationAuthz orgAuthz,
             PlatformAuthz authz,
             CancellationToken ct) =>
         {
-            var denied = await authz.EnsureAsync(
-                PlatformPermission.ManageManualPayments,
-                PlatformAuditActions.PlatformAccessChecked,
-                "SaaSPayment",
-                organizationId.ToString("D"),
-                organizationId,
-                summary: "List organization manual payments.",
-                cancellationToken: ct).ConfigureAwait(false);
-            if (denied is not null)
+            // Owner commercial self-service (Subscription & Billing) or Platform finance staff.
+            var orgDenied = await orgAuthz
+                .EnsureCanManageOrganizationCommercialAsync(
+                    organizationId,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    ct)
+                .ConfigureAwait(false);
+            if (orgDenied is not null)
             {
-                return denied;
+                var platformDenied = await authz.EnsureAsync(
+                    PlatformPermission.ManageManualPayments,
+                    PlatformAuditActions.PlatformAccessChecked,
+                    "SaaSPayment",
+                    organizationId.ToString("D"),
+                    organizationId,
+                    summary: "List organization manual payments.",
+                    cancellationToken: ct).ConfigureAwait(false);
+                if (platformDenied is not null)
+                {
+                    return orgDenied;
+                }
             }
 
             var result = await queries

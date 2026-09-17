@@ -267,6 +267,7 @@ builder.Services.AddScoped<GetOrganizationPublicIdentity>();
 builder.Services.AddScoped<ResolvePublicOrganizationId>();
 builder.Services.AddScoped<LookupPublicStoreLanding>();
 builder.Services.AddScoped<LookupPublicStoreBranches>();
+builder.Services.AddScoped<LookupPublicStoreBranchCommerceFulfillment>();
 builder.Services.AddScoped<ResolveExItsQr>();
 builder.Services.Configure<PosProductApiOptions>(builder.Configuration.GetSection(PosProductApiOptions.SectionName));
 builder.Services.AddHttpClient<IPosOrganizationCatalogReadClient, PosOrganizationCatalogReadClient>((sp, client) =>

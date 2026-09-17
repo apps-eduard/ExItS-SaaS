@@ -8,6 +8,7 @@ using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Payments;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 
 namespace ExItS.PinoyBusinessPOS.Application.Payments;
 
@@ -60,7 +61,15 @@ public sealed record BusinessReceivableDto(
     decimal OutstandingBalance,
     decimal OriginalAmount,
     DateTimeOffset CreatedAtUtc,
-    string? Remarks);
+    string? Remarks,
+    /// <summary>Open | PartiallyPaid | Paid | Reversed</summary>
+    string Status = "Open",
+    bool IsOverdue = false,
+    /// <summary>Paid at sale/receipt before the credit obligation was posted (usually 0 — netted).</summary>
+    decimal PaidAtSourceAmount = 0m,
+    /// <summary>Settled repayments applied to this credit via FIFO aging.</summary>
+    decimal LaterPaymentsAmount = 0m,
+    Guid? SourceId = null);
 
 public static class BusinessRepaymentMapper
 {
@@ -165,6 +174,24 @@ public sealed class BusinessOutstandingBalanceService
         Guid buyerOrganizationId,
         CancellationToken cancellationToken = default)
     {
+        var all = await ListReceivablesAsync(sellerOrganizationId, buyerOrganizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return all
+            .Where(r =>
+                (r.Status is "Open" or "PartiallyPaid")
+                && r.OutstandingBalance > 0m)
+            .ToList();
+    }
+
+    /// <summary>
+    /// All aged B2B credit obligations for filters Open | Overdue | Paid | All.
+    /// Source labels are clean business references (no raw <c>sale:guid|…</c> prefixes).
+    /// </summary>
+    public async Task<IReadOnlyList<BusinessReceivableDto>> ListReceivablesAsync(
+        Guid sellerOrganizationId,
+        Guid buyerOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
         var seller = PosOrganizationId.From(sellerOrganizationId);
         var buyer = PosOrganizationId.From(buyerOrganizationId);
         var creditItems = await _credits
@@ -176,38 +203,58 @@ public sealed class BusinessOutstandingBalanceService
             repayments,
             CreditFifoAging.EffectiveBusinessDateUtc(_clock.UtcNow));
         var creditById = creditItems.ToDictionary(c => c.Id.Value);
-        return BusinessCreditPaymentAllocator.FromAged(aged)
+
+        return aged
+            .OrderByDescending(a => a.CreatedAtUtc)
+            .ThenByDescending(a => a.CreditEntryId)
             .Select(o =>
             {
-                var sourceType = "Other";
-                if (ConnectedPoUtangObligationProjection.TryParseGoodsReceiptId(o.Remarks, out _))
+                creditById.TryGetValue(o.CreditEntryId, out var credit);
+                ConnectedPoUtangObligationProjection.TryResolveSource(
+                    o.Remarks,
+                    credit?.SourceSaleId?.Value,
+                    out var sourceType,
+                    out var sourceId,
+                    out var sourceReference);
+
+                var later = SaleMoney.RoundMoney(o.Amount - o.RemainingUnpaidAmount);
+                if (later < 0m)
                 {
-                    sourceType = "PO";
+                    later = 0m;
                 }
-                else if (ConnectedPoUtangObligationProjection.TryParseDirectPurchaseReceiptId(o.Remarks, out _))
+
+                string status;
+                if (string.Equals(o.Status, nameof(CreditEntryStatus.Reversed), StringComparison.Ordinal))
                 {
-                    sourceType = "DirectPurchase";
+                    status = "Reversed";
                 }
-                else if (ConnectedPoUtangObligationProjection.TryParseSaleId(o.Remarks, out _)
-                    || (creditById.TryGetValue(o.CreditEntryId, out var credit)
-                        && credit.SourceSaleId is not null))
+                else if (o.RemainingUnpaidAmount <= 0m)
                 {
-                    sourceType = "Sale";
+                    status = "Paid";
+                }
+                else if (later > 0m)
+                {
+                    status = "PartiallyPaid";
+                }
+                else
+                {
+                    status = "Open";
                 }
 
                 return new BusinessReceivableDto(
                     o.CreditEntryId,
                     sourceType,
-                    ConnectedPoUtangObligationProjection.TryFormatSourceLabelFromRemark(o.Remarks)
-                        ?? (creditById.TryGetValue(o.CreditEntryId, out var linked)
-                            && linked.SourceSaleId is not null
-                            ? linked.Remarks
-                            : null),
+                    sourceReference,
                     o.CurrentDueDate,
                     o.RemainingUnpaidAmount,
-                    aged.First(a => a.CreditEntryId == o.CreditEntryId).Amount,
+                    o.Amount,
                     o.CreatedAtUtc,
-                    o.Remarks);
+                    o.Remarks,
+                    status,
+                    o.IsOverdue,
+                    PaidAtSourceAmount: 0m,
+                    LaterPaymentsAmount: later,
+                    SourceId: sourceId);
             })
             .ToList();
     }

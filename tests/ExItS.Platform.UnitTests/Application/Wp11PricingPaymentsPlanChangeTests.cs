@@ -275,6 +275,71 @@ public sealed class Wp11PricingPaymentsPlanChangeTests
     }
 
     [Fact]
+    public async Task Paid_upgrade_with_simulated_success_updates_plan_and_records_payment()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartActivePaidSubscriptionAsync(
+            ctx.BusinessPlan,
+            ctx.BusinessVersion,
+            BillingCycle.Monthly);
+        await ctx.GenerateSnapshot.ExecuteAsync(sub.Id, expectedNextVersion: 1);
+
+        var upgrade = ctx.CreateUpgrade();
+        var result = await upgrade.ExecuteAsync(
+            ctx.Organization.Id,
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            ctx.ProPlan.Id,
+            BillingCycle.Monthly,
+            idempotencyKey: "pos-upgrade-sim-ok",
+            skipPaymentWhenTrialing: false,
+            paymentSimulation: "succeed");
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ctx.ProPlan.Id, result.Value!.PlanId);
+        Assert.Equal(ctx.ProPlan.MonthlyPrice, result.Value.AgreedPrice);
+        Assert.Equal(BillingCycle.Monthly, result.Value.BillingCycle);
+        Assert.Equal(1, ctx.SaaSPayments.AddCount);
+        Assert.Equal(1, ctx.ProviderPayments.Count);
+        var providerPayment = await ctx.ProviderPayments.GetByIdempotencyKeyAsync("pos-upgrade-sim-ok");
+        Assert.NotNull(providerPayment);
+        Assert.Equal(PaymentProviderResultStatus.Succeeded, providerPayment!.Status);
+    }
+
+    [Fact]
+    public async Task Paid_upgrade_with_simulated_failure_leaves_plan_unchanged()
+    {
+        var ctx = await Wp11CommercialHarness.CreateAsync(T0);
+        var sub = await ctx.StartActivePaidSubscriptionAsync(
+            ctx.BusinessPlan,
+            ctx.BusinessVersion,
+            BillingCycle.Monthly);
+        var originalPlanId = sub.PlanId;
+        var originalPrice = sub.AgreedPrice;
+
+        var upgrade = ctx.CreateUpgrade();
+        var result = await upgrade.ExecuteAsync(
+            ctx.Organization.Id,
+            ProductCode.Create(ProductCode.PinoyBusinessPos),
+            ctx.ProPlan.Id,
+            BillingCycle.Monthly,
+            idempotencyKey: "pos-upgrade-sim-fail",
+            skipPaymentWhenTrialing: false,
+            paymentSimulation: "fail");
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ApplicationErrorCodes.PaymentNotConfirmed, result.ErrorCode);
+
+        var reloaded = (await ctx.Subscriptions.GetByIdAsync(sub.Id))!;
+        Assert.Equal(originalPlanId, reloaded.PlanId);
+        Assert.Equal(originalPrice, reloaded.AgreedPrice);
+        Assert.Equal(0, ctx.SaaSPayments.AddCount);
+        Assert.Equal(1, ctx.ProviderPayments.Count);
+        var providerPayment = await ctx.ProviderPayments.GetByIdempotencyKeyAsync("pos-upgrade-sim-fail");
+        Assert.NotNull(providerPayment);
+        Assert.Equal(PaymentProviderResultStatus.Failed, providerPayment!.Status);
+    }
+
+    [Fact]
     public async Task Downgrade_schedules_pending_plan_without_deleting_subscription()
     {
         var ctx = await Wp11CommercialHarness.CreateAsync(T0);

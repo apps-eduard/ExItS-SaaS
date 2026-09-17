@@ -286,7 +286,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.regionPlaceholder": "Pumili ng rehiyon",
 
-  "branches.deliveryAreas.regionSearchPlaceholder": "Maghanap ng rehiyon…",
+  "branches.deliveryAreas.regionSearchPlaceholder": "Maghanap ng rehiyonâ€¦",
 
   "branches.deliveryAreas.regionSelected": "Napiling rehiyon",
 
@@ -294,7 +294,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.noRegionMatch": "Walang tumutugmang rehiyon",
 
-  "branches.deliveryAreas.regionsLoading": "Nilo-load ang mga rehiyon…",
+  "branches.deliveryAreas.regionsLoading": "Nilo-load ang mga rehiyonâ€¦",
 
   "branches.deliveryAreas.regionsFailed": "Hindi ma-load ang mga rehiyon.",
 
@@ -306,7 +306,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.cityPlaceholder": "Pumili ng lungsod o munisipyo",
 
-  "branches.deliveryAreas.citiesLoading": "Nilo-load ang mga lungsod…",
+  "branches.deliveryAreas.citiesLoading": "Nilo-load ang mga lungsodâ€¦",
 
   "branches.deliveryAreas.citiesFailed": "Hindi ma-load ang mga lungsod.",
 
@@ -420,7 +420,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.hoursSameAllDaysTitle": "Same hours for every day",
 
   "branches.hoursSameAllDaysLede":
-    "Set opens and closes once, then apply to all days — or mark every day open 24 hours.",
+    "Set opens and closes once, then apply to all days â€” or mark every day open 24 hours.",
 
   "branches.hoursApplyAll": "Apply to all days",
 
@@ -1475,7 +1475,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "checkout.creditPolicy.loadError": "Hindi ma-load ang credit policy. Subukan ulit.",
 
-  "checkout.creditPolicy.loading": "Nilo-load ang credit policyâ€¦",
+  "checkout.creditPolicy.loading": "Nilo-load ang credit policyÃ¢â‚¬Â¦",
 
   "checkout.creditPolicy.notApproved":
     "Naka-block ang Utang hanggang Approved ang credit policy ng customer na ito.",
@@ -1503,8 +1503,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerIdleEmpty": "Maghanap sa pangalan o numero para sa walk-in, o i-scan ang ExItS ID.",
 
   "checkout.utangCustomerIdleEmpty":
-    "No checkout customers yet. People and businesses share this directory â€” Utang requires an Approved person with available credit.",
-  "checkout.directoryCredit.approvedAvailable": "Approved â€¢ Available {amount}",
+    "No checkout customers yet. People and businesses share this directory Ã¢â‚¬â€ Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved Ã¢â‚¬Â¢ Available {amount}",
   "checkout.directoryCredit.pending": "Pending approval",
   "checkout.directoryCredit.notConfigured": "Credit not enabled",
   "checkout.directoryCredit.disabled": "Paused",
@@ -1518,7 +1518,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.connectionPending": "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
   "checkout.utangPendingUnavailableHint": "Unavailable",
-  "checkout.paymentUtangUnavailable": "Utang — unavailable",
+  "checkout.paymentUtangUnavailable": "Utang â€” unavailable",
   "checkout.utangPendingRelationshipHelper": "Utang becomes available after the customer accepts the relationship and credit requirements are met.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
@@ -1536,7 +1536,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.directoryCredit.status.PendingApproval": "Pending approval",
   "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
   "checkout.directoryCredit.status.Disabled": "Paused",
-  "checkout.directoryCredit.availableEmDash": "â€”",
+  "checkout.directoryCredit.availableEmDash": "Ã¢â‚¬â€",
 
 
   "checkout.customerIdleEmptyBusinesses":
@@ -1833,11 +1833,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.buyerPrice": "Presyo para sa buyer",
   "connected.buyerPriceSellingRef": "Selling {price}",
   "connected.discountPercent": "Discount %",
-  "connected.discountPercentHelp": "Same % off each selected productâ€™s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.discountPercentHelp": "Same % off each selected productÃ¢â‚¬â„¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
   "connected.applyDiscountPercent": "Apply discount",
   "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
   "connected.increasePercent": "Increase %",
-  "connected.increasePercentHelp": "Same % up each selected productâ€™s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.increasePercentHelp": "Same % up each selected productÃ¢â‚¬â„¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
   "connected.applyIncreasePercent": "Apply increase",
   "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
   "connected.percentModeLabel": "Percent change type",
@@ -2427,7 +2427,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditsTitle": "Mga utang charge",
   "customers.branchAccess.title": "Manage branch access",
   "customers.branchAccess.help":
-    "Customer stays organization-owned. Areas only help select branches â€” access is saved as an explicit branch list.",
+    "Customer stays organization-owned. Areas only help select branches Ã¢â‚¬â€ access is saved as an explicit branch list.",
   "customers.branchAccess.homeBranch": "Home branch",
   "customers.branchAccess.homeUnknown": "Not set",
   "customers.branchAccess.homeBadge": "Home",
@@ -2439,7 +2439,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.branchAccess.unassigned": "Unassigned branches",
   "customers.branchAccess.branches": "Branches",
   "customers.branchAccess.save": "Save branch access",
-  "customers.branchAccess.saving": "Savingâ€¦",
+  "customers.branchAccess.saving": "SavingÃ¢â‚¬Â¦",
   "customers.branchAccess.saveError": "Could not save branch access.",
   "customers.branchAccess.loadError": "Could not load branches.",
   "customers.branchAccess.offline": "Branch access can be managed when you are online.",
@@ -2499,7 +2499,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.orgConnectAsCustomer": "Add as business customer",
 
   "customers.orgNeedsBuyerConnection":
-    "Kailangan ng Active supplier connection para sa Direct B2B checkout. Sabihin sa organization na ito na mag-connect sa iyo sa Suppliers, tapos tanggapin ang request. Pagkatapos, lalabas sila sa Customers â†’ Businesses at sa Sell checkout.",
+    "Kailangan ng Active supplier connection para sa Direct B2B checkout. Sabihin sa organization na ito na mag-connect sa iyo sa Suppliers, tapos tanggapin ang request. Pagkatapos, lalabas sila sa Customers Ã¢â€ â€™ Businesses at sa Sell checkout.",
 
   "customers.orgNeedsConnectionAction": "Paano mag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
@@ -2751,7 +2751,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.storeDetails.readOnlyIdentity": "Identity managed by customer.",
   "customers.storeDetails.cancel": "Cancel",
   "customers.storeDetails.save": "Save changes",
-  "customers.storeDetails.saving": "Saving…",
+  "customers.storeDetails.saving": "Savingâ€¦",
   "customers.storeDetails.saved": "Customer details saved.",
   "customers.storeDetails.saveFailed": "Could not save customer details.",
   "customers.storeDetails.nameRequired": "Preferred name is required.",
@@ -2788,18 +2788,18 @@ export const filPH: Record<keyof typeof en, string> = {
     "Connection is still pending. Use a custom contact until the buyer accepts.",
   "customers.business.relationshipContact.organizationContact": "Contact at {name}",
   "customers.business.relationshipContact.directoryHelp": "Lists owner and staff from {name} - not your own organization.",
-  "customers.business.relationshipContact.searchContacts": "Search staff…",
-  "customers.business.relationshipContact.loadingContacts": "Loading contacts…",
+  "customers.business.relationshipContact.searchContacts": "Search staffâ€¦",
+  "customers.business.relationshipContact.loadingContacts": "Loading contactsâ€¦",
   "customers.business.relationshipContact.noContacts": "No matching people at {name}.",
   "customers.business.relationshipContact.noContactsAvailable": "{name} has no owner or staff to choose yet. Invite staff on their side, or use a custom contact.",
   "customers.business.relationshipContact.contactsLoadFailed": "Could not load organization contacts.",
   "customers.business.relationshipContact.retry": "Retry",
-  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staff…",
+  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffâ€¦",
   "customers.business.relationshipContact.changeContact": "Change contact",
   "customers.business.relationshipContact.ownerBadge": "Owner",
   "customers.business.relationshipContact.useCustomContact": "+ Use custom contact",
   "customers.business.relationshipContact.organizationManagedReadonly":
-    "Organization-managed contact information · Read-only",
+    "Organization-managed contact information Â· Read-only",
   "customers.business.relationshipContact.contactUnavailable": "Contact no longer available",
   "customers.business.relationshipContact.chooseAnother": "Choose another contact",
   "customers.business.relationshipContact.directoryCount": "{count} people at {name}",
@@ -2815,7 +2815,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.business.relationshipContact.internalNotes": "Internal notes",
   "customers.business.relationshipContact.cancel": "Cancel",
   "customers.business.relationshipContact.save": "Save changes",
-  "customers.business.relationshipContact.saving": "Saving…",
+  "customers.business.relationshipContact.saving": "Savingâ€¦",
   "customers.business.relationshipContact.saved": "Relationship contact saved.",
   "customers.business.relationshipContact.saveFailed": "Could not save relationship contact.",
 
@@ -2966,17 +2966,54 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.receivables.outstanding": "Outstanding",
   "customers.receivables.amountApplied": "Inilapat",
   "customers.receivables.remaining": "Natitira",
-  "customers.receivables.loading": "Naglo-load ng receivables…",
+  "customers.receivables.loading": "Naglo-load ng receivablesâ€¦",
   "customers.receivables.loadFailed": "Hindi ma-load ang receivables.",
   "customers.receivables.empty": "Walang bukas na receivable",
   "customers.receivables.emptyDetail": "Bayad na ang lahat ng credit line para sa business customer na ito.",
   "customers.receivables.offline": "Hindi available ang receivables offline",
   "customers.receivables.offlineDetail": "Kumonekta ulit para makita ang bukas na receivables.",
   "customers.receivables.backToCustomer": "Bumalik sa business customer",
+  "customers.receivables.sectionTitle": "Receivables",
+  "b2bObligations.receivablesTitle": "Receivables",
+  "b2bObligations.payablesTitle": "Payables",
+  "b2bObligations.filterAria": "Filter obligations",
+  "b2bObligations.filter.open": "Open",
+  "b2bObligations.filter.overdue": "Overdue",
+  "b2bObligations.filter.paid": "Paid",
+  "b2bObligations.filter.all": "All",
+  "b2bObligations.status.open": "Open",
+  "b2bObligations.status.partiallyPaid": "Partially paid",
+  "b2bObligations.status.paid": "Paid",
+  "b2bObligations.status.voided": "Voided",
+  "b2bObligations.status.reversed": "Reversed",
+  "b2bObligations.source.sale": "Product sale",
+  "b2bObligations.source.goodsReceipt": "PO receipt",
+  "b2bObligations.source.directPurchase": "Direct purchase",
+  "b2bObligations.source.other": "Other",
+  "b2bObligations.originalAmount": "Original amount",
+  "b2bObligations.paidAtSource": "Paid at sale",
+  "b2bObligations.paidAtReceipt": "Paid at receipt",
+  "b2bObligations.laterPayments": "Later payments",
+  "b2bObligations.balance": "Balance",
+  "b2bObligations.dueDate": "Due date",
+  "b2bObligations.overdueBadge": "Overdue",
+  "b2bObligations.recordPayment": "Record payment",
+  "b2bObligations.payNow": "Pay now",
+  "b2bObligations.payNowNotReady": "Online supplier payments are not ready yet.",
+  "b2bObligations.viewDetails": "View details",
+  "b2bObligations.viewDetailsUnavailable": "Source document is not available here.",
+  "b2bObligations.loadMore": "Load 10 more",
+  "b2bObligations.loadFailed": "Could not load obligations.",
+  "b2bObligations.empty": "No obligations in this filter.",
+  "b2bObligations.emptyOpen": "No open obligations.",
+  "b2bObligations.col.status": "Status",
+  "b2bObligations.col.source": "Source",
+  "b2bObligations.col.actions": "Actions",
+  "customers.receivables.pageTitleAll": "Receivables",
   "customers.recordedPaymentCashToast": "Payment of {amount} recorded.",
   "customers.recordedPaymentCheckToast": "Check payment of {amount} recorded and is pending clearing.",
   "customers.reference": "Reference (optional)",
-"customers.statementTitle": "Statement ng customer",
+  "customers.statementTitle": "Statement ng customer",
 
   "customers.statusActive": "Active",
 
@@ -3421,7 +3458,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
   "uiStandards.buttonMotionTitle": "Button motion",
   "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
-  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX â€” Cancel / dismiss. CornerUpLeft â€” Cancel and return / abandon edit. X â€” Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft â€” Back/navigation.",
+  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX Ã¢â‚¬â€ Cancel / dismiss. CornerUpLeft Ã¢â‚¬â€ Cancel and return / abandon edit. X Ã¢â‚¬â€ Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft Ã¢â‚¬â€ Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
@@ -3429,7 +3466,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
-  "uiStandards.buttonPilotBadge": "BUTTON STANDARD â€” APPROVED / LOCKED",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
   "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
@@ -3442,8 +3479,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.tabModuleSubnav": "Module Subnav",
   "uiStandards.tabActionChips": "Action Chips",
   "uiStandards.tabCards": "Cards",
-  "uiStandards.tabsPilotBadge": "TABS STANDARD â€” APPROVED / LOCKED",
-  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED â€” Docs/UI/exits-tabs-standard.md.",
+  "uiStandards.tabsPilotBadge": "TABS STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-tabs-standard.md.",
   "uiStandards.tabsVariantsTitle": "Tab variants",
   "uiStandards.tabsCountsTitle": "Tabs with counts",
   "uiStandards.tabsIconsTitle": "Icons",
@@ -3454,8 +3491,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.tabsRealWorldTitle": "Real-world examples",
   "uiStandards.tabsCheatTitle": "Cursor shorthand",
   "uiStandards.tabsCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
-  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV â€” PILOT / CANDIDATE",
-  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module â€” not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE â€” Docs/UI/exits-module-subnav-standard.md.",
+  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV Ã¢â‚¬â€ PILOT / CANDIDATE",
+  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module Ã¢â‚¬â€ not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-module-subnav-standard.md.",
   "uiStandards.moduleSubnavComparisonTitle": "Variant comparison",
   "uiStandards.moduleSubnavIconsTitle": "Icons",
   "uiStandards.moduleSubnavCountsTitle": "Counts",
@@ -3463,14 +3500,14 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.moduleSubnavRealWorldTitle": "Real-world examples",
   "uiStandards.moduleSubnavCheatTitle": "Cursor shorthand",
   "uiStandards.moduleSubnavCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.actionChipsPilotBadge": "ACTION CHIP â€” PILOT / CANDIDATE",
-  "uiStandards.actionChipsPilotLede": "Canonical ExItS Action Chip pilot (ExitsChipBar variant=actions baseline + ActionChipBar gallery). Quick actions and navigation shortcuts â€” not Tabs, Filters, Module Subnav, or Buttons. Theme and density from Preferences. PILOT / CANDIDATE â€” Docs/UI/exits-action-chip-standard.md.",
+  "uiStandards.actionChipsPilotBadge": "ACTION CHIP Ã¢â‚¬â€ PILOT / CANDIDATE",
+  "uiStandards.actionChipsPilotLede": "Canonical ExItS Action Chip pilot (ExitsChipBar variant=actions baseline + ActionChipBar gallery). Quick actions and navigation shortcuts Ã¢â‚¬â€ not Tabs, Filters, Module Subnav, or Buttons. Theme and density from Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-action-chip-standard.md.",
   "uiStandards.actionChipsOverviewTitle": "Semantic overview",
-  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button â€” same-looking labels, different jobs.",
+  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button Ã¢â‚¬â€ same-looking labels, different jobs.",
   "uiStandards.actionChipsVariantsTitle": "Visual variants",
   "uiStandards.actionChipsVariantsLede": "Soft, outline, ghost, primary treatments, elevated, and special-use gradient. Same label for comparison.",
   "uiStandards.actionChipsShapesTitle": "Shapes",
-  "uiStandards.actionChipsShapesLede": "Pill, soft, and square â€” reuse locked Chip shape language with action touch targets.",
+  "uiStandards.actionChipsShapesLede": "Pill, soft, and square Ã¢â‚¬â€ reuse locked Chip shape language with action touch targets.",
   "uiStandards.actionChipsContentTitle": "Content & states",
   "uiStandards.actionChipsContentLede": "Text, icons, counts, primary emphasis, disabled, and loading.",
   "uiStandards.actionChipsGroupsTitle": "Action Chip groups",
@@ -3479,8 +3516,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.actionChipsRealWorldLede": "Static Inventory, Purchasing, Stock Count, Returns, and Staff shortcuts for visual comparison. No APIs.",
   "uiStandards.actionChipsCheatTitle": "Cursor shorthand",
   "uiStandards.actionChipsCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.cardsPilotBadge": "CARD STANDARD â€” APPROVED / LOCKED",
-  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable at status accents, motion. Theme at density mula sa Preferences. APPROVED / LOCKED â€” Docs/UI/exits-card-standard.md.",
+  "uiStandards.cardsPilotBadge": "CARD STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable at status accents, motion. Theme at density mula sa Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
   "uiStandards.cardsTreatmentsTitle": "Card treatments",
   "uiStandards.cardsBasicTitle": "Basic / content cards",
   "uiStandards.cardsKpiTitle": "KPI / Stat",
@@ -3495,8 +3532,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
-  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED â€” Docs/UI/exits-card-standard.md.",
-  "uiStandards.chipPilotBadge": "CHIP STANDARD â€” APPROVED / LOCKED",
+  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
+  "uiStandards.chipPilotBadge": "CHIP STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
   "uiStandards.chipPilotLede": "Approved ExItS chip language. Soft semantic surfaces, density from Preferences, primary via --exits-primary. See Docs/UI/exits-chip-standard.md.",
   "uiStandards.chipStatusTitle": "Status chips",
   "uiStandards.chipShapesTitle": "Chip shapes",
@@ -3525,7 +3562,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.simpleModuleSubnavNote": "Related route/page navigation.",
   "uiStandards.simpleFiltersNote": "Changes the current dataset/view; does not navigate to another page.",
   "uiStandards.tableCheatLede": "Use these terms in Cursor tasks. Explicit ON/OFF overrides FULL TABLE defaults. ACTIONS and INLINE EDIT are optional.",
-  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD â€” APPROVED / LOCKED",
+  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
   "uiStandards.tablesAlignmentTitle": "Table alignment",
   "uiStandards.tablesActionsTitle": "Table actions",
   "uiStandards.tablesInlineRowEditTitle": "Inline row edit",
@@ -3543,7 +3580,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "exitsTable.filterNoSku": "No SKU",
   "exitsTable.next": "Next",
   "exitsTable.previous": "Previous",
-  "exitsTable.range": "{from}â€“{to} of {total}",
+  "exitsTable.range": "{from}Ã¢â‚¬â€œ{to} of {total}",
   "exitsTable.rowsPerPage": "Rows per page",
   "exitsTable.searchProducts": "Search products",
   "exitsTable.selectAll": "Select all visible rows",
@@ -3661,7 +3698,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} Â· Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} Ã‚Â· Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Window",
 
@@ -3880,7 +3917,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Â· {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Ã‚Â· {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
 
@@ -5429,9 +5466,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment â€” dagdag",
+  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢â‚¬â€ dagdag",
 
-  "inventory.movementType.manualDecrease": "Stock adjustment â€” bawas",
+  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢â‚¬â€ bawas",
 
   "inventory.movementType.sale": "Sale",
 
@@ -5445,9 +5482,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.transferCancel": "Transfer cancel restore",
 
-  "inventory.movementType.stockCountIncrease": "Stock count â€” dagdag",
+  "inventory.movementType.stockCountIncrease": "Stock count Ã¢â‚¬â€ dagdag",
 
-  "inventory.movementType.stockCountDecrease": "Stock count â€” bawas",
+  "inventory.movementType.stockCountDecrease": "Stock count Ã¢â‚¬â€ bawas",
 
   "inventory.movementType.stockUse": "Stock use",
 
@@ -6596,7 +6633,79 @@ export const filPH: Record<keyof typeof en, string> = {
   "admin.nav.overview": "Overview",
   "admin.nav.profile": "Organization profile",
   "admin.nav.documentsPrinting": "Documents & Printing",
-  "orgProfile.title": "Organization profile",
+    "orgSubscription.planCurrent": "Current plan",
+
+  "orgSubscription.selectPlan": "Select",
+
+  "orgSubscription.selectedPlan": "Selected",
+
+  "orgSubscription.previewGainedFeatures": "Features you would gain",
+
+  "orgSubscription.reviewTitle": "Review plan change",
+
+  "orgSubscription.reviewCurrentPlan": "Current plan",
+
+  "orgSubscription.reviewNewPlan": "New plan",
+
+  "orgSubscription.reviewBillingCycle": "Billing cycle",
+
+  "orgSubscription.reviewCurrentPrice": "Current price",
+
+  "orgSubscription.reviewNewPrice": "New price",
+
+  "orgSubscription.reviewEffective": "Effective",
+
+  "orgSubscription.reviewEffectiveImmediate": "Immediately after simulated payment",
+
+  "orgSubscription.reviewEffectiveRenewal": "At next renewal ({date})",
+
+  "orgSubscription.reviewLimitsTitle": "Capacity changes",
+
+  "orgSubscription.reviewLimitRow": "{label}: {current} â†’ {target}",
+
+  "orgSubscription.continueToPayment": "Continue to simulated payment",
+
+  "orgSubscription.scheduleDowngrade": "Schedule downgrade",
+
+  "orgSubscription.backToPlans": "Back to plans",
+
+  "orgSubscription.simulatedPaymentTitle": "Simulated payment",
+
+  "orgSubscription.simulatedPaymentDetail": "BillingMode is Simulated. This is not a real payment gateway.",
+
+  "orgSubscription.simulatedAmountDue": "Amount due",
+
+  "orgSubscription.simulatedMethod": "Demo payment method",
+
+  "orgSubscription.simulatedMethodValue": "ExItS Local Validation card",
+
+  "orgSubscription.simulateSuccess": "Simulate successful payment",
+
+  "orgSubscription.simulateFailure": "Simulate failed payment",
+
+  "orgSubscription.submitting": "Workingâ€¦",
+
+  "orgSubscription.upgradeSuccess": "Plan upgraded successfully.",
+
+  "orgSubscription.downgradeSuccess": "Downgrade scheduled successfully.",
+
+  "orgSubscription.paymentFailedTitle": "Simulated payment failed",
+
+  "orgSubscription.paymentFailedDetail": "Your plan and entitlements were not changed. You can try again or choose another plan.",
+
+  "orgSubscription.changeError": "Could not change the plan right now.",
+
+  "orgSubscription.billingModeLabel": "Billing mode",
+
+  "orgSubscription.billingModeSimulated": "Simulated",
+
+  "orgSubscription.invoicesTitle": "Simulated invoices & payments",
+
+  "orgSubscription.invoiceSimulated": "Simulated",
+
+  "orgSubscription.historyTitle": "Recent plan-change payments",
+
+"orgProfile.title": "Organization profile",
   "orgProfile.lede": "Business name, contact details, and public organization ID.",
   "orgProfile.editShort": "Edit",
   "orgProfile.copyId": "Copy ID",
@@ -6606,7 +6715,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgProfile.incompleteBody":
     "A phone number and full address help receipts, documents, and supplier connections.",
   "orgProfile.incompleteAction": "Complete profile",
-  "orgProfile.addressCountryOnly": "Country only ({country}) — add street and city.",
+  "orgProfile.addressCountryOnly": "Country only ({country}) â€” add street and city.",
   "orgProfile.section.basics": "Basics",
   "orgProfile.section.contact": "Contact",
   "orgProfile.section.address": "Address",
@@ -6683,10 +6792,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "staffBusinessProfile.jobTitle": "Position / Job title",
   "staffBusinessProfile.departmentPlaceholder": "Select or add department",
   "staffBusinessProfile.jobTitlePlaceholder": "Select or add position",
-  "staffBusinessProfile.catalogSearch": "Search…",
+  "staffBusinessProfile.catalogSearch": "Searchâ€¦",
   "staffBusinessProfile.catalogEmpty": "No matches",
-  "staffBusinessProfile.createDepartment": "Add “{value}”",
-  "staffBusinessProfile.createJobTitle": "Add “{value}”",
+  "staffBusinessProfile.createDepartment": "Add â€œ{value}â€",
+  "staffBusinessProfile.createJobTitle": "Add â€œ{value}â€",
   "staffBusinessProfile.unsavedTitle": "Discard unsaved changes?",
   "staffBusinessProfile.unsavedDetail": "You have unsaved changes. Close anyway?",
   "staffBusinessProfile.unsavedConfirm": "Discard",
@@ -6744,7 +6853,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgSubscription.deniedDetail":
     "Ang organization Owner lang ang makakakita ng subscription at billing details.",
 
-  "orgSubscription.loading": "Ikinakarga ang subscription mo…",
+  "orgSubscription.loading": "Ikinakarga ang subscription moâ€¦",
 
   "orgSubscription.loadError": "Hindi makarga ang subscription mo",
 
@@ -6812,11 +6921,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgSubscription.planDowngrade": "Mas mababang plan",
 
   "orgSubscription.planLimits":
-    "Branches {branches} · Staff {staff} · Devices {devices} · Areas {areas}",
+    "Branches {branches} Â· Staff {staff} Â· Devices {devices} Â· Areas {areas}",
 
   "orgSubscription.compare": "Tingnan ang epekto",
 
-  "orgSubscription.comparing": "Tinitingnan ang epekto…",
+  "orgSubscription.comparing": "Tinitingnan ang epektoâ€¦",
 
   "orgSubscription.previewError": "Hindi matingnan ang epekto ng plan na ito ngayon.",
 
@@ -6831,20 +6940,15 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.previewLostFeatures": "Mga feature na mawawala",
 
-  "orgSubscription.changeManagedTitle": "Ang ExItS ang naglalapat ng pagbabago ng plan",
-
-  "orgSubscription.changeManagedDetail":
-    "Hindi nagpoproseso ng subscription payment ang app na ito. Kontakin ang ExItS para lumipat ng plan.",
-
-  "orgSubscription.billingManagedTitle": "Ang billing ay pinamamahalaan ng ExItS.",
+  "orgSubscription.billingManagedTitle": "Billing mode: Simulated",
 
   "orgSubscription.billingManagedDetail":
-    "Walang self-service payment method o card na naka-file sa app na ito. Kontakin ang ExItS para sa billing, resibo, o tanong sa bayad.",
+    "Subscription payments in this environment use ExItS Local Validation simulation. Plan changes update the real subscription and entitlements; only the payment provider is simulated.",
 
   "orgSubscription.invoicesEmptyTitle": "Walang invoice na maipapakita",
 
   "orgSubscription.invoicesEmptyDetail":
-    "Hindi pa nagpapadala ang ExItS ng subscription invoice sa app na ito. Ang store sales at supplier payables ay hindi subscription invoice.",
+    "Successful simulated plan-change payments appear here after they are linked. Store sales and supplier payables are not subscription invoices.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -7381,10 +7485,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.explore.billingEveryYear": "every year",
   "personal.explore.billingPopular": "Popular",
   "personal.explore.billingBestValue": "Best value",
-  "personal.explore.billingBestValueSave": "Best value â€” Save {percent}%",
+  "personal.explore.billingBestValueSave": "Best value Ã¢â‚¬â€ Save {percent}%",
   "personal.explore.billingSavePercent": "Save {percent}%",
   "personal.explore.cycleSavings": "Save {percent}%",
-  "personal.explore.cycleSavingsDetail": "Save {amount} Â· {percent}%",
+  "personal.explore.cycleSavingsDetail": "Save {amount} Ã‚Â· {percent}%",
   "personal.explore.equivalentMonthly": "{amount}/month equivalent",
   "personal.startBusiness.baseAmount": "Base",
   "personal.startBusiness.discount": "Discount ({percent}%)",
@@ -7395,7 +7499,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.explore.annualSavings": "Save {percent}% vs monthly",
 
-  "personal.explore.capacityLine": "{branches} branch Â· {staff} staff Â· {devices} POS",
+  "personal.explore.capacityLine": "{branches} branch Ã‚Â· {staff} staff Ã‚Â· {devices} POS",
   "personal.explore.viewAllFeatures": "View all features",
   "personal.explore.simulatedPaymentsNotice":
     "Payments are currently simulated. No real charge will be made.",
@@ -7486,7 +7590,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "paymentMethods.selectedBranches": "Selected branches",
   "paymentMethods.noBranches": "No active branches to select yet.",
   "paymentMethods.orgRequired": "Open Payment methods from Manage Business for an organization.",
-  "paymentMethods.loading": "Loading payment methodsâ€¦",
+  "paymentMethods.loading": "Loading payment methodsÃ¢â‚¬Â¦",
   "paymentMethods.errorTitle": "Could not load payment methods",
   "paymentMethods.saved": "Payment method saved",
 
@@ -7586,7 +7690,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.payingAmount": "Amount due: {amount}",
   "subscriptionCheckout.payNow": "Pay now (simulated)",
   "subscriptionCheckout.confirmSimulatedPay": "Confirm simulated payment",
-  "subscriptionCheckout.processing": "Processingâ€¦",
+  "subscriptionCheckout.processing": "ProcessingÃ¢â‚¬Â¦",
   "subscriptionCheckout.processFailed": "Payment could not be processed.",
   "subscriptionCheckout.invalidChannel": "Choose GCash, Maya, or Card.",
   "subscriptionCheckout.ewalletHint": "Simulate a {channel} wallet authorization. No real wallet is contacted.",
@@ -7601,12 +7705,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.card.requiredFields": "Enter card name, number, expiry, and CVV.",
   "subscriptionCheckout.card.invalidNumber": "Enter a test card number.",
   "subscriptionCheckout.card.testScenarios": "Test card autofill",
-  "subscriptionCheckout.card.scenarioSuccess": "4242â€¦ success",
-  "subscriptionCheckout.card.scenarioDecline": "4000â€¦0002 fail",
-  "subscriptionCheckout.card.scenarioProcessing": "4000â€¦9995 processing",
-  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 â†’ Paid",
-  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 â†’ Failed",
-  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 â†’ Processing",
+  "subscriptionCheckout.card.scenarioSuccess": "4242Ã¢â‚¬Â¦ success",
+  "subscriptionCheckout.card.scenarioDecline": "4000Ã¢â‚¬Â¦0002 fail",
+  "subscriptionCheckout.card.scenarioProcessing": "4000Ã¢â‚¬Â¦9995 processing",
+  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 Ã¢â€ â€™ Paid",
+  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 Ã¢â€ â€™ Failed",
+  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 Ã¢â€ â€™ Processing",
   "subscriptionCheckout.resultTitle": "Payment result",
   "subscriptionCheckout.receiptTitle": "Receipt",
   "subscriptionCheckout.paymentDetailsTitle": "Payment details",
@@ -9555,7 +9659,51 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.supplierNotReadyTitle": "Supplier not ready for purchase orders",
   "purchasing.supplierNotReadyBody":
     "This supplier is not currently ready to accept purchase orders from your organization. Please contact your supplier.",
-  "purchasing.readyForPurchaseOrders": "Ready for purchase orders",
+    "purchasing.supplierNotReady.dismiss": "Dismiss",
+
+  "purchasing.supplierNotReady.issuePrefix": "Issue:",
+
+  "purchasing.supplierNotReady.issuesPrefix": "Issues:",
+
+  "purchasing.supplierNotReady.issue.fulfillment": "Fulfillment setup",
+
+  "purchasing.supplierNotReady.issue.noUsableMethod": "Pickup or Delivery",
+
+  "purchasing.supplierNotReady.issue.payment": "Payment",
+
+  "purchasing.supplierNotReady.issue.catalog": "Catalog",
+
+  "purchasing.supplierNotReady.issue.contact": "Contact",
+
+  "purchasing.supplierNotReady.issue.credit": "Credit",
+
+  "purchasing.supplierNotReady.phrase.fulfillment": "fulfillment",
+
+  "purchasing.supplierNotReady.phrase.noUsableMethod": "fulfillment methods",
+
+  "purchasing.supplierNotReady.phrase.payment": "payment",
+
+  "purchasing.supplierNotReady.phrase.catalog": "catalog",
+
+  "purchasing.supplierNotReady.phrase.contact": "contact",
+
+  "purchasing.supplierNotReady.phrase.credit": "credit",
+
+  "purchasing.supplierNotReady.reason.fulfillment": "Purchase orders are currently unavailable because this supplier has not completed its fulfillment setup. Please contact the supplier and ask them to review their purchase-order fulfillment settings.",
+
+  "purchasing.supplierNotReady.reason.noUsableMethod": "This supplier currently has no Pickup or Delivery method available for purchase orders. Please contact the supplier.",
+
+  "purchasing.supplierNotReady.reason.payment": "This supplier has not configured an accepted payment method for purchase orders.",
+
+  "purchasing.supplierNotReady.reason.catalog": "This supplier currently has no products available for purchase ordering.",
+
+  "purchasing.supplierNotReady.reason.contact": "The supplier must complete its business contact setup before accepting purchase orders.",
+
+  "purchasing.supplierNotReady.reason.credit": "Credit purchasing is currently unavailable for this business relationship.",
+
+  "purchasing.supplierNotReady.reason.multiple": "Purchase orders are currently unavailable due to {reasons} setup. Please contact your supplier.",
+
+"purchasing.readyForPurchaseOrders": "Ready for purchase orders",
   "purchasing.fulfillmentMethod": "Fulfillment",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",
@@ -9677,7 +9825,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.category": "Kategorya",
   "purchasing.categoriesPlaceholder": "Pumili ng kategorya",
   "purchasing.categoriesSelected": "{count} selected",
-  "purchasing.categoriesTriggerCount": "Categories · {count}",
+  "purchasing.categoriesTriggerCount": "Categories Â· {count}",
   "purchasing.selectAllCategories": "Piliin lahat",
   "purchasing.deselectAllCategories": "Alisin ang lahat",
   "purchasing.clearCategories": "Clear categories",
@@ -10942,7 +11090,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Maghanap o pumili ng produkto para magsimula ng sale.",
 
-  "sell.linePreview": "{qty} {unit} Ã— {price} = {amount}",
+  "sell.linePreview": "{qty} {unit} Ãƒâ€” {price} = {amount}",
 
   "sell.midSession.deviceLost": "Hindi na aprubado ang device mo para magbenta.",
 
@@ -12897,7 +13045,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "nav.backToWarehouseHome": "Back to Warehouse home",
 
   "catalog.cancel": "Kanselahin",
-  "catalog.category.creating": "Gumagawaâ€¦",
+  "catalog.category.creating": "GumagawaÃ¢â‚¬Â¦",
   "catalog.category.deactivateConfirm": "I-deactivate ang kategoryang ito? Mananatili ito sa historical products pero hindi maaaring i-assign sa bagong products.",
   "catalog.categoryCreateFailed": "Hindi magawa ang kategorya.",
   "catalog.categoryDeactivateFailed": "Hindi ma-deactivate ang kategorya.",
@@ -12912,7 +13060,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
   "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
   "production.recipes.lowMarginWarning": "Low estimated gross margin.",
-  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Â· Selling price: {price} Â· Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Ã‚Â· Selling price: {price} Ã‚Â· Estimated loss: {loss} / {uom}",
   "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
   "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
   "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
@@ -12941,7 +13089,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.orgReviewIncomingRequest": "Review request",
   "customers.orgOpenPendingConnection": "Open pending connection",
   "customers.business.waitingForAccept": "Waiting for {name} to accept.",
-  "customers.business.actionRequired": "Action required â€” {name} wants to connect.",
+  "customers.business.actionRequired": "Action required Ã¢â‚¬â€ {name} wants to connect.",
   "customers.business.reviewRequest": "Review request",
   "customers.badge.pending": "Pending",
   "customers.badge.active": "Active",

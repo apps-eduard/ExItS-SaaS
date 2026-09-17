@@ -115,6 +115,8 @@ type CreditTermsSectionProps = (PersonalProps | BusinessProps) & {
   canRecordPayment?: boolean;
   canViewStatement?: boolean;
   onRecordPayment?: () => void;
+  /** When set, Open receivables card focuses the on-page Receivables section. */
+  onOpenReceivables?: () => void;
   subjectIdentity?: string | null;
   policyOverride?: SharedPolicy | null;
   titleKey: string;
@@ -175,6 +177,7 @@ export function CreditTermsSection({
   canRecordPayment = false,
   canViewStatement = false,
   onRecordPayment,
+  onOpenReceivables,
   subjectIdentity = null,
   policyOverride,
   titleKey,
@@ -914,21 +917,40 @@ export function CreditTermsSection({
                 {t("customers.receivables.openTitle")}
               </dt>
               <dd className="m-0">
-                <Link
-                  to={`/customers/business/${id}/receivables`}
-                  className="inline-flex flex-col gap-0.5 text-[inherit] no-underline hover:underline"
-                  data-testid={`${testIdPrefix}-credit-policy-open-receivables-link`}
-                >
-                  <span className="tabular-nums font-medium">
-                    {t("customers.receivables.openCount").replace(
-                      "{count}",
-                      String(openReceivableCount),
-                    )}
-                  </span>
-                  <span className="tabular-nums">
-                    <MoneyDisplay amount={openReceivablesDisplayTotal} />
-                  </span>
-                </Link>
+                {onOpenReceivables ? (
+                  <button
+                    type="button"
+                    className="inline-flex flex-col gap-0.5 border-0 bg-transparent p-0 text-left text-[inherit] underline-offset-2 hover:underline cursor-pointer"
+                    data-testid={`${testIdPrefix}-credit-policy-open-receivables-link`}
+                    onClick={() => onOpenReceivables()}
+                  >
+                    <span className="tabular-nums font-medium">
+                      {t("customers.receivables.openCount").replace(
+                        "{count}",
+                        String(openReceivableCount),
+                      )}
+                    </span>
+                    <span className="tabular-nums">
+                      <MoneyDisplay amount={openReceivablesDisplayTotal} />
+                    </span>
+                  </button>
+                ) : (
+                  <Link
+                    to={`/customers/business/${id}/receivables?filter=open`}
+                    className="inline-flex flex-col gap-0.5 text-[inherit] no-underline hover:underline"
+                    data-testid={`${testIdPrefix}-credit-policy-open-receivables-link`}
+                  >
+                    <span className="tabular-nums font-medium">
+                      {t("customers.receivables.openCount").replace(
+                        "{count}",
+                        String(openReceivableCount),
+                      )}
+                    </span>
+                    <span className="tabular-nums">
+                      <MoneyDisplay amount={openReceivablesDisplayTotal} />
+                    </span>
+                  </Link>
+                )}
               </dd>
             </div>
           ) : null}

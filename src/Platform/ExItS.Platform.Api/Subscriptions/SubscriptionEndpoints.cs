@@ -615,6 +615,8 @@ internal static class SubscriptionEndpoints
                 targetPlanId,
                 billingCycle,
                 body.IdempotencyKey,
+                skipPaymentWhenTrialing: true,
+                paymentSimulation: body.PaymentSimulation,
                 cancellationToken: ct).ConfigureAwait(false);
 
             if (result.IsSuccess)
@@ -1031,7 +1033,12 @@ internal sealed record UpgradeSubscriptionRequest(
     Guid? PlanId = null,
     string? PlanKey = null,
     string? BillingCycle = null,
-    string? IdempotencyKey = null);
+    string? IdempotencyKey = null,
+    /// <summary>
+    /// Simulated billing only (Local Validation). Examples: succeed, fail, declined.
+    /// Ignored when the payment provider is not a test/simulated provider.
+    /// </summary>
+    string? PaymentSimulation = null);
 
 internal sealed record DowngradeSubscriptionRequest(
     Guid? PlanId = null,

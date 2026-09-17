@@ -54,6 +54,7 @@ public sealed class UpgradeOrganizationSubscription
         BillingCycle billingCycle,
         string? idempotencyKey,
         bool skipPaymentWhenTrialing = true,
+        string? paymentSimulation = null,
         CancellationToken cancellationToken = default)
     {
         var organization = await _organizations.GetByIdAsync(organizationId, cancellationToken).ConfigureAwait(false);
@@ -128,22 +129,41 @@ public sealed class UpgradeOrganizationSubscription
         try
         {
             var quote = SubscriptionBillingPricing.Quote(targetPlan, billingCycle);
-            payment = await _paymentProvider
-                .ChargeAsync(
-                    new PaymentChargeRequest(
-                        organizationId.Value,
-                        subscription.Id.Value,
-                        quote.FinalAmount,
-                        targetPlan.CurrencyCode,
-                        idempotencyKey,
-                        Purpose: "upgrade",
-                        PlanKey: quote.PlanKey,
-                        BillingCycle: quote.BillingCycle.ToString(),
-                        BaseAmount: quote.BaseAmount,
-                        DiscountAmount: quote.DiscountAmount,
-                        DiscountPercent: quote.DiscountPercent),
-                    cancellationToken)
-                .ConfigureAwait(false);
+            var chargeRequest = new PaymentChargeRequest(
+                organizationId.Value,
+                subscription.Id.Value,
+                quote.FinalAmount,
+                targetPlan.CurrencyCode,
+                idempotencyKey,
+                Purpose: "upgrade",
+                PlanKey: quote.PlanKey,
+                BillingCycle: quote.BillingCycle.ToString(),
+                BaseAmount: quote.BaseAmount,
+                DiscountAmount: quote.DiscountAmount,
+                DiscountPercent: quote.DiscountPercent);
+
+            var simulation = string.IsNullOrWhiteSpace(paymentSimulation)
+                ? null
+                : paymentSimulation.Trim();
+            if (simulation is not null)
+            {
+                if (!_paymentProvider.IsTestProvider)
+                {
+                    return ApplicationResult<Subscription>.Failure(
+                        ApplicationErrorCodes.PaymentNotConfigured,
+                        "Payment simulation is only available when BillingMode is Simulated (Local Validation).");
+                }
+
+                payment = await _paymentProvider
+                    .SimulateAsync(simulation, chargeRequest, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                payment = await _paymentProvider
+                    .ChargeAsync(chargeRequest, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
         catch (NotSupportedException ex)
         {

@@ -433,6 +433,25 @@ if ($partialStart) {
         $null = Resolve-LocalValidationCatalogService -ServiceKey $onlyKey
     }
     Write-Step ("Partial start OnlyServices=[{0}] (infra preserved; other apps untouched)." -f ($OnlyServices -join ', '))
+    # Dashboard Start/Restart must free the canonical catalog port before relaunch
+    # (leftover apphosts can keep :8092 occupied after a crashed window).
+    foreach ($onlyKey in @($OnlyServices)) {
+        $svc = Resolve-LocalValidationCatalogService -ServiceKey $onlyKey
+        if ($svc.Kind -eq 'infra') { continue }
+        $port = [int]$svc.Port
+        # Prefer env-derived host ports (resolved from .env.local-validation / stack defaults).
+        switch ($svc.Key) {
+            'platform-api' { $port = $platformApiPort }
+            'pos-api' { $port = $posApiPort }
+            'platform-admin' { $port = $adminPort }
+            'org-web' { $port = $orgWebPort }
+            'personal-web' { $port = $personalWebPort }
+            'react-admin' { $port = $adminWebReactPort }
+            'react-pos' { $port = $reactPosPortEarly }
+        }
+        Write-Step ("Freeing $($svc.Label) port $port before partial start...")
+        $null = Stop-LocalValidationPortListeners -Port $port -Label $svc.Label
+    }
 } else {
     Write-Step 'Stopping Docker app services before host mode (infrastructure and volumes preserved)...'
     $null = Stop-LocalValidationDockerAppServices -ComposeFile $composeFile -EnvFile $envFile

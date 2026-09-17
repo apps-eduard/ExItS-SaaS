@@ -95,4 +95,24 @@ public sealed class ConnectedPoUtangObligationProjectionTests
                 "grn:11111111-1111-4111-8111-111111111111|Connected PO PO-1 receipt",
                 out _));
     }
+
+    [Fact]
+    public void TryResolveSource_strips_sale_guid_prefix_for_clean_label()
+    {
+        var saleId = Guid.Parse("44444444-4444-4444-8444-444444444444");
+        var remark = ConnectedPoUtangObligationProjection.BuildSaleRemark(saleId, "SALE-20260917-000001");
+
+        Assert.True(
+            ConnectedPoUtangObligationProjection.TryResolveSource(
+                remark,
+                sourceSaleId: null,
+                out var sourceType,
+                out var sourceId,
+                out var label));
+        Assert.Equal("Sale", sourceType);
+        Assert.Equal(saleId, sourceId);
+        Assert.DoesNotContain("sale:", label ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(saleId.ToString("D"), label ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SALE-20260917-000001", label ?? "", StringComparison.OrdinalIgnoreCase);
+    }
 }

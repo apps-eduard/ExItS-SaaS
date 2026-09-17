@@ -2,8 +2,13 @@ namespace ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 
 /// <summary>
 /// Pure evaluation of whether a connected supplier is ready to accept buyer POs.
-/// Conditional requirements: Delivery/Pickup/Utang config only when that capability is enabled.
-/// DeliveryEnabled here means organization Offer Delivery (not per-customer override).
+/// Fulfillment mirrors seller Branch PO readiness: an effective branch method is
+/// enabled+ready. PO fulfillment is satisfied when at least one branch channel
+/// (Pickup or Delivery) is usable — incomplete sibling channels do not block.
+/// Organization Offer Delivery only controls the DeliveryConfig checklist row;
+/// it does not gate FulfillmentMethod or listing Delivery when the branch channel
+/// is already enabled+ready. DeliveryEnabled here means organization Offer Delivery
+/// (not per-customer override).
 /// </summary>
 public static class ConnectedSupplierCommerceReadiness
 {
@@ -23,13 +28,34 @@ public static class ConnectedSupplierCommerceReadiness
     public const string FulfillmentPickup = "Pickup";
     public const string FulfillmentDelivery = "Delivery";
 
+    /// <summary>Buyer-safe blocker categories (no internal field names).</summary>
+    public const string BuyerBlockerFulfillment = "Fulfillment";
+    public const string BuyerBlockerNoUsableMethod = "NoUsableMethod";
+    public const string BuyerBlockerPayment = "Payment";
+    public const string BuyerBlockerCatalog = "Catalog";
+    public const string BuyerBlockerContact = "Contact";
+    public const string BuyerBlockerCredit = "Credit";
+
+    private static readonly string[] BuyerBlockerOrder =
+    [
+        BuyerBlockerFulfillment,
+        BuyerBlockerNoUsableMethod,
+        BuyerBlockerPayment,
+        BuyerBlockerCatalog,
+        BuyerBlockerContact,
+        BuyerBlockerCredit,
+    ];
+
     public sealed record Input(
         bool HasSellingBranch,
         bool PickupEnabled,
         /// <summary>Organization Offer Delivery is ON.</summary>
         bool DeliveryEnabled,
+        /// <summary>Branch PickupEnabled and Platform PickupReady (setup, not open-now).</summary>
         bool PickupConfigured,
-        /// <summary>Delivery-capable selling branch is ready (config preserved even when org OFF).</summary>
+        /// <summary>
+        /// Branch DeliveryEnabled and Platform DeliveryReady (setup). Org Offer Delivery is separate.
+        /// </summary>
         bool DeliveryConfigured,
         bool HasAcceptedPaymentMethod,
         bool UtangPaymentEnabled,
@@ -51,21 +77,23 @@ public static class ConnectedSupplierCommerceReadiness
 
     public static Result Evaluate(Input input)
     {
-        // Buyer-usable methods: only include Delivery when org offers it AND branch is ready.
+        // Branch channels (same as seller Branch PO panel): enabled + ready.
+        var pickupUsable = input.PickupEnabled && input.PickupConfigured;
+        var branchDeliveryUsable = input.DeliveryConfigured;
+
         var methods = new List<string>(2);
-        if (input.PickupEnabled)
+        if (pickupUsable)
         {
             methods.Add(FulfillmentPickup);
         }
 
-        if (input.DeliveryEnabled && input.DeliveryConfigured)
+        if (branchDeliveryUsable)
         {
             methods.Add(FulfillmentDelivery);
         }
 
-        // FulfillmentMethod: at least one offered method (Pickup enabled OR org Delivery ON).
-        // Pickup can independently satisfy this row; DeliveryConfig is separate when org Delivery ON.
-        var hasOfferedMethod = input.PickupEnabled || input.DeliveryEnabled;
+        // At least one branch channel — Pickup-only or Delivery-only both satisfy.
+        var hasBranchFulfillmentMethod = pickupUsable || branchDeliveryUsable;
 
         var requirements = new List<Requirement>
         {
@@ -76,13 +104,13 @@ public static class ConnectedSupplierCommerceReadiness
                 "Choose the branch that fulfills purchase orders for this connection."),
             Item(
                 FulfillmentMethod,
-                input.HasSellingBranch && hasOfferedMethod,
+                input.HasSellingBranch && hasBranchFulfillmentMethod,
                 "Fulfillment methods",
-                "Enable Pickup and/or turn on Offer Delivery for the organization."),
+                "Enable and finish Pickup and/or Delivery so at least one method is ready."),
             Conditional(
                 DeliveryConfig,
                 applicable: input.DeliveryEnabled,
-                complete: input.DeliveryConfigured,
+                complete: branchDeliveryUsable,
                 title: "Delivery configuration",
                 detail: "Finish delivery setup for a delivery-capable selling branch."),
             Conditional(
@@ -115,10 +143,84 @@ public static class ConnectedSupplierCommerceReadiness
                 detail: "Complete credit terms before this business can use Utang."),
         };
 
+        // PickupConfig/DeliveryConfig stay visible on the supplier checklist, but overall
+        // readiness follows FulfillmentMethod (at least one branch channel).
         var isReady = requirements.All(r =>
-            r.Status is StatusComplete or StatusNotApplicable);
+            r.Code is PickupConfig or DeliveryConfig
+            || r.Status is StatusComplete or StatusNotApplicable);
 
         return new Result(isReady, methods, requirements);
+    }
+
+    /// <summary>
+    /// Buyer projection: if no method remains after filtering (e.g. customer Block on
+    /// Delivery-only), surface NoUsableMethod.
+    /// </summary>
+    public static Result EnsureBuyerHasUsableMethod(Result evaluated)
+    {
+        if (evaluated.SupportedFulfillmentMethods.Count > 0)
+        {
+            return evaluated;
+        }
+
+        var requirements = evaluated.Requirements
+            .Select(r => r.Code == FulfillmentMethod
+                ? r with
+                {
+                    Status = StatusMissing,
+                    Detail = "Enable and finish Pickup and/or Delivery so buyers have at least one method.",
+                }
+                : r)
+            .ToList();
+
+        return new Result(IsReady: false, evaluated.SupportedFulfillmentMethods, requirements);
+    }
+
+    /// <summary>
+    /// Maps missing requirements to buyer-safe blocker categories.
+    /// Never returns internal requirement codes, titles, or configuration details.
+    /// </summary>
+    public static IReadOnlyList<string> MapBuyerSafeBlockerCategories(Result result)
+    {
+        if (result.IsReady)
+        {
+            return Array.Empty<string>();
+        }
+
+        var hasUsableMethod = result.SupportedFulfillmentMethods.Count > 0;
+        var present = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var requirement in result.Requirements)
+        {
+            if (requirement.Status != StatusMissing)
+            {
+                continue;
+            }
+
+            // Incomplete sibling channel must not surface when another method already works.
+            if (hasUsableMethod
+                && requirement.Code is PickupConfig or DeliveryConfig)
+            {
+                continue;
+            }
+
+            var category = requirement.Code switch
+            {
+                SellingBranch => BuyerBlockerFulfillment,
+                PickupConfig or DeliveryConfig => BuyerBlockerFulfillment,
+                FulfillmentMethod => BuyerBlockerNoUsableMethod,
+                PaymentMethods => BuyerBlockerPayment,
+                SharedCatalog => BuyerBlockerCatalog,
+                ResponsibleContact => BuyerBlockerContact,
+                CreditPolicy => BuyerBlockerCredit,
+                _ => null,
+            };
+            if (category is not null)
+            {
+                present.Add(category);
+            }
+        }
+
+        return BuyerBlockerOrder.Where(present.Contains).ToArray();
     }
 
     public static bool HasResponsibleContact(

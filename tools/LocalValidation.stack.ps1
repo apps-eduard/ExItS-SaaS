@@ -648,6 +648,24 @@ function Invoke-DockerQuiet {
     }
 }
 
+function Get-LocalValidationDockerComposeLabel {
+    <#
+    .SYNOPSIS
+      StrictMode-safe read of a Docker Compose label. Newer/partial label sets
+      (e.g. admin-web-react) may omit working_dir/config_files.
+    #>
+    param(
+        $Labels,
+        [Parameter(Mandatory)][string]$Name
+    )
+    if ($null -eq $Labels) { return $null }
+    $prop = $Labels.PSObject.Properties[$Name]
+    if ($null -eq $prop) { return $null }
+    $value = [string]$prop.Value
+    if ([string]::IsNullOrWhiteSpace($value)) { return $null }
+    return $value
+}
+
 function Get-LocalValidationDockerAppContainers {
     $names = @(
         $LocalValidationStack.PlatformApiContainer,
@@ -671,9 +689,9 @@ function Get-LocalValidationDockerAppContainers {
         $results += [pscustomobject]@{
             Name              = $name
             Status            = $state
-            ComposeWorkingDir = if ($labels) { [string]$labels.'com.docker.compose.project.working_dir' } else { $null }
-            ComposeConfigFile = if ($labels) { [string]$labels.'com.docker.compose.project.config_files' } else { $null }
-            ComposeService    = if ($labels) { [string]$labels.'com.docker.compose.service' } else { $null }
+            ComposeWorkingDir = Get-LocalValidationDockerComposeLabel -Labels $labels -Name 'com.docker.compose.project.working_dir'
+            ComposeConfigFile = Get-LocalValidationDockerComposeLabel -Labels $labels -Name 'com.docker.compose.project.config_files'
+            ComposeService    = Get-LocalValidationDockerComposeLabel -Labels $labels -Name 'com.docker.compose.service'
         }
     }
     return $results

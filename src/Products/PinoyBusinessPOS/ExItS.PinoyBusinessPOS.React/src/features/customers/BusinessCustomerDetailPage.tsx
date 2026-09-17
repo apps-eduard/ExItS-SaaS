@@ -28,6 +28,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { formatRelativeOrDate } from "@/features/devices/device-presentation";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
+import { BusinessCustomerReceivablesSection } from "@/features/customers/BusinessCustomerReceivablesSection";
 import { BusinessRelationshipContactEditDrawer } from "@/features/customers/BusinessRelationshipContactEditDrawer";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
 import { RecordPaymentModal } from "@/features/customers/RecordPaymentModal";
@@ -119,6 +120,7 @@ export function BusinessCustomerDetailPage() {
   const allowStatement = canViewStatement(sessionGrant);
   const [relationshipEditOpen, setRelationshipEditOpen] = useState(false);
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [receivablesFocusToken, setReceivablesFocusToken] = useState(0);
   const [readinessFilter, setReadinessFilter] = useState<SupplierCommerceReadinessFilter>(
     DEFAULT_SUPPLIER_COMMERCE_READINESS_FILTER,
   );
@@ -884,6 +886,24 @@ export function BusinessCustomerDetailPage() {
             .filter((part): part is string => Boolean(part))
             .join(" · ")}
           onRecordPayment={isConnected ? () => setRecordPaymentOpen(true) : undefined}
+          onOpenReceivables={
+            isConnected
+              ? () => setReceivablesFocusToken((n) => n + 1)
+              : undefined
+          }
+        />
+      ) : null}
+
+      {workspace && connectionId && isConnected ? (
+        <BusinessCustomerReceivablesSection
+          workspace={workspace}
+          connectionId={connectionId}
+          online={online}
+          displayName={name}
+          outstandingBalance={utangSummaryQuery.data?.outstandingAmount ?? 0}
+          canRecordPayment={allowRepay}
+          focusToken={receivablesFocusToken > 0 ? receivablesFocusToken : null}
+          initialFilter="open"
         />
       ) : null}
 
@@ -921,6 +941,9 @@ export function BusinessCustomerDetailPage() {
           onSuccess={() => {
             void queryClient.invalidateQueries({
               queryKey: ["business-customers", "utang-summary", workspace.organizationId, connectionId],
+            });
+            void queryClient.invalidateQueries({
+              queryKey: ["business-customers", "receivables", workspace.organizationId, connectionId],
             });
           }}
         />

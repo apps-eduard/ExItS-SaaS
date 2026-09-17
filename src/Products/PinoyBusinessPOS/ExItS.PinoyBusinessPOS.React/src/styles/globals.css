@@ -7451,6 +7451,20 @@ html:has(.admin-shell) #root {
   background: color-mix(in srgb, var(--exits-surface-muted) 28%, var(--exits-surface));
 }
 
+.b2b-obligations-table th,
+.b2b-obligations-table td {
+  vertical-align: middle;
+}
+
+.b2b-obligations-table th {
+  font-size: var(--exits-text-xs);
+  white-space: nowrap;
+}
+
+.b2b-obligations-responsive .exits-responsive-data__table {
+  min-width: 0;
+}
+
 .po-order-table__head,
 .po-order-table__row {
   display: grid;

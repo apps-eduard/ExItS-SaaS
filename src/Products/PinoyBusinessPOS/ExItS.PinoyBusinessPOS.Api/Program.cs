@@ -521,6 +521,17 @@ builder.Services.AddScoped<UpdateOperationalSetup>();
 builder.Services.AddScoped<GetOrganizationOnboardingProgress>();
 builder.Services.AddScoped<EnsureOrganizationOnboardingProgress>();
 builder.Services.AddScoped<UpdateOrganizationOnboardingProgress>();
+builder.Services.AddScoped<IOrganizationPrivacyContext, PosApiOrganizationPrivacyContext>();
+builder.Services.AddHttpClient(PosApiOrganizationPrivacyContext.HttpClientName, (provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(3);
+});
 builder.Services.AddScoped<GetOrganizationPrivacyReadiness>();
 builder.Services.AddScoped<ListCashDenominationsQuery>();
 builder.Services.AddScoped<ReplaceCashDenominations>();

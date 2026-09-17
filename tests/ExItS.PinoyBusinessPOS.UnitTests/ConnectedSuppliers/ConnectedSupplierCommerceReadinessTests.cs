@@ -96,11 +96,16 @@ public sealed class ConnectedSupplierCommerceReadinessTests
         Assert.Equal(
             ConnectedSupplierCommerceReadiness.StatusNotApplicable,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
-        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentPickup], result.SupportedFulfillmentMethods);
+        Assert.Equal(
+            [
+                ConnectedSupplierCommerceReadiness.FulfillmentPickup,
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            ],
+            result.SupportedFulfillmentMethods);
     }
 
     [Fact]
-    public void Pickup_can_satisfy_fulfillment_method_while_delivery_incomplete()
+    public void Pickup_can_satisfy_fulfillment_while_delivery_incomplete()
     {
         var result = ConnectedSupplierCommerceReadiness.Evaluate(
             new ConnectedSupplierCommerceReadiness.Input(
@@ -116,7 +121,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
 
-        Assert.False(result.IsReady);
+        Assert.True(result.IsReady);
         Assert.Equal(
             ConnectedSupplierCommerceReadiness.StatusComplete,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod).Status);
@@ -124,6 +129,211 @@ public sealed class ConnectedSupplierCommerceReadinessTests
             ConnectedSupplierCommerceReadiness.StatusMissing,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
         Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentPickup], result.SupportedFulfillmentMethods);
+        Assert.Empty(ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
+    }
+
+    [Fact]
+    public void Delivery_only_ready_satisfies_fulfillment()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: false,
+                DeliveryEnabled: true,
+                PickupConfigured: false,
+                DeliveryConfigured: true,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.True(result.IsReady);
+        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentDelivery], result.SupportedFulfillmentMethods);
+        Assert.Empty(ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
+    }
+
+    [Fact]
+    public void Delivery_only_branch_ready_without_org_offer_completes_fulfillment_method()
+    {
+        // Branch Delivery ON+ready; org Offer Delivery OFF; Pickup OFF.
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: false,
+                DeliveryEnabled: false,
+                PickupConfigured: false,
+                DeliveryConfigured: true,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.True(result.IsReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusComplete,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod).Status);
+        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentDelivery], result.SupportedFulfillmentMethods);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusNotApplicable,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
+        Assert.Empty(ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
+    }
+
+    [Fact]
+    public void Both_ready_exposes_pickup_and_delivery_methods()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                PickupConfigured: true,
+                DeliveryConfigured: true,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.True(result.IsReady);
+        Assert.Equal(
+            [
+                ConnectedSupplierCommerceReadiness.FulfillmentPickup,
+                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            ],
+            result.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public void Neither_method_ready_blocks_with_no_usable_method()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: true,
+                PickupConfigured: false,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.False(result.IsReady);
+        Assert.Empty(result.SupportedFulfillmentMethods);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusMissing,
+            result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod).Status);
+        var blockers = ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod, blockers);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.BuyerBlockerFulfillment, blockers);
+    }
+
+    [Fact]
+    public void Enabled_but_not_ready_pickup_does_not_count_as_usable()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: false,
+                PickupConfigured: false,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.False(result.IsReady);
+        Assert.Empty(result.SupportedFulfillmentMethods);
+        Assert.Equal(
+            [
+                ConnectedSupplierCommerceReadiness.BuyerBlockerFulfillment,
+                ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod,
+            ],
+            ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
+    }
+
+    [Fact]
+    public void Buyer_safe_blockers_map_fulfillment_without_internal_codes()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: false,
+                DeliveryEnabled: true,
+                PickupConfigured: false,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        var blockers = ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result);
+        Assert.Equal(
+            [
+                ConnectedSupplierCommerceReadiness.BuyerBlockerFulfillment,
+                ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod,
+            ],
+            blockers);
+        Assert.DoesNotContain(ConnectedSupplierCommerceReadiness.DeliveryConfig, blockers);
+    }
+
+    [Fact]
+    public void Buyer_safe_blockers_group_payment_and_catalog()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: false,
+                PickupConfigured: true,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: false,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: false,
+                HasResponsibleContact: true));
+
+        var blockers = ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result);
+        Assert.Equal(
+            [
+                ConnectedSupplierCommerceReadiness.BuyerBlockerPayment,
+                ConnectedSupplierCommerceReadiness.BuyerBlockerCatalog,
+            ],
+            blockers);
+    }
+
+    [Fact]
+    public void Buyer_safe_blockers_empty_when_ready()
+    {
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+            new ConnectedSupplierCommerceReadiness.Input(
+                HasSellingBranch: true,
+                PickupEnabled: true,
+                DeliveryEnabled: false,
+                PickupConfigured: true,
+                DeliveryConfigured: false,
+                HasAcceptedPaymentMethod: true,
+                UtangPaymentEnabled: false,
+                CreditAllowRequested: false,
+                HasValidCreditPolicy: false,
+                HasSharedCatalog: true,
+                HasResponsibleContact: true));
+
+        Assert.Empty(ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
     }
 
     [Fact]

@@ -19,6 +19,7 @@ export type BusinessCreditPolicySectionProps = {
   canRecordPayment?: boolean;
   canViewStatement?: boolean;
   onRecordPayment?: () => void;
+  onOpenReceivables?: () => void;
   /** Display under dialog title, e.g. "Kizy Bakery · ORG436352". */
   subjectIdentity?: string | null;
   /** When set, skip fetch (used by unit tests). */
@@ -38,6 +39,7 @@ export function BusinessCreditPolicySection(props: BusinessCreditPolicySectionPr
       canRecordPayment={props.canRecordPayment}
       canViewStatement={props.canViewStatement}
       onRecordPayment={props.onRecordPayment}
+      onOpenReceivables={props.onOpenReceivables}
       subjectIdentity={props.subjectIdentity}
       policyOverride={props.policyOverride}
       titleKey="customers.business.creditPolicy.title"

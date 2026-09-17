@@ -200,10 +200,63 @@ export function comparePlanTier(
   return "same";
 }
 
+/** All published plans for Change plan UI — caller marks the current plan. */
+export function listAvailablePlansForChange(
+  availablePlans: ReadonlyArray<OrganizationPlanDto>,
+): OrganizationPlanDto[] {
+  return [...availablePlans].sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
 /** Plans the Owner may compare against — the current plan is shown separately. */
 export function selectableAvailablePlans(
   availablePlans: ReadonlyArray<OrganizationPlanDto>,
   current: OrganizationPlanDto | null | undefined,
 ): OrganizationPlanDto[] {
   return availablePlans.filter((plan) => !(current?.id && plan.id === current.id));
+}
+
+export type PlanLimitDiffRow = {
+  dimension: CapacityDimension;
+  current: number;
+  target: number;
+};
+
+export function buildPlanLimitDiffs(
+  current: OrganizationPlanDto | null | undefined,
+  target: OrganizationPlanDto | null | undefined,
+): PlanLimitDiffRow[] {
+  if (!current || !target) return [];
+  return [
+    { dimension: "branches", current: current.maxBranches, target: target.maxBranches },
+    { dimension: "staff", current: current.maxActiveStaff, target: target.maxActiveStaff },
+    {
+      dimension: "devices",
+      current: current.maxActivePosDevices,
+      target: target.maxActivePosDevices,
+    },
+    { dimension: "areas", current: current.maxAreas, target: target.maxAreas },
+  ];
+}
+
+/** Prefer next renewal for scheduled downgrades; fall back to period end. */
+export function resolveDowngradeEffectiveAtUtc(
+  subscription: OrganizationSubscriptionDto | null | undefined,
+): string | null {
+  if (!subscription) return null;
+  return (
+    subscription.renewalDateUtc ??
+    subscription.currentPeriodEndUtc ??
+    subscription.paidPeriodEndUtc ??
+    null
+  );
+}
+
+export function quotePlanPriceForCycle(
+  plan: OrganizationPlanDto | null | undefined,
+  billingCycle: string | null | undefined,
+): number | null {
+  if (!plan) return null;
+  const cycle = billingCycle?.trim().toLowerCase() ?? "";
+  if (cycle === "annual" || cycle === "yearly") return plan.annualPrice;
+  return plan.monthlyPrice;
 }

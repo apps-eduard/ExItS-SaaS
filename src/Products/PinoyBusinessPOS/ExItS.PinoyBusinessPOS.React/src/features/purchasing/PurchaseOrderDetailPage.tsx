@@ -630,7 +630,9 @@ export function PurchaseOrderDetailPage() {
       po.status === "Draft" &&
       commerceReadinessQuery.isSuccess &&
       !supplierCommerceReady ? (
-        <SupplierNotReadyForPoBanner />
+        <SupplierNotReadyForPoBanner
+          blockerCategories={commerceReadinessQuery.data?.blockerCategories}
+        />
       ) : null}
       {needsApproval ? (
         <Notice tone="warning" testId="po-needs-approval">

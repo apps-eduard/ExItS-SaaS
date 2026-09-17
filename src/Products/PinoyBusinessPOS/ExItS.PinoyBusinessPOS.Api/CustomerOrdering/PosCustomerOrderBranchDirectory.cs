@@ -37,6 +37,104 @@ internal sealed class PosCustomerOrderBranchDirectory(
         return branches.FirstOrDefault(b => b.BranchId == branchId);
     }
 
+    public async Task<CustomerOrderBranchSnapshot?> GetCommerceBranchAsync(
+        Guid sellerOrganizationId,
+        Guid branchId,
+        string? sellerPublicOrganizationId,
+        CancellationToken cancellationToken = default)
+    {
+        var membershipBranch = await GetBranchAsync(sellerOrganizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (membershipBranch is not null)
+        {
+            return membershipBranch;
+        }
+
+        // Connected buyers are not seller-org members — ListBranches returns empty/403.
+        // Fall back to the public Active-branch commerce fulfillment snapshot.
+        return await TryGetPublicCommerceBranchAsync(sellerPublicOrganizationId, branchId, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    private async Task<CustomerOrderBranchSnapshot?> TryGetPublicCommerceBranchAsync(
+        string? sellerPublicOrganizationId,
+        Guid branchId,
+        CancellationToken cancellationToken)
+    {
+        if (branchId == Guid.Empty || string.IsNullOrWhiteSpace(sellerPublicOrganizationId))
+        {
+            return null;
+        }
+
+        EnsureBaseAddress();
+        if (client.BaseAddress is null)
+        {
+            return null;
+        }
+
+        var encoded = Uri.EscapeDataString(sellerPublicOrganizationId.Trim());
+        using var platformRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/v1/public/stores/{encoded}/branches/{branchId:D}/commerce-fulfillment");
+
+        try
+        {
+            using var response = await client.SendAsync(platformRequest, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var dto = await response.Content
+                .ReadFromJsonAsync<PublicCommerceFulfillmentDto>(JsonOptions, cancellationToken)
+                .ConfigureAwait(false);
+            if (dto is null || dto.BranchId != branchId)
+            {
+                return null;
+            }
+
+            return new CustomerOrderBranchSnapshot(
+                dto.BranchId,
+                string.IsNullOrWhiteSpace(dto.Name) ? "Branch" : dto.Name,
+                dto.CustomerOrderingEnabled,
+                dto.PickupEnabled,
+                dto.DeliveryEnabled,
+                CustomerOrderingOperational: false,
+                PickupOperational: false,
+                DeliveryOperational: false,
+                OnlineOrdersPaused: false,
+                StoreStatusMessage: null,
+                Latitude: null,
+                Longitude: null,
+                DeliveryPolicy: null,
+                IsPrimary: false,
+                DeliveryServiceAreas: null,
+                PickupReady: dto.PickupReady,
+                DeliveryReady: dto.DeliveryReady);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
+    private sealed record PublicCommerceFulfillmentDto(
+        Guid BranchId,
+        string Name,
+        bool PickupEnabled,
+        bool DeliveryEnabled,
+        bool PickupReady,
+        bool DeliveryReady,
+        bool CustomerOrderingEnabled);
+
     public async Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(
         Guid sellerOrganizationId,
         CancellationToken cancellationToken = default)
@@ -78,7 +176,8 @@ internal sealed class PosCustomerOrderBranchDirectory(
                             "Manila",
                             "NCR")
                     ],
-                    PickupReady: true)
+                    PickupReady: true,
+                    DeliveryReady: true)
             ];
         }
 
@@ -243,6 +342,7 @@ internal sealed class PosCustomerOrderBranchDirectory(
             policy,
             branch.IsPrimary,
             areas,
-            branch.PickupReady);
+            branch.PickupReady,
+            branch.DeliveryReady);
     }
 }

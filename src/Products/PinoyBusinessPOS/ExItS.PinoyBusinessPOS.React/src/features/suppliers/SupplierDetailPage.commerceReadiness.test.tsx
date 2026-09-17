@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import { SupplierDetailPage } from "@/features/suppliers/SupplierDetailPage";
@@ -131,6 +132,7 @@ describe("SupplierDetailPage commerce readiness", () => {
       isReady: true,
       supportedFulfillmentMethods: ["Pickup", "Delivery"],
       requirements: null,
+      blockerCategories: [],
     });
 
     renderPage();
@@ -144,26 +146,52 @@ describe("SupplierDetailPage commerce readiness", () => {
     expect(screen.queryByText(/Selling \/ fulfillment branch/i)).not.toBeInTheDocument();
   });
 
-  it("shows generic warning and disables Create PO when supplier is not ready", async () => {
+  it("shows fulfillment category messaging and never internal checklist details", async () => {
     readinessMock.mockResolvedValue({
       relationshipId,
       isReady: false,
-      supportedFulfillmentMethods: [],
+      supportedFulfillmentMethods: ["Pickup"],
       requirements: null,
+      blockerCategories: ["Fulfillment"],
     });
 
     renderPage();
 
     const banner = await screen.findByTestId("supplier-not-ready-for-po-banner");
     expect(banner).toHaveTextContent(/Supplier not ready for purchase orders/i);
-    expect(banner).toHaveTextContent(/Please contact your supplier/i);
-    expect(screen.queryByTestId("supplier-ready-for-po")).not.toBeInTheDocument();
+    expect(banner).toHaveTextContent(/fulfillment setup/i);
+    expect(banner).toHaveTextContent(/Issue:\s*Fulfillment setup/i);
     expect(screen.queryByText(/Responsible contact/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Shared catalog/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/SellingBranch|PickupConfig|DeliveryConfig/i)).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByTestId("supplier-create-purchase-order")).toBeDisabled();
     });
-    expect(screen.getByTestId("supplier-browse-catalog")).toBeInTheDocument();
+  });
+
+  it("dismisses banner without enabling Create PO", async () => {
+    readinessMock.mockResolvedValue({
+      relationshipId,
+      isReady: false,
+      supportedFulfillmentMethods: [],
+      requirements: null,
+      blockerCategories: ["Payment", "Catalog"],
+    });
+
+    renderPage();
+
+    const banner = await screen.findByTestId("supplier-not-ready-for-po-banner");
+    expect(banner).toHaveTextContent(/fulfillment|payment|catalog/i);
+    expect(screen.getByTestId("supplier-not-ready-for-po-banner-issues")).toHaveTextContent(
+      /Issues:\s*Payment · Catalog/i,
+    );
+
+    await userEvent.click(screen.getByTestId("supplier-not-ready-for-po-banner-dismiss"));
+    expect(screen.queryByTestId("supplier-not-ready-for-po-banner")).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("supplier-create-purchase-order")).toBeDisabled();
+    });
   });
 });

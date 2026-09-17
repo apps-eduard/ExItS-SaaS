@@ -193,4 +193,58 @@ public static class ConnectedPoUtangObligationProjection
 
         return null;
     }
+
+    /// <summary>
+    /// Canonical source for mirrored receivable/payable UI.
+    /// SourceType matches buyer payables: Sale | GoodsReceipt | DirectPurchaseReceipt | Other.
+    /// </summary>
+    public static bool TryResolveSource(
+        string? remarks,
+        Guid? sourceSaleId,
+        out string sourceType,
+        out Guid? sourceId,
+        out string? sourceReference)
+    {
+        sourceType = "Other";
+        sourceId = null;
+        sourceReference = TryFormatSourceLabelFromRemark(remarks);
+
+        if (TryParseGoodsReceiptId(remarks, out var grnId))
+        {
+            sourceType = "GoodsReceipt";
+            sourceId = grnId;
+            return true;
+        }
+
+        if (TryParseDirectPurchaseReceiptId(remarks, out var dprId))
+        {
+            sourceType = "DirectPurchaseReceipt";
+            sourceId = dprId;
+            return true;
+        }
+
+        if (TryParseSaleId(remarks, out var saleIdFromRemark))
+        {
+            sourceType = "Sale";
+            sourceId = saleIdFromRemark;
+            return true;
+        }
+
+        if (sourceSaleId is Guid saleId && saleId != Guid.Empty)
+        {
+            sourceType = "Sale";
+            sourceId = saleId;
+            if (string.IsNullOrWhiteSpace(sourceReference) && !string.IsNullOrWhiteSpace(remarks))
+            {
+                // Strip accidental raw prefixes from legacy remarks.
+                sourceReference = remarks.StartsWith(SaleRemarkPrefix, StringComparison.Ordinal)
+                    ? TryFormatSourceLabelFromRemark(remarks)
+                    : remarks.Trim();
+            }
+
+            return true;
+        }
+
+        return sourceReference is not null;
+    }
 }

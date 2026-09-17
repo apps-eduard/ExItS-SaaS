@@ -846,6 +846,8 @@ export const connectedSupplierCommerceReadinessSchema = z.object({
   isReady: z.boolean(),
   supportedFulfillmentMethods: z.array(z.string()).default([]),
   requirements: z.array(commerceReadinessRequirementSchema).nullable().optional(),
+  /** Buyer-safe categories only; empty when ready. Never internal checklist details. */
+  blockerCategories: z.array(z.string()).nullable().optional().default([]),
 });
 
 export type ConnectedSupplierCommerceReadiness = z.infer<
@@ -1094,6 +1096,11 @@ export const businessReceivableSchema = z.object({
   originalAmount: z.number(),
   createdAtUtc: isoDateSchema,
   remarks: z.string().nullable().optional(),
+  status: z.string().optional().default("Open"),
+  isOverdue: z.boolean().optional().default(false),
+  paidAtSourceAmount: z.number().optional().default(0),
+  laterPaymentsAmount: z.number().optional(),
+  sourceId: guidSchema.nullable().optional(),
 });
 
 export type BusinessReceivable = z.infer<typeof businessReceivableSchema>;

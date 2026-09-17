@@ -75,6 +75,8 @@ export function BranchFulfillmentListPage() {
       });
       await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
       await queryClient.invalidateQueries({ queryKey: ["business-customers"] });
+      await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
     },
     onError: (err) => {
       setToggleError(
@@ -111,6 +113,9 @@ export function BranchFulfillmentListPage() {
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
       });
+      await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
+      await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
+      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
     },
     onError: (err) => {
       setOptimistic(null);

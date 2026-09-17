@@ -21,7 +21,11 @@ public sealed record ConnectedSupplierCommerceReadinessDto(
     Guid RelationshipId,
     bool IsReady,
     IReadOnlyList<string> SupportedFulfillmentMethods,
-    IReadOnlyList<ConnectedSupplierCommerceReadinessRequirementDto>? Requirements = null);
+    IReadOnlyList<ConnectedSupplierCommerceReadinessRequirementDto>? Requirements = null,
+    /// <summary>
+    /// Buyer-safe blocker categories only (Fulfillment, Payment, …). Empty when ready.
+    /// </summary>
+    IReadOnlyList<string>? BlockerCategories = null);
 
 /// <summary>
 /// Authoritative commerce readiness for connected supplier PO acceptance.
@@ -94,6 +98,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
         var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
         var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
+        forBuyer = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(forBuyer);
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
             ToDto(relationship.Id.Value, forBuyer, includeRequirements: false));
     }
@@ -135,6 +140,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
         CancellationToken cancellationToken = default)
     {
         var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
+        if (forBuyerMessage)
+        {
+            evaluated = ApplyBuyerDeliveryFilter(evaluated, relationship);
+            evaluated = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(evaluated);
+        }
+
         if (evaluated.IsReady)
         {
             return ApplicationResult.Success();
@@ -200,7 +211,11 @@ public sealed class ConnectedSupplierCommerceReadinessService
         if (hasBranch)
         {
             var branch = await _branches
-                .GetBranchAsync(supplierOrg.Value, relationship.SupplierBranchId!.Value, cancellationToken)
+                .GetCommerceBranchAsync(
+                    supplierOrg.Value,
+                    relationship.SupplierBranchId!.Value,
+                    relationship.SupplierPublicOrganizationIdSnapshot,
+                    cancellationToken)
                 .ConfigureAwait(false);
             if (branch is not null)
             {
@@ -208,12 +223,9 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 // Setup completeness (not open-now operational). Closed store must not
                 // keep Supplier Readiness stuck on Pickup configuration.
                 pickupConfigured = branch.PickupReady;
-                // Preserve branch delivery config when org Offer Delivery is OFF;
-                // readiness only treats it as complete when org offers Delivery.
-                deliveryConfigured = branch.DeliveryEnabled
-                    && (branch.DeliveryOperational
-                        || branch.DeliveryPolicy is not null
-                        || !string.IsNullOrWhiteSpace(relationship.DeliveryInstructions));
+                // Canonical: enabled + Platform DeliveryReady (same as seller Branch PO panel).
+                // Do not use DeliveryOperational (open-now) or ad-hoc policy/instructions checks.
+                deliveryConfigured = branch.DeliveryEnabled && branch.DeliveryReady;
             }
         }
 
@@ -275,28 +287,27 @@ public sealed class ConnectedSupplierCommerceReadinessService
     }
 
     /// <summary>
-    /// Buyer-facing methods apply EffectiveDelivery (org ON + ready branch + override != block).
-    /// Customer Block must not appear as a supplier readiness gap.
+    /// Buyer-facing methods: strip Delivery when the customer override Blocks it.
+    /// Branch Delivery enabled+ready is enough to list Delivery (org Offer Delivery is not
+    /// required for method availability). When Delivery was the only usable method and
+    /// Block applies, the buyer projection becomes not-ready with NoUsableMethod.
     /// </summary>
     internal static ConnectedSupplierCommerceReadiness.Result ApplyBuyerDeliveryFilter(
         ConnectedSupplierCommerceReadiness.Result evaluated,
         ConnectedSupplierRelationship relationship)
     {
-        var orgOffersDelivery = evaluated.Requirements.Any(r =>
-            r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig
-            && r.Status != ConnectedSupplierCommerceReadiness.StatusNotApplicable);
         var readyBranch = evaluated.SupportedFulfillmentMethods.Contains(
             ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
             StringComparer.OrdinalIgnoreCase);
+        // Branch channel is the offer signal for buyer method listing; org Offer Delivery
+        // remains a separate supplier checklist concern (DeliveryConfig).
         var allowed = EffectiveDeliveryAllowance.IsAllowed(
-            orgOffersDelivery,
-            readyBranch,
+            orgOfferDelivery: readyBranch,
+            readyDeliveryBranchExists: readyBranch,
             relationship.CustomerDeliveryOverride);
 
         if (allowed
-            || !evaluated.SupportedFulfillmentMethods.Contains(
-                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
-                StringComparer.OrdinalIgnoreCase))
+            || !readyBranch)
         {
             return evaluated;
         }
@@ -306,10 +317,30 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
                 StringComparison.OrdinalIgnoreCase))
             .ToArray();
+
+        if (filtered.Length > 0)
+        {
+            // Pickup (or another non-delivery method) still works for this buyer.
+            return new ConnectedSupplierCommerceReadiness.Result(
+                evaluated.IsReady,
+                filtered,
+                evaluated.Requirements);
+        }
+
+        // Delivery was the only usable method and the customer override blocks it.
+        var requirements = evaluated.Requirements
+            .Select(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod
+                ? r with
+                {
+                    Status = ConnectedSupplierCommerceReadiness.StatusMissing,
+                    Detail = "Enable and finish Pickup and/or Delivery so buyers have at least one method.",
+                }
+                : r)
+            .ToList();
         return new ConnectedSupplierCommerceReadiness.Result(
-            evaluated.IsReady,
+            IsReady: false,
             filtered,
-            evaluated.Requirements);
+            requirements);
     }
 
     private sealed class NullOrganizationFulfillmentSettingsRepository : IOrganizationFulfillmentSettingsRepository
@@ -378,11 +409,14 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 ActionPathFor(r.Code))).ToList();
         }
 
+        var blockerCategories = ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(evaluated);
+
         return new ConnectedSupplierCommerceReadinessDto(
             relationshipId,
             evaluated.IsReady,
             evaluated.SupportedFulfillmentMethods,
-            requirements);
+            requirements,
+            blockerCategories);
     }
 
     private static string? ActionPathFor(string code) =>

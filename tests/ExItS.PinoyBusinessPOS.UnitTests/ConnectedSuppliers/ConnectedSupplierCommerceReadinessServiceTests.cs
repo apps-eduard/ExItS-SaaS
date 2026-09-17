@@ -28,7 +28,26 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.True(result.Value!.IsReady);
         Assert.Null(result.Value.Requirements);
+        Assert.Empty(result.Value.BlockerCategories ?? []);
         Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_includes_blocker_categories_without_requirement_details()
+    {
+        var relationship = ReadyRelationship(withContact: false);
+        var service = CreateService(relationship, readyBranch: true, shared: true);
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(result.Value!.IsReady);
+        Assert.Null(result.Value.Requirements);
+        Assert.Contains(
+            ConnectedSupplierCommerceReadiness.BuyerBlockerContact,
+            result.Value.BlockerCategories ?? []);
+        Assert.DoesNotContain(
+            result.Value.BlockerCategories ?? [],
+            c => c.Contains("Responsible", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -94,6 +113,101 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
             r => r.Code == ConnectedSupplierCommerceReadiness.PickupConfig);
         Assert.Equal(ConnectedSupplierCommerceReadiness.StatusComplete, pickup.Status);
         Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Delivery_uses_platform_delivery_ready_not_operational_or_policy_heuristic()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.IsReady);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Pickup_ready_keeps_buyer_ready_when_org_delivery_incomplete()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranches(true),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        // FakeBranches has DeliveryEnabled false → delivery not usable; pickup ready.
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.IsReady);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentPickup],
+            result.Value.SupportedFulfillmentMethods);
+        Assert.Empty(result.Value.BlockerCategories ?? []);
+    }
+
+    [Fact]
+    public async Task Supplier_delivery_only_without_org_offer_marks_fulfillment_complete()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliveryOnlySetupReady(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: false));
+
+        var supplier = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
+        Assert.True(supplier.IsSuccess, supplier.ErrorMessage);
+        Assert.True(supplier.Value!.IsReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.StatusComplete,
+            supplier.Value.Requirements!
+                .Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod)
+                .Status);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
+            supplier.Value.SupportedFulfillmentMethods);
+
+        // Buyer also gets Delivery from the branch channel (org Offer Delivery not required).
+        var buyer = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+        Assert.True(buyer.IsSuccess, buyer.ErrorMessage);
+        Assert.True(buyer.Value!.IsReady);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
+            buyer.Value.SupportedFulfillmentMethods);
+        Assert.Empty(buyer.Value.BlockerCategories ?? []);
+    }
+
+    [Fact]
+    public async Task Wrong_or_missing_branch_snapshot_does_not_leak_ready_fulfillment()
+    {
+        var relationship = ReadyRelationship();
+        var service = CreateService(relationship, readyBranch: false, shared: true);
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(result.Value!.IsReady);
+        Assert.Empty(result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(
+            ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod,
+            result.Value.BlockerCategories ?? []);
     }
 
     private static ConnectedSupplierRelationship ReadyRelationship(
@@ -203,7 +317,8 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                         Latitude: null,
                         Longitude: null,
                         DeliveryPolicy: null,
-                        PickupReady: true)
+                        PickupReady: true,
+                        DeliveryReady: false)
                     : null);
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
@@ -229,10 +344,85 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Latitude: null,
                     Longitude: null,
                     DeliveryPolicy: null,
-                    PickupReady: true));
+                    PickupReady: true,
+                    DeliveryReady: false));
 
         public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
+    }
+
+    /// <summary>
+    /// Both channels setup-ready; delivery operational false (store closed) — must still count.
+    /// </summary>
+    private sealed class FakeBranchesDeliverySetupReadyStoreClosed : ICustomerOrderBranchDirectory
+    {
+        public Task<CustomerOrderBranchSnapshot?> GetBranchAsync(Guid sellerOrganizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrderBranchSnapshot?>(
+                new CustomerOrderBranchSnapshot(
+                    branchId,
+                    "Main",
+                    CustomerOrderingEnabled: true,
+                    PickupEnabled: true,
+                    DeliveryEnabled: true,
+                    CustomerOrderingOperational: false,
+                    PickupOperational: false,
+                    DeliveryOperational: false,
+                    OnlineOrdersPaused: false,
+                    StoreStatusMessage: "Closed",
+                    Latitude: 14.5m,
+                    Longitude: 121.0m,
+                    DeliveryPolicy: null,
+                    PickupReady: true,
+                    DeliveryReady: true));
+
+        public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
+    }
+
+    /// <summary>Pickup OFF; Delivery enabled+ready (branch channel only).</summary>
+    private sealed class FakeBranchesDeliveryOnlySetupReady : ICustomerOrderBranchDirectory
+    {
+        public Task<CustomerOrderBranchSnapshot?> GetBranchAsync(Guid sellerOrganizationId, Guid branchId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<CustomerOrderBranchSnapshot?>(
+                new CustomerOrderBranchSnapshot(
+                    branchId,
+                    "Main",
+                    CustomerOrderingEnabled: true,
+                    PickupEnabled: false,
+                    DeliveryEnabled: true,
+                    CustomerOrderingOperational: true,
+                    PickupOperational: false,
+                    DeliveryOperational: true,
+                    OnlineOrdersPaused: false,
+                    StoreStatusMessage: null,
+                    Latitude: 14.5m,
+                    Longitude: 121.0m,
+                    DeliveryPolicy: null,
+                    PickupReady: false,
+                    DeliveryReady: true));
+
+        public Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(Guid sellerOrganizationId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<CustomerOrderBranchSnapshot>>([]);
+    }
+
+    private sealed class FakeOrgOfferDelivery(bool offer) : IOrganizationFulfillmentSettingsRepository
+    {
+        public Task<OrganizationFulfillmentSettings?> GetAsync(
+            PosOrganizationId organizationId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<OrganizationFulfillmentSettings?>(
+                OrganizationFulfillmentSettings.Rehydrate(
+                    Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                    organizationId,
+                    offer,
+                    Now,
+                    Now));
+
+        public Task AddAsync(OrganizationFulfillmentSettings settings, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task UpdateAsync(OrganizationFulfillmentSettings settings, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakePayments : IOrganizationPaymentMethodSettingRepository

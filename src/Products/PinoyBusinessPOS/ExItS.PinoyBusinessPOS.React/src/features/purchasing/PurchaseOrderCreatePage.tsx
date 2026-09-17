@@ -843,7 +843,9 @@ export function PurchaseOrderCreatePage() {
       />
 
       {connected && commerceReadinessQuery.isSuccess && !supplierCommerceReady ? (
-        <SupplierNotReadyForPoBanner />
+        <SupplierNotReadyForPoBanner
+          blockerCategories={commerceReadinessQuery.data?.blockerCategories}
+        />
       ) : null}
 
       {allowManage ? (

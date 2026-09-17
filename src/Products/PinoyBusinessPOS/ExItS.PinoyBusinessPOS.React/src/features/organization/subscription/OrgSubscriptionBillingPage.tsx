@@ -1,17 +1,14 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Check, CreditCard, FileText, Minus, Receipt } from "lucide-react";
 import { canInviteOrganizationStaff, canManageStoreAreas } from "@/access/pos-capabilities";
 import { getBranchCapacity } from "@/api/platform/organization-branches-client";
-import type {
-  OrganizationPlanDto,
-  OrganizationCurrentPlanDto,
-} from "@/api/platform/organization-current-plan-client";
+import type { OrganizationCurrentPlanDto } from "@/api/platform/organization-current-plan-client";
 import { getOrganizationCurrentPlan } from "@/api/platform/organization-current-plan-client";
-import { getOrganizationPlanChangePreview } from "@/api/platform/organization-plan-change-client";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
 import { listOrganizationMembers } from "@/api/platform/organization-members-client";
+import { listOrganizationSaasPayments } from "@/api/platform/organization-saas-payments-client";
 import { getPosDeviceCapacity } from "@/api/platform/pos-devices-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -24,6 +21,8 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { Button } from "@/components/ui/button";
 import { AdminUsageMeter } from "@/features/admin/AdminUsageMeter";
 import { PlanSubscriptionChip } from "@/features/admin/PlanSubscriptionChip";
+import { OrgPlanChangePanel } from "@/features/organization/subscription/OrgPlanChangePanel";
+import { isSimulatedOrganizationBilling } from "@/features/organization/subscription/organization-billing-mode";
 import {
   CAPACITY_LABEL_KEYS,
   PLAN_FEATURE_LABEL_KEYS,
@@ -31,12 +30,10 @@ import {
   SUBSCRIPTION_TAB_LABEL_KEYS,
   buildCapacityUsage,
   buildPlanFeatureRows,
-  comparePlanTier,
   formatSubscriptionDate,
   parseSubscriptionTab,
   resolveNextPaymentDate,
   resolveSubscriptionStatusTone,
-  selectableAvailablePlans,
   type SubscriptionTabId,
 } from "@/features/organization/subscription/subscription-billing-view";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -46,19 +43,20 @@ const COMMERCIAL_STALE_TIME = 60_000;
 
 /**
  * Organization Subscription & Billing (Owner-only, `/org/subscription`).
- * Reads Platform commercial state; never processes payments and never mutates
- * the subscription. Plan limits always come from the current-plan payload.
+ * Plan changes use Platform commercial APIs; payment execution is Simulated
+ * via Local Validation — subscription and entitlement domain stay real.
  */
 export function OrgSubscriptionBillingPage() {
   const { t } = useI18n();
-  const { boundWorkspace, sessionGrant } = useWorkspace();
+  const { boundWorkspace, sessionGrant, refreshSessionGrant } = useWorkspace();
+  const queryClient = useQueryClient();
   const organizationId = boundWorkspace?.organizationId ?? null;
   const canManage = canInviteOrganizationStaff(sessionGrant);
   const areasEntitled = canManageStoreAreas(sessionGrant);
+  const simulatedBilling = isSimulatedOrganizationBilling();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = parseSubscriptionTab(searchParams.get("tab"));
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const goToTab = useCallback(
     (tab: SubscriptionTabId) => {
@@ -128,6 +126,19 @@ export function OrgSubscriptionBillingPage() {
     },
   });
 
+  const paymentsQuery = useQuery({
+    queryKey: ["org-subscription", "saas-payments", organizationId],
+    enabled: enabled && (activeTab === "invoices" || activeTab === "billing"),
+    staleTime: 0,
+    queryFn: async ({ signal }) => {
+      const result = await listOrganizationSaasPayments(organizationId!, signal);
+      if (!result.ok) {
+        throw new Error(result.body?.detail ?? "saas-payments");
+      }
+      return result.value;
+    },
+  });
+
   const data: OrganizationCurrentPlanDto | undefined = currentPlanQuery.data;
   const subscription = data?.currentSubscription ?? null;
   const currentPlan = data?.currentPlan ?? null;
@@ -155,41 +166,12 @@ export function OrgSubscriptionBillingPage() {
   const atLimitRows = capacityRows.filter((row) => row.atLimit);
   const nearLimitRows = capacityRows.filter((row) => row.nearLimit);
 
-  const otherPlans = useMemo(
-    () => selectableAvailablePlans(data?.availablePlans ?? [], currentPlan),
-    [currentPlan, data?.availablePlans],
-  );
-
-  const selectedPlan = useMemo(
-    () => otherPlans.find((plan) => plan.id === selectedPlanId) ?? null,
-    [otherPlans, selectedPlanId],
-  );
-
-  const previewQuery = useQuery({
-    queryKey: [
-      "org-subscription",
-      "plan-change-preview",
-      organizationId,
-      subscription?.id,
-      selectedPlan?.id,
-    ],
-    enabled: Boolean(enabled && subscription?.id && selectedPlan?.id),
-    staleTime: 0,
-    queryFn: async ({ signal }) => {
-      const result = await getOrganizationPlanChangePreview(
-        {
-          organizationId: organizationId!,
-          subscriptionId: subscription!.id!,
-          planId: selectedPlan!.id!,
-        },
-        signal,
-      );
-      if (!result.ok) {
-        throw new Error(result.body?.detail ?? "plan-change-preview");
-      }
-      return result.value;
-    },
-  });
+  async function handlePlanChangeCompleted() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["org-subscription"] }),
+      refreshSessionGrant(),
+    ]);
+  }
 
   if (!canManage) {
     return (
@@ -205,14 +187,6 @@ export function OrgSubscriptionBillingPage() {
   const statusLabel = subscription?.status ?? t("orgSubscription.notAvailable");
   const nextPaymentDate = formatSubscriptionDate(resolveNextPaymentDate(subscription));
   const cycleLabel = subscription?.billingCycle ?? t("orgSubscription.notAvailable");
-
-  function planLimitsLine(plan: OrganizationPlanDto): string {
-    return t("orgSubscription.planLimits")
-      .replace("{branches}", String(plan.maxBranches))
-      .replace("{staff}", String(plan.maxActiveStaff))
-      .replace("{devices}", String(plan.maxActivePosDevices))
-      .replace("{areas}", String(plan.maxAreas));
-  }
 
   const summaryRows = (
     <dl className="grid gap-3 sm:grid-cols-2" data-testid="org-subscription-summary">
@@ -268,6 +242,16 @@ export function OrgSubscriptionBillingPage() {
           </dt>
           <dd className="m-0">
             <MoneyDisplay amount={subscription.agreedPrice} testId="org-subscription-amount" />
+          </dd>
+        </div>
+      ) : null}
+      {simulatedBilling ? (
+        <div className="flex flex-col gap-1">
+          <dt className="text-[length:var(--exits-text-xs)] text-muted">
+            {t("orgSubscription.billingModeLabel")}
+          </dt>
+          <dd className="m-0" data-testid="org-subscription-billing-mode-summary">
+            {t("orgSubscription.billingModeSimulated")}
           </dd>
         </div>
       ) : null}
@@ -396,123 +380,17 @@ export function OrgSubscriptionBillingPage() {
         </section>
       ) : null}
 
-      <section className="flex flex-col gap-2">
-        <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("orgSubscription.plansTitle")}
-        </h3>
-        {otherPlans.length === 0 ? (
-          <EmptyState
-            title={t("orgSubscription.plansEmpty")}
-            size="compact"
-            testId="org-subscription-plans-empty"
-          />
-        ) : (
-          <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="org-subscription-plans">
-            {otherPlans.map((plan) => {
-              const direction = comparePlanTier(currentPlan, plan);
-              const selected = plan.id != null && plan.id === selectedPlanId;
-              return (
-                <li
-                  key={plan.id ?? plan.planKey ?? plan.displayName}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2"
-                  data-testid={`org-subscription-plan-${plan.planKey ?? plan.code ?? plan.id}`}
-                  data-direction={direction}
-                >
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <span className="font-medium">{plan.displayName}</span>
-                    <span className="text-[length:var(--exits-text-xs)] text-muted">
-                      {planLimitsLine(plan)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusChip
-                      tone={direction === "downgrade" ? "warning" : "info"}
-                      shape="auto"
-                    >
-                      {direction === "downgrade"
-                        ? t("orgSubscription.planDowngrade")
-                        : t("orgSubscription.planUpgrade")}
-                    </StatusChip>
-                    <Button
-                      intent="neutral"
-                      appearance="outline"
-                      onClick={() => setSelectedPlanId(plan.id)}
-                      disabled={!plan.id || !subscription?.id || selected}
-                      data-testid={`org-subscription-check-${plan.planKey ?? plan.code ?? plan.id}`}
-                    >
-                      {t("orgSubscription.compare")}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {selectedPlan ? (
-        <section className="flex flex-col gap-2" data-testid="org-subscription-preview">
-          {previewQuery.isLoading ? <LoadingState label={t("orgSubscription.comparing")} /> : null}
-          {previewQuery.isError ? (
-            <Notice tone="danger" testId="org-subscription-preview-error">
-              {t("orgSubscription.previewError")}
-            </Notice>
-          ) : null}
-          {previewQuery.data?.hasBlockingUsageConflicts ? (
-            <Notice
-              tone="danger"
-              title={t("orgSubscription.previewBlockedTitle")}
-              testId="org-subscription-preview-blocked"
-            >
-              <span className="block">
-                {t("orgSubscription.previewBlockedDetail").replace(
-                  "{plan}",
-                  selectedPlan.displayName ?? "",
-                )}
-              </span>
-              <ul className="m-0 mt-1 list-disc pl-4">
-                {previewQuery.data.usageConflicts.map((conflict) => (
-                  <li key={`${conflict.resource}-${conflict.targetLimit}`}>{conflict.message}</li>
-                ))}
-              </ul>
-            </Notice>
-          ) : null}
-          {previewQuery.data && !previewQuery.data.hasBlockingUsageConflicts ? (
-            <Notice
-              tone="success"
-              title={t("orgSubscription.previewOkTitle")}
-              testId="org-subscription-preview-ok"
-            >
-              {t("orgSubscription.previewOkDetail").replace(
-                "{plan}",
-                selectedPlan.displayName ?? "",
-              )}
-            </Notice>
-          ) : null}
-          {previewQuery.data && previewQuery.data.lostFeatures.length > 0 ? (
-            <div
-              className="text-[length:var(--exits-text-sm)]"
-              data-testid="org-subscription-preview-lost"
-            >
-              <strong>{t("orgSubscription.previewLostFeatures")}</strong>
-              <ul className="m-0 mt-1 list-disc pl-4">
-                {previewQuery.data.lostFeatures.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* No self-service subscription payment exists in this app — do not fake checkout. */}
-      <Notice
-        tone="info"
-        title={t("orgSubscription.changeManagedTitle")}
-        testId="org-subscription-change-managed"
-      >
-        {t("orgSubscription.changeManagedDetail")}
-      </Notice>
+      {organizationId && subscription ? (
+        <OrgPlanChangePanel
+          organizationId={organizationId}
+          subscription={subscription}
+          currentPlan={currentPlan}
+          availablePlans={data?.availablePlans ?? []}
+          onCompleted={handlePlanChangeCompleted}
+        />
+      ) : (
+        <Notice tone="info">{t("orgSubscription.noSubscriptionDetail")}</Notice>
+      )}
     </div>
   );
 
@@ -526,16 +404,44 @@ export function OrgSubscriptionBillingPage() {
       >
         {t("orgSubscription.billingManagedDetail")}
       </Notice>
+      {paymentsQuery.isLoading ? <LoadingState label={t("orgSubscription.loading")} /> : null}
+      {paymentsQuery.data && paymentsQuery.data.items.length > 0 ? (
+        <section className="flex flex-col gap-2" data-testid="org-subscription-billing-history">
+          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("orgSubscription.historyTitle")}
+          </h3>
+          <PaymentHistoryList items={paymentsQuery.data.items} />
+        </section>
+      ) : null}
     </div>
   );
 
   const invoicesPanel = (
-    <EmptyState
-      title={t("orgSubscription.invoicesEmptyTitle")}
-      detail={t("orgSubscription.invoicesEmptyDetail")}
-      icon={<Receipt className="size-5" aria-hidden />}
-      testId="org-subscription-invoices-empty"
-    />
+    <div className="flex flex-col gap-4">
+      {paymentsQuery.isLoading ? <LoadingState label={t("orgSubscription.loading")} /> : null}
+      {paymentsQuery.isError ? (
+        <ErrorState
+          title={t("orgSubscription.loadError")}
+          detail={t("orgSubscription.loadErrorDetail")}
+        />
+      ) : null}
+      {paymentsQuery.data && paymentsQuery.data.items.length === 0 ? (
+        <EmptyState
+          title={t("orgSubscription.invoicesEmptyTitle")}
+          detail={t("orgSubscription.invoicesEmptyDetail")}
+          icon={<Receipt className="size-5" aria-hidden />}
+          testId="org-subscription-invoices-empty"
+        />
+      ) : null}
+      {paymentsQuery.data && paymentsQuery.data.items.length > 0 ? (
+        <section className="flex flex-col gap-2" data-testid="org-subscription-invoices">
+          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("orgSubscription.invoicesTitle")}
+          </h3>
+          <PaymentHistoryList items={paymentsQuery.data.items} />
+        </section>
+      ) : null}
+    </div>
   );
 
   const tabItems: ExitsTabItem[] = SUBSCRIPTION_TABS.map((tab) => ({
@@ -596,5 +502,58 @@ export function OrgSubscriptionBillingPage() {
         />
       ) : null}
     </div>
+  );
+}
+
+function PaymentHistoryList({
+  items,
+}: {
+  items: ReadonlyArray<{
+    id: string | null;
+    amount: number | null;
+    status: string | null;
+    method: string | null;
+    externalReference: string | null;
+    paidAtUtc: string | null;
+    createdAtUtc: string | null;
+  }>;
+}) {
+  const { t } = useI18n();
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      {items.map((item) => (
+        <li
+          key={item.id ?? item.externalReference ?? `${item.createdAtUtc}-${item.amount}`}
+          className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--exits-radius-md)] border border-border px-3 py-2"
+          data-testid="org-subscription-invoice-row"
+        >
+          <div className="flex min-w-0 flex-col gap-1">
+            <span className="font-medium">
+              {item.amount != null ? (
+                <MoneyDisplay amount={item.amount} />
+              ) : (
+                t("orgSubscription.notAvailable")
+              )}
+            </span>
+            <span className="text-[length:var(--exits-text-xs)] text-muted">
+              {formatSubscriptionDate(item.paidAtUtc ?? item.createdAtUtc) ??
+                t("orgSubscription.notAvailable")}
+              {item.externalReference ? ` · ${item.externalReference}` : null}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <StatusChip tone="info" shape="auto">
+              {t("orgSubscription.invoiceSimulated")}
+            </StatusChip>
+            <StatusChip
+              tone={item.status?.toLowerCase() === "confirmed" ? "success" : "neutral"}
+              shape="auto"
+            >
+              {item.status ?? t("orgSubscription.notAvailable")}
+            </StatusChip>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

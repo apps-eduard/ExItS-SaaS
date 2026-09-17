@@ -13,8 +13,8 @@ import {
   type BusinessReceivable,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
-import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
+import { FormDrawer } from "@/components/exits/FormDrawer";
 import { Notice } from "@/components/exits/Notice";
 import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { Button, buttonIconMotion } from "@/components/ui/button";
@@ -74,10 +74,14 @@ function methodLabelKey(method: UtangRepaymentPaymentMethod) {
 
 function receivableSourceLabelKey(sourceType: string | null | undefined): MessageKey {
   const normalized = (sourceType ?? "").trim().toLowerCase();
-  if (normalized === "po") {
+  if (normalized === "po" || normalized === "goodsreceipt") {
     return "customers.receivables.source.po";
   }
-  if (normalized === "directpurchase" || normalized === "direct") {
+  if (
+    normalized === "directpurchase" ||
+    normalized === "direct" ||
+    normalized === "directpurchasereceipt"
+  ) {
     return "customers.receivables.source.direct";
   }
   if (normalized === "sale") {
@@ -461,10 +465,6 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
     (!isCheck || Boolean(checkNumber.trim() && bankName.trim() && checkDate.trim())) &&
     businessAllocationReady;
 
-  if (!props.open) {
-    return null;
-  }
-
   function switchToManual() {
     setAllocationMode("manual");
     setPreselectSeedActive(false);
@@ -484,15 +484,24 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
   }
 
   return (
-    <ExitsModal
+    <FormDrawer
       open={props.open}
-      onOpenChange={props.onOpenChange}
-      title={`${t("customers.recordPayment")} - ${props.displayName}`}
-      busy={mutation.isPending}
+      onOpenChange={(next) => {
+        if (!next && mutation.isPending) {
+          return;
+        }
+        props.onOpenChange(next);
+      }}
+      title={t("customers.recordPayment")}
+      description={props.displayName}
+      saving={mutation.isPending}
+      size="lg"
       testId="record-payment-modal"
       closeLabel={t("customers.creditPolicy.cancel")}
+      cancelLabel={t("customers.creditPolicy.cancel")}
+      cancelTestId="record-payment-cancel"
       footer={
-        <>
+        <div className="exits-form-drawer__footer-actions">
           <Button
             type="button"
             variant="outline"
@@ -516,7 +525,7 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
             <Wallet className="size-4 shrink-0" aria-hidden />
             {mutation.isPending ? t("customers.saving") : t("customers.recordPayment")}
           </Button>
-        </>
+        </div>
       }
     >
       <div className="grid gap-3">
@@ -830,6 +839,6 @@ export function RecordPaymentModal(props: RecordPaymentModalProps) {
             {formError}
           </p>
         ) : null}
-    </ExitsModal>
+    </FormDrawer>
   );
 }

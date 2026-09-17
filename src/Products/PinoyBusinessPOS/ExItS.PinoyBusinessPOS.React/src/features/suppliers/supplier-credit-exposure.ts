@@ -1,4 +1,12 @@
-import { roundMoneyAmount } from "@/lib/money-input";
+﻿import { roundMoneyAmount } from "@/lib/money-input";
+import type { B2bObligationListFilter } from "@/features/b2b-obligations/b2b-obligations-model";
+
+export type SupplierPayableListFilter = B2bObligationListFilter;
+
+export {
+  filterB2bObligations as filterSupplierPayables,
+  countB2bObligationsByFilter as countSupplierPayablesByFilter,
+} from "@/features/b2b-obligations/b2b-obligations-model";
 
 /**
  * Buyer Supplier Credit exposure math (aligned with seller Business Customer policy):
@@ -66,42 +74,4 @@ export function formatUtilizationPercent(percent: number): string {
     return String(rounded);
   }
   return rounded.toFixed(1);
-}
-
-export type SupplierPayableListFilter = "open" | "overdue" | "paid" | "all";
-
-export function filterSupplierPayables<
-  T extends { status: string; isOverdue: boolean; balance: number },
->(payables: readonly T[], filter: SupplierPayableListFilter): T[] {
-  switch (filter) {
-    case "open":
-      return payables.filter(
-        (p) =>
-          (p.status === "Open" || p.status === "PartiallyPaid") && p.balance > 0,
-      );
-    case "overdue":
-      return payables.filter(
-        (p) =>
-          p.isOverdue &&
-          p.status !== "Paid" &&
-          p.status !== "Voided" &&
-          p.balance > 0,
-      );
-    case "paid":
-      return payables.filter((p) => p.status === "Paid");
-    case "all":
-    default:
-      return [...payables];
-  }
-}
-
-export function countSupplierPayablesByFilter<
-  T extends { status: string; isOverdue: boolean; balance: number },
->(payables: readonly T[]): Record<SupplierPayableListFilter, number> {
-  return {
-    open: filterSupplierPayables(payables, "open").length,
-    overdue: filterSupplierPayables(payables, "overdue").length,
-    paid: filterSupplierPayables(payables, "paid").length,
-    all: payables.length,
-  };
 }

@@ -1,15 +1,12 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   BadgeCheck,
   CircleDollarSign,
   ClipboardList,
-  Eye,
-  FileText,
   Lock,
   Wallet,
-  X,
 } from "lucide-react";
 import { canManagePurchasing, canViewPurchasing } from "@/access/pos-capabilities";
 import { getOrganizationOnlineSupplierPaymentsCapability } from "@/api/platform/organization-online-supplier-payments-client";
@@ -17,24 +14,23 @@ import { getBusinessCustomerCreditPolicy } from "@/api/pos/pos-business-credit-p
 import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import {
   getSupplierPayableSummary,
-  listSupplierPayablePayments,
   listSupplierPayables,
   type PosSupplierPayableDto,
-  type PosSupplierPayablePaymentDto,
 } from "@/api/pos/pos-supplier-payables-client";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBar";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { laterPaymentsAmount } from "@/features/purchasing/receive-payment";
+import { B2bObligationsView } from "@/features/b2b-obligations/B2bObligationsView";
+import {
+  mapPayableToObligation,
+  type B2bObligationItem,
+  type B2bObligationListFilter,
+} from "@/features/b2b-obligations/b2b-obligations-model";
 import {
   computeSupplierCreditExposure,
-  countSupplierPayablesByFilter,
   filterSupplierPayables,
   formatUtilizationPercent,
-  type SupplierPayableListFilter,
 } from "@/features/suppliers/supplier-credit-exposure";
 import { resolveBuyerSupplierPaymentCta } from "@/features/suppliers/buyer-supplier-payment-gate";
 import {
@@ -43,77 +39,8 @@ import {
   resolveBuyerCreditDisplayStatus,
 } from "@/features/customers/credit-policy";
 import { useI18n } from "@/i18n/I18nProvider";
-import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
-
-function payableStatusTone(
-  status: string,
-  isOverdue: boolean,
-): "success" | "warning" | "info" | "danger" {
-  if (status === "Paid") {
-    return "success";
-  }
-  if (status === "Voided") {
-    return "warning";
-  }
-  if (isOverdue) {
-    return "danger";
-  }
-  if (status === "PartiallyPaid") {
-    return "info";
-  }
-  return "warning";
-}
-
-function statusLabelKey(status: string): MessageKey {
-  switch (status) {
-    case "Open":
-      return "supplierPayables.status.open";
-    case "PartiallyPaid":
-      return "supplierPayables.status.partiallyPaid";
-    case "Paid":
-      return "supplierPayables.status.paid";
-    case "Voided":
-      return "supplierPayables.status.voided";
-    default:
-      return "supplierPayables.status.open";
-  }
-}
-
-function methodLabelKey(method: string): MessageKey {
-  switch (method) {
-    case "BankTransfer":
-      return "supplierPayables.method.bankTransfer";
-    case "GCash":
-      return "supplierPayables.method.gcash";
-    case "Other":
-      return "supplierPayables.method.other";
-    default:
-      return "supplierPayables.method.cash";
-  }
-}
-
-function sourceLabelKey(sourceType: string): MessageKey {
-  if (sourceType === "DirectPurchaseReceipt") {
-    return "supplierPayables.source.directPurchase";
-  }
-  if (sourceType === "Sale") {
-    return "supplierPayables.source.sale";
-  }
-  return "supplierPayables.source.goodsReceipt";
-}
-
-function formatPayableSourceLabel(
-  payable: Pick<PosSupplierPayableDto, "sourceType" | "sourceReference">,
-  t: (key: MessageKey) => string,
-): string {
-  const reference = payable.sourceReference?.trim();
-  if (reference) {
-    return reference;
-  }
-  return t(sourceLabelKey(payable.sourceType));
-}
 
 function canPayPayable(payable: PosSupplierPayableDto): boolean {
   return (
@@ -137,8 +64,7 @@ export function SupplierCreditSection({
   const allowView = canViewPurchasing(sessionGrant);
   const allowManage = canManagePurchasing(sessionGrant);
 
-  const [detailTarget, setDetailTarget] = useState<PosSupplierPayableDto | null>(null);
-  const [payableFilter, setPayableFilter] = useState<SupplierPayableListFilter>("open");
+  const [payableFilter, setPayableFilter] = useState<B2bObligationListFilter>("open");
 
   const workspace = useMemo(
     () =>
@@ -161,7 +87,6 @@ export function SupplierCreditSection({
       getBusinessCustomerCreditPolicy(workspace!, connectedRelationshipId!, signal),
   });
 
-  // Connected buyers: wait for credit-policy GET (heals missing Direct Purchase payables) before listing.
   const payablesReady =
     Boolean(workspace) &&
     allowView &&
@@ -180,7 +105,7 @@ export function SupplierCreditSection({
     queryFn: ({ signal }) =>
       listSupplierPayables(
         workspace!,
-        { supplierId, page: 1, pageSize: 50 },
+        { supplierId, page: 1, pageSize: 100 },
         signal,
       ),
   });
@@ -200,19 +125,12 @@ export function SupplierCreditSection({
     staleTime: 60_000,
   });
 
-  const historyPayableId = detailTarget?.payableId;
-
-  const paymentsQuery = useQuery({
-    queryKey: ["supplier-payable-payments", workspace?.organizationId, historyPayableId],
-    enabled: Boolean(workspace) && allowView && online && Boolean(historyPayableId),
-    queryFn: ({ signal }) => listSupplierPayablePayments(workspace!, historyPayableId!, signal),
-  });
-
   if (!allowView) {
     return null;
   }
 
   const payables = listQuery.data?.items ?? [];
+  const obligations = payables.map(mapPayableToObligation);
   const summary = summaryQuery.data;
   const creditPolicy = creditPolicyQuery.data;
   const approvedCreditLimit =
@@ -220,7 +138,6 @@ export function SupplierCreditSection({
       ? creditPolicy.creditLimit
       : null;
   const isConnected = Boolean(connectedRelationshipId);
-  // Prefer canonical business credit outstanding when connected; payable summary otherwise.
   const outstanding =
     isConnected && typeof creditPolicy?.outstandingAmount === "number"
       ? creditPolicy.outstandingAmount
@@ -234,15 +151,12 @@ export function SupplierCreditSection({
     outstanding,
     reservedByActivePos,
   });
-  // Prefer server available when approved; fall back to derived exposure.
   const availableDisplay =
     approvedCreditLimit != null && typeof creditPolicy?.availableCredit === "number"
       ? creditPolicy.availableCredit
       : exposure.availableCredit;
   const overdueTotal = summary?.overdueTotal ?? 0;
   const openCount = summary?.openCount ?? filterSupplierPayables(payables, "open").length;
-  const filterCounts = countSupplierPayablesByFilter(payables);
-  const filteredPayables = filterSupplierPayables(payables, payableFilter);
 
   const availableToneClass =
     availableDisplay == null
@@ -250,41 +164,6 @@ export function SupplierCreditSection({
       : availableDisplay < -1e-9 || exposure.isOverLimit
         ? "supplier-credit-stat--available-danger"
         : "supplier-credit-stat--available";
-
-  const payableFilterChips: ExitsChipItem[] = [
-    {
-      key: "open",
-      label: t("supplierPayables.filter.open"),
-      count: filterCounts.open,
-      state: payableFilter === "open" ? "active" : "idle",
-      testId: "supplier-credit-filter-open",
-      onSelect: () => setPayableFilter("open"),
-    },
-    {
-      key: "overdue",
-      label: t("supplierPayables.filter.overdue"),
-      count: filterCounts.overdue,
-      state: payableFilter === "overdue" ? "active" : "idle",
-      testId: "supplier-credit-filter-overdue",
-      onSelect: () => setPayableFilter("overdue"),
-    },
-    {
-      key: "paid",
-      label: t("supplierPayables.filter.paid"),
-      count: filterCounts.paid,
-      state: payableFilter === "paid" ? "active" : "idle",
-      testId: "supplier-credit-filter-paid",
-      onSelect: () => setPayableFilter("paid"),
-    },
-    {
-      key: "all",
-      label: t("supplierPayables.filter.all"),
-      count: filterCounts.all,
-      state: payableFilter === "all" ? "active" : "idle",
-      testId: "supplier-credit-filter-all",
-      onSelect: () => setPayableFilter("all"),
-    },
-  ];
 
   const utilizationCaption =
     exposure.hasApprovedLimit &&
@@ -317,7 +196,13 @@ export function SupplierCreditSection({
       online,
     }) === "unavailable";
 
-  function paymentCtaFor(payable: PosSupplierPayableDto) {
+  const payableById = new Map(payables.map((p) => [p.payableId, p]));
+
+  function paymentCtaFor(item: B2bObligationItem) {
+    const payable = payableById.get(item.id);
+    if (!payable) {
+      return "hidden" as const;
+    }
     return resolveBuyerSupplierPaymentCta({
       platformCapability,
       paymentMethods,
@@ -458,260 +343,16 @@ export function SupplierCreditSection({
         </p>
       ) : null}
 
-      <Card className="supplier-credit-card">
-        <div className="supplier-credit-card__header">
-          <span className="supplier-credit-card__header-icon" aria-hidden>
-            <FileText className="size-4" />
-          </span>
-          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("supplierPayables.listTitle")}
-          </h3>
-        </div>
-        <ExitsChipBar
-          variant="filter"
-          ariaLabel={t("supplierPayables.filterAria")}
-          testId="supplier-credit-payable-filters"
-          items={payableFilterChips}
-        />
-        {filteredPayables.length === 0 ? (
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted" data-testid="supplier-credit-empty">
-            {payableFilter === "open"
-              ? t("supplierPayables.emptyOpen")
-              : t("supplierPayables.empty")}
-          </p>
-        ) : (
-          <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="supplier-credit-list">
-            {filteredPayables.map((payable) => {
-              const later = laterPaymentsAmount(payable.paidAmount, payable.paidAtReceiptAmount);
-              const cta = paymentCtaFor(payable);
-              return (
-                <li
-                  key={payable.payableId}
-                  className="supplier-payable-item"
-                  data-testid={`supplier-payable-${payable.payableId}`}
-                  data-status={payable.status}
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusChip tone={payableStatusTone(payable.status, payable.isOverdue)}>
-                      {t(statusLabelKey(payable.status))}
-                    </StatusChip>
-                    {payable.isOverdue && payable.status !== "Voided" && payable.status !== "Paid" ? (
-                      <StatusChip tone="danger">{t("supplierPayables.overdue")}</StatusChip>
-                    ) : null}
-                  </div>
-                  <p className="mt-2 mb-1 text-[length:var(--exits-text-sm)] text-muted">
-                    {formatPayableSourceLabel(payable, t)}
-                    {payable.createdAtUtc
-                      ? ` · ${new Date(payable.createdAtUtc).toLocaleDateString()}`
-                      : ""}
-                  </p>
-                  <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.originalAmount")}</dt>
-                      <dd className="m-0 tabular-nums">
-                        <MoneyDisplay amount={payable.originalAmount} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.paidAtReceipt")}</dt>
-                      <dd className="m-0 tabular-nums">
-                        <MoneyDisplay amount={payable.paidAtReceiptAmount} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.laterPayments")}</dt>
-                      <dd className="m-0 tabular-nums">
-                        <MoneyDisplay amount={later} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.totalPaid")}</dt>
-                      <dd className="m-0 tabular-nums">
-                        <MoneyDisplay amount={payable.paidAmount} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.balance")}</dt>
-                      <dd className="m-0 font-semibold tabular-nums">
-                        <MoneyDisplay amount={payable.balance} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("supplierPayables.dueDate")}</dt>
-                      <dd className="m-0">{payable.dueDate?.trim() || "—"}</dd>
-                    </div>
-                  </dl>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {cta === "pay_now" ? (
-                      <Button
-                        type="button"
-                        className="supplier-detail-action-btn"
-                        data-testid={`supplier-payable-pay-now-${payable.payableId}`}
-                        disabled
-                        title={t("supplierPayables.payNowNotReady")}
-                      >
-                        <Wallet className="size-4 shrink-0" aria-hidden />
-                        {t("supplierPayables.payNow")}
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="supplier-detail-action-btn"
-                      data-testid={`supplier-payable-detail-${payable.payableId}`}
-                      onClick={() => setDetailTarget(payable)}
-                    >
-                      <Eye className="size-4 shrink-0" aria-hidden />
-                      {t("supplierPayables.viewDetails")}
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
-
-      {detailTarget ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="supplier-payable-detail-title"
-          data-testid="supplier-payable-detail-dialog"
-        >
-          <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto">
-            <h2
-              id="supplier-payable-detail-title"
-              className="m-0 mb-3 text-[length:var(--exits-text-base)] font-semibold"
-            >
-              {t("supplierPayables.detailTitle")}
-            </h2>
-            <div className="mb-3 flex flex-wrap gap-2">
-              <StatusChip tone={payableStatusTone(detailTarget.status, detailTarget.isOverdue)}>
-                {t(statusLabelKey(detailTarget.status))}
-              </StatusChip>
-            </div>
-            <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-              <div>
-                <dt className="text-muted">{t("supplierPayables.source")}</dt>
-                <dd className="m-0">{formatPayableSourceLabel(detailTarget, t)}</dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.receiptDate")}</dt>
-                <dd className="m-0">
-                  {new Date(detailTarget.createdAtUtc).toLocaleDateString()}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.originalAmount")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay amount={detailTarget.originalAmount} />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.paidAtReceipt")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay amount={detailTarget.paidAtReceiptAmount} />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.laterPayments")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay
-                    amount={laterPaymentsAmount(
-                      detailTarget.paidAmount,
-                      detailTarget.paidAtReceiptAmount,
-                    )}
-                  />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.balance")}</dt>
-                <dd className="m-0">
-                  <MoneyDisplay amount={detailTarget.balance} />
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">{t("supplierPayables.dueDate")}</dt>
-                <dd className="m-0">{detailTarget.dueDate?.trim() || "—"}</dd>
-              </div>
-              {detailTarget.voidReason?.trim() ? (
-                <div className="sm:col-span-2">
-                  <dt className="text-muted">{t("supplierPayables.voidReason")}</dt>
-                  <dd className="m-0">{detailTarget.voidReason}</dd>
-                </div>
-              ) : null}
-            </dl>
-
-            <h3 className="mb-2 mt-4 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("supplierPayables.paymentHistory")}
-            </h3>
-            {paymentsQuery.isLoading ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("loading.label")}
-              </p>
-            ) : (paymentsQuery.data?.length ?? 0) === 0 ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="supplier-payable-no-payments"
-              >
-                {t("supplierPayables.noPayments")}
-              </p>
-            ) : (
-              <ul
-                className="m-0 flex list-none flex-col gap-2 p-0"
-                data-testid="supplier-payable-payment-history"
-              >
-                {(paymentsQuery.data as PosSupplierPayablePaymentDto[]).map((payment) => (
-                  <li
-                    key={payment.paymentId}
-                    className="rounded-md border border-border p-2 text-[length:var(--exits-text-sm)]"
-                    data-testid={`supplier-payment-row-${payment.paymentId}`}
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <MoneyDisplay amount={payment.amount} />
-                      <span className="text-muted">{t(methodLabelKey(payment.paymentMethod))}</span>
-                    </div>
-                    <p className="m-0 mt-1 text-muted">
-                      {new Date(payment.paidAtUtc).toLocaleString()}
-                    </p>
-                    {payment.reference?.trim() ? (
-                      <p className="m-0 mt-1">{payment.reference}</p>
-                    ) : null}
-                    {payment.notes?.trim() ? (
-                      <p className="m-0 mt-1 text-muted">{payment.notes}</p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {paymentCtaFor(detailTarget) === "pay_now" ? (
-                <Button
-                  type="button"
-                  className="supplier-detail-action-btn"
-                  data-testid="supplier-payable-detail-pay-now"
-                  disabled
-                  title={t("supplierPayables.payNowNotReady")}
-                >
-                  <Wallet className="size-4 shrink-0" aria-hidden />
-                  {t("supplierPayables.payNow")}
-                </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setDetailTarget(null)}
-                data-testid="supplier-payable-detail-close"
-              >
-                <X className="size-4 shrink-0" aria-hidden />
-                {t("supplierPayables.cancel")}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      ) : null}
+      <B2bObligationsView
+        perspective="payable"
+        items={obligations}
+        isLoading={listQuery.isLoading}
+        isError={listQuery.isError}
+        filter={payableFilter}
+        onFilterChange={setPayableFilter}
+        resolvePayNow={paymentCtaFor}
+        testIdPrefix="supplier-credit"
+      />
     </div>
   );
 }

@@ -6,10 +6,14 @@ import type {
 import {
   buildCapacityUsage,
   buildPlanFeatureRows,
+  buildPlanLimitDiffs,
   capacityAtLimitDimensions,
   classifySubscriptionStatus,
   comparePlanTier,
+  listAvailablePlansForChange,
   parseSubscriptionTab,
+  quotePlanPriceForCycle,
+  resolveDowngradeEffectiveAtUtc,
   resolveNextPaymentDate,
   resolveSubscriptionStatusTone,
   selectableAvailablePlans,
@@ -156,6 +160,53 @@ describe("plan comparison", () => {
     expect(selectableAvailablePlans([current, pro], current).map((p) => p.planKey)).toEqual([
       "pro",
     ]);
+  });
+
+  it("lists all available plans sorted for Change plan UI", () => {
+    const starter = plan({ id: "s", planKey: "starter", sortOrder: 10 });
+    const growth = plan({ id: "g", planKey: "growth", sortOrder: 20 });
+    const pro = plan({ id: "p", planKey: "pro", sortOrder: 30 });
+    expect(listAvailablePlansForChange([pro, starter, growth]).map((p) => p.planKey)).toEqual([
+      "starter",
+      "growth",
+      "pro",
+    ]);
+  });
+
+  it("diffs capacities between plans from the payload", () => {
+    expect(
+      buildPlanLimitDiffs(
+        plan({ maxBranches: 3, maxActiveStaff: 10 }),
+        plan({ maxBranches: 1, maxActiveStaff: 3 }),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        { dimension: "branches", current: 3, target: 1 },
+        { dimension: "staff", current: 10, target: 3 },
+      ]),
+    );
+  });
+
+  it("quotes monthly vs annual price for the subscription cycle", () => {
+    const growth = plan();
+    expect(quotePlanPriceForCycle(growth, "Monthly")).toBe(1099);
+    expect(quotePlanPriceForCycle(growth, "Annual")).toBe(11880);
+  });
+});
+
+describe("resolveDowngradeEffectiveAtUtc", () => {
+  it("prefers renewal then period end", () => {
+    expect(
+      resolveDowngradeEffectiveAtUtc(
+        subscription({
+          renewalDateUtc: "2027-02-01T00:00:00Z",
+          currentPeriodEndUtc: "2026-12-01T00:00:00Z",
+        }),
+      ),
+    ).toBe("2027-02-01T00:00:00Z");
+    expect(
+      resolveDowngradeEffectiveAtUtc(subscription({ currentPeriodEndUtc: "2026-12-01T00:00:00Z" })),
+    ).toBe("2026-12-01T00:00:00Z");
   });
 });
 

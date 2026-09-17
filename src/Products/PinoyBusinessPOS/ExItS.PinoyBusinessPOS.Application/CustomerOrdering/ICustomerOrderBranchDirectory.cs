@@ -26,7 +26,9 @@ public sealed record CustomerOrderBranchSnapshot(
     bool IsPrimary = false,
     IReadOnlyList<CustomerOrderDeliveryServiceAreaSnapshot>? DeliveryServiceAreas = null,
     /// <summary>Setup complete for pickup (independent of store open-now / pause).</summary>
-    bool PickupReady = false);
+    bool PickupReady = false,
+    /// <summary>Setup complete for delivery (independent of store open-now / pause).</summary>
+    bool DeliveryReady = false);
 
 public sealed record CustomerOrderBranchDeliveryPolicySnapshot(
     decimal MinimumOrderAmount,
@@ -42,6 +44,18 @@ public interface ICustomerOrderBranchDirectory
         Guid sellerOrganizationId,
         Guid branchId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Loads a seller branch for connected-supplier commerce readiness.
+    /// Default: same as <see cref="GetBranchAsync"/>. Implementations that serve connected
+    /// buyers should fall back when the caller is not a seller-org member.
+    /// </summary>
+    Task<CustomerOrderBranchSnapshot?> GetCommerceBranchAsync(
+        Guid sellerOrganizationId,
+        Guid branchId,
+        string? sellerPublicOrganizationId,
+        CancellationToken cancellationToken = default) =>
+        GetBranchAsync(sellerOrganizationId, branchId, cancellationToken);
 
     /// <summary>Active fulfillment branches for the seller organization (customer storefront).</summary>
     Task<IReadOnlyList<CustomerOrderBranchSnapshot>> ListBranchesAsync(

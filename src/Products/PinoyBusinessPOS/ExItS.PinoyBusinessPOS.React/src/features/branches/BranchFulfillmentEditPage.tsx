@@ -315,6 +315,12 @@ export function BranchFulfillmentEditPage() {
     setReadiness(nextReadiness);
   }
 
+  async function invalidateCommerceReadinessQueries() {
+    await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
+    await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
+    await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
+  }
+
   async function afterSectionSave(okKey: MessageKey) {
     if (!organizationId) {
       return;
@@ -327,6 +333,7 @@ export function BranchFulfillmentEditPage() {
     await queryClient.invalidateQueries({
       queryKey: ["branch-fulfillment-detail", organizationId, branchId],
     });
+    await invalidateCommerceReadinessQueries();
     setOkMessage(t(okKey));
   }
 
@@ -388,6 +395,7 @@ export function BranchFulfillmentEditPage() {
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-detail", organizationId, branchId],
       });
+      await invalidateCommerceReadinessQueries();
       setOkMessage(t("branches.savedHours"));
     } catch (err) {
       setError(
@@ -516,6 +524,7 @@ export function BranchFulfillmentEditPage() {
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
       });
+      await invalidateCommerceReadinessQueries();
       setOkMessage(t("branches.saved"));
     } catch (err) {
       setError(
@@ -759,6 +768,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.added"));
             } catch (err) {
               setError(
@@ -784,6 +794,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.added"));
             } catch (err) {
               setError(
@@ -811,6 +822,7 @@ export function BranchFulfillmentEditPage() {
               await queryClient.invalidateQueries({
                 queryKey: ["branch-fulfillment-list", organizationId],
               });
+              await invalidateCommerceReadinessQueries();
               setOkMessage(t("branches.deliveryAreas.removed"));
             } catch (err) {
               setError(

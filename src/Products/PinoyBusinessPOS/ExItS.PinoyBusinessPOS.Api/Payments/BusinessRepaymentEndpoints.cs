@@ -86,7 +86,7 @@ internal static class BusinessRepaymentEndpoints
             }
 
             var items = await outstanding
-                .ListOpenReceivablesAsync(
+                .ListReceivablesAsync(
                     relationship.SupplierOrganizationId.Value,
                     relationship.BuyerOrganizationId.Value,
                     ct)

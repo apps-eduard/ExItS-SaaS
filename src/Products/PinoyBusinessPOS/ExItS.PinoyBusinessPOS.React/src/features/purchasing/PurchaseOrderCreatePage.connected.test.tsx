@@ -657,19 +657,20 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
   });
 
-  it("blocks create and shows generic banner when supplier commerce is not ready", async () => {
+  it("blocks create and shows category banner when supplier commerce is not ready", async () => {
     getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
       relationshipId,
       isReady: false,
       supportedFulfillmentMethods: [],
       requirements: null,
+      blockerCategories: ["Catalog"],
     });
     renderPage(`/purchasing/new?supplierId=${supplierId}`);
     await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
 
     const banner = await screen.findByTestId("po-supplier-not-ready-banner");
     expect(banner).toHaveTextContent(/Supplier not ready for purchase orders/i);
-    expect(banner).toHaveTextContent(/Please contact your supplier/i);
+    expect(banner).toHaveTextContent(/no products available for purchase ordering/i);
     expect(screen.queryByText(/Responsible contact/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Shared catalog/i)).not.toBeInTheDocument();
 
