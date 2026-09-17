@@ -89,6 +89,13 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
         ? Store
         : MapPin;
 
+  const typeChipLabel =
+    indicator.typeLabel === "Warehouse"
+      ? t("branches.type.warehouse")
+      : indicator.typeLabel === "Retail"
+        ? t("branches.type.retail")
+        : null;
+
   const showWorkspaceControl = Boolean(boundWorkspace) || canSwitchWorkspace;
   const ariaLabel = canSwitchWorkspace
     ? t("workspace.changeLocationAria").replace("{details}", indicator.detailsForAria)
@@ -121,6 +128,9 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
   }
 
   function renderWorkspaceButton(testId: string, stacked: boolean) {
+    const areaOnly = indicator.areaName?.trim() || null;
+    const showSplitSecondary = Boolean(areaOnly && typeChipLabel);
+
     return (
       <button
         type="button"
@@ -133,13 +143,17 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           canSwitchWorkspace
             ? "app-top-bar__workspace--interactive"
             : "app-top-bar__workspace--static",
+          indicator.typeLabel === "Warehouse" && "app-top-bar__workspace--warehouse",
+          indicator.typeLabel === "Retail" && "app-top-bar__workspace--retail",
         )}
         title={indicator.title}
         aria-label={ariaLabel}
         onClick={openWorkspaceSwitcher}
         disabled={!canSwitchWorkspace}
       >
-        <LocationIcon className="app-top-bar__workspace-icon" aria-hidden />
+        <span className="app-top-bar__workspace-icon-wrap" aria-hidden="true">
+          <LocationIcon className="app-top-bar__workspace-icon" strokeWidth={2.25} />
+        </span>
         <span className="app-top-bar__workspace-text">
           <span className="app-top-bar__workspace-primary" data-testid={`${testId}-primary`}>
             {indicator.primary}
@@ -153,13 +167,28 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
                 className="app-top-bar__workspace-secondary"
                 data-testid={`${testId}-secondary`}
               >
-                {indicator.secondary}
+                {showSplitSecondary ? (
+                  <>
+                    <span className="app-top-bar__workspace-area">{areaOnly}</span>
+                    <span className="app-top-bar__workspace-sep" aria-hidden>
+                      {" "}
+                      ·{" "}
+                    </span>
+                    <span className="app-top-bar__workspace-type">{typeChipLabel}</span>
+                  </>
+                ) : typeChipLabel && indicator.secondary === typeChipLabel ? (
+                  <span className="app-top-bar__workspace-type">{typeChipLabel}</span>
+                ) : (
+                  indicator.secondary
+                )}
               </span>
             </>
           ) : null}
         </span>
         {canSwitchWorkspace ? (
-          <ChevronDown className="app-top-bar__workspace-chevron" aria-hidden />
+          <span className="app-top-bar__workspace-chevron-wrap" aria-hidden="true">
+            <ChevronDown className="app-top-bar__workspace-chevron" strokeWidth={2.25} />
+          </span>
         ) : null}
       </button>
     );
@@ -177,28 +206,27 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
           hideDesktopBrand && "app-top-bar__row--shell-desktop",
         )}
       >
-        {hideDesktopBrand ? (
-          <div className="app-top-bar__brand app-top-bar__brand--shell-mobile">
-            <span className="app-top-bar__mark" aria-hidden="true">
-              E
-            </span>
-            <div className="app-top-bar__brand-copy">
-              {/* Mobile topbar: no branch selector — switch via Account menu → Workspace. */}
-              <p className="app-top-bar__app-name">{t("app.name")}</p>
-            </div>
+        <div
+          className={cn(
+            "app-top-bar__brand",
+            hideDesktopBrand && "app-top-bar__brand--shell-mobile",
+          )}
+        >
+          <span className="app-top-bar__mark" aria-hidden="true">
+            <span className="app-top-bar__mark-glyph">E</span>
+          </span>
+          <div className="app-top-bar__brand-copy">
+            {/* Mobile topbar: no branch selector — switch via Account menu → Workspace. */}
+            <p className="app-top-bar__app-name">{t("app.name")}</p>
           </div>
-        ) : (
-          <div className="app-top-bar__brand">
-            <span className="app-top-bar__mark" aria-hidden="true">
-              E
-            </span>
-            <div className="app-top-bar__brand-copy">
-              <p className="app-top-bar__app-name">{t("app.name")}</p>
-            </div>
-          </div>
-        )}
+        </div>
 
-        <div className="app-top-bar__center hidden lg:flex">
+        <div
+          className={cn(
+            "app-top-bar__center hidden lg:flex",
+            hideDesktopBrand && "app-top-bar__center--shell-desktop",
+          )}
+        >
           {showWorkspaceControl ? (
             renderWorkspaceButton("workspace-context", false)
           ) : (
@@ -245,6 +273,7 @@ export function AppTopBar({ hideDesktopBrand = false }: AppTopBarProps) {
             label={t("topbar.preferences")}
             className="app-top-bar__action"
           />
+          <span className="app-top-bar__actions-divider" aria-hidden="true" />
           <AccountMenu
             compact
             signingOut={signingOut}
