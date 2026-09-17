@@ -11,7 +11,8 @@ export type NeedsAttentionGroupId =
   | "inventory"
   | "connectedCommerce"
   | "branchFulfillment"
-  | "creditConfiguration";
+  | "creditConfiguration"
+  | "subscription";
 
 export type NeedsAttentionAlertKind =
   | "lowStock"
@@ -23,7 +24,10 @@ export type NeedsAttentionAlertKind =
   | "deliveryReadiness"
   | "pickupReadiness"
   | "missingFulfillment"
-  | "branchInfoIncomplete";
+  | "branchInfoIncomplete"
+  | "pastDue"
+  | "suspended"
+  | "capacityAtLimit";
 
 export type NeedsAttentionAlert = {
   id: string;
@@ -44,6 +48,7 @@ export type NeedsAttentionGroup = {
 };
 
 export const NEEDS_ATTENTION_GROUP_ORDER: NeedsAttentionGroupId[] = [
+  "subscription",
   "inventory",
   "connectedCommerce",
   "branchFulfillment",
@@ -55,6 +60,7 @@ export const NEEDS_ATTENTION_GROUP_LABEL_KEYS: Record<NeedsAttentionGroupId, Mes
   connectedCommerce: "shell.needsAttention.group.connectedCommerce",
   branchFulfillment: "shell.needsAttention.group.branchFulfillment",
   creditConfiguration: "shell.needsAttention.group.creditConfiguration",
+  subscription: "shell.needsAttention.group.subscription",
 };
 
 /** PO payment methods used by connected-supplier commerce readiness. */
@@ -101,10 +107,23 @@ export type NeedsAttentionBranchInputs = {
   deliveryAreasComplete?: boolean;
 };
 
+/**
+ * Owner-only commercial signals. Healthy Active/Trialing subscriptions never alert —
+ * only unpaid/suspended states and fully consumed plan allowances are actionable.
+ */
+export type NeedsAttentionSubscriptionInputs = {
+  subscriptionStatus?: string | null;
+  branches?: { used: number; allowed: number } | null;
+  staff?: { used: number; allowed: number } | null;
+  devices?: { used: number; allowed: number } | null;
+  areas?: { used: number; allowed: number } | null;
+};
+
 export type NeedsAttentionInputs = {
   inventory?: NeedsAttentionInventoryInputs | null;
   commerce?: NeedsAttentionCommerceInputs | null;
   branch?: NeedsAttentionBranchInputs | null;
+  subscription?: NeedsAttentionSubscriptionInputs | null;
 };
 
 function positive(value: number | null | undefined): number {
@@ -146,8 +165,71 @@ function resolvePickupHref(branchId: string, branch: NeedsAttentionBranchInputs)
   return branchFulfillmentEditPath(branchId, "overview");
 }
 
+export const SUBSCRIPTION_BILLING_HREF = "/org/subscription?tab=billing";
+export const SUBSCRIPTION_PLAN_HREF = "/org/subscription?tab=plan";
+
+function subscriptionCapacityAtLimitCount(
+  subscription: NeedsAttentionSubscriptionInputs,
+): number {
+  const dimensions = [
+    subscription.branches,
+    subscription.staff,
+    subscription.devices,
+    subscription.areas,
+  ];
+  return dimensions.filter(
+    (dimension) => dimension != null && dimension.allowed > 0 && dimension.used >= dimension.allowed,
+  ).length;
+}
+
 export function buildNeedsAttentionAlerts(inputs: NeedsAttentionInputs): NeedsAttentionAlert[] {
   const alerts: NeedsAttentionAlert[] = [];
+
+  const subscription = inputs.subscription;
+  if (subscription) {
+    const status =
+      subscription.subscriptionStatus?.trim().toLowerCase().replace(/[\s_]+/g, "") ?? "";
+
+    if (status === "pastdue") {
+      alerts.push({
+        id: "subscription-past-due",
+        kind: "pastDue",
+        group: "subscription",
+        count: 1,
+        href: SUBSCRIPTION_BILLING_HREF,
+        titleKey: "shell.needsAttention.subscriptionPastDue",
+        reasonKey: "shell.needsAttention.subscriptionPastDueReason",
+        testId: "needs-attention-subscription-past-due",
+      });
+    }
+
+    if (status === "suspended") {
+      alerts.push({
+        id: "subscription-suspended",
+        kind: "suspended",
+        group: "subscription",
+        count: 1,
+        href: SUBSCRIPTION_BILLING_HREF,
+        titleKey: "shell.needsAttention.subscriptionSuspended",
+        reasonKey: "shell.needsAttention.subscriptionSuspendedReason",
+        testId: "needs-attention-subscription-suspended",
+      });
+    }
+
+    const atLimit = subscriptionCapacityAtLimitCount(subscription);
+    if (atLimit > 0) {
+      alerts.push({
+        id: "subscription-capacity",
+        kind: "capacityAtLimit",
+        group: "subscription",
+        count: atLimit,
+        href: SUBSCRIPTION_PLAN_HREF,
+        titleKey: "shell.needsAttention.subscriptionCapacity",
+        reasonKey: "shell.needsAttention.subscriptionCapacityReason",
+        testId: "needs-attention-subscription-capacity",
+      });
+    }
+  }
 
   const inventory = inputs.inventory;
   if (inventory) {

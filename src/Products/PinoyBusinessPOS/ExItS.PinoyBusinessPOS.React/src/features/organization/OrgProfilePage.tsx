@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil } from "lucide-react";
+import { Check, Copy, Mail, MapPin, Pencil, Phone } from "lucide-react";
 import {
   getOrganization,
   updateOrganizationBranding,
@@ -12,26 +12,59 @@ import { hasOrganizationManagementAuthority } from "@/access/pos-capabilities";
 import { FormDrawer } from "@/components/exits/FormDrawer";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useToast } from "@/components/exits/ToastProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+
+function hasText(value: string | null | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+function orgInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase() || "?";
+}
 
 function formatAddress(org: PlatformOrganizationDto): string | null {
   const p = org.profile;
-  const parts = [
-    p.addressLine1,
-    p.addressLine2,
-    [p.city, p.region].filter(Boolean).join(", ") || null,
-    p.postalCode,
-    p.countryCode,
-  ]
+  const locality = [p.city, p.region].filter((x) => hasText(x)).join(", ") || null;
+  const parts = [p.addressLine1, p.addressLine2, locality, p.postalCode, p.countryCode]
     .map((x) => x?.trim())
     .filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : null;
+}
+
+/** True when address is only a bare country code (common incomplete state). */
+function hasMeaningfulAddress(org: PlatformOrganizationDto): boolean {
+  const p = org.profile;
+  return (
+    hasText(p.addressLine1) ||
+    hasText(p.addressLine2) ||
+    hasText(p.city) ||
+    hasText(p.region) ||
+    hasText(p.postalCode)
+  );
+}
+
+function profileGaps(org: PlatformOrganizationDto): Array<"phone" | "email" | "address"> {
+  const gaps: Array<"phone" | "email" | "address"> = [];
+  if (!hasText(org.profile.contactPhone)) gaps.push("phone");
+  if (!hasText(org.profile.contactEmail)) gaps.push("email");
+  if (!hasMeaningfulAddress(org)) gaps.push("address");
+  return gaps;
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return <span className="org-profile-edit-group__label">{children}</span>;
 }
 
 function OrgProfileEditDrawer({
@@ -144,60 +177,108 @@ function OrgProfileEditDrawer({
           {formError}
         </p>
       ) : null}
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.logoUrl")}</span>
-        <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} autoComplete="off" />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.businessName")}</span>
-        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.businessPhone")}</span>
-        <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.businessEmail")}</span>
-        <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.addressLine1")}</span>
-        <Input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span>{t("orgProfile.fields.addressLine2")}</span>
-        <Input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
-      </label>
-      <div className="grid grid-cols-2 gap-2">
+
+      <div className="org-profile-edit-group">
+        <p className="org-profile-edit-group__title m-0">{t("orgProfile.section.basics")}</p>
         <label className="flex flex-col gap-1 text-sm">
-          <span>{t("orgProfile.fields.city")}</span>
-          <Input value={city} onChange={(e) => setCity(e.target.value)} />
+          <FieldLabel>{t("orgProfile.fields.businessName")}</FieldLabel>
+          <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span>{t("orgProfile.fields.region")}</span>
-          <Input value={region} onChange={(e) => setRegion(e.target.value)} />
+          <FieldLabel>{t("orgProfile.fields.logoUrl")}</FieldLabel>
+          <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} autoComplete="off" />
         </label>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+
+      <div className="org-profile-edit-group">
+        <p className="org-profile-edit-group__title m-0">{t("orgProfile.section.contact")}</p>
         <label className="flex flex-col gap-1 text-sm">
-          <span>{t("orgProfile.fields.postalCode")}</span>
-          <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+          <FieldLabel>{t("orgProfile.fields.businessPhone")}</FieldLabel>
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span>{t("orgProfile.fields.countryCode")}</span>
-          <Input value={countryCode} onChange={(e) => setCountryCode(e.target.value)} />
+          <FieldLabel>{t("orgProfile.fields.businessEmail")}</FieldLabel>
+          <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
         </label>
+      </div>
+
+      <div className="org-profile-edit-group">
+        <p className="org-profile-edit-group__title m-0">{t("orgProfile.section.address")}</p>
+        <label className="flex flex-col gap-1 text-sm">
+          <FieldLabel>{t("orgProfile.fields.addressLine1")}</FieldLabel>
+          <Input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          <FieldLabel>{t("orgProfile.fields.addressLine2")}</FieldLabel>
+          <Input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-sm">
+            <FieldLabel>{t("orgProfile.fields.city")}</FieldLabel>
+            <Input value={city} onChange={(e) => setCity(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <FieldLabel>{t("orgProfile.fields.region")}</FieldLabel>
+            <Input value={region} onChange={(e) => setRegion(e.target.value)} />
+          </label>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-sm">
+            <FieldLabel>{t("orgProfile.fields.postalCode")}</FieldLabel>
+            <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            <FieldLabel>{t("orgProfile.fields.countryCode")}</FieldLabel>
+            <Input value={countryCode} onChange={(e) => setCountryCode(e.target.value)} />
+          </label>
+        </div>
       </div>
     </FormDrawer>
   );
 }
 
+function ContactRow({
+  icon: Icon,
+  label,
+  value,
+  empty,
+  testId,
+}: {
+  icon: typeof Phone;
+  label: string;
+  value: string | null;
+  empty: string;
+  testId: string;
+}) {
+  const filled = hasText(value);
+  return (
+    <div className="org-profile-contact__row" data-testid={testId} data-empty={filled ? "false" : "true"}>
+      <span className="org-profile-contact__icon" aria-hidden>
+        <Icon className="size-4" strokeWidth={1.75} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="org-profile-contact__label m-0">{label}</p>
+        <p
+          className={cn(
+            "org-profile-contact__value m-0",
+            !filled && "org-profile-contact__value--empty",
+          )}
+        >
+          {filled ? value : empty}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function OrgProfilePage() {
   const { t } = useI18n();
+  const { showToast } = useToast();
   const { sessionGrant } = useWorkspace();
   const organizationId = sessionGrant?.organizationId ?? null;
   const canEdit = hasOrganizationManagementAuthority(sessionGrant);
   const [editOpen, setEditOpen] = useState(false);
+  const [idCopied, setIdCopied] = useState(false);
 
   const query = useQuery({
     queryKey: ["organization-profile", organizationId],
@@ -226,56 +307,159 @@ export function OrgProfilePage() {
 
   const org = query.data;
   const address = formatAddress(org);
+  const gaps = profileGaps(org);
+  const publicId = org.publicOrganizationId?.trim() || null;
+  const phone = org.profile.contactPhone?.trim() || null;
+  const email = org.profile.contactEmail?.trim() || null;
+
+  async function copyPublicId() {
+    if (!publicId) return;
+    try {
+      await navigator.clipboard.writeText(publicId);
+      setIdCopied(true);
+      showToast(t("qr.copied"), "success");
+      window.setTimeout(() => setIdCopied(false), 1600);
+    } catch {
+      showToast(t("orgProfile.copyFailed"), "error");
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-4 p-4" data-testid="org-profile-page">
+    <div className="org-profile-page flex flex-col gap-4 p-4" data-testid="org-profile-page">
       <PageHeader
         title={t("orgProfile.title")}
+        description={t("orgProfile.lede")}
         backTo={pageBackNav.org.to}
         backLabel={t(pageBackNav.org.labelKey)}
         actions={
           canEdit ? (
-            <Button type="button" variant="outline" data-testid="org-profile-edit" onClick={() => setEditOpen(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="org-profile-edit"
+              aria-label={t("orgProfile.edit")}
+              onClick={() => setEditOpen(true)}
+            >
               <Pencil className="size-4" aria-hidden />
-              {t("orgProfile.edit")}
+              <span className="org-profile-edit-label">{t("orgProfile.editShort")}</span>
             </Button>
           ) : null
         }
       />
 
-      <section className="flex flex-col gap-3" aria-labelledby="org-profile-heading">
-        <div className="flex items-start gap-3">
+      {gaps.length > 0 ? (
+        <Notice
+          tone="info"
+          title={t("orgProfile.incompleteTitle")}
+          testId="org-profile-incomplete"
+          action={
+            canEdit ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="org-profile-incomplete-edit"
+                onClick={() => setEditOpen(true)}
+              >
+                {t("orgProfile.incompleteAction")}
+              </Button>
+            ) : null
+          }
+        >
+          {t("orgProfile.incompleteBody")}
+        </Notice>
+      ) : null}
+
+      <section
+        className="catalog-form-section exits-animate-panel org-profile-identity"
+        aria-labelledby="org-profile-heading"
+        data-testid="org-profile-identity"
+      >
+        <div className="org-profile-identity__row">
           {org.branding.logoUrl ? (
-            <img src={org.branding.logoUrl} alt="" className="size-16 rounded-lg object-cover" />
+            <img
+              src={org.branding.logoUrl}
+              alt=""
+              className="org-profile-identity__avatar org-profile-identity__avatar--image"
+            />
           ) : (
-            <div className="flex size-16 items-center justify-center rounded-lg bg-muted text-lg font-semibold">
-              {org.displayName.slice(0, 2).toUpperCase()}
+            <div
+              className="org-profile-identity__avatar org-profile-identity__avatar--initials"
+              aria-hidden
+              data-testid="org-profile-initials"
+            >
+              {orgInitials(org.displayName)}
             </div>
           )}
-          <div className="min-w-0">
-            <h2 id="org-profile-heading" className="m-0 text-lg font-semibold">
+          <div className="org-profile-identity__copy min-w-0">
+            <h2 id="org-profile-heading" className="org-profile-identity__name m-0">
               {org.displayName}
             </h2>
-            <p className="m-0 text-sm text-muted-foreground" data-testid="org-profile-public-id">
-              {org.publicOrganizationId ?? t("orgProfile.publicIdPending")}
-            </p>
+            <div className="org-profile-identity__id-row">
+              <p className="org-profile-identity__id m-0" data-testid="org-profile-public-id">
+                {publicId ?? t("orgProfile.publicIdPending")}
+              </p>
+              {publicId ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="org-profile-identity__copy-btn"
+                  data-testid="org-profile-copy-id"
+                  aria-label={t("orgProfile.copyId")}
+                  onClick={() => void copyPublicId()}
+                >
+                  {idCopied ? (
+                    <Check className="size-3.5" aria-hidden />
+                  ) : (
+                    <Copy className="size-3.5" aria-hidden />
+                  )}
+                  <span>{idCopied ? t("qr.copied") : t("orgProfile.copyId")}</span>
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
+      </section>
 
-        <dl className="m-0 grid gap-2 text-sm">
-          <div>
-            <dt className="text-muted-foreground">{t("orgProfile.fields.businessPhone")}</dt>
-            <dd className="m-0">{org.profile.contactPhone?.trim() || t("common.notAvailable")}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t("orgProfile.fields.businessEmail")}</dt>
-            <dd className="m-0">{org.profile.contactEmail?.trim() || t("common.notAvailable")}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t("orgProfile.fields.address")}</dt>
-            <dd className="m-0">{address ?? t("common.notAvailable")}</dd>
-          </div>
-        </dl>
+      <section
+        className="catalog-form-section exits-animate-panel org-profile-contact"
+        aria-labelledby="org-profile-contact-heading"
+        data-testid="org-profile-contact"
+      >
+        <h2 id="org-profile-contact-heading" className="catalog-form-section__title m-0">
+          {t("orgProfile.contactTitle")}
+        </h2>
+        <div className="org-profile-contact__list">
+          <ContactRow
+            icon={Phone}
+            label={t("orgProfile.fields.businessPhone")}
+            value={phone}
+            empty={t("common.notAvailable")}
+            testId="org-profile-phone"
+          />
+          <ContactRow
+            icon={Mail}
+            label={t("orgProfile.fields.businessEmail")}
+            value={email}
+            empty={t("common.notAvailable")}
+            testId="org-profile-email"
+          />
+          <ContactRow
+            icon={MapPin}
+            label={t("orgProfile.fields.address")}
+            value={hasMeaningfulAddress(org) ? address : null}
+            empty={
+              hasText(org.profile.countryCode) && !hasMeaningfulAddress(org)
+                ? t("orgProfile.addressCountryOnly").replace(
+                    "{country}",
+                    org.profile.countryCode!.trim(),
+                  )
+                : t("common.notAvailable")
+            }
+            testId="org-profile-address"
+          />
+        </div>
       </section>
 
       <OrgProfileEditDrawer
@@ -287,3 +471,11 @@ export function OrgProfilePage() {
     </div>
   );
 }
+
+/** Exported for unit tests. */
+export const __orgProfileTestUtils = {
+  orgInitials,
+  formatAddress,
+  hasMeaningfulAddress,
+  profileGaps,
+};

@@ -1,21 +1,30 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeftRight,
-  BarChart3,
+  ArrowUpDown,
   Boxes,
+  CalendarClock,
   ClipboardList,
+  Clock3,
   FileText,
+  Gauge,
+  Handshake,
+  House,
   LayoutDashboard,
+  LineChart,
   MonitorSmartphone,
   Package,
   PackagePlus,
+  PieChart,
   Receipt,
-  RefreshCw,
   Settings,
+  ShoppingBag,
+  ShoppingBasket,
   ShoppingCart,
   Truck,
-  Users,
+  UserRound,
   Wallet,
+  Warehouse,
 } from "lucide-react";
 import type { PosSessionGrantFacts } from "@/access/pos-capabilities";
 import {
@@ -98,6 +107,7 @@ export type OperationsSidebarGroupId =
 export type OperationsSidebarGroup = {
   id: OperationsSidebarGroupId;
   titleKey: MessageKey;
+  icon: LucideIcon;
   items: OperationsSidebarItem[];
 };
 
@@ -309,12 +319,13 @@ export function buildOperationsSidebarGroups(input: {
   groups.push({
     id: "operations",
     titleKey: "operations.nav.group.operations",
+    icon: House,
     items: [
       {
         id: "home",
         to: homeTo,
         labelKey: "org.nav.home",
-        icon: LayoutDashboard,
+        icon: House,
         testId: "ops-sidebar-home",
         matchPrefixes: warehouse ? ["/warehouse"] : ["/role/manager", "/role/owner", "/role/cashier"],
         end: true,
@@ -356,6 +367,7 @@ export function buildOperationsSidebarGroups(input: {
       groups.push({
         id: "daily",
         titleKey: "operations.nav.group.daily",
+        icon: ShoppingBag,
         items: daily,
       });
     }
@@ -384,7 +396,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "inventory",
       to: "/inventory",
       labelKey: "org.nav.inventory",
-      icon: Boxes,
+      icon: Warehouse,
       testId: "ops-sidebar-inventory",
       matchPrefixes: ["/inventory"],
     },
@@ -428,7 +440,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "purchasing",
       to: "/purchasing",
       labelKey: "org.nav.purchasing",
-      icon: PackagePlus,
+      icon: ShoppingBasket,
       testId: "ops-sidebar-purchasing",
       matchPrefixes: ["/purchasing"],
     },
@@ -473,7 +485,7 @@ export function buildOperationsSidebarGroups(input: {
         id: "expiring",
         to: "/inventory/expiration",
         labelKey: "org.more.expiringLots",
-        icon: ClipboardList,
+        icon: CalendarClock,
         testId: "ops-sidebar-expiring",
         matchPrefixes: ["/inventory/expiration"],
       },
@@ -487,7 +499,7 @@ export function buildOperationsSidebarGroups(input: {
         id: "movements",
         to: "/inventory/stock-use",
         labelKey: "org.more.stockMovements",
-        icon: RefreshCw,
+        icon: ArrowUpDown,
         testId: "ops-sidebar-movements",
         matchPrefixes: ["/inventory/stock-use"],
       },
@@ -500,6 +512,7 @@ export function buildOperationsSidebarGroups(input: {
     groups.push({
       id: "stock",
       titleKey: "operations.nav.group.stock",
+      icon: Boxes,
       items: stock,
     });
   }
@@ -512,7 +525,7 @@ export function buildOperationsSidebarGroups(input: {
         id: "customers",
         to: "/customers",
         labelKey: "org.more.customers",
-        icon: Users,
+        icon: UserRound,
         testId: "ops-sidebar-customers",
         matchPrefixes: ["/customers"],
       },
@@ -538,6 +551,7 @@ export function buildOperationsSidebarGroups(input: {
       groups.push({
         id: "customers",
         titleKey: "operations.nav.group.customers",
+        icon: Handshake,
         items: customers,
       });
     }
@@ -577,7 +591,7 @@ export function buildOperationsSidebarGroups(input: {
         id: "shifts",
         to: "/shifts",
         labelKey: isPosCashierRole(grant) ? "shift.myHubTitle" : "org.more.shifts",
-        icon: RefreshCw,
+        icon: Clock3,
         testId: "ops-sidebar-shifts",
         matchPrefixes: ["/shifts"],
       },
@@ -603,6 +617,7 @@ export function buildOperationsSidebarGroups(input: {
       groups.push({
         id: "control",
         titleKey: "operations.nav.group.control",
+        icon: Gauge,
         items: control,
       });
     }
@@ -616,7 +631,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "dashboard",
       to: "/dashboard",
       labelKey: "org.more.dashboard",
-      icon: LayoutDashboard,
+      icon: PieChart,
       testId: "ops-sidebar-dashboard",
       matchPrefixes: ["/dashboard"],
     },
@@ -630,7 +645,7 @@ export function buildOperationsSidebarGroups(input: {
       id: "reports",
       to: "/reports",
       labelKey: "org.more.reports",
-      icon: BarChart3,
+      icon: LineChart,
       testId: "ops-sidebar-reports",
       matchPrefixes: ["/reports"],
     },
@@ -642,6 +657,7 @@ export function buildOperationsSidebarGroups(input: {
     groups.push({
       id: "insights",
       titleKey: "operations.nav.group.insights",
+      icon: LayoutDashboard,
       items: insights,
     });
   }
@@ -649,6 +665,7 @@ export function buildOperationsSidebarGroups(input: {
   groups.push({
     id: "utility",
     titleKey: "operations.nav.group.utility",
+    icon: Settings,
     items: [
       {
         id: "preferences",

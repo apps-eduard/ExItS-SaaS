@@ -1,15 +1,22 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  canInviteOrganizationStaff,
   canManageBranchFulfillment,
   canManageCustomerCreditPolicy,
   canManagePaymentMethods,
+  canManageStoreAreas,
   canViewInventory,
   canViewSuppliers,
   hasOrganizationManagementAuthority,
   isPosOwnerRole,
 } from "@/access/pos-capabilities";
 import { getBranchFulfillmentReadiness } from "@/api/platform/branch-fulfillment-client";
+import { getBranchCapacity } from "@/api/platform/organization-branches-client";
+import { getOrganizationCurrentPlan } from "@/api/platform/organization-current-plan-client";
+import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
+import { listOrganizationMembers } from "@/api/platform/organization-members-client";
+import { getPosDeviceCapacity } from "@/api/platform/pos-devices-client";
 import {
   getOrganizationFulfillmentSettings,
   getSupplierConnectedSupplierCommerceReadiness,
@@ -30,6 +37,8 @@ import {
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const COMMERCE_READINESS_CAP = 25;
+/** Commercial state changes rarely; keep the Owner-only subscription probe cheap. */
+const SUBSCRIPTION_STALE_TIME = 5 * 60_000;
 
 export function needsAttentionQueryKey(
   organizationId: string | null | undefined,
@@ -82,6 +91,9 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     isPosOwnerRole(sessionGrant);
   const supplierCommerceEligible = allowSuppliers || isPosOwnerRole(sessionGrant);
   const allowCommerce = allowSuppliers || allowCredit || allowPaymentDetection;
+  /** Subscription & Billing is Owner-only; never probe commercial state for staff. */
+  const allowSubscription = canInviteOrganizationStaff(sessionGrant) && Boolean(organizationId);
+  const allowAreaCapacity = allowSubscription && canManageStoreAreas(sessionGrant);
 
   const enabled = Boolean(workspace);
 
@@ -197,8 +209,90 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
   });
 
+  const subscriptionQuery = useQuery({
+    queryKey: ["shell", "needs-attention", "subscription", organizationId ?? "none"],
+    enabled: allowSubscription,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    queryFn: async ({ signal }) => {
+      const result = await getOrganizationCurrentPlan(organizationId!, signal);
+      return result.ok ? result.value : null;
+    },
+  });
+
+  const branchCapacityQuery = useQuery({
+    queryKey: ["shell", "needs-attention", "branch-capacity", organizationId ?? "none"],
+    enabled: allowSubscription,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    queryFn: async ({ signal }) => {
+      const result = await getBranchCapacity(organizationId!, signal);
+      return result.ok ? result.value : null;
+    },
+  });
+
+  const deviceCapacityQuery = useQuery({
+    queryKey: ["shell", "needs-attention", "device-capacity", organizationId ?? "none"],
+    enabled: allowSubscription,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    queryFn: async ({ signal }) => {
+      const result = await getPosDeviceCapacity(organizationId!, signal);
+      return result.ok ? result.value : null;
+    },
+  });
+
+  const areaCapacityQuery = useQuery({
+    queryKey: ["shell", "needs-attention", "area-capacity", organizationId ?? "none"],
+    enabled: allowAreaCapacity,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    queryFn: async ({ signal }) => {
+      const result = await listOrganizationAreas(organizationId!, signal);
+      return result.ok ? result.value : null;
+    },
+  });
+
+  const activeStaffQuery = useQuery({
+    queryKey: ["shell", "needs-attention", "active-staff", organizationId ?? "none"],
+    enabled: allowSubscription,
+    staleTime: SUBSCRIPTION_STALE_TIME,
+    queryFn: async () => {
+      const result = await listOrganizationMembers(organizationId!, "Active");
+      return result.ok ? result.members.length : null;
+    },
+  });
+
+  const subscriptionInputs = useMemo(() => {
+    if (!allowSubscription) {
+      return null;
+    }
+    const currentPlan = subscriptionQuery.data?.currentPlan ?? null;
+    const branchCapacity = branchCapacityQuery.data ?? null;
+    const deviceCapacity = deviceCapacityQuery.data ?? null;
+    const areaCapacity = areaCapacityQuery.data ?? null;
+    const activeStaffCount = activeStaffQuery.data ?? null;
+
+    return {
+      subscriptionStatus: subscriptionQuery.data?.subscriptionStatus ?? null,
+      branches: branchCapacity,
+      devices: deviceCapacity,
+      areas:
+        areaCapacity && areaCapacity.maxAreas > 0
+          ? { used: areaCapacity.activeAreaCount, allowed: areaCapacity.maxAreas }
+          : null,
+      staff:
+        activeStaffCount != null && currentPlan && currentPlan.maxActiveStaff > 0
+          ? { used: activeStaffCount, allowed: currentPlan.maxActiveStaff }
+          : null,
+    };
+  }, [
+    activeStaffQuery.data,
+    allowSubscription,
+    areaCapacityQuery.data,
+    branchCapacityQuery.data,
+    deviceCapacityQuery.data,
+    subscriptionQuery.data,
+  ]);
+
   const alerts = useMemo(() => {
-    if (!workspace) {
+    if (!workspace && !subscriptionInputs) {
       return [];
     }
 
@@ -260,6 +354,7 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
               deliveryAreasComplete: branchReadinessQuery.data.deliveryAreasComplete,
             }
           : null,
+      subscription: subscriptionInputs,
     });
   }, [
     allowBranchDetection,
@@ -278,6 +373,7 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     overviewQuery.data?.nearExpiryLotCount,
     paymentsQuery.data,
     paymentsQuery.isSuccess,
+    subscriptionInputs,
     supplierCommerceEligible,
     workspace,
   ]);
@@ -292,7 +388,8 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     ((allowSuppliers || allowCredit) &&
       (businessCustomersQuery.isLoading ||
         (activeConnectionIds.length > 0 && commerceReadinessQuery.isLoading))) ||
-    (allowBranchDetection && branchReadinessQuery.isLoading);
+    (allowBranchDetection && branchReadinessQuery.isLoading) ||
+    (allowSubscription && subscriptionQuery.isLoading);
 
   const isFetching =
     overviewQuery.isFetching ||
@@ -300,7 +397,8 @@ export function useNeedsAttentionAlerts(): UseNeedsAttentionAlertsResult {
     paymentsQuery.isFetching ||
     businessCustomersQuery.isFetching ||
     commerceReadinessQuery.isFetching ||
-    branchReadinessQuery.isFetching;
+    branchReadinessQuery.isFetching ||
+    subscriptionQuery.isFetching;
 
   return { alerts, groups, count, badge, isLoading, isFetching };
 }

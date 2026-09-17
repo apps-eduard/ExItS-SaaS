@@ -101,6 +101,7 @@ import { AdminMoreHubPage } from "@/features/admin/AdminMoreHubPage";
 import { OrgBusinessQrPage } from "@/features/org/OrgBusinessQrPage";
 import { OrgNotificationsPage } from "@/features/org/OrgNotificationsPage";
 import { OrgOwnershipTransferPage } from "@/features/org/ownership/OrgOwnershipTransferPage";
+import { OrgSubscriptionBillingPage } from "@/features/organization/subscription/OrgSubscriptionBillingPage";
 import { PublicStoreLandingPage } from "@/features/store/PublicStoreLandingPage";
 import { CatalogCategoriesPage } from "@/features/catalog/CatalogCategoriesPage";
 import { CatalogBrandsPage } from "@/features/catalog/CatalogBrandsPage";
@@ -598,6 +599,14 @@ export const appRoutes = [
               {
                 path: "profile",
                 element: <OrgProfilePage />,
+              },
+              {
+                path: "subscription",
+                element: (
+                  <RequireInviteStaff>
+                    <OrgSubscriptionBillingPage />
+                  </RequireInviteStaff>
+                ),
               },
               {
                 path: "documents-printing",

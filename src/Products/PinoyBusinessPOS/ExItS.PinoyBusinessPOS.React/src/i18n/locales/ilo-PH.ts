@@ -3182,6 +3182,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "navigationMode.helperStandard": "Icons and labels.",
   "navigationMode.helperCompact": "Permanent icon rail.",
   "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "shell.collapseSidebar": "I-collapse ti sidebar",
+  "shell.expandSidebar": "I-expand ti sidebar",
+  "shell.collapseAllNavGroups": "I-collapse amin",
+  "shell.expandAllNavGroups": "I-expand amin",
 
   "density.compact": "Compact",
 
@@ -6719,6 +6723,129 @@ export const iloPH: Record<keyof typeof en, string> = {
   "admin.nav.reports": "Reports",
 
   "admin.nav.ownership": "Ownership Transfer",
+
+  "admin.nav.subscription": "Subscription & Billing",
+
+  "orgSubscription.title": "Subscription & Billing",
+
+  "orgSubscription.lede": "Ti ExItS plan mo, panagusar maibusor iti plan limits, ken billing status.",
+  "orgSubscription.openFromOverview": "Lukatan ti Subscription & Billing",
+  "orgSubscription.tabsAria": "Subscription and billing sections",
+
+  "orgSubscription.tab.overview": "Overview",
+
+  "orgSubscription.tab.plan": "Plan & Usage",
+
+  "orgSubscription.tab.billing": "Billing",
+
+  "orgSubscription.tab.invoices": "Invoices",
+
+  "orgSubscription.deniedTitle": "Owner access required",
+
+  "orgSubscription.deniedDetail":
+    "Ti organization Owner laeng ti makakita iti subscription ken billing details.",
+
+  "orgSubscription.loading": "Maikarkarga ti subscription mo…",
+
+  "orgSubscription.loadError": "Saan a nakarga ti subscription mo",
+
+  "orgSubscription.loadErrorDetail": "Kitaen ti koneksion ken padasen manen kalpasan ti apagbiit.",
+
+  "orgSubscription.noSubscription": "Awan pay ti subscription",
+
+  "orgSubscription.noSubscriptionDetail":
+    "Daytoy nga organization awan pay ti ExItS subscription para iti Pinoy Business POS.",
+
+  "orgSubscription.plan": "Plan",
+
+  "orgSubscription.status": "Status",
+
+  "orgSubscription.billingCycle": "Billing cycle",
+
+  "orgSubscription.nextPayment": "Sumaruno a bayad",
+
+  "orgSubscription.amount": "Naikari a presio",
+
+  "orgSubscription.notAvailable": "Awan",
+
+  "orgSubscription.action.changePlan": "Balbaliwan ti plan",
+
+  "orgSubscription.action.manageBilling": "Manage billing",
+
+  "orgSubscription.usageTitle": "Panagusar ti plan",
+
+  "orgSubscription.pendingChange": "Naka-schedule a panagbaliw ti plan",
+
+  "orgSubscription.pendingChangeDetail": "Mangrugi ti {plan} iti {date}.",
+
+  "orgSubscription.pendingChangeDetailNoDate": "Naka-schedule a mangrugi ti {plan}.",
+
+  "orgSubscription.featuresTitle": "Ania ti nairaman iti plan mo",
+
+  "orgSubscription.feature.customerCredit": "Customer credit (Utang)",
+
+  "orgSubscription.feature.advancedReports": "Advanced reports",
+
+  "orgSubscription.feature.export": "Data export",
+
+  "orgSubscription.featureIncluded": "Nairaman",
+
+  "orgSubscription.featureUnavailable": "Awan iti daytoy a plan",
+
+  "orgSubscription.limitsTitle": "Panagusar maibusor iti plan limits",
+
+  "orgSubscription.nearLimitTitle": "Ngannganin madanon ti plan limit",
+
+  "orgSubscription.nearLimitDetail":
+    "Ngannganin madanon ti plan limit. Kitaen ti plan sakbay a mangnayon.",
+
+  "orgSubscription.atLimitTitle": "Nadanon ti plan limit",
+
+  "orgSubscription.atLimitDetail":
+    "Naupay amin a mapalubosan daytoy a plan. Idilig dagiti plan iti baba sakbay a mangnayon.",
+
+  "orgSubscription.plansTitle": "Dagiti available a plan",
+
+  "orgSubscription.plansEmpty": "Awan pay ti sabali a plan a naipablaak ita.",
+
+  "orgSubscription.planUpgrade": "Nangatngato a plan",
+
+  "orgSubscription.planDowngrade": "Nababbaba a plan",
+
+  "orgSubscription.planLimits":
+    "Branches {branches} · Staff {staff} · Devices {devices} · Areas {areas}",
+
+  "orgSubscription.compare": "Kitaen ti epekto",
+
+  "orgSubscription.comparing": "Kitkitaen ti epekto…",
+
+  "orgSubscription.previewError": "Saan a makita ti epekto daytoy a plan ita.",
+
+  "orgSubscription.previewBlockedTitle": "Saan pay a maipakat daytoy a plan",
+
+  "orgSubscription.previewBlockedDetail":
+    "Ti panagusar mo ita ket nasursurok ngem ti palubos ti {plan}. Awan ti nabaliwan. Kissayan pay ti panagusar, wenno agtalinaed iti agdama a plan.",
+
+  "orgSubscription.previewOkTitle": "Awan ti manglapped a conflict",
+
+  "orgSubscription.previewOkDetail": "Umanay ti panagusar mo ita iti {plan}.",
+
+  "orgSubscription.previewLostFeatures": "Dagiti feature a mapukaw",
+
+  "orgSubscription.changeManagedTitle": "Ti ExItS ti mangipakat iti panagbaliw ti plan",
+
+  "orgSubscription.changeManagedDetail":
+    "Daytoy nga app saan a mangproseso iti subscription payment. Kontaken ti ExItS tapno agbaliw iti sabali a plan.",
+
+  "orgSubscription.billingManagedTitle": "Ti billing ket iggem ti ExItS.",
+
+  "orgSubscription.billingManagedDetail":
+    "Awan ti self-service payment method wenno card a nakafile iti daytoy nga app. Kontaken ti ExItS para iti billing, resibo, wenno saludsod maipapan iti bayad.",
+
+  "orgSubscription.invoicesEmptyTitle": "Awan ti invoice a maipakita",
+
+  "orgSubscription.invoicesEmptyDetail":
+    "Ti ExItS saan pay a mangipablaak iti subscription invoice iti daytoy nga app. Dagiti store sales ken supplier payables saan a subscription invoice.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -11040,6 +11167,20 @@ export const iloPH: Record<keyof typeof en, string> = {
   "shell.needsAttention.group.branchFulfillment": "Branch / fulfillment",
 
   "shell.needsAttention.group.creditConfiguration": "Credit / configuration",
+
+  "shell.needsAttention.group.subscription": "Subscription & billing",
+
+  "shell.needsAttention.subscriptionPastDue": "Past due ti subscription",
+
+  "shell.needsAttention.subscriptionPastDueReason": "Overdue ti bayad para iti ExItS plan mo",
+
+  "shell.needsAttention.subscriptionSuspended": "Suspended ti subscription",
+
+  "shell.needsAttention.subscriptionSuspendedReason": "Suspended ti ExItS plan mo",
+
+  "shell.needsAttention.subscriptionCapacity": "Nadanon ti plan limit",
+
+  "shell.needsAttention.subscriptionCapacityReason": "Naupay dagiti plan allowance",
 
   "shell.needsAttention.lowStock": "Low stock",
 

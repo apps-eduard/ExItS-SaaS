@@ -1,17 +1,24 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BarChart3,
+  BadgeDollarSign,
   Building2,
+  ClipboardCheck,
+  ContactRound,
   CreditCard,
   FileText,
   KeyRound,
   LayoutDashboard,
+  LineChart,
   Map,
   MapPinned,
   MonitorSmartphone,
+  PackageCheck,
+  PieChart,
   QrCode,
   Settings,
   ShieldCheck,
+  Store,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
@@ -48,6 +55,7 @@ export type AdminNavItemId =
   | "staff"
   | "roles"
   | "devices"
+  | "subscription"
   | "cash"
   | "paymentMethods"
   | "businessQr"
@@ -75,6 +83,8 @@ export type AdminNavItem = {
 export type AdminNavGroup = {
   id: AdminNavGroupId;
   titleKey: MessageKey;
+  /** Distinctive group header icon (accordion affordance). */
+  icon: LucideIcon;
   items: AdminNavItem[];
 };
 
@@ -110,12 +120,13 @@ export function buildAdminNavGroups(
   groups.push({
     id: "overview",
     titleKey: "admin.nav.group.overview",
+    icon: LayoutDashboard,
     items: [
       {
         id: "overview",
         to: "/org",
         labelKey: "admin.nav.overview",
-        icon: Building2,
+        icon: LayoutDashboard,
         testId: "admin-nav-overview",
         matchPrefixes: ["/org"],
         end: true,
@@ -129,7 +140,7 @@ export function buildAdminNavGroups(
     id: "profile",
     to: "/org/profile",
     labelKey: "admin.nav.profile",
-    icon: Building2,
+    icon: ContactRound,
     testId: "admin-nav-profile",
     matchPrefixes: ["/org/profile"],
   });
@@ -185,7 +196,7 @@ export function buildAdminNavGroups(
       id: "roles",
       to: "/org/roles",
       labelKey: "admin.nav.roles",
-      icon: ShieldCheck,
+      icon: UserCog,
       testId: "admin-nav-roles",
       matchPrefixes: ["/org/roles"],
     });
@@ -200,10 +211,22 @@ export function buildAdminNavGroups(
       matchPrefixes: ["/org/devices"],
     });
   }
+  // Commercial subscription self-service is Owner-only — never exposed to org staff.
+  if (canInvite) {
+    organizationItems.push({
+      id: "subscription",
+      to: "/org/subscription",
+      labelKey: "admin.nav.subscription",
+      icon: BadgeDollarSign,
+      testId: "admin-nav-subscription",
+      matchPrefixes: ["/org/subscription"],
+    });
+  }
   if (organizationItems.length > 0) {
     groups.push({
       id: "organization",
       titleKey: "admin.nav.group.organization",
+      icon: Building2,
       items: organizationItems,
     });
   }
@@ -241,6 +264,7 @@ export function buildAdminNavGroups(
     groups.push({
       id: "business",
       titleKey: "admin.nav.group.business",
+      icon: Store,
       items: businessItems,
     });
   }
@@ -251,7 +275,7 @@ export function buildAdminNavGroups(
       id: "dashboard",
       to: "/dashboard",
       labelKey: "admin.nav.dashboard",
-      icon: LayoutDashboard,
+      icon: PieChart,
       testId: "admin-nav-dashboard",
       matchPrefixes: ["/dashboard"],
     });
@@ -261,7 +285,7 @@ export function buildAdminNavGroups(
       id: "reports",
       to: "/reports",
       labelKey: "admin.nav.reports",
-      icon: BarChart3,
+      icon: LineChart,
       testId: "admin-nav-reports",
       matchPrefixes: ["/reports"],
     });
@@ -272,7 +296,7 @@ export function buildAdminNavGroups(
       // Branch fulfillment Overview (PO fulfillment + readiness) — not the branches list.
       to: branchId ? branchFulfillmentEditPath(branchId, "overview") : "/org/branches",
       labelKey: "branches.detail.configureFulfillment",
-      icon: Settings,
+      icon: PackageCheck,
       testId: "admin-nav-configure-fulfillment",
       matchPrefixes: branchId ? [`/org/branches/${branchId}/fulfillment`] : [],
     });
@@ -281,6 +305,7 @@ export function buildAdminNavGroups(
     groups.push({
       id: "review",
       titleKey: "admin.nav.group.review",
+      icon: ClipboardCheck,
       items: reviewItems,
     });
   }
@@ -289,6 +314,7 @@ export function buildAdminNavGroups(
     groups.push({
       id: "security",
       titleKey: "admin.nav.group.security",
+      icon: ShieldCheck,
       items: [
         {
           id: "ownership",
@@ -305,6 +331,7 @@ export function buildAdminNavGroups(
   groups.push({
     id: "settings",
     titleKey: "admin.nav.group.settings",
+    icon: Settings,
     items: [
       {
         id: "preferences",
@@ -459,7 +486,8 @@ export function matchAdminMobileTab(
     path.startsWith("/org/branches") ||
     path.startsWith("/org/staff") ||
     path.startsWith("/org/roles") ||
-    path.startsWith("/org/devices")
+    path.startsWith("/org/devices") ||
+    path.startsWith("/org/subscription")
   ) {
     return "manage";
   }

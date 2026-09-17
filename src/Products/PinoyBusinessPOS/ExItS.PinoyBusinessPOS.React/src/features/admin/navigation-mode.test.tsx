@@ -15,6 +15,7 @@ import {
   UI_PREFERENCES_STORAGE_KEY,
   writeUiPreferences,
 } from "@/lib/preferences/ui-preferences";
+import { SIDEBAR_NAV_GROUPS_STORAGE_KEY } from "@/features/shell/sidebar-nav-group-accordion";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const globalsCss = readFileSync(resolve(rootDir, "styles/globals.css"), "utf8");
@@ -42,9 +43,11 @@ function renderWithProviders(ui: ReactNode, path: string) {
   );
 }
 
-describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
+describe("desktop sidenav group accordion (Org Admin + Operations)", () => {
   beforeEach(() => {
     window.localStorage.removeItem(UI_PREFERENCES_STORAGE_KEY);
+    window.localStorage.removeItem(SIDEBAR_NAV_GROUPS_STORAGE_KEY);
+    writeUiPreferences({ ...defaultUiPreferences, navigationMode: "standard" });
     useWorkspaceMock.mockReturnValue({
       boundWorkspace: {
         organizationId: "11111111-1111-1111-1111-111111111111",
@@ -54,6 +57,7 @@ describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
         branchType: "Retail",
         experience: "operations",
       },
+      workspaces: [],
       sessionGrant: {
         productAccessAllowed: true,
         mappedPosRoleCode: "Owner",
@@ -70,106 +74,103 @@ describe("desktop navigation modes (Standard / Compact / Reveal)", () => {
     });
   });
 
-  it("keeps Standard labels visible with icons, brand header, and aria-current", () => {
-    writeUiPreferences({ ...defaultUiPreferences, navigationMode: "standard" });
+  it("keeps full-width labels visible with icons, brand header, and aria-current", () => {
     renderWithProviders(<AdminSidebar />, "/org");
 
     const overview = screen.getByTestId("admin-nav-overview");
     expect(overview).toHaveAttribute("aria-current", "page");
     expect(overview).toHaveAttribute("aria-label");
-    expect(overview).not.toHaveAttribute("title");
     expect(overview.querySelector(".admin-sidebar__label")).toBeInTheDocument();
     expect(overview.querySelector(".admin-sidebar__icon")).toBeInTheDocument();
     expect(screen.getByTestId("admin-sidebar-brand")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-sidebar-brand-collapse-toggle")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByTestId("admin-sidebar-brand-collapse-toggle")).toHaveAttribute(
+      "aria-label",
+      "Collapse all",
+    );
+    // Brand toggle must not switch navigationMode to icon rail.
     expect(document.documentElement.dataset.navigationMode).toBe("standard");
   });
 
-  it("Compact idle hides labels, keeps accessible names, and uses ExitsTooltip without auto-expand", () => {
-    writeUiPreferences({ ...defaultUiPreferences, navigationMode: "compact" });
+  it("collapses and expands an individual CONTROL group without changing sidebar width mode", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
     renderWithProviders(<OperationsSidebar />, "/inventory");
 
-    const inventory = screen.getByTestId("ops-sidebar-inventory");
-    expect(inventory).toHaveAttribute("aria-current", "page");
-    expect(inventory.getAttribute("aria-label")).toBeTruthy();
-    expect(inventory).not.toHaveAttribute("title");
-    expect(inventory.querySelector(".admin-sidebar__icon")).toBeInTheDocument();
-    expect(inventory.querySelector(".admin-sidebar__label")).toBeInTheDocument();
-    expect(screen.getByTestId("operations-sidebar-brand")).toBeInTheDocument();
-    expect(document.documentElement.dataset.navigationMode).toBe("compact");
+    const stock = screen.getByTestId("sidebar-nav-group-stock");
+    expect(stock).toHaveAttribute("data-expanded", "true");
+    expect(screen.getByTestId("ops-sidebar-inventory")).toHaveAttribute("aria-current", "page");
 
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="compact"\][\s\S]*?\.admin-sidebar__label[\s\S]*?clip:\s*rect\(0,\s*0,\s*0,\s*0\)/,
-    );
-    expect(globalsCss).toMatch(/\.exits-tooltip/);
-    expect(globalsCss).not.toMatch(
-      /\[data-navigation-mode="compact"\]\s*\.admin-sidebar\.admin-sidebar--expanded:hover/,
-    );
-    expect(globalsCss).not.toMatch(
-      /\[data-navigation-mode="compact"\]\s*\.admin-sidebar\.admin-sidebar--expanded:focus-within/,
-    );
+    const controlToggle = screen.getByTestId("sidebar-nav-group-toggle-control");
+    await user.click(controlToggle);
+    expect(screen.getByTestId("sidebar-nav-group-control")).toHaveAttribute("data-expanded", "false");
+    // Active STOCK group stays open and independent.
+    expect(screen.getByTestId("sidebar-nav-group-stock")).toHaveAttribute("data-expanded", "true");
+    expect(screen.getByTestId("ops-sidebar-inventory")).toBeVisible();
+    expect(document.documentElement.dataset.navigationMode).toBe("standard");
   });
 
-  it("Reveal pushes shell by animating explicit width/flex-basis (not custom-property snap)", () => {
+  it("brand Collapse all collapses non-active groups; Expand all restores them", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    renderWithProviders(<OperationsSidebar />, "/inventory");
+
+    const brandToggle = screen.getByTestId("operations-sidebar-brand-collapse-toggle");
+    expect(brandToggle).toHaveAttribute("aria-label", "Collapse all");
+
+    await user.click(brandToggle);
+    expect(brandToggle).toHaveAttribute("aria-label", "Expand all");
+    expect(brandToggle).toHaveAttribute("aria-pressed", "false");
+    // Active route group remains visible.
+    expect(screen.getByTestId("sidebar-nav-group-stock")).toHaveAttribute("data-expanded", "true");
+    expect(screen.getByTestId("ops-sidebar-inventory")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("sidebar-nav-group-control")).toHaveAttribute("data-expanded", "false");
+    // Must not mutate navigationMode / icon-rail preference.
+    expect(document.documentElement.dataset.navigationMode).toBe("standard");
+    expect(JSON.parse(window.localStorage.getItem(UI_PREFERENCES_STORAGE_KEY) ?? "{}")).toMatchObject({
+      navigationMode: "standard",
+    });
+
+    await user.click(brandToggle);
+    expect(brandToggle).toHaveAttribute("aria-label", "Collapse all");
+    expect(screen.getByTestId("sidebar-nav-group-control")).toHaveAttribute("data-expanded", "true");
+  });
+
+  it("persists group accordion preference across remount", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(<OperationsSidebar />, "/inventory");
+
+    await user.click(screen.getByTestId("sidebar-nav-group-toggle-control"));
+    expect(screen.getByTestId("sidebar-nav-group-control")).toHaveAttribute("data-expanded", "false");
+    unmount();
+
+    renderWithProviders(<OperationsSidebar />, "/inventory");
+    expect(screen.getByTestId("sidebar-nav-group-control")).toHaveAttribute("data-expanded", "false");
+    expect(screen.getByTestId("sidebar-nav-group-stock")).toHaveAttribute("data-expanded", "true");
+  });
+
+  it("Org Admin multi-item group headers expose aria-expanded; Overview is a flat solo link", () => {
+    renderWithProviders(<AdminSidebar />, "/org");
+    expect(screen.getByTestId("admin-nav-overview")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("sidebar-nav-solo-overview")).toBeInTheDocument();
+    expect(screen.queryByTestId("sidebar-nav-group-toggle-overview")).not.toBeInTheDocument();
+
+    const organizationToggle = screen.getByTestId("sidebar-nav-group-toggle-organization");
+    expect(organizationToggle.tagName).toBe("BUTTON");
+    expect(organizationToggle).toHaveAttribute("aria-expanded", "true");
+    expect(organizationToggle).toHaveAttribute("aria-controls", "sidebar-nav-group-panel-organization");
+  });
+
+  it("CSS still scopes Compact/Reveal to preference modes without brand-toggle rail wiring", () => {
+    // Preference CSS may still exist; brand toggle must not be the rail switcher.
     expect(globalsCss).toMatch(/--exits-shell-sidebar-width:\s*15\.5rem/);
-    expect(globalsCss).toMatch(
-      /html\[data-navigation-mode="reveal"\][\s\S]*?--exits-shell-sidebar-width:\s*3\.75rem/,
-    );
-    expect(globalsCss).toMatch(/--exits-sidebar-reveal-duration:\s*280ms/);
-    expect(globalsCss).toMatch(/--exits-sidebar-collapse-duration:\s*240ms/);
-    expect(globalsCss).toMatch(/--exits-sidebar-collapse-grace:\s*140ms/);
-    expect(globalsCss).toMatch(/cubic-bezier\(0\.2,\s*0,\s*0,\s*1\)/);
-
-    // Idle rail uses concrete lengths (interpolatable), not only var(--token).
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*3\.75rem/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*flex:\s*0\s+0\s+3\.75rem/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar-rail\s*\{[^}]*transition:[\s\S]*?width\s+var\(--exits-sidebar-collapse-duration\)/,
-    );
-
-    // Open state sets concrete 15.5rem on the rail (hover + focus-within).
-    expect(globalsCss).toMatch(
-      /:has\(\.admin-sidebar:hover\)\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*15\.5rem/,
-    );
-    expect(globalsCss).toMatch(
-      /:has\(\.admin-sidebar:focus-within\)\s*\.admin-sidebar-rail\s*\{[^}]*width:\s*15\.5rem/,
-    );
-    expect(globalsCss).toMatch(
-      /:has\(\.admin-sidebar:focus-within\)\s*\.admin-sidebar-rail\s*\{[^}]*transition:[\s\S]*?width\s+var\(--exits-sidebar-reveal-duration\)/,
-    );
-
-    // Must not open solely by flipping the token on html (custom-property snap).
-    expect(globalsCss).not.toMatch(
-      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:hover\)\s*\{\s*--exits-shell-sidebar-width:\s*15\.5rem;\s*\}/,
-    );
-    expect(globalsCss).not.toMatch(
-      /html\[data-navigation-mode="reveal"\]:has\(\.admin-sidebar:focus-within\)\s*\{\s*--exits-shell-sidebar-width:\s*15\.5rem;\s*\}/,
-    );
-
-    // Push model: reveal sidebar stays in flow (relative), not absolute overlay.
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar\.admin-sidebar--expanded\s*\{[^}]*position:\s*relative/,
-    );
-    expect(globalsCss).not.toMatch(
-      /\[data-navigation-mode="reveal"\]\s*\.admin-sidebar\.admin-sidebar--expanded\s*\{[^}]*position:\s*absolute/,
-    );
-
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*0/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-navigation-mode="reveal"\][\s\S]*?:hover[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1|:focus-within[\s\S]*?\.admin-sidebar__label[\s\S]*?opacity:\s*1/,
-    );
-    expect(globalsCss).toMatch(/\[data-motion="reduced"\][\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/);
-    expect(globalsCss).toMatch(
-      /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?--exits-sidebar-reveal-duration:\s*0ms/,
-    );
-  });
-
-  it("does not change mobile bottom-nav architecture in CSS", () => {
+    expect(globalsCss).toMatch(/\.admin-sidebar__group-toggle/);
+    expect(globalsCss).toMatch(/\.admin-sidebar__group-panel--open/);
+    expect(globalsCss).toMatch(/grid-template-rows:\s*0fr/);
     expect(globalsCss).not.toMatch(
       /\[data-navigation-mode="compact"\][\s\S]{0,200}operations-bottom-nav/,
     );

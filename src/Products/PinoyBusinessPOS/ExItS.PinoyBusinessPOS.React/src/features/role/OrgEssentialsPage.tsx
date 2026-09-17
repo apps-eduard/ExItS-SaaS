@@ -442,10 +442,17 @@ export function OrgEssentialsPage() {
                 <div className="admin-overview-column__header">
                   <h2 className="admin-command__title m-0">{t("org.group.plan")}</h2>
                   {currentPlanQuery.data?.planDisplayName ? (
-                    <PlanSubscriptionChip
-                      planKey={currentPlanQuery.data.planKey}
-                      planDisplayName={currentPlanQuery.data.planDisplayName}
-                    />
+                    <Link
+                      to="/org/subscription"
+                      className="no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      aria-label={t("orgSubscription.openFromOverview")}
+                      data-testid="org-plan-chip-link"
+                    >
+                      <PlanSubscriptionChip
+                        planKey={currentPlanQuery.data.planKey}
+                        planDisplayName={currentPlanQuery.data.planDisplayName}
+                      />
+                    </Link>
                   ) : null}
                 </div>
                 <div className="admin-plan-usage" data-testid="org-plan-usage">

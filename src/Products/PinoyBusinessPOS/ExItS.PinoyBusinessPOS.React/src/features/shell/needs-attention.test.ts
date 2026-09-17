@@ -282,6 +282,79 @@ describe("buildNeedsAttentionAlerts", () => {
       "branchFulfillment",
     ]);
   });
+
+  it("stays silent for a healthy Active or Trialing subscription", () => {
+    expect(
+      buildNeedsAttentionAlerts({
+        subscription: {
+          subscriptionStatus: "Active",
+          branches: { used: 1, allowed: 3 },
+          staff: { used: 2, allowed: 10 },
+          devices: { used: 1, allowed: 2 },
+          areas: { used: 0, allowed: 5 },
+        },
+      }),
+    ).toEqual([]);
+
+    expect(
+      buildNeedsAttentionAlerts({
+        subscription: { subscriptionStatus: "Trialing", branches: { used: 1, allowed: 3 } },
+      }),
+    ).toEqual([]);
+  });
+
+  it("raises a past-due subscription alert pointing at Billing", () => {
+    const alerts = buildNeedsAttentionAlerts({
+      subscription: { subscriptionStatus: "PastDue" },
+    });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "pastDue",
+      group: "subscription",
+      count: 1,
+      href: "/org/subscription?tab=billing",
+      testId: "needs-attention-subscription-past-due",
+    });
+  });
+
+  it("raises a suspended subscription alert", () => {
+    const alerts = buildNeedsAttentionAlerts({
+      subscription: { subscriptionStatus: "Suspended" },
+    });
+    expect(alerts.map((a) => a.kind)).toEqual(["suspended"]);
+    expect(alerts[0]?.href).toBe("/org/subscription?tab=billing");
+  });
+
+  it("aggregates at-limit plan capacity into one actionable alert", () => {
+    const alerts = buildNeedsAttentionAlerts({
+      subscription: {
+        subscriptionStatus: "Active",
+        branches: { used: 3, allowed: 3 },
+        staff: { used: 12, allowed: 10 },
+        devices: { used: 1, allowed: 2 },
+        // Unlimited / unknown allowances never create an alert.
+        areas: { used: 4, allowed: 0 },
+      },
+    });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toMatchObject({
+      kind: "capacityAtLimit",
+      group: "subscription",
+      count: 2,
+      href: "/org/subscription?tab=plan",
+      testId: "needs-attention-subscription-capacity",
+    });
+  });
+
+  it("orders the subscription group before operational groups", () => {
+    const groups = groupNeedsAttentionAlerts(
+      buildNeedsAttentionAlerts({
+        inventory: { lowStockProductCount: 1 },
+        subscription: { subscriptionStatus: "PastDue" },
+      }),
+    );
+    expect(groups.map((g) => g.id)).toEqual(["subscription", "inventory"]);
+  });
 });
 
 describe("formatNeedsAttentionBadge", () => {

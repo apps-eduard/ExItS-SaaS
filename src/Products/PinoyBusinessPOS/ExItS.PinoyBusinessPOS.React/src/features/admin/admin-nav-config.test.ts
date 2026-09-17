@@ -9,6 +9,12 @@ import {
   resolveConfigureFulfillmentBranchId,
   shouldUseAdminManagementShell,
 } from "@/features/admin/admin-nav-config";
+import {
+  buildOperationsBottomNavTabs,
+  buildOperationsSidebarGroups,
+  flattenOperationsSidebarItems,
+  isAdminOnlyOperationsPath,
+} from "@/features/operations/operations-nav-config";
 
 function grant(
   overrides: Partial<PosSessionGrantFacts> & Pick<PosSessionGrantFacts, "mappedPosRoleCode">,
@@ -39,6 +45,47 @@ describe("admin-nav-config", () => {
     expect(items.some((i) => i.id === "roles")).toBe(true);
     expect(items.some((i) => i.id === "devices")).toBe(true);
     expect(items.some((i) => i.to === "/sell")).toBe(false);
+  });
+
+  it("exposes Subscription & Billing to the Owner under the organization group", () => {
+    const owner = grant({
+      mappedPosRoleCode: "Owner",
+      membershipRole: "OrganizationOwner",
+      organizationManagementAuthority: true,
+    });
+    const groups = buildAdminNavGroups(owner);
+    const organization = groups.find((g) => g.id === "organization");
+    const subscription = organization?.items.find((i) => i.id === "subscription");
+
+    expect(subscription).toMatchObject({
+      to: "/org/subscription",
+      testId: "admin-nav-subscription",
+      matchPrefixes: ["/org/subscription"],
+      labelKey: "admin.nav.subscription",
+    });
+    expect(subscription?.locked).toBeUndefined();
+    expect(matchAdminNavItem("/org/subscription", flattenAdminNavItems(groups))).toBe(
+      "subscription",
+    );
+    expect(
+      matchAdminNavItem("/org/subscription?tab=billing", flattenAdminNavItems(groups)),
+    ).toBe("subscription");
+  });
+
+  it("hides Subscription & Billing from non-owner Manage Business principals", () => {
+    const orgAdmin = grant({
+      mappedPosRoleCode: "Admin",
+      membershipRole: "OrganizationAdministrator",
+      organizationManagementAuthority: true,
+    });
+    expect(
+      flattenAdminNavItems(buildAdminNavGroups(orgAdmin)).some((i) => i.id === "subscription"),
+    ).toBe(false);
+
+    const manager = grant({ mappedPosRoleCode: "StoreManager" });
+    expect(
+      flattenAdminNavItems(buildAdminNavGroups(manager)).some((i) => i.id === "subscription"),
+    ).toBe(false);
   });
 
   it("locks Areas without entitlement and keeps Owner-only items Owner-only", () => {
@@ -180,5 +227,29 @@ describe("admin-nav-config", () => {
     expect(
       shouldUseAdminManagementShell({ experience: "manage_business", pathname: "/sell" }),
     ).toBe(false);
+  });
+});
+
+describe("operations navigation stays free of Subscription & Billing", () => {
+  const owner = grant({
+    mappedPosRoleCode: "Owner",
+    membershipRole: "OrganizationOwner",
+    organizationManagementAuthority: true,
+  });
+
+  it("never adds a subscription destination to the operations sidenav or bottom tabs", () => {
+    const items = flattenOperationsSidebarItems(
+      buildOperationsSidebarGroups({ grant: owner, experience: "operations" }),
+    );
+    expect(items.some((i) => i.id === "subscription")).toBe(false);
+    expect(items.some((i) => i.to.startsWith("/org/subscription"))).toBe(false);
+
+    const tabs = buildOperationsBottomNavTabs({ grant: owner, experience: "operations" });
+    expect(tabs.some((t) => t.to.startsWith("/org/subscription"))).toBe(false);
+  });
+
+  it("treats /org/subscription as an admin-only path for the operations shell", () => {
+    expect(isAdminOnlyOperationsPath("/org/subscription")).toBe(true);
+    expect(isAdminOnlyOperationsPath("/org/subscription?tab=billing")).toBe(true);
   });
 });

@@ -3182,6 +3182,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "navigationMode.helperStandard": "Icons and labels.",
   "navigationMode.helperCompact": "Permanent icon rail.",
   "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "shell.collapseSidebar": "I-collapse ang sidebar",
+  "shell.expandSidebar": "I-expand ang sidebar",
+  "shell.collapseAllNavGroups": "I-collapse tanan",
+  "shell.expandAllNavGroups": "I-expand tanan",
 
   "density.compact": "Compact / hugot",
 
@@ -6719,6 +6723,129 @@ export const cebPH: Record<keyof typeof en, string> = {
   "admin.nav.reports": "Reports",
 
   "admin.nav.ownership": "Ownership Transfer",
+
+  "admin.nav.subscription": "Subscription & Billing",
+
+  "orgSubscription.title": "Subscription & Billing",
+
+  "orgSubscription.lede": "Ang imong ExItS plan, paggamit batok sa plan limits, ug billing status.",
+  "orgSubscription.openFromOverview": "Ablihi ang Subscription & Billing",
+  "orgSubscription.tabsAria": "Subscription and billing sections",
+
+  "orgSubscription.tab.overview": "Overview",
+
+  "orgSubscription.tab.plan": "Plan & Usage",
+
+  "orgSubscription.tab.billing": "Billing",
+
+  "orgSubscription.tab.invoices": "Invoices",
+
+  "orgSubscription.deniedTitle": "Owner access required",
+
+  "orgSubscription.deniedDetail":
+    "Ang organization Owner lamang makakita sa subscription ug billing details.",
+
+  "orgSubscription.loading": "Ginakarga ang imong subscription…",
+
+  "orgSubscription.loadError": "Wala makarga ang imong subscription",
+
+  "orgSubscription.loadErrorDetail": "Susiha ang koneksyon ug sulayi pag-usab human sa pila ka gutlo.",
+
+  "orgSubscription.noSubscription": "Wala pay subscription",
+
+  "orgSubscription.noSubscriptionDetail":
+    "Kini nga organization wala pay ExItS subscription para sa Pinoy Business POS.",
+
+  "orgSubscription.plan": "Plan",
+
+  "orgSubscription.status": "Status",
+
+  "orgSubscription.billingCycle": "Billing cycle",
+
+  "orgSubscription.nextPayment": "Sunod nga bayad",
+
+  "orgSubscription.amount": "Kasabutang presyo",
+
+  "orgSubscription.notAvailable": "Wala",
+
+  "orgSubscription.action.changePlan": "Usba ang plan",
+
+  "orgSubscription.action.manageBilling": "Manage billing",
+
+  "orgSubscription.usageTitle": "Paggamit sa plan",
+
+  "orgSubscription.pendingChange": "Naka-schedule nga pag-usab sa plan",
+
+  "orgSubscription.pendingChangeDetail": "Magsugod ang {plan} sa {date}.",
+
+  "orgSubscription.pendingChangeDetailNoDate": "Naka-schedule na nga magsugod ang {plan}.",
+
+  "orgSubscription.featuresTitle": "Unsa ang naapil sa imong plan",
+
+  "orgSubscription.feature.customerCredit": "Customer credit (Utang)",
+
+  "orgSubscription.feature.advancedReports": "Advanced reports",
+
+  "orgSubscription.feature.export": "Data export",
+
+  "orgSubscription.featureIncluded": "Naapil",
+
+  "orgSubscription.featureUnavailable": "Wala niini nga plan",
+
+  "orgSubscription.limitsTitle": "Paggamit batok sa plan limits",
+
+  "orgSubscription.nearLimitTitle": "Hapit na maabot ang plan limit",
+
+  "orgSubscription.nearLimitDetail":
+    "Hapit na nimo maabot ang plan limit. Susiha ang plan sa dili pa magdugang.",
+
+  "orgSubscription.atLimitTitle": "Naabot na ang plan limit",
+
+  "orgSubscription.atLimitDetail":
+    "Nagamit na ang tanan nga gitugot niini nga plan. Itandi ang mga plan sa ubos sa dili pa magdugang.",
+
+  "orgSubscription.plansTitle": "Mga available nga plan",
+
+  "orgSubscription.plansEmpty": "Wala pay laing plan nga naka-publish karon.",
+
+  "orgSubscription.planUpgrade": "Mas taas nga plan",
+
+  "orgSubscription.planDowngrade": "Mas ubos nga plan",
+
+  "orgSubscription.planLimits":
+    "Branches {branches} · Staff {staff} · Devices {devices} · Areas {areas}",
+
+  "orgSubscription.compare": "Susiha ang epekto",
+
+  "orgSubscription.comparing": "Ginasusi ang epekto…",
+
+  "orgSubscription.previewError": "Wala masusi ang epekto niini nga plan karon.",
+
+  "orgSubscription.previewBlockedTitle": "Dili pa mapadapat kini nga plan",
+
+  "orgSubscription.previewBlockedDetail":
+    "Ang imong paggamit karon labaw sa gitugot sa {plan}. Walay giusab. Pagkunhod usa sa paggamit, o pabilin sa imong karon nga plan.",
+
+  "orgSubscription.previewOkTitle": "Walay nagbabag nga conflict",
+
+  "orgSubscription.previewOkDetail": "Ang imong paggamit karon mohaum sa {plan}.",
+
+  "orgSubscription.previewLostFeatures": "Mga feature nga mawala",
+
+  "orgSubscription.changeManagedTitle": "Ang ExItS ang nagpadapat sa pag-usab sa plan",
+
+  "orgSubscription.changeManagedDetail":
+    "Kini nga app dili nagproseso sa subscription payment. Kontaka ang ExItS aron mobalhin sa laing plan.",
+
+  "orgSubscription.billingManagedTitle": "Ang billing gidumala sa ExItS.",
+
+  "orgSubscription.billingManagedDetail":
+    "Walay self-service payment method o card nga naka-file niini nga app. Kontaka ang ExItS para sa billing, resibo, o pangutana sa bayad.",
+
+  "orgSubscription.invoicesEmptyTitle": "Walay invoice nga ikapakita",
+
+  "orgSubscription.invoicesEmptyDetail":
+    "Ang ExItS wala pa magpadala sa subscription invoice niini nga app. Ang store sales ug supplier payables dili subscription invoice.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -11039,6 +11166,20 @@ export const cebPH: Record<keyof typeof en, string> = {
   "shell.needsAttention.group.branchFulfillment": "Branch / fulfillment",
 
   "shell.needsAttention.group.creditConfiguration": "Credit / configuration",
+
+  "shell.needsAttention.group.subscription": "Subscription & billing",
+
+  "shell.needsAttention.subscriptionPastDue": "Past due ang subscription",
+
+  "shell.needsAttention.subscriptionPastDueReason": "Overdue ang bayad sa imong ExItS plan",
+
+  "shell.needsAttention.subscriptionSuspended": "Suspended ang subscription",
+
+  "shell.needsAttention.subscriptionSuspendedReason": "Suspended ang imong ExItS plan",
+
+  "shell.needsAttention.subscriptionCapacity": "Naabot na ang plan limit",
+
+  "shell.needsAttention.subscriptionCapacityReason": "Nagamit na ang mga plan allowance",
 
   "shell.needsAttention.lowStock": "Low stock",
 

@@ -3182,6 +3182,10 @@ export const hilPH: Record<keyof typeof en, string> = {
   "navigationMode.helperStandard": "Icons and labels.",
   "navigationMode.helperCompact": "Permanent icon rail.",
   "navigationMode.helperReveal": "Icon rail that expands on hover or focus.",
+  "shell.collapseSidebar": "I-collapse ang sidebar",
+  "shell.expandSidebar": "I-expand ang sidebar",
+  "shell.collapseAllNavGroups": "I-collapse tanan",
+  "shell.expandAllNavGroups": "I-expand tanan",
 
   "density.compact": "Compact / hugot",
 
@@ -6719,6 +6723,129 @@ export const hilPH: Record<keyof typeof en, string> = {
   "admin.nav.reports": "Reports",
 
   "admin.nav.ownership": "Ownership Transfer",
+
+  "admin.nav.subscription": "Subscription & Billing",
+
+  "orgSubscription.title": "Subscription & Billing",
+
+  "orgSubscription.lede": "Ang imo ExItS plan, paggamit batok sa plan limits, kag billing status.",
+  "orgSubscription.openFromOverview": "Abihi ang Subscription & Billing",
+  "orgSubscription.tabsAria": "Subscription and billing sections",
+
+  "orgSubscription.tab.overview": "Overview",
+
+  "orgSubscription.tab.plan": "Plan & Usage",
+
+  "orgSubscription.tab.billing": "Billing",
+
+  "orgSubscription.tab.invoices": "Invoices",
+
+  "orgSubscription.deniedTitle": "Owner access required",
+
+  "orgSubscription.deniedDetail":
+    "Ang organization Owner lang ang makakita sang subscription kag billing details.",
+
+  "orgSubscription.loading": "Ginakarga ang imo subscription…",
+
+  "orgSubscription.loadError": "Indi makarga ang imo subscription",
+
+  "orgSubscription.loadErrorDetail": "Tan-awa ang koneksyon kag tilawi liwat sa dali lang.",
+
+  "orgSubscription.noSubscription": "Wala pa sang subscription",
+
+  "orgSubscription.noSubscriptionDetail":
+    "Ini nga organization wala pa sang ExItS subscription para sa Pinoy Business POS.",
+
+  "orgSubscription.plan": "Plan",
+
+  "orgSubscription.status": "Status",
+
+  "orgSubscription.billingCycle": "Billing cycle",
+
+  "orgSubscription.nextPayment": "Masunod nga bayad",
+
+  "orgSubscription.amount": "Ginkasugtan nga presyo",
+
+  "orgSubscription.notAvailable": "Wala",
+
+  "orgSubscription.action.changePlan": "Islan ang plan",
+
+  "orgSubscription.action.manageBilling": "Manage billing",
+
+  "orgSubscription.usageTitle": "Paggamit sang plan",
+
+  "orgSubscription.pendingChange": "Naka-schedule nga pag-islan sang plan",
+
+  "orgSubscription.pendingChangeDetail": "Magasugod ang {plan} sa {date}.",
+
+  "orgSubscription.pendingChangeDetailNoDate": "Naka-schedule na nga magasugod ang {plan}.",
+
+  "orgSubscription.featuresTitle": "Ano ang nalakip sa imo plan",
+
+  "orgSubscription.feature.customerCredit": "Customer credit (Utang)",
+
+  "orgSubscription.feature.advancedReports": "Advanced reports",
+
+  "orgSubscription.feature.export": "Data export",
+
+  "orgSubscription.featureIncluded": "Nalakip",
+
+  "orgSubscription.featureUnavailable": "Wala sa sini nga plan",
+
+  "orgSubscription.limitsTitle": "Paggamit batok sa plan limits",
+
+  "orgSubscription.nearLimitTitle": "Malapit na maabot ang plan limit",
+
+  "orgSubscription.nearLimitDetail":
+    "Malapit na nimo maabot ang plan limit. Tan-awa ang plan antes magdugang.",
+
+  "orgSubscription.atLimitTitle": "Naabot na ang plan limit",
+
+  "orgSubscription.atLimitDetail":
+    "Nagamit na ang tanan nga ginatugot sini nga plan. Ipaanggid ang mga plan sa idalom antes magdugang.",
+
+  "orgSubscription.plansTitle": "Mga available nga plan",
+
+  "orgSubscription.plansEmpty": "Wala pa sang iban nga plan nga naka-publish subong.",
+
+  "orgSubscription.planUpgrade": "Mas mataas nga plan",
+
+  "orgSubscription.planDowngrade": "Mas manubo nga plan",
+
+  "orgSubscription.planLimits":
+    "Branches {branches} · Staff {staff} · Devices {devices} · Areas {areas}",
+
+  "orgSubscription.compare": "Tan-awa ang epekto",
+
+  "orgSubscription.comparing": "Ginatan-aw ang epekto…",
+
+  "orgSubscription.previewError": "Indi matan-aw ang epekto sini nga plan subong.",
+
+  "orgSubscription.previewBlockedTitle": "Indi pa mapadapat ini nga plan",
+
+  "orgSubscription.previewBlockedDetail":
+    "Ang imo paggamit subong labaw sa ginatugot sang {plan}. Wala sang gin-islan. Pabuhini anay ang paggamit, ukon magpabilin sa imo subong nga plan.",
+
+  "orgSubscription.previewOkTitle": "Wala sang nagabalabag nga conflict",
+
+  "orgSubscription.previewOkDetail": "Nagakasyo ang imo paggamit subong sa {plan}.",
+
+  "orgSubscription.previewLostFeatures": "Mga feature nga madula",
+
+  "orgSubscription.changeManagedTitle": "Ang ExItS ang nagapadapat sang pag-islan sang plan",
+
+  "orgSubscription.changeManagedDetail":
+    "Ini nga app wala nagaproseso sang subscription payment. Kontaka ang ExItS agod magbalhin sa iban nga plan.",
+
+  "orgSubscription.billingManagedTitle": "Ang billing ginadumala sang ExItS.",
+
+  "orgSubscription.billingManagedDetail":
+    "Wala sang self-service payment method ukon card nga naka-file sa sini nga app. Kontaka ang ExItS para sa billing, resibo, ukon pamangkot sa bayad.",
+
+  "orgSubscription.invoicesEmptyTitle": "Wala sang invoice nga mapakita",
+
+  "orgSubscription.invoicesEmptyDetail":
+    "Ang ExItS wala pa nagapadala sang subscription invoice sa sini nga app. Ang store sales kag supplier payables indi subscription invoice.",
 
   "admin.nav.preferences": "Preferences",
 
@@ -11039,6 +11166,20 @@ export const hilPH: Record<keyof typeof en, string> = {
   "shell.needsAttention.group.branchFulfillment": "Branch / fulfillment",
 
   "shell.needsAttention.group.creditConfiguration": "Credit / configuration",
+
+  "shell.needsAttention.group.subscription": "Subscription & billing",
+
+  "shell.needsAttention.subscriptionPastDue": "Past due ang subscription",
+
+  "shell.needsAttention.subscriptionPastDueReason": "Overdue ang bayad para sa imo ExItS plan",
+
+  "shell.needsAttention.subscriptionSuspended": "Suspended ang subscription",
+
+  "shell.needsAttention.subscriptionSuspendedReason": "Suspended ang imo ExItS plan",
+
+  "shell.needsAttention.subscriptionCapacity": "Naabot na ang plan limit",
+
+  "shell.needsAttention.subscriptionCapacityReason": "Nagamit na ang mga plan allowance",
 
   "shell.needsAttention.lowStock": "Low stock",
 
