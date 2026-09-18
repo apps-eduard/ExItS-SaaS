@@ -31,7 +31,8 @@ public sealed record PosInventoryAccountDto(
     string? CategoryName = null,
     string MonitoringMode = "BranchDefault",
     decimal ReservedQuantity = 0m,
-    decimal AvailableQuantity = 0m);
+    decimal AvailableQuantity = 0m,
+    decimal PendingReturnQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

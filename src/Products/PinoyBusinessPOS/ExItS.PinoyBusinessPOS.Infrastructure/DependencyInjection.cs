@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentAttemptRepository, PaymentAttemptRepository>();
         services.AddScoped<IOrganizationPaymentMethodSettingRepository, OrganizationPaymentMethodSettingRepository>();
         services.AddScoped<IOrganizationFulfillmentSettingsRepository, OrganizationFulfillmentSettingsRepository>();
+        services.AddScoped<IOrganizationConnectedCommerceSettingsRepository, OrganizationConnectedCommerceSettingsRepository>();
         services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
         services.AddScoped<IProductBrandRepository, ProductBrandRepository>();
@@ -75,6 +76,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomerOrderStockService, CustomerOrderStockService>();
         services.AddScoped<ICustomerOrderUtangLedgerService, CustomerOrderUtangLedgerService>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
+        services.AddScoped<IReturnBatchRepository, ReturnBatchRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();
         services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.IManagementOverviewReadStore, ManagementOverviewReadStore>();

@@ -15,7 +15,11 @@ public sealed class InventoryBranchBalance
     public CatalogProductId ProductId { get; }
     public decimal OnHandQuantity { get; private set; }
     public decimal ReservedQuantity { get; private set; }
-    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity;
+    public decimal PendingReturnQuantity { get; private set; }
+    /// <summary>
+    /// Sellable stock. Pending returns are excluded until disposition finalizes sellable qty.
+    /// </summary>
+    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity - PendingReturnQuantity;
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     private InventoryBranchBalance(
@@ -24,6 +28,7 @@ public sealed class InventoryBranchBalance
         CatalogProductId productId,
         decimal onHandQuantity,
         decimal reservedQuantity,
+        decimal pendingReturnQuantity,
         DateTimeOffset updatedAtUtc)
     {
         OrganizationId = organizationId;
@@ -31,6 +36,7 @@ public sealed class InventoryBranchBalance
         ProductId = productId;
         OnHandQuantity = onHandQuantity;
         ReservedQuantity = reservedQuantity;
+        PendingReturnQuantity = pendingReturnQuantity;
         UpdatedAtUtc = updatedAtUtc;
     }
 
@@ -40,7 +46,8 @@ public sealed class InventoryBranchBalance
         CatalogProductId productId,
         decimal onHandQuantity,
         DateTimeOffset utcNow,
-        decimal reservedQuantity = 0m)
+        decimal reservedQuantity = 0m,
+        decimal pendingReturnQuantity = 0m)
     {
         EnsureUtc(utcNow);
         if (onHandQuantity < 0m)
@@ -64,12 +71,20 @@ public sealed class InventoryBranchBalance
                 "Branch reserved quantity cannot exceed on-hand.");
         }
 
+        if (pendingReturnQuantity < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
+                "Branch pending return quantity cannot be negative.");
+        }
+
         return new InventoryBranchBalance(
             organizationId,
             branchId,
             productId,
             onHandQuantity,
             reservedQuantity,
+            pendingReturnQuantity,
             utcNow);
     }
 
@@ -79,8 +94,9 @@ public sealed class InventoryBranchBalance
         CatalogProductId productId,
         decimal onHandQuantity,
         DateTimeOffset updatedAtUtc,
-        decimal reservedQuantity = 0m) =>
-        new(organizationId, branchId, productId, onHandQuantity, reservedQuantity, updatedAtUtc);
+        decimal reservedQuantity = 0m,
+        decimal pendingReturnQuantity = 0m) =>
+        new(organizationId, branchId, productId, onHandQuantity, reservedQuantity, pendingReturnQuantity, updatedAtUtc);
 
     public void Apply(decimal signedQuantity, DateTimeOffset utcNow)
     {
@@ -154,6 +170,29 @@ public sealed class InventoryBranchBalance
         Apply(-quantity, utcNow);
     }
 
+    public void IncreasePendingReturn(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositivePendingReturnQuantity(quantity);
+        PendingReturnQuantity += quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void DecreasePendingReturn(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositivePendingReturnQuantity(quantity);
+        if (PendingReturnQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
+                "Cannot decrease more than pending branch return quantity.");
+        }
+
+        PendingReturnQuantity -= quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
     private static void EnsurePositiveReservationQuantity(decimal quantity)
     {
         if (quantity <= 0m)
@@ -161,6 +200,16 @@ public sealed class InventoryBranchBalance
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryReservationQuantity,
                 "Reservation quantity must be greater than zero.");
+        }
+    }
+
+    private static void EnsurePositivePendingReturnQuantity(decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
+                "Pending return quantity must be greater than zero.");
         }
     }
 

@@ -116,7 +116,8 @@ internal static class InventoryTransferEntityMapper
             CatalogProductId.From(record.ProductId),
             record.OnHandQuantity,
             record.UpdatedAtUtc,
-            record.ReservedQuantity);
+            record.ReservedQuantity,
+            record.PendingReturnQuantity);
 
     public static InventoryBranchBalanceRecord ToRecord(InventoryBranchBalance balance) =>
         new()
@@ -126,6 +127,7 @@ internal static class InventoryTransferEntityMapper
             ProductId = balance.ProductId.Value,
             OnHandQuantity = balance.OnHandQuantity,
             ReservedQuantity = balance.ReservedQuantity,
+            PendingReturnQuantity = balance.PendingReturnQuantity,
             UpdatedAtUtc = balance.UpdatedAtUtc
         };
 
@@ -133,6 +135,7 @@ internal static class InventoryTransferEntityMapper
     {
         record.OnHandQuantity = balance.OnHandQuantity;
         record.ReservedQuantity = balance.ReservedQuantity;
+        record.PendingReturnQuantity = balance.PendingReturnQuantity;
         record.UpdatedAtUtc = balance.UpdatedAtUtc;
     }
 

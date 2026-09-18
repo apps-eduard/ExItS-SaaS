@@ -84,6 +84,30 @@ public sealed class ConnectedPoShortCloseSettlementTests
     }
 
     [Fact]
+    public void Prepaid_amount_paid_snapshot_creates_refund_due_without_payables()
+    {
+        var po = BuildPo(ordered: 10m, received: 7m, unitCost: 100m);
+        po.RecordSettledPrepayment(1000m, Now);
+        var preview = ConnectedPoShortCloseSettlement.Compute(
+            po,
+            Array.Empty<SupplierPayable>(),
+            treatOutstandingAsCancelled: true);
+        Assert.Equal(700m, preview.FinalAcceptedValue);
+        Assert.Equal(1000m, preview.AmountPaid);
+        Assert.Equal(300m, preview.RefundDue);
+
+        po.CloseAllRemaining(
+            "Shortage after prepaid",
+            Guid.NewGuid(),
+            Now.AddMinutes(1),
+            preview.RefundDue,
+            preview.AmountPaid);
+        Assert.Equal(PurchaseOrderStatus.Received, po.Status);
+        Assert.Equal(300m, po.RefundDueAmount);
+        Assert.Equal(1000m, po.AmountPaidSnapshot);
+    }
+
+    [Fact]
     public void Damaged_and_not_delivered_are_not_charged()
     {
         var po = BuildPoWithDiscrepancy(

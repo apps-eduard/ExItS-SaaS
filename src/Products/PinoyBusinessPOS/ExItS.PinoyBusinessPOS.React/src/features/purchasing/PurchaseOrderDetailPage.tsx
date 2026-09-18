@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
+import { listConnectedPoReturnsByPurchaseOrder } from "@/api/pos/pos-connected-po-returns-client";
 import { getBuyerConnectedSupplierCommerceReadiness } from "@/api/pos/pos-connected-suppliers-client";
 import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
@@ -74,6 +75,7 @@ function buyerStatusTone(status: string, displayStatus: string): "success" | "wa
     case "ChangesNeedApproval":
     case "New":
     case "ReceivedWithIssues":
+    case "ReceivedAwaitingPayment":
       return "warning";
     case "Cancelled":
     case "Declined":
@@ -101,6 +103,8 @@ function buyerStatusLabel(
       return "Fully received";
     case "CompletedRemainingCancelled":
       return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedAwaitingPayment":
+      return t("incomingOrders.statusReceivedAwaitingPayment");
     case "ReceivedWithIssues":
       return t("incomingOrders.statusReceivedWithIssues");
     case "Shipped":
@@ -470,6 +474,19 @@ export function PurchaseOrderDetailPage() {
     return supplier.connectedRelationshipId ?? null;
   }, [po?.supplierId, suppliersQuery.data]);
 
+  const connectedReturnsQuery = useQuery({
+    queryKey: ["connected-po-returns", workspace?.organizationId, purchaseOrderId],
+    enabled:
+      Boolean(workspace) &&
+      Boolean(purchaseOrderId) &&
+      online &&
+      Boolean(connectedRelationshipId) &&
+      po?.status === "Received",
+    queryFn: ({ signal }) =>
+      listConnectedPoReturnsByPurchaseOrder(workspace!, purchaseOrderId!, signal),
+  });
+  const connectedReturns = connectedReturnsQuery.data ?? [];
+
   const commerceReadinessQuery = useQuery({
     queryKey: ["connected-suppliers", "commerce-readiness", connectedRelationshipId],
     enabled:
@@ -499,6 +516,7 @@ export function PurchaseOrderDetailPage() {
     po?.status === "Draft" &&
     supplierCommerceReady &&
     !commerceReadinessQuery.isFetching;
+  const canEditDraft = allowManage && online && po?.status === "Draft";
   const canCancel =
     allowManage && online && (po?.status === "Draft" || po?.canWithdrawConnected === true);
   const canReceive =
@@ -744,6 +762,43 @@ export function PurchaseOrderDetailPage() {
         <Notice tone="info" testId="po-receive-gated">
           {t("purchasing.connectedReceiveBlocked")}
         </Notice>
+      ) : null}
+      {displayStatus === "ReceivedAwaitingPayment" ||
+      po.financialSettlementStatus === "AwaitingPayment" ? (
+        <Notice tone="warning" testId="po-awaiting-payment">
+          {t("incomingOrders.awaitingPaymentBuyerBody")}
+        </Notice>
+      ) : null}
+      {connectedRelationshipId && po.status === "Received" && po.financialSettlementStatus !== "AwaitingPayment" ? (
+        <Card className="p-3" data-testid="po-connected-returns-card">
+          <p className="m-0 font-medium">{t("returns.connectedPo.sectionTitle")}</p>
+          {connectedReturns.length > 0 ? (
+            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {connectedReturns.some((batch) => batch.status !== "Finalized")
+                ? t("returns.connectedPo.statusReturnsPending")
+                : t("returns.connectedPo.statusReturnsProcessed")}
+            </p>
+          ) : null}
+          <ul className="mb-0 mt-2 list-none space-y-1 p-0">
+            {connectedReturns.map((batch) => (
+              <li
+                key={batch.returnBatchId}
+                className="text-[length:var(--exits-text-sm)] text-muted"
+                data-testid={`po-connected-return-${batch.returnBatchId}`}
+              >
+                {batch.batchNumber} ·{" "}
+                {batch.status === "AwaitingSellerReceipt"
+                  ? t("returns.connectedPo.awaitingSellerReceipt")
+                  : batch.status}
+              </li>
+            ))}
+          </ul>
+          <Button asChild className="mt-3" data-testid="po-connected-return-items">
+            <Link to={`/returns/connected-po/${purchaseOrderId}`}>
+              {t("returns.connectedPo.returnItems")}
+            </Link>
+          </Button>
+        </Card>
       ) : null}
       {banner ? (
         <Notice tone="success" testId="po-banner">
@@ -1003,6 +1058,11 @@ export function PurchaseOrderDetailPage() {
                 {t("purchasing.declineChanges")}
               </Button>
             </>
+          ) : null}
+          {canEditDraft ? (
+            <Button asChild variant="outline" data-testid="po-edit-order">
+              <Link to={`/purchasing/${purchaseOrderId}/edit`}>{t("purchasing.editOrder")}</Link>
+            </Button>
           ) : null}
           {canReceive ? (
             <Button asChild data-testid="po-receive">

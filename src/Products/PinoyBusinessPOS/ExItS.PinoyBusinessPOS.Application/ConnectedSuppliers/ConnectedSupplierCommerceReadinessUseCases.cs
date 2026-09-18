@@ -25,7 +25,11 @@ public sealed record ConnectedSupplierCommerceReadinessDto(
     /// <summary>
     /// Buyer-safe blocker categories only (Fulfillment, Payment, …). Empty when ready.
     /// </summary>
-    IReadOnlyList<string>? BlockerCategories = null);
+    IReadOnlyList<string>? BlockerCategories = null,
+    bool AllowPayBeforeFulfillment = true,
+    bool AllowPayOnDeliveryOrReceipt = true,
+    bool AllowSupplierCredit = false,
+    string DefaultPaymentTiming = "PayBeforeFulfillment");
 
 /// <summary>
 /// Authoritative commerce readiness for connected supplier PO acceptance.
@@ -53,6 +57,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
     private readonly IOrganizationPaymentMethodSettingRepository _paymentSettings;
     private readonly IBusinessCustomerCreditPolicyRepository _creditPolicies;
     private readonly IOrganizationFulfillmentSettingsRepository _fulfillmentSettings;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _connectedCommerceSettings;
     private readonly IPosCommercialAccessAccessor _access;
 
     public ConnectedSupplierCommerceReadinessService(
@@ -62,7 +67,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
         IOrganizationPaymentMethodSettingRepository paymentSettings,
         IBusinessCustomerCreditPolicyRepository creditPolicies,
         IPosCommercialAccessAccessor access,
-        IOrganizationFulfillmentSettingsRepository? fulfillmentSettings = null)
+        IOrganizationFulfillmentSettingsRepository? fulfillmentSettings = null,
+        IOrganizationConnectedCommerceSettingsRepository? connectedCommerceSettings = null)
     {
         _relationships = relationships;
         _shares = shares;
@@ -70,6 +76,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
         _paymentSettings = paymentSettings;
         _creditPolicies = creditPolicies;
         _fulfillmentSettings = fulfillmentSettings ?? new NullOrganizationFulfillmentSettingsRepository();
+        _connectedCommerceSettings = connectedCommerceSettings;
         _access = access;
     }
 
@@ -100,7 +107,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
         var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
         forBuyer = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(forBuyer);
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
-            ToDto(relationship.Id.Value, forBuyer, includeRequirements: false));
+            await ToDtoAsync(relationship, forBuyer, includeRequirements: false, cancellationToken)
+                .ConfigureAwait(false));
     }
 
     public async Task<ApplicationResult<ConnectedSupplierCommerceReadinessDto>> GetForSupplierAsync(
@@ -127,7 +135,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
         var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
-            ToDto(relationship.Id.Value, evaluated, includeRequirements: true));
+            await ToDtoAsync(relationship, evaluated, includeRequirements: true, cancellationToken)
+                .ConfigureAwait(false));
     }
 
     /// <summary>
@@ -393,10 +402,11 @@ public sealed class ConnectedSupplierCommerceReadinessService
         return enabled;
     }
 
-    private static ConnectedSupplierCommerceReadinessDto ToDto(
-        Guid relationshipId,
+    private async Task<ConnectedSupplierCommerceReadinessDto> ToDtoAsync(
+        ConnectedSupplierRelationship relationship,
         ConnectedSupplierCommerceReadiness.Result evaluated,
-        bool includeRequirements)
+        bool includeRequirements,
+        CancellationToken cancellationToken)
     {
         IReadOnlyList<ConnectedSupplierCommerceReadinessRequirementDto>? requirements = null;
         if (includeRequirements)
@@ -410,13 +420,26 @@ public sealed class ConnectedSupplierCommerceReadinessService
         }
 
         var blockerCategories = ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(evaluated);
+        var settings = _connectedCommerceSettings is null
+            ? OrganizationConnectedCommerceSettings.CreateDefault(relationship.SupplierOrganizationId, DateTimeOffset.UtcNow)
+            : (await _connectedCommerceSettings
+                .GetAsync(relationship.SupplierOrganizationId, cancellationToken)
+                .ConfigureAwait(false)
+                ?? OrganizationConnectedCommerceSettings.CreateDefault(
+                    relationship.SupplierOrganizationId,
+                    DateTimeOffset.UtcNow));
+        var timing = ConnectedPoPaymentTimingResolver.Resolve(settings, relationship);
 
         return new ConnectedSupplierCommerceReadinessDto(
-            relationshipId,
+            relationship.Id.Value,
             evaluated.IsReady,
             evaluated.SupportedFulfillmentMethods,
             requirements,
-            blockerCategories);
+            blockerCategories,
+            timing.AllowPayBeforeFulfillment,
+            timing.AllowPayOnDeliveryOrReceipt,
+            timing.AllowSupplierCredit,
+            timing.DefaultPaymentTiming.ToString());
     }
 
     private static string? ActionPathFor(string code) =>

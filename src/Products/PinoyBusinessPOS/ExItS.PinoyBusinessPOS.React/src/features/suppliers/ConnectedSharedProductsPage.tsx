@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Link2Off, Percent, Share2, Tag } from "lucide-react";
+import { Building2, Link2Off, Percent, Share2, Tag, X } from "lucide-react";
 import { canGovernOrganizationCatalog, canManageSuppliers } from "@/access/pos-capabilities";
 import {
   applyBuyerProductPricing,
@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
@@ -43,6 +44,7 @@ export function ConnectedSharedProductsPage() {
   const [percentMode, setPercentMode] = useState<"discount" | "increase">("discount");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [summaryDismissed, setSummaryDismissed] = useState(false);
   const buyerPriceInputRef = useRef<HTMLInputElement>(null);
   const percentInputRef = useRef<HTMLInputElement>(null);
 
@@ -369,30 +371,47 @@ export function ConnectedSharedProductsPage() {
           detail={t("connected.noProductsForFilterHelp")}
         />
       ) : null}
-      {query.data ? (
-        <div className="flex min-w-0 flex-col gap-1" data-testid="connected-share-summary">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {query.data.catalogSharingMode === "AllEligible"
-              ? t("connected.shareSummaryAllEligible")
-                  .replace("{shared}", String(query.data.sharedCount))
-                  .replace("{eligible}", String(query.data.eligibleCount))
-              : t("connected.shareSummary")
-                  .replace("{shared}", String(query.data.sharedCount))
-                  .replace("{eligible}", String(query.data.eligibleCount))}
-          </p>
-          {query.data.customerDiscountPercent != null
-          && query.data.customerDiscountPercent > 0 ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("connected.customerDiscountBanner").replace(
-                "{percent}",
-                String(query.data.customerDiscountPercent),
-              )}
-            </p>
-          ) : query.data.catalogSharingMode === "AllEligible" ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("connected.sellingPriceBaselineBanner")}
-            </p>
-          ) : null}
+      {query.data && !summaryDismissed ? (
+        <div className="relative" data-testid="connected-share-summary">
+          <Notice
+            tone="info"
+            testId="connected-share-summary-notice"
+            className="pe-10"
+            title={
+              query.data.catalogSharingMode === "AllEligible"
+                ? t("connected.shareSummaryAllEligible")
+                    .replace("{shared}", String(query.data.sharedCount))
+                    .replace("{eligible}", String(query.data.eligibleCount))
+                : t("connected.shareSummary")
+                    .replace("{shared}", String(query.data.sharedCount))
+                    .replace("{eligible}", String(query.data.eligibleCount))
+            }
+          >
+            <p>{t("connected.shareSummaryBuyerVisibilityHelp")}</p>
+            {query.data.customerDiscountPercent != null
+            && query.data.customerDiscountPercent > 0 ? (
+              <p className="mt-1">
+                {t("connected.customerDiscountBanner").replace(
+                  "{percent}",
+                  String(query.data.customerDiscountPercent),
+                )}
+              </p>
+            ) : query.data.catalogSharingMode === "AllEligible" ? (
+              <p className="mt-1">{t("connected.sellingPriceBaselineBanner")}</p>
+            ) : null}
+          </Notice>
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="ghost"
+            size="icon"
+            className="absolute end-1 top-1 size-8 shrink-0"
+            aria-label={t("connected.shareSummary.dismiss")}
+            data-testid="connected-share-summary-dismiss"
+            onClick={() => setSummaryDismissed(true)}
+          >
+            <X className="size-4" aria-hidden />
+          </Button>
         </div>
       ) : null}
       {allowManage && shareItems.length > 0 ? (

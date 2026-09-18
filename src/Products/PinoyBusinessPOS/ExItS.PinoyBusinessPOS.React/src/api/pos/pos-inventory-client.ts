@@ -37,6 +37,7 @@ export type PosInventoryAccountDto = {
   monitoringMode?: "BranchDefault" | "Custom" | "NotMonitored" | string;
   reservedQuantity?: number;
   availableQuantity?: number;
+  pendingReturnQuantity?: number;
 };
 
 export type PosInventoryReservationItemDto = {

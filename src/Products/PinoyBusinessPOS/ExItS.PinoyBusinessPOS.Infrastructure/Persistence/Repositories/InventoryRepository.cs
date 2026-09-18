@@ -788,6 +788,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.SaleReturnRestock),
             cancellationToken);
 
+    public Task<bool> HasSaleReturnWriteOffAsync(
+        PosOrganizationId organizationId,
+        SaleReturnId saleReturnId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == saleReturnId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.SaleReturn)
+                && m.MovementType == nameof(StockMovementType.SaleReturnWriteOff),
+            cancellationToken);
+
     public Task<bool> HasInventoryTransferMovementAsync(
         PosOrganizationId organizationId,
         InventoryTransferId transferId,

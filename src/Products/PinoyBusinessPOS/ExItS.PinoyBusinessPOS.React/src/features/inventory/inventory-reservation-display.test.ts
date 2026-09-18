@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatInventoryQty,
   resolveAvailableQuantity,
+  resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 
@@ -32,6 +33,24 @@ describe("inventory-reservation-display", () => {
   it("hides reserved when zero", () => {
     expect(resolveReservedQuantity({ reservedQuantity: 0 })).toBe(0);
     expect(resolveReservedQuantity({})).toBe(0);
+  });
+
+  it("defaults pending-return quantity to zero", () => {
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: 0 })).toBe(0);
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: -2 })).toBe(0);
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: 1.25 })).toBe(1.25);
+    expect(resolvePendingReturnQuantity({})).toBe(0);
+  });
+
+  it("excludes pending return from available when API availableQuantity is absent", () => {
+    expect(
+      resolveAvailableQuantity({
+        isTracked: true,
+        onHandQuantity: 10,
+        reservedQuantity: 2,
+        pendingReturnQuantity: 3,
+      }),
+    ).toBe(5);
   });
 
   it("formats weighted quantities with precision", () => {

@@ -116,6 +116,7 @@ internal sealed class InventoryBranchBalanceRecord
     public Guid ProductId { get; set; }
     public decimal OnHandQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
+    public decimal PendingReturnQuantity { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }
 

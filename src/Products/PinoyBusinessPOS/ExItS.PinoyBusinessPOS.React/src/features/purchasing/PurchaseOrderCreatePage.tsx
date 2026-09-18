@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, Check, ClipboardList, PackageSearch, Plus, Store } from "lucide-react";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
@@ -20,6 +20,7 @@ import {
 import {
   createPurchaseOrder,
   getPurchaseOrder,
+  updatePurchaseOrder,
 } from "@/api/pos/pos-purchase-orders-client";
 import {
   isConnectedSupplier,
@@ -28,7 +29,9 @@ import {
 } from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
+import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
@@ -142,6 +145,8 @@ async function loadAllExposedCatalog(
 export function PurchaseOrderCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { purchaseOrderId: editPurchaseOrderId } = useParams<{ purchaseOrderId?: string }>();
+  const isEdit = Boolean(editPurchaseOrderId);
   const [searchParams] = useSearchParams();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
@@ -158,7 +163,7 @@ export function PurchaseOrderCreatePage() {
   const finderPanelId = "po-product-finder-panel";
 
   const [supplierId, setSupplierId] = useState(
-    () => searchParams.get("supplierId")?.trim() ?? "",
+    () => (isEdit ? "" : searchParams.get("supplierId")?.trim() ?? ""),
   );
   const [orderDate, setOrderDate] = useState(todayIsoDate);
   const [notes, setNotes] = useState("");
@@ -180,8 +185,12 @@ export function PurchaseOrderCreatePage() {
   const [setupBusyKey, setSetupBusyKey] = useState<string | null>(null);
   const [setupBulkBusy, setSetupBulkBusy] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<ConnectedPoPaymentMethodCode | "">("Cash");
+  const [paymentTiming, setPaymentTiming] = useState<string>("PayBeforeFulfillment");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"Pickup" | "Delivery" | "">("");
   const purchaseOrderIdRef = useRef<string | null>(null);
+  const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
+  const [editMetaHydrated, setEditMetaHydrated] = useState(false);
+  const [editLinesHydrated, setEditLinesHydrated] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -203,6 +212,12 @@ export function PurchaseOrderCreatePage() {
         : null,
     [boundWorkspace],
   );
+
+  const existingOrderQuery = useQuery({
+    queryKey: ["purchase-order", workspace?.organizationId, editPurchaseOrderId, "edit"],
+    enabled: Boolean(workspace) && online && allowManage && isEdit && Boolean(editPurchaseOrderId),
+    queryFn: ({ signal }) => getPurchaseOrder(workspace!, editPurchaseOrderId!, signal),
+  });
 
   const suppliersQuery = useQuery({
     queryKey: ["suppliers", "po-create", workspace?.organizationId],
@@ -254,6 +269,88 @@ export function PurchaseOrderCreatePage() {
       return { ready, categoryBySupplierProductId };
     },
   });
+
+  useEffect(() => {
+    if (!isEdit || editMetaHydrated || !existingOrderQuery.data) {
+      return;
+    }
+    const po = existingOrderQuery.data;
+    if (po.status !== "Draft") {
+      navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
+      return;
+    }
+    setSupplierId(po.supplierId);
+    setOrderDate(po.orderDate.slice(0, 10));
+    setNotes(po.notes ?? "");
+    setPaymentTerm(
+      (po.paymentTerm as ConnectedPoPaymentMethodCode | undefined) &&
+        CONNECTED_PO_PAYMENT_OPTIONS.some((o) => o.code === po.paymentTerm)
+        ? (po.paymentTerm as ConnectedPoPaymentMethodCode)
+        : "Cash",
+    );
+    if (po.paymentTiming) {
+      setPaymentTiming(po.paymentTiming);
+    }
+    setExpectedUpdatedAtUtc(po.updatedAtUtc);
+    setEditMetaHydrated(true);
+  }, [isEdit, editMetaHydrated, existingOrderQuery.data, navigate]);
+
+  useEffect(() => {
+    if (!isEdit || !editMetaHydrated || editLinesHydrated || !existingOrderQuery.data) {
+      return;
+    }
+    if (!suppliersQuery.isSuccess) {
+      return;
+    }
+    const po = existingOrderQuery.data;
+    if (connected) {
+      if (linkedProductsQuery.isLoading) {
+        return;
+      }
+      const readyByBuyerId = new Map(
+        (linkedProductsQuery.data?.ready ?? []).map((p) => [p.buyerProductId, p] as const),
+      );
+      setConnectedLines(
+        po.lines
+          .filter((line): line is typeof line & { productId: string } => Boolean(line.productId))
+          .map((line) => {
+            const ready = readyByBuyerId.get(line.productId);
+            return {
+              productId: line.productId,
+              name: line.nameSnapshot?.trim() || ready?.productName || "—",
+              uom: line.uomSnapshot?.trim() || ready?.unitOfMeasure || "",
+              orderedQty: line.orderedQty,
+              unitPurchaseCost: line.unitPurchaseCost,
+              purchaseUnitId: line.purchaseUnitId ?? ready?.purchaseUnitId ?? null,
+            };
+          }),
+      );
+      setExternalLines([]);
+    } else {
+      setExternalLines(
+        po.lines
+          .filter((line): line is typeof line & { productId: string } => Boolean(line.productId))
+          .map((line) => ({
+            productId: line.productId,
+            name: line.nameSnapshot?.trim() || "—",
+            uom: line.uomSnapshot?.trim() || "",
+            orderedQty: line.orderedQty,
+            unitPurchaseCost: line.unitPurchaseCost,
+          })),
+      );
+      setConnectedLines([]);
+    }
+    setEditLinesHydrated(true);
+  }, [
+    isEdit,
+    editMetaHydrated,
+    editLinesHydrated,
+    existingOrderQuery.data,
+    suppliersQuery.isSuccess,
+    connected,
+    linkedProductsQuery.isLoading,
+    linkedProductsQuery.data,
+  ]);
 
   const supplierProductIdsKey = useMemo(() => {
     const ids = (linkedProductsQuery.data?.ready ?? []).map((p) => p.supplierProductId);
@@ -316,6 +413,51 @@ export function PurchaseOrderCreatePage() {
       prev && methods.includes(prev) ? prev : "",
     );
   }, [connected, supportedFulfillmentMethods.join("|")]);
+
+  const effectivePaymentTimings = useMemo(() => {
+    const data = commerceReadinessQuery.data;
+    if (!data) {
+      return [] as Array<{ code: string; labelKey: "connectedCommerce.timing.payBefore" | "connectedCommerce.timing.payOnDelivery" | "connectedCommerce.timing.supplierCredit" }>;
+    }
+    const options: Array<{
+      code: string;
+      labelKey:
+        | "connectedCommerce.timing.payBefore"
+        | "connectedCommerce.timing.payOnDelivery"
+        | "connectedCommerce.timing.supplierCredit";
+    }> = [];
+    if (data.allowPayBeforeFulfillment) {
+      options.push({ code: "PayBeforeFulfillment", labelKey: "connectedCommerce.timing.payBefore" });
+    }
+    if (data.allowPayOnDeliveryOrReceipt) {
+      options.push({
+        code: "PayOnDeliveryOrReceipt",
+        labelKey: "connectedCommerce.timing.payOnDelivery",
+      });
+    }
+    if (data.allowSupplierCredit) {
+      options.push({ code: "SupplierCredit", labelKey: "connectedCommerce.timing.supplierCredit" });
+    }
+    return options;
+  }, [commerceReadinessQuery.data]);
+
+  useEffect(() => {
+    if (!connected) {
+      setPaymentTiming("PayBeforeFulfillment");
+      return;
+    }
+    const allowed = effectivePaymentTimings.map((o) => o.code);
+    const preferred = commerceReadinessQuery.data?.defaultPaymentTiming;
+    setPaymentTiming((prev) => {
+      if (prev && allowed.includes(prev)) {
+        return prev;
+      }
+      if (preferred && allowed.includes(preferred)) {
+        return preferred;
+      }
+      return allowed[0] ?? "PayBeforeFulfillment";
+    });
+  }, [connected, effectivePaymentTimings, commerceReadinessQuery.data?.defaultPaymentTiming]);
 
   const productsQuery = useQuery({
     queryKey: ["catalog-products", "po-create", workspace?.organizationId, debounced],
@@ -448,8 +590,11 @@ export function PurchaseOrderCreatePage() {
     if (!connected || !linkedProductsQuery.isSuccess) {
       return;
     }
+    if (isEdit && !editLinesHydrated) {
+      return;
+    }
     setConnectedLines((prev) => retainCompatibleDraftLines(prev, readyProducts));
-  }, [connected, linkedProductsQuery.isSuccess, readyProducts]);
+  }, [connected, linkedProductsQuery.isSuccess, readyProducts, isEdit, editLinesHydrated]);
 
   function onSupplierChange(nextSupplierId: string) {
     setSupplierId(nextSupplierId);
@@ -736,6 +881,10 @@ export function PurchaseOrderCreatePage() {
         setError(t("purchasing.poPaymentMethodRequired"));
         return;
       }
+      if (!paymentTiming) {
+        setError(t("purchasing.paymentTimingRequired"));
+        return;
+      }
       if (paymentTerm === "Utang" && !utangEligibility.eligible) {
         setError(t(utangEligibility.reasonKey));
         return;
@@ -760,6 +909,42 @@ export function PurchaseOrderCreatePage() {
     setSaving(true);
     setError(null);
     try {
+      const linePayload = activeLines.map((l) => ({
+        productId: l.productId,
+        orderedQty: l.orderedQty,
+        unitPurchaseCost: l.unitPurchaseCost,
+        purchaseUnitId:
+          "purchaseUnitId" in l ? ((l as ConnectedPoDraftLine).purchaseUnitId ?? null) : null,
+      }));
+      const sharedBody = {
+        supplierId,
+        orderDate,
+        notes: notes.trim() || null,
+        intendedReceivingBranchId: workspace.branchId ?? null,
+        paymentTerm: connected ? paymentTerm || null : null,
+        paymentTiming: connected ? paymentTiming || null : null,
+        fulfillmentMethod: connected && fulfillmentMethod ? fulfillmentMethod : null,
+        lines: linePayload,
+      };
+
+      if (isEdit && editPurchaseOrderId) {
+        if (!expectedUpdatedAtUtc) {
+          setError(t("purchasing.saveFailed"));
+          return;
+        }
+        const po = await updatePurchaseOrder(workspace, editPurchaseOrderId, {
+          ...sharedBody,
+          expectedUpdatedAtUtc,
+        });
+        setExpectedUpdatedAtUtc(po.updatedAtUtc);
+        await queryClient.invalidateQueries({
+          queryKey: ["purchase-order", workspace.organizationId, editPurchaseOrderId],
+        });
+        await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+        navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
+        return;
+      }
+
       if (!purchaseOrderIdRef.current) {
         const generated = createSecureMutationId();
         if (!generated.ok) {
@@ -771,23 +956,28 @@ export function PurchaseOrderCreatePage() {
       const purchaseOrderId = purchaseOrderIdRef.current;
       const po = await createPurchaseOrder(workspace, {
         purchaseOrderId,
-        supplierId,
-        orderDate,
-        notes: notes.trim() || null,
-        intendedReceivingBranchId: workspace.branchId ?? null,
-        paymentTerm: connected ? paymentTerm || null : null,
-        fulfillmentMethod: connected && fulfillmentMethod ? fulfillmentMethod : null,
-        lines: activeLines.map((l) => ({
-          productId: l.productId,
-          orderedQty: l.orderedQty,
-          unitPurchaseCost: l.unitPurchaseCost,
-          purchaseUnitId:
-            "purchaseUnitId" in l ? ((l as ConnectedPoDraftLine).purchaseUnitId ?? null) : null,
-        })),
+        ...sharedBody,
       });
       purchaseOrderIdRef.current = null;
       navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
     } catch (err) {
+      if (isEdit) {
+        if (
+          err instanceof PosApiError &&
+          (err.errorCode === "pos.connected_supplier.out_of_stock" ||
+            err.errorCode === "pos.connected_supplier.insufficient_stock")
+        ) {
+          void orderStockQuery.refetch();
+          setError(err.problem.detail ?? t("purchasing.stockChanged"));
+          return;
+        }
+        setError(
+          err instanceof PosApiError
+            ? (err.problem.detail ?? t("purchasing.saveFailed"))
+            : t("purchasing.saveFailed"),
+        );
+        return;
+      }
       const purchaseOrderId = purchaseOrderIdRef.current;
       if (purchaseOrderId && workspace) {
         setError(t("checkout.confirmingTransaction"));
@@ -833,12 +1023,36 @@ export function PurchaseOrderCreatePage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
+  if (isEdit && existingOrderQuery.isLoading) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (isEdit && existingOrderQuery.isError) {
+    return (
+      <ErrorState
+        title={t("purchasing.loadFailed")}
+        detail={describePosApiError(existingOrderQuery.error, t, "error.detail")}
+      />
+    );
+  }
+
+  if (isEdit && (!editMetaHydrated || !editLinesHydrated)) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  const detailBackTo = editPurchaseOrderId
+    ? `/purchasing/${editPurchaseOrderId}`
+    : "/purchasing/orders";
+
   return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-create-page">
+    <div
+      className="flex min-w-0 flex-col gap-4"
+      data-testid={isEdit ? "purchase-order-edit-page" : "purchase-order-create-page"}
+    >
       <PageHeader
-        title={t("purchasing.createTitle")}
-        backTo="/purchasing/orders"
-        backLabel={t("purchasing.backOrders")}
+        title={t(isEdit ? "purchasing.editTitle" : "purchasing.createTitle")}
+        backTo={detailBackTo}
+        backLabel={t(isEdit ? "purchasing.detailTitle" : "purchasing.backOrders")}
         backTestId="page-header-back-purchasing"
       />
 
@@ -892,7 +1106,7 @@ export function PurchaseOrderCreatePage() {
                 className="exits-select w-full"
           value={supplierId}
                 onChange={(e) => onSupplierChange(e.target.value)}
-          disabled={!allowManage || !online}
+          disabled={!allowManage || !online || isEdit}
           data-testid="po-supplier"
                 aria-label={t("purchasing.supplier")}
         >
@@ -1505,7 +1719,7 @@ export function PurchaseOrderCreatePage() {
 
           {connected && supportedFulfillmentMethods.length > 0 ? (
             <section
-              className="flex flex-col gap-2 rounded-md border border-border p-3"
+              className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
               data-testid="po-fulfillment-method"
               aria-labelledby="po-fulfillment-method-heading"
             >
@@ -1526,7 +1740,7 @@ export function PurchaseOrderCreatePage() {
                 </p>
               ) : (
                 <div
-                  className="flex flex-col gap-2"
+                  className="grid grid-cols-2 gap-2"
                   role="radiogroup"
                   aria-label={t("purchasing.fulfillmentMethod")}
                 >
@@ -1557,9 +1771,50 @@ export function PurchaseOrderCreatePage() {
       </section>
           ) : null}
 
+          {connected && effectivePaymentTimings.length > 0 ? (
+            <section
+              className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
+              data-testid="po-payment-timing"
+              aria-labelledby="po-payment-timing-heading"
+            >
+              <h3
+                id="po-payment-timing-heading"
+                className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+              >
+                {t("purchasing.paymentTiming")}
+              </h3>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("purchasing.paymentTimingHelp")}
+              </p>
+              <ExitsPillSelect
+                appearance="tile"
+                aria-label={t("purchasing.paymentTiming")}
+                value={
+                  effectivePaymentTimings.some((option) => option.code === paymentTiming)
+                    ? paymentTiming
+                    : (effectivePaymentTimings[0]?.code ?? paymentTiming)
+                }
+                onChange={setPaymentTiming}
+                disabled={!allowManage}
+                options={effectivePaymentTimings.map((option) => ({
+                  value: option.code,
+                  label: t(option.labelKey),
+                }))}
+                className={
+                  effectivePaymentTimings.length >= 3
+                    ? "grid-cols-3"
+                    : effectivePaymentTimings.length === 2
+                      ? "grid-cols-2"
+                      : "grid-cols-1"
+                }
+                testId="po-payment-timing-select"
+              />
+            </section>
+          ) : null}
+
           {connected ? (
             <section
-              className="po-payment-method-section flex flex-col gap-2 rounded-md border border-border p-3"
+              className="po-payment-method-section flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
               data-testid="po-payment-method"
               aria-labelledby="po-payment-method-heading"
             >
@@ -1569,49 +1824,34 @@ export function PurchaseOrderCreatePage() {
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("purchasing.paymentMethodIntendedHelp")}
               </p>
-              <div
-                className="flex flex-col gap-2"
-                role="radiogroup"
+              <ExitsPillSelect<ConnectedPoPaymentMethodCode>
+                appearance="tile"
                 aria-label={t("purchasing.paymentMethod")}
-              >
-                {CONNECTED_PO_PAYMENT_OPTIONS.map((option) => {
+                value={paymentTerm || "Cash"}
+                onChange={setPaymentTerm}
+                disabled={!allowManage}
+                options={CONNECTED_PO_PAYMENT_OPTIONS.map((option) => {
                   const utangBlocked =
                     option.requiresUtangEligibility === true && !utangEligibility.eligible;
-                  const disabled = !allowManage || utangBlocked;
-                  return (
-                    <label
-                      key={option.code}
-                      className={`flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2 ${
-                        disabled ? "opacity-60" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="po-payment-term"
-                        value={option.code}
-                        checked={paymentTerm === option.code}
-                        disabled={disabled}
-                        onChange={() => setPaymentTerm(option.code)}
-                        data-testid={`po-payment-${option.code}`}
-                      />
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-[length:var(--exits-text-sm)] font-medium">
-                          {t(option.labelKey)}
-                          {utangBlocked ? ` — ${t("purchasing.utang.unavailable")}` : null}
-                        </span>
-                        {utangBlocked ? (
-                          <span className="text-[length:var(--exits-text-xs)] text-muted">
-                            {t(utangEligibility.reasonKey)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </label>
-                  );
+                  return {
+                    value: option.code,
+                    label: utangBlocked
+                      ? `${t(option.labelKey)} — ${t("purchasing.utang.unavailable")}`
+                      : t(option.labelKey),
+                    disabled: utangBlocked,
+                  };
                 })}
-              </div>
+                className="grid-cols-3"
+                testId="po-payment"
+              />
               {selectedPaymentHelp ? (
                 <Notice tone="info" testId="po-payment-help">
                   {t(selectedPaymentHelp)}
+                </Notice>
+              ) : null}
+              {paymentTerm === "Utang" && !utangEligibility.eligible ? (
+                <Notice tone="warning" testId="po-utang-blocked">
+                  {t(utangEligibility.reasonKey)}
                 </Notice>
               ) : null}
               {paymentTerm === "Utang" && creditPolicyQuery.data ? (
@@ -1665,7 +1905,7 @@ export function PurchaseOrderCreatePage() {
       <Button
         type="button"
               variant="destructive"
-              onClick={() => navigate("/purchasing/orders")}
+              onClick={() => navigate(detailBackTo)}
               data-testid="po-create-cancel"
             >
               {t("purchasing.cancel")}
@@ -1684,13 +1924,15 @@ export function PurchaseOrderCreatePage() {
         onClick={() => void submit()}
         data-testid="po-create-submit"
       >
-        {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
+        {saving
+          ? t("purchasing.saving")
+          : t(isEdit ? "purchasing.saveOrder" : "purchasing.createOrder")}
       </Button>
           </div>
         </div>
       ) : (
         <Button type="button" disabled data-testid="po-create-submit">
-          {t("purchasing.createOrder")}
+          {t(isEdit ? "purchasing.saveOrder" : "purchasing.createOrder")}
         </Button>
       )}
 

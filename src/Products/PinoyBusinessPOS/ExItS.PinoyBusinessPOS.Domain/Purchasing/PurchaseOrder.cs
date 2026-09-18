@@ -16,6 +16,7 @@ public sealed class PurchaseOrder
     public const int SupplierReferenceMaxLength = 128;
     public const int NotesMaxLength = 512;
     public const int RemainingClosedReasonMaxLength = 512;
+    public const int SellerSettlementRemarksMaxLength = 512;
     public const int MaxLineCount = 200;
 
     private readonly List<PurchaseOrderLine> _lines;
@@ -39,6 +40,8 @@ public sealed class PurchaseOrder
     public DateTimeOffset UpdatedAtUtc { get; private set; }
     /// <summary>Connected-PO settlement term. Cash default. Not proof of payment.</summary>
     public ConnectedPoPaymentTerm PaymentTerm { get; private set; }
+    /// <summary>Connected-PO payment timing. Defaults to pay-before. Locked on connected confirm.</summary>
+    public ConnectedPoPaymentTiming PaymentTiming { get; private set; }
     /// <summary>
     /// Historical supplier source branch (Platform branch id) snapshotted at PO create/update-draft.
     /// Null for manual suppliers and legacy rows. Immutable after Ordered.
@@ -63,6 +66,16 @@ public sealed class PurchaseOrder
     public decimal RefundDueAmount { get; private set; }
     /// <summary>Total paid across receipt payables at short-close time.</summary>
     public decimal? AmountPaidSnapshot { get; private set; }
+    /// <summary>
+    /// Commercial settlement state. Independent of <see cref="Status"/>: goods may be Received
+    /// while pay-on-delivery/receipt settlement is still outstanding.
+    /// </summary>
+    public ConnectedPoFinancialSettlementStatus FinancialSettlementStatus { get; private set; }
+    /// <summary>Seller remarks captured when settlement was confirmed.</summary>
+    public string? SellerSettlementRemarks { get; private set; }
+    public DateTimeOffset? FinanciallySettledAtUtc { get; private set; }
+    /// <summary>Actor who confirmed settlement. Null when settlement required no payment.</summary>
+    public Guid? FinanciallySettledBy { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -82,6 +95,7 @@ public sealed class PurchaseOrder
         DateTimeOffset updatedAtUtc,
         List<PurchaseOrderLine> lines,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
@@ -93,7 +107,12 @@ public sealed class PurchaseOrder
         decimal? finalAcceptedValue = null,
         decimal? cancelledRemainingValue = null,
         decimal refundDueAmount = 0m,
-        decimal? amountPaidSnapshot = null)
+        decimal? amountPaidSnapshot = null,
+        ConnectedPoFinancialSettlementStatus financialSettlementStatus =
+            ConnectedPoFinancialSettlementStatus.NotRequired,
+        string? sellerSettlementRemarks = null,
+        DateTimeOffset? financiallySettledAtUtc = null,
+        Guid? financiallySettledBy = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -111,6 +130,7 @@ public sealed class PurchaseOrder
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         PaymentTerm = paymentTerm;
+        PaymentTiming = paymentTiming;
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchNameSnapshot);
         IntendedReceivingBranchId = NormalizeBranchId(intendedReceivingBranchId);
@@ -123,7 +143,38 @@ public sealed class PurchaseOrder
         AmountPaidSnapshot = amountPaidSnapshot is null
             ? null
             : SaleMoney.RoundMoney(amountPaidSnapshot.Value);
+        FinancialSettlementStatus = financialSettlementStatus;
+        SellerSettlementRemarks = NormalizeSellerSettlementRemarks(sellerSettlementRemarks);
+        FinanciallySettledAtUtc = financiallySettledAtUtc;
+        FinanciallySettledBy = financiallySettledBy == Guid.Empty ? null : financiallySettledBy;
         _lines = lines;
+    }
+
+    /// <summary>
+    /// Records settled prepayment toward PayBefore fulfillment (does not short-close the PO).
+    /// Cumulative; never decreases. Used when settlement is confirmed before goods receipt.
+    /// </summary>
+    public void RecordSettledPrepayment(decimal settledAmount, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (RemainingClosedAtUtc is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Settled prepayment cannot be recorded after remaining quantity was closed.");
+        }
+
+        var rounded = SaleMoney.RoundMoney(settledAmount);
+        if (rounded < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                "Settled prepayment cannot be negative.");
+        }
+
+        var current = AmountPaidSnapshot ?? 0m;
+        AmountPaidSnapshot = SaleMoney.RoundMoney(Math.Max(current, rounded));
+        UpdatedAtUtc = utcNow;
     }
 
     public static PurchaseOrder CreateDraft(
@@ -140,7 +191,8 @@ public sealed class PurchaseOrder
         Guid? createdBy = null,
         Guid? supplierBranchId = null,
         string? supplierBranchName = null,
-        Guid? intendedReceivingBranchId = null)
+        Guid? intendedReceivingBranchId = null,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
@@ -173,6 +225,7 @@ public sealed class PurchaseOrder
             utcNow,
             poLines,
             paymentTerm,
+            paymentTiming,
             supplierBranchId,
             supplierBranchName,
             intendedReceivingBranchId);
@@ -187,6 +240,7 @@ public sealed class PurchaseOrder
         string? supplierReference = null,
         string? notes = null,
         ConnectedPoPaymentTerm? paymentTerm = null,
+        ConnectedPoPaymentTiming? paymentTiming = null,
         Guid? supplierBranchId = null,
         string? supplierBranchName = null,
         bool updateSupplierSourceBranch = false)
@@ -204,6 +258,11 @@ public sealed class PurchaseOrder
         if (paymentTerm is { } term)
         {
             PaymentTerm = term;
+        }
+
+        if (paymentTiming is { } timing)
+        {
+            PaymentTiming = timing;
         }
 
         if (updateSupplierSourceBranch)
@@ -552,6 +611,149 @@ public sealed class PurchaseOrder
         UpdatedAtUtc = utcNow;
     }
 
+    /// <summary>
+    /// Records authoritative completion settlement when outstanding reaches zero via receipt
+    /// (good + short-close on lines), without requiring an explicit Close remaining action.
+    /// Does not rewrite payment history; only raises RefundDue when paid exceeds accepted good value.
+    /// </summary>
+    public void ApplyCompletionSettlement(
+        decimal finalAcceptedValue,
+        decimal cancelledRemainingValue,
+        decimal refundDueAmount,
+        decimal amountPaid,
+        DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (Status != PurchaseOrderStatus.Received)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Completion settlement applies only when the purchase order is fully received.");
+        }
+
+        FinalAcceptedValue = SaleMoney.RoundMoney(Math.Max(0m, finalAcceptedValue));
+        CancelledRemainingValue = SaleMoney.RoundMoney(Math.Max(0m, cancelledRemainingValue));
+        var roundedPaid = SaleMoney.RoundMoney(Math.Max(0m, amountPaid));
+        var currentPaid = AmountPaidSnapshot ?? 0m;
+        AmountPaidSnapshot = SaleMoney.RoundMoney(Math.Max(currentPaid, roundedPaid));
+        var nextRefundDue = refundDueAmount < 0m ? 0m : SaleMoney.RoundMoney(refundDueAmount);
+        // Never decrease an already recorded refund due (idempotent retries / prior short-close).
+        RefundDueAmount = SaleMoney.RoundMoney(Math.Max(RefundDueAmount, nextRefundDue));
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Holds a fully received pay-on-delivery/receipt purchase order in commercial settlement
+    /// until the seller confirms payment. Goods remain <see cref="PurchaseOrderStatus.Received"/>.
+    /// Idempotent; never downgrades an already settled order.
+    /// </summary>
+    /// <param name="effectivePaymentTiming">
+    /// Connected-relationship effective timing when it supersedes <see cref="PaymentTiming"/>
+    /// (seller-proposed timing accepted by the buyer).
+    /// </param>
+    public void MarkAwaitingPayment(
+        DateTimeOffset utcNow,
+        ConnectedPoPaymentTiming? effectivePaymentTiming = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (Status != PurchaseOrderStatus.Received)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Awaiting payment applies only when the purchase order is fully received.");
+        }
+
+        if ((effectivePaymentTiming ?? PaymentTiming) != ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Awaiting payment applies only to pay-on-delivery or pay-on-receipt timing.");
+        }
+
+        if (FinancialSettlementStatus is ConnectedPoFinancialSettlementStatus.Settled
+            or ConnectedPoFinancialSettlementStatus.AwaitingPayment)
+        {
+            return;
+        }
+
+        FinancialSettlementStatus = ConnectedPoFinancialSettlementStatus.AwaitingPayment;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Records seller-confirmed settlement. Idempotent: a second confirmation preserves the first
+    /// settlement timestamp, actor, and remarks.
+    /// </summary>
+    public void MarkFinanciallySettled(Guid actorId, DateTimeOffset utcNow, string? sellerRemarks = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        SaleMoney.EnsureActor(actorId);
+        if (Status != PurchaseOrderStatus.Received)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Settlement can be confirmed only when the purchase order is fully received.");
+        }
+
+        if (FinancialSettlementStatus == ConnectedPoFinancialSettlementStatus.Settled)
+        {
+            return;
+        }
+
+        FinancialSettlementStatus = ConnectedPoFinancialSettlementStatus.Settled;
+        SellerSettlementRemarks = NormalizeSellerSettlementRemarks(sellerRemarks) ?? SellerSettlementRemarks;
+        FinanciallySettledAtUtc = utcNow;
+        FinanciallySettledBy = actorId;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Auto-completes settlement when nothing is due (zero accepted value, or already fully paid).
+    /// No actor is recorded because no payment was collected at this point.
+    /// </summary>
+    public void MarkNoPaymentDue(DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (Status != PurchaseOrderStatus.Received)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "No-payment-due completion applies only when the purchase order is fully received.");
+        }
+
+        if (FinancialSettlementStatus == ConnectedPoFinancialSettlementStatus.Settled)
+        {
+            return;
+        }
+
+        FinancialSettlementStatus = ConnectedPoFinancialSettlementStatus.Settled;
+        FinanciallySettledAtUtc ??= utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Records a settlement payment collected after goods receipt (pay-on-delivery/receipt).
+    /// Cumulative and never decreasing; does not by itself confirm settlement.
+    /// </summary>
+    public void RecordPostReceiptSettlementPayment(
+        decimal settledAmount,
+        DateTimeOffset utcNow,
+        string? sellerRemarks = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        var rounded = SaleMoney.RoundMoney(settledAmount);
+        if (rounded < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseReceiveQuantity,
+                "Settlement payment cannot be negative.");
+        }
+
+        AmountPaidSnapshot = SaleMoney.RoundMoney((AmountPaidSnapshot ?? 0m) + rounded);
+        SellerSettlementRemarks = NormalizeSellerSettlementRemarks(sellerRemarks) ?? SellerSettlementRemarks;
+        UpdatedAtUtc = utcNow;
+    }
+
     public static string NormalizeRemainingClosedReason(string reason)
     {
         if (string.IsNullOrWhiteSpace(reason))
@@ -588,6 +790,7 @@ public sealed class PurchaseOrder
         DateTimeOffset updatedAtUtc,
         IReadOnlyList<PurchaseOrderLine> lines,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
@@ -599,7 +802,12 @@ public sealed class PurchaseOrder
         decimal? finalAcceptedValue = null,
         decimal? cancelledRemainingValue = null,
         decimal refundDueAmount = 0m,
-        decimal? amountPaidSnapshot = null) =>
+        decimal? amountPaidSnapshot = null,
+        ConnectedPoFinancialSettlementStatus financialSettlementStatus =
+            ConnectedPoFinancialSettlementStatus.NotRequired,
+        string? sellerSettlementRemarks = null,
+        DateTimeOffset? financiallySettledAtUtc = null,
+        Guid? financiallySettledBy = null) =>
         new(
             id,
             organizationId,
@@ -616,6 +824,7 @@ public sealed class PurchaseOrder
             updatedAtUtc,
             lines.ToList(),
             paymentTerm,
+            paymentTiming,
             supplierBranchId,
             supplierBranchNameSnapshot,
             intendedReceivingBranchId,
@@ -627,7 +836,18 @@ public sealed class PurchaseOrder
             finalAcceptedValue,
             cancelledRemainingValue,
             refundDueAmount,
-            amountPaidSnapshot);
+            amountPaidSnapshot,
+            financialSettlementStatus,
+            sellerSettlementRemarks,
+            financiallySettledAtUtc,
+            financiallySettledBy);
+
+    public static string? NormalizeSellerSettlementRemarks(string? remarks) =>
+        NormalizeOptionalText(
+            remarks,
+            SellerSettlementRemarksMaxLength,
+            DomainErrorCodes.InvalidPurchaseOrderNotes,
+            "Seller settlement remarks");
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

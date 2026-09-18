@@ -613,7 +613,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
         /exceeds current available stock/i,
       ),
     );
-    await user.click(screen.getByTestId("po-payment-Cash"));
+    await user.click(screen.getByTestId("po-payment-option-Cash"));
     expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
   });
 

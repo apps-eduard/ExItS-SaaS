@@ -36,6 +36,10 @@ public sealed class StockMovement
     public const string PurchaseReceiptReversalReason = "Purchase receipt reversed";
     public const string DirectPurchaseReceiptReversalReason = "Direct purchase reversed";
     public const string ConnectedPurchaseFulfillmentReason = "Connected purchase fulfillment";
+    public const string SaleReturnWriteOffReason = "Sale return write-off";
+    public const string ConnectedPoReturnDispatchReason = "Connected PO return dispatched to supplier";
+    public const string ConnectedPoReturnRestockReason = "Connected PO return restock";
+    public const string ConnectedPoReturnWriteOffReason = "Connected PO return write-off";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -1029,6 +1033,95 @@ public sealed class StockMovement
             ConnectedPurchaseFulfillmentReason,
             StockMovementSourceType.ConnectedPurchaseOrder,
             fulfillmentSourceId ?? connectedPurchaseOrderId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
+    public static StockMovement SaleReturnWriteOff(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid saleReturnId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (saleReturnId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnId,
+                "SaleReturnId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.SaleReturnWriteOff,
+            -absolute,
+            SaleReturnWriteOffReason,
+            StockMovementSourceType.SaleReturn,
+            saleReturnId,
+            utcNow,
+            actorId);
+    }
+
+    /// <summary>
+    /// Connected-PO return movement. Dispatch decreases buyer on-hand; restock increases seller on-hand;
+    /// write-off is an audit-only decrease for the damaged portion (seller on-hand is never increased for it).
+    /// </summary>
+    public static StockMovement ConnectedPoReturn(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        StockMovementType movementType,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid returnBatchId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (returnBatchId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidReturnBatchId,
+                "ReturnBatchId cannot be an empty GUID.");
+        }
+
+        var (reason, sign) = movementType switch
+        {
+            StockMovementType.ConnectedPoReturnDispatch => (ConnectedPoReturnDispatchReason, -1m),
+            StockMovementType.ConnectedPoReturnRestock => (ConnectedPoReturnRestockReason, 1m),
+            StockMovementType.ConnectedPoReturnWriteOff => (ConnectedPoReturnWriteOffReason, -1m),
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidInventoryMovementType,
+                "Movement type is not a connected purchase-order return movement.")
+        };
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            movementType,
+            sign * absolute,
+            reason,
+            StockMovementSourceType.ReturnBatch,
+            returnBatchId,
             utcNow,
             actorId,
             branchId);

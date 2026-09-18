@@ -25,6 +25,9 @@ export type PurchaseOrderActivityKind =
   | "receipt"
   | "receipt_reversed"
   | "remaining_closed"
+  | "awaiting_payment"
+  | "payment_confirmed"
+  | "no_payment_due"
   | "completed";
 
 export type PurchaseOrderActivityReceiptLine = {
@@ -55,6 +58,8 @@ export type PurchaseOrderActivityEvent = {
     proposedTotal: number | null;
     reservationExpiresAtUtc: string | null;
   };
+  /** Optional seller settlement remarks (payment confirmed). */
+  note?: string | null;
 };
 
 function compareUtc(a: string, b: string): number {
@@ -256,6 +261,32 @@ export function buildPurchaseOrderActivityEvents(input: {
     }
   }
 
+  const lastPostedReceiptAt = [...postedReceipts]
+    .filter((r) => (r.status ?? "Posted") === "Posted")
+    .sort((a, b) => compareUtc(a.receivedAtUtc, b.receivedAtUtc))
+    .at(-1)?.receivedAtUtc;
+
+  // Settlement gate for pay-on-delivery/receipt: goods received but payment still outstanding.
+  const settlement = po.financialSettlementStatus ?? "NotRequired";
+  if (po.status === "Received" && settlement !== "NotRequired") {
+    const awaitingAt = lastPostedReceiptAt?.trim() || po.remainingClosedAtUtc?.trim();
+    if (awaitingAt) {
+      events.push({
+        id: `awaiting-payment:${po.purchaseOrderId}`,
+        kind: "awaiting_payment",
+        atUtc: awaitingAt,
+      });
+    }
+    if (settlement === "Settled" && po.financiallySettledAtUtc?.trim()) {
+      events.push({
+        id: `settled:${po.purchaseOrderId}`,
+        kind: (po.amountPaidSnapshot ?? 0) > 0 ? "payment_confirmed" : "no_payment_due",
+        atUtc: po.financiallySettledAtUtc,
+        note: po.sellerSettlementRemarks?.trim() || null,
+      });
+    }
+  }
+
   // Completion: only when PO is fully received; timestamp = last posted (non-void) receipt.
   if (po.remainingClosedAtUtc?.trim()) {
     events.push({
@@ -264,7 +295,7 @@ export function buildPurchaseOrderActivityEvents(input: {
       atUtc: po.remainingClosedAtUtc,
       actorId: po.remainingClosedByUserId ?? null,
     });
-  } else if (po.status === "Received") {
+  } else if (po.status === "Received" && settlement !== "AwaitingPayment") {
     const lastPosted = [...postedReceipts]
       .filter((r) => (r.status ?? "Posted") === "Posted")
       .sort((a, b) => compareUtc(a.receivedAtUtc, b.receivedAtUtc))
@@ -322,7 +353,10 @@ export function buildPurchaseOrderActivityEvents(input: {
       receipt: 3,
       receipt_reversed: 4,
       remaining_closed: 5,
-      completed: 5,
+      awaiting_payment: 5,
+      payment_confirmed: 6,
+      no_payment_due: 6,
+      completed: 7,
     };
     return order[a.kind] - order[b.kind];
   });

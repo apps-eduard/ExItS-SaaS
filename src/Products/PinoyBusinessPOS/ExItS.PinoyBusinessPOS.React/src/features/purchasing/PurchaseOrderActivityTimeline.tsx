@@ -64,6 +64,12 @@ function eventTitle(
       return t("purchasing.activity.receiptReversed").replace("{grn}", event.grnNumber ?? "");
     case "remaining_closed":
       return t("purchasing.activity.remainingClosed");
+    case "awaiting_payment":
+      return t("purchasing.activity.awaitingPayment");
+    case "payment_confirmed":
+      return t("purchasing.activity.paymentConfirmed");
+    case "no_payment_due":
+      return t("purchasing.activity.noPaymentDue");
     case "completed":
       return t("purchasing.activity.completed");
   }
@@ -141,6 +147,11 @@ export function PurchaseOrderActivityTimeline({
                     testId={`po-activity-actor-${event.id}`}
                   />
                 </div>
+              ) : null}
+              {event.note?.trim() ? (
+                <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("incomingOrders.sellerRemarks")}: {event.note.trim()}
+                </p>
               ) : null}
 
               {event.kind === "changes_proposed" && event.proposalSummary ? (

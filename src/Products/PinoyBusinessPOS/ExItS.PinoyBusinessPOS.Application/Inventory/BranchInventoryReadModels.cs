@@ -107,4 +107,5 @@ public sealed record BranchInventoryListRow(
     string? CategoryName = null,
     string MonitoringMode = "BranchDefault",
     decimal BranchReserved = 0m,
-    decimal BranchAvailable = 0m);
+    decimal BranchAvailable = 0m,
+    decimal BranchPendingReturn = 0m);

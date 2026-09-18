@@ -25,12 +25,20 @@ public static class ConnectedPoUtangCredit
         term == ConnectedPoPaymentTerm.Utang;
 
     /// <summary>
+    /// Supplier credit applies when the payment term is Utang and/or confirmed timing is SupplierCredit.
+    /// Timing alone is enough so credit reservation cannot be skipped by a mismatched term.
+    /// </summary>
+    public static bool UsesUtang(ConnectedPurchaseOrder order) =>
+        UsesUtang(order.EffectivePaymentTerm)
+        || order.EffectivePaymentTiming == ConnectedPoPaymentTiming.SupplierCredit;
+
+    /// <summary>
     /// Gross amount this PO would reserve before subtracting already-posted Utang (receipt conversions).
     /// Prefers confirmed total when the supplier has accepted / confirmed lines.
     /// </summary>
     public static decimal ReservationBaseAmount(ConnectedPurchaseOrder order)
     {
-        if (!UsesUtang(order.EffectivePaymentTerm))
+        if (!UsesUtang(order))
         {
             return 0m;
         }

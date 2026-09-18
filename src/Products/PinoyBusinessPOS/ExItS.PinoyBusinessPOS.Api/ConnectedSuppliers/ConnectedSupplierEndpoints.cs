@@ -305,6 +305,12 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/prepare",async(HttpRequest req,Guid id,StartPreparingIncomingOrder use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/confirm-settlement",async(HttpRequest req,Guid id,ConfirmIncomingOrderSettlementRequest? body,ConfirmIncomingOrderSettlement use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body??new ConfirmIncomingOrderSettlementRequest(),ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/confirm-receipt-settlement",async(HttpRequest req,Guid id,ConfirmIncomingOrderReceiptSettlementRequest? body,ConfirmIncomingOrderReceiptSettlement use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId,body??new ConfirmIncomingOrderReceiptSettlementRequest(),ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/fulfill",async(HttpRequest req,Guid id,MarkIncomingOrderFulfilled use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;

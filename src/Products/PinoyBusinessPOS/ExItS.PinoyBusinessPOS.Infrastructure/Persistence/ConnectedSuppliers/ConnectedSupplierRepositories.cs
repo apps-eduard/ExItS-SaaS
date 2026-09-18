@@ -11,15 +11,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
 
 internal sealed class ConnectedSupplierRelationshipRepository(PosDbContext db) : IConnectedSupplierRelationshipRepository
 {
+    private IQueryable<ConnectedSupplierRelationshipRecord> QueryRelationships() =>
+        db.ConnectedSupplierRelationships.Include(x => x.CategoryDiscountOverrides);
+
     public async Task<ConnectedSupplierRelationship?> GetAsync(ConnectedSupplierRelationshipId id,CancellationToken ct=default)
-    {var r=await db.ConnectedSupplierRelationships.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
+    {var r=await QueryRelationships().AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<ConnectedSupplierRelationship?> FindOpenAsync(PosOrganizationId buyer,PosOrganizationId supplier,CancellationToken ct=default)
-    {var r=await db.ConnectedSupplierRelationships.AsNoTracking().SingleOrDefaultAsync(x=>x.BuyerOrganizationId==buyer.Value&&x.SupplierOrganizationId==supplier.Value&&(x.Status==0||x.Status==1),ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
+    {var r=await QueryRelationships().AsNoTracking().SingleOrDefaultAsync(x=>x.BuyerOrganizationId==buyer.Value&&x.SupplierOrganizationId==supplier.Value&&(x.Status==0||x.Status==1),ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<IReadOnlyList<ConnectedSupplierRelationship>> ListAsync(PosOrganizationId org,bool supplierView,CancellationToken ct=default)=>
-        (await db.ConnectedSupplierRelationships.AsNoTracking().Where(x=>supplierView?x.SupplierOrganizationId==org.Value:x.BuyerOrganizationId==org.Value)
+        (await QueryRelationships().AsNoTracking().Where(x=>supplierView?x.SupplierOrganizationId==org.Value:x.BuyerOrganizationId==org.Value)
         .OrderByDescending(x=>x.UpdatedAtUtc).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
     public Task AddAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){db.ConnectedSupplierRelationships.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
-    public async Task UpdateAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){var r=await db.ConnectedSupplierRelationships.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
+    public async Task UpdateAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){var r=await QueryRelationships().SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
 }
 
 internal sealed class SupplierProductExposureRepository(PosDbContext db) : ISupplierProductExposureRepository

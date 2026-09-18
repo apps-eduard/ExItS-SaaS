@@ -6,12 +6,17 @@ export type ExitsPillSelectOption<T extends string = string> = {
   disabled?: boolean;
 };
 
+/** `pill` = compact rounded chips; `tile` = full-width bordered tiles (forms / cards). */
+export type ExitsPillSelectAppearance = "pill" | "tile";
+
 type ExitsPillSelectBaseProps<T extends string> = {
   options: ReadonlyArray<ExitsPillSelectOption<T>>;
   disabled?: boolean;
   className?: string;
   testId?: string;
   "aria-label"?: string;
+  /** Visual shape. Default `pill`. Use `tile` for equal-width attribute grids in cards. */
+  appearance?: ExitsPillSelectAppearance;
 };
 
 export type ExitsPillSelectProps<T extends string = string> =
@@ -27,7 +32,7 @@ export type ExitsPillSelectProps<T extends string = string> =
     });
 
 /**
- * In-flow pill attribute select (size / variant chips).
+ * In-flow attribute select (size / variant / payment choices).
  * Double-ring selected treatment; Primary tokens (not page-local green).
  * Use for short fixed option sets — not long searchable lists.
  */
@@ -38,8 +43,10 @@ export function ExitsPillSelect<T extends string>(props: ExitsPillSelectProps<T>
     className,
     testId,
     "aria-label": ariaLabel,
+    appearance = "pill",
   } = props;
   const multi = props.mode === "multi";
+  const tile = appearance === "tile";
 
   function isSelected(value: T): boolean {
     if (multi) {
@@ -68,8 +75,9 @@ export function ExitsPillSelect<T extends string>(props: ExitsPillSelectProps<T>
       role={multi ? "group" : "radiogroup"}
       aria-label={ariaLabel}
       aria-disabled={disabled || undefined}
-      className={cn("flex flex-wrap gap-2", className)}
+      className={cn(tile ? "grid gap-2" : "flex flex-wrap gap-2", className)}
       data-testid={testId}
+      data-appearance={appearance}
     >
       {options.map((option) => {
         const selected = isSelected(option.value);
@@ -85,8 +93,11 @@ export function ExitsPillSelect<T extends string>(props: ExitsPillSelectProps<T>
             data-selected={selected ? "true" : "false"}
             data-testid={testId ? `${testId}-option-${option.value}` : undefined}
             className={cn(
-              "rounded-full border p-0.5 transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
+              "border p-0.5 transition-[border-color,box-shadow] duration-[var(--exits-motion-fast)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--exits-primary)] focus-visible:ring-offset-1",
+              tile
+                ? "min-w-0 w-full rounded-[var(--exits-radius-md)]"
+                : "rounded-full",
               selected
                 ? "border-[var(--exits-primary)]"
                 : "border-[var(--exits-border)]",
@@ -96,9 +107,12 @@ export function ExitsPillSelect<T extends string>(props: ExitsPillSelectProps<T>
           >
             <span
               className={cn(
-                "inline-flex min-h-8 min-w-9 items-center justify-center rounded-full px-3",
-                "text-[length:var(--exits-text-sm)] font-semibold tabular-nums",
+                "inline-flex items-center justify-center",
+                "text-[length:var(--exits-text-sm)] font-normal",
                 "transition-[background-color,color] duration-[var(--exits-motion-fast)]",
+                tile
+                  ? "min-h-10 w-full rounded-[calc(var(--exits-radius-md)-2px)] px-3 py-2 text-center"
+                  : "min-h-8 min-w-9 rounded-full px-3 tabular-nums",
                 selected
                   ? "bg-[var(--exits-primary)] text-[var(--exits-primary-foreground)]"
                   : "bg-[color-mix(in_srgb,var(--exits-surface-muted)_88%,var(--exits-surface))] text-foreground",

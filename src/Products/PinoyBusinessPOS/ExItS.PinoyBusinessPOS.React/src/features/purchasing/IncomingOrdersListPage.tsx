@@ -94,6 +94,8 @@ function statusLabel(t: (key: MessageKey) => string, status: string, displayStat
       return t("incomingOrders.statusCompleted");
     case "CompletedRemainingCancelled":
       return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedAwaitingPayment":
+      return t("incomingOrders.statusReceivedAwaitingPayment");
     case "ReceivedWithIssues":
       return t("incomingOrders.statusReceivedWithIssues");
     case "PartiallyReceived":

@@ -126,4 +126,18 @@ public static class CheckSettlementStatuses
         status = Enum.Parse<CheckSettlementStatus>(match, ignoreCase: false);
         return true;
     }
+
+    public static string ToCode(CheckSettlementStatus status) => status.ToString();
+
+    public static CheckSettlementStatus Parse(string? code)
+    {
+        if (!TryParse(code, out var status))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCheckSettlementStatus,
+                $"Check settlement status must be one of: {string.Join(", ", Codes)}.");
+        }
+
+        return status;
+    }
 }

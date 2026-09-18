@@ -17,6 +17,7 @@ internal sealed class SaleRecord
     public decimal? AmountTendered { get; set; }
     public decimal? ChangeAmount { get; set; }
     public string? GcashReference { get; set; }
+    public string? CheckSettlementStatus { get; set; }
     public Guid? CustomerId { get; set; }
     public string BuyerPartyKind { get; set; } = "WalkIn";
     public string? BuyerDisplayNameSnapshot { get; set; }

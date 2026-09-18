@@ -61,9 +61,12 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
         CancellationToken cancellationToken = default)
     {
         var restockLines = saleReturn.Lines
-            .Where(l => l.RestockDisposition == RestockDisposition.ReturnToStock)
+            .Where(l => l.RestockDisposition == RestockDisposition.ReturnToStock && l.SellableQuantity > 0m)
             .ToList();
-        if (restockLines.Count == 0)
+        var writeOffLines = saleReturn.Lines
+            .Where(l => l.RestockDisposition == RestockDisposition.ReturnToStock && l.DamagedQuantity > 0m)
+            .ToList();
+        if (restockLines.Count == 0 && writeOffLines.Count == 0)
         {
             return;
         }
@@ -73,11 +76,22 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
             .GroupBy(l => l.ProductId.Value)
             .Select(g => new RestockGroup(
                 g.First().ProductId,
-                g.Sum(l => l.QuantityReturned),
+                g.Sum(l => l.SellableQuantity),
+                g.ToList()))
+            .ToList();
+        var writeOffGroups = writeOffLines
+            .GroupBy(l => l.ProductId.Value)
+            .Select(g => new RestockGroup(
+                g.First().ProductId,
+                g.Sum(l => l.DamagedQuantity),
                 g.ToList()))
             .ToList();
 
-        var productIds = restockGroups.Select(g => g.ProductId).ToList();
+        var productIds = restockGroups
+            .Select(g => g.ProductId)
+            .Concat(writeOffGroups.Select(g => g.ProductId))
+            .Distinct()
+            .ToList();
         var accounts = await _inventory
             .ListByProductIdsAsync(organizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
@@ -196,6 +210,45 @@ public sealed class SaleReturnStockService : ISaleReturnStockService
                         cancellationToken)
                     .ConfigureAwait(false);
             }
+        }
+
+        foreach (var group in writeOffGroups)
+        {
+            if (!accountsByProduct.TryGetValue(group.ProductId.Value, out var account) || !account.IsTracked)
+            {
+                continue;
+            }
+
+            if (await _inventory
+                    .HasSaleReturnWriteOffAsync(
+                        organizationId,
+                        saleReturn.Id,
+                        group.ProductId,
+                        cancellationToken)
+                    .ConfigureAwait(false))
+            {
+                continue;
+            }
+
+            productsById.TryGetValue(group.ProductId.Value, out var product);
+            SellingMode sellingMode = product?.SellingMode ?? SellingMode.PerItem;
+            UnitOfMeasure uom = group.Lines[0].UomSnapshot;
+            var movement = StockMovement.SaleReturnWriteOff(
+                organizationId,
+                group.ProductId,
+                account.Id,
+                group.Quantity,
+                uom,
+                saleReturn.Id.Value,
+                actorId,
+                utcNow,
+                sellingMode: sellingMode);
+            if (originalSale.BranchId is not null)
+            {
+                movement = movement.WithBranch(originalSale.BranchId.Value);
+            }
+
+            await _inventory.AddMovementAsync(movement, cancellationToken).ConfigureAwait(false);
         }
     }
 

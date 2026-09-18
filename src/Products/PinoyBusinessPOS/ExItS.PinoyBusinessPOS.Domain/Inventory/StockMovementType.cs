@@ -47,7 +47,15 @@ public enum StockMovementType
     /// <summary>Compensating reversal when a direct purchase receipt is voided.</summary>
     DirectPurchaseReceiptReversal = 23,
     /// <summary>Supplier stock decrease when a connected purchase order is fulfilled/delivered.</summary>
-    ConnectedPurchaseFulfillment = 24
+    ConnectedPurchaseFulfillment = 24,
+    /// <summary>Returned quantity classified as damaged and written off from pending return bucket.</summary>
+    SaleReturnWriteOff = 25,
+    /// <summary>Buyer stock leaves on-hand when the seller confirms receipt of a connected-PO return.</summary>
+    ConnectedPoReturnDispatch = 26,
+    /// <summary>Seller stock returns to on-hand for the sellable portion of a finalized connected-PO return.</summary>
+    ConnectedPoReturnRestock = 27,
+    /// <summary>Damaged portion of a finalized connected-PO return, written off on the seller side.</summary>
+    ConnectedPoReturnWriteOff = 28
 }
 
 public static class StockMovementTypes
@@ -80,7 +88,11 @@ public static class StockMovementTypes
         nameof(StockMovementType.WasteLossVoidRestoration),
         nameof(StockMovementType.PurchaseReceiptReversal),
         nameof(StockMovementType.DirectPurchaseReceiptReversal),
-        nameof(StockMovementType.ConnectedPurchaseFulfillment)
+        nameof(StockMovementType.ConnectedPurchaseFulfillment),
+        nameof(StockMovementType.SaleReturnWriteOff),
+        nameof(StockMovementType.ConnectedPoReturnDispatch),
+        nameof(StockMovementType.ConnectedPoReturnRestock),
+        nameof(StockMovementType.ConnectedPoReturnWriteOff)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

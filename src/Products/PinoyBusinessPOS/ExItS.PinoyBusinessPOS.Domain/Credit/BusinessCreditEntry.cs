@@ -146,6 +146,37 @@ public sealed class BusinessCreditEntry
         CurrentDueDate = dueDate;
     }
 
+    /// <summary>
+    /// Reduces an active B2B credit for a connected-PO return without fabricating repayments.
+    /// When the reduction equals the remaining amount, the entry reverses.
+    /// </summary>
+    public void ReduceForConnectedPoReturn(decimal reductionAmount, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status == CreditEntryStatus.Reversed)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCreditEntryStatusTransition,
+                "Reversed business credit entries cannot be reduced.");
+        }
+
+        var normalized = CreditEntry.NormalizeAmount(reductionAmount);
+        if (normalized > _amount)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCreditAmount,
+                "Reduction amount cannot exceed the business credit amount.");
+        }
+
+        if (normalized == _amount)
+        {
+            Reverse("Connected PO return full credit reduction", utcNow);
+            return;
+        }
+
+        _amount = SaleMoney.RoundMoney(_amount - normalized);
+    }
+
     private static Guid? NormalizeConnectionId(Guid? connectionId) =>
         connectionId is Guid id && id != Guid.Empty ? id : null;
 

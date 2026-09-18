@@ -445,8 +445,8 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     standard: "Pill select",
     category: "selects",
     status: "Pilot",
-    summary: "In-flow attribute pills (size/variant) — single or multi",
-    keywords: ["pill", "size", "attribute", "variant", "chip", "select", "multi"],
+    summary: "In-flow attribute select — pill chips or tile (forms); single or multi",
+    keywords: ["pill", "tile", "size", "attribute", "variant", "chip", "select", "multi"],
   },
   {
     id: "creatable-combobox",

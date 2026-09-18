@@ -248,6 +248,13 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasSaleReturnWriteOffAsync(
+        PosOrganizationId organizationId,
+        SaleReturnId saleReturnId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
     Task<bool> HasInventoryTransferMovementAsync(
         PosOrganizationId organizationId,
         InventoryTransferId transferId,

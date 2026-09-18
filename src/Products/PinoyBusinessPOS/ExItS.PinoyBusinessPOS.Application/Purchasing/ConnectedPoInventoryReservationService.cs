@@ -4,6 +4,7 @@ using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -24,6 +25,7 @@ public sealed class ConnectedPoInventoryReservationService
     private readonly ICatalogProductUnitRepository _units;
     private readonly IConnectedPoInventoryReservationRepository _reservations;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly IOrganizationConnectedCommerceSettingsRepository? _connectedCommerceSettings;
 
     public ConnectedPoInventoryReservationService(
         IInventoryRepository inventory,
@@ -31,7 +33,8 @@ public sealed class ConnectedPoInventoryReservationService
         ICatalogProductRepository products,
         ICatalogProductUnitRepository units,
         IConnectedPoInventoryReservationRepository reservations,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IOrganizationConnectedCommerceSettingsRepository? connectedCommerceSettings = null)
     {
         _inventory = inventory;
         _branchBalances = branchBalances;
@@ -39,6 +42,7 @@ public sealed class ConnectedPoInventoryReservationService
         _units = units;
         _reservations = reservations;
         _branches = branches;
+        _connectedCommerceSettings = connectedCommerceSettings;
     }
 
     public async Task ReserveConfirmedOnAcceptAsync(
@@ -162,7 +166,18 @@ public sealed class ConnectedPoInventoryReservationService
             return;
         }
 
-        var expires = utcNow.Add(ConnectedPoInventoryReservationOptions.DefaultProposalHoldDuration);
+        var holdHours = 24;
+        if (_connectedCommerceSettings is not null)
+        {
+            var settings = await _connectedCommerceSettings
+                .GetAsync(relationship.SupplierOrganizationId, cancellationToken)
+                .ConfigureAwait(false);
+            holdHours = settings?.ProposalReservationHoldHours is int configured
+                ? Math.Clamp(configured, OrganizationConnectedCommerceSettings.MinProposalReservationHoldHours, OrganizationConnectedCommerceSettings.MaxProposalReservationHoldHours)
+                : 24;
+        }
+
+        var expires = utcNow.AddHours(holdHours);
         await ReserveAsync(
                 order,
                 relationship,

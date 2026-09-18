@@ -13,8 +13,10 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Parties;
+using ExItS.PinoyBusinessPOS.Domain.Payments;
 using ExItS.PinoyBusinessPOS.Domain.Permissions;
 using ExItS.PinoyBusinessPOS.Domain.Purchasing;
+using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
 using Microsoft.Extensions.Logging;
 
@@ -213,6 +215,9 @@ public sealed record ConnectedPurchaseOrderDto(
     string? SubmittedPaymentTermLabel = null,
     string? ProposedPaymentTerm = null,
     string? ProposedPaymentTermLabel = null,
+    string PaymentTiming = "PayBeforeFulfillment",
+    string? SubmittedPaymentTiming = null,
+    string? ProposedPaymentTiming = null,
     decimal ProposedTotalAmount = 0m,
     decimal ConfirmedTotalAmount = 0m,
     DateTimeOffset? ChangesProposedAtUtc = null,
@@ -230,7 +235,12 @@ public sealed record ConnectedPurchaseOrderDto(
     decimal? CancelledRemainingValue = null,
     decimal RefundDueAmount = 0m,
     decimal AmountPaid = 0m,
-    decimal BalanceDue = 0m);
+    decimal BalanceDue = 0m,
+    string FinancialSettlementStatus = "NotRequired",
+    decimal RemainingDueAmount = 0m,
+    string? SellerSettlementRemarks = null,
+    DateTimeOffset? FinanciallySettledAtUtc = null,
+    string? BuyerReceiptRemarks = null);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
 public sealed record CloseIncomingOrderRemainingRequest(string Reason);
 public sealed record ProposeIncomingOrderLineRequest(
@@ -240,7 +250,8 @@ public sealed record ProposeIncomingOrderLineRequest(
     decimal? ProposedUnitPrice = null);
 public sealed record ProposeIncomingOrderChangesRequest(
     IReadOnlyList<ProposeIncomingOrderLineRequest> Lines,
-    string? ProposedPaymentTerm = null);
+    string? ProposedPaymentTerm = null,
+    string? ProposedPaymentTiming = null);
 public sealed record DraftReviewLineRequest(Guid SupplierProductId, decimal UnitPriceSnapshot);
 public sealed record RevalidateConnectedPoDraftRequest(IReadOnlyList<DraftReviewLineRequest> Lines);
 public enum ConnectedPoDraftReviewStatus { Unchanged, PriceChanged, Unavailable, RelationshipInactive }
@@ -471,6 +482,22 @@ public static class ConnectedSupplierMapper
                 Array.Empty<GoodsReceipt>());
         }
 
+        var balanceDue = buyerPo is null
+            ? 0m
+            : buyerPo.RemainingClosedAtUtc is not null
+                ? Math.Max(0m, (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m))
+                : (settlementPreview?.BalanceDue
+                    ?? Math.Max(
+                        0m,
+                        (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m)));
+        var buyerReceiptRemarks = receiptDtos is null
+            ? null
+            : string.Join(
+                " | ",
+                receiptDtos
+                    .Select(r => r.Notes?.Trim())
+                    .Where(n => !string.IsNullOrWhiteSpace(n))!);
+
         return new(
             x.Id.Value,
             x.RelationshipId.Value,
@@ -501,6 +528,9 @@ public static class ConnectedSupplierMapper
             ConnectedPoPaymentTerms.ToUiLabel(x.PaymentTerm),
             x.ProposedPaymentTerm is { } ppt ? ConnectedPoPaymentTerms.ToApi(ppt) : null,
             x.ProposedPaymentTerm is { } ppt2 ? ConnectedPoPaymentTerms.ToUiLabel(ppt2) : null,
+            x.EffectivePaymentTiming.ToString(),
+            x.PaymentTiming.ToString(),
+            x.ProposedPaymentTiming?.ToString(),
             x.ProposedTotalAmount,
             x.ConfirmedTotalAmount,
             x.ChangesProposedAtUtc,
@@ -520,14 +550,12 @@ public static class ConnectedSupplierMapper
                 ? (buyerPo.RefundDueAmount)
                 : (settlementPreview?.RefundDue ?? buyerPo?.RefundDueAmount ?? 0m),
             buyerPo?.AmountPaidSnapshot ?? settlementPreview?.AmountPaid ?? 0m,
-            buyerPo is null
-                ? 0m
-                : buyerPo.RemainingClosedAtUtc is not null
-                    ? Math.Max(0m, (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m))
-                    : (settlementPreview?.BalanceDue
-                        ?? Math.Max(
-                            0m,
-                            (buyerPo.FinalAcceptedValue ?? 0m) - (buyerPo.AmountPaidSnapshot ?? 0m))));
+            balanceDue,
+            (buyerPo?.FinancialSettlementStatus ?? ConnectedPoFinancialSettlementStatus.NotRequired).ToString(),
+            balanceDue,
+            buyerPo?.SellerSettlementRemarks,
+            buyerPo?.FinanciallySettledAtUtc,
+            string.IsNullOrWhiteSpace(buyerReceiptRemarks) ? null : buyerReceiptRemarks);
     }
 
     public static ConnectedPurchaseOrderLineDto MapLine(
@@ -2528,8 +2556,20 @@ public sealed class ProposeIncomingOrderChanges
             {
                 proposedPayment = ConnectedPoPaymentTerms.ParseRequired(request.ProposedPaymentTerm);
             }
+            ConnectedPoPaymentTiming? proposedPaymentTiming = null;
+            if (!string.IsNullOrWhiteSpace(request.ProposedPaymentTiming))
+            {
+                if (!Enum.TryParse<ConnectedPoPaymentTiming>(request.ProposedPaymentTiming.Trim(), true, out var parsedTiming))
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                        ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                        "Proposed payment timing is invalid.");
+                }
 
-            o.ProposeLineChanges(proposals, now, actorId, proposedPayment);
+                proposedPaymentTiming = parsedTiming;
+            }
+
+            o.ProposeLineChanges(proposals, now, actorId, proposedPayment, proposedPaymentTiming);
 
             if (_reservations is not null)
             {
@@ -2688,6 +2728,7 @@ public sealed class StartPreparingIncomingOrder
     private readonly IPurchaseOrderRepository? _buyerOrders;
     private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ConnectedPoInventoryReservationService? _reservations;
+    private readonly ISupplierPayableRepository? _payables;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2701,7 +2742,8 @@ public sealed class StartPreparingIncomingOrder
         IConnectedSupplierRelationshipRepository? relationships = null,
         IPurchaseOrderRepository? buyerOrders = null,
         ConnectedPoInventoryReservationService? reservations = null,
-        IBuyerSupplierProductLinkRepository? links = null)
+        IBuyerSupplierProductLinkRepository? links = null,
+        ISupplierPayableRepository? payables = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2712,6 +2754,7 @@ public sealed class StartPreparingIncomingOrder
         _buyerOrders = buyerOrders;
         _reservations = reservations;
         _links = links;
+        _payables = payables;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(Guid orgId, Guid id, CancellationToken ct = default)
@@ -2755,6 +2798,14 @@ public sealed class StartPreparingIncomingOrder
                 }
 
                 o.ReopenForRemainingFulfillment(_clock.GetUtcNow());
+            }
+
+            var payBeforeGate = await ConnectedPoPayBeforeFulfillmentGate
+                .EvaluateAsync(o, buyerPo, _buyerOrders, _payables, ct)
+                .ConfigureAwait(false);
+            if (!payBeforeGate.IsSatisfied)
+            {
+                return ConnectedPoPayBeforeFulfillmentGate.Fail<ConnectedPurchaseOrderDto>(payBeforeGate);
             }
 
             o.StartPreparing(_clock.GetUtcNow());
@@ -2822,6 +2873,7 @@ public sealed class MarkIncomingOrderFulfilled
     private readonly IPurchaseOrderRepository? _buyerOrders;
     private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ConnectedPurchaseOrderFulfillStock _fulfillStock;
+    private readonly ISupplierPayableRepository? _payables;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2835,7 +2887,8 @@ public sealed class MarkIncomingOrderFulfilled
         IOrganizationBusinessNotificationPublisher? notifications = null,
         IConnectedSupplierRelationshipRepository? relationships = null,
         IPurchaseOrderRepository? buyerOrders = null,
-        IBuyerSupplierProductLinkRepository? links = null)
+        IBuyerSupplierProductLinkRepository? links = null,
+        ISupplierPayableRepository? payables = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2846,6 +2899,7 @@ public sealed class MarkIncomingOrderFulfilled
         _relationships = relationships!;
         _buyerOrders = buyerOrders;
         _links = links;
+        _payables = payables;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2911,6 +2965,14 @@ public sealed class MarkIncomingOrderFulfilled
                 return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
                     ConnectedSupplierErrorCodes.NotFound,
                     "Relationship was not found.");
+            }
+
+            var payBeforeGate = await ConnectedPoPayBeforeFulfillmentGate
+                .EvaluateAsync(o, buyerPo, _buyerOrders, _payables, ct)
+                .ConfigureAwait(false);
+            if (!payBeforeGate.IsSatisfied)
+            {
+                return ConnectedPoPayBeforeFulfillmentGate.Fail<ConnectedPurchaseOrderDto>(payBeforeGate);
             }
 
             var utcNow = _clock.GetUtcNow();
@@ -3059,6 +3121,7 @@ public sealed class CloseIncomingOrderRemaining
                 .ConfigureAwait(false);
 
             var payables = new List<Domain.SupplierPayables.SupplierPayable>();
+            var pendingCheckAmount = 0m;
             if (_payables is not null)
             {
                 foreach (var receipt in receipts.Where(r => r.Status == GoodsReceiptStatus.Posted))
@@ -3070,9 +3133,17 @@ public sealed class CloseIncomingOrderRemaining
                             receipt.Id.Value,
                             ct)
                         .ConfigureAwait(false);
-                    if (payable is not null)
+                    if (payable is null)
                     {
-                        payables.Add(payable);
+                        continue;
+                    }
+
+                    payables.Add(payable);
+                    if (!ConnectedPoPostReceiptFinancialCompletion.CountsAsSettled(
+                            o.EffectivePaymentTerm,
+                            receipt.Settlement.CheckClearingStatus))
+                    {
+                        pendingCheckAmount += payable.PaidAtReceiptAmount;
                     }
                 }
             }
@@ -3089,6 +3160,14 @@ public sealed class CloseIncomingOrderRemaining
                 utcNow,
                 preview.RefundDue,
                 preview.AmountPaid);
+            ConnectedPoPostReceiptFinancialCompletion.Apply(
+                buyerPo,
+                o.EffectivePaymentTiming,
+                o.EffectivePaymentTerm,
+                preview.FinalAcceptedValue,
+                preview.AmountPaid,
+                utcNow,
+                pendingCheckAmount);
 
             if (_reservations is not null)
             {
@@ -3116,6 +3195,366 @@ public sealed class CloseIncomingOrderRemaining
                 o.BuyerPurchaseOrderId.Value.ToString("D"),
                 "Remaining quantity cancelled",
                 $"PO {poLabel} remaining quantity was cancelled. Settlement is based on goods actually received.",
+                ct).ConfigureAwait(false);
+
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                ConnectedSupplierMapper.Map(o, buyerPo: buyerPo, buyerReceipts: receipts));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed record ConfirmIncomingOrderSettlementRequest(
+    decimal? SettledAmount = null,
+    string? CheckClearingStatus = null);
+
+/// <summary>
+/// Seller confirms PayBefore settlement on the buyer PO (prepayment snapshot).
+/// For Check terms, clearing must be Cleared.
+/// </summary>
+public sealed class ConfirmIncomingOrderSettlement
+{
+    private readonly IConnectedPurchaseOrderRepository _orders;
+    private readonly IPurchaseOrderRepository _buyerOrders;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+
+    public ConfirmIncomingOrderSettlement(
+        IConnectedPurchaseOrderRepository orders,
+        IPurchaseOrderRepository buyerOrders,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        TimeProvider? clock = null)
+    {
+        _orders = orders;
+        _buyerOrders = buyerOrders;
+        _uow = uow;
+        _access = access;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
+        Guid orgId,
+        Guid id,
+        ConfirmIncomingOrderSettlementRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var o = await _orders.GetAsync(ConnectedPurchaseOrderId.From(id), ct).ConfigureAwait(false);
+        if (o is null || o.SupplierOrganizationId != PosOrganizationId.From(orgId))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierErrorCodes.IncomingOrderNotFound, "Incoming order was not found.");
+        }
+
+        if (o.EffectivePaymentTiming != ConnectedPoPaymentTiming.PayBeforeFulfillment)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Settlement confirmation applies only when payment timing is Pay before fulfillment.");
+        }
+
+        if (o.EffectivePaymentTerm == ConnectedPoPaymentTerm.Check)
+        {
+            if (!UtangCheckClearingStatuses.TryParse(request.CheckClearingStatus, out var clearing)
+                || clearing != UtangCheckClearingStatus.Cleared)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierDomainErrorCodes.PaymentRequiredBeforeFulfillment,
+                    "Check payment must be Cleared before fulfillment settlement can be confirmed.");
+            }
+        }
+
+        try
+        {
+            var buyerPo = await _buyerOrders
+                .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                .ConfigureAwait(false);
+            if (buyerPo is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Buyer purchase order was not found.");
+            }
+
+            var required = SaleMoney.RoundMoney(
+                o.ConfirmedTotalAmount > 0m ? o.ConfirmedTotalAmount : o.TotalAmount);
+            var amount = request.SettledAmount is decimal explicitAmount
+                ? SaleMoney.RoundMoney(explicitAmount)
+                : required;
+            if (amount + 0.0000001m < required)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ConnectedSupplierDomainErrorCodes.PaymentRequiredBeforeFulfillment,
+                    "Settled amount must cover the confirmed purchase order total.");
+            }
+
+            buyerPo.RecordSettledPrepayment(amount, _clock.GetUtcNow());
+            await _buyerOrders.UpdateAsync(buyerPo, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+            return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                ConnectedSupplierMapper.Map(o, buyerPo: buyerPo));
+        }
+        catch (DomainException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
+public sealed record ConfirmIncomingOrderReceiptSettlementRequest(
+    decimal? SettledAmount = null,
+    string? PaymentMethod = null,
+    string? Reference = null,
+    string? SellerRemarks = null,
+    string? CheckClearingStatus = null);
+
+/// <summary>
+/// Seller confirms pay-on-delivery/receipt settlement after the buyer confirmed goods receipt.
+/// Goods stay Received; this closes the commercial settlement gate (AwaitingPayment → Settled).
+/// </summary>
+public sealed class ConfirmIncomingOrderReceiptSettlement
+{
+    private readonly IConnectedPurchaseOrderRepository _orders;
+    private readonly IPurchaseOrderRepository _buyerOrders;
+    private readonly ISupplierPayableRepository? _payables;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
+    private readonly IPosUnitOfWork _uow;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+    private readonly ILogger<ConfirmIncomingOrderReceiptSettlement>? _logger;
+
+    public ConfirmIncomingOrderReceiptSettlement(
+        IConnectedPurchaseOrderRepository orders,
+        IPurchaseOrderRepository buyerOrders,
+        IPosUnitOfWork uow,
+        IPosCommercialAccessAccessor access,
+        ISupplierPayableRepository? payables = null,
+        IOrganizationBusinessNotificationPublisher? notifications = null,
+        TimeProvider? clock = null,
+        ILogger<ConfirmIncomingOrderReceiptSettlement>? logger = null)
+    {
+        _orders = orders;
+        _buyerOrders = buyerOrders;
+        _uow = uow;
+        _access = access;
+        _payables = payables;
+        _notifications = notifications ?? new NoOpOrganizationBusinessNotificationPublisher();
+        _clock = clock ?? TimeProvider.System;
+        _logger = logger;
+    }
+
+    public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
+        Guid orgId,
+        Guid id,
+        Guid actorId,
+        ConfirmIncomingOrderReceiptSettlementRequest request,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        if (actorId == Guid.Empty)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ApplicationErrorCodes.ActorRequired,
+                "An actor identifier is required to confirm settlement.");
+        }
+
+        var o = await _orders.GetAsync(ConnectedPurchaseOrderId.From(id), ct).ConfigureAwait(false);
+        if (o is null || o.SupplierOrganizationId != PosOrganizationId.From(orgId))
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierErrorCodes.IncomingOrderNotFound, "Incoming order was not found.");
+        }
+
+        if (o.EffectivePaymentTiming != ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Payment confirmation applies only when payment timing is Pay on delivery or receipt.");
+        }
+
+        try
+        {
+            var buyerPo = await _buyerOrders
+                .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                .ConfigureAwait(false);
+            if (buyerPo is null)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Buyer purchase order was not found.");
+            }
+
+            var receipts = await _buyerOrders
+                .ListGoodsReceiptsForPurchaseOrderAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                .ConfigureAwait(false);
+
+            if (buyerPo.FinancialSettlementStatus == ConnectedPoFinancialSettlementStatus.Settled)
+            {
+                // Idempotent: settlement was already confirmed.
+                return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
+                    ConnectedSupplierMapper.Map(o, buyerPo: buyerPo, buyerReceipts: receipts));
+            }
+
+            if (buyerPo.Status != PurchaseOrderStatus.Received
+                || buyerPo.FinancialSettlementStatus != ConnectedPoFinancialSettlementStatus.AwaitingPayment)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderNotAwaitingPayment,
+                    "Payment can be confirmed only after the buyer confirmed receipt and payment is still due.");
+            }
+
+            if (!Domain.SupplierPayables.SupplierPayablePaymentMethods.TryParse(
+                    request.PaymentMethod,
+                    out var paymentMethod))
+            {
+                paymentMethod = Domain.SupplierPayables.SupplierPayablePaymentMethod.Cash;
+            }
+
+            if (paymentMethod == Domain.SupplierPayables.SupplierPayablePaymentMethod.Check
+                && (!UtangCheckClearingStatuses.TryParse(request.CheckClearingStatus, out var clearing)
+                    || clearing != UtangCheckClearingStatus.Cleared))
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderSettlementCheckNotCleared,
+                    "A check payment must be Cleared before settlement can be confirmed.");
+            }
+
+            var payables = new List<Domain.SupplierPayables.SupplierPayable>();
+            if (_payables is not null)
+            {
+                foreach (var receipt in receipts.Where(r => r.Status == GoodsReceiptStatus.Posted))
+                {
+                    var payable = await _payables
+                        .FindBySourceAsync(
+                            o.BuyerOrganizationId,
+                            Domain.SupplierPayables.SupplierPayableSourceType.GoodsReceipt,
+                            receipt.Id.Value,
+                            ct)
+                        .ConfigureAwait(false);
+                    if (payable is not null)
+                    {
+                        payables.Add(payable);
+                    }
+                }
+            }
+
+            var before = ConnectedPoShortCloseSettlement.Compute(
+                buyerPo,
+                payables,
+                treatOutstandingAsCancelled: false);
+            var remainingDue = before.BalanceDue;
+            if (remainingDue <= 0m)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderSettlementNothingDue,
+                    "There is no remaining amount due on this purchase order.");
+            }
+
+            var amount = SaleMoney.RoundMoney(request.SettledAmount ?? remainingDue);
+            if (amount <= 0m)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderSettlementAmountInvalid,
+                    "Settlement amount must be greater than zero.");
+            }
+
+            if (amount > remainingDue)
+            {
+                return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                    ApplicationErrorCodes.PurchaseOrderSettlementAmountInvalid,
+                    "Settlement amount cannot exceed the remaining amount due.");
+            }
+
+            var utcNow = _clock.GetUtcNow();
+            var unapplied = amount;
+            foreach (var payable in payables
+                .Where(p => p.Status != Domain.SupplierPayables.SupplierPayableStatus.Voided && p.Balance > 0m)
+                .OrderBy(p => p.CreatedAtUtc))
+            {
+                if (unapplied <= 0m)
+                {
+                    break;
+                }
+
+                var applied = SaleMoney.RoundMoney(Math.Min(unapplied, payable.Balance));
+                payable.ApplyPayment(
+                    applied,
+                    paymentMethod,
+                    actorId,
+                    utcNow,
+                    reference: request.Reference,
+                    notes: request.SellerRemarks);
+                await _payables!.UpdateAsync(payable, ct).ConfigureAwait(false);
+                unapplied = SaleMoney.RoundMoney(unapplied - applied);
+            }
+
+            // Remainder has no open payable row (e.g. payables not tracked) — keep the PO snapshot authoritative.
+            buyerPo.RecordPostReceiptSettlementPayment(unapplied, utcNow, request.SellerRemarks);
+
+            var after = ConnectedPoShortCloseSettlement.Compute(
+                buyerPo,
+                payables,
+                treatOutstandingAsCancelled: false);
+            buyerPo.ApplyCompletionSettlement(
+                after.FinalAcceptedValue,
+                after.CancelledRemainingValue,
+                after.RefundDue,
+                after.AmountPaid,
+                utcNow);
+
+            var fullySettled = after.BalanceDue <= 0m;
+            if (fullySettled)
+            {
+                buyerPo.MarkFinanciallySettled(actorId, utcNow, request.SellerRemarks);
+            }
+
+            await _buyerOrders.UpdateAsync(buyerPo, ct).ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+
+            _logger?.LogInformation(
+                "Connected PO settlement recorded. CpoId={ConnectedPurchaseOrderId} PoId={PurchaseOrderId} Actor={ActorId} Amount={Amount} RemainingDue={RemainingDue} Settled={Settled}",
+                o.Id.Value,
+                buyerPo.Id.Value,
+                actorId,
+                amount,
+                after.BalanceDue,
+                fullySettled);
+
+            var poLabel = o.BuyerPoNumber ?? o.BuyerPurchaseOrderId.Value.ToString("D");
+            await _notifications.PublishAsync(
+                orgId,
+                o.BuyerOrganizationId.Value,
+                fullySettled
+                    ? ConnectedPurchaseOrderNotificationTypes.SettlementConfirmed
+                    : ConnectedPurchaseOrderNotificationTypes.PaymentRecorded,
+                o.BuyerPurchaseOrderId.Value.ToString("D"),
+                fullySettled ? "Payment confirmed" : "Payment recorded",
+                fullySettled
+                    ? $"Supplier confirmed settlement for PO {poLabel}."
+                    : $"Supplier recorded a partial payment for PO {poLabel}.",
                 ct).ConfigureAwait(false);
 
             return ApplicationResult<ConnectedPurchaseOrderDto>.Success(

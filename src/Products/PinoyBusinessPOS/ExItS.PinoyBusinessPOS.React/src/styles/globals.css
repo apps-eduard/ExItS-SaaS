@@ -6713,24 +6713,30 @@ html:has(.admin-shell) #root {
 
 .inventory-row__aside {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   flex-shrink: 0;
   align-items: center;
-  gap: 0.35rem;
-  max-width: 42%;
+  gap: 0;
+  min-width: 0;
+  text-align: center;
 }
 
 .inventory-row__qty {
   display: inline-flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-end;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
-  padding: 0;
-  background: transparent;
-  font-size: var(--exits-text-sm);
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: var(--exits-primary-soft);
+  font-size: calc(var(--exits-text-sm) * 0.9);
   font-weight: 700;
   line-height: 1.15;
-  color: var(--exits-text);
+  color: var(--exits-primary);
 }
 
 .inventory-row__qty--muted {
@@ -6741,12 +6747,14 @@ html:has(.admin-shell) #root {
 }
 
 .inventory-row__qty--warn {
-  background: transparent;
+  border-color: color-mix(in srgb, var(--exits-warning) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-warning) 10%, var(--exits-surface));
   color: var(--exits-warning);
 }
 
 .inventory-row__qty--danger {
-  background: transparent;
+  border-color: color-mix(in srgb, var(--exits-danger) 45%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger) 10%, var(--exits-surface));
   color: var(--exits-danger);
 }
 

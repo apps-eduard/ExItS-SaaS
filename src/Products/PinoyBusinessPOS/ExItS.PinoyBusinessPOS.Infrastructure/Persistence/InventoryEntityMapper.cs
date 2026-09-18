@@ -18,7 +18,8 @@ internal static class InventoryEntityMapper
             record.OnHandQuantity,
             record.CreatedAtUtc,
             record.UpdatedAtUtc,
-            record.ReservedQuantity);
+            record.ReservedQuantity,
+            record.PendingReturnQuantity);
 
     public static InventoryAccountRecord ToRecord(InventoryAccount account) =>
         new()
@@ -31,6 +32,7 @@ internal static class InventoryEntityMapper
             ReorderQuantity = account.ReorderQuantity,
             OnHandQuantity = account.OnHandQuantity,
             ReservedQuantity = account.ReservedQuantity,
+            PendingReturnQuantity = account.PendingReturnQuantity,
             CreatedAtUtc = account.CreatedAtUtc,
             UpdatedAtUtc = account.UpdatedAtUtc
         };
@@ -42,6 +44,7 @@ internal static class InventoryEntityMapper
         record.ReorderQuantity = account.ReorderQuantity;
         record.OnHandQuantity = account.OnHandQuantity;
         record.ReservedQuantity = account.ReservedQuantity;
+        record.PendingReturnQuantity = account.PendingReturnQuantity;
         record.UpdatedAtUtc = account.UpdatedAtUtc;
     }
 

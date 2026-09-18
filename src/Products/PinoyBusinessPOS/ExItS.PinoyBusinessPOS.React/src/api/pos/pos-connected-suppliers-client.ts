@@ -848,6 +848,10 @@ export const connectedSupplierCommerceReadinessSchema = z.object({
   requirements: z.array(commerceReadinessRequirementSchema).nullable().optional(),
   /** Buyer-safe categories only; empty when ready. Never internal checklist details. */
   blockerCategories: z.array(z.string()).nullable().optional().default([]),
+  allowPayBeforeFulfillment: z.boolean().optional().default(true),
+  allowPayOnDeliveryOrReceipt: z.boolean().optional().default(true),
+  allowSupplierCredit: z.boolean().optional().default(false),
+  defaultPaymentTiming: z.string().optional().default("PayBeforeFulfillment"),
 });
 
 export type ConnectedSupplierCommerceReadiness = z.infer<
@@ -1638,6 +1642,12 @@ export const connectedPurchaseOrderSchema = z.object({
   refundDueAmount: z.number().optional().default(0),
   amountPaid: z.number().optional().default(0),
   balanceDue: z.number().optional().default(0),
+  /** NotRequired | AwaitingPayment | Settled — commercial settlement gate on the buyer PO. */
+  financialSettlementStatus: z.string().optional().default("NotRequired"),
+  remainingDueAmount: z.number().optional().default(0),
+  sellerSettlementRemarks: z.string().nullable().optional(),
+  financiallySettledAtUtc: isoDateSchema.nullable().optional(),
+  buyerReceiptRemarks: z.string().nullable().optional(),
 });
 
 export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
@@ -1769,6 +1779,36 @@ export async function closeIncomingOrderRemaining(
     signal,
     path,
     body: { reason: input.reason },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function confirmIncomingOrderReceiptSettlement(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    settledAmount?: number | null;
+    paymentMethod?: string | null;
+    reference?: string | null;
+    sellerRemarks?: string | null;
+    checkClearingStatus?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/confirm-receipt-settlement`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      settledAmount: input.settledAmount ?? null,
+      paymentMethod: input.paymentMethod ?? null,
+      reference: input.reference ?? null,
+      sellerRemarks: input.sellerRemarks ?? null,
+      checkClearingStatus: input.checkClearingStatus ?? null,
+    },
   });
   return connectedPurchaseOrderSchema.parse(raw);
 }

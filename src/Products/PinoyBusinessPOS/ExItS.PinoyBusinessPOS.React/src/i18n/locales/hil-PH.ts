@@ -2098,9 +2098,13 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "connected.shareSummaryAllEligible": "{shared} available of {eligible} eligible (all eligible shared by default)",
 
+  "connected.shareSummaryBuyerVisibilityHelp":
+    "Only inventory-tracked eligible products are visible to the buyer. A Shared status alone does not mean the buyer can see it.",
+  "connected.shareSummary.dismiss": "Dismiss share summary",
+
   "connected.customerDiscountBanner": "Customer pricing: {percent}% off selling price",
 
-  "connected.sellingPriceBaselineBanner": "Customer price uses each product selling price (no extra discount).",
+  "connected.sellingPriceBaselineBanner": "Customer price uses each product's selling price (no extra discount).",
 
   "connected.listPrice": "Selling price",
 
@@ -2648,6 +2652,38 @@ export const hilPH: Record<keyof typeof en, string> = {
   "customers.business.deliveryAllowanceOrgOff":
     "Delivery is not currently offered by your organization.",
   "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
+  "customers.business.connectedCommerce.paymentTimingTitle": "Payment timing",
+  "customers.business.connectedCommerce.paymentTimingHelp":
+    "Use organization defaults, or restrict timings for this customer. Customers cannot enable a timing disabled globally.",
+  "customers.business.connectedCommerce.openOrgSettings": "Org Connected Commerce",
+  "customers.business.connectedCommerce.useOrgDefaults": "Use organization payment timing defaults",
+  "customers.business.connectedCommerce.useOrgDefaultsOn":
+    "This customer inherits organization allowed timings and default.",
+  "customers.business.connectedCommerce.useOrgDefaultsOff":
+    "This customer may further restrict allowed timings and choose a customer default.",
+  "customers.business.connectedCommerce.overrideNoAlert":
+    "Customer overrides are intentional and do not create Needs Attention alerts.",
+  "customers.business.connectedCommerce.timingDisabledGlobally": "Disabled by organization settings.",
+  "customers.business.connectedCommerce.effective": "Effective",
+  "customers.business.connectedCommerce.notEffective": "Off",
+  "customers.business.connectedCommerce.effectiveDefault": "Effective default: {timing}",
+  "customers.business.connectedCommerce.pricingTitle": "B2B pricing overrides",
+  "customers.business.connectedCommerce.pricingHelp":
+    "Nullable fields inherit organization pricing. Precedence: customer category → customer default → org category → org default → base price. No stacking.",
+  "customers.business.connectedCommerce.orgDefaultDiscount": "Organization default discount: {n}%",
+  "customers.business.connectedCommerce.customerDefaultDiscount": "Customer default discount (%)",
+  "customers.business.connectedCommerce.inheritPlaceholder": "Inherit organization default",
+  "customers.business.connectedCommerce.categoryOverrides": "Category discount overrides",
+  "customers.business.connectedCommerce.noCategoryOverrides": "No customer category overrides.",
+  "customers.business.connectedCommerce.addCategory": "Category",
+  "customers.business.connectedCommerce.selectCategory": "Select category…",
+  "customers.business.connectedCommerce.addRule": "Add rule",
+  "customers.business.connectedCommerce.saved": "Customer Connected Commerce settings saved.",
+  "customers.business.connectedCommerce.saveFailed": "Could not save customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.loadFailed": "Could not load customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.invalidDiscount": "Discount must be between 0 and 100.",
+  "connectedCommerce.addCategoryRule": "Add category rule",
+  "connectedCommerce.selectCategory": "Select category…",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
@@ -3847,6 +3883,8 @@ export const hilPH: Record<keyof typeof en, string> = {
   "inventory.availableQty": "{qty} {uom} available",
 
   "inventory.reservedBadge": "{qty} reserved",
+  "inventory.returnsPendingBadge": "{qty} returns pending",
+  "inventory.availableLabel": "available",
 
   "inventory.viewReservations": "Tan-awa ang reservations",
 
@@ -6975,6 +7013,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "admin.nav.devices": "Devices",
 
   "admin.nav.cashHandling": "Cash Handling",
+  "admin.nav.connectedCommerce": "Connected Commerce",
 
   "admin.nav.businessQr": "Business QR",
 
@@ -7718,6 +7757,74 @@ export const hilPH: Record<keyof typeof en, string> = {
   "personal.explore.payments.onlineBanking": "Online Banking",
   "personal.explore.payments.comingSoon": "Coming soon",
   "admin.nav.paymentMethods": "Payment methods",
+  "connectedCommerce.title": "Connected Commerce",
+  "connectedCommerce.lede":
+    "Organization defaults for B2B fulfillment, payments, pricing, and orders. Branch and customer details stay in their canonical pages.",
+  "connectedCommerce.tabsLabel": "Connected Commerce sections",
+  "connectedCommerce.tab.overview": "Overview",
+  "connectedCommerce.tab.fulfillment": "Fulfillment",
+  "connectedCommerce.tab.payments": "Payments",
+  "connectedCommerce.tab.catalog": "Catalog & Pricing",
+  "connectedCommerce.tab.orders": "Orders",
+  "connectedCommerce.tab.documents": "Documents & Compliance",
+  "connectedCommerce.orgRequired": "Organization required",
+  "connectedCommerce.orgRequiredDetail": "Bind an organization workspace to manage Connected Commerce settings.",
+  "connectedCommerce.summary.fulfillment": "Fulfillment",
+  "connectedCommerce.summary.payments": "Payments",
+  "connectedCommerce.summary.catalog": "Catalog / Pricing",
+  "connectedCommerce.summary.customers": "Connected customers",
+  "connectedCommerce.summary.onlinePayments": "Platform online payments",
+  "connectedCommerce.summary.documents": "Documents / BIR",
+  "connectedCommerce.optionalReady": "Default {n}% (optional)",
+  "connectedCommerce.offerDeliveryOn": "Offer Delivery ON",
+  "connectedCommerce.offerDeliveryOff": "Offer Delivery OFF",
+  "connectedCommerce.linkBranches": "Review branch fulfillment setup",
+  "connectedCommerce.linkPaymentMethods": "Review accepted payment methods",
+  "connectedCommerce.branchReadinessHelp":
+    "Pickup and Delivery readiness remain on each branch fulfillment page. Use Manage fulfillment to open Branches.",
+  "connectedCommerce.platformUnknown": "Unknown",
+  "connectedCommerce.incompleteTitle": "Actionable items",
+  "connectedCommerce.informational": "informational",
+  "connectedCommerce.open": "Open",
+  "connectedCommerce.offerDelivery": "Offer Delivery",
+  "connectedCommerce.offerDeliveryHelp":
+    "When OFF, Delivery is N/A globally and buyers cannot select Delivery. Branch delivery config is preserved.",
+  "connectedCommerce.customerDeliveryNote":
+    "Individual connected customers may be restricted from Delivery on their Business Customer page.",
+  "connectedCommerce.branchReadiness": "Branch readiness",
+  "connectedCommerce.noBranches": "No branches available.",
+  "connectedCommerce.pickup": "Pickup",
+  "connectedCommerce.delivery": "Delivery",
+  "connectedCommerce.manageFulfillment": "Manage fulfillment",
+  "connectedCommerce.paymentTiming": "Payment timing",
+  "connectedCommerce.paymentTimingHelp":
+    "Choose which timings connected purchase orders may use. Default must be one of the enabled timings.",
+  "connectedCommerce.timing.payBefore": "Pay in advance",
+  "connectedCommerce.timing.payOnDelivery": "Pay on delivery",
+  "connectedCommerce.timing.supplierCredit": "Supplier Utang",
+  "connectedCommerce.defaultTiming": "Default timing",
+  "connectedCommerce.acceptedMethods": "Accepted payment methods",
+  "connectedCommerce.managePaymentMethods": "Manage payment methods",
+  "connectedCommerce.onlinePayments": "Online supplier payments",
+  "connectedCommerce.onlinePaymentsReadonly": "Managed by ExItS Platform Admin. Organizations cannot override this gate.",
+  "connectedCommerce.catalogHelp":
+    "These prices are used as defaults for connected business customers. Customer-specific pricing can override these rules.",
+  "connectedCommerce.defaultDiscount": "Default B2B discount (%)",
+  "connectedCommerce.categoryRules": "Category pricing",
+  "connectedCommerce.categoryRulesCount": "{n} categories with overrides",
+  "connectedCommerce.noCategoryRules": "No category rules yet. Add rules after selecting seller categories.",
+  "connectedCommerce.removeRule": "Remove",
+  "connectedCommerce.proposalHoldHours": "Proposal stock reservation duration (hours)",
+  "connectedCommerce.ordersRules":
+    "Reservations reduce Available stock, not On hand. Proposals expire and release stock. Confirmed reservations remain until fulfilled or cancelled.",
+  "connectedCommerce.birStatus": "BIR / official documents",
+  "connectedCommerce.birReadonly": "Platform-controlled. Organization cannot self-approve.",
+  "connectedCommerce.documentPrefs": "Document & printing preferences",
+  "connectedCommerce.documentPrefsDevice": "Current print preferences are device-local (This device), not organization-wide.",
+  "connectedCommerce.openDocuments": "Open Documents & Printing",
+  "connectedCommerce.save": "Save",
+  "connectedCommerce.saved": "Connected Commerce settings saved.",
+  "connectedCommerce.saveFailed": "Could not save Connected Commerce settings.",
   "paymentMethods.title": "Payment methods",
   "paymentMethods.lede": "Choose how your stores accept payment. Online providers stay Coming soon until integrated.",
   "paymentMethods.builtIn": "Built-in",
@@ -9523,6 +9630,9 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.createOrder": "Create purchase order",
 
   "purchasing.createTitle": "New purchase order",
+  "purchasing.editTitle": "Edit purchase order",
+  "purchasing.editOrder": "Edit order",
+  "purchasing.saveOrder": "Save order",
 
   "purchasing.damaged": "Damaged",
 
@@ -9662,6 +9772,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.completed": "Fully received",
   "purchasing.activity.remainingClosed": "Remaining quantity cancelled",
+  "purchasing.activity.awaitingPayment": "Awaiting payment",
+  "purchasing.activity.paymentConfirmed": "Payment confirmed",
+  "purchasing.activity.noPaymentDue": "No payment due",
 
   "purchasing.activity.empty": "No activity yet.",
 
@@ -9789,6 +9902,9 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethodIntendedHelp":
     "Choose the intended payment method for this order. This does not mean payment has been received.",
+  "purchasing.paymentTiming": "Payment timing",
+  "purchasing.paymentTimingHelp": "Choose when payment is due for this connected purchase order.",
+  "purchasing.paymentTimingRequired": "Select a payment timing.",
 
   "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
 
@@ -10815,6 +10931,31 @@ export const hilPH: Record<keyof typeof en, string> = {
   "returns.back": "Balik sa returns",
 
   "returns.backToEdit": "Balik sa pag-edit",
+  "returns.returnsPending": "Returns pending",
+  "returns.returnsProcessed": "Returns processed",
+  "returns.statusCompletedReturnsPending": "Completed · Returns pending",
+  "returns.statusCompletedReturnsProcessed": "Completed · Returns processed",
+  "returns.returnedItems": "Returned items",
+  "returns.pendingInspection": "Pending inspection",
+  "returns.classified": "Classified",
+  "returns.process": "Process",
+  "returns.returnInspection": "Return inspection",
+  "returns.returnedQuantity": "Returned quantity",
+  "returns.sellableAgain": "Sellable again",
+  "returns.damagedWriteOff": "Damaged / write-off",
+  "returns.totalClassified": "Total classified must match returned quantity.",
+  "returns.saveClassification": "Save classification",
+  "returns.reviewReturn": "Review return",
+  "returns.finalizeReturns": "Finalize returns",
+  "returns.inventoryImpact": "Inventory impact",
+  "returns.financialImpact": "Financial impact",
+  "returns.originalSaleTotal": "Original sale total",
+  "returns.amountPreviouslyPaid": "Amount previously paid",
+  "returns.remainingAmountDue": "Remaining amount due",
+  "returns.refundRemaining": "Refund remaining",
+  "returns.recordRefund": "Record refund",
+  "returns.refundReference": "Refund reference",
+  "returns.refundDue": "Refund due",
 
   "returns.cannotReturn": "Indi ma-return ini nga transaction.",
 
@@ -13231,4 +13372,31 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.incomingKindBuyerRequest": "Buyer request",
   "connected.incomingKindSupplierInvite": "Supplier invitation",
   "connected.reviewAndAccept": "Review & accept",
+  "returns.connectedPo.sectionTitle": "Supplier returns",
+  "returns.connectedPo.returnItems": "Return items to supplier",
+  "returns.connectedPo.requestTitle": "Return to supplier",
+  "returns.connectedPo.requestLede": "Select the received items you are sending back.",
+  "returns.connectedPo.returnableQty": "Available to return",
+  "returns.connectedPo.receivedQty": "Received",
+  "returns.connectedPo.alreadyReturned": "Already returned",
+  "returns.connectedPo.noReturnableLines": "No received items are available to return.",
+  "returns.connectedPo.blocked": "This purchase order cannot be returned yet.",
+  "returns.connectedPo.submitRequest": "Send return request",
+  "returns.connectedPo.requestSent": "Return request sent to the supplier.",
+  "returns.connectedPo.sellerInboxTitle": "Incoming buyer returns",
+  "returns.connectedPo.sellerInboxEmpty": "No buyer returns are waiting.",
+  "returns.connectedPo.process": "Process",
+  "returns.connectedPo.markReceived": "Confirm goods received",
+  "returns.connectedPo.awaitingSellerReceipt": "Awaiting supplier receipt",
+  "returns.connectedPo.statusReturnsPending": "Returns pending",
+  "returns.connectedPo.statusReturnsProcessed": "Returns processed",
+  "returns.connectedPo.poNumber": "PO number",
+  "returns.connectedPo.returnValue": "Return value",
+  "returns.connectedPo.refundDue": "Refund due",
+  "returns.connectedPo.recordRefund": "Record refund",
+  "returns.connectedPo.inspect": "Inspect",
+  "returns.connectedPo.reviewAndFinalize": "Review and finalize",
+  "returns.connectedPo.loadError": "Could not load the supplier return.",
+  "returns.connectedPo.processTitle": "Process buyer return",
+  "returns.connectedPo.refundAmountInvalid": "Enter a refund amount greater than zero.",
 };

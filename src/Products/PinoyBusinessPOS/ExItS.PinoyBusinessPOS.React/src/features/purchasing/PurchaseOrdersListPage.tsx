@@ -78,6 +78,10 @@ export function purchaseOrderListStatusTone(po: PosPurchaseOrderDto): StatusChip
   if (normalized === "waitingforsupplier" || normalized.startsWith("waiting")) {
     return "primary";
   }
+  // Goods received but settlement still due — not a success state.
+  if (normalized === "receivedawaitingpayment") {
+    return "warning";
+  }
 
   switch (po.status) {
     case "Ordered":

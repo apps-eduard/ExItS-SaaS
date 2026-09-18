@@ -361,7 +361,8 @@ public sealed class InventoryQueryService
             row.CategoryName,
             row.MonitoringMode,
             row.BranchReserved,
-            available);
+            available,
+            row.BranchPendingReturn);
     }
 
     public static PosInventoryAccountDto Map(
@@ -424,7 +425,8 @@ public sealed class InventoryQueryService
             null,
             "BranchDefault",
             reserved,
-            available);
+            available,
+            0m);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)

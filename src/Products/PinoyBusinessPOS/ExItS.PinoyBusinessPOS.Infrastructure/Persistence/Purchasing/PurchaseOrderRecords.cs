@@ -34,6 +34,7 @@ internal sealed class PurchaseOrderRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int PaymentTerm { get; set; }
+    public int PaymentTiming { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
     public Guid? IntendedReceivingBranchId { get; set; }
@@ -44,6 +45,10 @@ internal sealed class PurchaseOrderRecord
     public decimal? CancelledRemainingValue { get; set; }
     public decimal RefundDueAmount { get; set; }
     public decimal? AmountPaidSnapshot { get; set; }
+    public int FinancialSettlementStatus { get; set; }
+    public string? SellerSettlementRemarks { get; set; }
+    public DateTimeOffset? FinanciallySettledAtUtc { get; set; }
+    public Guid? FinanciallySettledBy { get; set; }
     public uint Xmin { get; set; }
 }
 

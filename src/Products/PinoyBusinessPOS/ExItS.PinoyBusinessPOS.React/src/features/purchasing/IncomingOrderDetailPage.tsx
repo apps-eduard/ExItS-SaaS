@@ -7,6 +7,7 @@ import { describePosApiError } from "@/access/pos-commercial-errors";
 import {
   acceptIncomingOrder,
   closeIncomingOrderRemaining,
+  confirmIncomingOrderReceiptSettlement,
   declineIncomingOrder,
   fulfillIncomingOrder,
   getIncomingOrder,
@@ -28,7 +29,7 @@ import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
-import { incomingOrderStatusTone } from "@/features/purchasing/incoming-orders-helpers";
+import { incomingOrderStatusTone, isIncomingOrderAwaitingPayment } from "@/features/purchasing/incoming-orders-helpers";
 import {
   buildIncomingOrderExportModel,
   downloadIncomingOrderCsv,
@@ -85,6 +86,8 @@ function statusLabel(t: (key: MessageKey) => string, status: string, displayStat
       return t("incomingOrders.statusCompleted");
     case "CompletedRemainingCancelled":
       return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedAwaitingPayment":
+      return t("incomingOrders.statusReceivedAwaitingPayment");
     case "ReceivedWithIssues":
       return t("incomingOrders.statusReceivedWithIssues");
     case "PartiallyReceived":
@@ -201,6 +204,12 @@ export function IncomingOrderDetailPage() {
   const [showMarkRemainingConfirm, setShowMarkRemainingConfirm] = useState(false);
   const [showCloseRemaining, setShowCloseRemaining] = useState(false);
   const [closeRemainingReason, setCloseRemainingReason] = useState("");
+  const [showConfirmPayment, setShowConfirmPayment] = useState(false);
+  const [settlementAmount, setSettlementAmount] = useState("");
+  const [settlementMethod, setSettlementMethod] = useState("Cash");
+  const [settlementReference, setSettlementReference] = useState("");
+  const [settlementSellerRemarks, setSettlementSellerRemarks] = useState("");
+  const [settlementCheckCleared, setSettlementCheckCleared] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -312,6 +321,35 @@ export function IncomingOrderDetailPage() {
     },
   });
 
+  const confirmPaymentMutation = useMutation({
+    mutationFn: () => {
+      const parsed = Number.parseFloat(settlementAmount);
+      return confirmIncomingOrderReceiptSettlement(workspace!, connectedPurchaseOrderId!, {
+        settledAmount: Number.isFinite(parsed) ? parsed : null,
+        paymentMethod: settlementMethod,
+        reference: settlementReference.trim() || null,
+        sellerRemarks: settlementSellerRemarks.trim() || null,
+        checkClearingStatus:
+          settlementMethod === "Check" ? (settlementCheckCleared ? "Cleared" : "PendingClearing") : null,
+      });
+    },
+    onSuccess: async () => {
+      setActionError(null);
+      setShowConfirmPayment(false);
+      setSettlementReference("");
+      setSettlementSellerRemarks("");
+      setSettlementCheckCleared(false);
+      showToast({
+        title: t("incomingOrders.settlementConfirmed"),
+        tone: "success",
+      });
+      await refresh();
+    },
+    onError: (err) => {
+      setActionError(describePosApiError(err, t, "incomingOrders.actionFailed"));
+    },
+  });
+
   const proposeMutation = useMutation({
     mutationFn: (lines: Array<{ productId: string; proposedQty: number; unavailable: boolean }>) =>
       proposeIncomingOrderChanges(workspace!, connectedPurchaseOrderId!, { lines }),
@@ -342,6 +380,7 @@ export function IncomingOrderDetailPage() {
     prepareMutation.isPending ||
     fulfillMutation.isPending ||
     closeRemainingMutation.isPending ||
+    confirmPaymentMutation.isPending ||
     proposeMutation.isPending ||
     withdrawProposalMutation.isPending;
 
@@ -615,6 +654,175 @@ export function IncomingOrderDetailPage() {
               {t("incomingOrders.closeRemainingReason")}: {order.remainingClosedReason.trim()}
             </p>
           ) : null}
+        </Card>
+      ) : null}
+
+      {isIncomingOrderAwaitingPayment(order) ? (
+        <Card className="flex flex-col gap-3 p-3" data-testid="incoming-order-awaiting-payment">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="m-0 font-medium">{t("incomingOrders.awaitingPaymentTitle")}</p>
+            <StatusChip tone="warning">{t("incomingOrders.statusReceivedAwaitingPayment")}</StatusChip>
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("incomingOrders.awaitingPaymentSellerBody")}
+          </p>
+          <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.orderTotal")}</dt>
+              <dd className="m-0">
+                <MoneyDisplay
+                  amount={
+                    order.confirmedTotalAmount > 0 ? order.confirmedTotalAmount : order.totalAmount
+                  }
+                />
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.goodReceivedValue")}</dt>
+              <dd className="m-0 font-medium">
+                <MoneyDisplay amount={order.finalAcceptedValue ?? 0} />
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.paymentReceived")}</dt>
+              <dd className="m-0">
+                <MoneyDisplay amount={order.amountPaid ?? 0} />
+              </dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>{t("incomingOrders.remainingDue")}</dt>
+              <dd className="m-0 font-medium">
+                <MoneyDisplay
+                  amount={order.remainingDueAmount ?? order.balanceDue ?? 0}
+                />
+              </dd>
+            </div>
+            {(order.cancelledRemainingValue ?? 0) > 0 ? (
+              <div className="flex justify-between gap-2">
+                <dt>{t("incomingOrders.cancelledRemaining")}</dt>
+                <dd className="m-0">
+                  <MoneyDisplay amount={order.cancelledRemainingValue ?? 0} />
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+          {order.buyerReceiptRemarks?.trim() ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("incomingOrders.buyerReceiptRemarks")}: {order.buyerReceiptRemarks.trim()}
+            </p>
+          ) : null}
+          {canAct && !showConfirmPayment ? (
+            <Button
+              type="button"
+              data-testid="incoming-order-confirm-payment-btn"
+              onClick={() => {
+                setSettlementAmount(
+                  String(order.remainingDueAmount ?? order.balanceDue ?? 0),
+                );
+                setSettlementMethod(
+                  order.paymentTerm === "ManualGCash"
+                    ? "ManualGCash"
+                    : order.paymentTerm === "BankTransfer"
+                      ? "BankTransfer"
+                      : order.paymentTerm === "BankDeposit"
+                        ? "BankDeposit"
+                        : order.paymentTerm === "Check"
+                          ? "Check"
+                          : "Cash",
+                );
+                setShowConfirmPayment(true);
+              }}
+            >
+              {t("incomingOrders.confirmPayment")}
+            </Button>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {showConfirmPayment ? (
+        <Card className="flex flex-col gap-3 p-4" data-testid="incoming-order-confirm-payment-dialog">
+          <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
+            {t("incomingOrders.confirmPaymentTitle")}
+          </h2>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("incomingOrders.confirmPaymentBody")}
+          </p>
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("incomingOrders.settlementAmount")}</span>
+            <input
+              className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+              inputMode="decimal"
+              data-testid="incoming-order-settlement-amount"
+              value={settlementAmount}
+              onChange={(e) => setSettlementAmount(e.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("incomingOrders.settlementMethod")}</span>
+            <select
+              className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+              data-testid="incoming-order-settlement-method"
+              value={settlementMethod}
+              onChange={(e) => setSettlementMethod(e.target.value)}
+            >
+              <option value="Cash">{t("purchasing.paymentMethod.cod")}</option>
+              <option value="ManualGCash">{t("purchasing.paymentMethod.gcash")}</option>
+              <option value="BankTransfer">{t("purchasing.paymentMethod.bankTransfer")}</option>
+              <option value="BankDeposit">{t("purchasing.paymentMethod.bankDeposit")}</option>
+              <option value="Check">{t("purchasing.paymentMethod.check")}</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("incomingOrders.settlementReference")}</span>
+            <input
+              className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+              data-testid="incoming-order-settlement-reference"
+              value={settlementReference}
+              onChange={(e) => setSettlementReference(e.target.value)}
+            />
+          </label>
+          {settlementMethod === "Check" ? (
+            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <input
+                type="checkbox"
+                data-testid="incoming-order-settlement-check-cleared"
+                checked={settlementCheckCleared}
+                onChange={(e) => setSettlementCheckCleared(e.target.checked)}
+              />
+              <span>{t("incomingOrders.settlementCheckCleared")}</span>
+            </label>
+          ) : null}
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>{t("incomingOrders.sellerRemarks")}</span>
+            <textarea
+              className="min-h-20 rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+              data-testid="incoming-order-settlement-remarks"
+              value={settlementSellerRemarks}
+              onChange={(e) => setSettlementSellerRemarks(e.target.value)}
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={confirmPaymentMutation.isPending}
+              onClick={() => setShowConfirmPayment(false)}
+            >
+              {t("purchasing.cancel")}
+            </Button>
+            <Button
+              type="button"
+              data-testid="incoming-order-settlement-submit"
+              disabled={
+                !canAct ||
+                confirmPaymentMutation.isPending ||
+                (settlementMethod === "Check" && !settlementCheckCleared)
+              }
+              onClick={() => confirmPaymentMutation.mutate()}
+            >
+              {t("incomingOrders.confirmPayment")}
+            </Button>
+          </div>
         </Card>
       ) : null}
 

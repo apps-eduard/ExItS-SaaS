@@ -869,7 +869,7 @@ export function BranchFulfillmentEditPage() {
           </div>
           <div className="catalog-form-actions__secondary">
             <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link to={branchBackPath}>{t("branches.cancel")}</Link>
+              <Link to={branchFallbackPath}>{t("branches.cancel")}</Link>
             </Button>
           </div>
         </div>

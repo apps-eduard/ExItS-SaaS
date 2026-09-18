@@ -1,21 +1,16 @@
 import { Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { acceptReturnBatch } from "@/api/pos/pos-return-batches-client";
 import {
-  createSaleReturn,
   estimateLineRefundAmount,
   estimateTotalRefundAmount,
   formatRefundMethodLabel,
   getRefundableSale,
-  getSaleReturn,
-  isCashRefundMethod,
   isCashShiftRequiredError,
-  isGCashRefundMethod,
   isStaleReturnConflict,
-  isUtangRefundMethod,
   type PosRefundableSaleLineDto,
-  type RestockDisposition,
 } from "@/api/pos/pos-sale-returns-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -28,7 +23,6 @@ import { pageBackNav } from "@/navigation/page-back-nav";
 import { isByWeightSellingMode } from "@/cart/sell-cart-helpers";
 import { describeReturnError } from "@/features/returns/return-errors";
 import { resolveReturnMutationId } from "@/features/returns/return-mutation-id";
-import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import {
   clampReturnQuantity,
   formatReturnQuantityDisplay,
@@ -40,13 +34,13 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type LineDraft = {
   quantity: number;
-  disposition: RestockDisposition;
 };
 
-type Step = "edit" | "confirm" | "success";
+type Step = "edit" | "confirm";
 
 export function ProcessReturnPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const headerBack = {
     backTo: pageBackNav.returns.to,
     backLabel: t(pageBackNav.returns.labelKey),
@@ -63,10 +57,7 @@ export function ProcessReturnPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [staleNotice, setStaleNotice] = useState(false);
-  const [completedReturnId, setCompletedReturnId] = useState<string | null>(null);
-  const [completedRefund, setCompletedRefund] = useState<number | null>(null);
-  const [completedMethod, setCompletedMethod] = useState<string | null>(null);
-  const [pendingReturnId, setPendingReturnId] = useState<string | null>(null);
+  const [pendingReturnBatchId, setPendingReturnBatchId] = useState<string | null>(null);
 
   const workspace =
     boundWorkspace?.branchId && boundWorkspace.organizationId
@@ -91,7 +82,6 @@ export function ProcessReturnPage() {
               : 0;
           next[line.saleLineId] = {
             quantity,
-            disposition: prior?.disposition ?? "ReturnToStock",
           };
         }
         return next;
@@ -110,7 +100,7 @@ export function ProcessReturnPage() {
       .map((line) => {
         const draft = drafts[line.saleLineId];
         const quantity = draft?.quantity ?? 0;
-        return { line, quantity, disposition: draft?.disposition ?? "ReturnToStock" };
+        return { line, quantity };
       })
       .filter((entry) => entry.quantity > 0);
   }, [drafts, refundable]);
@@ -139,7 +129,6 @@ export function ProcessReturnPage() {
       ...prev,
       [line.saleLineId]: {
         quantity,
-        disposition: prev[line.saleLineId]?.disposition ?? "ReturnToStock",
       },
     }));
   }
@@ -150,21 +139,11 @@ export function ProcessReturnPage() {
     setLineQuantity(line, current + delta * stepSize);
   }
 
-  function setDisposition(saleLineId: string, disposition: RestockDisposition) {
-    setDrafts((prev) => ({
-      ...prev,
-      [saleLineId]: {
-        quantity: prev[saleLineId]?.quantity ?? 0,
-        disposition,
-      },
-    }));
-  }
-
   async function reloadRefundable() {
     setStaleNotice(true);
     setStep("edit");
     setError(null);
-    setPendingReturnId(null);
+    setPendingReturnBatchId(null);
     setDrafts({});
     await queryClient.invalidateQueries({
       queryKey: ["refundable-sale", workspace?.organizationId, workspace?.branchId, saleId],
@@ -182,17 +161,17 @@ export function ProcessReturnPage() {
       return;
     }
 
-    const resolved = resolveReturnMutationId(pendingReturnId);
+    const resolved = resolveReturnMutationId(pendingReturnBatchId);
     if (!resolved.ok) {
       setError(t("returns.errorSecureId"));
       return;
     }
 
-    setPendingReturnId(resolved.id);
-    await submitReturn(resolved.id, trimmedReason);
+    setPendingReturnBatchId(resolved.id);
+    await submitReturnBatch(resolved.id, trimmedReason);
   }
 
-  async function submitReturn(returnId: string, trimmedReason: string) {
+  async function submitReturnBatch(returnBatchId: string, trimmedReason: string) {
     if (!workspace || !saleId || !refundable) {
       return;
     }
@@ -201,23 +180,22 @@ export function ProcessReturnPage() {
     setError(null);
 
     try {
-      const created = await createSaleReturn(workspace, {
+      await acceptReturnBatch(workspace, {
         saleId,
         reason: trimmedReason,
         notes: notes.trim() || undefined,
-        returnId,
-        lines: selectedLines.map(({ line, quantity, disposition }) => ({
+        returnBatchId,
+        lines: selectedLines.map(({ line, quantity }) => ({
           saleLineId: line.saleLineId,
-          quantity,
-          restockDisposition: disposition,
+          acceptedQuantity: quantity,
         })),
       });
-      setCompletedReturnId(created.returnId);
-      setCompletedRefund(created.totalRefundAmount);
-      setCompletedMethod(created.refundMethod);
-      setStep("success");
-      setPendingReturnId(null);
+      setPendingReturnBatchId(null);
+      await queryClient.invalidateQueries({
+        queryKey: ["return-batches", workspace.organizationId, workspace.branchId, saleId],
+      });
       await queryClient.invalidateQueries({ queryKey: ["sale-returns"] });
+      navigate(`/sell/sales/${saleId}/summary`, { replace: true });
     } catch (err) {
       if (isCashShiftRequiredError(err)) {
         setError(t("returns.errorNoShift"));
@@ -225,28 +203,6 @@ export function ProcessReturnPage() {
         await reloadRefundable();
         setError(t("returns.errorStale"));
       } else {
-        setError(t("checkout.confirmingTransaction"));
-        const outcome = await resolveAmbiguousMutationOutcome({
-          error: err,
-          lookup: () => getSaleReturn(workspace, returnId),
-        });
-        if (outcome.kind === "confirmed") {
-          setCompletedReturnId(outcome.value.returnId);
-          setCompletedRefund(outcome.value.totalRefundAmount);
-          setCompletedMethod(outcome.value.refundMethod);
-          setStep("success");
-          setPendingReturnId(null);
-          await queryClient.invalidateQueries({ queryKey: ["sale-returns"] });
-          return;
-        }
-        if (outcome.kind === "still_unknown") {
-          setError(t("checkout.transactionStatusUnknown"));
-          return;
-        }
-        if (outcome.kind === "not_found") {
-          setError(describeReturnError(outcome.lookupError, t));
-          return;
-        }
         setError(describeReturnError(err, t));
       }
     } finally {
@@ -300,46 +256,6 @@ export function ProcessReturnPage() {
     );
   }
 
-  if (step === "success" && completedReturnId != null && completedRefund != null) {
-    const method = completedMethod ?? refundable.paymentMethod;
-    return (
-      <div data-testid="process-return-success" className="flex min-w-0 flex-col gap-4">
-        <PageHeader title={t("returns.successTitle")} description={refundable.saleNumber} {...headerBack} />
-        <Card>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("returns.refundAmount")}
-          </p>
-          <p className="mb-0 mt-1 text-[length:var(--exits-text-lg)] font-semibold">
-            <MoneyDisplay amount={completedRefund} testId="returns-final-refund" />
-          </p>
-          {isCashRefundMethod(method) ? (
-            <p className="mb-0 mt-3" data-testid="returns-success-cash">
-              {t("returns.successCash")}
-            </p>
-          ) : null}
-          {isGCashRefundMethod(method) ? (
-            <p className="mb-0 mt-3" data-testid="returns-success-gcash">
-              {t("returns.successGCash")}
-            </p>
-          ) : null}
-          {isUtangRefundMethod(method) ? (
-            <p className="mb-0 mt-3" data-testid="returns-success-utang">
-              {t("returns.successUtang")}
-            </p>
-          ) : null}
-          <p className="mb-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
-            {t("returns.refundMethod")}: {formatRefundMethodLabel(method)}
-          </p>
-        </Card>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild data-testid="returns-view-detail">
-            <Link to={`/returns/${completedReturnId}`}>{t("returns.viewDetail")}</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (step === "confirm") {
     return (
       <div data-testid="process-return-confirm" className="flex min-w-0 flex-col gap-3">
@@ -350,7 +266,7 @@ export function ProcessReturnPage() {
         />
         <section className="catalog-form-section exits-animate-panel gap-0">
           <ul className="m-0 list-none space-y-2 p-0">
-            {selectedLines.map(({ line, quantity, disposition }) => (
+            {selectedLines.map(({ line, quantity }) => (
               <li key={line.saleLineId} className="text-[length:var(--exits-text-sm)]">
                 <span className="font-semibold">{line.productNameSnapshot}</span>
                 <span className="text-muted">
@@ -359,10 +275,7 @@ export function ProcessReturnPage() {
                     quantity,
                     line.unitOfMeasure,
                     line.sellingMode,
-                  )} ·{" "}
-                  {disposition === "ReturnToStock"
-                    ? t("returns.putBackInStock")
-                    : t("returns.doNotReturnToStock")}
+                  )}
                 </span>
               </li>
             ))}
@@ -446,7 +359,6 @@ export function ProcessReturnPage() {
         {refundable.lines.map((line) => {
           const draft = drafts[line.saleLineId] ?? {
             quantity: 0,
-            disposition: "ReturnToStock" as RestockDisposition,
           };
           const byWeight = isByWeightSellingMode(line.sellingMode);
           const decimals = maxReturnQuantityDecimals(line.unitOfMeasure, line.sellingMode);
@@ -518,35 +430,6 @@ export function ProcessReturnPage() {
                     {t("returns.returnAll")}
                   </Button>
                 </div>
-
-                <fieldset className="mt-3 border-0 p-0">
-                  <legend className="mb-1 text-[length:var(--exits-text-sm)]">
-                    {t("returns.stockDisposition")}
-                  </legend>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant={draft.disposition === "ReturnToStock" ? "default" : "ghost"}
-                      data-testid={`returns-restock-${line.saleLineId}`}
-                      onClick={() => setDisposition(line.saleLineId, "ReturnToStock")}
-                    >
-                      {t("returns.putBackInStock")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={draft.disposition === "DoNotRestock" ? "default" : "ghost"}
-                      data-testid={`returns-no-restock-${line.saleLineId}`}
-                      onClick={() => setDisposition(line.saleLineId, "DoNotRestock")}
-                    >
-                      {t("returns.doNotReturnToStock")}
-                    </Button>
-                  </div>
-                  <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-                    {draft.disposition === "ReturnToStock"
-                      ? t("returns.putBackHint")
-                      : t("returns.doNotRestockHint")}
-                  </p>
-                </fieldset>
 
                 {draft.quantity > 0 ? (
                   <p className="mb-0 mt-3 flex justify-between gap-2 text-[length:var(--exits-text-sm)]">

@@ -96,7 +96,8 @@ public sealed class SaleReturn
         RegisterId? refundRegisterId = null,
         DateOnly? returnDate = null,
         string? notes = null,
-        SaleReturnId? id = null)
+        SaleReturnId? id = null,
+        bool requireCashShift = true)
     {
         SaleMoney.EnsureUtc(utcNow);
         SaleMoney.EnsureActor(createdBy);
@@ -130,7 +131,7 @@ public sealed class SaleReturn
         }
 
         var refundMethod = sale.PaymentMethod;
-        ValidateCashShift(refundMethod, cashierShiftId);
+        ValidateCashShift(refundMethod, cashierShiftId, requireCashShift);
 
         var saleLinesById = sale.Lines.ToDictionary(l => l.Id.Value);
         var seenSaleLines = new HashSet<Guid>();
@@ -241,9 +242,9 @@ public sealed class SaleReturn
             completedAtUtc,
             lines.ToList());
 
-    private static void ValidateCashShift(SalePaymentMethod refundMethod, CashierShiftId? cashierShiftId)
+    private static void ValidateCashShift(SalePaymentMethod refundMethod, CashierShiftId? cashierShiftId, bool requireCashShift)
     {
-        if (refundMethod == SalePaymentMethod.Cash && cashierShiftId is null)
+        if (refundMethod == SalePaymentMethod.Cash && requireCashShift && cashierShiftId is null)
         {
             throw new DomainException(
                 DomainErrorCodes.SaleReturnCashShiftRequired,
@@ -262,14 +263,14 @@ public sealed class SaleReturn
     private static List<SaleReturnLineDraft> ConsolidateLineDrafts(IReadOnlyList<SaleReturnLineDraft> drafts)
     {
         var order = new List<Guid>();
-        var bySaleLine = new Dictionary<Guid, (decimal Quantity, RestockDisposition Disposition, string? LineReason)>();
+        var bySaleLine = new Dictionary<Guid, (decimal Quantity, RestockDisposition Disposition, string? LineReason, decimal? SellableQuantity, decimal? DamagedQuantity)>();
 
         foreach (var draft in drafts.OrderBy(d => d.SaleLineId.Value))
         {
             if (!bySaleLine.TryGetValue(draft.SaleLineId.Value, out var running))
             {
                 order.Add(draft.SaleLineId.Value);
-                running = (0m, draft.RestockDisposition, draft.LineReason);
+                running = (0m, draft.RestockDisposition, draft.LineReason, 0m, 0m);
             }
 
             if (running.Disposition != draft.RestockDisposition)
@@ -282,18 +283,26 @@ public sealed class SaleReturn
             bySaleLine[draft.SaleLineId.Value] = (
                 running.Quantity + draft.QuantityReturned,
                 draft.RestockDisposition,
-                draft.LineReason ?? running.LineReason);
+                draft.LineReason ?? running.LineReason,
+                (draft.SellableQuantity is null && draft.DamagedQuantity is null)
+                    ? null
+                    : (running.SellableQuantity ?? 0m) + (draft.SellableQuantity ?? 0m),
+                (draft.SellableQuantity is null && draft.DamagedQuantity is null)
+                    ? null
+                    : (running.DamagedQuantity ?? 0m) + (draft.DamagedQuantity ?? 0m));
         }
 
         return order
             .Select(id =>
             {
-                var (qty, disposition, lineReason) = bySaleLine[id];
+                var (qty, disposition, lineReason, sellable, damaged) = bySaleLine[id];
                 return new SaleReturnLineDraft(
                     SaleLineId.From(id),
                     qty,
                     disposition,
-                    lineReason);
+                    lineReason,
+                    sellable,
+                    damaged);
             })
             .ToList();
     }

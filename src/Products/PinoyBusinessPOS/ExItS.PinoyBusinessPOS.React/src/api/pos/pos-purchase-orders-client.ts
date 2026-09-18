@@ -41,6 +41,7 @@ export const posPurchaseOrderLineDtoSchema = z.object({
   supplierProductId: guidSchema.nullable().optional(),
   skuSnapshot: z.string().nullable().optional(),
   needsProductSetup: z.boolean().optional().default(false),
+  purchaseUnitId: guidSchema.nullable().optional(),
 });
 
 export const connectedPurchaseOrderLineDtoSchema = z
@@ -103,6 +104,7 @@ export const posPurchaseOrderDtoSchema = z.object({
   canReceiveConnected: z.boolean().optional(),
   paymentTerm: z.string().optional(),
   paymentTermLabel: z.string().optional(),
+  paymentTiming: z.string().optional(),
   proposedTotalAmount: z.number().nullable().optional(),
   confirmedTotalAmount: z.number().nullable().optional(),
   connectedLines: z.array(connectedPurchaseOrderLineDtoSchema).nullable().optional(),
@@ -121,6 +123,11 @@ export const posPurchaseOrderDtoSchema = z.object({
   cancelledRemainingValue: z.number().nullable().optional(),
   refundDueAmount: z.number().optional().default(0),
   amountPaidSnapshot: z.number().nullable().optional(),
+  /** NotRequired | AwaitingPayment | Settled — commercial settlement gate, independent of status. */
+  financialSettlementStatus: z.string().optional().default("NotRequired"),
+  remainingDueAmount: z.number().optional().default(0),
+  sellerSettlementRemarks: z.string().nullable().optional(),
+  financiallySettledAtUtc: z.string().nullable().optional(),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
@@ -204,6 +211,8 @@ export type CreatePurchaseOrderRequest = {
   intendedReceivingBranchId?: string | null;
   /** Connected PO fulfillment method (Pickup|Delivery). Server-enforced. */
   fulfillmentMethod?: string | null;
+  /** Connected PO payment timing. Server-validated against effective relationship policy. */
+  paymentTiming?: string | null;
 };
 
 export type UpdatePurchaseOrderRequest = CreatePurchaseOrderRequest & {
@@ -319,6 +328,9 @@ function serializeCreateBody(body: CreatePurchaseOrderRequest): Record<string, u
   }
   if (body.fulfillmentMethod) {
     payload.fulfillmentMethod = body.fulfillmentMethod;
+  }
+  if (body.paymentTiming) {
+    payload.paymentTiming = body.paymentTiming;
   }
   return payload;
 }

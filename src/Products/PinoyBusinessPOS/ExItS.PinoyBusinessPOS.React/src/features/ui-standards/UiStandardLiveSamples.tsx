@@ -199,6 +199,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [selectSearch, setSelectSearch] = useState("");
   const [selectSwitch, setSelectSwitch] = useState(true);
   const [sizeSingle, setSizeSingle] = useState("M");
+  const [tileTiming, setTileTiming] = useState("PayBefore");
   const [sizeMulti, setSizeMulti] = useState<string[]>(["S", "L", "XL"]);
   const [coverImage, setCoverImage] = useState<ExitsUploadItem | null>(null);
   const [galleryImages, setGalleryImages] = useState<Array<ExitsUploadItem | null>>([
@@ -1037,6 +1038,22 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                       { value: "XXL", label: "XXL" },
                     ]}
                     testId="ui-standard-select-pill-single"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <SectionLabel>Attribute select — tile (single)</SectionLabel>
+                  <ExitsPillSelect
+                    appearance="tile"
+                    aria-label="Payment timing"
+                    value={tileTiming}
+                    onChange={setTileTiming}
+                    options={[
+                      { value: "PayBefore", label: "Pay in advance" },
+                      { value: "PayOnDelivery", label: "Pay on delivery" },
+                      { value: "Utang", label: "Supplier Utang" },
+                    ]}
+                    className="grid-cols-3"
+                    testId="ui-standard-select-tile-single"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">

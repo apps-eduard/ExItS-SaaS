@@ -9,6 +9,8 @@ public sealed record PosSaleReturnLineDto(
     decimal QuantityReturned,
     decimal UnitPriceSnapshot,
     decimal RefundAmount,
+    decimal SellableQuantity,
+    decimal DamagedQuantity,
     string RestockDisposition,
     string? LineReason,
     Guid? InventoryMovementId);

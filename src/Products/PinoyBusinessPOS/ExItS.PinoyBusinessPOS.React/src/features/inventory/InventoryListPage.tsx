@@ -14,8 +14,10 @@ import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   formatInventoryQty,
+  InventoryPendingReturnBadge,
   InventoryReservedBadge,
   resolveAvailableQuantity,
+  resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
@@ -355,6 +357,7 @@ export function InventoryListPage() {
                 const tracksExpiry = tracked && item.tracksExpiration === true;
                 const availableQty = resolveAvailableQuantity(item);
                 const reservedQty = resolveReservedQuantity(item);
+                const pendingReturnQty = resolvePendingReturnQuantity(item);
 
                 return (
                   <li key={item.productId}>
@@ -373,8 +376,12 @@ export function InventoryListPage() {
                         data-testid={`inventory-row-link-${item.productId}`}
                       >
                         <span className="exits-list__name block truncate font-semibold">{item.name}</span>
-                        {!tracked || tracksExpiry || showStockChip ? (
-                          <div className="inventory-row__chips mt-1 flex flex-wrap gap-1">
+                        {!tracked ||
+                        tracksExpiry ||
+                        showStockChip ||
+                        reservedQty > 0 ||
+                        pendingReturnQty > 0 ? (
+                          <div className="inventory-row__chips mt-1 flex flex-wrap items-center gap-1">
                             {!tracked ? (
                               <span className="inventory-row__badge inventory-row__badge--untracked">
                                 {t("inventory.notTracked")}
@@ -396,24 +403,6 @@ export function InventoryListPage() {
                                 {outOfStock ? stockStatus : t("inventory.lowStock")}
                               </span>
                             ) : null}
-                          </div>
-                        ) : null}
-                      </AppLinkWithReturn>
-                      <div className="inventory-row__aside flex min-w-0 shrink-0 flex-col items-end gap-1">
-                        {tracked ? (
-                          <>
-                            <span
-                              className={cn(
-                                "inventory-row__qty tabular-nums",
-                                lowStock && "inventory-row__qty--warn",
-                                outOfStock && "inventory-row__qty--danger",
-                              )}
-                              data-testid={`inventory-row-available-${item.productId}`}
-                            >
-                              {t("inventory.availableQty")
-                                .replace("{qty}", formatInventoryQty(availableQty))
-                                .replace("{uom}", item.unitOfMeasure)}
-                            </span>
                             <InventoryReservedBadge
                               reservedQuantity={reservedQty}
                               onClick={() =>
@@ -424,7 +413,26 @@ export function InventoryListPage() {
                               }
                               testId={`inventory-row-reserved-${item.productId}`}
                             />
-                          </>
+                            <InventoryPendingReturnBadge
+                              pendingReturnQuantity={pendingReturnQty}
+                              unitOfMeasure={item.unitOfMeasure}
+                              testId={`inventory-row-pending-return-${item.productId}`}
+                            />
+                          </div>
+                        ) : null}
+                      </AppLinkWithReturn>
+                      <div className="inventory-row__aside shrink-0">
+                        {tracked ? (
+                          <span
+                            className={cn(
+                              "inventory-row__qty tabular-nums",
+                              lowStock && "inventory-row__qty--warn",
+                              outOfStock && "inventory-row__qty--danger",
+                            )}
+                            data-testid={`inventory-row-available-${item.productId}`}
+                          >
+                            {formatInventoryQty(availableQty)}
+                          </span>
                         ) : (
                           <span className="inventory-row__qty inventory-row__qty--muted" aria-hidden>
                             —
