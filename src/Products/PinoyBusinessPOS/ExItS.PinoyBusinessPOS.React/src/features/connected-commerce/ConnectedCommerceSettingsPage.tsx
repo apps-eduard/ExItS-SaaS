@@ -38,6 +38,7 @@ import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMu
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useToast } from "@/components/exits/ToastProvider";
+import { invalidateOrganizationOfferDeliveryQueries } from "@/features/branches/offer-delivery-queries";
 import {
   parseConnectedCommerceTab,
   type ConnectedCommerceTab,
@@ -222,8 +223,8 @@ export function ConnectedCommerceSettingsPage() {
       if (!workspace) throw new Error("missing workspace");
       return updateOrganizationOfferDelivery(workspace, offerDelivery);
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["connected-commerce"] });
+    onSuccess: async () => {
+      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
       showToast(t("connectedCommerce.saved"), "success");
     },
     onError: () => showToast(t("connectedCommerce.saveFailed"), "error"),

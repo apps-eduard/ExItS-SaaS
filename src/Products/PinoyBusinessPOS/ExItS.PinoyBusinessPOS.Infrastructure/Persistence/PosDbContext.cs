@@ -4767,6 +4767,9 @@ public sealed class PosDbContext : DbContext
                 .HasMaxLength(128);
             entity.Property(e => e.IntendedReceivingBranchId)
                 .HasColumnName("intended_receiving_branch_id");
+            entity.Property(e => e.FulfillmentMethod)
+                .HasColumnName("fulfillment_method")
+                .HasMaxLength(32);
             entity.Property(e => e.RemainingClosedAtUtc).HasColumnName("remaining_closed_at_utc");
             entity.Property(e => e.RemainingClosedByUserId).HasColumnName("remaining_closed_by_user_id");
             entity.Property(e => e.RemainingClosedReason)
@@ -5856,6 +5859,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.DeclineNote).HasColumnName("decline_note").HasMaxLength(280);
             entity.Property(x=>x.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
             entity.Property(x=>x.PaymentTiming).HasColumnName("payment_timing").IsRequired().HasDefaultValue(0);
+            entity.Property(x=>x.FulfillmentMethod).HasColumnName("fulfillment_method").HasMaxLength(32);
+            entity.Property(x=>x.ConfirmedFulfillmentMethod).HasColumnName("confirmed_fulfillment_method").HasMaxLength(32);
             entity.Property(x=>x.ProposedPaymentTerm).HasColumnName("proposed_payment_term");
             entity.Property(x=>x.ProposedPaymentTiming).HasColumnName("proposed_payment_timing");
             entity.Property(x=>x.ConfirmedPaymentTerm).HasColumnName("confirmed_payment_term");

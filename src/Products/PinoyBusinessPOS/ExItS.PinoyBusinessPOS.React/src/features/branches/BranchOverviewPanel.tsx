@@ -39,6 +39,8 @@ type BranchOverviewPanelProps = {
   readiness: BranchFulfillmentReadinessDto;
   busy: boolean;
   t: (key: MessageKey) => string;
+  /** When false, branch Delivery ON is configured-only — not offered to buyers. */
+  orgOfferDelivery?: boolean;
   onTogglePickup: (enabled: boolean) => void;
   onToggleDelivery: (enabled: boolean) => void;
   onEnableOrdering: () => void;
@@ -199,6 +201,7 @@ export function BranchOverviewPanel({
   readiness,
   busy,
   t,
+  orgOfferDelivery,
   onTogglePickup,
   onToggleDelivery,
   onEnableOrdering,
@@ -325,7 +328,9 @@ export function BranchOverviewPanel({
             hint={
               delivery.hintKey
                 ? t(delivery.hintKey)
-                : t("branches.poFulfillment.helper.delivery")
+                : readiness.deliveryEnabled && orgOfferDelivery === false
+                  ? t("branches.poFulfillment.helper.deliveryOrgOfferOff")
+                  : t("branches.poFulfillment.helper.delivery")
             }
             t={t}
             onCheckedChange={(next) => {

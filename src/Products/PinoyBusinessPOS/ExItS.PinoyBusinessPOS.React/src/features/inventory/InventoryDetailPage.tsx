@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ChevronDown, ChevronRight, PackageMinus, Trash2 } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
@@ -90,6 +90,7 @@ function formatLotStatus(lot: PosInventoryLotDto, t: ReturnType<typeof useI18n>[
 export function InventoryDetailPage() {
   const { t } = useI18n();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { productId } = useParams();
   const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant, workspaces } = useWorkspace();
@@ -271,6 +272,7 @@ export function InventoryDetailPage() {
       setOpeningExpiry("");
       setOpeningLotNumber("");
       await invalidateInventory();
+      navigate(pageBackNav.inventory.to);
     },
     onError: (err) => {
       setError(
@@ -500,15 +502,17 @@ export function InventoryDetailPage() {
           ? t("inventory.sellingPriceBranch")
           : t("inventory.sellingPriceOrganization")}
       </span>
-      <Button asChild type="button" variant="ghost" className="mt-1 w-fit px-0">
-        <Link
-          to={`/catalog/products/${account.productId}/edit`}
-          data-testid="inventory-review-selling-price"
-        >
-          {t("inventory.reviewSellingPrice")}
-        </Link>
-      </Button>
     </div>
+  ) : null;
+  const reviewSellingPriceButton = effectiveSelling ? (
+    <Button asChild type="button" intent="primary" appearance="outline" className="min-w-0 flex-1 sm:flex-none">
+      <Link
+        to={`/catalog/products/${account.productId}/edit`}
+        data-testid="inventory-review-selling-price"
+      >
+        {t("inventory.reviewSellingPrice")}
+      </Link>
+    </Button>
   ) : null;
   const purchaseCostAwareness =
     purchaseCostFeedback.kind === "zeroMargin" ? (
@@ -1043,29 +1047,48 @@ export function InventoryDetailPage() {
           <h2 className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
             {t("inventory.enableTracking")}
           </h2>
-          <div className="inventory-detail-opening-fields">
-            <Input
-              label={t("inventory.openingQuantityOptional")}
-              name="openingQuantity"
-              inputMode="decimal"
-              value={openingQty}
-              onChange={(e) => setOpeningQty(e.target.value)}
-            />
-            {Number(openingQty) > 0 ? (
-              <Input
-                label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
-                name="openingUnitCost"
-                inputMode="decimal"
-                value={openingUnitCost}
-                onChange={(e) => setOpeningUnitCost(e.target.value)}
-                data-testid="inventory-enable-unit-cost"
-              />
+          <div
+            className={cn(
+              "inventory-detail-enable-split",
+              !sellingPriceAwareness && "inventory-detail-enable-split--opening-only",
+            )}
+          >
+            <Card
+              className="inventory-detail-enable-split__card flex min-w-0 flex-col gap-2 p-3"
+              data-testid="inventory-enable-opening-qty-card"
+            >
+              <div className="inventory-detail-opening-fields inventory-detail-opening-fields--enable">
+                <Input
+                  label={t("inventory.openingQuantityOptional")}
+                  name="openingQuantity"
+                  inputMode="decimal"
+                  value={openingQty}
+                  onChange={(e) => setOpeningQty(e.target.value)}
+                />
+                {Number(openingQty) > 0 ? (
+                  <Input
+                    label={`${t("inventory.unitPurchaseCost")} (₱ / ${account.unitOfMeasure})`}
+                    name="openingUnitCost"
+                    inputMode="decimal"
+                    value={openingUnitCost}
+                    onChange={(e) => setOpeningUnitCost(e.target.value)}
+                    data-testid="inventory-enable-unit-cost"
+                  />
+                ) : null}
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("inventory.openingHint")}
+              </p>
+            </Card>
+            {sellingPriceAwareness ? (
+              <Card
+                className="inventory-detail-enable-split__card flex min-w-0 flex-col gap-0.5 p-3"
+                data-testid="inventory-enable-selling-price-card"
+              >
+                {sellingPriceAwareness}
+              </Card>
             ) : null}
           </div>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("inventory.openingHint")}
-          </p>
-          {sellingPriceAwareness}
           {Number(openingQty) > 0 ? (
             <>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
@@ -1105,21 +1128,28 @@ export function InventoryDetailPage() {
               </p>
             </>
           ) : null}
-          <Button
-            type="button"
-            disabled={
-              enableMutation.isPending ||
-              (Number(openingQty) > 0 &&
-                (!openingUnitCost.trim() ||
-                  !Number.isFinite(Number(openingUnitCost)) ||
-                  Number(openingUnitCost) <= 0)) ||
-              !openingExpiryReady
-            }
-            onClick={() => enableMutation.mutate()}
-            data-testid="inventory-enable"
+          <div
+            className="inventory-detail-enable-actions flex flex-wrap items-stretch gap-2"
+            data-testid="inventory-enable-actions"
           >
-            {t("inventory.enable")}
-          </Button>
+            <Button
+              type="button"
+              className="min-w-0 flex-1 sm:flex-none"
+              disabled={
+                enableMutation.isPending ||
+                (Number(openingQty) > 0 &&
+                  (!openingUnitCost.trim() ||
+                    !Number.isFinite(Number(openingUnitCost)) ||
+                    Number(openingUnitCost) <= 0)) ||
+                !openingExpiryReady
+              }
+              onClick={() => enableMutation.mutate()}
+              data-testid="inventory-enable"
+            >
+              {t("inventory.enable")}
+            </Button>
+            {reviewSellingPriceButton}
+          </div>
         </Card>
         ) : null
       ) : showAddOpeningStock && allowManageInventory ? (
@@ -1191,22 +1221,28 @@ export function InventoryDetailPage() {
                 </p>
               </>
             ) : null}
-            <Button
-              type="button"
-              className="w-fit"
-              disabled={
-                addOpeningStockMutation.isPending ||
-                !(openingQuantityValue > 0) ||
-                !openingUnitCost.trim() ||
-                !Number.isFinite(Number(openingUnitCost)) ||
-                Number(openingUnitCost) <= 0 ||
-                !openingExpiryReady
-              }
-              onClick={() => addOpeningStockMutation.mutate()}
-              data-testid="inventory-add-opening-stock-submit"
+            <div
+              className="inventory-detail-enable-actions flex flex-wrap items-stretch gap-2"
+              data-testid="inventory-opening-stock-actions"
             >
-              {t("inventory.addOpeningStock")}
-            </Button>
+              <Button
+                type="button"
+                className="min-w-0 flex-1 sm:flex-none"
+                disabled={
+                  addOpeningStockMutation.isPending ||
+                  !(openingQuantityValue > 0) ||
+                  !openingUnitCost.trim() ||
+                  !Number.isFinite(Number(openingUnitCost)) ||
+                  Number(openingUnitCost) <= 0 ||
+                  !openingExpiryReady
+                }
+                onClick={() => addOpeningStockMutation.mutate()}
+                data-testid="inventory-add-opening-stock-submit"
+              >
+                {t("inventory.addOpeningStock")}
+              </Button>
+              {reviewSellingPriceButton}
+            </div>
           </Card>
           <Button
             type="button"

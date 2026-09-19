@@ -316,7 +316,7 @@ public sealed class ConnectedPoLifecycleDomainTests
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("GCash"));
         Assert.Equal(ConnectedPoPaymentTerm.ManualGCash, ConnectedPoPaymentTerms.Parse("ManualGCash"));
         Assert.Equal(ConnectedPoPaymentTerm.Utang, ConnectedPoPaymentTerms.Parse("Utang"));
-        Assert.Equal("COD / Pay on delivery", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.Cash));
+        Assert.Equal("Cash", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.Cash));
         Assert.Equal("GCash / Manual e-wallet", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.ManualGCash));
         Assert.Equal("Bank transfer", ConnectedPoPaymentTerms.ToUiLabel(ConnectedPoPaymentTerm.BankTransfer));
         Assert.Equal("ManualGCash", ConnectedPoPaymentTerms.ToApi(ConnectedPoPaymentTerm.ManualGCash));

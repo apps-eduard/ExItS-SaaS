@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Check, ClipboardList, PackageSearch, Plus, Store } from "lucide-react";
+import { BookOpen, Check, ClipboardList, Plus, Store } from "lucide-react";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
@@ -33,7 +33,7 @@ import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -58,6 +58,7 @@ import {
   orderUnitCount,
   requestedExceedsSupplierAvailability,
   resolveConnectedCategoryId,
+  resolveSupplierAvailability,
   retainCompatibleDraftLines,
   type ConnectedPoCategoryFilter,
   type ConnectedPoDraftLine,
@@ -65,9 +66,9 @@ import {
 } from "@/features/purchasing/purchase-order-create-connected";
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import {
-  ProductFinderPanel,
   SelectedItemsPanel,
 } from "@/components/exits/ProductSelectionWorkspace";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data-view";
 import { PurchaseOrderLinkedProductsFinder } from "@/features/purchasing/PurchaseOrderLinkedProductsFinder";
@@ -173,6 +174,7 @@ export function PurchaseOrderCreatePage() {
     emptyConnectedCategoryFilter,
   );
   const [readinessFilter, setReadinessFilter] = useState<PoCatalogSetupFilter>("linked");
+  const [linkedProductScope, setLinkedProductScope] = useState<"notAdded" | "added">("notAdded");
   const [connectedLines, setConnectedLines] = useState<ConnectedPoDraftLine[]>([]);
   const [externalLines, setExternalLines] = useState<ExternalDraftLine[]>([]);
   const [qtyText, setQtyText] = useState("1");
@@ -395,16 +397,68 @@ export function PurchaseOrderCreatePage() {
   });
 
   const supplierCommerceReady = !connected || commerceReadinessQuery.data?.isReady === true;
-  const supportedFulfillmentMethods = commerceReadinessQuery.data?.supportedFulfillmentMethods ?? [];
+  const buyerReceivingReady = Boolean(boundWorkspace?.branchId);
+  const fulfillmentUi = useMemo(() => {
+    const data = commerceReadinessQuery.data;
+    const methods = (data?.supportedFulfillmentMethods ?? []).filter(
+      (m): m is "Pickup" | "Delivery" => m === "Pickup" || m === "Delivery",
+    );
+    const pickupAvailable = methods.includes("Pickup");
+    const deliverySupplierAvailable = methods.includes("Delivery");
+    const deliverySelectable = deliverySupplierAvailable && buyerReceivingReady;
+    const deliverySetupRequired = deliverySupplierAvailable && !buyerReceivingReady;
+    const deliveryReason = data?.deliveryUnavailableReason ?? null;
+    let helpKey:
+      | "purchasing.fulfillment.singleMethodHelp"
+      | "purchasing.fulfillment.deliveryUnavailableOrgOff"
+      | "purchasing.fulfillment.deliveryUnavailableCustomer"
+      | "purchasing.fulfillment.deliveryUnavailableBranch"
+      | "purchasing.fulfillment.deliverySetupRequired"
+      | null = null;
+    let helpMethod: "Pickup" | "Delivery" | null = null;
+
+    if (deliverySetupRequired) {
+      // Card carries setup copy — avoid duplicate help line.
+      helpKey = null;
+    } else if (pickupAvailable && !deliverySupplierAvailable) {
+      if (deliveryReason === "RelationshipBlocked") {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableCustomer";
+      } else if (deliveryReason === "OrgOfferOff") {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableOrgOff";
+      } else if (deliveryReason === "BranchNotReady" || !data?.branchDeliveryReady) {
+        helpKey = "purchasing.fulfillment.singleMethodHelp";
+        helpMethod = "Pickup";
+      } else {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableBranch";
+      }
+    } else if (!pickupAvailable && deliverySelectable) {
+      helpKey = "purchasing.fulfillment.singleMethodHelp";
+      helpMethod = "Delivery";
+    }
+
+    const choosable: Array<"Pickup" | "Delivery"> = [];
+    if (pickupAvailable) choosable.push("Pickup");
+    if (deliverySelectable) choosable.push("Delivery");
+
+    return {
+      pickupAvailable,
+      deliverySupplierAvailable,
+      deliverySelectable,
+      deliverySetupRequired,
+      deliveryReason,
+      helpKey,
+      helpMethod,
+      choosable,
+      showSection: pickupAvailable || deliverySupplierAvailable,
+    };
+  }, [commerceReadinessQuery.data, buyerReceivingReady]);
 
   useEffect(() => {
     if (!connected) {
       setFulfillmentMethod("");
       return;
     }
-    const methods = supportedFulfillmentMethods.filter(
-      (m): m is "Pickup" | "Delivery" => m === "Pickup" || m === "Delivery",
-    );
+    const methods = fulfillmentUi.choosable;
     if (methods.length === 1) {
       setFulfillmentMethod(methods[0]!);
       return;
@@ -412,7 +466,7 @@ export function PurchaseOrderCreatePage() {
     setFulfillmentMethod((prev) =>
       prev && methods.includes(prev) ? prev : "",
     );
-  }, [connected, supportedFulfillmentMethods.join("|")]);
+  }, [connected, fulfillmentUi.choosable.join("|")]);
 
   const effectivePaymentTimings = useMemo(() => {
     const data = commerceReadinessQuery.data;
@@ -535,13 +589,23 @@ export function PurchaseOrderCreatePage() {
     () => filterConnectedReadyProducts(readyProducts, debounced, categoryFilter),
     [readyProducts, debounced, categoryFilter],
   );
-  /** Already on the PO — hide from Find products until removed. */
+  /** Find products list — not-added (default) or already-on-order. */
   const findConnectedProducts = useMemo(() => {
     const selected = new Set(connectedLines.map((line) => line.productId));
+    if (linkedProductScope === "added") {
+      return filteredConnected.filter((product) => selected.has(product.buyerProductId));
+    }
     return filteredConnected.filter((product) => !selected.has(product.buyerProductId));
-  }, [connectedLines, filteredConnected]);
+  }, [connectedLines, filteredConnected, linkedProductScope]);
   const hasLinkedProductFilters =
-    debounced.length > 0 || isConnectedCategoryFilterActive(categoryFilter);
+    debounced.length > 0 ||
+    isConnectedCategoryFilterActive(categoryFilter) ||
+    linkedProductScope === "added";
+  const addedOnOrderCount = connectedLines.length;
+  const notAddedCount = useMemo(() => {
+    const selected = new Set(connectedLines.map((line) => line.productId));
+    return filteredConnected.filter((product) => !selected.has(product.buyerProductId)).length;
+  }, [connectedLines, filteredConnected]);
   const setupItems = useMemo(() => {
     if (!readinessQuery.data || readinessFilter === "linked") {
       return [];
@@ -602,6 +666,7 @@ export function PurchaseOrderCreatePage() {
     setDebounced("");
     setCategoryFilter(emptyConnectedCategoryFilter());
     setReadinessFilter("linked");
+    setLinkedProductScope("notAdded");
     setSelectedProduct(null);
     setQtyText("1");
     setCostText("");
@@ -889,22 +954,7 @@ export function PurchaseOrderCreatePage() {
         setError(t(utangEligibility.reasonKey));
         return;
       }
-      try {
-        const readiness = await getBuyerConnectedSupplierCommerceReadiness(
-          workspace,
-          relationshipId!,
-        );
-        await queryClient.invalidateQueries({
-          queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
-        });
-        if (!readiness.isReady) {
-          setError(t("purchasing.supplierNotReadyBody"));
-          return;
-        }
-      } catch {
-        setError(t("purchasing.supplierNotReadyBody"));
-        return;
-      }
+      // Draft create/update must not block on fulfillment readiness — Submit enforces that later.
     }
     setSaving(true);
     setError(null);
@@ -1203,6 +1253,7 @@ export function PurchaseOrderCreatePage() {
                           product.packageLabel || product.unitOfMeasure || "",
                         )
                       : "");
+                  const availability = product ? resolveSupplierAvailability(product) : null;
                   const availabilityLabel = product
                     ? formatSupplierAvailabilityLabel(product, t)
                     : null;
@@ -1215,27 +1266,16 @@ export function PurchaseOrderCreatePage() {
                     name: line.name,
                     sku: product?.supplierSku,
                     orderedQty: line.orderedQty,
+                    unitLabel: unitOfMeasure || null,
                     unitPurchaseCost: line.unitPurchaseCost,
                     availabilityLabel,
+                    availabilityKind: availability?.kind ?? null,
                     overOrderWarning,
-                    quantityControl: product ? (
-                      <QuantityStepper
-                        compact
-                        value={line.orderedQty}
-                        onChange={(next) => setConnectedQty(product, next)}
-                        unitOfMeasure={product.unitOfMeasure || line.uom}
-                        sellingMode="PerItem"
-                        unit={unitOfMeasure || undefined}
-                        disabled={!allowManage || !online || saving}
-                        decreaseLabel={t("purchasing.decreaseQty")}
-                        increaseLabel={t("purchasing.increaseQty")}
-                        ariaLabel={t("purchasing.qtyShort")}
-                        valueTestId={`po-qty-${line.productId}`}
-                        className="po-order-qty-stepper"
-                      />
-                    ) : (
-                      <span className="tabular-nums">{line.orderedQty}</span>
-                    ),
+                    canEditQty: Boolean(product) && allowManage && online && !saving,
+                    unitOfMeasure: product?.unitOfMeasure || line.uom || null,
+                    onQtyChange: product
+                      ? (next) => setConnectedQty(product, next)
+                      : undefined,
                     onRemove: product
                       ? () => setConnectedQty(product, 0)
                       : () =>
@@ -1255,9 +1295,7 @@ export function PurchaseOrderCreatePage() {
                   name: line.name,
                   orderedQty: line.orderedQty,
                   unitPurchaseCost: line.unitPurchaseCost,
-                  quantityControl: (
-                    <span className="tabular-nums">{line.orderedQty}</span>
-                  ),
+                  canEditQty: false,
                   onRemove: () =>
                     setExternalLines((prev) =>
                       prev.filter((l) => l.productId !== line.productId),
@@ -1266,17 +1304,21 @@ export function PurchaseOrderCreatePage() {
               />
             )}
           </SelectedItemsPanel>
-          {finderOpen ? (
-            <ProductFinderPanel
-              title={t("purchasing.supplierProducts")}
-              titleIcon={<PackageSearch className="size-5" strokeWidth={1.75} />}
-              headingId="po-find-products-heading"
-              panelId={finderPanelId}
-              closeLabel={t("purchasing.closeFindProducts")}
-              onClose={closeFinder}
-              closeTestId="po-close-finder"
-              testId="po-add-products"
-            >
+          <ExitsModal
+            open={finderOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                closeFinder();
+              }
+            }}
+            title={t("purchasing.supplierProducts")}
+            closeLabel={t("purchasing.closeFindProducts")}
+            testId="po-add-products"
+            id={finderPanelId}
+            size="lg"
+            fullHeightOnCompact
+            className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
+          >
               {connected ? (
                 <div
                   className="flex flex-col gap-3"
@@ -1354,6 +1396,36 @@ export function PurchaseOrderCreatePage() {
                 data-testid="po-product-search"
                 containerClassName="po-setup-filter-search"
               />
+              {showLinkedOrdering ? (
+                <div
+                  className="po-linked-list-mode"
+                  role="group"
+                  aria-label={t("purchasing.linkedListMode")}
+                >
+                  <Button
+                    type="button"
+                    intent="primary"
+                    appearance={linkedProductScope === "notAdded" ? "solid" : "outline"}
+                    className="po-filter-added-btn"
+                    data-testid="po-filter-not-added"
+                    aria-pressed={linkedProductScope === "notAdded"}
+                    onClick={() => setLinkedProductScope("notAdded")}
+                  >
+                    {t("purchasing.filterNotAdded").replace("{n}", String(notAddedCount))}
+                  </Button>
+                  <Button
+                    type="button"
+                    intent="primary"
+                    appearance={linkedProductScope === "added" ? "solid" : "outline"}
+                    className="po-filter-added-btn"
+                    data-testid="po-filter-added"
+                    aria-pressed={linkedProductScope === "added"}
+                    onClick={() => setLinkedProductScope("added")}
+                  >
+                    {t("purchasing.filterAdded").replace("{n}", String(addedOnOrderCount))}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
           {connectedLoading ? <LoadingState label={t("loading.label")} /> : null}
@@ -1373,11 +1445,10 @@ export function PurchaseOrderCreatePage() {
                   }
                 />
               ) : null}
-                      {linkedProductsQuery.isSuccess &&
-                      readyProducts.length > 0 &&
-                      filteredConnected.length === 0 &&
-                      hasLinkedProductFilters ? (
-
+              {linkedProductsQuery.isSuccess &&
+              readyProducts.length > 0 &&
+              findConnectedProducts.length === 0 &&
+              hasLinkedProductFilters ? (
                 <EmptyState
                   align="center"
                   icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
@@ -1394,19 +1465,33 @@ export function PurchaseOrderCreatePage() {
                       >
                         {t("purchasing.clearCategories")}
                       </Button>
+                    ) : linkedProductScope === "added" ? (
+                      <Button
+                        type="button"
+                        intent="primary"
+                        appearance="outline"
+                        data-testid="po-show-not-added"
+                        onClick={() => setLinkedProductScope("notAdded")}
+                      >
+                        {t("purchasing.filterNotAdded").replace("{n}", String(notAddedCount))}
+                      </Button>
                     ) : undefined
                   }
                 />
               ) : null}
-                        <PurchaseOrderLinkedProductsFinder
-                          layout={linkedProductsLayout}
-                          products={findConnectedProducts}
-                          allowManage={allowManage}
-                          online={online}
-                          saving={saving}
-                          onAddProduct={(product) => setConnectedQty(product, 1)}
-                          t={t}
-                        />
+              {findConnectedProducts.length > 0 ? (
+                <PurchaseOrderLinkedProductsFinder
+                  layout={linkedProductsLayout}
+                  products={findConnectedProducts}
+                  allowManage={allowManage}
+                  online={online}
+                  saving={saving}
+                  actionMode={linkedProductScope === "added" ? "added" : "add"}
+                  onAddProduct={(product) => setConnectedQty(product, 1)}
+                  onRemoveProduct={(product) => setConnectedQty(product, 0)}
+                  t={t}
+                />
+              ) : null}
             </>
           ) : (
             <>
@@ -1485,7 +1570,6 @@ export function PurchaseOrderCreatePage() {
                   </span>
                   <span>{t("purchasing.colProduct")}</span>
                   <span>{t("purchasing.colSku")}</span>
-                  <span>{t("purchasing.colUnit")}</span>
                   <span className="po-order-table__price-head">{t("purchasing.supplierPrice")}</span>
                   <span className="po-order-table__action-head">{t("purchasing.colAction")}</span>
                 </div>
@@ -1518,9 +1602,6 @@ export function PurchaseOrderCreatePage() {
                           </span>
                           <span className="po-order-table__sku">
                             {item.supplierSku ?? t("connected.noSku")}
-                          </span>
-                          <span className="po-order-table__unit">
-                            {formatUnitOfMeasureLabel(item.unitOfMeasureCode)}
                           </span>
                           <span className="po-order-table__price tabular-nums">
                             {formatPeso(item.poPrice)}
@@ -1714,10 +1795,9 @@ export function PurchaseOrderCreatePage() {
         ) : null}
       </section>
               )}
-            </ProductFinderPanel>
-          ) : null}
+          </ExitsModal>
 
-          {connected && supportedFulfillmentMethods.length > 0 ? (
+          {connected && fulfillmentUi.showSection ? (
             <section
               className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
               data-testid="po-fulfillment-method"
@@ -1729,22 +1809,14 @@ export function PurchaseOrderCreatePage() {
               >
                 {t("purchasing.fulfillmentMethod")}
               </h3>
-              {supportedFulfillmentMethods.length === 1 ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-fulfillment-readonly">
-                  {t("purchasing.fulfillment.singleMethodHelp").replace(
-                    "{method}",
-                    supportedFulfillmentMethods[0] === "Pickup"
-                      ? t("purchasing.fulfillment.pickup")
-                      : t("purchasing.fulfillment.delivery"),
-                  )}
-                </p>
-              ) : (
+
+              {fulfillmentUi.choosable.length >= 2 ? (
                 <div
                   className="grid grid-cols-2 gap-2"
                   role="radiogroup"
                   aria-label={t("purchasing.fulfillmentMethod")}
                 >
-                  {supportedFulfillmentMethods.map((method) => (
+                  {fulfillmentUi.choosable.map((method) => (
                     <label
                       key={method}
                       className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2"
@@ -1754,9 +1826,7 @@ export function PurchaseOrderCreatePage() {
                         name="po-fulfillment-method"
                         value={method}
                         checked={fulfillmentMethod === method}
-                        onChange={() =>
-                          setFulfillmentMethod(method === "Pickup" ? "Pickup" : "Delivery")
-                        }
+                        onChange={() => setFulfillmentMethod(method)}
                         disabled={!allowManage}
                       />
                       <span className="text-[length:var(--exits-text-sm)] font-medium">
@@ -1767,8 +1837,67 @@ export function PurchaseOrderCreatePage() {
                     </label>
                   ))}
                 </div>
-        )}
-      </section>
+              ) : fulfillmentUi.choosable.length === 1 ? (
+                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-fulfillment-readonly">
+                  {fulfillmentUi.choosable[0] === "Pickup"
+                    ? t("purchasing.fulfillment.pickup")
+                    : t("purchasing.fulfillment.delivery")}
+                </p>
+              ) : null}
+
+              {fulfillmentUi.deliverySetupRequired ? (
+                <div
+                  className="flex flex-col gap-1 rounded-md border border-border px-3 py-2"
+                  data-testid="po-fulfillment-delivery-setup"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[length:var(--exits-text-sm)] font-medium">
+                      {t("purchasing.fulfillment.delivery")}
+                    </span>
+                    <StatusChip tone="warning">
+                      {t("purchasing.fulfillment.deliverySetupBadge")}
+                    </StatusChip>
+                  </div>
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("purchasing.fulfillment.deliverySetupRequired")}
+                  </p>
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("purchasing.fulfillment.deliverySetupRequiredDetail").replace(
+                      "{branch}",
+                      boundWorkspace?.branchName ?? t("purchasing.receivingBranch"),
+                    )}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    asChild
+                    data-testid="po-fulfillment-complete-receiving"
+                  >
+                    <Link to="/org/branches">{t("purchasing.fulfillment.completeReceivingSetup")}</Link>
+                  </Button>
+                </div>
+              ) : null}
+
+              {fulfillmentUi.helpKey ? (
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid={
+                    fulfillmentUi.helpKey === "purchasing.fulfillment.singleMethodHelp"
+                      ? "po-fulfillment-single-help"
+                      : "po-fulfillment-delivery-unavailable"
+                  }
+                >
+                  {fulfillmentUi.helpKey === "purchasing.fulfillment.singleMethodHelp"
+                    ? t("purchasing.fulfillment.singleMethodHelp").replace(
+                        "{method}",
+                        (fulfillmentUi.helpMethod ?? "Pickup") === "Pickup"
+                          ? t("purchasing.fulfillment.pickup")
+                          : t("purchasing.fulfillment.delivery"),
+                      )
+                    : t(fulfillmentUi.helpKey)}
+                </p>
+              ) : null}
+            </section>
           ) : null}
 
           {connected && effectivePaymentTimings.length > 0 ? (
@@ -1918,8 +2047,7 @@ export function PurchaseOrderCreatePage() {
                 saving ||
                 statusLocked ||
                 activeLines.length === 0 ||
-                (connected && !paymentTerm) ||
-                (connected && !supplierCommerceReady)
+                (connected && !paymentTerm)
               }
         onClick={() => void submit()}
         data-testid="po-create-submit"

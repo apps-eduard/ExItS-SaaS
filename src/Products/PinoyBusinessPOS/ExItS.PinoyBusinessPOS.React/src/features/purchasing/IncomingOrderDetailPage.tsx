@@ -513,11 +513,27 @@ export function IncomingOrderDetailPage() {
       value: order.paymentTermLabel || order.paymentTerm || "—",
     },
     {
+      key: "paymentTiming",
+      label: t("purchasing.paymentTiming"),
+      value:
+        order.paymentTiming === "PayOnDeliveryOrReceipt"
+          ? t("connectedCommerce.timing.payOnDelivery")
+          : order.paymentTiming === "SupplierCredit"
+            ? t("connectedCommerce.timing.supplierCredit")
+            : t("connectedCommerce.timing.payBefore"),
+    },
+    {
       key: "orderDate",
       label: t("incomingOrders.orderDate"),
       value: order.orderDate,
     },
   ];
+
+  const requiresPayBefore =
+    order.paymentTiming === "PayBeforeFulfillment";
+  const payBeforeSettled =
+    (order.amountPaid ?? 0) + 0.0000001 >= (order.confirmedTotalAmount || order.totalAmount || 0);
+  const payBeforeBlocksPrepare = requiresPayBefore && !payBeforeSettled;
 
   function tryProposeChanges() {
     if (!hasMaterialChanges) {
@@ -1306,11 +1322,16 @@ export function IncomingOrderDetailPage() {
 
       {isAccepted && !needsPrepareRemaining ? (
         <div className="po-document-actions">
+          {payBeforeBlocksPrepare ? (
+            <Notice tone="danger" testId="incoming-order-pay-before-required">
+              {t("incomingOrders.paymentRequiredBeforeFulfillment")}
+            </Notice>
+          ) : null}
           <div className="po-document-actions__cluster">
             <BackActionButton />
             <Button
               type="button"
-              disabled={!canAct}
+              disabled={!canAct || payBeforeBlocksPrepare}
               data-testid="incoming-order-prepare"
               onClick={() => prepareMutation.mutate()}
             >

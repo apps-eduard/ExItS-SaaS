@@ -126,6 +126,8 @@ internal sealed class ConnectedPurchaseOrderRecord
     public string? DeclineNote { get; set; }
     public int PaymentTerm { get; set; }
     public int PaymentTiming { get; set; } = (int)ConnectedPoPaymentTiming.PayBeforeFulfillment;
+    public string? FulfillmentMethod { get; set; }
+    public string? ConfirmedFulfillmentMethod { get; set; }
     public int? ProposedPaymentTerm { get; set; }
     public int? ProposedPaymentTiming { get; set; }
     public int? ConfirmedPaymentTerm { get; set; }
@@ -438,7 +440,9 @@ internal static class ConnectedSupplierEntityMapper
             r.CreditPostedAmount,
             (ConnectedPoInventoryReservationState)r.InventoryReservationState,
             r.InventoryReservationExpiresAtUtc,
-            r.InventoryReservationRevision);
+            r.InventoryReservationRevision,
+            r.FulfillmentMethod,
+            r.ConfirmedFulfillmentMethod);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -449,6 +453,8 @@ internal static class ConnectedSupplierEntityMapper
         DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
         PaymentTerm=(int)x.PaymentTerm,
         PaymentTiming=(int)x.PaymentTiming,
+        FulfillmentMethod=x.FulfillmentMethod,
+        ConfirmedFulfillmentMethod=x.ConfirmedFulfillmentMethod,
         ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value,
         ProposedPaymentTiming=x.ProposedPaymentTiming is null ? null : (int)x.ProposedPaymentTiming.Value,
         ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value,
@@ -471,6 +477,8 @@ internal static class ConnectedSupplierEntityMapper
         r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;
         r.PaymentTerm=(int)x.PaymentTerm;
         r.PaymentTiming=(int)x.PaymentTiming;
+        r.FulfillmentMethod=x.FulfillmentMethod;
+        r.ConfirmedFulfillmentMethod=x.ConfirmedFulfillmentMethod;
         r.ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value;
         r.ProposedPaymentTiming=x.ProposedPaymentTiming is null ? null : (int)x.ProposedPaymentTiming.Value;
         r.ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value;

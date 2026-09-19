@@ -37,10 +37,17 @@ export type ExitsModalProps = {
   /** Sticky footer actions (Cancel | Continue pattern). */
   footer?: ReactNode;
   size?: ExitsModalSize;
+  /**
+   * Below `lg`, fill the viewport height (edge-to-edge sheet).
+   * Desktop (`lg+`) keeps the normal centered dialog height.
+   */
+  fullHeightOnCompact?: boolean;
   /** When true, Escape / backdrop do not close. */
   busy?: boolean;
   testId?: string;
   closeLabel?: string;
+  /** Optional id on the dialog panel (e.g. aria-controls from an opener). */
+  id?: string;
   /** Optional form submit handler — wraps body+footer in <form>. */
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   className?: string;
@@ -58,9 +65,11 @@ export function ExitsModal({
   children,
   footer,
   size = "md",
+  fullHeightOnCompact = false,
   busy = false,
   testId = "exits-modal",
   closeLabel = "Close",
+  id,
   onSubmit,
   className,
 }: ExitsModalProps) {
@@ -184,7 +193,12 @@ export function ExitsModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className={cn(
+        "fixed inset-0 z-[70] flex justify-center bg-black/40",
+        fullHeightOnCompact
+          ? "items-stretch p-0 lg:items-center lg:p-4"
+          : "items-end p-4 sm:items-center",
+      )}
       role="presentation"
       data-testid={`${testId}-backdrop`}
       onClick={() => {
@@ -195,6 +209,7 @@ export function ExitsModal({
     >
       <div
         ref={panelRef}
+        id={id}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -203,9 +218,17 @@ export function ExitsModal({
         tabIndex={-1}
         data-testid={testId}
         className={cn(
-          "flex w-full max-h-[min(90dvh,40rem)] flex-col gap-3 overflow-hidden rounded-[var(--exits-radius-md)] border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
+          "flex w-full flex-col gap-3 overflow-hidden border border-border bg-surface p-4 shadow-[var(--exits-shadow-lg)]",
           "exits-motion-dialog motion-reduce:transition-none",
-          SIZE_CLASS[size],
+          fullHeightOnCompact
+            ? cn(
+                "h-[100dvh] max-h-[100dvh] max-w-none rounded-none",
+                "lg:h-auto lg:max-h-[min(90dvh,40rem)] lg:rounded-[var(--exits-radius-md)]",
+                size === "sm" && "lg:max-w-sm",
+                size === "md" && "lg:max-w-md",
+                size === "lg" && "lg:max-w-lg",
+              )
+            : cn("max-h-[min(90dvh,40rem)] rounded-[var(--exits-radius-md)]", SIZE_CLASS[size]),
           className,
         )}
         onClick={(event) => event.stopPropagation()}

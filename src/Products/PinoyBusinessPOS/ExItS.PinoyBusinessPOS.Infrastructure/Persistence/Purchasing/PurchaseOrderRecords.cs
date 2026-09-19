@@ -38,6 +38,7 @@ internal sealed class PurchaseOrderRecord
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
     public Guid? IntendedReceivingBranchId { get; set; }
+    public string? FulfillmentMethod { get; set; }
     public DateTimeOffset? RemainingClosedAtUtc { get; set; }
     public Guid? RemainingClosedByUserId { get; set; }
     public string? RemainingClosedReason { get; set; }

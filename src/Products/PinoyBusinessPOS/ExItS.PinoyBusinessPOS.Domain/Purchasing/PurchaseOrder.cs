@@ -54,6 +54,11 @@ public sealed class PurchaseOrder
     /// Null preserves legacy / connected-supplier behavior (receive at acting branch).
     /// </summary>
     public Guid? IntendedReceivingBranchId { get; private set; }
+    /// <summary>
+    /// Connected PO fulfillment channel selected by the buyer (Pickup / Delivery).
+    /// Null for manual suppliers and legacy rows.
+    /// </summary>
+    public string? FulfillmentMethod { get; private set; }
     /// <summary>When remaining outstanding was explicitly short-closed (seller Close remaining).</summary>
     public DateTimeOffset? RemainingClosedAtUtc { get; private set; }
     public Guid? RemainingClosedByUserId { get; private set; }
@@ -99,6 +104,7 @@ public sealed class PurchaseOrder
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
+        string? fulfillmentMethod = null,
         DateTimeOffset? cancelledAtUtc = null,
         Guid? cancelledByUserId = null,
         DateTimeOffset? remainingClosedAtUtc = null,
@@ -134,6 +140,7 @@ public sealed class PurchaseOrder
         SupplierBranchId = NormalizeBranchId(supplierBranchId);
         SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchNameSnapshot);
         IntendedReceivingBranchId = NormalizeBranchId(intendedReceivingBranchId);
+        FulfillmentMethod = NormalizeFulfillmentMethod(fulfillmentMethod);
         RemainingClosedAtUtc = remainingClosedAtUtc;
         RemainingClosedByUserId = remainingClosedByUserId;
         RemainingClosedReason = remainingClosedReason;
@@ -192,7 +199,8 @@ public sealed class PurchaseOrder
         Guid? supplierBranchId = null,
         string? supplierBranchName = null,
         Guid? intendedReceivingBranchId = null,
-        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment)
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
+        string? fulfillmentMethod = null)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureLines(lines);
@@ -228,7 +236,8 @@ public sealed class PurchaseOrder
             paymentTiming,
             supplierBranchId,
             supplierBranchName,
-            intendedReceivingBranchId);
+            intendedReceivingBranchId,
+            fulfillmentMethod: fulfillmentMethod);
     }
 
     public void UpdateDraft(
@@ -243,7 +252,9 @@ public sealed class PurchaseOrder
         ConnectedPoPaymentTiming? paymentTiming = null,
         Guid? supplierBranchId = null,
         string? supplierBranchName = null,
-        bool updateSupplierSourceBranch = false)
+        bool updateSupplierSourceBranch = false,
+        string? fulfillmentMethod = null,
+        bool updateFulfillmentMethod = false)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureDraft();
@@ -269,6 +280,11 @@ public sealed class PurchaseOrder
         {
             SupplierBranchId = NormalizeBranchId(supplierBranchId);
             SupplierBranchNameSnapshot = NormalizeBranchName(supplierBranchName);
+        }
+
+        if (updateFulfillmentMethod)
+        {
+            FulfillmentMethod = NormalizeFulfillmentMethod(fulfillmentMethod);
         }
 
         ReplaceDraftLines(lines);
@@ -794,6 +810,7 @@ public sealed class PurchaseOrder
         Guid? supplierBranchId = null,
         string? supplierBranchNameSnapshot = null,
         Guid? intendedReceivingBranchId = null,
+        string? fulfillmentMethod = null,
         DateTimeOffset? cancelledAtUtc = null,
         Guid? cancelledByUserId = null,
         DateTimeOffset? remainingClosedAtUtc = null,
@@ -828,6 +845,7 @@ public sealed class PurchaseOrder
             supplierBranchId,
             supplierBranchNameSnapshot,
             intendedReceivingBranchId,
+            fulfillmentMethod,
             cancelledAtUtc,
             cancelledByUserId,
             remainingClosedAtUtc,
@@ -861,6 +879,29 @@ public sealed class PurchaseOrder
 
         var trimmed = name.Trim();
         return trimmed.Length <= 128 ? trimmed : trimmed[..128];
+    }
+
+    private static string? NormalizeFulfillmentMethod(string? method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            return null;
+        }
+
+        var trimmed = method.Trim();
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentPickup, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentPickup;
+        }
+
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentDelivery;
+        }
+
+        throw new DomainException(
+            ConnectedSupplierDomainErrorCodes.InvalidOrder,
+            "Fulfillment method must be Pickup or Delivery.");
     }
 
     private void EnsureDraft()

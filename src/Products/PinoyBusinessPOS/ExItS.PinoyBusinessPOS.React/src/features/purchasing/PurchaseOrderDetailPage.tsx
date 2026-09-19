@@ -501,6 +501,8 @@ export function PurchaseOrderDetailPage() {
 
   const supplierCommerceReady =
     !connectedRelationshipId || commerceReadinessQuery.data?.isReady !== false;
+  const supportedPickupAvailable =
+    commerceReadinessQuery.data?.supportedFulfillmentMethods?.includes("Pickup") === true;
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
     po?.cancelledByUserId,
@@ -594,7 +596,7 @@ export function PurchaseOrderDetailPage() {
       setError(
         err instanceof PosApiError
           ? err.errorCode === "pos.connected_supplier.commerce_not_ready"
-            ? t("purchasing.supplierNotReadyBody")
+            ? t("purchasing.supplierNotReadySubmitBlocked")
             : (err.problem.detail ?? t("purchasing.actionFailed"))
           : t("purchasing.actionFailed"),
       );
@@ -807,7 +809,46 @@ export function PurchaseOrderDetailPage() {
       ) : null}
       {error ? (
         <Notice tone="danger" testId="po-detail-error">
-          {error}
+          <div className="flex flex-col gap-2">
+            <span>{error}</span>
+            {error.toLowerCase().includes("pickup") ||
+            error.toLowerCase().includes("delivery") ||
+            error.toLowerCase().includes("receiving") ? (
+              <div className="flex flex-wrap gap-2">
+                {supportedPickupAvailable ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="po-submit-choose-pickup"
+                    onClick={() => navigate(`/purchasing/${purchaseOrderId}/edit`)}
+                  >
+                    {t("purchasing.choosePickup")}
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-testid="po-submit-manage-receiving"
+                  onClick={() => navigate("/branches")}
+                >
+                  {t("purchasing.manageReceivingBranch")}
+                </Button>
+                {connectedRelationshipId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="po-submit-view-fulfillment"
+                    onClick={() => navigate(`/suppliers/connected/${connectedRelationshipId}`)}
+                  >
+                    {t("purchasing.viewFulfillmentSetup")}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </Notice>
       ) : null}
       {canSubmit ? (
@@ -832,6 +873,21 @@ export function PurchaseOrderDetailPage() {
             label: t("purchasing.paymentTerm"),
             value: po.paymentTermLabel || po.paymentTerm || "Cash",
           },
+          ...(po.paymentTiming
+            ? [
+                {
+                  key: "paymentTiming",
+                  label: t("purchasing.paymentTiming"),
+                  value:
+                    po.paymentTimingLabel ||
+                    (po.paymentTiming === "PayOnDeliveryOrReceipt"
+                      ? t("connectedCommerce.timing.payOnDelivery")
+                      : po.paymentTiming === "SupplierCredit"
+                        ? t("connectedCommerce.timing.supplierCredit")
+                        : t("connectedCommerce.timing.payBefore")),
+                },
+              ]
+            : []),
           {
             key: "orderDate",
             label: t("purchasing.fieldOrderDate"),
@@ -1106,11 +1162,11 @@ export function PurchaseOrderDetailPage() {
                         ],
                       });
                       if (!readiness.isReady) {
-                        setError(t("purchasing.supplierNotReadyBody"));
+                        setError(t("purchasing.supplierNotReadySubmitBlocked"));
                         return;
                       }
                     } catch {
-                      setError(t("purchasing.supplierNotReadyBody"));
+                      setError(t("purchasing.supplierNotReadySubmitBlocked"));
                       return;
                     }
                   }

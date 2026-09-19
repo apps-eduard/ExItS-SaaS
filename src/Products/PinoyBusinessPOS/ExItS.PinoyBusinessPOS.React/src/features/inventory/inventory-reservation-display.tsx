@@ -5,7 +5,12 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 export function formatInventoryQty(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
-  return formatQuantityDisplay(value);
+  const trimmed = formatQuantityDisplay(value);
+  const [integerPart, fractionPart] = trimmed.split(".");
+  if (!integerPart) return trimmed;
+  // Explicit comma grouping (1,000) for inventory product cards / qty display.
+  const grouped = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return fractionPart != null && fractionPart.length > 0 ? `${grouped}.${fractionPart}` : grouped;
 }
 
 export function resolveAvailableQuantity(item: {

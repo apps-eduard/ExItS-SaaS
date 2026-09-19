@@ -161,7 +161,7 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
     }
 
     [Fact]
-    public async Task Supplier_delivery_only_without_org_offer_marks_fulfillment_complete()
+    public async Task Supplier_delivery_only_without_org_offer_does_not_list_delivery()
     {
         var relationship = ReadyRelationship();
         var service = new ConnectedSupplierCommerceReadinessService(
@@ -175,24 +175,18 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
 
         var supplier = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
         Assert.True(supplier.IsSuccess, supplier.ErrorMessage);
-        Assert.True(supplier.Value!.IsReady);
+        Assert.False(supplier.Value!.IsReady);
+        Assert.Empty(supplier.Value.SupportedFulfillmentMethods);
         Assert.Equal(
-            ConnectedSupplierCommerceReadiness.StatusComplete,
+            ConnectedSupplierCommerceReadiness.StatusMissing,
             supplier.Value.Requirements!
                 .Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod)
                 .Status);
-        Assert.Equal(
-            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
-            supplier.Value.SupportedFulfillmentMethods);
 
-        // Buyer also gets Delivery from the branch channel (org Offer Delivery not required).
         var buyer = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
         Assert.True(buyer.IsSuccess, buyer.ErrorMessage);
-        Assert.True(buyer.Value!.IsReady);
-        Assert.Equal(
-            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
-            buyer.Value.SupportedFulfillmentMethods);
-        Assert.Empty(buyer.Value.BlockerCategories ?? []);
+        Assert.False(buyer.Value!.IsReady);
+        Assert.Empty(buyer.Value.SupportedFulfillmentMethods);
     }
 
     [Fact]
@@ -208,6 +202,119 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
         Assert.Contains(
             ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod,
             result.Value.BlockerCategories ?? []);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_exposes_both_methods_when_org_offer_on()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchPickupReady);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.False(result.Value.RelationshipDeliveryBlocked);
+        Assert.Null(result.Value.DeliveryUnavailableReason);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_org_offer_off_reports_reason_not_false_pickup_only_capability()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: false));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableOrgOfferOff,
+            result.Value.DeliveryUnavailableReason);
+        Assert.DoesNotContain(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_relationship_block_reports_customer_reason()
+    {
+        var relationship = ReadyRelationship();
+        relationship.SetCustomerDeliveryOverride(CustomerDeliveryOverride.Block, Now);
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.True(result.Value.RelationshipDeliveryBlocked);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableRelationshipBlocked,
+            result.Value.DeliveryUnavailableReason);
+        Assert.DoesNotContain(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            result.Value.SupportedFulfillmentMethods);
+
+        var gate = await service.EnsureFulfillmentMethodAllowedAsync(
+            relationship,
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            forBuyerMessage: true);
+        Assert.False(gate.IsSuccess);
+        Assert.Contains("business relationship", gate.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Ensure_fulfillment_and_buyer_projection_agree_on_delivery()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var projection = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+        var gate = await service.EnsureFulfillmentMethodAllowedAsync(
+            relationship,
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            forBuyerMessage: true);
+
+        Assert.True(projection.IsSuccess);
+        Assert.Contains(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            projection.Value!.SupportedFulfillmentMethods);
+        Assert.True(gate.IsSuccess, gate.ErrorMessage);
     }
 
     private static ConnectedSupplierRelationship ReadyRelationship(

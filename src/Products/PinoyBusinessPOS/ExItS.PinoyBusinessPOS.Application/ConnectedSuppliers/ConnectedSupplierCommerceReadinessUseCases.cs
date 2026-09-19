@@ -29,7 +29,22 @@ public sealed record ConnectedSupplierCommerceReadinessDto(
     bool AllowPayBeforeFulfillment = true,
     bool AllowPayOnDeliveryOrReceipt = true,
     bool AllowSupplierCredit = false,
-    string DefaultPaymentTiming = "PayBeforeFulfillment");
+    string DefaultPaymentTiming = "PayBeforeFulfillment",
+    /// <summary>Organization Offer Delivery master switch.</summary>
+    bool OrgOfferDelivery = false,
+    /// <summary>Selected supplier branch Pickup enabled+ready.</summary>
+    bool BranchPickupReady = false,
+    /// <summary>Selected supplier branch Delivery enabled+ready (config), independent of Offer Delivery.</summary>
+    bool BranchDeliveryReady = false,
+    /// <summary>Relationship CustomerDeliveryOverride = Block.</summary>
+    bool RelationshipDeliveryBlocked = false,
+    /// <summary>
+    /// Buyer-safe Delivery unavailability reason when Delivery is not selectable:
+    /// OrgOfferOff | BranchNotReady | RelationshipBlocked.
+    /// </summary>
+    string? DeliveryUnavailableReason = null,
+    /// <summary>Buyer-safe Pickup unavailability reason: BranchNotReady when not selectable.</summary>
+    string? PickupUnavailableReason = null);
 
 /// <summary>
 /// Authoritative commerce readiness for connected supplier PO acceptance.
@@ -103,9 +118,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 ConnectedSupplierErrorCodes.NotFound, "Relationship was not found.");
         }
 
-        var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
-        var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
-        forBuyer = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(forBuyer);
+        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var forBuyer = ApplyBuyerDeliveryFilter(snapshot);
+        forBuyer = forBuyer with
+        {
+            Result = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(forBuyer.Result),
+        };
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
             await ToDtoAsync(relationship, forBuyer, includeRequirements: false, cancellationToken)
                 .ConfigureAwait(false));
@@ -133,9 +151,9 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 ConnectedSupplierErrorCodes.NotFound, "Business customer relationship was not found.");
         }
 
-        var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
         return ApplicationResult<ConnectedSupplierCommerceReadinessDto>.Success(
-            await ToDtoAsync(relationship, evaluated, includeRequirements: true, cancellationToken)
+            await ToDtoAsync(relationship, snapshot, includeRequirements: true, cancellationToken)
                 .ConfigureAwait(false));
     }
 
@@ -148,11 +166,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
         bool forBuyerMessage,
         CancellationToken cancellationToken = default)
     {
-        var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var evaluated = snapshot.Result;
         if (forBuyerMessage)
         {
-            evaluated = ApplyBuyerDeliveryFilter(evaluated, relationship);
-            evaluated = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(evaluated);
+            snapshot = ApplyBuyerDeliveryFilter(snapshot);
+            evaluated = ConnectedSupplierCommerceReadiness.EnsureBuyerHasUsableMethod(snapshot.Result);
         }
 
         if (evaluated.IsReady)
@@ -185,11 +204,9 @@ public sealed class ConnectedSupplierCommerceReadinessService
             return ApplicationResult.Success();
         }
 
-        var evaluated = await EvaluateAsync(relationship, cancellationToken).ConfigureAwait(false);
-        var forBuyer = ApplyBuyerDeliveryFilter(evaluated, relationship);
-        if (forBuyer.SupportedFulfillmentMethods.Contains(
-                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
-                StringComparer.OrdinalIgnoreCase))
+        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var forBuyer = ApplyBuyerDeliveryFilter(snapshot);
+        if (forBuyer.Options.DeliverySelectable)
         {
             return ApplicationResult.Success();
         }
@@ -197,11 +214,31 @@ public sealed class ConnectedSupplierCommerceReadinessService
         return ApplicationResult.Failure(
             ConnectedSupplierErrorCodes.CommerceNotReady,
             forBuyerMessage
-                ? "Delivery is not available for this supplier connection."
+                ? forBuyer.Options.DeliveryUnavailableReason switch
+                {
+                    ConnectedSupplierCommerceReadiness.DeliveryUnavailableRelationshipBlocked
+                        => "Delivery is not available for this business relationship.",
+                    ConnectedSupplierCommerceReadiness.DeliveryUnavailableOrgOfferOff
+                        => "Delivery is currently disabled by this supplier.",
+                    _
+                        => "Delivery is not available for this supplier connection.",
+                }
                 : "Delivery is not available for this business customer.");
     }
 
     public async Task<ConnectedSupplierCommerceReadiness.Result> EvaluateAsync(
+        ConnectedSupplierRelationship relationship,
+        CancellationToken cancellationToken = default)
+    {
+        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
+        return snapshot.Result;
+    }
+
+    internal sealed record EvaluationSnapshot(
+        ConnectedSupplierCommerceReadiness.Result Result,
+        ConnectedSupplierCommerceReadiness.BuyerFulfillmentOptions Options);
+
+    private async Task<EvaluationSnapshot> EvaluateSnapshotAsync(
         ConnectedSupplierRelationship relationship,
         CancellationToken cancellationToken = default)
     {
@@ -216,7 +253,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
         bool pickupEnabled = false;
         bool pickupConfigured = false;
-        bool deliveryConfigured = false;
+        bool deliveryEnabled = false;
+        bool deliveryReady = false;
         if (hasBranch)
         {
             var branch = await _branches
@@ -234,9 +272,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 pickupConfigured = branch.PickupReady;
                 // Canonical: enabled + Platform DeliveryReady (same as seller Branch PO panel).
                 // Do not use DeliveryOperational (open-now) or ad-hoc policy/instructions checks.
-                deliveryConfigured = branch.DeliveryEnabled && branch.DeliveryReady;
+                deliveryEnabled = branch.DeliveryEnabled;
+                deliveryReady = branch.DeliveryReady;
             }
         }
+
+        var deliveryConfigured = deliveryEnabled && deliveryReady;
 
         var paymentSettings = await _paymentSettings
             .ListByOrganizationAsync(supplierOrg, cancellationToken)
@@ -280,7 +321,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
             relationship.ContactSource,
             relationship.OrganizationMemberId);
 
-        return ConnectedSupplierCommerceReadiness.Evaluate(
+        var result = ConnectedSupplierCommerceReadiness.Evaluate(
             new ConnectedSupplierCommerceReadiness.Input(
                 HasSellingBranch: hasBranch,
                 PickupEnabled: pickupEnabled,
@@ -293,51 +334,58 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 HasValidCreditPolicy: hasValidCredit,
                 HasSharedCatalog: hasCatalog,
                 HasResponsibleContact: hasContact));
+
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: orgOfferDelivery,
+            branchPickupEnabled: pickupEnabled,
+            branchPickupReady: pickupConfigured,
+            branchDeliveryEnabled: deliveryEnabled,
+            branchDeliveryReady: deliveryReady,
+            customerOverride: relationship.CustomerDeliveryOverride);
+
+        // Align selectable methods with Evaluate when relationship does not Block
+        // (Evaluate already applied org+branch). Options refine Block + reasons.
+        return new EvaluationSnapshot(result, options);
     }
 
     /// <summary>
     /// Buyer-facing methods: strip Delivery when the customer override Blocks it.
-    /// Branch Delivery enabled+ready is enough to list Delivery (org Offer Delivery is not
-    /// required for method availability). When Delivery was the only usable method and
-    /// Block applies, the buyer projection becomes not-ready with NoUsableMethod.
+    /// Uses canonical EffectiveDeliveryAllowance (org Offer Delivery + branch ready + override).
     /// </summary>
-    internal static ConnectedSupplierCommerceReadiness.Result ApplyBuyerDeliveryFilter(
-        ConnectedSupplierCommerceReadiness.Result evaluated,
-        ConnectedSupplierRelationship relationship)
+    internal static EvaluationSnapshot ApplyBuyerDeliveryFilter(EvaluationSnapshot snapshot)
     {
-        var readyBranch = evaluated.SupportedFulfillmentMethods.Contains(
-            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
-            StringComparer.OrdinalIgnoreCase);
-        // Branch channel is the offer signal for buyer method listing; org Offer Delivery
-        // remains a separate supplier checklist concern (DeliveryConfig).
-        var allowed = EffectiveDeliveryAllowance.IsAllowed(
-            orgOfferDelivery: readyBranch,
-            readyDeliveryBranchExists: readyBranch,
-            relationship.CustomerDeliveryOverride);
-
-        if (allowed
-            || !readyBranch)
+        var options = snapshot.Options;
+        if (options.DeliverySelectable)
         {
-            return evaluated;
+            return snapshot;
         }
 
-        var filtered = evaluated.SupportedFulfillmentMethods
+        var filtered = snapshot.Result.SupportedFulfillmentMethods
             .Where(m => !m.Equals(
                 ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
                 StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
+        if (filtered.Length == snapshot.Result.SupportedFulfillmentMethods.Count)
+        {
+            // Delivery was never listed (org/branch) — keep result; options still carry reason.
+            return snapshot with { Options = options with { SelectableMethods = filtered } };
+        }
+
         if (filtered.Length > 0)
         {
-            // Pickup (or another non-delivery method) still works for this buyer.
-            return new ConnectedSupplierCommerceReadiness.Result(
-                evaluated.IsReady,
-                filtered,
-                evaluated.Requirements);
+            return snapshot with
+            {
+                Result = new ConnectedSupplierCommerceReadiness.Result(
+                    snapshot.Result.IsReady,
+                    filtered,
+                    snapshot.Result.Requirements),
+                Options = options with { SelectableMethods = filtered },
+            };
         }
 
         // Delivery was the only usable method and the customer override blocks it.
-        var requirements = evaluated.Requirements
+        var requirements = snapshot.Result.Requirements
             .Select(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod
                 ? r with
                 {
@@ -346,10 +394,40 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 }
                 : r)
             .ToList();
-        return new ConnectedSupplierCommerceReadiness.Result(
-            IsReady: false,
-            filtered,
-            requirements);
+        return snapshot with
+        {
+            Result = new ConnectedSupplierCommerceReadiness.Result(
+                IsReady: false,
+                filtered,
+                requirements),
+            Options = options with { SelectableMethods = filtered },
+        };
+    }
+
+    /// <summary>
+    /// Legacy helper: strips Delivery from an Evaluate result when the relationship Blocks it.
+    /// Prefers reconstructing options from listed methods (Evaluate already applied org+branch).
+    /// </summary>
+    internal static ConnectedSupplierCommerceReadiness.Result ApplyBuyerDeliveryFilter(
+        ConnectedSupplierCommerceReadiness.Result evaluated,
+        ConnectedSupplierRelationship relationship)
+    {
+        var hasPickup = evaluated.SupportedFulfillmentMethods.Contains(
+            ConnectedSupplierCommerceReadiness.FulfillmentPickup,
+            StringComparer.OrdinalIgnoreCase);
+        var hasDelivery = evaluated.SupportedFulfillmentMethods.Contains(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            StringComparer.OrdinalIgnoreCase);
+        // When Delivery is listed, org offer + branch ready were both true at Evaluate time.
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: hasDelivery,
+            branchPickupEnabled: hasPickup,
+            branchPickupReady: hasPickup,
+            branchDeliveryEnabled: hasDelivery,
+            branchDeliveryReady: hasDelivery,
+            customerOverride: relationship.CustomerDeliveryOverride);
+
+        return ApplyBuyerDeliveryFilter(new EvaluationSnapshot(evaluated, options)).Result;
     }
 
     private sealed class NullOrganizationFulfillmentSettingsRepository : IOrganizationFulfillmentSettingsRepository
@@ -404,10 +482,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
     private async Task<ConnectedSupplierCommerceReadinessDto> ToDtoAsync(
         ConnectedSupplierRelationship relationship,
-        ConnectedSupplierCommerceReadiness.Result evaluated,
+        EvaluationSnapshot snapshot,
         bool includeRequirements,
         CancellationToken cancellationToken)
     {
+        var evaluated = snapshot.Result;
+        var options = snapshot.Options;
         IReadOnlyList<ConnectedSupplierCommerceReadinessRequirementDto>? requirements = null;
         if (includeRequirements)
         {
@@ -430,16 +510,23 @@ public sealed class ConnectedSupplierCommerceReadinessService
                     DateTimeOffset.UtcNow));
         var timing = ConnectedPoPaymentTimingResolver.Resolve(settings, relationship);
 
+        // SelectableMethods is the canonical Block-aware projection for Create PO + submit.
         return new ConnectedSupplierCommerceReadinessDto(
             relationship.Id.Value,
             evaluated.IsReady,
-            evaluated.SupportedFulfillmentMethods,
+            options.SelectableMethods,
             requirements,
             blockerCategories,
             timing.AllowPayBeforeFulfillment,
             timing.AllowPayOnDeliveryOrReceipt,
             timing.AllowSupplierCredit,
-            timing.DefaultPaymentTiming.ToString());
+            timing.DefaultPaymentTiming.ToString(),
+            options.OrgOfferDelivery,
+            options.BranchPickupReady,
+            options.BranchDeliveryReady,
+            options.RelationshipDeliveryBlocked,
+            options.DeliveryUnavailableReason,
+            options.PickupUnavailableReason);
     }
 
     private static string? ActionPathFor(string code) =>

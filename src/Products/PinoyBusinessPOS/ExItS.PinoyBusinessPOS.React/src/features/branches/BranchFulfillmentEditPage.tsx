@@ -27,6 +27,7 @@ import {
 } from "@/api/platform/branch-fulfillment-client";
 import {
   getSupplierConnectedSupplierCommerceReadiness,
+  getOrganizationFulfillmentSettings,
   listBusinessCustomers,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
@@ -58,6 +59,7 @@ import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
 import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
+import { organizationOfferDeliveryQueryKey } from "@/features/branches/offer-delivery-queries";
 import { hasEnabledPoPaymentMethod, requirementIsMissing } from "@/features/shell/needs-attention";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -174,6 +176,17 @@ export function BranchFulfillmentEditPage() {
         contactOk: !requirementIsMissing(readiness.requirements, "ResponsibleContact"),
       };
     },
+  });
+
+  const orgFulfillmentQuery = useQuery({
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
+    enabled: Boolean(organizationId && canAccess && boundWorkspace?.branchId),
+    staleTime: 60_000,
+    queryFn: ({ signal }) =>
+      getOrganizationFulfillmentSettings(
+        { organizationId: organizationId!, branchId: boundWorkspace!.branchId },
+        signal,
+      ),
   });
 
   const [name, setName] = useState("");
@@ -651,6 +664,7 @@ export function BranchFulfillmentEditPage() {
             branchId={branchId}
             readiness={currentReadiness}
             t={t}
+            orgOfferDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
             catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
             paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
             contactOk={supplierSummaryQuery.data?.contactOk ?? null}
@@ -659,6 +673,7 @@ export function BranchFulfillmentEditPage() {
             readiness={currentReadiness}
             busy={busy || !canManage}
             t={t}
+            orgOfferDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
             onTogglePickup={(enabled) => {
               if (!canManage) return;
               void toggleFulfillment({ pickupEnabled: enabled });

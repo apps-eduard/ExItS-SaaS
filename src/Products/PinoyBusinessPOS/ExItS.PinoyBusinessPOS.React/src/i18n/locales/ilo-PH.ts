@@ -480,8 +480,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.offerDeliveryTitle": "Organization Delivery",
   "branches.offerDeliveryLede": "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
   "branches.offerDelivery": "Offer Delivery",
-  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
-  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryOnHint": "Allow connected business customers to choose Delivery from delivery-ready branches.",
+  "branches.offerDeliveryOffHint": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
   "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
 
   "branches.loadError": "Saan a ma-load dagiti branch.",
@@ -597,6 +597,8 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "branches.poFulfillment.helper.delivery":
     "Enable if this branch will deliver connected purchase orders.",
+  "branches.poFulfillment.helper.deliveryOrgOfferOff":
+    "This branch Delivery switch is ON (setup kept). Buyers still will not see Delivery until you turn Offer Delivery on under Branches.",
 
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
 
@@ -2650,7 +2652,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
   "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
   "customers.business.deliveryAllowanceOrgOff":
-    "Delivery is not currently offered by your organization.",
+    "Effective: Disabled globally. Offer Delivery is off for your organization.",
+  "customers.business.deliveryAllowanceOrgOffHelp":
+    "Branch Delivery setup can stay configured. Buyers will not be offered Delivery until you turn Offer Delivery on.",
+  "customers.business.deliveryAllowanceOpenOfferDelivery": "Open Offer Delivery settings",
   "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
   "customers.business.connectedCommerce.paymentTimingTitle": "Payment timing",
   "customers.business.connectedCommerce.paymentTimingHelp":
@@ -13400,4 +13405,42 @@ export const iloPH: Record<keyof typeof en, string> = {
   "returns.connectedPo.loadError": "Could not load the supplier return.",
   "returns.connectedPo.processTitle": "Process buyer return",
   "returns.connectedPo.refundAmountInvalid": "Enter a refund amount greater than zero.",
+
+  "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillment.pickup": "Pickup",
+  "purchasing.fulfillment.delivery": "Delivery",
+  "purchasing.fulfillment.deliveryUnavailableOrgOff":
+    "Delivery is currently disabled by this supplier.",
+  "purchasing.fulfillment.deliveryUnavailableBranch":
+    "Delivery is not ready on the selected fulfillment branch.",
+  "purchasing.fulfillment.deliveryUnavailableCustomer":
+    "Delivery is not available for this business relationship.",
+  "purchasing.fulfillment.deliverySetupRequired":
+    "Delivery is available, but your receiving address/setup must be completed.",
+  "purchasing.fulfillment.deliverySetupRequiredDetail":
+    "Complete the receiving address for {branch}.",
+  "purchasing.fulfillment.completeReceivingSetup": "Complete receiving setup",
+  "purchasing.fulfillment.deliverySetupBadge": "Setup required",
+  "purchasing.fulfillment.singleMethodHelp":
+    "This supplier currently supports {method} only.",
+  "branches.poFulfillment.deliveryConfiguredReady": "Configured: Ready",
+  "branches.poFulfillment.deliveryEffectiveDisabledGlobally":
+    "Effective: Disabled globally (Offer Delivery is off)",
+  "branches.connectedOrderDeliveryTitle": "Connected order delivery",
+  "branches.offerDeliveryStatusOn": "ON",
+  "branches.offerDeliveryStatusOff": "OFF",
+  "branches.offerDeliveryOnDetail": "Buyers may use Delivery from eligible delivery-ready branches.",
+  "branches.offerDeliveryOffDetail": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
+  "branches.offerDeliveryTurnOn": "Turn on Offer Delivery",
+  "branches.offerDeliveryOpenConnectedCommerce": "Open Connected Commerce settings",
+  "branches.mgmt.pickupOff": "Pickup Off",
+  "branches.mgmt.pickupReady": "Pickup Ready",
+  "branches.mgmt.pickupSetup": "Pickup Setup",
+  "branches.mgmt.deliveryOff": "Delivery Off",
+  "branches.mgmt.deliveryReady": "Delivery Ready",
+  "branches.mgmt.deliverySetup": "Delivery Setup",
+  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready · Globally paused",
+  "branches.poFulfillment.deliveryEffectivePaused": "Effective: Paused globally",
+  "branches.poFulfillment.offerDeliveryPausedHelp": "Offer Delivery is off for the organization. Your branch configuration is preserved.",
+  "customers.business.deliveryAllowanceBlockedTitle": "Not allowed for this customer"
 };

@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ResponsiveDataLayout } from "@/components/exits/responsive-data-view";
 import {
@@ -8,7 +8,6 @@ import {
 } from "@/components/exits/ProductSelectionView";
 import {
   formatSupplierAvailabilityLabel,
-  formatUnitOfMeasureLabel,
   formatUnitPriceLabel,
   type ConnectedPoReadyProduct,
 } from "@/features/purchasing/purchase-order-create-connected";
@@ -17,19 +16,22 @@ type Translate = (key: string) => string;
 
 type PurchaseOrderLinkedProductsFinderProps = {
   layout: ResponsiveDataLayout;
-  /** Products not yet on the PO (selected lines are excluded by the page). */
   products: readonly ConnectedPoReadyProduct[];
   allowManage: boolean;
   online: boolean;
   saving: boolean;
+  /** `add` = Plus action; `added` = remove-from-order (Added filter). */
+  actionMode?: "add" | "added";
   onAddProduct: (product: ConnectedPoReadyProduct) => void;
+  onRemoveProduct?: (product: ConnectedPoReadyProduct) => void;
   t: Translate;
 };
 
 /**
  * Create PO (Linked tab) adapter — supplier stock/price/add → ProductSelectionView.
- * Selected products are omitted by the parent so Add always means “add to order”.
+ * Parent excludes selected lines unless `actionMode="added"` (Added filter).
  * Stock is informational; Add is never blocked by availability.
+ * SKU sits under the product name (no separate SKU column).
  */
 export function PurchaseOrderLinkedProductsFinder({
   layout,
@@ -37,54 +39,65 @@ export function PurchaseOrderLinkedProductsFinder({
   allowManage,
   online,
   saving,
+  actionMode = "add",
   onAddProduct,
+  onRemoveProduct,
   t,
 }: PurchaseOrderLinkedProductsFinderProps) {
   const columns: ProductSelectionColumn[] = [
-    { id: "product", header: t("purchasing.colProduct") },
-    { id: "category", header: t("purchasing.category") },
-    { id: "sku", header: t("purchasing.colSku") },
-    { id: "unit", header: t("purchasing.colUnit") },
-    { id: "stock", header: t("purchasing.colStock") },
-    { id: "price", header: t("purchasing.supplierPrice"), cellAlign: "numeric" },
+    { id: "product", header: t("purchasing.colProduct"), colSize: "flex" },
+    {
+      id: "category",
+      header: t("purchasing.category"),
+      className: "po-linked-col--category",
+    },
+    {
+      id: "stock",
+      header: t("purchasing.colStock"),
+      cellAlign: "numeric",
+      colSize: "numeric",
+      className: "po-linked-col--stock",
+    },
+    {
+      id: "price",
+      header: t("purchasing.supplierPrice"),
+      cellAlign: "numeric",
+      colSize: "money",
+      className: "po-linked-col--price",
+    },
   ];
 
   const rows: ProductSelectionRow[] = products.map((product) => {
     const stockLabel = formatSupplierAvailabilityLabel(product, t);
-
-    const unitLabel =
-      product.packageLabel || product.unitOfMeasure
-        ? formatUnitOfMeasureLabel(
-            product.packageLabel || product.unitOfMeasure || "",
-          )
-        : "—";
-
-    const priceLabel = formatUnitPriceLabel(
-      product.unitPurchaseCost,
-      product.unitOfMeasure,
-    );
-
+    const priceLabel = formatUnitPriceLabel(product.unitPurchaseCost);
     const skuLabel = product.supplierSku ?? t("connected.noSku");
+    const skuCell = (
+      <span className="po-linked-sku" data-testid={`po-sku-${product.buyerProductId}`}>
+        {skuLabel}
+      </span>
+    );
     const categoryLabel = product.categoryName?.trim() || "—";
     const categoryCell = (
       <span data-testid={`po-category-${product.buyerProductId}`}>{categoryLabel}</span>
+    );
+    const productCell = (
+      <span className="po-linked-product-cell">
+        <span className="po-linked-product-name font-medium leading-snug">{product.productName}</span>
+        {skuCell}
+      </span>
     );
 
     return {
       id: product.buyerProductId,
       testId: `po-connected-product-${product.buyerProductId}`,
       title: product.productName,
-      subtitle: skuLabel,
+      subtitle: skuCell,
       status: (
         <span data-testid={`po-stock-${product.buyerProductId}`}>{stockLabel}</span>
       ),
       cells: [
-        <span key="name" className="font-medium leading-snug">
-          {product.productName}
-        </span>,
+        productCell,
         categoryCell,
-        skuLabel,
-        unitLabel,
         <span key="stock" data-testid={`po-stock-${product.buyerProductId}`}>
           {stockLabel}
         </span>,
@@ -94,25 +107,41 @@ export function PurchaseOrderLinkedProductsFinder({
       ],
       fields: [
         { label: t("purchasing.category"), value: categoryCell },
-        { label: t("purchasing.colUnit"), value: unitLabel },
         { label: t("purchasing.colStock"), value: stockLabel },
         { label: t("purchasing.supplierPrice"), value: priceLabel, emphasize: true },
       ],
-      primaryAction: (
-        <Button
-          type="button"
-          variant="default"
-          size="icon"
-          shape="round"
-          className="po-linked-add-btn"
-          data-testid={`po-add-${product.buyerProductId}`}
-          disabled={!allowManage || !online || saving}
-          aria-label={t("purchasing.addProduct")}
-          onClick={() => onAddProduct(product)}
-        >
-          <Plus className="size-4" aria-hidden />
-        </Button>
-      ),
+      primaryAction:
+        actionMode === "added" ? (
+          <Button
+            type="button"
+            intent="danger"
+            appearance="outline"
+            size="icon"
+            shape="round"
+            className="po-linked-remove-btn"
+            data-testid={`po-remove-${product.buyerProductId}`}
+            disabled={!allowManage || !online || saving || !onRemoveProduct}
+            aria-label={t("purchasing.removeLine")}
+            onClick={() => onRemoveProduct?.(product)}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            intent="primary"
+            appearance="outline"
+            size="icon"
+            shape="round"
+            className="po-linked-add-btn"
+            data-testid={`po-add-${product.buyerProductId}`}
+            disabled={!allowManage || !online || saving}
+            aria-label={t("purchasing.addProduct")}
+            onClick={() => onAddProduct(product)}
+          >
+            <Plus className="size-4" aria-hidden />
+          </Button>
+        ),
     };
   });
 
@@ -121,7 +150,8 @@ export function PurchaseOrderLinkedProductsFinder({
       layout={layout}
       columns={columns}
       rows={rows}
-      emptyMessage={t("purchasing.noReadyProducts")}
+      actionHeader={actionMode === "added" ? t("purchasing.removeLine") : t("purchasing.addProduct")}
+      actionColClassName="po-linked-action-col"
       testId="po-linked-products"
     />
   );

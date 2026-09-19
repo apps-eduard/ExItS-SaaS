@@ -49,7 +49,7 @@ function Harness({
         paidNowValue={paidNowValue}
         allowSupplierCredit={allowSupplierCredit}
         lockedFromPo={lockedFromPo}
-        lockedPaymentMethodLabel={lockedFromPo ? "COD / Pay on delivery" : undefined}
+        lockedPaymentMethodLabel={lockedFromPo ? "Cash" : undefined}
         settlementFields={EMPTY_RECEIVE_SETTLEMENT}
         onSettlementFieldsChange={vi.fn()}
       />
@@ -119,7 +119,7 @@ describe("ReceivePaymentSection", () => {
     expect(screen.queryByTestId("receive-payment-mode")).not.toBeInTheDocument();
     expect(screen.queryByTestId("receive-payment-method")).not.toBeInTheDocument();
     expect(screen.getByTestId("receive-payment-locked-method")).toHaveTextContent(
-      "COD / Pay on delivery",
+      "Cash",
     );
     expect(screen.getByTestId("receive-payment-locked-hint")).toBeInTheDocument();
   });

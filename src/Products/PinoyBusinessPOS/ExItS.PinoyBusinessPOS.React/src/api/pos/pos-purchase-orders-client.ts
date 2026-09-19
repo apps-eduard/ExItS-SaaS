@@ -105,6 +105,8 @@ export const posPurchaseOrderDtoSchema = z.object({
   paymentTerm: z.string().optional(),
   paymentTermLabel: z.string().optional(),
   paymentTiming: z.string().optional(),
+  paymentTimingLabel: z.string().optional(),
+  fulfillmentMethod: z.string().nullable().optional(),
   proposedTotalAmount: z.number().nullable().optional(),
   confirmedTotalAmount: z.number().nullable().optional(),
   connectedLines: z.array(connectedPurchaseOrderLineDtoSchema).nullable().optional(),

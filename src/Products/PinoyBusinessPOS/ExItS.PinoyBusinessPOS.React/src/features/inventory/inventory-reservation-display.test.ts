@@ -57,4 +57,10 @@ describe("inventory-reservation-display", () => {
     expect(formatInventoryQty(1.25)).toBe("1.25");
     expect(formatInventoryQty(2)).toBe("2");
   });
+
+  it("adds thousand separators for inventory card quantities", () => {
+    expect(formatInventoryQty(1000)).toBe("1,000");
+    expect(formatInventoryQty(12500)).toBe("12,500");
+    expect(formatInventoryQty(1000.5)).toBe("1,000.5");
+  });
 });

@@ -48,20 +48,20 @@ public static class ConnectedPoPayBeforeFulfillmentGate
         }
 
         var message = inputs.Order.EffectivePaymentTerm == ConnectedPoPaymentTerm.Check
-            ? "Fulfillment is blocked until full prepayment is settled and check payment is Cleared."
-            : "Fulfillment is blocked until full prepayment is settled.";
+            ? "Payment is required before fulfillment can begin. Check payment must be Cleared."
+            : "Payment is required before fulfillment can begin.";
         return new SettlementEvaluation(required, settled, IsSatisfied: false, FailureMessage: message);
     }
 
     public static ApplicationResult Fail(SettlementEvaluation evaluation) =>
         ApplicationResult.Failure(
             ConnectedSupplierDomainErrorCodes.PaymentRequiredBeforeFulfillment,
-            evaluation.FailureMessage ?? "Fulfillment is blocked until full prepayment is settled.");
+            evaluation.FailureMessage ?? "Payment is required before fulfillment can begin.");
 
     public static ApplicationResult<T> Fail<T>(SettlementEvaluation evaluation) =>
         ApplicationResult<T>.Failure(
             ConnectedSupplierDomainErrorCodes.PaymentRequiredBeforeFulfillment,
-            evaluation.FailureMessage ?? "Fulfillment is blocked until full prepayment is settled.");
+            evaluation.FailureMessage ?? "Payment is required before fulfillment can begin.");
 
     public static async Task<SettlementEvaluation> EvaluateAsync(
         ConnectedPurchaseOrder order,

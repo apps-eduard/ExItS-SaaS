@@ -341,13 +341,16 @@ function formatAvailabilityQty(quantity: number): string {
   if (!Number.isFinite(quantity)) {
     return "0";
   }
-  if (Math.abs(quantity - Math.trunc(quantity)) < 1e-9) {
-    return String(Math.trunc(quantity));
-  }
-  return String(Math.round(quantity * 1_000_000) / 1_000_000);
+  const rounded =
+    Math.abs(quantity - Math.trunc(quantity)) < 1e-9
+      ? Math.trunc(quantity)
+      : Math.round(quantity * 1_000_000) / 1_000_000;
+  const [integerPart, fractionPart] = String(rounded).split(".");
+  const grouped = (integerPart ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return fractionPart != null && fractionPart.length > 0 ? `${grouped}.${fractionPart}` : grouped;
 }
 
-/** Finder/stock column label: "Available now: {qty} {unit}" or "Out of stock". */
+/** Finder/stock column label: qty only, "Out of stock", or not tracked. */
 export function formatSupplierAvailabilityLabel(
   product: ConnectedPoReadyProduct,
   t: (key: string) => string,
@@ -357,10 +360,7 @@ export function formatSupplierAvailabilityLabel(
     return t("purchasing.supplierOutOfStock");
   }
   if (availability.kind === "available") {
-    const unit = formatUnitOfMeasureLabel(product.packageLabel || product.unitOfMeasure || "");
-    return t("purchasing.supplierAvailableNow")
-      .replace("{qty}", formatAvailabilityQty(availability.quantity))
-      .replace("{unit}", unit);
+    return formatAvailabilityQty(availability.quantity);
   }
   return t("purchasing.stockNotTracked");
 }
@@ -464,9 +464,8 @@ export function formatUnitOfMeasureLabel(unitOfMeasure: string): string {
   }
 }
 
-export function formatUnitPriceLabel(unitPurchaseCost: number, unitOfMeasure: string): string {
-  const unit = formatUnitOfMeasureLabel(unitOfMeasure);
-  return `${formatCompactPeso(unitPurchaseCost)} / ${unit}`;
+export function formatUnitPriceLabel(unitPurchaseCost: number, _unitOfMeasure?: string): string {
+  return formatCompactPeso(unitPurchaseCost);
 }
 
 export function formatLineMath(orderedQty: number, unitPurchaseCost: number): string {

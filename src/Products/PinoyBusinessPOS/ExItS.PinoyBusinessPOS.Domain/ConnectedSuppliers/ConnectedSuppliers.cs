@@ -165,6 +165,7 @@ public static class ConnectedSupplierDomainErrorCodes
     public const string InvalidProposalHoldHours = "ConnectedSupplier_InvalidProposalHoldHours";
     public const string DuplicateCategoryDiscountRule = "ConnectedSupplier_DuplicateCategoryDiscountRule";
     public const string PaymentRequiredBeforeFulfillment = "ConnectedSupplier_PaymentRequiredBeforeFulfillment";
+    public const string FulfillmentNotReady = "ConnectedSupplier_FulfillmentNotReady";
 }
 
 public sealed class ConnectedSupplierRelationship
@@ -1418,13 +1419,23 @@ public static class ConnectedPoPaymentTerms
     public static string ToUiLabel(ConnectedPoPaymentTerm term) =>
         term switch
         {
-            ConnectedPoPaymentTerm.Cash => "COD / Pay on delivery",
+            // Method label only — never imply PaymentTiming (PayBefore vs PayOnDelivery).
+            ConnectedPoPaymentTerm.Cash => "Cash",
             ConnectedPoPaymentTerm.ManualGCash => "GCash / Manual e-wallet",
             ConnectedPoPaymentTerm.BankTransfer => "Bank transfer",
             ConnectedPoPaymentTerm.BankDeposit => "Bank deposit",
             ConnectedPoPaymentTerm.Check => "Check",
             ConnectedPoPaymentTerm.Utang => "Utang / Credit",
             _ => term.ToString(),
+        };
+
+    public static string ToUiLabel(ConnectedPoPaymentTiming timing) =>
+        timing switch
+        {
+            ConnectedPoPaymentTiming.PayBeforeFulfillment => "Pay before fulfillment",
+            ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt => "Pay on delivery / receipt",
+            ConnectedPoPaymentTiming.SupplierCredit => "Supplier credit (Utang)",
+            _ => timing.ToString(),
         };
 }
 
@@ -1596,12 +1607,16 @@ public sealed class ConnectedPurchaseOrder
     /// <summary>Original buyer-submitted payment term. Never overwritten by proposals.</summary>
     public ConnectedPoPaymentTerm PaymentTerm { get; }
     public ConnectedPoPaymentTiming PaymentTiming { get; }
+    /// <summary>Buyer-selected fulfillment channel at submit (Pickup / Delivery).</summary>
+    public string? FulfillmentMethod { get; private set; }
     /// <summary>Supplier-proposed payment term while awaiting buyer review (null = unchanged).</summary>
     public ConnectedPoPaymentTerm? ProposedPaymentTerm { get; private set; }
     public ConnectedPoPaymentTiming? ProposedPaymentTiming { get; private set; }
     /// <summary>Agreed payment term after accept (null until accepted).</summary>
     public ConnectedPoPaymentTerm? ConfirmedPaymentTerm { get; private set; }
     public ConnectedPoPaymentTiming? ConfirmedPaymentTiming { get; private set; }
+    /// <summary>Locked fulfillment method after supplier confirmation (null until accepted).</summary>
+    public string? ConfirmedFulfillmentMethod { get; private set; }
     public ConnectedPoPaymentTerm EffectivePaymentTerm =>
         ConfirmedPaymentTerm
         ?? ProposedPaymentTerm
@@ -1610,6 +1625,9 @@ public sealed class ConnectedPurchaseOrder
         ConfirmedPaymentTiming
         ?? ProposedPaymentTiming
         ?? PaymentTiming;
+    public string? EffectiveFulfillmentMethod =>
+        ConfirmedFulfillmentMethod
+        ?? FulfillmentMethod;
     public bool HasProposedPaymentChange =>
         (ProposedPaymentTerm is ConnectedPoPaymentTerm proposed && proposed != PaymentTerm)
         || (ProposedPaymentTiming is ConnectedPoPaymentTiming proposedTiming && proposedTiming != PaymentTiming);
@@ -1674,7 +1692,9 @@ public sealed class ConnectedPurchaseOrder
         decimal creditPostedAmount = 0m,
         ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
         DateTimeOffset? inventoryReservationExpiresAtUtc = null,
-        int inventoryReservationRevision = 0)
+        int inventoryReservationRevision = 0,
+        string? fulfillmentMethod = null,
+        string? confirmedFulfillmentMethod = null)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -1688,10 +1708,12 @@ public sealed class ConnectedPurchaseOrder
         TotalAmount = total;
         PaymentTerm = paymentTerm;
         PaymentTiming = paymentTiming;
+        FulfillmentMethod = NormalizeConnectedFulfillmentMethod(fulfillmentMethod);
         ProposedPaymentTerm = proposedPaymentTerm;
         ProposedPaymentTiming = proposedPaymentTiming;
         ConfirmedPaymentTerm = confirmedPaymentTerm;
         ConfirmedPaymentTiming = confirmedPaymentTiming;
+        ConfirmedFulfillmentMethod = NormalizeConnectedFulfillmentMethod(confirmedFulfillmentMethod);
         CreatedAtUtc = created;
         UpdatedAtUtc = updated;
         AcceptedAtUtc = accepted;
@@ -1722,7 +1744,8 @@ public sealed class ConnectedPurchaseOrder
         DateTimeOffset utcNow,
         ConnectedPurchaseOrderId? id = null,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
-        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment)
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
+        string? fulfillmentMethod = null)
     {
         if (relationship.Status != ConnectedSupplierRelationshipStatus.Active || lines.Count == 0)
         {
@@ -1754,7 +1777,8 @@ public sealed class ConnectedPurchaseOrder
             null,
             lines.ToList(),
             paymentTerm,
-            paymentTiming);
+            paymentTiming,
+            fulfillmentMethod: fulfillmentMethod);
     }
 
     public void Accept(DateTimeOffset utcNow)
@@ -1768,6 +1792,7 @@ public sealed class ConnectedPurchaseOrder
         ProposedPaymentTiming = null;
         ConfirmedPaymentTerm = PaymentTerm;
         ConfirmedPaymentTiming = PaymentTiming;
+        ConfirmedFulfillmentMethod = FulfillmentMethod;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1932,6 +1957,7 @@ public sealed class ConnectedPurchaseOrder
         ReplaceLines(confirmed);
         ConfirmedPaymentTerm = ProposedPaymentTerm ?? PaymentTerm;
         ConfirmedPaymentTiming = ProposedPaymentTiming ?? PaymentTiming;
+        ConfirmedFulfillmentMethod = FulfillmentMethod;
         ProposedPaymentTerm = null;
         ProposedPaymentTiming = null;
         Status = ConnectedPurchaseOrderStatus.Accepted;
@@ -2213,7 +2239,9 @@ public sealed class ConnectedPurchaseOrder
         decimal creditPostedAmount = 0m,
         ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
         DateTimeOffset? inventoryReservationExpiresAtUtc = null,
-        int inventoryReservationRevision = 0) =>
+        int inventoryReservationRevision = 0,
+        string? fulfillmentMethod = null,
+        string? confirmedFulfillmentMethod = null) =>
         new(
             id,
             relationshipId,
@@ -2248,5 +2276,30 @@ public sealed class ConnectedPurchaseOrder
             creditPostedAmount,
             inventoryReservationState,
             inventoryReservationExpiresAtUtc,
-            inventoryReservationRevision);
+            inventoryReservationRevision,
+            fulfillmentMethod,
+            confirmedFulfillmentMethod);
+
+    private static string? NormalizeConnectedFulfillmentMethod(string? method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            return null;
+        }
+
+        var trimmed = method.Trim();
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentPickup, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentPickup;
+        }
+
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentDelivery;
+        }
+
+        throw new DomainException(
+            ConnectedSupplierDomainErrorCodes.InvalidOrder,
+            "Fulfillment method must be Pickup or Delivery.");
+    }
 }

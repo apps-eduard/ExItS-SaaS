@@ -57,6 +57,7 @@ internal static class PurchaseEntityMapper
             record.SupplierBranchId,
             record.SupplierBranchNameSnapshot,
             record.IntendedReceivingBranchId,
+            record.FulfillmentMethod,
             record.CancelledAtUtc,
             record.CancelledByUserId,
             record.RemainingClosedAtUtc,
@@ -95,6 +96,7 @@ internal static class PurchaseEntityMapper
             SupplierBranchId = po.SupplierBranchId,
             SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot,
             IntendedReceivingBranchId = po.IntendedReceivingBranchId,
+            FulfillmentMethod = po.FulfillmentMethod,
             RemainingClosedAtUtc = po.RemainingClosedAtUtc,
             RemainingClosedByUserId = po.RemainingClosedByUserId,
             RemainingClosedReason = po.RemainingClosedReason,
@@ -127,6 +129,7 @@ internal static class PurchaseEntityMapper
         record.SupplierBranchId = po.SupplierBranchId;
         record.SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot;
         record.IntendedReceivingBranchId = po.IntendedReceivingBranchId;
+        record.FulfillmentMethod = po.FulfillmentMethod;
         record.RemainingClosedAtUtc = po.RemainingClosedAtUtc;
         record.RemainingClosedByUserId = po.RemainingClosedByUserId;
         record.RemainingClosedReason = po.RemainingClosedReason;

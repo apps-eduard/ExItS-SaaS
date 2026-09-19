@@ -583,23 +583,41 @@ export function BusinessCustomerDetailPage() {
               {t("customers.business.deliveryAllowanceTitle")}
             </h2>
             {!customer.orgOfferDelivery ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="business-delivery-org-off"
-              >
-                {t("customers.business.deliveryAllowanceOrgOff")}
-              </p>
+              <div className="flex flex-col gap-2" data-testid="business-delivery-org-off">
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.business.deliveryAllowanceOrgOff")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.business.deliveryAllowanceOrgOffHelp")}
+                </p>
+                <Button type="button" variant="outline" asChild data-testid="business-delivery-open-offer">
+                  <Link to="/org/connected-commerce?tab=fulfillment">
+                    {t("customers.business.deliveryAllowanceOpenOfferDelivery")}
+                  </Link>
+                </Button>
+              </div>
+            ) : customer.customerDeliveryOverride === "block" ? (
+              <div className="flex flex-col gap-2" data-testid="business-delivery-blocked">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                  {t("customers.business.deliveryAllowanceBlockedTitle")}
+                </p>
+                <BranchFulfillmentSwitch
+                  checked={false}
+                  disabled={!allowManage || deliveryAllowanceMutation.isPending}
+                  pending={deliveryAllowanceMutation.isPending}
+                  label={t("customers.business.deliveryAllowance")}
+                  hint={t("customers.business.deliveryAllowanceBlocked")}
+                  testId="business-allow-delivery-switch"
+                  onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
+                />
+              </div>
             ) : (
               <BranchFulfillmentSwitch
                 checked={customer.customerDeliveryOverride !== "block"}
                 disabled={!allowManage || deliveryAllowanceMutation.isPending}
                 pending={deliveryAllowanceMutation.isPending}
                 label={t("customers.business.deliveryAllowance")}
-                hint={
-                  customer.customerDeliveryOverride === "block"
-                    ? t("customers.business.deliveryAllowanceBlocked")
-                    : t("customers.business.deliveryAllowanceInherited")
-                }
+                hint={t("customers.business.deliveryAllowanceInherited")}
                 testId="business-allow-delivery-switch"
                 onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
               />
@@ -761,6 +779,7 @@ export function BusinessCustomerDetailPage() {
               </li>
             ) : (
               filteredReadinessItems.map((item) => {
+                const needsSetup = item.status === "Missing";
                 const href = resolveSupplierCommerceReadinessPath(
                   item.code,
                   {
@@ -768,50 +787,58 @@ export function BusinessCustomerDetailPage() {
                     openContactEditor:
                       item.code === "ResponsibleContact" &&
                       allowManage &&
-                      item.status === "Missing",
+                      needsSetup,
                   },
                   item.actionPath,
                 );
                 return (
                   <li key={item.code} className="m-0 p-0">
-                    <Link
-                      to={href}
-                      className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-inherit no-underline transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      data-testid={`commerce-readiness-${item.code}`}
-                      data-status={item.status}
-                      aria-label={t("customers.business.commerceReadinessOpenItem").replace(
-                        "{title}",
-                        item.title,
-                      )}
+                    <Card
+                      treatment={needsSetup ? "accent" : "bordered"}
+                      accentTone={needsSetup ? "danger" : "neutral"}
+                      accentPosition="tint"
+                      className="overflow-hidden p-0"
+                      data-testid={`commerce-readiness-card-${item.code}`}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
-                            {item.title}
-                          </span>
-                          <StatusChip
-                            tone={
-                              item.status === "Complete"
-                                ? "success"
-                                : item.status === "Missing"
-                                  ? "warning"
-                                  : "neutral"
-                            }
-                          >
-                            {t(commerceReadinessStatusLabelKey(item.status))}
-                          </StatusChip>
+                      <Link
+                        to={href}
+                        className="flex items-center gap-3 px-3 py-2 text-inherit no-underline transition-colors hover:bg-[color-mix(in_srgb,var(--exits-foreground)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        data-testid={`commerce-readiness-${item.code}`}
+                        data-status={item.status}
+                        aria-label={t("customers.business.commerceReadinessOpenItem").replace(
+                          "{title}",
+                          item.title,
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                              {item.title}
+                            </span>
+                            <StatusChip
+                              tone={
+                                item.status === "Complete"
+                                  ? "success"
+                                  : needsSetup
+                                    ? "danger"
+                                    : "neutral"
+                              }
+                            >
+                              {t(commerceReadinessStatusLabelKey(item.status))}
+                            </StatusChip>
+                          </div>
+                          {item.detail ? (
+                            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                              {item.detail}
+                            </p>
+                          ) : null}
                         </div>
-                        {item.detail ? (
-                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                            {item.detail}
-                          </p>
-                        ) : null}
-                      </div>
-                      <ChevronRight
-                        className="size-4 shrink-0 text-muted"
-                        aria-hidden
-                      />
-                    </Link>
+                        <ChevronRight
+                          className="size-4 shrink-0 text-muted"
+                          aria-hidden
+                        />
+                      </Link>
+                    </Card>
                   </li>
                 );
               })

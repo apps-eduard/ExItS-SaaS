@@ -475,6 +475,7 @@ builder.Services.AddScoped<UpdateConnectionCatalogSettings>();
 builder.Services.AddScoped<ListBusinessCustomers>();
 builder.Services.AddScoped<GetBusinessCustomer>();
 builder.Services.AddScoped<ConnectedSupplierCommerceReadinessService>();
+builder.Services.AddScoped<ConnectedPoFulfillmentReadinessGate>();
 builder.Services.AddScoped<GetBuyerConnectedSupplierCommerceReadiness>();
 builder.Services.AddScoped<GetSupplierConnectedSupplierCommerceReadiness>();
 builder.Services.AddScoped<ListBusinessCustomerOrganizationContacts>();

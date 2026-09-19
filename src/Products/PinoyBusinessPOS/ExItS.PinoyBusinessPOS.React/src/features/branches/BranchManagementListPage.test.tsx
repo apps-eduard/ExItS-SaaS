@@ -10,6 +10,7 @@ const canUseWarehouseBranches = vi.fn(() => true);
 vi.mock("@/access/pos-capabilities", () => ({
   canManageBranchFulfillment: () => true,
   canInviteOrganizationStaff: () => true,
+  canManageSuppliers: () => true,
   canUseWarehouseBranches: () => canUseWarehouseBranches(),
 }));
 
@@ -21,14 +22,26 @@ vi.mock("@/i18n/I18nProvider", () => ({
 
 vi.mock("@/workspace/WorkspaceProvider", () => ({
   useWorkspace: () => ({
-    boundWorkspace: { organizationId: "11111111-1111-1111-1111-111111111111" },
+    boundWorkspace: {
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      branchId: "22222222-2222-2222-2222-222222222222",
+    },
     sessionGrant: { productRole: "Owner", organizationManagementAuthority: true },
+  }),
+}));
+
+vi.mock("@/workspace/use-pos-workspace-scope", () => ({
+  usePosWorkspaceScope: () => ({
+    organizationId: "11111111-1111-1111-1111-111111111111",
+    branchId: "22222222-2222-2222-2222-222222222222",
   }),
 }));
 
 const listBranchManagementSummaries = vi.fn();
 const getBranchCapacity = vi.fn();
 const listOrganizationAreas = vi.fn();
+const getOrganizationFulfillmentSettings = vi.fn();
+const updateOrganizationOfferDelivery = vi.fn();
 
 vi.mock("@/api/platform/organization-branches-client", () => ({
   listBranchManagementSummaries: (...args: unknown[]) => listBranchManagementSummaries(...args),
@@ -37,6 +50,12 @@ vi.mock("@/api/platform/organization-branches-client", () => ({
 
 vi.mock("@/api/platform/organization-areas-client", () => ({
   listOrganizationAreas: (...args: unknown[]) => listOrganizationAreas(...args),
+}));
+
+vi.mock("@/api/pos/pos-connected-suppliers-client", () => ({
+  getOrganizationFulfillmentSettings: (...args: unknown[]) =>
+    getOrganizationFulfillmentSettings(...args),
+  updateOrganizationOfferDelivery: (...args: unknown[]) => updateOrganizationOfferDelivery(...args),
 }));
 
 const branchId = "22222222-2222-2222-2222-222222222222";
@@ -123,6 +142,14 @@ describe("BranchManagementListPage", () => {
     listBranchManagementSummaries.mockResolvedValue({
       ok: true,
       value: [retailBranch()],
+    });
+    getOrganizationFulfillmentSettings.mockResolvedValue({
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      offerDelivery: false,
+    });
+    updateOrganizationOfferDelivery.mockResolvedValue({
+      organizationId: "11111111-1111-1111-1111-111111111111",
+      offerDelivery: true,
     });
   });
 
@@ -268,10 +295,10 @@ describe("BranchManagementListPage", () => {
     );
     expect(screen.getByTestId(`branch-mgmt-area-${branchId}`)).toHaveTextContent("North");
     expect(screen.getByTestId(`branch-mgmt-pickup-${branchId}`)).toHaveTextContent(
-      "branches.mgmt.on",
+      "branches.mgmt.pickupReady",
     );
     expect(screen.getByTestId(`branch-mgmt-delivery-${branchId}`)).toHaveTextContent(
-      "branches.mgmt.off",
+      "branches.mgmt.deliveryOff",
     );
 
     expect(screen.getByTestId(`branch-mgmt-open-${branchId}`)).toHaveAttribute(
@@ -346,5 +373,51 @@ describe("BranchManagementListPage", () => {
       within(panel).queryByTestId(`branch-mgmt-more-fulfillment-${warehouseId}`),
     ).not.toBeInTheDocument();
     expect(within(panel).queryByText("branches.mgmt.viewQr")).not.toBeInTheDocument();
+  });
+
+  it("shows Offer Delivery control and globally paused Delivery when org offer is off", async () => {
+    listBranchManagementSummaries.mockResolvedValue({
+      ok: true,
+      value: [
+        retailBranch({
+          deliveryEnabled: true,
+          deliverySectionsComplete: 5,
+          deliverySectionsTotal: 5,
+        }),
+      ],
+    });
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("org-offer-delivery-card")).toBeInTheDocument();
+      expect(screen.getByTestId(`branch-mgmt-card-${branchId}`)).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("org-offer-delivery-status")).toHaveTextContent(
+      "branches.offerDeliveryStatusOff",
+    );
+    expect(screen.getByTestId(`branch-mgmt-delivery-${branchId}`)).toHaveTextContent(
+      "branches.mgmt.deliveryReadyGloballyPaused",
+    );
+    expect(screen.getByTestId(`branch-mgmt-pickup-${branchId}`)).toHaveTextContent(
+      "branches.mgmt.pickupReady",
+    );
+  });
+
+  it("toggles Offer Delivery via canonical API from Branches page", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("org-offer-delivery-turn-on")).toBeInTheDocument();
+    });
+    await user.click(screen.getByTestId("org-offer-delivery-turn-on"));
+    await waitFor(() => {
+      expect(updateOrganizationOfferDelivery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          organizationId: "11111111-1111-1111-1111-111111111111",
+        }),
+        true,
+      );
+    });
   });
 });

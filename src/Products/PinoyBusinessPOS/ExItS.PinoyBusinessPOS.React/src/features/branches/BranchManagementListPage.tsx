@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Route, Store, Warehouse } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
+  canManageSuppliers,
   canUseWarehouseBranches,
 } from "@/access/pos-capabilities";
 import {
@@ -13,20 +14,35 @@ import {
   type BranchManagementSummaryItemDto,
 } from "@/api/platform/organization-branches-client";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
+import {
+  getOrganizationFulfillmentSettings,
+  updateOrganizationOfferDelivery,
+} from "@/api/pos/pos-connected-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BottomSheet } from "@/components/exits/SheetDialog";
 import { DropdownMenu, MenuItem } from "@/components/ui/dropdown-menu";
 import { normalizeBranchStatusFilter } from "@/features/branches/branch-code";
+import {
+  resolveBranchListDeliveryStatus,
+  resolveBranchListPickupStatus,
+} from "@/features/branches/branch-list-fulfillment-status";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
+import { OrgOfferDeliveryCard } from "@/features/branches/OrgOfferDeliveryCard";
+import {
+  invalidateOrganizationOfferDeliveryQueries,
+  organizationOfferDeliveryQueryKey,
+} from "@/features/branches/offer-delivery-queries";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { pageBackNav } from "@/navigation/page-back-nav";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type StatusFilter = "all" | "active" | "suspended" | "archived";
@@ -79,9 +95,12 @@ function matchesTypeFilter(branch: BranchManagementSummaryItemDto, filter: TypeF
 export function BranchManagementListPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
+  const canEditOfferDelivery = canManageSuppliers(sessionGrant) || canManage;
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -91,6 +110,7 @@ export function BranchManagementListPage() {
     null,
   );
   const [desktopMenuId, setDesktopMenuId] = useState<string | null>(null);
+  const [offerError, setOfferError] = useState<string | null>(null);
 
   const summaryQuery = useQuery({
     queryKey: ["branch-management-summary", organizationId],
@@ -101,6 +121,26 @@ export function BranchManagementListPage() {
         throw new Error(result.body?.detail ?? t("branches.mgmt.loadError"));
       }
       return result.value;
+    },
+  });
+
+  const orgFulfillmentQuery = useQuery({
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
+    enabled: Boolean(workspace && organizationId && canManage),
+    queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
+  });
+
+  const offerDeliveryMutation = useMutation({
+    mutationFn: async (next: boolean) => {
+      if (!workspace) throw new Error("missing workspace");
+      return updateOrganizationOfferDelivery(workspace, next);
+    },
+    onSuccess: async () => {
+      setOfferError(null);
+      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
+    },
+    onError: (err) => {
+      setOfferError(err instanceof Error ? err.message : t("branches.offerDeliveryFailed"));
     },
   });
 
@@ -344,6 +384,25 @@ export function BranchManagementListPage() {
         </div>
       ) : null}
 
+      {offerError ? (
+        <Notice tone="danger" testId="branch-mgmt-offer-delivery-error">
+          {offerError}
+        </Notice>
+      ) : null}
+
+      <OrgOfferDeliveryCard
+        offerDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
+        canEdit={canEditOfferDelivery}
+        pending={offerDeliveryMutation.isPending}
+        loading={orgFulfillmentQuery.isLoading}
+        t={t}
+        compact
+        onCheckedChange={(next) => {
+          setOfferError(null);
+          offerDeliveryMutation.mutate(next);
+        }}
+      />
+
       <div className="branch-mgmt-toolbar">
         <div className="branch-mgmt-filters">
           <div className="branch-mgmt-filter-group">
@@ -454,6 +513,18 @@ export function BranchManagementListPage() {
           {branches.map((branch) => {
             const location = [branch.city, branch.region].filter(Boolean).join(", ");
             const warehouse = isWarehouseBranch(branch.branchType);
+            const orgOfferDelivery = orgFulfillmentQuery.data?.offerDelivery === true;
+            const pickupStatus = resolveBranchListPickupStatus({
+              pickupEnabled: branch.pickupEnabled,
+              pickupSectionsComplete: branch.pickupSectionsComplete,
+              pickupSectionsTotal: branch.pickupSectionsTotal,
+            });
+            const deliveryStatus = resolveBranchListDeliveryStatus({
+              deliveryEnabled: branch.deliveryEnabled,
+              deliverySectionsComplete: branch.deliverySectionsComplete,
+              deliverySectionsTotal: branch.deliverySectionsTotal,
+              orgOfferDelivery,
+            });
             return (
               <li key={branch.id}>
                 <article
@@ -519,13 +590,23 @@ export function BranchManagementListPage() {
                         <div className="exits-entity-card__meta-item">
                           <dt>{t("branches.mgmt.pickup")}</dt>
                           <dd data-testid={`branch-mgmt-pickup-${branch.id}`}>
-                            {branch.pickupEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                            <StatusChip tone={pickupStatus.tone} appearance="outline">
+                              {t(pickupStatus.labelKey)}
+                            </StatusChip>
                           </dd>
                         </div>
                         <div className="exits-entity-card__meta-item">
                           <dt>{t("branches.mgmt.delivery")}</dt>
                           <dd data-testid={`branch-mgmt-delivery-${branch.id}`}>
-                            {branch.deliveryEnabled ? t("branches.mgmt.on") : t("branches.mgmt.off")}
+                            <StatusChip
+                              tone={deliveryStatus.tone}
+                              appearance="outline"
+                              data-globally-paused={
+                                deliveryStatus.globallyPaused ? "true" : "false"
+                              }
+                            >
+                              {t(deliveryStatus.labelKey)}
+                            </StatusChip>
                           </dd>
                         </div>
                       </>

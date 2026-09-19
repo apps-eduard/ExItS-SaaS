@@ -852,6 +852,21 @@ export const connectedSupplierCommerceReadinessSchema = z.object({
   allowPayOnDeliveryOrReceipt: z.boolean().optional().default(true),
   allowSupplierCredit: z.boolean().optional().default(false),
   defaultPaymentTiming: z.string().optional().default("PayBeforeFulfillment"),
+  /** Organization Offer Delivery master switch. */
+  orgOfferDelivery: z.boolean().optional().default(false),
+  /** Selected supplier branch Pickup enabled+ready. */
+  branchPickupReady: z.boolean().optional().default(false),
+  /** Selected supplier branch Delivery enabled+ready (config), independent of Offer Delivery. */
+  branchDeliveryReady: z.boolean().optional().default(false),
+  /** Relationship CustomerDeliveryOverride = Block. */
+  relationshipDeliveryBlocked: z.boolean().optional().default(false),
+  /**
+   * Buyer-safe Delivery unavailability reason when Delivery is not selectable:
+   * OrgOfferOff | BranchNotReady | RelationshipBlocked.
+   */
+  deliveryUnavailableReason: z.string().nullable().optional(),
+  /** Buyer-safe Pickup unavailability reason: BranchNotReady when not selectable. */
+  pickupUnavailableReason: z.string().nullable().optional(),
 });
 
 export type ConnectedSupplierCommerceReadiness = z.infer<
@@ -1624,6 +1639,10 @@ export const connectedPurchaseOrderSchema = z.object({
   buyerReceivingStatus: z.string().nullable().optional(),
   paymentTerm: z.string().optional().default("Cash"),
   paymentTermLabel: z.string().optional().default("Cash"),
+  paymentTiming: z.string().optional().default("PayBeforeFulfillment"),
+  submittedPaymentTiming: z.string().nullable().optional(),
+  proposedPaymentTiming: z.string().nullable().optional(),
+  fulfillmentMethod: z.string().nullable().optional(),
   proposedTotalAmount: z.number().optional().default(0),
   confirmedTotalAmount: z.number().optional().default(0),
   changesProposedAtUtc: isoDateSchema.nullable().optional(),

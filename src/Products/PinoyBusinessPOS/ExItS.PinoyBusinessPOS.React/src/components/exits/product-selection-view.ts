@@ -12,11 +12,10 @@ export const RECEIVE_FIND_PRODUCT_COLUMNS: readonly ResponsiveColumnMeta[] = [
   { id: "actions", label: "Action", priority: "hiddenOnCompact" },
 ] as const;
 
-/** Create PO linked-ordering column priorities. */
+/** Create PO linked-ordering column priorities. SKU is under product name (not a column). */
 export const PO_LINKED_PRODUCT_COLUMNS: readonly ResponsiveColumnMeta[] = [
   { id: "product", label: "Product", priority: "primary" },
-  { id: "sku", label: "SKU", priority: "secondary" },
-  { id: "unit", label: "Unit", priority: "secondary" },
+  { id: "category", label: "Category", priority: "secondary" },
   { id: "stock", label: "Stock", priority: "status" },
   { id: "price", label: "Price", priority: "metric" },
   { id: "actions", label: "Qty", priority: "hiddenOnCompact" },

@@ -20,11 +20,15 @@ import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { Card } from "@/components/ui/card";
 import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
 import { BranchSetupTabLinks } from "@/features/branches/BranchSetupTabLinks";
 import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
 import { resolveFulfillmentToggle } from "@/features/branches/fulfillment-toggle";
+import { OrgOfferDeliveryCard } from "@/features/branches/OrgOfferDeliveryCard";
+import {
+  invalidateOrganizationOfferDeliveryQueries,
+  organizationOfferDeliveryQueryKey,
+} from "@/features/branches/offer-delivery-queries";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -55,7 +59,7 @@ export function BranchFulfillmentListPage() {
   });
 
   const orgFulfillmentQuery = useQuery({
-    queryKey: ["organization-fulfillment-settings", organizationId],
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
     enabled: Boolean(workspace && canOfferDelivery),
     queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
   });
@@ -70,13 +74,7 @@ export function BranchFulfillmentListPage() {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["organization-fulfillment-settings", organizationId],
-      });
-      await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
+      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
     },
     onError: (err) => {
       setToggleError(
@@ -205,33 +203,18 @@ export function BranchFulfillmentListPage() {
       ) : null}
 
       {canOfferDelivery ? (
-        <Card
-          className="flex flex-col gap-2 p-3"
-          data-testid="org-offer-delivery-card"
-        >
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("branches.offerDeliveryTitle")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("branches.offerDeliveryLede")}
-          </p>
-          <BranchFulfillmentSwitch
-            checked={orgFulfillmentQuery.data?.offerDelivery === true}
-            disabled={!workspace || orgFulfillmentQuery.isLoading}
-            pending={orgOfferPending || offerDeliveryMutation.isPending}
-            label={t("branches.offerDelivery")}
-            hint={
-              orgFulfillmentQuery.data?.offerDelivery
-                ? t("branches.offerDeliveryOnHint")
-                : t("branches.offerDeliveryOffHint")
-            }
-            testId="org-offer-delivery-switch"
-            onCheckedChange={(next) => {
-              setToggleError(null);
-              offerDeliveryMutation.mutate(next);
-            }}
-          />
-        </Card>
+        <OrgOfferDeliveryCard
+          offerDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
+          canEdit={canOfferDelivery}
+          pending={orgOfferPending || offerDeliveryMutation.isPending}
+          loading={orgFulfillmentQuery.isLoading}
+          t={t}
+          compact
+          onCheckedChange={(next) => {
+            setToggleError(null);
+            offerDeliveryMutation.mutate(next);
+          }}
+        />
       ) : null}
 
       {branches.length === 0 ? (

@@ -6423,6 +6423,28 @@ html:has(.admin-shell) #root {
   min-width: 0;
 }
 
+/* Enable-tracking: selling price + opening qty cards share one row. */
+.inventory-detail-enable-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.inventory-detail-enable-split__card {
+  min-width: 0;
+}
+
+/* Opening qty input fills its card (card already shares the row). */
+.inventory-detail-opening-fields--enable {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.inventory-detail-opening-fields--enable:has(> :nth-child(2)) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .inventory-detail-workspace {
   display: flex;
   min-width: 0;
@@ -6596,6 +6618,18 @@ html:has(.admin-shell) #root {
 
   .inventory-detail-opening-fields:not(:has(> :nth-child(2))) {
     grid-template-columns: 1fr;
+  }
+
+  .inventory-detail-enable-split:not(.inventory-detail-enable-split--opening-only) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .inventory-detail-opening-fields--enable {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inventory-detail-opening-fields--enable:has(> :nth-child(2)) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
@@ -7588,7 +7622,6 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1fr)
     11rem
-    4rem
     6.25rem
     9.75rem;
   column-gap: 0.55rem;
@@ -7604,7 +7637,6 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1fr)
     10rem
-    3.5rem
     6.25rem
     16rem;
 }
@@ -7615,7 +7647,6 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1.2fr)
     9rem
-    3.5rem
     6.5rem
     minmax(5.5rem, max-content)
     9.75rem;
@@ -7627,7 +7658,6 @@ html:has(.admin-shell) #root {
     1.75rem
     minmax(0, 1.2fr)
     9rem
-    3.5rem
     6.5rem
     minmax(5.5rem, max-content)
     16rem;
@@ -7740,10 +7770,164 @@ html:has(.admin-shell) #root {
 }
 
 .po-category-multiselect {
-  flex: 0 1 14rem;
-  width: 14rem;
+  flex: 0 0 auto;
+  width: auto;
   max-width: 100%;
-  min-width: 10rem;
+  min-width: 0;
+}
+
+/* Outline Categories trigger (primary border, transparent fill). */
+.po-category-multiselect .exits-select.receive-stock-category-trigger {
+  box-sizing: border-box;
+  width: auto;
+  min-width: max-content;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
+  padding-inline: var(--exits-control-padding-x);
+  border: 1px solid color-mix(in srgb, var(--exits-primary) 45%, var(--exits-border));
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
+  background-color: transparent;
+  color: var(--exits-primary);
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.po-category-multiselect .exits-select.receive-stock-category-trigger:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--exits-primary) 8%, transparent);
+  border-color: var(--exits-primary);
+}
+
+.po-category-multiselect .exits-select.receive-stock-category-trigger:focus-visible {
+  outline: none;
+  border-color: var(--exits-primary);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.po-linked-list-mode {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.po-filter-added-btn {
+  width: auto;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  white-space: nowrap;
+}
+
+/* Linked finder: fit container — never force horizontal scroll. */
+[data-testid="po-linked-products"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-testid="po-linked-products"] .exits-table-container,
+[data-testid="po-linked-products"] .product-selection__table,
+[data-testid="po-linked-products"] .exits-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+[data-testid="po-linked-products"] .exits-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+/* Product takes leftover space and may ellipsis. */
+[data-testid="po-linked-products"] .exits-table__col--flex {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+}
+
+[data-testid="po-linked-products"] .po-linked-col--category {
+  width: 22%;
+  min-width: 0;
+  max-width: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+[data-testid="po-linked-products"] .po-linked-col--stock,
+[data-testid="po-linked-products"] .exits-table__col--numeric.po-linked-col--stock {
+  width: 4.75rem;
+  min-width: 0;
+  max-width: 4.75rem;
+  white-space: nowrap;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Supplier price ≈ header text width */
+[data-testid="po-linked-products"] .po-linked-col--price,
+[data-testid="po-linked-products"] .exits-table__col--money.po-linked-col--price {
+  width: 7.5rem;
+  min-width: 0;
+  max-width: 7.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* Add/Remove ≈ header ("Add" / "Remove") + icon button */
+[data-testid="po-linked-products"] .product-selection__action-col,
+[data-testid="po-linked-products"] .exits-table__col--actions,
+[data-testid="po-linked-products"] .exits-table__cell--actions,
+[data-testid="po-linked-products"] .exits-table__head.exits-table__cell--actions,
+[data-testid="po-linked-products"] .po-linked-action-col {
+  width: 4.25rem;
+  min-width: 0;
+  max-width: 4.25rem;
+  padding-inline: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  vertical-align: middle;
+}
+
+[data-testid="po-linked-products"] .exits-table__head {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.po-linked-product-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.po-linked-product-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-linked-sku {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--exits-table-font-size, var(--exits-text-sm)) * 0.6);
+  line-height: 1.25;
+  color: var(--exits-text-muted);
 }
 
 .po-category-filters.exits-chip-bar {
@@ -7796,6 +7980,19 @@ html:has(.admin-shell) #root {
   border-color: color-mix(in srgb, var(--exits-primary) 60%, var(--exits-border));
   background: color-mix(in srgb, var(--exits-primary-soft) 70%, var(--exits-surface));
   color: var(--exits-primary-hover);
+}
+
+.po-linked-remove-btn {
+  border-radius: 999px;
+  border-color: color-mix(in srgb, var(--exits-danger, #c0392b) 45%, var(--exits-border));
+  background: var(--exits-danger-soft, color-mix(in srgb, var(--exits-danger, #c0392b) 12%, transparent));
+  color: var(--exits-danger, #c0392b);
+}
+
+.po-linked-remove-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-danger, #c0392b) 65%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-danger, #c0392b) 16%, var(--exits-surface));
+  color: var(--exits-danger, #c0392b);
 }
 
 .po-order-table__check,
@@ -7912,6 +8109,279 @@ html:has(.admin-shell) #root {
 .po-order-table__price-head,
 .po-order-table__action-head {
   text-align: right;
+}
+
+.po-order-items__qty-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.po-order-items__qty-readout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.po-order-items__qty-value {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.po-order-items__qty-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.po-order-items__qty-input {
+  width: 4.25rem;
+  min-width: 3.5rem;
+  max-width: 5rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  font-size: var(--exits-text-sm);
+  line-height: 1.2;
+  text-align: end;
+  padding-block: 0.15rem;
+  padding-inline: 0.3rem;
+}
+
+.po-order-items__qty-unit {
+  display: block;
+  max-width: 5.5rem;
+  color: var(--exits-muted, #5b6b60);
+  font-size: var(--exits-text-xs);
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.po-order-items__available-readout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.po-order-items__available-qty {
+  font-size: var(--exits-text-sm);
+  font-weight: var(--exits-font-weight-semibold);
+  white-space: nowrap;
+}
+
+.po-order-items__available-unit {
+  display: block;
+  max-width: 5.5rem;
+  color: var(--exits-muted, #5b6b60);
+  font-size: var(--exits-text-xs);
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.po-order-items__available-empty {
+  font-size: var(--exits-text-xs);
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.po-order-items__card-qty,
+.po-order-items__card-trailing {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+/* Fit table in card — no horizontal scroll (same approach as linked products). */
+[data-testid="po-order-items"],
+.po-order-items-responsive {
+  min-width: 0;
+  max-width: 100%;
+}
+
+[data-testid="po-order-items"] .exits-table-container,
+[data-testid="po-order-items"] .exits-table-scroll,
+.po-order-items-table {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+[data-testid="po-order-items"] .exits-table,
+.po-order-items-table .exits-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+.po-order-items-table__product-col {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .po-order-items-table__product-col {
+    min-width: 17.5rem;
+  }
+}
+
+.po-order-items-table__product-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.po-order-items-table__product-available-mobile {
+  display: none;
+  margin-top: 0.25rem;
+}
+
+.po-order-items-table__available-col {
+  width: 7.75rem;
+  min-width: 7.5rem;
+  max-width: 9.375rem;
+  padding-inline: 0.35rem;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.po-order-items-table__price-col {
+  width: 11rem;
+  min-width: 10.625rem;
+  max-width: 12.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  text-align: end;
+}
+
+.po-order-items-table__price-col.exits-table__head {
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.po-order-items-table__total-col {
+  width: 8.5rem;
+  min-width: 8.125rem;
+  max-width: 9.375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  text-align: end;
+}
+
+.po-order-items-table__qty-col {
+  width: 9.75rem;
+  min-width: 9.375rem;
+  max-width: 11.25rem;
+  padding-inline: 0.5rem 0.35rem;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+.po-order-items-table__qty-col .po-order-items__qty-actions {
+  justify-content: center;
+  width: 100%;
+}
+
+.po-order-items__row-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.po-order-items__edit-btn {
+  border-color: color-mix(in srgb, var(--exits-primary) 40%, var(--exits-border, #d8e0da));
+  background: var(--exits-primary-soft, #eef6f1);
+  color: var(--exits-primary);
+}
+
+.po-order-items__edit-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--exits-primary) 55%, var(--exits-border, #d8e0da));
+  background: color-mix(in srgb, var(--exits-primary) 14%, var(--exits-surface, #fff));
+}
+
+.po-order-items-table__action-col {
+  width: 6.5rem;
+  min-width: 6.25rem;
+  max-width: 7.25rem;
+  padding-inline: 0.25rem 0.5rem;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  overflow: visible;
+}
+
+[data-testid="po-order-items"] .exits-table__head {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-testid="po-order-items"] .po-order-items-table__action-col.exits-table__head,
+[data-testid="po-order-items"] .po-order-items-table__price-col.exits-table__head {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Narrow: Product | Qty | Amount; Available under product. */
+@media (max-width: 767px) {
+  .po-order-items-table__product-col {
+    min-width: 0;
+  }
+
+  .po-order-items-table__available-col,
+  .po-order-items-table__price-col {
+    display: none;
+  }
+
+  .po-order-items-table__product-available-mobile {
+    display: block;
+  }
+
+  .po-order-items-table__total-col {
+    width: 5.5rem;
+    min-width: 5rem;
+    max-width: 6rem;
+  }
+
+  .po-order-items-table__qty-col {
+    width: 5.5rem;
+    min-width: 5rem;
+    max-width: 6.5rem;
+    padding-inline: 0.25rem;
+  }
+
+  .po-order-items-table__action-col {
+    width: 6rem;
+    min-width: 5.5rem;
+    max-width: 6.5rem;
+  }
 }
 
 .po-order-table__action {

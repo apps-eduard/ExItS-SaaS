@@ -26,6 +26,8 @@ export type PoFulfillmentMethodLine = {
   ready: boolean;
   complete: number;
   total: number;
+  /** When Delivery is configured ready but Offer Delivery is OFF. */
+  effectiveDisabledGlobally?: boolean;
 };
 
 export type PoFulfillmentReadinessView = {
@@ -67,6 +69,7 @@ export function buildPoFulfillmentReadinessView(
     | "deliverySectionsComplete"
     | "deliverySectionsTotal"
   >,
+  options?: { orgOfferDelivery?: boolean },
 ): PoFulfillmentReadinessView {
   const pickupEnabled = readiness.pickupEnabled;
   const deliveryEnabled = readiness.deliveryEnabled;
@@ -134,6 +137,8 @@ export function buildPoFulfillmentReadinessView(
       ready: readiness.deliveryReady,
       complete: readiness.deliverySectionsComplete,
       total: readiness.deliverySectionsTotal,
+      effectiveDisabledGlobally:
+        deliveryEnabled && readiness.deliveryReady && options?.orgOfferDelivery === false,
     },
   ];
 

@@ -6054,6 +6054,8 @@ export const en = {
   "incomingOrders.review": "Review order",
   "incomingOrders.search": "Search by buyer or PO number",
   "incomingOrders.startPreparing": "Start preparing",
+  "incomingOrders.paymentRequiredBeforeFulfillment":
+    "Payment is required before fulfillment can begin.",
   "incomingOrders.statusAccepted": "Accepted",
   "incomingOrders.statusAwaitingReceipt": "Awaiting buyer receipt",
   "incomingOrders.statusChangesProposed": "Changes proposed",
@@ -6094,6 +6096,9 @@ export const en = {
   "purchasing.supplierProducts": "Supplier product",
   "purchasing.supplierPrice": "Supplier price",
   "purchasing.productAdded": "Added",
+  "purchasing.linkedListMode": "Product list",
+  "purchasing.filterNotAdded": "Not added ({n})",
+  "purchasing.filterAdded": "Added ({n})",
   "purchasing.categories": "Categories",
   "purchasing.category": "Category",
   "purchasing.categoriesPlaceholder": "Select categories",
@@ -6238,6 +6243,8 @@ export const en = {
   "purchasing.receiptTotal": "Total",
   "purchasing.addNewProduct": "Add new product",
   "purchasing.qtyShort": "Qty",
+  "purchasing.editQty": "Edit quantity for {name}",
+  "purchasing.doneEditingQty": "Done editing quantity",
   "purchasing.costShort": "Cost",
   "purchasing.sellingPriceShort": "Selling price",
   "purchasing.costZeroMarginWarning": "Purchase cost equals the current selling price (zero margin).",
@@ -6267,8 +6274,11 @@ export const en = {
   "purchasing.colUnit": "Unit",
   "purchasing.colPrice": "Price",
   "purchasing.colStock": "Stock",
+  "purchasing.colAvailable": "Available",
   "purchasing.colQty": "Qty",
   "purchasing.colAction": "Action",
+  "purchasing.colDelete": "Delete",
+  "purchasing.colEdit": "Edit",
   "purchasing.addProduct": "Add",
   "purchasing.categoryAll": "All",
   "purchasing.categoryOther": "Other",
@@ -6309,7 +6319,11 @@ export const en = {
   "purchasing.paymentTimingHelp": "Choose when payment is due for this connected purchase order.",
   "purchasing.paymentTimingRequired": "Select a payment timing.",
   "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
-  "purchasing.paymentMethod.cod": "COD / Pay on delivery",
+  "purchasing.paymentMethod.cod": "Cash",
+  "purchasing.fulfillmentSubmitBlocked": "Fulfillment setup is incomplete for the selected method.",
+  "purchasing.choosePickup": "Choose Pickup",
+  "purchasing.manageReceivingBranch": "Manage receiving branch",
+  "purchasing.viewFulfillmentSetup": "View fulfillment setup",
   "purchasing.paymentMethod.bankTransfer": "Bank transfer",
   "purchasing.paymentMethod.bankDeposit": "Bank deposit",
   "purchasing.paymentMethod.check": "Check",
@@ -6339,7 +6353,9 @@ export const en = {
   "purchasing.utang.remainingAfterPo": "Remaining after PO",
   "purchasing.supplierNotReadyTitle": "Supplier not ready for purchase orders",
   "purchasing.supplierNotReadyBody":
-    "This supplier is not currently ready to accept purchase orders from your organization. Please contact your supplier.",
+    "You can save a draft now. Submit will stay blocked until the supplier finishes setup.",
+  "purchasing.supplierNotReadySubmitBlocked":
+    "Submit is blocked until the supplier finishes setup for purchase orders.",
   "purchasing.supplierNotReady.dismiss": "Dismiss",
   "purchasing.supplierNotReady.issuePrefix": "Issue:",
   "purchasing.supplierNotReady.issuesPrefix": "Issues:",
@@ -6356,30 +6372,36 @@ export const en = {
   "purchasing.supplierNotReady.phrase.contact": "contact",
   "purchasing.supplierNotReady.phrase.credit": "credit",
   "purchasing.supplierNotReady.reason.fulfillment":
-    "Purchase orders are currently unavailable because this supplier has not completed its fulfillment setup. Please contact the supplier and ask them to review their purchase-order fulfillment settings.",
+    "You can save a draft now. Submit will stay blocked until this supplier completes its fulfillment setup.",
   "purchasing.supplierNotReady.reason.noUsableMethod":
-    "This supplier currently has no Pickup or Delivery method available for purchase orders. Please contact the supplier.",
+    "You can save a draft now. Submit will stay blocked until this supplier enables Pickup or Delivery for purchase orders.",
   "purchasing.supplierNotReady.reason.payment":
-    "This supplier has not configured an accepted payment method for purchase orders.",
+    "You can save a draft now. Submit will stay blocked until this supplier configures an accepted payment method.",
   "purchasing.supplierNotReady.reason.catalog":
-    "This supplier currently has no products available for purchase ordering.",
+    "You can save a draft now. Submit will stay blocked until this supplier has products available for purchase ordering.",
   "purchasing.supplierNotReady.reason.contact":
-    "The supplier must complete its business contact setup before accepting purchase orders.",
+    "You can save a draft now. Submit will stay blocked until the supplier completes its business contact setup.",
   "purchasing.supplierNotReady.reason.credit":
-    "Credit purchasing is currently unavailable for this business relationship.",
-  "purchasing.supplierNotReady.reason.multiple":
-    "Purchase orders are currently unavailable due to {reasons} setup. Please contact your supplier.",
+    "You can save a draft now. Credit purchasing remains unavailable for this business relationship until the supplier finishes credit setup.",
+  "purchasing.supplierNotReady.reason.multiple": "You can save a draft now. Submit will stay blocked due to {reasons} setup - contact your supplier.",
   "purchasing.readyForPurchaseOrders": "Ready for purchase orders",
   "purchasing.fulfillmentMethod": "Fulfillment",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",
   "purchasing.fulfillment.deliveryUnavailableOrgOff":
-    "Delivery is not offered by this supplier.",
+    "Delivery is currently disabled by this supplier.",
   "purchasing.fulfillment.deliveryUnavailableBranch":
     "Delivery is not ready on the selected fulfillment branch.",
   "purchasing.fulfillment.deliveryUnavailableCustomer":
-    "Delivery is not allowed for this connection.",
-  "purchasing.fulfillment.singleMethodHelp": "This supplier supports {method} only.",
+    "Delivery is not available for this business relationship.",
+  "purchasing.fulfillment.deliverySetupRequired":
+    "Delivery is available, but your receiving address/setup must be completed.",
+  "purchasing.fulfillment.deliverySetupRequiredDetail":
+    "Complete the receiving address for {branch}.",
+  "purchasing.fulfillment.completeReceivingSetup": "Complete receiving setup",
+  "purchasing.fulfillment.deliverySetupBadge": "Setup required",
+  "purchasing.fulfillment.singleMethodHelp":
+    "This supplier currently supports {method} only.",
   "purchasing.saveDraftAnyway": "Save draft",
   "customers.business.commerceReadinessTitle": "Supplier Readiness",
   "customers.business.commerceReadinessReady": "Ready",
@@ -6398,13 +6420,17 @@ export const en = {
   "customers.business.commerceReadinessStatus.Complete": "Complete",
   "customers.business.commerceReadinessStatus.Missing": "Needs setup",
   "customers.business.commerceReadinessStatus.NotApplicable": "Not required",
-  "customers.business.deliveryAllowanceTitle": "Delivery",
+  "customers.business.deliveryAllowanceOrgOff":
+    "Effective: Disabled globally. Offer Delivery is off for your organization.",
+  "customers.business.deliveryAllowanceOrgOffHelp":
+    "Branch Delivery setup can stay configured. Buyers will not be offered Delivery until you turn Offer Delivery on.",
+  "customers.business.deliveryAllowanceOpenOfferDelivery": "Open Offer Delivery settings",
+  "customers.business.deliveryAllowanceBlockedTitle": "Not allowed for this customer",
+  "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
   "customers.business.deliveryAllowance": "Allow delivery",
   "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
   "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
-  "customers.business.deliveryAllowanceOrgOff":
-    "Delivery is not currently offered by your organization.",
-  "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
+  "customers.business.deliveryAllowanceTitle": "Delivery",
   "customers.business.connectedCommerce.paymentTimingTitle": "Payment timing",
   "customers.business.connectedCommerce.paymentTimingHelp":
     "Use organization defaults, or restrict timings for this customer. Customers cannot enable a timing disabled globally.",
@@ -6699,9 +6725,20 @@ export const en = {
   "branches.offerDeliveryTitle": "Organization Delivery",
   "branches.offerDeliveryLede":
     "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
+  "branches.connectedOrderDeliveryTitle": "Connected order delivery",
   "branches.offerDelivery": "Offer Delivery",
-  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
-  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryStatusOn": "ON",
+  "branches.offerDeliveryStatusOff": "OFF",
+  "branches.offerDeliveryOnDetail":
+    "Buyers may use Delivery from eligible delivery-ready branches.",
+  "branches.offerDeliveryOffDetail":
+    "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
+  "branches.offerDeliveryOnHint":
+    "Allow connected business customers to choose Delivery from delivery-ready branches.",
+  "branches.offerDeliveryOffHint":
+    "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
+  "branches.offerDeliveryTurnOn": "Turn on Offer Delivery",
+  "branches.offerDeliveryOpenConnectedCommerce": "Open Connected Commerce settings",
   "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
   "branches.mgmt.title": "Branches & Warehouses",
   "branches.mgmt.lede": "Manage retail branches and warehouses for your business.",
@@ -6740,6 +6777,13 @@ export const en = {
   "branches.mgmt.delivery": "Delivery",
   "branches.mgmt.on": "On",
   "branches.mgmt.off": "Off",
+  "branches.mgmt.pickupOff": "Pickup Off",
+  "branches.mgmt.pickupReady": "Pickup Ready",
+  "branches.mgmt.pickupSetup": "Pickup Setup",
+  "branches.mgmt.deliveryOff": "Delivery Off",
+  "branches.mgmt.deliveryReady": "Delivery Ready",
+  "branches.mgmt.deliverySetup": "Delivery Setup",
+  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready · Globally paused",
   "branches.mgmt.emptyTitle": "No locations",
   "branches.mgmt.emptyDetail": "Add a retail branch or warehouse to manage locations and staff access.",
   "branches.mgmt.loadError": "Could not load branches.",
@@ -7021,6 +7065,8 @@ export const en = {
     "Enable if customers will collect connected purchase orders from this branch.",
   "branches.poFulfillment.helper.delivery":
     "Enable if this branch will deliver connected purchase orders.",
+  "branches.poFulfillment.helper.deliveryOrgOfferOff":
+    "This branch Delivery switch is ON (setup kept). Buyers still will not see Delivery until you turn Offer Delivery on under Branches.",
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
   "branches.poFulfillment.checklist.branchInfo": "Complete required branch information",
   "branches.poFulfillment.checklist.branchInfoComplete": "Required branch information complete",
@@ -7031,6 +7077,12 @@ export const en = {
   "branches.poFulfillment.methodOff": "Off",
   "branches.poFulfillment.methodReady": "Ready",
   "branches.poFulfillment.methodSetup": "Setup required",
+  "branches.poFulfillment.deliveryConfiguredReady": "Configured: Ready",
+  "branches.poFulfillment.deliveryEffectiveDisabledGlobally":
+    "Effective: Disabled globally (Offer Delivery is off)",
+  "branches.poFulfillment.deliveryEffectivePaused": "Effective: Paused globally",
+  "branches.poFulfillment.offerDeliveryPausedHelp":
+    "Offer Delivery is off for the organization. Your branch configuration is preserved.",
   "branches.poFulfillment.configure": "Configure fulfillment",
   "branches.poFulfillment.openDetails": "Branch details",
   "branches.poFulfillment.summaryTitle": "Supplier readiness",

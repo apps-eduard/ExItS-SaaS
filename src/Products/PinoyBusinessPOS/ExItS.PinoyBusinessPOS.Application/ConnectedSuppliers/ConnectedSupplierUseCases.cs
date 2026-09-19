@@ -53,6 +53,8 @@ public static class ConnectedSupplierErrorCodes
         "pos.connected_supplier.organization_contact.invalid";
     /// <summary>Connected supplier commerce setup is incomplete; buyer sees a generic message only.</summary>
     public const string CommerceNotReady = "pos.connected_supplier.commerce_not_ready";
+    /// <summary>Selected fulfillment method or receiving destination is not ready.</summary>
+    public const string FulfillmentNotReady = "pos.connected_supplier.fulfillment_not_ready";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -218,6 +220,7 @@ public sealed record ConnectedPurchaseOrderDto(
     string PaymentTiming = "PayBeforeFulfillment",
     string? SubmittedPaymentTiming = null,
     string? ProposedPaymentTiming = null,
+    string? FulfillmentMethod = null,
     decimal ProposedTotalAmount = 0m,
     decimal ConfirmedTotalAmount = 0m,
     DateTimeOffset? ChangesProposedAtUtc = null,
@@ -531,6 +534,7 @@ public static class ConnectedSupplierMapper
             x.EffectivePaymentTiming.ToString(),
             x.PaymentTiming.ToString(),
             x.ProposedPaymentTiming?.ToString(),
+            x.EffectiveFulfillmentMethod,
             x.ProposedTotalAmount,
             x.ConfirmedTotalAmount,
             x.ChangesProposedAtUtc,
@@ -2304,6 +2308,7 @@ public sealed class RespondIncomingOrder
     private readonly TimeProvider _clock;
     private readonly ConnectedSupplierCommerceReadinessService? _commerceReadiness;
     private readonly ConnectedPoInventoryReservationService? _reservations;
+    private readonly ConnectedPoFulfillmentReadinessGate? _fulfillmentGate;
 
     public RespondIncomingOrder(
         IConnectedPurchaseOrderRepository o,
@@ -2315,7 +2320,8 @@ public sealed class RespondIncomingOrder
         IPurchaseOrderRepository? buyerOrders = null,
         IBuyerSupplierProductLinkRepository? links = null,
         ConnectedSupplierCommerceReadinessService? commerceReadiness = null,
-        ConnectedPoInventoryReservationService? reservations = null)
+        ConnectedPoInventoryReservationService? reservations = null,
+        ConnectedPoFulfillmentReadinessGate? fulfillmentGate = null)
     {
         _orders = o;
         _uow = u;
@@ -2327,6 +2333,7 @@ public sealed class RespondIncomingOrder
         _links = links;
         _commerceReadiness = commerceReadiness;
         _reservations = reservations;
+        _fulfillmentGate = fulfillmentGate;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2380,6 +2387,27 @@ public sealed class RespondIncomingOrder
                         return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
                             readiness.ErrorCode!,
                             readiness.ErrorMessage!);
+                    }
+                }
+
+                if (_fulfillmentGate is not null && relForReserve is not null)
+                {
+                    PurchaseOrder? buyerPoForGate = null;
+                    if (_buyerOrders is not null)
+                    {
+                        buyerPoForGate = await _buyerOrders
+                            .GetByIdAsync(o.BuyerOrganizationId, o.BuyerPurchaseOrderId, ct)
+                            .ConfigureAwait(false);
+                    }
+
+                    var methodGate = await _fulfillmentGate
+                        .EnsureForLifecycleAsync(relForReserve, o, buyerPoForGate, forBuyerMessage: false, ct)
+                        .ConfigureAwait(false);
+                    if (!methodGate.IsSuccess)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                            methodGate.ErrorCode!,
+                            methodGate.ErrorMessage!);
                     }
                 }
 
@@ -2729,6 +2757,7 @@ public sealed class StartPreparingIncomingOrder
     private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly ISupplierPayableRepository? _payables;
+    private readonly ConnectedPoFulfillmentReadinessGate? _fulfillmentGate;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2743,7 +2772,8 @@ public sealed class StartPreparingIncomingOrder
         IPurchaseOrderRepository? buyerOrders = null,
         ConnectedPoInventoryReservationService? reservations = null,
         IBuyerSupplierProductLinkRepository? links = null,
-        ISupplierPayableRepository? payables = null)
+        ISupplierPayableRepository? payables = null,
+        ConnectedPoFulfillmentReadinessGate? fulfillmentGate = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2755,6 +2785,7 @@ public sealed class StartPreparingIncomingOrder
         _reservations = reservations;
         _links = links;
         _payables = payables;
+        _fulfillmentGate = fulfillmentGate;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(Guid orgId, Guid id, CancellationToken ct = default)
@@ -2798,6 +2829,23 @@ public sealed class StartPreparingIncomingOrder
                 }
 
                 o.ReopenForRemainingFulfillment(_clock.GetUtcNow());
+            }
+
+            if (_fulfillmentGate is not null && _relationships is not null)
+            {
+                var rel = await _relationships.GetAsync(o.RelationshipId, ct).ConfigureAwait(false);
+                if (rel is not null)
+                {
+                    var methodGate = await _fulfillmentGate
+                        .EnsureForLifecycleAsync(rel, o, buyerPo, forBuyerMessage: false, ct)
+                        .ConfigureAwait(false);
+                    if (!methodGate.IsSuccess)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                            methodGate.ErrorCode!,
+                            methodGate.ErrorMessage!);
+                    }
+                }
             }
 
             var payBeforeGate = await ConnectedPoPayBeforeFulfillmentGate
@@ -2874,6 +2922,7 @@ public sealed class MarkIncomingOrderFulfilled
     private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ConnectedPurchaseOrderFulfillStock _fulfillStock;
     private readonly ISupplierPayableRepository? _payables;
+    private readonly ConnectedPoFulfillmentReadinessGate? _fulfillmentGate;
     private readonly IPosUnitOfWork _uow;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly TimeProvider _clock;
@@ -2888,7 +2937,8 @@ public sealed class MarkIncomingOrderFulfilled
         IConnectedSupplierRelationshipRepository? relationships = null,
         IPurchaseOrderRepository? buyerOrders = null,
         IBuyerSupplierProductLinkRepository? links = null,
-        ISupplierPayableRepository? payables = null)
+        ISupplierPayableRepository? payables = null,
+        ConnectedPoFulfillmentReadinessGate? fulfillmentGate = null)
     {
         _orders = orders;
         _uow = uow;
@@ -2900,6 +2950,7 @@ public sealed class MarkIncomingOrderFulfilled
         _buyerOrders = buyerOrders;
         _links = links;
         _payables = payables;
+        _fulfillmentGate = fulfillmentGate;
     }
 
     public async Task<ApplicationResult<ConnectedPurchaseOrderDto>> ExecuteAsync(
@@ -2965,6 +3016,19 @@ public sealed class MarkIncomingOrderFulfilled
                 return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
                     ConnectedSupplierErrorCodes.NotFound,
                     "Relationship was not found.");
+            }
+
+            if (_fulfillmentGate is not null)
+            {
+                var methodGate = await _fulfillmentGate
+                    .EnsureForLifecycleAsync(rel, o, buyerPo, forBuyerMessage: false, ct)
+                    .ConfigureAwait(false);
+                if (!methodGate.IsSuccess)
+                {
+                    return ConnectedSupplierUseCaseGuard.Failure<ConnectedPurchaseOrderDto>(
+                        methodGate.ErrorCode!,
+                        methodGate.ErrorMessage!);
+                }
             }
 
             var payBeforeGate = await ConnectedPoPayBeforeFulfillmentGate

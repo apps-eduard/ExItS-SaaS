@@ -1999,6 +1999,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("confirmed_payment_timing");
 
+                    b.Property<string>("ConfirmedFulfillmentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("confirmed_fulfillment_method");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -2063,6 +2068,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("payment_timing");
+
+                    b.Property<string>("FulfillmentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("fulfillment_method");
 
                     b.Property<DateTimeOffset?>("PreparingAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -7591,6 +7601,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("IntendedReceivingBranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("intended_receiving_branch_id");
+
+                    b.Property<string>("FulfillmentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("fulfillment_method");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
