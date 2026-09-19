@@ -165,6 +165,50 @@ public sealed class PurchaseOrderDomainTests
         Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderStatusTransition, ex.ErrorCode);
     }
 
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_requires_reference_for_gcash()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 2m);
+
+        var missing = Assert.Throws<DomainException>(() =>
+            po.SubmitBuyerPrepaymentProof("ManualGCash", reference: null, details: null, Now));
+        Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderNotes, missing.ErrorCode);
+
+        po.SubmitBuyerPrepaymentProof("ManualGCash", "GC-123456", details: null, Now);
+        Assert.Equal("ManualGCash", po.BuyerPrepaymentMethod);
+        Assert.Equal("GC-123456", po.BuyerPrepaymentReference);
+        Assert.Equal(Now, po.BuyerPrepaymentSubmittedAtUtc);
+    }
+
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_requires_details_for_bank_or_check()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 2m);
+
+        var missing = Assert.Throws<DomainException>(() =>
+            po.SubmitBuyerPrepaymentProof("BankTransfer", reference: null, details: null, Now));
+        Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderNotes, missing.ErrorCode);
+
+        po.SubmitBuyerPrepaymentProof(
+            "BankTransfer",
+            reference: "TRX-9",
+            details: "BDO transfer from Acme Trading",
+            Now);
+        Assert.Equal("BankTransfer", po.BuyerPrepaymentMethod);
+        Assert.Equal("TRX-9", po.BuyerPrepaymentReference);
+        Assert.Equal("BDO transfer from Acme Trading", po.BuyerPrepaymentDetails);
+    }
+
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_allows_cash_without_reference()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 1m);
+        po.SubmitBuyerPrepaymentProof("Cash", reference: null, details: null, Now);
+        Assert.Equal("Cash", po.BuyerPrepaymentMethod);
+        Assert.Null(po.BuyerPrepaymentReference);
+        Assert.Equal(Now, po.BuyerPrepaymentSubmittedAtUtc);
+    }
+
     private static PurchaseOrder BuildOrderedPo(PosOrganizationId org, decimal orderedQty)
     {
         var po = PurchaseOrder.CreateDraft(

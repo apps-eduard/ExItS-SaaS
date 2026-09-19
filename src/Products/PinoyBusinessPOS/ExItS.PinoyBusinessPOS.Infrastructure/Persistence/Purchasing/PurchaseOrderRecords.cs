@@ -50,6 +50,10 @@ internal sealed class PurchaseOrderRecord
     public string? SellerSettlementRemarks { get; set; }
     public DateTimeOffset? FinanciallySettledAtUtc { get; set; }
     public Guid? FinanciallySettledBy { get; set; }
+    public DateTimeOffset? BuyerPrepaymentSubmittedAtUtc { get; set; }
+    public string? BuyerPrepaymentMethod { get; set; }
+    public string? BuyerPrepaymentReference { get; set; }
+    public string? BuyerPrepaymentDetails { get; set; }
     public uint Xmin { get; set; }
 }
 

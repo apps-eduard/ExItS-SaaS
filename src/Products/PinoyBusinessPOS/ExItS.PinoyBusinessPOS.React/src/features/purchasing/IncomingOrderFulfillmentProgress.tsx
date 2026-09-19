@@ -2,7 +2,6 @@ import { CountBadge } from "@/components/exits/CountChip";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import type { ConnectedPurchaseOrderLine } from "@/api/pos/pos-connected-suppliers-client";
 import { cn } from "@/lib/cn";
-import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 
 export type IncomingOrderFulfillmentProgressProps = {
   lines: readonly ConnectedPurchaseOrderLine[];
@@ -12,14 +11,15 @@ export type IncomingOrderFulfillmentProgressProps = {
   goodLabel: string;
   damagedLabel: string;
   missingLabel: string;
-  outstandingLabel: string;
+  unitLabel: string;
   unitCostLabel: string;
   remainingValueLabel: string;
   testId?: string;
 };
 
-function qty(value: number | null | undefined, uom: string): string {
-  return formatStockQtyLabel(value ?? 0, uom);
+function qty(value: number | null | undefined): string {
+  const n = value ?? 0;
+  return Number.isInteger(n) ? String(n) : String(n);
 }
 
 /**
@@ -34,7 +34,7 @@ export function IncomingOrderFulfillmentProgress({
   goodLabel,
   damagedLabel,
   missingLabel,
-  outstandingLabel,
+  unitLabel,
   unitCostLabel,
   remainingValueLabel,
   testId = "incoming-order-fulfillment-progress",
@@ -69,9 +69,7 @@ export function IncomingOrderFulfillmentProgress({
                   {missingLabel}
                 </th>
               ) : null}
-              <th scope="col" className="po-document-lines__num">
-                {outstandingLabel}
-              </th>
+              <th scope="col">{unitLabel}</th>
               <th scope="col" className="po-document-lines__num">
                 {unitCostLabel}
               </th>
@@ -82,34 +80,21 @@ export function IncomingOrderFulfillmentProgress({
           </thead>
           <tbody>
             {lines.map((line) => {
-              const outstanding = line.outstandingQty ?? 0;
-              const uom = line.unitOfMeasureCode;
+              const uom = line.unitOfMeasureCode?.trim() || "—";
               return (
-                <tr
-                  key={line.productId}
-                  data-testid={`${testId}-row-${line.productId}`}
-                  className={cn(outstanding > 0 && "incoming-order-fulfillment-row--outstanding")}
-                >
+                <tr key={line.productId} data-testid={`${testId}-row-${line.productId}`}>
                   <td className="po-document-lines__product font-medium">{line.nameSnapshot}</td>
                   <td className="po-document-lines__num tabular-nums">
-                    {qty(line.orderedQty ?? line.confirmedQty ?? line.qty, uom)}
+                    {qty(line.orderedQty ?? line.confirmedQty ?? line.qty)}
                   </td>
                   <td className="po-document-lines__num tabular-nums">
-                    {qty(line.goodReceivedQty, uom)}
+                    {qty(line.goodReceivedQty)}
                   </td>
-                  <td className="po-document-lines__num tabular-nums">{qty(line.damagedQty, uom)}</td>
+                  <td className="po-document-lines__num tabular-nums">{qty(line.damagedQty)}</td>
                   {showMissing ? (
-                    <td className="po-document-lines__num tabular-nums">{qty(line.missingQty, uom)}</td>
+                    <td className="po-document-lines__num tabular-nums">{qty(line.missingQty)}</td>
                   ) : null}
-                  <td
-                    className={cn(
-                      "po-document-lines__num tabular-nums",
-                      outstanding > 0 && "font-semibold text-[var(--exits-warning, #b45309)]",
-                    )}
-                    data-testid={`${testId}-outstanding-${line.productId}`}
-                  >
-                    {qty(outstanding, uom)}
-                  </td>
+                  <td className="text-muted">{uom}</td>
                   <td className="po-document-lines__num tabular-nums">
                     <MoneyDisplay amount={line.unitPriceSnapshot} />
                   </td>
@@ -128,34 +113,24 @@ export function IncomingOrderFulfillmentProgress({
         data-testid={`${testId}-mobile`}
       >
         {lines.map((line) => {
-          const outstanding = line.outstandingQty ?? 0;
-          const uom = line.unitOfMeasureCode;
+          const uom = line.unitOfMeasureCode?.trim() || "";
           return (
             <li
               key={line.productId}
-              className={cn(
-                "po-document-lines__mobile-row",
-                outstanding > 0 && "incoming-order-fulfillment-row--outstanding",
-              )}
+              className="po-document-lines__mobile-row"
               data-testid={`${testId}-mobile-${line.productId}`}
             >
               <p className="m-0 font-medium">{line.nameSnapshot}</p>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted tabular-nums">
-                {orderedLabel}: {qty(line.orderedQty ?? line.confirmedQty ?? line.qty, uom)}
+                {orderedLabel}: {qty(line.orderedQty ?? line.confirmedQty ?? line.qty)}
                 {" · "}
-                {goodLabel}: {qty(line.goodReceivedQty, uom)}
+                {goodLabel}: {qty(line.goodReceivedQty)}
                 {" · "}
-                {damagedLabel}: {qty(line.damagedQty, uom)}
-                {showMissing ? ` · ${missingLabel}: ${qty(line.missingQty, uom)}` : ""}
+                {damagedLabel}: {qty(line.damagedQty)}
+                {showMissing ? ` · ${missingLabel}: ${qty(line.missingQty)}` : ""}
+                {uom ? ` · ${unitLabel}: ${uom}` : ""}
               </p>
-              <p
-                className={cn(
-                  "m-0 text-[length:var(--exits-text-sm)] tabular-nums",
-                  outstanding > 0 && "font-semibold text-[var(--exits-warning, #b45309)]",
-                )}
-              >
-                {outstandingLabel}: {qty(outstanding, uom)}
-                {" · "}
+              <p className={cn("m-0 text-[length:var(--exits-text-sm)] tabular-nums")}>
                 {remainingValueLabel}: <MoneyDisplay amount={line.remainingValue ?? 0} />
               </p>
             </li>

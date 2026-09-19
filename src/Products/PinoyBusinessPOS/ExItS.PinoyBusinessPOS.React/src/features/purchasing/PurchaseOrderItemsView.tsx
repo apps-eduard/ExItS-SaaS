@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, Pencil, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExitsResponsiveDataView } from "@/components/exits/ExitsResponsiveDataView";
 import {
@@ -12,21 +12,13 @@ import {
   ExitsTableHeader,
   ExitsTableRow,
 } from "@/components/exits/ExitsTable";
-import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
+import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import type { ResponsiveDataLayout } from "@/components/exits/responsive-data-view";
 import {
   roundMoney,
   type SupplierAvailabilityState,
 } from "@/features/purchasing/purchase-order-create-connected";
-import {
-  clampQuantityToPrecision,
-  formatQuantityValue,
-  maxQuantityDecimals,
-  parseQuantityTyping,
-  quantityInputMinimum,
-  stripQuantityGrouping,
-} from "@/lib/quantity-rules";
 import { cn } from "@/lib/cn";
 
 export type PurchaseOrderSelectedLine = {
@@ -50,7 +42,7 @@ export type PurchaseOrderSelectedLine = {
   /** Non-blocking over-order warning copy when requested qty exceeds availability. */
   overOrderWarning?: string | null;
   onRemove: () => void;
-  /** Commit edited qty (plain text input). Omit when qty is read-only. */
+  /** Commit edited qty via QuantityStepper. Omit when qty is read-only. */
   onQtyChange?: (next: number) => void;
   canEditQty?: boolean;
 };
@@ -64,58 +56,8 @@ type PurchaseOrderItemsViewProps = {
   lineTestIdPrefix?: string;
 };
 
-function formatQtyDisplay(qty: number): string {
-  return Math.abs(qty - Math.trunc(qty)) < 1e-9
-    ? String(Math.trunc(qty))
-    : String(Math.round(qty * 1_000_000) / 1_000_000);
-}
-
-function qtyPrecision(unitOfMeasure?: string | null): number {
-  return maxQuantityDecimals(unitOfMeasure, "PerItem");
-}
-
-function qtyFloor(unitOfMeasure?: string | null): number {
-  return quantityInputMinimum(unitOfMeasure, "PerItem");
-}
-
-function commitQtyText(
-  raw: string,
-  unitOfMeasure: string | null | undefined,
-  onQtyChange: (next: number) => void,
-): string {
-  const precision = qtyPrecision(unitOfMeasure);
-  const floor = qtyFloor(unitOfMeasure);
-  const parsed = parseQuantityTyping(raw.trim(), precision);
-
-  let next: number | null = null;
-  if (parsed.kind === "value") {
-    next = parsed.value;
-  } else if (parsed.kind === "incomplete" || parsed.kind === "empty") {
-    const cleaned = stripQuantityGrouping(raw).replace(/\.$/u, "");
-    if (cleaned === "") {
-      next = floor;
-    } else {
-      const asNumber = Number(cleaned);
-      if (Number.isFinite(asNumber)) {
-        next = asNumber;
-      }
-    }
-  }
-
-  if (next == null || !Number.isFinite(next)) {
-    return formatQuantityValue(floor, precision);
-  }
-
-  let resolved = clampQuantityToPrecision(next, precision);
-  if (resolved <= 0 || resolved < floor) {
-    resolved = floor;
-  }
-  onQtyChange(resolved);
-  return formatQuantityValue(resolved, precision);
-}
-
 /**
- * Create PO selected lines — Available column; qty + edit + delete as separate cols.
+ * Create PO selected lines — Available column; QuantityStepper + delete action.
  * Always table presentation (no card conversion).
  */
 export function PurchaseOrderItemsView({
@@ -124,46 +66,6 @@ export function PurchaseOrderItemsView({
   t,
   lineTestIdPrefix = "po-connected-selected",
 }: PurchaseOrderItemsViewProps) {
-  const [editingProductId, setEditingProductId] = useState<string | null>(null);
-  const [qtyDraft, setQtyDraft] = useState("");
-  const qtyInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (!editingProductId) {
-      return;
-    }
-    if (!lines.some((line) => line.productId === editingProductId)) {
-      setEditingProductId(null);
-      setQtyDraft("");
-    }
-  }, [editingProductId, lines]);
-
-  useEffect(() => {
-    if (!editingProductId) {
-      return;
-    }
-    const input = qtyInputRef.current;
-    if (!input) {
-      return;
-    }
-    input.focus();
-    input.select();
-  }, [editingProductId]);
-
-  function startEdit(line: PurchaseOrderSelectedLine) {
-    setEditingProductId(line.productId);
-    setQtyDraft(formatQuantityValue(line.orderedQty, qtyPrecision(line.unitOfMeasure)));
-  }
-
-  function finishEdit(line: PurchaseOrderSelectedLine) {
-    if (line.onQtyChange) {
-      const nextText = commitQtyText(qtyDraft, line.unitOfMeasure, line.onQtyChange);
-      setQtyDraft(nextText);
-    }
-    setEditingProductId(null);
-    setQtyDraft("");
-  }
-
   function availableCell(
     line: PurchaseOrderSelectedLine,
     options?: { testId?: string | null },
@@ -217,121 +119,59 @@ export function PurchaseOrderItemsView({
   }
 
   function qtyCell(line: PurchaseOrderSelectedLine) {
-    const editing = editingProductId === line.productId;
-    if (editing) {
+    const canEdit = line.canEditQty !== false && typeof line.onQtyChange === "function";
+    if (!canEdit) {
       return (
-        <div className="po-order-items__qty-editor">
-          <input
-            ref={qtyInputRef}
-            type="text"
-            inputMode="decimal"
-            className="exits-input exits-input--no-spin po-order-items__qty-input tabular-nums"
-            value={qtyDraft}
-            aria-label={t("purchasing.qtyShort")}
-            data-testid={`po-qty-${line.productId}`}
-            onChange={(e) => setQtyDraft(e.target.value)}
-            onBlur={() => {
-              if (!line.onQtyChange) {
-                return;
-              }
-              setQtyDraft(commitQtyText(qtyDraft, line.unitOfMeasure, line.onQtyChange));
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                finishEdit(line);
-              }
-            }}
-          />
+        <span
+          className="po-order-items__qty-readout"
+          data-testid={`${lineTestIdPrefix}-qty-value-${line.productId}`}
+        >
+          <span className="po-order-items__qty-value tabular-nums">{line.orderedQty}</span>
           {line.unitLabel?.trim() ? (
             <span className="po-order-items__qty-unit">{line.unitLabel.trim()}</span>
           ) : null}
-        </div>
-      );
-    }
-
-    return (
-      <span
-        className="po-order-items__qty-readout"
-        data-testid={`${lineTestIdPrefix}-qty-value-${line.productId}`}
-      >
-        <span className="po-order-items__qty-value tabular-nums">
-          {formatQtyDisplay(line.orderedQty)}
         </span>
-        {line.unitLabel?.trim() ? (
-          <span className="po-order-items__qty-unit">{line.unitLabel.trim()}</span>
-        ) : null}
-      </span>
-    );
-  }
-
-  function editAction(line: PurchaseOrderSelectedLine) {
-    const editing = editingProductId === line.productId;
-    const canEdit = line.canEditQty !== false && typeof line.onQtyChange === "function";
-
-    if (editing) {
-      return (
-        <Button
-          type="button"
-          intent="success"
-          appearance="outline"
-          size="icon"
-          aria-label={t("purchasing.doneEditingQty")}
-          onClick={() => finishEdit(line)}
-          data-testid={`${lineTestIdPrefix}-qty-done-${line.productId}`}
-        >
-          <Check className="size-4" aria-hidden />
-        </Button>
       );
     }
 
-    if (!canEdit) {
-      return null;
-    }
-
+    const unitLabel = line.unitLabel?.trim() || null;
     return (
-      <Button
-        type="button"
-        intent="primary"
-        appearance="outline"
-        size="icon"
-        className="po-order-items__edit-btn"
-        aria-label={t("purchasing.editQty").replace("{name}", line.name)}
-        onClick={() => startEdit(line)}
-        data-testid={`${lineTestIdPrefix}-qty-edit-${line.productId}`}
-      >
-        <Pencil className="size-4" aria-hidden />
-      </Button>
-    );
-  }
-
-  function deleteAction(line: PurchaseOrderSelectedLine) {
-    return (
-      <Button
-        type="button"
-        intent="danger"
-        appearance="outline"
-        size="icon"
-        aria-label={t("purchasing.removeNamed").replace("{name}", line.name)}
-        onClick={() => {
-          if (editingProductId === line.productId) {
-            setEditingProductId(null);
-            setQtyDraft("");
-          }
-          line.onRemove();
-        }}
-        data-testid={`${lineTestIdPrefix}-remove-${line.productId}`}
-      >
-        <Trash2 className="size-4" aria-hidden />
-      </Button>
+      <div className="po-order-items__qty-stack">
+        <QuantityStepper
+          compact
+          variant="auto"
+          editOnClick
+          value={line.orderedQty}
+          unitOfMeasure={line.unitOfMeasure ?? undefined}
+          sellingMode="PerItem"
+          invalid={!(line.orderedQty > 0)}
+          decreaseLabel={t("purchasing.decreaseQty")}
+          increaseLabel={t("purchasing.increaseQty")}
+          ariaLabel={t("purchasing.qtyShort")}
+          valueClickLabel={t("purchasing.editQty").replace("{name}", line.name)}
+          valueTestId={`po-qty-${line.productId}`}
+          className="po-order-items__qty-stepper"
+          onChange={(next) => line.onQtyChange?.(next)}
+        />
+        {unitLabel ? <span className="po-order-items__qty-unit">{unitLabel}</span> : null}
+      </div>
     );
   }
 
   function actionCell(line: PurchaseOrderSelectedLine) {
     return (
       <ExitsTableActions className="po-order-items__row-actions justify-center">
-        {editAction(line)}
-        {deleteAction(line)}
+        <Button
+          type="button"
+          intent="danger"
+          appearance="outline"
+          size="icon"
+          aria-label={t("purchasing.removeNamed").replace("{name}", line.name)}
+          onClick={() => line.onRemove()}
+          data-testid={`${lineTestIdPrefix}-remove-${line.productId}`}
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </Button>
       </ExitsTableActions>
     );
   }
@@ -422,9 +262,7 @@ export function PurchaseOrderItemsView({
                   </span>
                 </ExitsTableCell>
                 <ExitsTableCell cellAlign="center" className="po-order-items-table__qty-col">
-                  <ExitsTableActions className="po-order-items__qty-actions justify-center">
-                    {qtyCell(line)}
-                  </ExitsTableActions>
+                  {qtyCell(line)}
                 </ExitsTableCell>
                 <ExitsTableCell cellAlign="center" className="po-order-items-table__action-col">
                   {actionCell(line)}

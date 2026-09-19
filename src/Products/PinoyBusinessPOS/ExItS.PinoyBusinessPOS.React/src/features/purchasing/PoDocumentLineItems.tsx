@@ -11,15 +11,11 @@ export type PoDocumentLineItemsProps = {
   emptyTitle: string;
   emptyDetail?: string;
   lines: PoDocumentLine[];
-  /** When true, show buyer receive progress columns. */
-  showReceiveProgress?: boolean;
   productColLabel: string;
   skuColLabel: string;
   qtyColLabel: string;
   unitCostColLabel: string;
   lineTotalColLabel: string;
-  receivedColLabel?: string;
-  outstandingColLabel?: string;
   /** Optional trailing slot in the section header (e.g. none). */
   headerEnd?: ReactNode;
   className?: string;
@@ -37,14 +33,11 @@ export function PoDocumentLineItems({
   emptyTitle,
   emptyDetail,
   lines,
-  showReceiveProgress = false,
   productColLabel,
   skuColLabel,
   qtyColLabel,
   unitCostColLabel,
   lineTotalColLabel,
-  receivedColLabel,
-  outstandingColLabel,
   headerEnd,
   className,
   testId = "po-document-lines",
@@ -93,16 +86,6 @@ export function PoDocumentLineItems({
                   <th scope="col" className="po-document-lines__num">
                     {lineTotalColLabel}
                   </th>
-                  {showReceiveProgress ? (
-                    <>
-                      <th scope="col" className="po-document-lines__num">
-                        {receivedColLabel}
-                      </th>
-                      <th scope="col" className="po-document-lines__num">
-                        {outstandingColLabel}
-                      </th>
-                    </>
-                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -120,16 +103,6 @@ export function PoDocumentLineItems({
                         testId={`${lineTestIdPrefix}-total-${line.id}`}
                       />
                     </td>
-                    {showReceiveProgress ? (
-                      <>
-                        <td className="po-document-lines__num tabular-nums">
-                          {line.receivedLabel ?? "—"}
-                        </td>
-                        <td className="po-document-lines__num tabular-nums">
-                          {line.outstandingLabel ?? "—"}
-                        </td>
-                      </>
-                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -158,13 +131,6 @@ export function PoDocumentLineItems({
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted tabular-nums">
                   {line.quantityLabel} × <MoneyDisplay amount={line.unitCost} />
                 </p>
-                {showReceiveProgress ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {receivedColLabel}: {line.receivedLabel ?? "—"}
-                    {" · "}
-                    {outstandingColLabel}: {line.outstandingLabel ?? "—"}
-                  </p>
-                ) : null}
               </li>
             ))}
           </ul>

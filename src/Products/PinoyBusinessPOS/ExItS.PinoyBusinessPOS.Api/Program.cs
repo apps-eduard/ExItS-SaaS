@@ -244,6 +244,16 @@ builder.Services.AddHttpClient<IPlatformSupplierLocationDirectory, PlatformSuppl
 
     client.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddHttpClient<IPlatformBranchFulfillmentGateway, PlatformBranchFulfillmentClient>((provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+    }
+
+    client.Timeout = TimeSpan.FromSeconds(15);
+});
 builder.Services.AddHttpClient<IOrganizationBusinessNotificationPublisher, PlatformOrganizationBusinessNotificationClient>((provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<PlatformAuthOptions>>().Value;
@@ -483,6 +493,8 @@ builder.Services.AddScoped<UpdateBusinessCustomerRelationshipContact>();
 builder.Services.AddScoped<UpdateBusinessCustomerDeliveryAllowance>();
 builder.Services.AddScoped<GetOrganizationFulfillmentSettings>();
 builder.Services.AddScoped<UpdateOrganizationOfferDelivery>();
+builder.Services.AddScoped<UpdateOrganizationBranchFulfillmentDefaults>();
+builder.Services.AddScoped<UpdateBranchFulfillmentSettingsWithOrgOfferGate>();
 builder.Services.AddScoped<GetOrganizationConnectedCommerceSettings>();
 builder.Services.AddScoped<UpdateOrganizationConnectedCommerceSettings>();
 builder.Services.AddScoped<GetConnectedCommerceOverview>();
@@ -567,6 +579,7 @@ builder.Services.AddScoped<SubmitPurchaseOrder>();
 builder.Services.AddScoped<CancelPurchaseOrder>();
 builder.Services.AddScoped<AcceptConnectedPoChanges>();
 builder.Services.AddScoped<DeclineConnectedPoChanges>();
+builder.Services.AddScoped<SubmitBuyerPrepaymentProof>();
 builder.Services.AddScoped<ReceivePurchaseOrder>();
 builder.Services.AddScoped<VoidGoodsReceipt>();
 builder.Services.AddScoped<QuotationQueryService>();

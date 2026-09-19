@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Api.ConnectedSuppliers;
 
@@ -150,6 +151,37 @@ internal static class ConnectedSupplierEndpoints
             }
 
             return PosApiResults.FromResult(await use.ExecuteAsync(org, body, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapPut("/organization/fulfillment-settings/branch-defaults", async (
+            HttpRequest req,
+            UpdateOrganizationBranchFulfillmentDefaultsRequest body,
+            UpdateOrganizationBranchFulfillmentDefaults use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ManageSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(await use.ExecuteAsync(org, body, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapPut("/organization/branches/{branchId:guid}/fulfillment-settings", async (
+            HttpRequest req,
+            Guid branchId,
+            UpdateBranchFulfillmentSettingsRequest body,
+            UpdateBranchFulfillmentSettingsWithOrgOfferGate use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ViewSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await use.ExecuteAsync(org, branchId, body, ct).ConfigureAwait(false),
+                Results.Ok);
         });
         group.MapGet("/business-customers/{connectionId:guid}/organization-contacts", async (
             HttpRequest req,

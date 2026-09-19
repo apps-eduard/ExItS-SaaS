@@ -5,6 +5,8 @@ import type { PosCatalogProductDto, PosCatalogProductUnitDto } from "@/api/pos/p
 import {
   cartLineKey,
   formatLineAmountPreview,
+  nextWeightCartQuantityKg,
+  nextWeightLineQuantityKg,
   normalizeCustomQuantity,
   normalizeWeightToKilograms,
   requiresWholeEnteredQuantity,
@@ -13,6 +15,7 @@ import {
   resolveSellCardStock,
   remainingQuantityAfterCart,
   isCommittedOutOfStock,
+  weightCartDecrementStepKg,
 } from "@/cart/sell-cart-helpers";
 import { SessionCartProvider, useSessionCart } from "@/cart/SessionCartProvider";
 
@@ -296,6 +299,60 @@ describe("sell-cart-helpers", () => {
     expect(normalizeWeightToKilograms(1500, "g")).toEqual({ kilograms: 1.5 });
     expect(normalizeWeightToKilograms(1.2345, "kg")).toEqual({ error: "precision" });
     expect(normalizeWeightToKilograms(1.5, "g")).toEqual({ error: "precision" });
+  });
+
+  it("uses adaptive kg cart steps and removes at or below zero", () => {
+    expect(weightCartDecrementStepKg(1.5)).toBe(1);
+    expect(weightCartDecrementStepKg(1)).toBe(1);
+    expect(weightCartDecrementStepKg(0.5)).toBe(0.1);
+    expect(weightCartDecrementStepKg(0.1)).toBe(0.1);
+    expect(weightCartDecrementStepKg(0.09)).toBe(0.01);
+    expect(nextWeightCartQuantityKg(1.5, 1)).toBe(2.5);
+    expect(nextWeightCartQuantityKg(1.5, -1)).toBe(0.5);
+    expect(nextWeightCartQuantityKg(0.5, -1)).toBe(0.4);
+    expect(nextWeightCartQuantityKg(0.05, -1)).toBe(0.04);
+    expect(nextWeightCartQuantityKg(0.01, -1)).toBe(0);
+
+    // Line editors: sell-cart adaptive steps; plus always +1 kg; never remove (1 → 0.9).
+    expect(nextWeightLineQuantityKg(2, -1)).toBe(1);
+    expect(nextWeightLineQuantityKg(1, -1)).toBe(0.9);
+    expect(nextWeightLineQuantityKg(0.9, -1)).toBe(0.8);
+    expect(nextWeightLineQuantityKg(0.1, -1)).toBe(0.01);
+    expect(nextWeightLineQuantityKg(0.05, -1)).toBe(0.04);
+    expect(nextWeightLineQuantityKg(0.01, -1)).toBe(0.01);
+    expect(nextWeightLineQuantityKg(0.01, 1)).toBe(1.01);
+    expect(nextWeightLineQuantityKg(0.1, 1)).toBe(1.1);
+    expect(nextWeightLineQuantityKg(0.9, 1)).toBe(1.9);
+    expect(nextWeightLineQuantityKg(1, 1)).toBe(2);
+    expect(nextWeightLineQuantityKg(1.5, 1)).toBe(2.5);
+
+    const { result } = renderHook(() => useSessionCart(), { wrapper });
+    const key = cartLineKey("meat", null);
+    act(() => {
+      result.current.addLine(meatProduct, { quantity: 1.5, replaceQuantity: true });
+    });
+    act(() => {
+      result.current.incrementLine(key);
+    });
+    expect(result.current.lines[0]?.quantity).toBe(2.5);
+    act(() => {
+      result.current.decrementLine(key);
+    });
+    expect(result.current.lines[0]?.quantity).toBe(1.5);
+    act(() => {
+      result.current.setLineQuantity(key, 0.5);
+    });
+    act(() => {
+      result.current.decrementLine(key);
+    });
+    expect(result.current.lines[0]?.quantity).toBe(0.4);
+    act(() => {
+      result.current.setLineQuantity(key, 0.01);
+    });
+    act(() => {
+      result.current.decrementLine(key);
+    });
+    expect(result.current.lines).toHaveLength(0);
   });
 
   it("normalizes custom quantity without kg conversion", () => {

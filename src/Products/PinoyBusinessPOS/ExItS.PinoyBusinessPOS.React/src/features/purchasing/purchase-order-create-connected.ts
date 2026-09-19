@@ -292,7 +292,7 @@ export function applyConnectedQuantityDelta(
     ];
   }
 
-  const nextQty = lines[index]!.orderedQty + delta;
+  const nextQty = Math.round((lines[index]!.orderedQty + delta) * 100) / 100;
   if (nextQty <= 0) {
     return lines.filter((line) => line.productId !== product.buyerProductId);
   }

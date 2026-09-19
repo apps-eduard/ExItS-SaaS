@@ -16,7 +16,6 @@ import {
   getOrganizationConnectedCommerceSettings,
   getOrganizationOfferDelivery,
   updateOrganizationConnectedCommerceSettings,
-  updateOrganizationOfferDelivery,
   type OrganizationConnectedCommerceSettingsDto,
 } from "@/api/pos/pos-connected-commerce-client";
 import { listCatalogCategories } from "@/api/pos/pos-catalog-client";
@@ -28,7 +27,6 @@ import { getOrganizationOnlineSupplierPaymentsCapability } from "@/api/platform/
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -38,7 +36,7 @@ import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMu
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useToast } from "@/components/exits/ToastProvider";
-import { invalidateOrganizationOfferDeliveryQueries } from "@/features/branches/offer-delivery-queries";
+import { ConnectedCommerceFulfillmentPanel } from "@/features/connected-commerce/ConnectedCommerceFulfillmentPanel";
 import {
   parseConnectedCommerceTab,
   type ConnectedCommerceTab,
@@ -104,7 +102,7 @@ export function ConnectedCommerceSettingsPage() {
   });
 
   const offerQuery = useQuery({
-    queryKey: ["connected-commerce", "offer-delivery", organizationId],
+    queryKey: ["connected-commerce", "fulfillment", organizationId],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) => getOrganizationOfferDelivery(workspace!, signal),
   });
@@ -213,18 +211,6 @@ export function ConnectedCommerceSettingsPage() {
     onSuccess: (saved) => {
       setDraft(saved);
       void queryClient.invalidateQueries({ queryKey: ["connected-commerce"] });
-      showToast(t("connectedCommerce.saved"), "success");
-    },
-    onError: () => showToast(t("connectedCommerce.saveFailed"), "error"),
-  });
-
-  const offerMutation = useMutation({
-    mutationFn: async (offerDelivery: boolean) => {
-      if (!workspace) throw new Error("missing workspace");
-      return updateOrganizationOfferDelivery(workspace, offerDelivery);
-    },
-    onSuccess: async () => {
-      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
       showToast(t("connectedCommerce.saved"), "success");
     },
     onError: () => showToast(t("connectedCommerce.saveFailed"), "error"),
@@ -369,39 +355,10 @@ export function ConnectedCommerceSettingsPage() {
       ) : null}
 
       {!loading && tab === "fulfillment" ? (
-        <div className="flex flex-col gap-3" data-testid="connected-commerce-fulfillment">
-          <Card className="flex flex-col gap-3 p-3" treatment="bordered">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                  {t("connectedCommerce.offerDelivery")}
-                </h2>
-                <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-                  {t("connectedCommerce.offerDeliveryHelp")}
-                </p>
-              </div>
-              <Switch
-                checked={offerQuery.data?.offerDelivery === true}
-                disabled={!canEdit || offerMutation.isPending}
-                onCheckedChange={(next) => offerMutation.mutate(next)}
-                data-testid="connected-commerce-offer-delivery"
-              />
-            </div>
-            <Notice tone="info">{t("connectedCommerce.customerDeliveryNote")}</Notice>
-          </Card>
-
-          <Card className="flex flex-col gap-2 p-3" treatment="bordered">
-            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-              {t("connectedCommerce.branchReadiness")}
-            </h2>
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("connectedCommerce.branchReadinessHelp")}
-            </p>
-            <Button asChild appearance="outline" size="default" className="self-start">
-              <Link to="/org/branches">{t("connectedCommerce.manageFulfillment")}</Link>
-            </Button>
-          </Card>
-        </div>
+        <ConnectedCommerceFulfillmentPanel
+          workspace={workspace}
+          organizationId={organizationId}
+        />
       ) : null}
 
       {!loading && tab === "payments" && draft ? (

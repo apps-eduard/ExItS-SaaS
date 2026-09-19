@@ -400,7 +400,7 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
     category: "forms",
     status: "Locked",
     summary:
-      "Canonical form fields, search, validation, disabled; QuantityStepper editable [neutral −][qty][primary +]; measured shows whole by default, accepts typed decimals; fractions below 1 allowed",
+      "Canonical form fields, search, validation, disabled; QuantityStepper default [neutral −][qty][primary +] for forms; cart capsule variant=auto adopts Preferences Control Shape (soft/standard/pill); editOnClick for middle-tap → input (sell cart non-kg); measured shows whole by default, accepts typed decimals; fractions below 1 allowed",
     keywords: [
       "form",
       "input",
@@ -409,6 +409,14 @@ export const UI_STANDARD_CATALOG_ROWS: ReadonlyArray<UiStandardCatalogRow> = [
       "validation",
       "quantity",
       "stepper",
+      "pill",
+      "soft",
+      "standard",
+      "auto",
+      "editOnClick",
+      "middle edit",
+      "control shape",
+      "cart",
       "purchasing",
     ],
   },

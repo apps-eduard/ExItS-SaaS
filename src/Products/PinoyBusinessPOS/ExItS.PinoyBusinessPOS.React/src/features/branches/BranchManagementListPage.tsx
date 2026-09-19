@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, LockKeyhole, MapPin, MoreHorizontal, Plus, Route, Store, Warehouse } from "lucide-react";
 import {
   canInviteOrganizationStaff,
   canManageBranchFulfillment,
-  canManageSuppliers,
   canUseWarehouseBranches,
 } from "@/access/pos-capabilities";
 import {
@@ -14,16 +13,12 @@ import {
   type BranchManagementSummaryItemDto,
 } from "@/api/platform/organization-branches-client";
 import { listOrganizationAreas } from "@/api/platform/organization-areas-client";
-import {
-  getOrganizationFulfillmentSettings,
-  updateOrganizationOfferDelivery,
-} from "@/api/pos/pos-connected-suppliers-client";
+import { getOrganizationFulfillmentSettings } from "@/api/pos/pos-connected-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { ExitsChipBar } from "@/components/exits/ExitsChipBar";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
-import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { BottomSheet } from "@/components/exits/SheetDialog";
@@ -34,9 +29,8 @@ import {
   resolveBranchListPickupStatus,
 } from "@/features/branches/branch-list-fulfillment-status";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
-import { OrgOfferDeliveryCard } from "@/features/branches/OrgOfferDeliveryCard";
 import {
-  invalidateOrganizationOfferDeliveryQueries,
+  OFFER_DELIVERY_SETTINGS_PATH,
   organizationOfferDeliveryQueryKey,
 } from "@/features/branches/offer-delivery-queries";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -95,12 +89,10 @@ function matchesTypeFilter(branch: BranchManagementSummaryItemDto, filter: TypeF
 export function BranchManagementListPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const workspace = usePosWorkspaceScope();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
-  const canEditOfferDelivery = canManageSuppliers(sessionGrant) || canManage;
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -110,7 +102,6 @@ export function BranchManagementListPage() {
     null,
   );
   const [desktopMenuId, setDesktopMenuId] = useState<string | null>(null);
-  const [offerError, setOfferError] = useState<string | null>(null);
 
   const summaryQuery = useQuery({
     queryKey: ["branch-management-summary", organizationId],
@@ -128,20 +119,6 @@ export function BranchManagementListPage() {
     queryKey: organizationOfferDeliveryQueryKey(organizationId),
     enabled: Boolean(workspace && organizationId && canManage),
     queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
-  });
-
-  const offerDeliveryMutation = useMutation({
-    mutationFn: async (next: boolean) => {
-      if (!workspace) throw new Error("missing workspace");
-      return updateOrganizationOfferDelivery(workspace, next);
-    },
-    onSuccess: async () => {
-      setOfferError(null);
-      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
-    },
-    onError: (err) => {
-      setOfferError(err instanceof Error ? err.message : t("branches.offerDeliveryFailed"));
-    },
   });
 
   const capacityQuery = useQuery({
@@ -384,24 +361,38 @@ export function BranchManagementListPage() {
         </div>
       ) : null}
 
-      {offerError ? (
-        <Notice tone="danger" testId="branch-mgmt-offer-delivery-error">
-          {offerError}
-        </Notice>
-      ) : null}
-
-      <OrgOfferDeliveryCard
-        offerDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
-        canEdit={canEditOfferDelivery}
-        pending={offerDeliveryMutation.isPending}
-        loading={orgFulfillmentQuery.isLoading}
-        t={t}
-        compact
-        onCheckedChange={(next) => {
-          setOfferError(null);
-          offerDeliveryMutation.mutate(next);
-        }}
-      />
+      <div
+        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+        data-testid="branch-mgmt-fulfillment-status"
+        data-offer-delivery={
+          orgFulfillmentQuery.data?.offerDelivery === true ? "on" : "off"
+        }
+      >
+        <div className="min-w-0">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.offerDelivery")}
+          </p>
+          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+            {orgFulfillmentQuery.data?.offerDelivery === true
+              ? t("branches.offerDeliveryOnDetail")
+              : t("branches.offerDeliveryOffDetail")}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusChip
+            tone={orgFulfillmentQuery.data?.offerDelivery === true ? "success" : "warning"}
+            appearance="outline"
+            data-testid="org-offer-delivery-status"
+          >
+            {orgFulfillmentQuery.data?.offerDelivery === true
+              ? t("branches.offerDeliveryStatusOn")
+              : t("branches.offerDeliveryStatusOff")}
+          </StatusChip>
+          <Button asChild variant="outline" data-testid="branch-mgmt-manage-fulfillment">
+            <Link to={OFFER_DELIVERY_SETTINGS_PATH}>{t("branches.manageFulfillment")}</Link>
+          </Button>
+        </div>
+      </div>
 
       <div className="branch-mgmt-toolbar">
         <div className="branch-mgmt-filters">

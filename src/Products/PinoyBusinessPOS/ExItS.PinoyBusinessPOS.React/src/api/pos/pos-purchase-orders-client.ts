@@ -130,6 +130,11 @@ export const posPurchaseOrderDtoSchema = z.object({
   remainingDueAmount: z.number().optional().default(0),
   sellerSettlementRemarks: z.string().nullable().optional(),
   financiallySettledAtUtc: z.string().nullable().optional(),
+  financiallySettledBy: guidSchema.nullable().optional(),
+  buyerPrepaymentSubmittedAtUtc: z.string().nullable().optional(),
+  buyerPrepaymentMethod: z.string().nullable().optional(),
+  buyerPrepaymentReference: z.string().nullable().optional(),
+  buyerPrepaymentDetails: z.string().nullable().optional(),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
@@ -619,6 +624,30 @@ export async function cancelPurchaseOrder(
     workspace,
     signal,
     path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/cancel`,
+  });
+  return posPurchaseOrderDtoSchema.parse(raw);
+}
+
+export async function submitBuyerPrepaymentProof(
+  workspace: PosWorkspaceScope,
+  purchaseOrderId: string,
+  input: {
+    method: string;
+    reference?: string | null;
+    details?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<PosPurchaseOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/submit-prepayment`,
+    body: {
+      method: input.method,
+      reference: input.reference ?? null,
+      details: input.details ?? null,
+    },
   });
   return posPurchaseOrderDtoSchema.parse(raw);
 }

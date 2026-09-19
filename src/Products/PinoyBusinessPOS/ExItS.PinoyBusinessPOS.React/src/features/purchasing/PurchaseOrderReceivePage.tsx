@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Check, Eye, History, RotateCcw, X } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   getGoodsReceipt,
   getPurchaseOrder,
   isPurchaseOrderReceivable,
+  listGoodsReceiptsForPurchaseOrder,
   receivePurchaseOrder,
   type PosGoodsReceiptDto,
 } from "@/api/pos/pos-purchase-orders-client";
@@ -37,7 +38,20 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { QuantityInput } from "@/components/exits/MoneyQuantityInputs";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
+import { DocumentActions } from "@/features/documents/DocumentActions";
+import {
+  GoodsReceiptBusinessDocument,
+  PurchaseOrderBusinessDocument,
+} from "@/features/documents/PurchasingBusinessDocuments";
+import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
+import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
+import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
+import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
   buildReceiveSettlementPayload,
@@ -52,12 +66,12 @@ import {
   type ReceivePaymentMode,
   type ReceiveSettlementFields,
 } from "@/features/purchasing/receive-payment";
-import { DocumentActions } from "@/features/documents/DocumentActions";
-import { GoodsReceiptBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
-import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
-import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import {
   buildPurchaseOrderReceiveExportModel,
+  downloadPurchaseOrderReceiveCsv,
+  downloadPurchaseOrderReceivePdf,
+  downloadPurchaseOrderReceiveXlsx,
+  printPurchaseOrderReceiveDocument,
 } from "@/features/purchasing/purchase-order-receive-output";
 import {
   buildReceivePlan,
@@ -74,11 +88,56 @@ import { ReceiveDiscrepancyDialog } from "@/features/purchasing/ReceiveDiscrepan
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import { selectUntrackedReceivingLines } from "@/features/purchasing/receive-tracking";
 import { useI18n } from "@/i18n/I18nProvider";
+import type { MessageKey } from "@/i18n/messages";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+function receiveStatusTone(
+  status: string,
+  displayStatus: string,
+): "success" | "warning" | "info" | "danger" {
+  const key = displayStatus || status;
+  switch (key) {
+    case "Ordered":
+    case "Ready":
+    case "Shipped":
+    case "AwaitingBuyerReceipt":
+      return "success";
+    case "PartiallyReceived":
+    case "ReceivedWithIssues":
+    case "ReceivedAwaitingPayment":
+      return "warning";
+    case "Cancelled":
+    case "Declined":
+      return "danger";
+    default:
+      return "info";
+  }
+}
+
+function receiveStatusLabel(
+  t: (key: MessageKey) => string,
+  status: string,
+  displayStatus: string,
+): string {
+  const key = displayStatus || status;
+  switch (key) {
+    case "PartiallyReceived":
+      return "Partially received";
+    case "Shipped":
+    case "AwaitingBuyerReceipt":
+      return "Shipped — awaiting receipt";
+    case "Ready":
+      return t("purchasing.readyForReceipt");
+    case "ReceivedAwaitingPayment":
+      return t("incomingOrders.statusReceivedAwaitingPayment");
+    default:
+      return key || status;
+  }
+}
 
 type ReceiveEditFieldKey = "receiveNow";
 
@@ -127,6 +186,7 @@ function ReceiveIconAction({
 type LineEdit = {
   productId: string;
   name: string;
+  sku: string;
   uom: string;
   orderedQty: number;
   receivedQty: number;
@@ -183,6 +243,8 @@ export function PurchaseOrderReceivePage() {
   const [discrepancyOpen, setDiscrepancyOpen] = useState(false);
   const [discrepancyTargetProductId, setDiscrepancyTargetProductId] = useState<string | null>(null);
   const [highlightUnclassified, setHighlightUnclassified] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
   const goodsReceiptIdRef = useRef<string | null>(null);
 
   const workspace = useMemo(
@@ -208,6 +270,7 @@ export function PurchaseOrderReceivePage() {
         po.lines.map((line) => ({
           productId: line.productId ?? "",
           name: line.nameSnapshot ?? line.productId ?? "",
+          sku: line.skuSnapshot?.trim() || "",
           uom: line.uomSnapshot ?? "",
           orderedQty: line.orderedQty,
           receivedQty: line.receivedQty,
@@ -229,7 +292,95 @@ export function PurchaseOrderReceivePage() {
     },
   });
 
+  const receiptsQuery = useQuery({
+    queryKey: ["purchase-order-receipts", workspace?.organizationId, purchaseOrderId],
+    enabled: Boolean(workspace) && Boolean(purchaseOrderId) && online,
+    queryFn: ({ signal }) =>
+      listGoodsReceiptsForPurchaseOrder(workspace!, purchaseOrderId!, signal),
+  });
+
   const po = query.data;
+  const receipts = receiptsQuery.data ?? [];
+  const actors = useActorDirectory(workspace?.organizationId, [
+    po?.orderedBy,
+    po?.financiallySettledBy,
+    po?.remainingClosedByUserId,
+    ...receipts.flatMap((r) => [r.receivedBy, r.voidedByUserId]),
+  ]);
+  const hasTimeline = useMemo(
+    () => (po ? buildPurchaseOrderActivityEvents({ po, receipts }).length > 0 : false),
+    [po, receipts],
+  );
+  const statusLabel = po
+    ? receiveStatusLabel(t, po.status, po.displayStatus || po.status)
+    : "";
+  const statusTone = po
+    ? receiveStatusTone(po.status, po.displayStatus || po.status)
+    : "info";
+
+  function runReceiveOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    const model = buildExportModel();
+    if (action === "csv") {
+      downloadPurchaseOrderReceiveCsv(model);
+      return;
+    }
+    if (action === "xlsx") {
+      downloadPurchaseOrderReceiveXlsx(model);
+      return;
+    }
+    if (action === "pdf") {
+      downloadPurchaseOrderReceivePdf(model);
+      return;
+    }
+    printPurchaseOrderReceiveDocument();
+  }
+
+  function renderPoUtilityActions(options?: { includePreview?: boolean }) {
+    const includePreview = options?.includePreview !== false;
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        {po ? <StatusChip tone={statusTone}>{statusLabel}</StatusChip> : null}
+        {hasTimeline ? (
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="outline"
+            shape="soft"
+            onClick={() => setTimelineOpen(true)}
+            data-testid="po-timeline-open"
+          >
+            <History className="size-4 shrink-0" aria-hidden />
+            {t("purchasing.timeline")}
+          </Button>
+        ) : null}
+        {includePreview ? (
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="outline"
+            shape="soft"
+            onClick={() => setDocumentPreviewOpen(true)}
+            data-testid="receive-po-preview-open"
+          >
+            <Eye className="size-4 shrink-0" aria-hidden />
+            {t("summary.preview")}
+          </Button>
+        ) : null}
+        <PoDocumentExportActions
+          printLabel={t("exitsTable.print")}
+          exportLabel={t("purchasing.export")}
+          csvLabel={t("exitsTable.exportCsv")}
+          xlsxLabel={t("exitsTable.exportExcel")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          onPrint={() => runReceiveOutput("print")}
+          onCsv={() => runReceiveOutput("csv")}
+          onXlsx={() => runReceiveOutput("xlsx")}
+          onPdf={() => runReceiveOutput("pdf")}
+        />
+      </div>
+    );
+  }
+
   const canReceive =
     allowManage &&
     online &&
@@ -260,12 +411,54 @@ export function PurchaseOrderReceivePage() {
     );
   }, [lines]);
 
+  const orderValue = useMemo(() => {
+    if (!lines) {
+      return 0;
+    }
+    if (po?.confirmedTotalAmount != null && po.confirmedTotalAmount > 0) {
+      return roundMoney(po.confirmedTotalAmount);
+    }
+    return roundMoney(
+      lines.reduce((sum, line) => sum + line.orderedQty * line.unitPurchaseCost, 0),
+    );
+  }, [lines, po?.confirmedTotalAmount]);
+
+  const previouslyReceivedValue = useMemo(() => {
+    if (!lines) {
+      return 0;
+    }
+    return roundMoney(
+      lines.reduce((sum, line) => sum + line.receivedQty * line.unitPurchaseCost, 0),
+    );
+  }, [lines]);
+
+  const remainingValue = useMemo(() => {
+    return roundMoney(Math.max(0, orderValue - previouslyReceivedValue - estimatedTotal));
+  }, [estimatedTotal, orderValue, previouslyReceivedValue]);
+
+  const isPartialReceiptSummary =
+    previouslyReceivedValue > 0.0000001 || remainingValue > 0.0000001;
+
   const lockedReceivePayment = useMemo(() => {
     if (!po?.paymentTerm) {
       return null;
     }
-    return resolveLockedReceivePaymentFromPo(po.paymentTerm, estimatedTotal);
-  }, [estimatedTotal, po?.paymentTerm]);
+    return resolveLockedReceivePaymentFromPo({
+      paymentTerm: po.paymentTerm,
+      paymentTiming: po.paymentTiming,
+      estimatedTotal,
+      amountPaidSnapshot: po.amountPaidSnapshot,
+      confirmedTotalAmount: po.confirmedTotalAmount,
+      financialSettlementStatus: po.financialSettlementStatus,
+    });
+  }, [
+    estimatedTotal,
+    po?.amountPaidSnapshot,
+    po?.confirmedTotalAmount,
+    po?.financialSettlementStatus,
+    po?.paymentTerm,
+    po?.paymentTiming,
+  ]);
 
   const filteredSortedLines = useMemo(() => lines ?? [], [lines]);
 
@@ -358,8 +551,63 @@ export function PurchaseOrderReceivePage() {
 
   const paidNowValue = lockedReceivePayment?.paidNow ?? parseMoneyInput(paidNowText);
 
+  const paymentSectionTitle = useMemo(() => {
+    const timing = lockedReceivePayment?.paymentTiming ?? po?.paymentTiming ?? "";
+    if (timing === "SupplierCredit" || lockedReceivePayment?.mode === "supplierCredit") {
+      return t("purchasing.supplierCredit");
+    }
+    if (timing === "PayBeforeFulfillment" || lockedReceivePayment?.prepaidSettled) {
+      return t("purchasing.prepayment");
+    }
+    if (timing === "PayOnDeliveryOrReceipt") {
+      return t("purchasing.paymentAtReceipt");
+    }
+    return t("purchasing.payment");
+  }, [lockedReceivePayment, po?.paymentTiming, t]);
+
+  const prepaidView = useMemo(() => {
+    if (!po || !lockedReceivePayment?.prepaidSettled) {
+      return null;
+    }
+    const method = lockedReceivePayment.paymentMethod;
+    let referenceLabel: string | null = null;
+    if (method === "GCash") {
+      referenceLabel = t("purchasing.gcashReference");
+    } else if (method === "BankTransfer" || method === "BankDeposit") {
+      referenceLabel = t("purchasing.transferReference");
+    } else if (method === "Check") {
+      referenceLabel = t("purchasing.checkReference");
+    }
+    return {
+      timingLabel: po.paymentTimingLabel?.trim() || t("connectedCommerce.timing.payBefore"),
+      methodLabel: po.paymentTermLabel?.trim() || po.paymentTerm || "—",
+      statusLabel: t("purchasing.paymentSettled"),
+      paidAmount: roundMoney(po.amountPaidSnapshot ?? po.confirmedTotalAmount ?? orderValue),
+      referenceLabel,
+      referenceValue: po.buyerPrepaymentReference?.trim() || null,
+      confirmedBy: null,
+      confirmedAtUtc: po.financiallySettledAtUtc?.trim() || null,
+      notes:
+        po.sellerSettlementRemarks?.trim() ||
+        po.buyerPrepaymentDetails?.trim() ||
+        null,
+    };
+  }, [lockedReceivePayment, orderValue, po, t]);
+
   function validateLockedReceiptPayment(): boolean {
     if (!lockedReceivePayment) {
+      return true;
+    }
+    if (lockedReceivePayment.prepaidIntegrityMissing) {
+      setError(t("purchasing.prepaidSettlementMissing"));
+      return false;
+    }
+    // Pay-before: never validate receipt settlement fields.
+    if (
+      lockedReceivePayment.paymentTiming === "PayBeforeFulfillment" ||
+      lockedReceivePayment.prepaidSettled ||
+      lockedReceivePayment.mode === "supplierCredit"
+    ) {
       return true;
     }
     const paidNow = lockedReceivePayment.paidNow;
@@ -371,6 +619,7 @@ export function PurchaseOrderReceivePage() {
     const settlementError = validateLockedSettlementFields(
       lockedReceivePayment.paymentMethod,
       settlementFields,
+      { skipSettlement: !lockedReceivePayment.requiresSettlement },
     );
     if (settlementError) {
       setError(t(settlementError));
@@ -387,8 +636,6 @@ export function PurchaseOrderReceivePage() {
         product: line.name,
         uom: line.uom,
         ordered: line.orderedQty,
-        received: line.receivedQty,
-        outstanding: line.outstandingQty,
         goodReceived: line.goodText || "0",
         damaged: line.damagedText || "0",
         expiry: line.expiryDate || "",
@@ -752,8 +999,19 @@ export function PurchaseOrderReceivePage() {
       return;
     }
     const paidNow = lockedReceivePayment?.paidNow ?? 0;
-    const methodAtReceipt = lockedReceivePayment?.paymentMethod ?? null;
-    const settlementPayload = buildReceiveSettlementPayload(methodAtReceipt, settlementFields);
+    // Always send the PO-locked method (never omit for prepaid) so server method-lock matches.
+    // Utang/supplier-credit has no receipt payment method code.
+    const methodAtReceipt =
+      lockedReceivePayment?.mode === "supplierCredit" &&
+      lockedReceivePayment.paymentMethod == null
+        ? null
+        : (lockedReceivePayment?.paymentMethod ?? paymentMethod);
+    const settlementPayload = buildReceiveSettlementPayload(methodAtReceipt, settlementFields, {
+      skipSettlement:
+        lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
+        lockedReceivePayment?.prepaidSettled === true ||
+        lockedReceivePayment?.requiresSettlement === false,
+    });
     if (!goodsReceiptIdRef.current) {
       const generated = createSecureMutationId();
       if (!generated.ok) {
@@ -872,11 +1130,27 @@ export function PurchaseOrderReceivePage() {
           backLabel={t("purchasing.backDetail")}
           backTestId="page-header-back-purchasing"
           actions={
-            <DocumentActions
-              printLabel={t("exitsTable.print")}
-              pdfLabel={t("exitsTable.exportPdf")}
-              testId="grn-business-document-actions"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusChip tone={statusTone}>{statusLabel}</StatusChip>
+              {hasTimeline ? (
+                <Button
+                  type="button"
+                  intent="neutral"
+                  appearance="outline"
+                  shape="soft"
+                  onClick={() => setTimelineOpen(true)}
+                  data-testid="po-timeline-open"
+                >
+                  <History className="size-4 shrink-0" aria-hidden />
+                  {t("purchasing.timeline")}
+                </Button>
+              ) : null}
+              <DocumentActions
+                printLabel={t("exitsTable.print")}
+                pdfLabel={t("exitsTable.exportPdf")}
+                testId="grn-business-document-actions"
+              />
+            </div>
           }
         />
         <GoodsReceiptBusinessDocument
@@ -1004,6 +1278,16 @@ export function PurchaseOrderReceivePage() {
             </Button>
           </div>
         </div>
+
+        <PurchaseOrderTimelineDrawer
+          open={timelineOpen}
+          onOpenChange={setTimelineOpen}
+          po={po}
+          receipts={receipts}
+          resolveActor={actors.resolve}
+          isResolving={actors.isResolving}
+          receiptsLoading={receiptsQuery.isLoading}
+        />
       </div>
     );
   }
@@ -1023,22 +1307,18 @@ export function PurchaseOrderReceivePage() {
             <tr>
               <th>{t("purchasing.receiveProduct")}</th>
               <th>{t("purchasing.ordered")}</th>
-              <th>{t("purchasing.receivedBefore")}</th>
-              <th>{t("purchasing.outstanding")}</th>
               <th>{t("purchasing.receiveNow")}</th>
+              <th>{t("purchasing.unit")}</th>
               <th>{t("purchasing.damaged")}</th>
             </tr>
           </thead>
           <tbody>
             {exportModel.rows.map((row) => (
               <tr key={`${row.product}-${row.uom}-${row.ordered}`}>
-                <td>
-                  {row.product} ({row.uom})
-                </td>
+                <td>{row.product}</td>
                 <td>{row.ordered}</td>
-                <td>{row.received}</td>
-                <td>{row.outstanding}</td>
                 <td>{row.goodReceived}</td>
+                <td>{row.uom}</td>
                 <td>{row.damaged}</td>
               </tr>
             ))}
@@ -1053,7 +1333,54 @@ export function PurchaseOrderReceivePage() {
         backTo={`/purchasing/${purchaseOrderId}`}
         backLabel={t("purchasing.backDetail")}
         backTestId="page-header-back-purchasing"
+        actions={renderPoUtilityActions()}
       />
+      {po.paymentTerm || po.paymentTiming ? (
+        <Card data-testid="receive-po-context">
+          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <dt className="text-muted">{t("purchasing.paymentTiming")}</dt>
+              <dd className="m-0 font-medium" data-testid="receive-context-timing">
+                {po.paymentTimingLabel?.trim() ||
+                  (po.paymentTiming === "PayBeforeFulfillment"
+                    ? t("connectedCommerce.timing.payBefore")
+                    : po.paymentTiming === "PayOnDeliveryOrReceipt"
+                      ? t("connectedCommerce.timing.payOnDelivery")
+                      : po.paymentTiming === "SupplierCredit"
+                        ? t("connectedCommerce.timing.supplierCredit")
+                        : po.paymentTiming) ||
+                  "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("purchasing.paymentStatus")}</dt>
+              <dd className="m-0 font-medium" data-testid="receive-context-payment-status">
+                {lockedReceivePayment?.prepaidSettled
+                  ? t("purchasing.paymentSettled")
+                  : po.financialSettlementStatus === "Settled"
+                    ? t("purchasing.paymentSettled")
+                    : po.financialSettlementStatus === "AwaitingPayment"
+                      ? t("purchasing.payBeforeDueChip")
+                      : po.paymentTermLabel || po.paymentTerm || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("purchasing.fulfillmentStatus")}</dt>
+              <dd className="m-0 font-medium" data-testid="receive-context-fulfillment">
+                {po.supplierFulfilledAtUtc
+                  ? t("purchasing.readyForReceipt")
+                  : po.connectedStatus || po.displayStatus || po.status}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("purchasing.receivingStatus")}</dt>
+              <dd className="m-0 font-medium" data-testid="receive-context-receiving">
+                {t("purchasing.awaitingGoodsReceipt")}
+              </dd>
+            </div>
+          </dl>
+        </Card>
+      ) : null}
       {!online ? (
         <Notice tone="warning" testId="receive-offline">
           {t("purchasing.offline")}
@@ -1126,6 +1453,7 @@ export function PurchaseOrderReceivePage() {
       ) : (
         <>
           {!reviewing ? (
+          <>
           <ExitsTableContainer data-testid="receive-lines-table">
             {filteredSortedLines.length === 0 ? (
               <EmptyState
@@ -1140,15 +1468,27 @@ export function PurchaseOrderReceivePage() {
                 <ExitsTable>
                   <ExitsTableHeader>
                     <ExitsTableRow>
-                      <ExitsTableHead cellAlign="text">
+                      <ExitsTableHead cellAlign="text" colSize="flex">
                         {t("purchasing.receiveProduct")}
                       </ExitsTableHead>
-                      <ExitsTableHead cellAlign="numeric">{t("purchasing.ordered")}</ExitsTableHead>
-                      <ExitsTableHead cellAlign="numeric">
-                        {t("purchasing.receivedBefore")}
+                      <ExitsTableHead cellAlign="text" colSize="sku">
+                        {t("catalog.sku")}
                       </ExitsTableHead>
-                      <ExitsTableHead cellAlign="numeric">{t("purchasing.outstanding")}</ExitsTableHead>
-                      <ExitsTableHead cellAlign="numeric">{t("purchasing.receiveNow")}</ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                        {t("purchasing.ordered")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                        {t("purchasing.receiveNow")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text" colSize="numeric">
+                        {t("purchasing.unit")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="money" colSize="money">
+                        {t("purchasing.unitCost")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="money" colSize="money">
+                        {t("purchasing.lineTotal")}
+                      </ExitsTableHead>
                       <ExitsTableHead cellAlign="actions" colSize="actions">
                         {t("purchasing.action")}
                       </ExitsTableHead>
@@ -1238,61 +1578,67 @@ export function PurchaseOrderReceivePage() {
                               </div>
                             ) : null}
                           </ExitsTableCell>
+                          <ExitsTableCell cellAlign="text" colSize="sku" className="tabular-nums text-muted">
+                            {line.sku || "—"}
+                          </ExitsTableCell>
                           <ExitsTableCell cellAlign="numeric" className="tabular-nums">
                             {line.orderedQty}
                           </ExitsTableCell>
-                          <ExitsTableCell cellAlign="numeric" className="tabular-nums">
-                            {line.receivedQty}
-                          </ExitsTableCell>
-                          <ExitsTableCell cellAlign="numeric" className="tabular-nums">
-                            {line.outstandingQty}
-                          </ExitsTableCell>
                           <ExitsTableCell cellAlign="numeric">
                             {editReceiveNow ? (
-                              <div className="exits-table__qty-edit">
-                                <ExitsTableInlineEditor
-                                  invalid={Boolean(editErrors.receiveNow)}
-                                  errorId={
+                              <ExitsTableInlineEditor
+                                invalid={Boolean(editErrors.receiveNow)}
+                                errorId={
+                                  editErrors.receiveNow ? rowValidationId : undefined
+                                }
+                              >
+                                <QuantityInput
+                                  label={t("purchasing.receiveNow")}
+                                  value={line.goodText}
+                                  onChange={(e) => {
+                                    updateLine(line.productId, {
+                                      goodText: e.target.value,
+                                      // Reset classification when good qty changes.
+                                      damagedText: "0",
+                                      notDeliveredText: "0",
+                                      remarksText: "",
+                                    });
+                                    setEditErrors((prev) => ({
+                                      ...prev,
+                                      receiveNow: undefined,
+                                    }));
+                                  }}
+                                  onBlur={(e) =>
+                                    onReceiveQtyBlur({
+                                      ...line,
+                                      goodText: e.currentTarget.value,
+                                    })
+                                  }
+                                  aria-invalid={Boolean(editErrors.receiveNow)}
+                                  aria-describedby={
                                     editErrors.receiveNow ? rowValidationId : undefined
                                   }
-                                >
-                                  <QuantityInput
-                                    label={t("purchasing.receiveNow")}
-                                    value={line.goodText}
-                                    onChange={(e) => {
-                                      updateLine(line.productId, {
-                                        goodText: e.target.value,
-                                        // Reset classification when good qty changes.
-                                        damagedText: "0",
-                                        notDeliveredText: "0",
-                                        remarksText: "",
-                                      });
-                                      setEditErrors((prev) => ({
-                                        ...prev,
-                                        receiveNow: undefined,
-                                      }));
-                                    }}
-                                    onBlur={(e) =>
-                                      onReceiveQtyBlur({
-                                        ...line,
-                                        goodText: e.currentTarget.value,
-                                      })
-                                    }
-                                    aria-invalid={Boolean(editErrors.receiveNow)}
-                                    aria-describedby={
-                                      editErrors.receiveNow ? rowValidationId : undefined
-                                    }
-                                    data-testid={`receive-good-${line.productId}`}
-                                  />
-                                </ExitsTableInlineEditor>
-                                <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
-                              </div>
+                                  data-testid={`receive-good-${line.productId}`}
+                                />
+                              </ExitsTableInlineEditor>
                             ) : (
-                              <span className="inline-flex items-center justify-end gap-1 tabular-nums">
-                                {line.goodText || "0"}
-                                <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
-                              </span>
+                              <span className="tabular-nums">{line.goodText || "0"}</span>
                             )}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="text" className="text-muted">
+                            {line.uom || "—"}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="money" className="tabular-nums">
+                            <MoneyDisplay amount={line.unitPurchaseCost} />
+                          </ExitsTableCell>
+                          <ExitsTableCell
+                            cellAlign="money"
+                            className="tabular-nums font-medium"
+                            data-testid={`receive-line-total-${line.productId}`}
+                          >
+                            <MoneyDisplay
+                              amount={roundMoney(goodQty * line.unitPurchaseCost)}
+                            />
                           </ExitsTableCell>
                           <ExitsTableCell cellAlign="actions" colSize="actions">
                             {canEdit ? (
@@ -1335,7 +1681,7 @@ export function PurchaseOrderReceivePage() {
                         </ExitsTableRow>
                         {showRowValidation ? (
                           <ExitsTableRow error>
-                            <ExitsTableCell colSpan={6}>
+                            <ExitsTableCell colSpan={8}>
                               <div
                                 id={rowValidationId}
                                 className="exits-table__row-validation"
@@ -1364,10 +1710,10 @@ export function PurchaseOrderReceivePage() {
                   </ExitsTableBody>
                   <ExitsTableFooter>
                     <ExitsTableRow>
-                      <ExitsTableCell cellAlign="text" colSpan={4}>
+                      <ExitsTableCell cellAlign="text" colSpan={6}>
                         {t("purchasing.receiptTotal")}
                       </ExitsTableCell>
-                      <ExitsTableCell cellAlign="numeric">
+                      <ExitsTableCell cellAlign="money">
                         <span className="font-semibold tabular-nums" data-testid="receive-estimated-total">
                           <MoneyDisplay amount={estimatedTotal} />
                         </span>
@@ -1394,7 +1740,18 @@ export function PurchaseOrderReceivePage() {
                         data-testid={`receive-line-mobile-${line.productId}`}
                       >
                         <div className="exits-table-mobile__title-row">
-                          <p className="exits-table-mobile__title">{line.name}</p>
+                          <div className="exits-table-mobile__lead-body min-w-0 flex-1">
+                            <p className="exits-table-mobile__title">{line.name}</p>
+                            <p className="exits-table-mobile__meta">
+                              {[
+                                line.sku ? `${t("catalog.sku")}: ${line.sku}` : null,
+                                line.uom ? `${t("purchasing.unit")}: ${line.uom}` : null,
+                                `${t("purchasing.ordered")}: ${line.orderedQty}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          </div>
                           {canEdit ? (
                             <div className="exits-table-mobile__actions">
                               {mobileEditing ? (
@@ -1460,37 +1817,32 @@ export function PurchaseOrderReceivePage() {
                           );
                         })()}
                         <p className="exits-table-mobile__meta">
-                          {t("purchasing.ordered")}: {line.orderedQty} ·{" "}
-                          {t("purchasing.receivedBefore")}: {line.receivedQty} ·{" "}
-                          {t("purchasing.outstanding")}: {line.outstandingQty}{" "}
-                          <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
+                          {t("purchasing.unitCost")}:{" "}
+                          <MoneyDisplay amount={line.unitPurchaseCost} />
                         </p>
                         {editReceiveNow ? (
                           <div className="mt-2 grid gap-2">
-                            <div className="exits-table__qty-edit">
-                              <ExitsTableInlineEditor align="start">
-                                <QuantityInput
-                                  label={t("purchasing.receiveNow")}
-                                  value={line.goodText}
-                                  onChange={(e) =>
-                                    updateLine(line.productId, {
-                                      goodText: e.target.value,
-                                      damagedText: "0",
-                                      notDeliveredText: "0",
-                                      remarksText: "",
-                                    })
-                                  }
-                                  onBlur={(e) =>
-                                    onReceiveQtyBlur({
-                                      ...line,
-                                      goodText: e.currentTarget.value,
-                                    })
-                                  }
-                                  data-testid={`receive-good-mobile-${line.productId}`}
-                                />
-                              </ExitsTableInlineEditor>
-                              <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
-                            </div>
+                            <ExitsTableInlineEditor align="start">
+                              <QuantityInput
+                                label={t("purchasing.receiveNow")}
+                                value={line.goodText}
+                                onChange={(e) =>
+                                  updateLine(line.productId, {
+                                    goodText: e.target.value,
+                                    damagedText: "0",
+                                    notDeliveredText: "0",
+                                    remarksText: "",
+                                  })
+                                }
+                                onBlur={(e) =>
+                                  onReceiveQtyBlur({
+                                    ...line,
+                                    goodText: e.currentTarget.value,
+                                  })
+                                }
+                                data-testid={`receive-good-mobile-${line.productId}`}
+                              />
+                            </ExitsTableInlineEditor>
                             {showExpiry ? (
                               <>
                                 <input
@@ -1518,8 +1870,12 @@ export function PurchaseOrderReceivePage() {
                           </div>
                         ) : (
                           <p className="exits-table-mobile__math mt-2">
-                            {t("purchasing.receiveNow")}: {line.goodText || "0"}{" "}
-                            <span className="exits-table__uom text-[length:var(--exits-text-xs)]">{line.uom}</span>
+                            {t("purchasing.receiveNow")}: {line.goodText || "0"}
+                            {" · "}
+                            {t("purchasing.lineTotal")}:{" "}
+                            <MoneyDisplay
+                              amount={roundMoney(goodQty * line.unitPurchaseCost)}
+                            />
                           </p>
                         )}
                       </ExitsTableMobileRow>
@@ -1547,105 +1903,232 @@ export function PurchaseOrderReceivePage() {
               </>
             )}
           </ExitsTableContainer>
+          <Card data-testid="receive-value-summary">
+            <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <dt className="text-muted">{t("purchasing.orderedValue")}</dt>
+                <dd className="m-0 font-medium tabular-nums" data-testid="receive-order-value">
+                  <MoneyDisplay amount={orderValue} />
+                </dd>
+              </div>
+              {isPartialReceiptSummary && previouslyReceivedValue > 0.0000001 ? (
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <dt className="text-muted">{t("purchasing.previouslyReceivedValue")}</dt>
+                  <dd
+                    className="m-0 font-medium tabular-nums"
+                    data-testid="receive-previously-received-value"
+                  >
+                    <MoneyDisplay amount={previouslyReceivedValue} />
+                  </dd>
+                </div>
+              ) : null}
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <dt className="text-muted">{t("purchasing.thisReceipt")}</dt>
+                <dd className="m-0 font-semibold tabular-nums" data-testid="receive-this-receipt-value">
+                  <MoneyDisplay amount={estimatedTotal} />
+                </dd>
+              </div>
+              {isPartialReceiptSummary && remainingValue > 0.0000001 ? (
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <dt className="text-muted">{t("purchasing.remainingValue")}</dt>
+                  <dd className="m-0 font-medium tabular-nums" data-testid="receive-remaining-value">
+                    <MoneyDisplay amount={remainingValue} />
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </Card>
+          </>
           ) : (
-            <Card data-testid="receive-review-summary">
-              <h2 className="m-0 mb-3 text-[length:var(--exits-text-md)] font-medium">
+            <div className="grid gap-3" data-testid="receive-review-summary">
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
                 {t("purchasing.reviewReceipt")}
               </h2>
-              <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {(lines ?? []).map((line) => {
-                  const good = parseNonNegativeQty(line.goodText) ?? 0;
-                  const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
-                  const notDelivered = parseNonNegativeQty(line.notDeliveredText) ?? 0;
-                  const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
-                  return (
-                    <li
-                      key={line.productId}
-                      className="rounded-md border border-border p-3"
-                      data-testid={`receive-review-line-${line.productId}`}
-                    >
-                      <p className="m-0 font-medium">{line.name}</p>
-                      <dl className="mt-2 mb-0 grid gap-1 text-[length:var(--exits-text-sm)]">
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="text-muted">{t("purchasing.ordered")}:</dt>
-                          <dd className="m-0 tabular-nums">
-                            {formatStockQtyLabel(line.orderedQty, line.uom)}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="text-muted">{t("purchasing.outstanding")}:</dt>
-                          <dd className="m-0 tabular-nums">
-                            {formatStockQtyLabel(line.outstandingQty, line.uom)}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="text-muted">{t("purchasing.goodReceived")}:</dt>
-                          <dd className="m-0 tabular-nums">
-                            {formatStockQtyLabel(good, line.uom)}
-                          </dd>
-                        </div>
-                        {discrepancy > 1e-9 ? (
-                          <>
-                            <div className="flex flex-wrap gap-x-2">
-                              <dt className="text-muted">{t("purchasing.damaged")}:</dt>
-                              <dd className="m-0 tabular-nums">
-                                {formatStockQtyLabel(damaged, line.uom)}
-                              </dd>
-                            </div>
-                            <div className="flex flex-wrap gap-x-2">
-                              <dt className="text-muted">{t("purchasing.notDelivered")}:</dt>
-                              <dd className="m-0 tabular-nums">
-                                {formatStockQtyLabel(notDelivered, line.uom)}
-                              </dd>
-                            </div>
-                            <div className="flex flex-wrap gap-x-2">
-                              <dt className="text-muted">{t("purchasing.remainingDecisionTitle")}:</dt>
-                              <dd className="m-0">
-                                {line.cancelRemaining
-                                  ? t("purchasing.cancelRemaining")
-                                  : t("purchasing.deliverLater")}
-                              </dd>
-                            </div>
-                            {line.remarksText.trim() ? (
-                              <div className="flex flex-wrap gap-x-2">
-                                <dt className="text-muted">{t("purchasing.discrepancyNote")}:</dt>
-                                <dd className="m-0">{line.remarksText.trim()}</dd>
+              <ExitsTableContainer data-testid="receive-review-lines-table">
+                <ExitsTable>
+                  <ExitsTableHeader>
+                    <ExitsTableRow>
+                      <ExitsTableHead cellAlign="text" colSize="flex">
+                        {t("purchasing.receiveProduct")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text" colSize="sku">
+                        {t("catalog.sku")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                        {t("purchasing.ordered")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                        {t("purchasing.goodReceived")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="text" colSize="numeric">
+                        {t("purchasing.unit")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="money" colSize="money">
+                        {t("purchasing.unitCost")}
+                      </ExitsTableHead>
+                      <ExitsTableHead cellAlign="money" colSize="money">
+                        {t("purchasing.lineTotal")}
+                      </ExitsTableHead>
+                    </ExitsTableRow>
+                  </ExitsTableHeader>
+                  <ExitsTableBody>
+                    {(lines ?? []).map((line) => {
+                      const good = parseNonNegativeQty(line.goodText) ?? 0;
+                      const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
+                      const notDelivered = parseNonNegativeQty(line.notDeliveredText) ?? 0;
+                      const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
+                      const discrepancySummary = formatReceiveDiscrepancySummary(line, {
+                        damaged: t("purchasing.damaged"),
+                        notDelivered: t("purchasing.notDelivered"),
+                      });
+                      return (
+                        <ExitsTableRow
+                          key={line.productId}
+                          data-testid={`receive-review-line-${line.productId}`}
+                        >
+                          <ExitsTableCell cellAlign="text" className="font-medium">
+                            <div>{line.name}</div>
+                            {discrepancy > 1e-9 ? (
+                              <div className="mt-1 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                                {discrepancySummary
+                                  ? `${t("purchasing.discrepancy")}: ${discrepancySummary}`
+                                  : null}
+                                {` · ${
+                                  line.cancelRemaining
+                                    ? t("purchasing.cancelRemaining")
+                                    : t("purchasing.deliverLater")
+                                }`}
+                                {line.remarksText.trim()
+                                  ? ` · ${line.remarksText.trim()}`
+                                  : ""}
+                                {damaged > 0
+                                  ? ` · ${t("purchasing.damaged")}: ${formatStockQtyLabel(damaged, line.uom)}`
+                                  : ""}
+                                {notDelivered > 0
+                                  ? ` · ${t("purchasing.notDelivered")}: ${formatStockQtyLabel(notDelivered, line.uom)}`
+                                  : ""}
                               </div>
                             ) : null}
-                          </>
+                          </ExitsTableCell>
+                          <ExitsTableCell
+                            cellAlign="text"
+                            colSize="sku"
+                            className="tabular-nums text-muted"
+                          >
+                            {line.sku || "—"}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                            {line.orderedQty}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                            {good}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="text" className="text-muted">
+                            {line.uom || "—"}
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="money" className="tabular-nums">
+                            <MoneyDisplay amount={line.unitPurchaseCost} />
+                          </ExitsTableCell>
+                          <ExitsTableCell cellAlign="money" className="tabular-nums font-medium">
+                            <MoneyDisplay
+                              amount={roundMoney(good * line.unitPurchaseCost)}
+                            />
+                          </ExitsTableCell>
+                        </ExitsTableRow>
+                      );
+                    })}
+                  </ExitsTableBody>
+                  <ExitsTableFooter>
+                    <ExitsTableRow>
+                      <ExitsTableCell cellAlign="text" colSpan={6}>
+                        {t("purchasing.receiptTotal")}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="money">
+                        <span
+                          className="font-semibold tabular-nums"
+                          data-testid="receive-review-estimated-total"
+                        >
+                          <MoneyDisplay amount={estimatedTotal} />
+                        </span>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  </ExitsTableFooter>
+                </ExitsTable>
+
+                <ExitsTableMobile data-testid="receive-review-lines-mobile">
+                  {(lines ?? []).map((line) => {
+                    const good = parseNonNegativeQty(line.goodText) ?? 0;
+                    const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
+                    const discrepancySummary = formatReceiveDiscrepancySummary(line, {
+                      damaged: t("purchasing.damaged"),
+                      notDelivered: t("purchasing.notDelivered"),
+                    });
+                    return (
+                      <ExitsTableMobileRow
+                        key={line.productId}
+                        data-testid={`receive-review-line-mobile-${line.productId}`}
+                      >
+                        <p className="exits-table-mobile__title">{line.name}</p>
+                        <p className="exits-table-mobile__meta">
+                          {[
+                            line.sku ? `${t("catalog.sku")}: ${line.sku}` : null,
+                            line.uom ? `${t("purchasing.unit")}: ${line.uom}` : null,
+                            `${t("purchasing.ordered")}: ${line.orderedQty}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        <p className="exits-table-mobile__math mt-1">
+                          {t("purchasing.goodReceived")}: {good}
+                          {" · "}
+                          {t("purchasing.lineTotal")}:{" "}
+                          <MoneyDisplay
+                            amount={roundMoney(good * line.unitPurchaseCost)}
+                          />
+                        </p>
+                        {discrepancy > 1e-9 && discrepancySummary ? (
+                          <p className="mt-1 text-[length:var(--exits-text-xs)] text-muted">
+                            {t("purchasing.discrepancy")}: {discrepancySummary}
+                            {line.remarksText.trim()
+                              ? ` · ${line.remarksText.trim()}`
+                              : ""}
+                          </p>
                         ) : null}
-                      </dl>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="mt-4 grid gap-2 border-t border-border pt-3 text-[length:var(--exits-text-sm)]">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-muted">{t("purchasing.receiptTotal")}</span>
-                  <span className="font-semibold tabular-nums" data-testid="receive-review-estimated-total">
-                    <MoneyDisplay amount={estimatedTotal} />
-                  </span>
-                </div>
-                {po.paymentTermLabel ? (
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.paymentMethod")}</span>
-                    <span>{po.paymentTermLabel}</span>
+                      </ExitsTableMobileRow>
+                    );
+                  })}
+                </ExitsTableMobile>
+              </ExitsTableContainer>
+
+              <Card>
+                <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <dt className="text-muted">{t("purchasing.receiptTotal")}</dt>
+                    <dd className="m-0 font-semibold tabular-nums">
+                      <MoneyDisplay amount={estimatedTotal} />
+                    </dd>
                   </div>
-                ) : null}
-                {deliveryReference.trim() ? (
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.deliveryReference")}</span>
-                    <span>{deliveryReference.trim()}</span>
-                  </div>
-                ) : null}
-                {notes.trim() ? (
-                  <div className="flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.receiveNotes")}</span>
-                    <span className="text-right">{notes.trim()}</span>
-                  </div>
-                ) : null}
-              </div>
-            </Card>
+                  {po.paymentTermLabel ? (
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.paymentMethod")}</dt>
+                      <dd className="m-0">{po.paymentTermLabel}</dd>
+                    </div>
+                  ) : null}
+                  {deliveryReference.trim() ? (
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.deliveryReference")}</dt>
+                      <dd className="m-0">{deliveryReference.trim()}</dd>
+                    </div>
+                  ) : null}
+                  {notes.trim() ? (
+                    <div className="flex flex-wrap justify-between gap-2">
+                      <dt className="text-muted">{t("purchasing.receiveNotes")}</dt>
+                      <dd className="m-0 text-right">{notes.trim()}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </Card>
+            </div>
           )}
 
           {reviewing && remainingDecisionLines.length > 0 ? (
@@ -1734,6 +2217,19 @@ export function PurchaseOrderReceivePage() {
                 dueDate={dueDate}
                 onDueDateChange={setDueDate}
                 paidNowValue={paidNowValue}
+                sectionTitle={paymentSectionTitle}
+                prepaidSettled={
+                lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
+                lockedReceivePayment?.prepaidSettled === true
+              }
+                prepaidView={prepaidView}
+                prepaidIntegrityMissing={
+                  lockedReceivePayment?.prepaidIntegrityMissing === true
+                }
+                supplierCreditReadOnly={
+                  lockedReceivePayment?.mode === "supplierCredit" &&
+                  lockedReceivePayment.paymentMethod == null
+                }
               />
             </div>
           ) : null}
@@ -1755,6 +2251,19 @@ export function PurchaseOrderReceivePage() {
               onDueDateChange={setDueDate}
               paidNowValue={paidNowValue}
               disabled={busy || statusLocked}
+              sectionTitle={paymentSectionTitle}
+              prepaidSettled={
+                lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
+                lockedReceivePayment?.prepaidSettled === true
+              }
+              prepaidView={prepaidView}
+              prepaidIntegrityMissing={
+                lockedReceivePayment?.prepaidIntegrityMissing === true
+              }
+              supplierCreditReadOnly={
+                lockedReceivePayment?.mode === "supplierCredit" &&
+                lockedReceivePayment.paymentMethod == null
+              }
             />
           ) : null}
 
@@ -1765,7 +2274,9 @@ export function PurchaseOrderReceivePage() {
                   type="button"
                   variant="ghost"
                   onClick={() => setReviewing(false)}
+                  data-testid="receive-back-to-edit"
                 >
+                  <ArrowLeft className="size-4 shrink-0" aria-hidden />
                   {t("purchasing.backToReceipt")}
                 </Button>
                 <Button
@@ -1816,6 +2327,38 @@ export function PurchaseOrderReceivePage() {
         confirmLabel={t("purchasing.saveClassification")}
         notAcceptedTemplate={t("purchasing.notAcceptedQty")}
       />
+
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        po={po}
+        receipts={receipts}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+        receiptsLoading={receiptsQuery.isLoading}
+      />
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={po.poNumber ?? t("purchasing.receiveTitle")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          testId="receive-po-document-preview"
+        >
+          <PurchaseOrderBusinessDocument
+            po={po}
+            supplierName={po.supplierName}
+            settings={documentSettings}
+            identity={identity}
+            headerVisibility={headerVisibility(documentSettings.header)}
+            deliveryAddress={boundWorkspace?.branchName ?? null}
+            preview
+          />
+        </BusinessDocumentPreview>
+      ) : null}
     </div>
   );
 }

@@ -1502,6 +1502,9 @@ export async function updateBusinessCustomerDeliveryAllowance(
 export const organizationFulfillmentSettingsSchema = z.object({
   organizationId: guidSchema,
   offerDelivery: z.boolean(),
+  defaultPickupEnabled: z.boolean().optional().default(false),
+  defaultDeliveryEnabled: z.boolean().optional().default(false),
+  defaultOnlineOrdersEnabled: z.boolean().optional().default(false),
 });
 
 export type OrganizationFulfillmentSettings = z.infer<
@@ -1532,6 +1535,31 @@ export async function updateOrganizationOfferDelivery(
     signal,
     path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
     body: { offerDelivery },
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
+}
+
+export async function updateOrganizationBranchFulfillmentDefaults(
+  workspace: PosWorkspaceScope,
+  body: {
+    offerDelivery: boolean;
+    defaultPickupEnabled: boolean;
+    defaultDeliveryEnabled: boolean;
+    defaultOnlineOrdersEnabled: boolean;
+  },
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
+    body: {
+      offerDelivery: body.offerDelivery,
+      defaultPickupEnabled: body.defaultPickupEnabled,
+      defaultDeliveryEnabled: body.defaultDeliveryEnabled,
+      defaultOnlineOrdersEnabled: body.defaultOnlineOrdersEnabled,
+    },
   });
   return organizationFulfillmentSettingsSchema.parse(raw);
 }
@@ -1667,6 +1695,10 @@ export const connectedPurchaseOrderSchema = z.object({
   sellerSettlementRemarks: z.string().nullable().optional(),
   financiallySettledAtUtc: isoDateSchema.nullable().optional(),
   buyerReceiptRemarks: z.string().nullable().optional(),
+  buyerPrepaymentSubmittedAtUtc: isoDateSchema.nullable().optional(),
+  buyerPrepaymentMethod: z.string().nullable().optional(),
+  buyerPrepaymentReference: z.string().nullable().optional(),
+  buyerPrepaymentDetails: z.string().nullable().optional(),
 });
 
 export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
@@ -1826,6 +1858,30 @@ export async function confirmIncomingOrderReceiptSettlement(
       paymentMethod: input.paymentMethod ?? null,
       reference: input.reference ?? null,
       sellerRemarks: input.sellerRemarks ?? null,
+      checkClearingStatus: input.checkClearingStatus ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function confirmIncomingOrderSettlement(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    settledAmount?: number | null;
+    checkClearingStatus?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/confirm-settlement`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      settledAmount: input.settledAmount ?? null,
       checkClearingStatus: input.checkClearingStatus ?? null,
     },
   });

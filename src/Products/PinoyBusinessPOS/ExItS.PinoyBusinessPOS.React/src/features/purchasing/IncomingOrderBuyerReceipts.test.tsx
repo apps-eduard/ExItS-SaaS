@@ -38,7 +38,6 @@ function renderReceipts(receipts: IncomingOrderBuyerReceipt[]) {
         receipts={receipts}
         buyerName="Paul Store"
         buyerLabel="Buyer"
-        remainingOutstanding={3}
         connectedPurchaseOrderId={cpoId}
         latestTitle="Latest goods receipt"
         historyTitle="Receipt history"
@@ -46,7 +45,6 @@ function renderReceipts(receipts: IncomingOrderBuyerReceipt[]) {
         goodLabel="Good received"
         damagedLabel="Damaged"
         missingLabel="Missing / not delivered"
-        outstandingLabel="Outstanding"
         deliveryRefLabel="Delivery reference"
         notesLabel="Notes"
         loadMoreLabel="Load more"

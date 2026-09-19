@@ -4800,6 +4800,17 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("financially_settled_at_utc");
             entity.Property(e => e.FinanciallySettledBy)
                 .HasColumnName("financially_settled_by");
+            entity.Property(e => e.BuyerPrepaymentSubmittedAtUtc)
+                .HasColumnName("buyer_prepayment_submitted_at_utc");
+            entity.Property(e => e.BuyerPrepaymentMethod)
+                .HasColumnName("buyer_prepayment_method")
+                .HasMaxLength(40);
+            entity.Property(e => e.BuyerPrepaymentReference)
+                .HasColumnName("buyer_prepayment_reference")
+                .HasMaxLength(120);
+            entity.Property(e => e.BuyerPrepaymentDetails)
+                .HasColumnName("buyer_prepayment_details")
+                .HasMaxLength(500);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -5750,6 +5761,9 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.OrganizationId).HasColumnName("organization_id");
             entity.Property(x => x.OfferDelivery).HasColumnName("offer_delivery");
+            entity.Property(x => x.DefaultPickupEnabled).HasColumnName("default_pickup_enabled");
+            entity.Property(x => x.DefaultDeliveryEnabled).HasColumnName("default_delivery_enabled");
+            entity.Property(x => x.DefaultOnlineOrdersEnabled).HasColumnName("default_online_orders_enabled");
             entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(x => x.OrganizationId)

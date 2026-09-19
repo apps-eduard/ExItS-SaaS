@@ -375,7 +375,7 @@ describe("BranchManagementListPage", () => {
     expect(within(panel).queryByText("branches.mgmt.viewQr")).not.toBeInTheDocument();
   });
 
-  it("shows Offer Delivery control and globally paused Delivery when org offer is off", async () => {
+  it("shows Offer Delivery status only and links to Connected Commerce", async () => {
     listBranchManagementSummaries.mockResolvedValue({
       ok: true,
       value: [
@@ -389,11 +389,17 @@ describe("BranchManagementListPage", () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId("org-offer-delivery-card")).toBeInTheDocument();
+      expect(screen.getByTestId("branch-mgmt-fulfillment-status")).toBeInTheDocument();
       expect(screen.getByTestId(`branch-mgmt-card-${branchId}`)).toBeInTheDocument();
     });
+    expect(screen.queryByTestId("org-offer-delivery-card")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("org-offer-delivery-switch")).not.toBeInTheDocument();
     expect(screen.getByTestId("org-offer-delivery-status")).toHaveTextContent(
       "branches.offerDeliveryStatusOff",
+    );
+    expect(screen.getByTestId("branch-mgmt-manage-fulfillment")).toHaveAttribute(
+      "href",
+      "/org/connected-commerce?tab=fulfillment",
     );
     expect(screen.getByTestId(`branch-mgmt-delivery-${branchId}`)).toHaveTextContent(
       "branches.mgmt.deliveryReadyGloballyPaused",
@@ -403,21 +409,13 @@ describe("BranchManagementListPage", () => {
     );
   });
 
-  it("toggles Offer Delivery via canonical API from Branches page", async () => {
-    const user = userEvent.setup();
+  it("does not edit Offer Delivery from Branches page", async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId("org-offer-delivery-turn-on")).toBeInTheDocument();
+      expect(screen.getByTestId("branch-mgmt-fulfillment-status")).toBeInTheDocument();
     });
-    await user.click(screen.getByTestId("org-offer-delivery-turn-on"));
-    await waitFor(() => {
-      expect(updateOrganizationOfferDelivery).toHaveBeenCalledWith(
-        expect.objectContaining({
-          organizationId: "11111111-1111-1111-1111-111111111111",
-        }),
-        true,
-      );
-    });
+    expect(screen.queryByTestId("org-offer-delivery-turn-on")).not.toBeInTheDocument();
+    expect(updateOrganizationOfferDelivery).not.toHaveBeenCalled();
   });
 });

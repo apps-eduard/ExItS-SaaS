@@ -15,7 +15,6 @@ export type IncomingOrderBuyerReceiptsProps = {
   receipts: readonly IncomingOrderBuyerReceipt[];
   buyerName: string;
   buyerLabel: string;
-  remainingOutstanding: number;
   connectedPurchaseOrderId: string;
   latestTitle: string;
   historyTitle: string;
@@ -23,7 +22,6 @@ export type IncomingOrderBuyerReceiptsProps = {
   goodLabel: string;
   damagedLabel: string;
   missingLabel: string;
-  outstandingLabel: string;
   deliveryRefLabel: string;
   notesLabel: string;
   loadMoreLabel: string;
@@ -52,7 +50,6 @@ export function IncomingOrderBuyerReceipts({
   receipts,
   buyerName,
   buyerLabel,
-  remainingOutstanding,
   connectedPurchaseOrderId,
   latestTitle,
   historyTitle,
@@ -60,7 +57,6 @@ export function IncomingOrderBuyerReceipts({
   goodLabel,
   damagedLabel,
   missingLabel,
-  outstandingLabel,
   deliveryRefLabel,
   notesLabel,
   loadMoreLabel,
@@ -134,12 +130,6 @@ export function IncomingOrderBuyerReceipts({
                 <dd className="m-0 tabular-nums">{formatStockQtyLabel(latest.missingQtyTotal)}</dd>
               </div>
             ) : null}
-            <div>
-              <dt className="text-[length:var(--exits-text-sm)] text-muted">{outstandingLabel}</dt>
-              <dd className="m-0 tabular-nums font-semibold">
-                {formatStockQtyLabel(remainingOutstanding)}
-              </dd>
-            </div>
             {latest.deliveryReference?.trim() ? (
               <div>
                 <dt className="text-[length:var(--exits-text-sm)] text-muted">{deliveryRefLabel}</dt>

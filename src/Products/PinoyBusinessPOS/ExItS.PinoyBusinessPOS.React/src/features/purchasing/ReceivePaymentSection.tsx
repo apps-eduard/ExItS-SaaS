@@ -27,6 +27,18 @@ function methodLabelKey(method: string): MessageKey {
   }
 }
 
+export type PrepaidSettlementView = {
+  timingLabel: string;
+  methodLabel: string;
+  statusLabel: string;
+  paidAmount: number;
+  referenceLabel?: string | null;
+  referenceValue?: string | null;
+  confirmedBy?: string | null;
+  confirmedAtUtc?: string | null;
+  notes?: string | null;
+};
+
 type ReceivePaymentSectionProps = {
   estimatedTotal: number;
   mode: ReceivePaymentMode;
@@ -47,6 +59,15 @@ type ReceivePaymentSectionProps = {
   lockedPaymentMethodLabel?: string;
   settlementFields?: ReceiveSettlementFields;
   onSettlementFieldsChange?: (fields: ReceiveSettlementFields) => void;
+  /** Dynamic section title (PayBefore → Payment / Prepayment; PayOnDelivery → Payment at receipt). */
+  sectionTitle?: string;
+  /** Already-settled PayBefore — read-only settlement, no receipt payment entry. */
+  prepaidSettled?: boolean;
+  prepaidView?: PrepaidSettlementView | null;
+  /** PayBefore receiving allowed but settlement snapshot missing. */
+  prepaidIntegrityMissing?: boolean;
+  /** Supplier credit timing — no payment fields. */
+  supplierCreditReadOnly?: boolean;
 };
 
 /**
@@ -71,14 +92,23 @@ export function ReceivePaymentSection({
   lockedPaymentMethodLabel,
   settlementFields,
   onSettlementFieldsChange,
+  sectionTitle,
+  prepaidSettled = false,
+  prepaidView = null,
+  prepaidIntegrityMissing = false,
+  supplierCreditReadOnly = false,
 }: ReceivePaymentSectionProps) {
   const { t } = useI18n();
   const paid = paidNowValue ?? 0;
   const remaining = remainingCredit(estimatedTotal, paid);
   const creditMode = mode === "supplierCredit";
   const showDueDate = creditMode && remaining > 0 && !lockedFromPo;
-  const showMethodDropdown = !lockedFromPo && paid > 0;
-  const showLockedMethod = lockedFromPo && Boolean(lockedPaymentMethodLabel ?? paymentMethod);
+  const showMethodDropdown = !lockedFromPo && paid > 0 && !prepaidSettled && !supplierCreditReadOnly;
+  const showLockedMethod =
+    lockedFromPo &&
+    !prepaidSettled &&
+    !supplierCreditReadOnly &&
+    Boolean(lockedPaymentMethodLabel ?? paymentMethod);
   const settlement = settlementFields ?? {
     gCashReference: "",
     bankName: "",
@@ -93,17 +123,106 @@ export function ReceivePaymentSection({
     onSettlementFieldsChange?.({ ...settlement, ...patch });
   }
 
-  const showGCashFields = lockedFromPo && paymentMethod === "GCash";
+  const collectSettlement =
+    lockedFromPo && !prepaidSettled && !supplierCreditReadOnly && !prepaidIntegrityMissing;
+  const showGCashFields = collectSettlement && paymentMethod === "GCash";
   const showBankFields =
-    lockedFromPo && (paymentMethod === "BankTransfer" || paymentMethod === "BankDeposit");
-  const showCheckFields = lockedFromPo && paymentMethod === "Check";
+    collectSettlement && (paymentMethod === "BankTransfer" || paymentMethod === "BankDeposit");
+  const showCheckFields = collectSettlement && paymentMethod === "Check";
+  const title = sectionTitle ?? t("purchasing.paymentAtReceipt");
 
   return (
     <Card data-testid={`${testIdPrefix}-section`}>
-      <h2 className="m-0 mb-3 text-[length:var(--exits-text-base)] font-semibold">
-        {t("purchasing.paymentAtReceipt")}
-      </h2>
+      <h2 className="m-0 mb-3 text-[length:var(--exits-text-base)] font-semibold">{title}</h2>
       <div className="grid gap-3">
+        {prepaidIntegrityMissing ? (
+          <p
+            className="m-0 rounded-md border border-[color-mix(in_srgb,var(--exits-danger)_35%,transparent)] bg-[color-mix(in_srgb,var(--exits-danger)_8%,transparent)] px-3 py-2 text-[length:var(--exits-text-sm)]"
+            data-testid={`${testIdPrefix}-prepaid-integrity`}
+            role="alert"
+          >
+            {t("purchasing.prepaidSettlementMissing")}
+          </p>
+        ) : null}
+
+        {prepaidSettled && prepaidView ? (
+          <div className="grid gap-2 text-[length:var(--exits-text-sm)]" data-testid={`${testIdPrefix}-prepaid`}>
+            <p className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-status`}>
+              {prepaidView.timingLabel}
+              {" · "}
+              {prepaidView.statusLabel}
+            </p>
+            <dl className="m-0 grid gap-2 sm:grid-cols-2">
+              <div>
+                <dt className="text-muted">{t("purchasing.paymentMethod")}</dt>
+                <dd className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-method`}>
+                  {prepaidView.methodLabel}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted">{t("purchasing.amountPaid")}</dt>
+                <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-amount`}>
+                  <MoneyDisplay amount={prepaidView.paidAmount} />
+                </dd>
+              </div>
+              {prepaidView.referenceValue ? (
+                <div>
+                  <dt className="text-muted">
+                    {prepaidView.referenceLabel ?? t("purchasing.gcashReference")}
+                  </dt>
+                  <dd className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-reference`}>
+                    {prepaidView.referenceValue}
+                  </dd>
+                </div>
+              ) : null}
+              <div>
+                <dt className="text-muted">{t("purchasing.paymentStatus")}</dt>
+                <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-settlement-status`}>
+                  {prepaidView.statusLabel}
+                </dd>
+              </div>
+              {prepaidView.confirmedBy ? (
+                <div>
+                  <dt className="text-muted">{t("purchasing.confirmedBy")}</dt>
+                  <dd className="m-0">{prepaidView.confirmedBy}</dd>
+                </div>
+              ) : null}
+              {prepaidView.confirmedAtUtc ? (
+                <div>
+                  <dt className="text-muted">{t("purchasing.confirmedAt")}</dt>
+                  <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-confirmed-at`}>
+                    {new Date(prepaidView.confirmedAtUtc).toLocaleString()}
+                  </dd>
+                </div>
+              ) : null}
+              {prepaidView.notes ? (
+                <div className="sm:col-span-2">
+                  <dt className="text-muted">{t("purchasing.settlementNotes")}</dt>
+                  <dd className="m-0 whitespace-pre-wrap">{prepaidView.notes}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        ) : null}
+
+        {supplierCreditReadOnly ? (
+          <div
+            className="grid gap-1 text-[length:var(--exits-text-sm)]"
+            data-testid={`${testIdPrefix}-supplier-credit`}
+          >
+            <p className="m-0 font-medium">
+              {lockedPaymentMethodLabel ?? t("purchasing.supplierCredit")}
+            </p>
+            <p className="m-0 text-muted">{t("purchasing.supplierCreditReceiveHint")}</p>
+            <div className="mt-2">
+              <p className="m-0 text-muted">{t("purchasing.receiptValue")}</p>
+              <p className="m-0">
+                <MoneyDisplay amount={estimatedTotal} testId={`${testIdPrefix}-total`} />
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {!lockedFromPo ? (
           <div
             className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
@@ -152,8 +271,7 @@ export function ReceivePaymentSection({
             <p className="m-0">
               <span className="text-muted">{t("purchasing.paymentMethod")}: </span>
               <span className="font-medium">
-                {lockedPaymentMethodLabel ??
-                  t(methodLabelKey(paymentMethod))}
+                {lockedPaymentMethodLabel ?? t(methodLabelKey(paymentMethod))}
               </span>
             </p>
             <p className="m-0 mt-1 text-muted" data-testid={`${testIdPrefix}-locked-hint`}>
@@ -162,29 +280,31 @@ export function ReceivePaymentSection({
           </div>
         ) : null}
 
-        <dl
-          className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3"
-          data-testid={`${testIdPrefix}-preview`}
-        >
-          <div>
-            <dt className="text-muted">{t("purchasing.receiptValue")}</dt>
-            <dd className="m-0">
-              <MoneyDisplay amount={estimatedTotal} testId={`${testIdPrefix}-total`} />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("purchasing.paidNow")}</dt>
-            <dd className="m-0">
-              <MoneyDisplay amount={paid} testId={`${testIdPrefix}-paid-preview`} />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted">{t("purchasing.balanceDue")}</dt>
-            <dd className="m-0" data-testid={`${testIdPrefix}-remaining`}>
-              <MoneyDisplay amount={remaining} />
-            </dd>
-          </div>
-        </dl>
+        {!prepaidSettled && !supplierCreditReadOnly ? (
+          <dl
+            className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-3"
+            data-testid={`${testIdPrefix}-preview`}
+          >
+            <div>
+              <dt className="text-muted">{t("purchasing.receiptValue")}</dt>
+              <dd className="m-0">
+                <MoneyDisplay amount={estimatedTotal} testId={`${testIdPrefix}-total`} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("purchasing.paidNow")}</dt>
+              <dd className="m-0">
+                <MoneyDisplay amount={paid} testId={`${testIdPrefix}-paid-preview`} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted">{t("purchasing.balanceDue")}</dt>
+              <dd className="m-0" data-testid={`${testIdPrefix}-remaining`}>
+                <MoneyDisplay amount={remaining} />
+              </dd>
+            </div>
+          </dl>
+        ) : null}
 
         {creditMode && !lockedFromPo ? (
           <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">

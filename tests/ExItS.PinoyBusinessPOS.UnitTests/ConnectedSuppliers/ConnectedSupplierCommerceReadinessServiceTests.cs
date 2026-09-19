@@ -522,6 +522,9 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
                     organizationId,
                     offer,
+                    defaultPickupEnabled: false,
+                    defaultDeliveryEnabled: false,
+                    defaultOnlineOrdersEnabled: false,
                     Now,
                     Now));
 

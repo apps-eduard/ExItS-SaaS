@@ -32,10 +32,32 @@ public static class PoReceiptPaymentMethodLock
     public static ApplicationResult<PoReceiptPaymentResolution> Validate(
         ConnectedPoPaymentTerm effectiveTerm,
         decimal receivedAmount,
-        ReceivePurchaseOrderRequest request)
+        ReceivePurchaseOrderRequest request,
+        ConnectedPoPaymentTiming? paymentTiming = null,
+        decimal? amountPaidSnapshot = null,
+        ConnectedPoFinancialSettlementStatus? financialSettlementStatus = null)
     {
         var received = SaleMoney.RoundMoney(receivedAmount);
         var expectedMethod = ToReceiptPaymentMethodCode(effectiveTerm);
+
+        // Pay-before is settled before fulfillment. Goods receipt must never re-require
+        // GCash/bank/check settlement fields or double-post PaidNow.
+        if (paymentTiming == ConnectedPoPaymentTiming.PayBeforeFulfillment)
+        {
+            if (!string.IsNullOrWhiteSpace(request.PaymentMethodAtReceipt)
+                && !PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
+            {
+                return ApplicationResult<PoReceiptPaymentResolution>.Failure(
+                    ApplicationErrorCodes.PurchaseReceiptPaymentMethodMismatch,
+                    "Payment method at receipt must match the purchase order payment term.");
+            }
+
+            return ApplicationResult<PoReceiptPaymentResolution>.Success(
+                new PoReceiptPaymentResolution(
+                    expectedMethod,
+                    PaidNow: 0m,
+                    GoodsReceiptSettlement.Empty));
+        }
 
         if (!PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
         {
@@ -45,7 +67,8 @@ public static class PoReceiptPaymentMethodLock
         }
 
         decimal? resolvedPaidNow = request.PaidNow;
-        if (effectiveTerm == ConnectedPoPaymentTerm.Utang)
+        if (effectiveTerm == ConnectedPoPaymentTerm.Utang
+            || paymentTiming == ConnectedPoPaymentTiming.SupplierCredit)
         {
             var paid = request.PaidNow ?? 0m;
             if (paid != 0m)

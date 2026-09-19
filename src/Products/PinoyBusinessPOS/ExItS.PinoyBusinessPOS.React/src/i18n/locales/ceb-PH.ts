@@ -5395,6 +5395,15 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.startPreparing": "Sugdi ang pag-andam",
 
+  "incomingOrders.payBeforeConfirmTitle": "Confirm buyer payment",
+  "incomingOrders.payBeforeConfirmBody":
+    "Confirm you received the buyer's payment before starting fulfillment.",
+  "incomingOrders.confirmPayBeforePayment": "Confirm payment received",
+  "incomingOrders.buyerPaymentSubmitted": "Buyer submitted payment",
+  "incomingOrders.waitingForBuyerPayment": "Waiting for buyer payment",
+  "incomingOrders.waitingForBuyerPaymentHelp":
+    "Ask the buyer to open this purchase order and submit payment proof.",
+
   "incomingOrders.statusAccepted": "Gidawat",
 
   "incomingOrders.statusAwaitingReceipt": "Naghulat sa receipt sa buyer",
@@ -9911,6 +9920,24 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.paymentTimingHelp": "Choose when payment is due for this connected purchase order.",
   "purchasing.paymentTimingRequired": "Select a payment timing.",
 
+  "purchasing.payBeforeTitle": "Pay before fulfillment",
+  "purchasing.payBeforeBody":
+    "The supplier accepted this order. Pay now, then submit your payment proof so they can start preparing.",
+  "purchasing.payBeforeDueChip": "Payment due",
+  "purchasing.payNow": "Pay now",
+  "purchasing.submitPayment": "Submit payment",
+  "purchasing.updatePaymentProof": "Update payment proof",
+  "purchasing.prepaymentSubmitted": "Payment submitted",
+  "purchasing.paymentSubmittedWaiting": "Waiting for seller",
+  "purchasing.paymentSubmittedWaitingBody":
+    "Your payment proof was submitted. The supplier must confirm before fulfillment can start.",
+  "purchasing.paymentReference": "Payment reference",
+  "purchasing.paymentReferenceHelp": "GCash reference or transaction ID",
+  "purchasing.paymentReferenceRequired": "Enter the payment reference.",
+  "purchasing.paymentDetails": "Payment details",
+  "purchasing.paymentDetailsHelp": "Bank account, check number, or other details the supplier can verify",
+  "purchasing.paymentDetailsRequired": "Enter bank or check details.",
+
   "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
 
   "purchasing.paymentMethod.cod": "COD / Pay on delivery",
@@ -10180,7 +10207,25 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.totalCost": "Total cost",
 
-  "purchasing.paymentAtReceipt": "Bayad sa resibo",
+    "purchasing.payment": "Payment",
+  "purchasing.prepayment": "Prepayment",
+  "purchasing.amountPaid": "Amount paid",
+  "purchasing.confirmedBy": "Confirmed by",
+  "purchasing.confirmedAt": "Confirmed at",
+  "purchasing.settlementNotes": "Settlement notes",
+  "purchasing.prepaidSettlementMissing": "Prepayment settlement data is missing for this pay-in-advance order. Contact the supplier or support before receiving — do not re-enter payment details.",
+  "purchasing.supplierCreditReceiveHint": "Accepted goods value will be posted to the approved supplier credit account.",
+  "purchasing.thisReceipt": "This receipt",
+  "purchasing.previouslyReceivedValue": "Previously received",
+  "purchasing.remainingValue": "Remaining",
+  "purchasing.awaitingGoodsReceipt": "Awaiting goods receipt",
+  "purchasing.paymentSettled": "Paid / Settled",
+  "purchasing.readyForReceipt": "Ready for receipt",
+  "purchasing.receivingStatus": "Receiving",
+  "purchasing.fulfillmentStatus": "Fulfillment",
+  "purchasing.transferReference": "Bank reference",
+  "purchasing.checkReference": "Check number",
+"purchasing.paymentAtReceipt": "Bayad sa resibo",
 
   "purchasing.paymentStatus": "Kahimtang sa bayad",
 

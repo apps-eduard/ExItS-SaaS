@@ -125,6 +125,8 @@ internal static class PosApiResults
             or ConnectedSupplierErrorCodes.InsufficientSupplierStock
             or ConnectedSupplierErrorCodes.RemainingAlreadyClosed
             or ConnectedSupplierErrorCodes.FulfillmentBlockedAfterShortClose
+            or ConnectedSupplierErrorCodes.OrganizationDeliveryNotOffered
+            or "platform.organization_branch.fulfillment.not_ready"
             or ApplicationErrorCodes.PurchaseOrderNothingToCloseRemaining
             or ApplicationErrorCodes.PurchaseOrderCloseRemainingReasonRequired
             or ApplicationErrorCodes.InventoryConcurrencyConflict

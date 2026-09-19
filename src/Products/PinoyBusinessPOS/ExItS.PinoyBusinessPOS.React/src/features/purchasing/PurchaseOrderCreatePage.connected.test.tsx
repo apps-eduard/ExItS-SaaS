@@ -490,30 +490,30 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     // Added product leaves Find products and appears on Purchase order items.
     expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
     expect(screen.getByTestId(`po-connected-selected-${buyerProductId}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`po-connected-selected-qty-value-${buyerProductId}`)).toHaveTextContent(
-      "1",
-    );
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("1");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱12.00");
 
-    await user.click(screen.getByTestId(`po-connected-selected-qty-edit-${buyerProductId}`));
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
     expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("1");
 
     await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "2");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("2");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱24.00");
 
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "5");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("5");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("5");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱60.00");
 
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "4");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("4");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("4");
     await user.click(screen.getByTestId(`po-connected-selected-remove-${buyerProductId}`));
     // Removed from order items → returns to Find products.
     expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeInTheDocument();
@@ -559,20 +559,21 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await waitFor(() => screen.getByTestId(`po-connected-product-${kgBuyerProductId}`));
 
     await user.click(screen.getByTestId(`po-add-${kgBuyerProductId}`));
-    await user.click(screen.getByTestId(`po-connected-selected-qty-edit-${kgBuyerProductId}`));
+    await user.click(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     const qty = screen.getByTestId(`po-qty-${kgBuyerProductId}`);
     expect(qty).toHaveValue("1");
 
     await user.clear(qty);
     await user.type(qty, "0.25");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("0.25");
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveTextContent("0.25");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱10.00");
 
+    await user.click(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     await user.clear(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${kgBuyerProductId}`), "1.25");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("1.25");
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveTextContent("1.25");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱50.00");
   });
 
@@ -608,7 +609,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       screen.queryByTestId(`po-connected-selected-over-order-${buyerProductId}`),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId(`po-connected-selected-qty-edit-${buyerProductId}`));
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
 
     // Type past available (5).
     const qty = screen.getByTestId(`po-qty-${buyerProductId}`);
@@ -616,7 +617,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await user.type(qty, "8");
     await user.tab();
     await waitFor(() =>
-      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("8"),
+      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("8"),
     );
     await waitFor(() =>
       expect(screen.getByTestId(`po-connected-selected-over-order-${buyerProductId}`)).toHaveTextContent(
@@ -733,7 +734,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await selectSupplierAndOpenFinder(user);
     await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
     await waitFor(() =>
-      expect(screen.getByTestId(`po-connected-selected-qty-value-${buyerProductId}`)).toBeInTheDocument(),
+      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toBeInTheDocument(),
     );
     await user.click(screen.getByTestId("po-payment-option-Cash"));
 

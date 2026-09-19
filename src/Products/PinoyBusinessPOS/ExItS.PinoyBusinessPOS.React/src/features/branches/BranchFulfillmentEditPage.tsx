@@ -16,8 +16,8 @@ import {
   getBranchOperatingHours,
   listBranchDeliveryServiceAreas,
   listOrganizationBranchesForFulfillment,
+  normalizeFulfillmentReadiness,
   setBranchOnlineOrdersPaused,
-  updateBranchFulfillmentSettings,
   updateOrganizationBranch,
   upsertBranchDeliveryPolicy,
   upsertBranchOperatingHours,
@@ -25,6 +25,7 @@ import {
   type BranchFulfillmentReadinessDto,
   type OrganizationBranchDto,
 } from "@/api/platform/branch-fulfillment-client";
+import { updateBranchFulfillmentSettingsViaPos } from "@/api/pos/pos-connected-commerce-client";
 import {
   getSupplierConnectedSupplierCommerceReadiness,
   getOrganizationFulfillmentSettings,
@@ -32,6 +33,7 @@ import {
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -530,14 +532,19 @@ export function BranchFulfillmentEditPage() {
     pickupEnabled?: boolean;
     deliveryEnabled?: boolean;
   }) {
-    if (!organizationId || busy) {
+    if (!organizationId || busy || !boundWorkspace?.branchId) {
       return;
     }
     setBusy(true);
     setError(null);
     setOkMessage(null);
     try {
-      const next = await updateBranchFulfillmentSettings(organizationId, branchId, partial);
+      const raw = await updateBranchFulfillmentSettingsViaPos(
+        { organizationId, branchId: boundWorkspace.branchId },
+        branchId,
+        partial,
+      );
+      const next = normalizeFulfillmentReadiness(raw);
       setReadiness(next);
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
@@ -546,9 +553,11 @@ export function BranchFulfillmentEditPage() {
       setOkMessage(t("branches.saved"));
     } catch (err) {
       setError(
-        err instanceof PlatformApiError
+        err instanceof PosApiError
           ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
-          : t("branches.fulfillmentFailed"),
+          : err instanceof PlatformApiError
+            ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
+            : t("branches.fulfillmentFailed"),
       );
     } finally {
       setBusy(false);

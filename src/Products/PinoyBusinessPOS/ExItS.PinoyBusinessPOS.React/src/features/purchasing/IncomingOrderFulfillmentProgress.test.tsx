@@ -28,7 +28,7 @@ function line(overrides: Partial<ConnectedPurchaseOrderLine> & Pick<ConnectedPur
 }
 
 describe("IncomingOrderFulfillmentProgress", () => {
-  it("renders cumulative fulfillment columns and highlights outstanding", () => {
+  it("renders cumulative fulfillment columns with a separate unit column", () => {
     render(
       <IncomingOrderFulfillmentProgress
         lines={[
@@ -57,7 +57,7 @@ describe("IncomingOrderFulfillmentProgress", () => {
         goodLabel="Good received"
         damagedLabel="Damaged"
         missingLabel="Missing / not delivered"
-        outstandingLabel="Outstanding"
+        unitLabel="Unit"
         unitCostLabel="Unit cost"
         remainingValueLabel="Remaining value"
       />,
@@ -66,15 +66,8 @@ describe("IncomingOrderFulfillmentProgress", () => {
     expect(screen.getByTestId("incoming-order-fulfillment-progress")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Good received" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Damaged" })).toBeInTheDocument();
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${appleId}`)).toHaveTextContent(
-      "1",
-    );
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${bananaId}`)).toHaveTextContent(
-      "2",
-    );
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-row-${appleId}`).className).toMatch(
-      /outstanding/,
-    );
+    expect(screen.getByRole("columnheader", { name: "Unit" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Outstanding" })).not.toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Missing / not delivered" })).not.toBeInTheDocument();
   });
 
@@ -97,7 +90,7 @@ describe("IncomingOrderFulfillmentProgress", () => {
         goodLabel="Good received"
         damagedLabel="Damaged"
         missingLabel="Missing / not delivered"
-        outstandingLabel="Outstanding"
+        unitLabel="Unit"
         unitCostLabel="Unit cost"
         remainingValueLabel="Remaining value"
       />,

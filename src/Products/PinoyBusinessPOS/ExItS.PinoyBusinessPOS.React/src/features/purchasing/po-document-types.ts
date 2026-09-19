@@ -17,9 +17,6 @@ export type PoDocumentLine = {
   quantityLabel: string;
   unitCost: number;
   lineTotal: number;
-  /** Buyer receive progress — omitted on seller snapshot. */
-  receivedLabel?: string;
-  outstandingLabel?: string;
 };
 
 export type PoDocumentEditableLine = PoDocumentLine & {

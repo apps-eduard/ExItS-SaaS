@@ -1,13 +1,13 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-/** Canonical React Query key for OrganizationFulfillmentSettings.OfferDelivery. */
+/** Canonical React Query key for OrganizationFulfillmentSettings. */
 export function organizationOfferDeliveryQueryKey(organizationId: string | null | undefined) {
   return ["organization-fulfillment-settings", organizationId ?? ""] as const;
 }
 
 /**
- * Invalidate every surface that projects Offer Delivery / effective Delivery.
- * Convenience UIs must all refresh from the same canonical setting.
+ * Invalidate every surface that projects Offer Delivery / effective Delivery / branch defaults.
+ * Connected Commerce Fulfillment is the primary edit surface; other pages must refresh.
  */
 export async function invalidateOrganizationOfferDeliveryQueries(
   queryClient: QueryClient,
@@ -17,6 +17,7 @@ export async function invalidateOrganizationOfferDeliveryQueries(
     queryClient.invalidateQueries({ queryKey: ["organization-fulfillment-settings"] }),
     queryClient.invalidateQueries({ queryKey: ["org-fulfillment-settings"] }),
     queryClient.invalidateQueries({ queryKey: ["connected-commerce", "offer-delivery"] }),
+    queryClient.invalidateQueries({ queryKey: ["connected-commerce", "fulfillment"] }),
     queryClient.invalidateQueries({ queryKey: ["connected-commerce"] }),
     queryClient.invalidateQueries({ queryKey: ["branch-management-summary"] }),
     queryClient.invalidateQueries({ queryKey: ["branch-fulfillment-list"] }),
@@ -35,5 +36,5 @@ export async function invalidateOrganizationOfferDeliveryQueries(
   await Promise.all(tasks);
 }
 
-/** Deep-link for the full organization Offer Delivery setting. */
+/** Deep-link for the organization fulfillment control center. */
 export const OFFER_DELIVERY_SETTINGS_PATH = "/org/connected-commerce?tab=fulfillment";

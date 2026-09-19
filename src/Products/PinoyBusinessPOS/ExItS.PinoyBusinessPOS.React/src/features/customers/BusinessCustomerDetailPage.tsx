@@ -592,7 +592,7 @@ export function BusinessCustomerDetailPage() {
                 </p>
                 <Button type="button" variant="outline" asChild data-testid="business-delivery-open-offer">
                   <Link to="/org/connected-commerce?tab=fulfillment">
-                    {t("customers.business.deliveryAllowanceOpenOfferDelivery")}
+                    {t("customers.business.deliveryAllowanceOpenFulfillment")}
                   </Link>
                 </Button>
               </div>

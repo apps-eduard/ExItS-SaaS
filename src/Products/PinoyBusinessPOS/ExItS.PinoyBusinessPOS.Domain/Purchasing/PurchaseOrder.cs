@@ -81,6 +81,14 @@ public sealed class PurchaseOrder
     public DateTimeOffset? FinanciallySettledAtUtc { get; private set; }
     /// <summary>Actor who confirmed settlement. Null when settlement required no payment.</summary>
     public Guid? FinanciallySettledBy { get; private set; }
+    /// <summary>When the buyer submitted Pay-before payment proof (awaiting seller confirm).</summary>
+    public DateTimeOffset? BuyerPrepaymentSubmittedAtUtc { get; private set; }
+    /// <summary>Payment method the buyer claims they used (Cash, ManualGCash, BankTransfer, …).</summary>
+    public string? BuyerPrepaymentMethod { get; private set; }
+    /// <summary>GCash / transfer / check reference supplied by the buyer.</summary>
+    public string? BuyerPrepaymentReference { get; private set; }
+    /// <summary>Optional bank name, check date, or other settlement details from the buyer.</summary>
+    public string? BuyerPrepaymentDetails { get; private set; }
 
     public IReadOnlyList<PurchaseOrderLine> Lines => _lines;
 
@@ -118,7 +126,11 @@ public sealed class PurchaseOrder
             ConnectedPoFinancialSettlementStatus.NotRequired,
         string? sellerSettlementRemarks = null,
         DateTimeOffset? financiallySettledAtUtc = null,
-        Guid? financiallySettledBy = null)
+        Guid? financiallySettledBy = null,
+        DateTimeOffset? buyerPrepaymentSubmittedAtUtc = null,
+        string? buyerPrepaymentMethod = null,
+        string? buyerPrepaymentReference = null,
+        string? buyerPrepaymentDetails = null)
     {
         Id = id;
         OrganizationId = organizationId;
@@ -154,6 +166,10 @@ public sealed class PurchaseOrder
         SellerSettlementRemarks = NormalizeSellerSettlementRemarks(sellerSettlementRemarks);
         FinanciallySettledAtUtc = financiallySettledAtUtc;
         FinanciallySettledBy = financiallySettledBy == Guid.Empty ? null : financiallySettledBy;
+        BuyerPrepaymentSubmittedAtUtc = buyerPrepaymentSubmittedAtUtc;
+        BuyerPrepaymentMethod = NormalizeBuyerPrepaymentMethod(buyerPrepaymentMethod);
+        BuyerPrepaymentReference = NormalizeBuyerPrepaymentReference(buyerPrepaymentReference);
+        BuyerPrepaymentDetails = NormalizeBuyerPrepaymentDetails(buyerPrepaymentDetails);
         _lines = lines;
     }
 
@@ -182,6 +198,87 @@ public sealed class PurchaseOrder
         var current = AmountPaidSnapshot ?? 0m;
         AmountPaidSnapshot = SaleMoney.RoundMoney(Math.Max(current, rounded));
         UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Buyer submits Pay-before payment proof after the supplier accepted the order.
+    /// Does not settle — seller must confirm before fulfillment can begin.
+    /// </summary>
+    public void SubmitBuyerPrepaymentProof(
+        string method,
+        string? reference,
+        string? details,
+        DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (PaymentTiming != ConnectedPoPaymentTiming.PayBeforeFulfillment)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Payment submission applies only when payment timing is Pay before fulfillment.");
+        }
+
+        if (Status != PurchaseOrderStatus.Ordered)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Payment can be submitted only while the purchase order is ordered and awaiting fulfillment.");
+        }
+
+        if (RemainingClosedAtUtc is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                "Payment cannot be submitted after remaining quantity was closed.");
+        }
+
+        var normalizedMethod = NormalizeBuyerPrepaymentMethod(method)
+            ?? throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderNotes,
+                "Payment method is required.");
+        var normalizedReference = NormalizeBuyerPrepaymentReference(reference);
+        var normalizedDetails = NormalizeBuyerPrepaymentDetails(details);
+
+        if (RequiresBuyerPrepaymentReference(normalizedMethod)
+            && string.IsNullOrWhiteSpace(normalizedReference))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderNotes,
+                "A payment reference is required for this payment method.");
+        }
+
+        if (RequiresBuyerPrepaymentDetails(normalizedMethod)
+            && string.IsNullOrWhiteSpace(normalizedDetails)
+            && string.IsNullOrWhiteSpace(normalizedReference))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidPurchaseOrderNotes,
+                "Bank or check details are required for this payment method.");
+        }
+
+        BuyerPrepaymentMethod = normalizedMethod;
+        BuyerPrepaymentReference = normalizedReference;
+        BuyerPrepaymentDetails = normalizedDetails;
+        BuyerPrepaymentSubmittedAtUtc = utcNow;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public static bool RequiresBuyerPrepaymentReference(string method)
+    {
+        var key = method.Trim();
+        return key.Equals("ManualGCash", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("GCash", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("BankTransfer", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("BankDeposit", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("Check", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool RequiresBuyerPrepaymentDetails(string method)
+    {
+        var key = method.Trim();
+        return key.Equals("BankTransfer", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("BankDeposit", StringComparison.OrdinalIgnoreCase)
+            || key.Equals("Check", StringComparison.OrdinalIgnoreCase);
     }
 
     public static PurchaseOrder CreateDraft(
@@ -824,7 +921,11 @@ public sealed class PurchaseOrder
             ConnectedPoFinancialSettlementStatus.NotRequired,
         string? sellerSettlementRemarks = null,
         DateTimeOffset? financiallySettledAtUtc = null,
-        Guid? financiallySettledBy = null) =>
+        Guid? financiallySettledBy = null,
+        DateTimeOffset? buyerPrepaymentSubmittedAtUtc = null,
+        string? buyerPrepaymentMethod = null,
+        string? buyerPrepaymentReference = null,
+        string? buyerPrepaymentDetails = null) =>
         new(
             id,
             organizationId,
@@ -858,7 +959,11 @@ public sealed class PurchaseOrder
             financialSettlementStatus,
             sellerSettlementRemarks,
             financiallySettledAtUtc,
-            financiallySettledBy);
+            financiallySettledBy,
+            buyerPrepaymentSubmittedAtUtc,
+            buyerPrepaymentMethod,
+            buyerPrepaymentReference,
+            buyerPrepaymentDetails);
 
     public static string? NormalizeSellerSettlementRemarks(string? remarks) =>
         NormalizeOptionalText(
@@ -866,6 +971,27 @@ public sealed class PurchaseOrder
             SellerSettlementRemarksMaxLength,
             DomainErrorCodes.InvalidPurchaseOrderNotes,
             "Seller settlement remarks");
+
+    public static string? NormalizeBuyerPrepaymentMethod(string? method) =>
+        NormalizeOptionalText(
+            method,
+            40,
+            DomainErrorCodes.InvalidPurchaseOrderNotes,
+            "Buyer prepayment method");
+
+    public static string? NormalizeBuyerPrepaymentReference(string? reference) =>
+        NormalizeOptionalText(
+            reference,
+            120,
+            DomainErrorCodes.InvalidPurchaseOrderNotes,
+            "Buyer prepayment reference");
+
+    public static string? NormalizeBuyerPrepaymentDetails(string? details) =>
+        NormalizeOptionalText(
+            details,
+            500,
+            DomainErrorCodes.InvalidPurchaseOrderNotes,
+            "Buyer prepayment details");
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;

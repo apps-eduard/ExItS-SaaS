@@ -55,6 +55,9 @@ public static class ConnectedSupplierErrorCodes
     public const string CommerceNotReady = "pos.connected_supplier.commerce_not_ready";
     /// <summary>Selected fulfillment method or receiving destination is not ready.</summary>
     public const string FulfillmentNotReady = "pos.connected_supplier.fulfillment_not_ready";
+    /// <summary>Branch Delivery cannot be enabled while organization Offer Delivery is OFF.</summary>
+    public const string OrganizationDeliveryNotOffered =
+        "pos.connected_supplier.organization_delivery_not_offered";
 }
 
 public sealed record ConnectedSupplierRelationshipDto(
@@ -243,7 +246,11 @@ public sealed record ConnectedPurchaseOrderDto(
     decimal RemainingDueAmount = 0m,
     string? SellerSettlementRemarks = null,
     DateTimeOffset? FinanciallySettledAtUtc = null,
-    string? BuyerReceiptRemarks = null);
+    string? BuyerReceiptRemarks = null,
+    DateTimeOffset? BuyerPrepaymentSubmittedAtUtc = null,
+    string? BuyerPrepaymentMethod = null,
+    string? BuyerPrepaymentReference = null,
+    string? BuyerPrepaymentDetails = null);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
 public sealed record CloseIncomingOrderRemainingRequest(string Reason);
 public sealed record ProposeIncomingOrderLineRequest(
@@ -559,7 +566,11 @@ public static class ConnectedSupplierMapper
             balanceDue,
             buyerPo?.SellerSettlementRemarks,
             buyerPo?.FinanciallySettledAtUtc,
-            string.IsNullOrWhiteSpace(buyerReceiptRemarks) ? null : buyerReceiptRemarks);
+            string.IsNullOrWhiteSpace(buyerReceiptRemarks) ? null : buyerReceiptRemarks,
+            buyerPo?.BuyerPrepaymentSubmittedAtUtc,
+            buyerPo?.BuyerPrepaymentMethod,
+            buyerPo?.BuyerPrepaymentReference,
+            buyerPo?.BuyerPrepaymentDetails);
     }
 
     public static ConnectedPurchaseOrderLineDto MapLine(

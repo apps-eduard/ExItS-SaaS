@@ -861,11 +861,12 @@ export function PurchaseOrderCreatePage() {
 
   function setConnectedQty(product: ConnectedPoReadyProduct, nextQty: number) {
     const current = qtyByProductId.get(product.buyerProductId) ?? 0;
-    const delta = nextQty - current;
-    if (delta === 0) {
+    const target = Math.round(nextQty * 100) / 100;
+    if (Math.abs(target - current) < 1e-9) {
       return;
     }
-    setConnectedLines((prev) => applyConnectedQuantityDelta(prev, product, delta));
+    // Absolute replace (not current+delta) so float noise never accumulates.
+    setConnectedLines((prev) => applyConnectedQuantityDelta(prev, product, target - current));
     setError(null);
   }
 

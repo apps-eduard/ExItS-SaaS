@@ -119,7 +119,13 @@ export async function updateOrganizationOfferDelivery(
   workspace: PosWorkspaceScope,
   offerDelivery: boolean,
   signal?: AbortSignal,
-): Promise<{ organizationId: string; offerDelivery: boolean }> {
+): Promise<{
+  organizationId: string;
+  offerDelivery: boolean;
+  defaultPickupEnabled?: boolean;
+  defaultDeliveryEnabled?: boolean;
+  defaultOnlineOrdersEnabled?: boolean;
+}> {
   return posRequest({
     workspace,
     path: "/api/v1/pos/connected-suppliers/organization/fulfillment-settings/offer-delivery",
@@ -132,10 +138,74 @@ export async function updateOrganizationOfferDelivery(
 export async function getOrganizationOfferDelivery(
   workspace: PosWorkspaceScope,
   signal?: AbortSignal,
-): Promise<{ organizationId: string; offerDelivery: boolean }> {
+): Promise<{
+  organizationId: string;
+  offerDelivery: boolean;
+  defaultPickupEnabled?: boolean;
+  defaultDeliveryEnabled?: boolean;
+  defaultOnlineOrdersEnabled?: boolean;
+}> {
   return posRequest({
     workspace,
     path: "/api/v1/pos/connected-suppliers/organization/fulfillment-settings",
+    signal,
+  });
+}
+
+/**
+ * Persists new-branch defaults via the existing offer-delivery PUT
+ * (optional default* fields). Avoids a separate /branch-defaults route
+ * that older running API binaries do not expose (404).
+ */
+export async function updateOrganizationBranchFulfillmentDefaults(
+  workspace: PosWorkspaceScope,
+  body: {
+    offerDelivery: boolean;
+    defaultPickupEnabled: boolean;
+    defaultDeliveryEnabled: boolean;
+    defaultOnlineOrdersEnabled: boolean;
+  },
+  signal?: AbortSignal,
+): Promise<{
+  organizationId: string;
+  offerDelivery: boolean;
+  defaultPickupEnabled: boolean;
+  defaultDeliveryEnabled: boolean;
+  defaultOnlineOrdersEnabled: boolean;
+}> {
+  return posRequest({
+    workspace,
+    path: "/api/v1/pos/connected-suppliers/organization/fulfillment-settings/offer-delivery",
+    method: "PUT",
+    body: {
+      offerDelivery: body.offerDelivery,
+      defaultPickupEnabled: body.defaultPickupEnabled,
+      defaultDeliveryEnabled: body.defaultDeliveryEnabled,
+      defaultOnlineOrdersEnabled: body.defaultOnlineOrdersEnabled,
+    },
+    signal,
+  });
+}
+
+/**
+ * Proxies Platform branch fulfillment updates through POS so Offer Delivery
+ * OFF→ON guards run server-side (OrganizationDeliveryNotOffered).
+ */
+export async function updateBranchFulfillmentSettingsViaPos(
+  workspace: PosWorkspaceScope,
+  branchId: string,
+  request: {
+    customerOrderingEnabled?: boolean;
+    pickupEnabled?: boolean;
+    deliveryEnabled?: boolean;
+  },
+  signal?: AbortSignal,
+): Promise<unknown> {
+  return posRequest({
+    workspace,
+    path: `/api/v1/pos/connected-suppliers/organization/branches/${branchId}/fulfillment-settings`,
+    method: "PUT",
+    body: request,
     signal,
   });
 }

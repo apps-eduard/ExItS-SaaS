@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, Store } from "lucide-react";
+import { Eye, History, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import { listConnectedPoReturnsByPurchaseOrder } from "@/api/pos/pos-connected-po-returns-client";
@@ -14,6 +14,7 @@ import {
   getPurchaseOrder,
   isPurchaseOrderReceivable,
   listGoodsReceiptsForPurchaseOrder,
+  submitBuyerPrepaymentProof,
   submitPurchaseOrder,
   voidGoodsReceipt,
   type PosGoodsReceiptDto,
@@ -45,12 +46,19 @@ import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
 import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
-import { DocumentActions } from "@/features/documents/DocumentActions";
+import {
+  exportBusinessDocumentPdf,
+  printBusinessDocument,
+} from "@/features/documents/print-business-document";
 import { PurchaseOrderBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
+import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
+import * as XLSX from "xlsx";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
@@ -146,8 +154,6 @@ function toBuyerDocumentLines(po: PosPurchaseOrderDto): PoDocumentLine[] {
       quantityLabel: uom ? `${line.orderedQty} ${uom}` : String(line.orderedQty),
       unitCost: line.unitPurchaseCost,
       lineTotal: line.lineTotal,
-      receivedLabel: uom ? `${line.receivedQty} ${uom}` : String(line.receivedQty),
-      outstandingLabel: uom ? `${line.outstandingQty} ${uom}` : String(line.outstandingQty),
     };
   });
 }
@@ -432,6 +438,11 @@ export function PurchaseOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [showPayForm, setShowPayForm] = useState(false);
+  const [payMethod, setPayMethod] = useState("Cash");
+  const [payReference, setPayReference] = useState("");
+  const [payDetails, setPayDetails] = useState("");
+  const [payError, setPayError] = useState<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -533,10 +544,67 @@ export function PurchaseOrderDetailPage() {
     (po.status === "Ordered" || po.status === "PartiallyReceived");
   const canAcceptChanges = allowManage && online && needsApproval;
   const orderTotal = po ? resolveOrderTotal(po) : null;
+  const payBeforeAmountDue =
+    po != null
+      ? (po.confirmedTotalAmount != null && po.confirmedTotalAmount > 0
+          ? po.confirmedTotalAmount
+          : (orderTotal ?? 0))
+      : 0;
+  const payBeforeDue =
+    po != null &&
+    po.paymentTiming === "PayBeforeFulfillment" &&
+    (po.connectedStatus === "Accepted" || displayStatus === "SupplierAccepted") &&
+    (po.amountPaidSnapshot ?? 0) + 0.0000001 < payBeforeAmountDue;
+  const payMethodNeedsReference =
+    payMethod === "ManualGCash" ||
+    payMethod === "GCash" ||
+    payMethod === "BankTransfer" ||
+    payMethod === "BankDeposit" ||
+    payMethod === "Check";
+  const payMethodNeedsDetails =
+    payMethod === "BankTransfer" || payMethod === "BankDeposit" || payMethod === "Check";
   const hasTimeline = useMemo(
     () => (po ? buildPurchaseOrderActivityEvents({ po, receipts }).length > 0 : false),
     [po, receipts],
   );
+
+  async function submitPayBeforeProof() {
+    if (!workspace || !purchaseOrderId || busy) {
+      return;
+    }
+    if (payMethodNeedsReference && !payReference.trim()) {
+      setPayError(t("purchasing.paymentReferenceRequired"));
+      return;
+    }
+    if (payMethodNeedsDetails && !payDetails.trim() && !payReference.trim()) {
+      setPayError(t("purchasing.paymentDetailsRequired"));
+      return;
+    }
+    setBusy(true);
+    setPayError(null);
+    setError(null);
+    try {
+      await submitBuyerPrepaymentProof(workspace, purchaseOrderId, {
+        method: payMethod,
+        reference: payReference.trim() || null,
+        details: payDetails.trim() || null,
+      });
+      setBanner(t("purchasing.prepaymentSubmitted"));
+      setShowPayForm(false);
+      await queryClient.invalidateQueries({
+        queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
+      });
+      await query.refetch();
+    } catch (err) {
+      setPayError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.actionFailed"))
+          : t("purchasing.actionFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function runAction(
     action: () => Promise<unknown>,
@@ -625,13 +693,6 @@ export function PurchaseOrderDetailPage() {
     : (po.supplierName ?? t("purchasing.unknownSupplier"));
   const documentLines = toBuyerDocumentLines(po);
   const proposalRevision = needsApproval ? buildProposalRevisionFromBuyerPo(po) : null;
-  const showReceiveProgress =
-    po.status === "Ordered" ||
-    po.status === "PartiallyReceived" ||
-    po.status === "Received" ||
-    displayStatus === "Ready" ||
-    displayStatus === "Shipped" ||
-    displayStatus === "AwaitingBuyerReceipt";
   const isShortClosed =
     Boolean(po.remainingClosedAtUtc) ||
     displayStatus === "CompletedRemainingCancelled" ||
@@ -693,6 +754,7 @@ export function PurchaseOrderDetailPage() {
                 type="button"
                 intent="neutral"
                 appearance="outline"
+                shape="soft"
                 onClick={() => setTimelineOpen(true)}
                 data-testid="po-timeline-open"
               >
@@ -700,12 +762,72 @@ export function PurchaseOrderDetailPage() {
                 {t("purchasing.timeline")}
               </Button>
             ) : null}
-            <DocumentActions
-              previewLabel={t("summary.preview")}
+            <Button
+              type="button"
+              intent="neutral"
+              appearance="outline"
+              shape="soft"
+              onClick={() => setDocumentPreviewOpen(true)}
+              data-testid="po-document-preview-open"
+            >
+              <Eye className="size-4 shrink-0" aria-hidden />
+              {t("summary.preview")}
+            </Button>
+            <PoDocumentExportActions
               printLabel={t("exitsTable.print")}
+              exportLabel={t("purchasing.export")}
+              csvLabel={t("exitsTable.exportCsv")}
+              xlsxLabel={t("exitsTable.exportExcel")}
               pdfLabel={t("exitsTable.exportPdf")}
-              onPreview={() => setDocumentPreviewOpen(true)}
-              testId="po-business-document-actions"
+              onPrint={() => printBusinessDocument()}
+              onPdf={() => exportBusinessDocumentPdf()}
+              onCsv={() => {
+                const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+                const text = buildCsvWithMetadata(
+                  [
+                    ["Purchase order", po.poNumber ?? ""],
+                    ["Status", resolvedStatusLabel],
+                    ["Exported at", new Date().toISOString()],
+                  ],
+                  {
+                    headers: ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                    rows: po.lines.map((line) => [
+                      line.nameSnapshot ?? "",
+                      line.skuSnapshot ?? "",
+                      line.orderedQty,
+                      line.uomSnapshot ?? "",
+                      line.unitPurchaseCost,
+                      line.lineTotal,
+                    ]),
+                  },
+                );
+                downloadCsvFile(`PO-${poPart}.csv`, text);
+              }}
+              onXlsx={() => {
+                const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+                const workbook = XLSX.utils.book_new();
+                const sheet = XLSX.utils.aoa_to_sheet([
+                  ["Purchase order", po.poNumber ?? ""],
+                  ["Status", resolvedStatusLabel],
+                  [],
+                  ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                  ...po.lines.map((line) => [
+                    line.nameSnapshot ?? "",
+                    line.skuSnapshot ?? "",
+                    line.orderedQty,
+                    line.uomSnapshot ?? "",
+                    line.unitPurchaseCost,
+                    line.lineTotal,
+                  ]),
+                ]);
+                XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
+                const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+                downloadBlob(
+                  `PO-${poPart}.xlsx`,
+                  buffer,
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                );
+              }}
             />
           </div>
         }
@@ -770,6 +892,157 @@ export function PurchaseOrderDetailPage() {
         <Notice tone="warning" testId="po-awaiting-payment">
           {t("incomingOrders.awaitingPaymentBuyerBody")}
         </Notice>
+      ) : null}
+      {payBeforeDue ? (
+        <Card className="flex flex-col gap-3 p-3" data-testid="po-pay-before-card">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="m-0 font-medium">{t("purchasing.payBeforeTitle")}</p>
+            <StatusChip tone="warning">
+              {po.buyerPrepaymentSubmittedAtUtc
+                ? t("purchasing.paymentSubmittedWaiting")
+                : t("purchasing.payBeforeDueChip")}
+            </StatusChip>
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {po.buyerPrepaymentSubmittedAtUtc
+              ? t("purchasing.paymentSubmittedWaitingBody")
+              : t("purchasing.payBeforeBody")}
+          </p>
+          <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+            <div className="flex justify-between gap-2">
+              <dt>{t("purchasing.orderTotal")}</dt>
+              <dd className="m-0 font-medium">
+                <MoneyDisplay amount={payBeforeAmountDue} />
+              </dd>
+            </div>
+            {po.buyerPrepaymentSubmittedAtUtc ? (
+              <>
+                <div className="flex justify-between gap-2">
+                  <dt>{t("purchasing.paymentMethod")}</dt>
+                  <dd className="m-0">{po.buyerPrepaymentMethod ?? "—"}</dd>
+                </div>
+                {po.buyerPrepaymentReference ? (
+                  <div className="flex justify-between gap-2">
+                    <dt>{t("purchasing.paymentReference")}</dt>
+                    <dd className="m-0">{po.buyerPrepaymentReference}</dd>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </dl>
+          {allowManage && online && (!po.buyerPrepaymentSubmittedAtUtc || showPayForm) ? (
+            showPayForm ? (
+              <div className="flex flex-col gap-3" data-testid="po-pay-before-form">
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span>{t("purchasing.paymentMethod")}</span>
+                  <select
+                    className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                    data-testid="po-pay-before-method"
+                    value={payMethod}
+                    onChange={(e) => setPayMethod(e.target.value)}
+                  >
+                    <option value="Cash">{t("purchasing.paymentMethod.cod")}</option>
+                    <option value="ManualGCash">{t("purchasing.paymentMethod.gcash")}</option>
+                    <option value="BankTransfer">{t("purchasing.paymentMethod.bankTransfer")}</option>
+                    <option value="BankDeposit">{t("purchasing.paymentMethod.bankDeposit")}</option>
+                    <option value="Check">{t("purchasing.paymentMethod.check")}</option>
+                  </select>
+                </label>
+                {payMethodNeedsReference ? (
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <span>{t("purchasing.paymentReference")}</span>
+                    <input
+                      className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                      data-testid="po-pay-before-reference"
+                      value={payReference}
+                      onChange={(e) => setPayReference(e.target.value)}
+                      placeholder={t("purchasing.paymentReferenceHelp")}
+                    />
+                  </label>
+                ) : null}
+                {payMethodNeedsDetails ? (
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <span>{t("purchasing.paymentDetails")}</span>
+                    <textarea
+                      className="min-h-20 rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                      data-testid="po-pay-before-details"
+                      value={payDetails}
+                      onChange={(e) => setPayDetails(e.target.value)}
+                      placeholder={t("purchasing.paymentDetailsHelp")}
+                    />
+                  </label>
+                ) : null}
+                {payError ? (
+                  <Notice tone="danger" testId="po-pay-before-error">
+                    {payError}
+                  </Notice>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => {
+                      setShowPayForm(false);
+                      setPayError(null);
+                    }}
+                  >
+                    {t("purchasing.cancel")}
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={busy}
+                    data-testid="po-pay-before-submit"
+                    onClick={() => void submitPayBeforeProof()}
+                  >
+                    {t("purchasing.submitPayment")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                data-testid="po-pay-now"
+                onClick={() => {
+                  const term = po.paymentTerm || "Cash";
+                  setPayMethod(
+                    term === "ManualGCash" || term === "GCash"
+                      ? "ManualGCash"
+                      : term === "BankTransfer"
+                        ? "BankTransfer"
+                        : term === "BankDeposit"
+                          ? "BankDeposit"
+                          : term === "Check"
+                            ? "Check"
+                            : "Cash",
+                  );
+                  setPayReference(po.buyerPrepaymentReference ?? "");
+                  setPayDetails(po.buyerPrepaymentDetails ?? "");
+                  setPayError(null);
+                  setShowPayForm(true);
+                }}
+              >
+                {t("purchasing.payNow")}
+              </Button>
+            )
+          ) : null}
+          {allowManage && online && po.buyerPrepaymentSubmittedAtUtc && !showPayForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="po-pay-before-update"
+              onClick={() => {
+                setPayMethod(po.buyerPrepaymentMethod || "Cash");
+                setPayReference(po.buyerPrepaymentReference ?? "");
+                setPayDetails(po.buyerPrepaymentDetails ?? "");
+                setPayError(null);
+                setShowPayForm(true);
+              }}
+            >
+              {t("purchasing.updatePaymentProof")}
+            </Button>
+          ) : null}
+        </Card>
       ) : null}
       {connectedRelationshipId && po.status === "Received" && po.financialSettlementStatus !== "AwaitingPayment" ? (
         <Card className="p-3" data-testid="po-connected-returns-card">
@@ -1008,14 +1281,11 @@ export function PurchaseOrderDetailPage() {
             emptyTitle={t("purchasing.linesEmpty")}
             emptyDetail={t("purchasing.linesRequired")}
             lines={documentLines}
-            showReceiveProgress={showReceiveProgress}
             productColLabel={t("purchasing.colProduct")}
             skuColLabel={t("purchasing.colSku")}
             qtyColLabel={t("purchasing.ordered")}
             unitCostColLabel={t("purchasing.unitPurchaseCost")}
             lineTotalColLabel={t("purchasing.orderedValue")}
-            receivedColLabel={t("purchasing.received")}
-            outstandingColLabel={t("purchasing.outstanding")}
             testId="po-lines-table"
             lineTestIdPrefix="po-line"
           />

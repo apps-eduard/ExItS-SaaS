@@ -10,6 +10,86 @@ export function roundQuantity(quantity: number): number {
   return Math.round(quantity * 1000) / 1000;
 }
 
+/** Cart ± for ByWeight lines — always +1 kg on increment. */
+export const WEIGHT_CART_INCREMENT_KG = 1;
+/** Decrement when quantity ≥ 1 kg. */
+export const WEIGHT_CART_STEP_1KG = 1;
+/** Decrement when 100 g ≤ quantity < 1 kg. */
+export const WEIGHT_CART_STEP_100G = 0.1;
+/** Decrement when quantity < 100 g. */
+export const WEIGHT_CART_STEP_10G = 0.01;
+
+/**
+ * Adaptive kg cart decrement step (canonical kilograms).
+ * ≥ 1 kg → 1 kg; ≥ 100 g and &lt; 1 kg → 100 g; &lt; 100 g → 10 g.
+ */
+export function weightCartDecrementStepKg(quantityKg: number): number {
+  if (!Number.isFinite(quantityKg) || quantityKg <= 0) {
+    return WEIGHT_CART_STEP_10G;
+  }
+  if (quantityKg < WEIGHT_CART_STEP_100G - 1e-12) {
+    return WEIGHT_CART_STEP_10G;
+  }
+  if (quantityKg < WEIGHT_CART_INCREMENT_KG - 1e-12) {
+    return WEIGHT_CART_STEP_100G;
+  }
+  return WEIGHT_CART_STEP_1KG;
+}
+
+export function nextWeightCartQuantityKg(
+  quantityKg: number,
+  direction: 1 | -1,
+): number {
+  if (direction > 0) {
+    return roundQuantity(quantityKg + WEIGHT_CART_INCREMENT_KG);
+  }
+  return roundQuantity(quantityKg - weightCartDecrementStepKg(quantityKg));
+}
+
+/** True when qty is stored in kilograms (catalog Kilogram / kg). */
+export function isKilogramQuantityUnit(unitOfMeasure?: string | null): boolean {
+  const uom = (unitOfMeasure ?? "").trim().toLowerCase();
+  return uom === "kilogram" || uom === "kg" || uom === "kilo";
+}
+
+/** Adaptive kg ± for QuantityStepper / line editors (ByWeight or Kilogram UOM). */
+export function usesAdaptiveWeightSteps(input: {
+  unitOfMeasure?: string | null;
+  sellingMode?: string | null;
+}): boolean {
+  return isByWeightSellingMode(input.sellingMode) || isKilogramQuantityUnit(input.unitOfMeasure);
+}
+
+/**
+ * Line-editor kg ± (PO items, etc.): same adaptive steps as sell cart.
+ * Plus: always +1 kg.
+ * Minus: ≥1 → 1 kg; 0.1–1 → 0.1; &lt;0.1 → 0.01.
+ * Unlike sell cart, never removes: from ≥1 the step that would hit 0 enters the
+ * 100 g band (1 → 0.9); otherwise clamps at min (trash removes the line).
+ * Results are 2 dp so float noise never reaches the UI.
+ */
+export function nextWeightLineQuantityKg(
+  quantityKg: number,
+  direction: 1 | -1,
+  minKg: number = WEIGHT_CART_STEP_10G,
+): number {
+  const floor = Number.isFinite(minKg) && minKg > 0 ? minKg : WEIGHT_CART_STEP_10G;
+  const q = Math.round(quantityKg * 100) / 100;
+
+  if (direction > 0) {
+    return Math.round(nextWeightCartQuantityKg(q, 1) * 100) / 100;
+  }
+
+  const raw = Math.round(nextWeightCartQuantityKg(q, -1) * 100) / 100;
+  if (raw >= floor - 1e-12) {
+    return raw;
+  }
+  if (q >= WEIGHT_CART_INCREMENT_KG - 1e-12) {
+    return Math.max(floor, Math.round((q - WEIGHT_CART_STEP_100G) * 100) / 100);
+  }
+  return floor;
+}
+
 export function isByWeightSellingMode(sellingMode: string | null | undefined): boolean {
   return (sellingMode ?? "").trim().toLowerCase() === "byweight";
 }

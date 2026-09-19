@@ -91,12 +91,81 @@ describe("receive-payment helpers", () => {
     const utang = resolveLockedReceivePaymentFromPo("Utang", 643);
     expect(utang.paidNow).toBe(0);
     expect(utang.paymentMethod).toBeNull();
+    expect(utang.prepaidSettled).toBe(false);
     const cash = resolveLockedReceivePaymentFromPo("Cash", 100);
     expect(cash.paidNow).toBe(100);
     expect(cash.paymentMethod).toBe("Cash");
     const check = resolveLockedReceivePaymentFromPo("Check", 250);
     expect(check.paidNow).toBe(0);
     expect(check.paymentMethod).toBe("Check");
+  });
+
+  it("treats settled PayBefore as prepaid — no receipt settlement required", () => {
+    const prepaid = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayBeforeFulfillment",
+      estimatedTotal: 850,
+      amountPaidSnapshot: 850,
+      confirmedTotalAmount: 850,
+    });
+    expect(prepaid.prepaidSettled).toBe(true);
+    expect(prepaid.requiresSettlement).toBe(false);
+    expect(prepaid.paidNow).toBe(0);
+    expect(prepaid.paymentMethod).toBe("GCash");
+    expect(
+      validateLockedSettlementFields("GCash", {
+        gCashReference: "",
+        bankName: "",
+        transferOrDepositReference: "",
+        settlementDate: "",
+        checkNumber: "",
+        checkDate: "",
+        settlementNotes: "",
+      }, { skipSettlement: true }),
+    ).toBeNull();
+  });
+
+  it("flags PayBefore without settlement snapshot as integrity missing", () => {
+    const missing = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayBeforeFulfillment",
+      estimatedTotal: 850,
+      amountPaidSnapshot: 0,
+      confirmedTotalAmount: 850,
+    });
+    expect(missing.prepaidSettled).toBe(false);
+    expect(missing.prepaidIntegrityMissing).toBe(true);
+  });
+
+  it("keeps PayOnDelivery GCash settlement required and Cash without GCash", () => {
+    const gcash = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayOnDeliveryOrReceipt",
+      estimatedTotal: 200,
+      amountPaidSnapshot: 0,
+    });
+    expect(gcash.prepaidSettled).toBe(false);
+    expect(gcash.requiresSettlement).toBe(true);
+    expect(gcash.paymentMethod).toBe("GCash");
+
+    const cash = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "Cash",
+      paymentTiming: "PayOnDeliveryOrReceipt",
+      estimatedTotal: 200,
+    });
+    expect(cash.requiresSettlement).toBe(false);
+    expect(cash.paymentMethod).toBe("Cash");
+  });
+
+  it("locks SupplierCredit without settlement fields", () => {
+    const credit = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "Utang",
+      paymentTiming: "SupplierCredit",
+      estimatedTotal: 500,
+    });
+    expect(credit.mode).toBe("supplierCredit");
+    expect(credit.requiresSettlement).toBe(false);
+    expect(credit.paymentMethod).toBeNull();
   });
 
   it("clears stale settlement fields and validates locked settlement", () => {
@@ -119,20 +188,30 @@ describe("receive-payment helpers", () => {
     expect(payload.checkClearingStatus).toBe("PendingClearing");
   });
 
-  it("maps receipt reverse blocked-by-payments to friendly message", () => {
-    const friendly =
-      "This receipt cannot be reversed because supplier payments have already been recorded.";
-    expect(
-      receiptReverseErrorMessage(
-        {
-          problem: {
-            errorCode: "pos.supplier_payable.void.blocked_by_payments",
-            detail: "raw",
-          },
-        },
-        "fallback",
-        friendly,
-      ),
-    ).toBe(friendly);
+  it("treats all PayBefore timing as no receipt settlement required", () => {
+    const unpaid = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayBeforeFulfillment",
+      estimatedTotal: 850,
+      amountPaidSnapshot: 0,
+      confirmedTotalAmount: 850,
+    });
+    expect(unpaid.requiresSettlement).toBe(false);
+    expect(unpaid.paidNow).toBe(0);
+    expect(unpaid.prepaidSettled).toBe(false);
+    expect(unpaid.prepaidIntegrityMissing).toBe(true);
+  });
+
+  it("treats PayBefore financialSettlementStatus Settled as prepaid", () => {
+    const prepaid = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayBeforeFulfillment",
+      estimatedTotal: 850,
+      amountPaidSnapshot: 0,
+      confirmedTotalAmount: 850,
+      financialSettlementStatus: "Settled",
+    });
+    expect(prepaid.prepaidSettled).toBe(true);
+    expect(prepaid.requiresSettlement).toBe(false);
   });
 });

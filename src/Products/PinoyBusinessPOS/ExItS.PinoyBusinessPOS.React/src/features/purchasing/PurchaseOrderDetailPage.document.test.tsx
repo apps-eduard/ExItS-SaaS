@@ -110,10 +110,10 @@ describe("PurchaseOrderDetailPage business document", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("po-business-document-actions-preview")).toBeInTheDocument();
+      expect(screen.getByTestId("po-document-preview-open")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByTestId("po-business-document-actions-preview"));
+    await user.click(screen.getByTestId("po-document-preview-open"));
 
     const preview = await screen.findByTestId("po-document-preview");
     expect(within(preview).getByTestId("po-business-document")).toBeInTheDocument();
@@ -140,10 +140,10 @@ describe("PurchaseOrderDetailPage business document", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("po-business-document-actions-print")).toBeInTheDocument();
+      expect(screen.getByTestId("po-document-print")).toBeInTheDocument();
     });
 
-    await user.click(screen.getByTestId("po-business-document-actions-print"));
+    await user.click(screen.getByTestId("po-document-print"));
     expect(window.print).toHaveBeenCalled();
     expect(screen.getByTestId("po-print-host")).toBeInTheDocument();
     expect(screen.getAllByTestId("po-business-document")).toHaveLength(1);

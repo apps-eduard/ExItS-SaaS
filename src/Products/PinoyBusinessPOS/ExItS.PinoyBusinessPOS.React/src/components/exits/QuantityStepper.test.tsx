@@ -771,5 +771,140 @@ describe("QuantityStepper editable mode", () => {
     );
     expect(screen.getByTestId("qty")).toHaveValue("1,250.25");
   });
+
+  it("editOnClick idle mode still steps via onChange without parent ± handlers", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={2}
+        onChange={onChange}
+        editOnClick
+        min={1}
+        step={1}
+        precision={0}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+
+    // Idle: center is a button, not an input.
+    expect(screen.getByTestId("qty")).toHaveRole("button");
+    await user.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(3);
+
+    rerender(
+      <QuantityStepper
+        value={3}
+        onChange={onChange}
+        editOnClick
+        min={1}
+        step={1}
+        precision={0}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(2);
+
+    rerender(
+      <QuantityStepper
+        value={2}
+        onChange={onChange}
+        editOnClick
+        min={1}
+        step={1}
+        precision={0}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+
+    // Middle click still opens the input.
+    await user.click(screen.getByTestId("qty"));
+    expect(screen.getByTestId("qty")).toHaveValue("2");
+  });
+
+  it("uses adaptive kg line steps for Kilogram onChange (1→0.9, floor at 0.01)", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        editOnClick
+        unitOfMeasure="Kilogram"
+        sellingMode="PerItem"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(0.9);
+
+    rerender(
+      <QuantityStepper
+        value={0.9}
+        onChange={onChange}
+        editOnClick
+        unitOfMeasure="Kilogram"
+        sellingMode="PerItem"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(0.8);
+
+    rerender(
+      <QuantityStepper
+        value={0.9}
+        onChange={onChange}
+        editOnClick
+        unitOfMeasure="Kilogram"
+        sellingMode="PerItem"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+    await user.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(1.9);
+
+    rerender(
+      <QuantityStepper
+        value={0.01}
+        onChange={onChange}
+        editOnClick
+        unitOfMeasure="Kilogram"
+        sellingMode="PerItem"
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueClickLabel="Edit qty"
+        valueTestId="qty"
+      />,
+    );
+    expect(screen.getByLabelText("Decrease")).toBeDisabled();
+  });
 });
 

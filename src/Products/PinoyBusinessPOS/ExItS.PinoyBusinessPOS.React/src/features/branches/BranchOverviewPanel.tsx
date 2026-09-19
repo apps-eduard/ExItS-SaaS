@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   CircleAlert,
   CircleCheck,
@@ -11,6 +12,7 @@ import type { BranchFulfillmentReadinessDto } from "@/api/platform/branch-fulfil
 import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Switch } from "@/components/ui/switch";
+import { BranchDeliveryOrgOfferGuardDialog } from "@/features/branches/BranchDeliveryOrgOfferGuardDialog";
 import {
   deliveryEnablementLabel,
   missingRequirementMessageKey,
@@ -54,6 +56,9 @@ type ChannelCardProps = {
   title: string;
   progress?: string;
   statusLabel: EnablementLabel;
+  /** Overrides EnablementLabel chip text (e.g. ON · Globally paused). */
+  statusText?: string;
+  statusTone?: "success" | "warning" | "info" | "danger";
   Icon: LucideIcon;
   switchId: string;
   switchTestId: string;
@@ -77,6 +82,8 @@ function ChannelCard({
   title,
   progress,
   statusLabel,
+  statusText,
+  statusTone,
   Icon,
   switchId,
   switchTestId,
@@ -119,8 +126,12 @@ function ChannelCard({
             onCheckedChange={onCheckedChange}
           />
           <div data-testid={statusTestId}>
-            <StatusChip tone={enablementTone(statusLabel)} shape="soft" appearance="outline">
-              {t(enablementStatusWord(statusLabel))}
+            <StatusChip
+              tone={statusTone ?? enablementTone(statusLabel)}
+              shape="soft"
+              appearance="outline"
+            >
+              {statusText ?? t(enablementStatusWord(statusLabel))}
             </StatusChip>
           </div>
         </div>
@@ -209,6 +220,7 @@ export function BranchOverviewPanel({
   onResumeOrders,
 }: BranchOverviewPanelProps) {
   const [toggleConfirm, setToggleConfirm] = useState<ToggleConfirm | null>(null);
+  const [orgDeliveryGuardOpen, setOrgDeliveryGuardOpen] = useState(false);
   const orderingLabel = orderingEnablementLabel(readiness);
   const pickupLabel = pickupEnablementLabel(readiness);
   const deliveryLabel = deliveryEnablementLabel(readiness);
@@ -217,6 +229,8 @@ export function BranchOverviewPanel({
   const noFulfillmentMethod =
     !readiness.pickupEnabled && !readiness.deliveryEnabled;
   const configCompleteButMethodsOff = setupComplete && noFulfillmentMethod;
+  const deliveryGloballyPaused =
+    readiness.deliveryEnabled && orgOfferDelivery === false;
 
   const pickup = resolveFulfillmentToggle({
     channel: "pickup",
@@ -231,6 +245,7 @@ export function BranchOverviewPanel({
     ready: readiness.deliveryReady,
     canUseDelivery: readiness.canUseDelivery,
     pending: busy,
+    orgOfferDelivery,
   });
 
   const orderingChecked =
@@ -281,6 +296,24 @@ export function BranchOverviewPanel({
         ) : null}
       </div>
 
+      {orgOfferDelivery === false ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+          data-testid="branch-delivery-globally-paused"
+        >
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {t("branches.deliveryGloballyPaused")}
+          </p>
+          <Link
+            to="/org/connected-commerce?tab=fulfillment"
+            className="text-[length:var(--exits-text-sm)] font-medium underline underline-offset-2"
+            data-testid="branch-manage-org-fulfillment"
+          >
+            {t("branches.manageOrganizationFulfillment")}
+          </Link>
+        </div>
+      ) : null}
+
       <div
         id="branch-fulfillment-toggles"
         data-testid="branch-fulfillment-toggles"
@@ -319,6 +352,10 @@ export function BranchOverviewPanel({
               .replace("{complete}", String(readiness.deliverySectionsComplete))
               .replace("{total}", String(readiness.deliverySectionsTotal))}
             statusLabel={deliveryLabel}
+            statusText={
+              deliveryGloballyPaused ? t("branches.status.onGloballyPaused") : undefined
+            }
+            statusTone={deliveryGloballyPaused ? "warning" : undefined}
             Icon={Truck}
             switchId="overview-delivery-switch"
             switchTestId="overview-delivery-switch"
@@ -334,6 +371,10 @@ export function BranchOverviewPanel({
             }
             t={t}
             onCheckedChange={(next) => {
+              if (next && delivery.blockReason === "orgOffer") {
+                setOrgDeliveryGuardOpen(true);
+                return;
+              }
               if (next && delivery.enableBlocked) return;
               setToggleConfirm({ kind: "delivery", next });
             }}
@@ -433,10 +474,16 @@ export function BranchOverviewPanel({
           if (!toggleConfirm || busy) {
             return;
           }
-          const intent = toggleConfirm;
+          const confirm = toggleConfirm;
           setToggleConfirm(null);
-          applyToggleConfirm(intent);
+          applyToggleConfirm(confirm);
         }}
+      />
+
+      <BranchDeliveryOrgOfferGuardDialog
+        open={orgDeliveryGuardOpen}
+        onCancel={() => setOrgDeliveryGuardOpen(false)}
+        t={t}
       />
     </section>
   );

@@ -26,6 +26,7 @@ import {
   isCommittedOutOfStock,
   resolveAddFlow,
   sumCartBaseQuantityForProduct,
+  WEIGHT_CART_INCREMENT_KG,
   type StockGuardInput,
 } from "@/cart/sell-cart-helpers";
 import { useSessionCart, type SessionCartLine } from "@/cart/SessionCartProvider";
@@ -827,7 +828,11 @@ export function SellFloorPage() {
         cart.incrementLine(lineKey);
         return;
       }
-      const step = line.allowsCustomQuantity || isByWeightSellingMode(line.sellingMode) ? 0.001 : 1;
+      const step = isByWeightSellingMode(line.sellingMode)
+        ? WEIGHT_CART_INCREMENT_KG
+        : line.allowsCustomQuantity
+          ? 0.001
+          : 1;
       const otherBase = sumCartBaseQuantityForProduct(cart.lines, line.productId, line.lineKey);
       const check = evaluateStockGuard({
         stock,

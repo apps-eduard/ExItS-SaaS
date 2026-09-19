@@ -70,7 +70,11 @@ internal static class PurchaseEntityMapper
             (ConnectedPoFinancialSettlementStatus)record.FinancialSettlementStatus,
             record.SellerSettlementRemarks,
             record.FinanciallySettledAtUtc,
-            record.FinanciallySettledBy);
+            record.FinanciallySettledBy,
+            record.BuyerPrepaymentSubmittedAtUtc,
+            record.BuyerPrepaymentMethod,
+            record.BuyerPrepaymentReference,
+            record.BuyerPrepaymentDetails);
     }
 
     public static PurchaseOrderRecord ToRecord(PurchaseOrder po) =>
@@ -107,7 +111,11 @@ internal static class PurchaseEntityMapper
             FinancialSettlementStatus = (int)po.FinancialSettlementStatus,
             SellerSettlementRemarks = po.SellerSettlementRemarks,
             FinanciallySettledAtUtc = po.FinanciallySettledAtUtc,
-            FinanciallySettledBy = po.FinanciallySettledBy
+            FinanciallySettledBy = po.FinanciallySettledBy,
+            BuyerPrepaymentSubmittedAtUtc = po.BuyerPrepaymentSubmittedAtUtc,
+            BuyerPrepaymentMethod = po.BuyerPrepaymentMethod,
+            BuyerPrepaymentReference = po.BuyerPrepaymentReference,
+            BuyerPrepaymentDetails = po.BuyerPrepaymentDetails
         };
 
     public static void ApplyToRecord(PurchaseOrder po, PurchaseOrderRecord record)
@@ -141,6 +149,10 @@ internal static class PurchaseEntityMapper
         record.SellerSettlementRemarks = po.SellerSettlementRemarks;
         record.FinanciallySettledAtUtc = po.FinanciallySettledAtUtc;
         record.FinanciallySettledBy = po.FinanciallySettledBy;
+        record.BuyerPrepaymentSubmittedAtUtc = po.BuyerPrepaymentSubmittedAtUtc;
+        record.BuyerPrepaymentMethod = po.BuyerPrepaymentMethod;
+        record.BuyerPrepaymentReference = po.BuyerPrepaymentReference;
+        record.BuyerPrepaymentDetails = po.BuyerPrepaymentDetails;
     }
 
     public static PurchaseOrderLineRecord ToRecord(PurchaseOrderLine line) =>

@@ -99,7 +99,12 @@ public sealed record PosPurchaseOrderDto(
     string FinancialSettlementStatus = "NotRequired",
     decimal RemainingDueAmount = 0m,
     string? SellerSettlementRemarks = null,
-    DateTimeOffset? FinanciallySettledAtUtc = null);
+    DateTimeOffset? FinanciallySettledAtUtc = null,
+    Guid? FinanciallySettledBy = null,
+    DateTimeOffset? BuyerPrepaymentSubmittedAtUtc = null,
+    string? BuyerPrepaymentMethod = null,
+    string? BuyerPrepaymentReference = null,
+    string? BuyerPrepaymentDetails = null);
 
 public sealed record PosGoodsReceiptLineDto(
     Guid LineId,
@@ -284,7 +289,12 @@ public static class PurchaseMapper
                 0m,
                 (po.FinalAcceptedValue ?? 0m) - (po.AmountPaidSnapshot ?? 0m)),
             SellerSettlementRemarks: po.SellerSettlementRemarks,
-            FinanciallySettledAtUtc: po.FinanciallySettledAtUtc);
+            FinanciallySettledAtUtc: po.FinanciallySettledAtUtc,
+            FinanciallySettledBy: po.FinanciallySettledBy,
+            BuyerPrepaymentSubmittedAtUtc: po.BuyerPrepaymentSubmittedAtUtc,
+            BuyerPrepaymentMethod: po.BuyerPrepaymentMethod,
+            BuyerPrepaymentReference: po.BuyerPrepaymentReference,
+            BuyerPrepaymentDetails: po.BuyerPrepaymentDetails);
     }
 
     public static async Task<PosPurchaseOrderDto> MapWithNamesAsync(
@@ -2140,6 +2150,119 @@ public sealed class AcceptConnectedPoChanges
     }
 }
 
+public sealed record SubmitBuyerPrepaymentProofRequest(
+    string Method,
+    string? Reference = null,
+    string? Details = null);
+
+/// <summary>
+/// Buyer submits Pay-before payment proof after the supplier accepted the connected order.
+/// Does not settle — seller must confirm via ConfirmIncomingOrderSettlement.
+/// </summary>
+public sealed class SubmitBuyerPrepaymentProof
+{
+    private readonly IPurchaseOrderRepository _orders;
+    private readonly IConnectedPurchaseOrderRepository _connectedOrders;
+    private readonly IPosUnitOfWork _unitOfWork;
+    private readonly IPosCommercialAccessAccessor _access;
+    private readonly TimeProvider _clock;
+
+    public SubmitBuyerPrepaymentProof(
+        IPurchaseOrderRepository orders,
+        IConnectedPurchaseOrderRepository connectedOrders,
+        IPosUnitOfWork unitOfWork,
+        IPosCommercialAccessAccessor access,
+        TimeProvider? clock = null)
+    {
+        _orders = orders;
+        _connectedOrders = connectedOrders;
+        _unitOfWork = unitOfWork;
+        _access = access;
+        _clock = clock ?? TimeProvider.System;
+    }
+
+    public async Task<ApplicationResult<PosPurchaseOrderDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid purchaseOrderId,
+        SubmitBuyerPrepaymentProofRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = CommercialAccessGuard.Require(_access, UtangCapability.ManagePurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        try
+        {
+            var org = PosOrganizationId.From(organizationId);
+            var id = PurchaseOrderId.From(purchaseOrderId);
+            var existing = await _orders.GetByIdAsync(org, id, cancellationToken).ConfigureAwait(false);
+            if (existing is null)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ApplicationErrorCodes.PurchaseOrderNotFound,
+                    "Purchase order was not found in this organization.");
+            }
+
+            var connected = await _connectedOrders
+                .GetByBuyerPurchaseOrderAsync(id, cancellationToken)
+                .ConfigureAwait(false);
+            if (connected is null || connected.BuyerOrganizationId != org)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ConnectedSupplierErrorCodes.IncomingOrderNotFound,
+                    "Connected purchase order was not found.");
+            }
+
+            if (connected.EffectivePaymentTiming != ConnectedPoPaymentTiming.PayBeforeFulfillment)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                    "Payment submission applies only when payment timing is Pay before fulfillment.");
+            }
+
+            if (connected.Status is ConnectedPurchaseOrderStatus.New
+                or ConnectedPurchaseOrderStatus.Declined
+                or ConnectedPurchaseOrderStatus.Withdrawn
+                or ConnectedPurchaseOrderStatus.ChangesProposed)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                    "Payment can be submitted only after the supplier accepted the order.");
+            }
+
+            var required = SaleMoney.RoundMoney(
+                connected.ConfirmedTotalAmount > 0m
+                    ? connected.ConfirmedTotalAmount
+                    : connected.TotalAmount);
+            if ((existing.AmountPaidSnapshot ?? 0m) + 0.0000001m >= required && required > 0m)
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    DomainErrorCodes.InvalidPurchaseOrderStatusTransition,
+                    "Payment was already confirmed by the supplier.");
+            }
+
+            existing.SubmitBuyerPrepaymentProof(
+                request.Method,
+                request.Reference,
+                request.Details,
+                _clock.GetUtcNow());
+            await _orders.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+            await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            return ApplicationResult<PosPurchaseOrderDto>.Success(PurchaseMapper.Map(existing, connected));
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<PosPurchaseOrderDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+}
+
 /// <summary>
 /// Buyer declines supplier-proposed revisions only. Returns the connected PO to New for re-response.
 /// Does not cancel the buyer purchase order.
@@ -2451,11 +2574,15 @@ public sealed class ReceivePurchaseOrder
                 .ToList();
 
             var effectivePaymentTerm = connected?.EffectivePaymentTerm ?? existing.PaymentTerm;
+            var effectivePaymentTiming = connected?.EffectivePaymentTiming ?? existing.PaymentTiming;
             var receivedAmountPreview = GoodsReceiptLine.SumGoodLineTotals(existing, receiveLines);
             var paymentResolution = PoReceiptPaymentMethodLock.Validate(
                 effectivePaymentTerm,
                 receivedAmountPreview,
-                request);
+                request,
+                effectivePaymentTiming,
+                existing.AmountPaidSnapshot,
+                existing.FinancialSettlementStatus);
             if (!paymentResolution.IsSuccess)
             {
                 return ApplicationResult<PosGoodsReceiptDto>.Failure(

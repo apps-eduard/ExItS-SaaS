@@ -104,13 +104,16 @@ Sticky portrait cart bar is hidden. Payment section remains below the floor.
 - 48–64px placeholder thumbnail
 - Name ≤ 2 lines
 - Price prominent; unit secondary
-- In-cart: `QuantityStepper` (minus / qty / plus), ≥48dp
+- In-cart: `QuantityStepper` **`variant="auto"`** — primary capsule that adopts Preferences → Control Shape (soft / standard / pill)
+- Non-kg cart lines: auto + **`editOnClick`** (middle tap → inline number input)
+- Kg cart lines: auto display `1kg` / `1.5kg` / `0.5kg`; middle opens weight dialog (`onValueClick`)
 - Selected/in-cart without loud fills
 
 ### Cart line
 
 - Name; unit × qty; line total
-- Compact stepper
+- Compact **auto** stepper (`variant="auto"` / DesignSystem `Variant=Auto`)
+- Non-kg: `editOnClick` for middle manual entry; kg: `onValueClick` → weight sheet
 - Remove is Ghost and spatially separated (not adjacent-only destructive)
 
 ### Category switching
@@ -121,7 +124,7 @@ Filters browse products only. **Never** clears the cart. Quantities stay reflect
 
 | Need | Use |
 |---|---|
-| ± quantity | `QuantityStepper` |
+| ± quantity | `QuantityStepper` — **auto** cart capsule (adopts Control Shape); **editOnClick** for middle manual entry; default for form editable qty |
 | Money | `MoneyDisplay` (`Emphasized` for totals) |
 | Primary CTA | one `Button` Primary per screen region |
 | Initial load | `Skeleton` (not full-page spinner after first paint) |

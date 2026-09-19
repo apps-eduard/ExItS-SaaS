@@ -2479,6 +2479,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
+                    b.Property<bool>("DefaultDeliveryEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("default_delivery_enabled");
+
+                    b.Property<bool>("DefaultOnlineOrdersEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("default_online_orders_enabled");
+
+                    b.Property<bool>("DefaultPickupEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("default_pickup_enabled");
+
                     b.Property<bool>("OfferDelivery")
                         .HasColumnType("boolean")
                         .HasColumnName("offer_delivery");
@@ -7557,6 +7569,25 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount_paid_snapshot");
+
+                    b.Property<string>("BuyerPrepaymentDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("buyer_prepayment_details");
+
+                    b.Property<string>("BuyerPrepaymentMethod")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("buyer_prepayment_method");
+
+                    b.Property<string>("BuyerPrepaymentReference")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("buyer_prepayment_reference");
+
+                    b.Property<DateTimeOffset?>("BuyerPrepaymentSubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("buyer_prepayment_submitted_at_utc");
 
                     b.Property<DateTimeOffset?>("CancelledAtUtc")
                         .HasColumnType("timestamp with time zone")

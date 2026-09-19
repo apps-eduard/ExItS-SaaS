@@ -43,8 +43,21 @@ export type LockedReceivePaymentConfig = {
   mode: ReceivePaymentMode;
   paymentMethod: ReceivePaymentMethodCode | null;
   paymentTerm: string;
+  paymentTiming: string;
   paidNow: number;
   requiresSettlement: boolean;
+  /** PayBefore prepayment already confirmed — show read-only settlement, skip receipt payment entry. */
+  prepaidSettled: boolean;
+  prepaidIntegrityMissing: boolean;
+};
+
+export type ResolveLockedReceivePaymentInput = {
+  paymentTerm?: string | null;
+  paymentTiming?: string | null;
+  estimatedTotal: number;
+  amountPaidSnapshot?: number | null;
+  confirmedTotalAmount?: number | null;
+  financialSettlementStatus?: string | null;
 };
 
 export function roundMoney(value: number): number {
@@ -107,33 +120,81 @@ export function mapPoPaymentTermToReceiveMethod(
 }
 
 /**
- * Locked receive payment derived from PO payment term (Receive Goods).
+ * Locked receive payment derived from confirmed PO payment term + timing.
+ * Overload: (paymentTerm, estimatedTotal) kept for existing call sites.
  */
 export function resolveLockedReceivePaymentFromPo(
-  paymentTerm: string | null | undefined,
-  estimatedTotal: number,
+  paymentTermOrInput: string | null | undefined | ResolveLockedReceivePaymentInput,
+  estimatedTotalMaybe?: number,
 ): LockedReceivePaymentConfig {
-  const term = normalizePaymentTerm(paymentTerm);
-  if (isConnectedUtangPaymentTerm(term)) {
+  const input: ResolveLockedReceivePaymentInput =
+    typeof paymentTermOrInput === "object" && paymentTermOrInput !== null
+      ? paymentTermOrInput
+      : {
+          paymentTerm: paymentTermOrInput,
+          estimatedTotal: estimatedTotalMaybe ?? 0,
+        };
+
+  const term = normalizePaymentTerm(input.paymentTerm);
+  const timing = (input.paymentTiming ?? "").trim();
+  const estimatedTotal = roundMoney(input.estimatedTotal);
+  const paidSnapshot = roundMoney(input.amountPaidSnapshot ?? 0);
+  const required =
+    input.confirmedTotalAmount != null && input.confirmedTotalAmount > 0
+      ? roundMoney(input.confirmedTotalAmount)
+      : estimatedTotal;
+  const payBefore = timing === "PayBeforeFulfillment";
+  const financiallySettled =
+    (input.financialSettlementStatus ?? "").trim().toLowerCase() === "settled";
+  const prepaidSettled =
+    payBefore &&
+    (paidSnapshot + 0.0000001 >= Math.max(required, 0.01) || financiallySettled);
+  // Pay-before never collects settlement at receipt (payment is pre-fulfillment only).
+  const prepaidIntegrityMissing =
+    payBefore && !prepaidSettled && paidSnapshot <= 0 && !financiallySettled;
+
+  if (timing === "SupplierCredit" || isConnectedUtangPaymentTerm(term)) {
     return {
       lockedFromPo: true,
       mode: "supplierCredit",
       paymentMethod: null,
       paymentTerm: term,
+      paymentTiming: timing,
       paidNow: 0,
       requiresSettlement: false,
+      prepaidSettled: false,
+      prepaidIntegrityMissing: false,
     };
   }
+
+  if (payBefore) {
+    return {
+      lockedFromPo: true,
+      mode: "paidInFull",
+      paymentMethod: mapPoPaymentTermToReceiveMethod(term),
+      paymentTerm: term,
+      paymentTiming: timing,
+      paidNow: 0,
+      requiresSettlement: false,
+      prepaidSettled,
+      prepaidIntegrityMissing,
+    };
+  }
+
   if (term === "Check") {
     return {
       lockedFromPo: true,
       mode: "supplierCredit",
       paymentMethod: "Check",
       paymentTerm: term,
+      paymentTiming: timing,
       paidNow: 0,
       requiresSettlement: true,
+      prepaidSettled: false,
+      prepaidIntegrityMissing,
     };
   }
+
   const method = mapPoPaymentTermToReceiveMethod(term);
   const requiresSettlement =
     method === "GCash" || method === "BankTransfer" || method === "BankDeposit";
@@ -142,8 +203,11 @@ export function resolveLockedReceivePaymentFromPo(
     mode: "paidInFull",
     paymentMethod: method,
     paymentTerm: term,
+    paymentTiming: timing,
     paidNow: estimatedTotal,
     requiresSettlement,
+    prepaidSettled: false,
+    prepaidIntegrityMissing,
   };
 }
 
@@ -182,6 +246,7 @@ export function clearStaleSettlementFields(
 export function buildReceiveSettlementPayload(
   method: ReceivePaymentMethodCode | null,
   fields: ReceiveSettlementFields,
+  options?: { skipSettlement?: boolean },
 ): {
   gCashReference?: string | null;
   bankName?: string | null;
@@ -192,6 +257,9 @@ export function buildReceiveSettlementPayload(
   settlementNotes?: string | null;
   checkClearingStatus?: string | null;
 } {
+  if (options?.skipSettlement) {
+    return {};
+  }
   const trimmedNotes = fields.settlementNotes.trim();
   const notes = trimmedNotes ? trimmedNotes : null;
   if (method === "GCash") {
@@ -223,7 +291,11 @@ export function buildReceiveSettlementPayload(
 export function validateLockedSettlementFields(
   method: ReceivePaymentMethodCode | null,
   fields: ReceiveSettlementFields,
+  options?: { skipSettlement?: boolean },
 ): string | null {
+  if (options?.skipSettlement) {
+    return null;
+  }
   if (method === "GCash" && !fields.gCashReference.trim()) {
     return "purchasing.gcashReferenceRequired";
   }

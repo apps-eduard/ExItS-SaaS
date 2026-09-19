@@ -10,9 +10,21 @@ namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
 public sealed record OrganizationFulfillmentSettingsDto(
     Guid OrganizationId,
-    bool OfferDelivery);
+    bool OfferDelivery,
+    bool DefaultPickupEnabled,
+    bool DefaultDeliveryEnabled,
+    bool DefaultOnlineOrdersEnabled);
 
-public sealed record UpdateOrganizationOfferDeliveryRequest(bool OfferDelivery);
+public sealed record UpdateOrganizationOfferDeliveryRequest(
+    bool OfferDelivery,
+    bool? DefaultPickupEnabled = null,
+    bool? DefaultDeliveryEnabled = null,
+    bool? DefaultOnlineOrdersEnabled = null);
+
+public sealed record UpdateOrganizationBranchFulfillmentDefaultsRequest(
+    bool DefaultPickupEnabled,
+    bool DefaultDeliveryEnabled,
+    bool DefaultOnlineOrdersEnabled);
 
 public sealed class GetOrganizationFulfillmentSettings(
     IOrganizationFulfillmentSettingsRepository settings,
@@ -31,9 +43,18 @@ public sealed class GetOrganizationFulfillmentSettings(
 
         var org = PosOrganizationId.From(organizationId);
         var row = await settings.GetAsync(org, cancellationToken).ConfigureAwait(false);
-        return ApplicationResult<OrganizationFulfillmentSettingsDto>.Success(
-            new OrganizationFulfillmentSettingsDto(organizationId, row?.OfferDelivery == true));
+        return ApplicationResult<OrganizationFulfillmentSettingsDto>.Success(MapDto(organizationId, row));
     }
+
+    internal static OrganizationFulfillmentSettingsDto MapDto(
+        Guid organizationId,
+        OrganizationFulfillmentSettings? row) =>
+        new(
+            organizationId,
+            row?.OfferDelivery == true,
+            row?.DefaultPickupEnabled == true,
+            row?.DefaultDeliveryEnabled == true,
+            row?.DefaultOnlineOrdersEnabled == true);
 }
 
 public sealed class UpdateOrganizationOfferDelivery(
@@ -63,17 +84,87 @@ public sealed class UpdateOrganizationOfferDelivery(
         {
             row = OrganizationFulfillmentSettings.CreateDefault(org, now);
             row.SetOfferDelivery(request.OfferDelivery, now);
+            ApplyOptionalDefaults(row, request, now);
             await settings.AddAsync(row, cancellationToken).ConfigureAwait(false);
         }
         else
         {
             row.SetOfferDelivery(request.OfferDelivery, now);
+            ApplyOptionalDefaults(row, request, now);
             await settings.UpdateAsync(row, cancellationToken).ConfigureAwait(false);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return ApplicationResult<OrganizationFulfillmentSettingsDto>.Success(
-            new OrganizationFulfillmentSettingsDto(organizationId, row.OfferDelivery));
+            GetOrganizationFulfillmentSettings.MapDto(organizationId, row));
+    }
+
+    private static void ApplyOptionalDefaults(
+        OrganizationFulfillmentSettings row,
+        UpdateOrganizationOfferDeliveryRequest request,
+        DateTimeOffset nowUtc)
+    {
+        if (request.DefaultPickupEnabled is null
+            && request.DefaultDeliveryEnabled is null
+            && request.DefaultOnlineOrdersEnabled is null)
+        {
+            return;
+        }
+
+        row.SetBranchFulfillmentDefaults(
+            request.DefaultPickupEnabled ?? row.DefaultPickupEnabled,
+            request.DefaultDeliveryEnabled ?? row.DefaultDeliveryEnabled,
+            request.DefaultOnlineOrdersEnabled ?? row.DefaultOnlineOrdersEnabled,
+            nowUtc);
+    }
+}
+
+public sealed class UpdateOrganizationBranchFulfillmentDefaults(
+    IOrganizationFulfillmentSettingsRepository settings,
+    IPosUnitOfWork unitOfWork,
+    IPosCommercialAccessAccessor access,
+    TimeProvider? clock = null)
+{
+    private readonly TimeProvider _clock = clock ?? TimeProvider.System;
+
+    public async Task<ApplicationResult<OrganizationFulfillmentSettingsDto>> ExecuteAsync(
+        Guid organizationId,
+        UpdateOrganizationBranchFulfillmentDefaultsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(access, UtangCapability.ManageSuppliers);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<OrganizationFulfillmentSettingsDto>(
+                gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var org = PosOrganizationId.From(organizationId);
+        var now = _clock.GetUtcNow();
+        var row = await settings.GetAsync(org, cancellationToken).ConfigureAwait(false);
+        if (row is null)
+        {
+            row = OrganizationFulfillmentSettings.CreateDefault(org, now);
+            row.SetBranchFulfillmentDefaults(
+                request.DefaultPickupEnabled,
+                request.DefaultDeliveryEnabled,
+                request.DefaultOnlineOrdersEnabled,
+                now);
+            await settings.AddAsync(row, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            row.SetBranchFulfillmentDefaults(
+                request.DefaultPickupEnabled,
+                request.DefaultDeliveryEnabled,
+                request.DefaultOnlineOrdersEnabled,
+                now);
+            await settings.UpdateAsync(row, cancellationToken).ConfigureAwait(false);
+        }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return ApplicationResult<OrganizationFulfillmentSettingsDto>.Success(
+            GetOrganizationFulfillmentSettings.MapDto(organizationId, row));
     }
 }
 
