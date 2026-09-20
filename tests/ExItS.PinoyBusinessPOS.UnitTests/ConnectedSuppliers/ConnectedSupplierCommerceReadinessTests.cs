@@ -438,6 +438,9 @@ public sealed class ConnectedSupplierCommerceReadinessTests
     [InlineData(CatalogSharingMode.AllEligible, 0, 0, 0, false)]
     [InlineData(CatalogSharingMode.AllEligible, 5, 0, 5, false)]
     [InlineData(CatalogSharingMode.AllEligible, 5, 0, 1, true)]
+    [InlineData(CatalogSharingMode.AllEligible, 9, 0, 0, true)]
+    [InlineData(CatalogSharingMode.AllEligible, 9, 0, 9, false)]
+    [InlineData(CatalogSharingMode.AllEligible, 1, 0, 0, true)]
     public void Shared_catalog_respects_sharing_mode(
         CatalogSharingMode mode,
         int eligible,
@@ -448,6 +451,20 @@ public sealed class ConnectedSupplierCommerceReadinessTests
         Assert.Equal(
             expected,
             ConnectedSupplierCommerceReadiness.HasSharedCatalog(mode, eligible, explicitShared, excluded));
+    }
+
+    [Fact]
+    public void Catalog_readiness_flips_false_then_true_when_eligible_exclusions_clear()
+    {
+        // Stop sharing all eligible → CatalogReady false
+        Assert.False(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 9));
+        // Re-share clears eligible exclusions (ineligible exclusion rows must not be counted)
+        Assert.True(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 0));
+        // Single valid share restores readiness
+        Assert.True(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 8));
     }
 
     [Fact]

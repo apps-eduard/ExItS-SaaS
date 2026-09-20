@@ -99,9 +99,93 @@ export const connectedBuyerProductShareSchema = z.object({
   categoryNameSnapshot: z.string().nullable().optional(),
   defaultPoPrice: z.number().nullable().optional(),
   isBlockedFromConnectedBuyers: z.boolean().optional(),
+  /** When true, product inventory tracking is enabled (required to share). */
+  isInventoryTracked: z.boolean().optional().default(false),
+  isEligible: z.boolean().optional().default(false),
+  isEffectivelyShared: z.boolean().optional().default(false),
+  isExplicitlyExcluded: z.boolean().optional().default(false),
+  sharingStatus: z.string().optional().default("NotShared"),
+  hasValidPoPrice: z.boolean().optional().default(false),
+  canShare: z.boolean().optional().default(false),
+  canStopSharing: z.boolean().optional().default(false),
+  resolvedPoPrice: z.number().nullable().optional(),
   /** When present, BranchLocal products are not exposable to connected buyers. */
   scope: z.string().nullable().optional(),
 });
+
+function asOptionalNumber(value: unknown): number | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  if (value === undefined) {
+    return undefined;
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeBuyerProductShare(raw: Record<string, unknown>) {
+  const isInventoryTracked = Boolean(
+    raw.isInventoryTracked ?? raw.IsInventoryTracked ?? false,
+  );
+  const isEligible = Boolean(raw.isEligible ?? raw.IsEligible ?? false);
+  const isEffectivelyShared = Boolean(
+    raw.isEffectivelyShared ?? raw.IsEffectivelyShared ?? raw.isShared ?? raw.IsShared ?? false,
+  );
+  const isExplicitlyExcluded = Boolean(
+    raw.isExplicitlyExcluded ?? raw.IsExplicitlyExcluded ?? false,
+  );
+  const sharingStatus = String(
+    raw.sharingStatus ?? raw.SharingStatus ?? (isEffectivelyShared ? "Shared" : "NotShared"),
+  );
+  const sellingPrice = asOptionalNumber(raw.sellingPrice ?? raw.SellingPrice) ?? null;
+  const defaultPoPrice = asOptionalNumber(raw.defaultPoPrice ?? raw.DefaultPoPrice) ?? null;
+  const resolvedFromApi = asOptionalNumber(raw.resolvedPoPrice ?? raw.ResolvedPoPrice);
+  const resolvedPoPrice =
+    resolvedFromApi != null && resolvedFromApi > 0
+      ? resolvedFromApi
+      : defaultPoPrice != null && defaultPoPrice > 0
+        ? defaultPoPrice
+        : sellingPrice != null && sellingPrice > 0
+          ? sellingPrice
+          : null;
+  const apiHasValid = raw.hasValidPoPrice ?? raw.HasValidPoPrice;
+  const hasValidPoPrice =
+    (resolvedPoPrice != null && resolvedPoPrice > 0) || apiHasValid === true;
+  const apiCanStop = raw.canStopSharing ?? raw.CanStopSharing;
+  // Shared rows must always be stoppable — never leave canStopSharing false when Shared.
+  const canStopSharing =
+    apiCanStop === true || isEffectivelyShared || sharingStatus === "Shared";
+  const apiCanShare = raw.canShare ?? raw.CanShare;
+  const canShare =
+    !canStopSharing
+    && (
+      apiCanShare === true
+      || (
+        isEligible
+        && hasValidPoPrice
+        && !isEffectivelyShared
+        && sharingStatus !== "Shared"
+        && apiCanShare !== false
+      )
+    );
+  return {
+    ...raw,
+    sellingPrice,
+    defaultPoPrice,
+    resolvedPoPrice,
+    isInventoryTracked,
+    isEligible,
+    isEffectivelyShared,
+    isExplicitlyExcluded,
+    sharingStatus,
+    hasValidPoPrice,
+    canShare,
+    canStopSharing,
+    isShared: isEffectivelyShared,
+    scope: (raw.scope ?? raw.Scope ?? null) as string | null,
+  };
+}
 
 export const buyerProductShareCategoryFacetSchema = z.object({
   categoryName: z.string().nullable().optional(),
@@ -129,6 +213,8 @@ export const missingDefaultPoProductSchema = z.object({
 export const bulkBuyerProductShareMutationResultSchema = z.object({
   affectedCount: z.number(),
   needsDefaultPo: z.array(missingDefaultPoProductSchema).nullable().optional(),
+  alreadySharedCount: z.number().optional().default(0),
+  alreadyNotSharedCount: z.number().optional().default(0),
 });
 
 export const buyerPricePreviewItemSchema = z.object({
@@ -661,7 +747,21 @@ export async function queryBuyerProductShares(
       pageSize: options.pageSize ?? 25,
     }),
   });
-  return buyerProductShareQueryResultSchema.parse(raw);
+  const payload = raw as Record<string, unknown>;
+  const itemsRaw = (payload.items ?? payload.Items ?? []) as Record<string, unknown>[];
+  return buyerProductShareQueryResultSchema.parse({
+    ...payload,
+    items: itemsRaw.map(normalizeBuyerProductShare),
+    matchingCount: payload.matchingCount ?? payload.MatchingCount,
+    eligibleCount: payload.eligibleCount ?? payload.EligibleCount,
+    sharedCount: payload.sharedCount ?? payload.SharedCount,
+    page: payload.page ?? payload.Page,
+    pageSize: payload.pageSize ?? payload.PageSize,
+    categories: payload.categories ?? payload.Categories,
+    catalogSharingMode: payload.catalogSharingMode ?? payload.CatalogSharingMode,
+    customerDiscountPercent:
+      payload.customerDiscountPercent ?? payload.CustomerDiscountPercent ?? null,
+  });
 }
 
 export async function listBuyerProductShares(
@@ -675,7 +775,8 @@ export async function listBuyerProductShares(
     signal,
     path: relPath(relationshipId, "/buyer-product-shares"),
   });
-  return z.array(connectedBuyerProductShareSchema).parse(raw);
+  const itemsRaw = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[];
+  return z.array(connectedBuyerProductShareSchema).parse(itemsRaw.map(normalizeBuyerProductShare));
 }
 
 export async function setBuyerProductShares(
@@ -691,7 +792,8 @@ export async function setBuyerProductShares(
     path: relPath(relationshipId, "/buyer-product-shares"),
     body: { products },
   });
-  return z.array(connectedBuyerProductShareSchema).parse(raw);
+  const itemsRaw = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[];
+  return z.array(connectedBuyerProductShareSchema).parse(itemsRaw.map(normalizeBuyerProductShare));
 }
 
 export async function confirmBuyerProductSharing(
@@ -737,7 +839,14 @@ export async function bulkMutateBuyerProductShares(
       establishDefaultPoPrices: input.establishDefaultPoPrices ?? null,
     },
   });
-  return bulkBuyerProductShareMutationResultSchema.parse(raw);
+  const payload = raw as Record<string, unknown>;
+  return bulkBuyerProductShareMutationResultSchema.parse({
+    ...payload,
+    affectedCount: payload.affectedCount ?? payload.AffectedCount,
+    needsDefaultPo: payload.needsDefaultPo ?? payload.NeedsDefaultPo ?? null,
+    alreadySharedCount: payload.alreadySharedCount ?? payload.AlreadySharedCount ?? 0,
+    alreadyNotSharedCount: payload.alreadyNotSharedCount ?? payload.AlreadyNotSharedCount ?? 0,
+  });
 }
 
 export async function previewBuyerProductPricing(
@@ -867,6 +976,8 @@ export const connectedSupplierCommerceReadinessSchema = z.object({
   deliveryUnavailableReason: z.string().nullable().optional(),
   /** Buyer-safe Pickup unavailability reason: BranchNotReady when not selectable. */
   pickupUnavailableReason: z.string().nullable().optional(),
+  /** Current buyer-orderable shared catalog product count. */
+  buyerOrderableCount: z.number().optional().default(0),
 });
 
 export type ConnectedSupplierCommerceReadiness = z.infer<
@@ -888,7 +999,13 @@ export async function getBuyerConnectedSupplierCommerceReadiness(
     signal,
     path: relPath(relationshipId, "/commerce-readiness"),
   });
-  return connectedSupplierCommerceReadinessSchema.parse(raw);
+  return connectedSupplierCommerceReadinessSchema.parse({
+    ...(raw as Record<string, unknown>),
+    buyerOrderableCount:
+      (raw as Record<string, unknown>).buyerOrderableCount
+      ?? (raw as Record<string, unknown>).BuyerOrderableCount
+      ?? 0,
+  });
 }
 
 /** Supplier projection — includes detailed checklist. */
@@ -903,7 +1020,13 @@ export async function getSupplierConnectedSupplierCommerceReadiness(
     signal,
     path: `${PATH}/business-customers/${connectionId}/commerce-readiness`,
   });
-  return connectedSupplierCommerceReadinessSchema.parse(raw);
+  return connectedSupplierCommerceReadinessSchema.parse({
+    ...(raw as Record<string, unknown>),
+    buyerOrderableCount:
+      (raw as Record<string, unknown>).buyerOrderableCount
+      ?? (raw as Record<string, unknown>).BuyerOrderableCount
+      ?? 0,
+  });
 }
 
 export async function autoLinkExactMatches(

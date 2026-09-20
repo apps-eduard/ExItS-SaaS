@@ -1,17 +1,28 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import { canViewPurchasing } from "@/access/pos-capabilities";
 import { getIncomingOrder } from "@/api/pos/pos-connected-suppliers-client";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { Card } from "@/components/ui/card";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
-import { formatActivityDateTime } from "@/features/purchasing/purchase-order-activity";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
+import {
+  buildConnectedPurchaseOrderActivityEvents,
+  formatActivityDateTime,
+} from "@/features/purchasing/purchase-order-activity";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { useI18n } from "@/i18n/I18nProvider";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
 import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -27,6 +38,8 @@ export function IncomingOrderReceiptDetailPage() {
     connectedPurchaseOrderId: string;
     goodsReceiptId: string;
   }>();
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   const smartBack = usePageSmartBack({
     fallback: connectedPurchaseOrderId
@@ -52,7 +65,13 @@ export function IncomingOrderReceiptDetailPage() {
     queryFn: ({ signal }) => getIncomingOrder(workspace!, connectedPurchaseOrderId!, signal),
   });
 
+  const actors = useActorDirectory(workspace?.organizationId, []);
   const receipt = query.data?.buyerReceipts?.find((r) => r.goodsReceiptId === goodsReceiptId);
+  const timelineEvents = useMemo(
+    () => (query.data ? buildConnectedPurchaseOrderActivityEvents(query.data) : []),
+    [query.data],
+  );
+  const hasTimeline = timelineEvents.length > 0;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -77,17 +96,149 @@ export function IncomingOrderReceiptDetailPage() {
     );
   }
 
+  const order = query.data;
+  const statusLabel =
+    receipt.status === "Voided"
+      ? t("incomingOrders.receiptVoided")
+      : t("incomingOrders.receiptPosted");
+  const statusTone = receipt.status === "Voided" ? "danger" : "success";
+
+  function runReceiptOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    const filenameBase = sanitizeCsvFilenamePart(receipt.grnNumber || "grn");
+    const rows = receipt.lines.map((line) => [
+      line.nameSnapshot,
+      line.goodQty,
+      line.damagedQty,
+      line.missingQty,
+      line.remainingAction ?? "",
+      line.discrepancyNote ?? "",
+    ]);
+
+    if (action === "csv") {
+      const text = buildCsvWithMetadata(
+        [
+          ["Goods receipt", receipt.grnNumber],
+          ["PO", order.buyerPoNumber ?? ""],
+          ["Status", statusLabel],
+          ["Exported at", new Date().toISOString()],
+        ],
+        {
+          headers: ["Product", "Good", "Damaged", "Missing", "Remaining", "Note"],
+          rows,
+        },
+      );
+      downloadCsvFile(`${filenameBase}.csv`, text);
+      return;
+    }
+
+    if (action === "xlsx") {
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet([
+        ["Goods receipt", receipt.grnNumber],
+        ["PO", order.buyerPoNumber ?? ""],
+        ["Status", statusLabel],
+        [],
+        ["Product", "Good", "Damaged", "Missing", "Remaining", "Note"],
+        ...rows,
+      ]);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Receipt");
+      const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+      downloadBlob(
+        `${filenameBase}.xlsx`,
+        buffer,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      return;
+    }
+
+    if (action === "pdf") {
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      doc.setFontSize(14);
+      doc.text(receipt.grnNumber, 40, 40);
+      doc.setFontSize(10);
+      doc.text(`${statusLabel} · ${new Date().toLocaleString()}`, 40, 58);
+      autoTable(doc, {
+        startY: 72,
+        head: [["Product", "Good", "Damaged", "Missing", "Remaining", "Note"]],
+        body: rows.map((row) => row.map((cell) => String(cell))),
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [55, 75, 60] },
+      });
+      downloadBlob(
+        `${filenameBase}.pdf`,
+        new Blob([new Uint8Array(doc.output("arraybuffer") as ArrayBuffer)], {
+          type: "application/pdf",
+        }),
+        "application/pdf",
+      );
+      return;
+    }
+
+    const previous = document.body.classList.contains("exits-printing");
+    document.body.classList.add("exits-printing");
+    const cleanup = () => {
+      if (!previous) {
+        document.body.classList.remove("exits-printing");
+      }
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    window.setTimeout(cleanup, 1000);
+  }
+
+  const printDocument = (
+    <div className="incoming-order-print-root" data-testid="incoming-order-receipt-print-root">
+      <h1>{receipt.grnNumber}</h1>
+      <p>{statusLabel}</p>
+      <p>
+        {t("incomingOrders.buyer")}:{" "}
+        {order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Good</th>
+            <th>Damaged</th>
+            <th>Missing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {receipt.lines.map((line) => (
+            <tr key={`${line.productId}-${line.nameSnapshot}`}>
+              <td>{line.nameSnapshot}</td>
+              <td>{formatStockQtyLabel(line.goodQty, line.uomSnapshot)}</td>
+              <td>{formatStockQtyLabel(line.damagedQty, line.uomSnapshot)}</td>
+              <td>{formatStockQtyLabel(line.missingQty, line.uomSnapshot)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="exits-page flex min-w-0 flex-col gap-3" data-testid="incoming-order-receipt-detail-page">
+      <div className="exits-bizdoc-print-host" aria-hidden>
+        {printDocument}
+      </div>
+
       <PageHeader
         title={receipt.grnNumber}
         {...smartBack}
         actions={
-          <StatusChip tone={receipt.status === "Voided" ? "danger" : "success"}>
-            {receipt.status === "Voided"
-              ? t("incomingOrders.receiptVoided")
-              : t("incomingOrders.receiptPosted")}
-          </StatusChip>
+          <PoProcessHeaderActions
+            statusLabel={statusLabel}
+            statusTone={statusTone}
+            timelineEnabled={hasTimeline}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => runReceiptOutput("print")}
+            onCsv={() => runReceiptOutput("csv")}
+            onXlsx={() => runReceiptOutput("xlsx")}
+            onPdf={() => runReceiptOutput("pdf")}
+          />
         }
       />
 
@@ -101,7 +252,7 @@ export function IncomingOrderReceiptDetailPage() {
         <p className="m-0">
           {t("incomingOrders.buyer")}:{" "}
           <span className="font-medium">
-            {query.data.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
+            {order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
           </span>
         </p>
         {receipt.deliveryReference?.trim() ? (
@@ -182,6 +333,30 @@ export function IncomingOrderReceiptDetailPage() {
           </ul>
         ) : null}
       </Card>
+
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        titleHint={order.buyerPoNumber}
+        events={timelineEvents}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+      />
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={receipt.grnNumber}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          showPdf={false}
+          testId="incoming-order-receipt-document-preview"
+        >
+          {printDocument}
+        </BusinessDocumentPreview>
+      ) : null}
     </div>
   );
 }

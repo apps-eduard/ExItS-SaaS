@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, History, Store } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import { listConnectedPoReturnsByPurchaseOrder } from "@/api/pos/pos-connected-po-returns-client";
@@ -53,7 +53,7 @@ import {
 import { PurchaseOrderBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
-import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
 import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
@@ -747,71 +747,25 @@ export function PurchaseOrderDetailPage() {
         title={po.poNumber ?? t("purchasing.detailTitle")}
         {...smartBack}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
-            {hasTimeline ? (
-              <Button
-                type="button"
-                intent="neutral"
-                appearance="outline"
-                shape="soft"
-                onClick={() => setTimelineOpen(true)}
-                data-testid="po-timeline-open"
-              >
-                <History className="size-4 shrink-0" aria-hidden />
-                {t("purchasing.timeline")}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              intent="neutral"
-              appearance="outline"
-              shape="soft"
-              onClick={() => setDocumentPreviewOpen(true)}
-              data-testid="po-document-preview-open"
-            >
-              <Eye className="size-4 shrink-0" aria-hidden />
-              {t("summary.preview")}
-            </Button>
-            <PoDocumentExportActions
-              printLabel={t("exitsTable.print")}
-              exportLabel={t("purchasing.export")}
-              csvLabel={t("exitsTable.exportCsv")}
-              xlsxLabel={t("exitsTable.exportExcel")}
-              pdfLabel={t("exitsTable.exportPdf")}
-              onPrint={() => printBusinessDocument()}
-              onPdf={() => exportBusinessDocumentPdf()}
-              onCsv={() => {
-                const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
-                const text = buildCsvWithMetadata(
-                  [
-                    ["Purchase order", po.poNumber ?? ""],
-                    ["Status", resolvedStatusLabel],
-                    ["Exported at", new Date().toISOString()],
-                  ],
-                  {
-                    headers: ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
-                    rows: po.lines.map((line) => [
-                      line.nameSnapshot ?? "",
-                      line.skuSnapshot ?? "",
-                      line.orderedQty,
-                      line.uomSnapshot ?? "",
-                      line.unitPurchaseCost,
-                      line.lineTotal,
-                    ]),
-                  },
-                );
-                downloadCsvFile(`PO-${poPart}.csv`, text);
-              }}
-              onXlsx={() => {
-                const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
-                const workbook = XLSX.utils.book_new();
-                const sheet = XLSX.utils.aoa_to_sheet([
+          <PoProcessHeaderActions
+            statusLabel={resolvedStatusLabel}
+            statusTone={statusTone}
+            timelineEnabled={hasTimeline}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => printBusinessDocument()}
+            onPdf={() => exportBusinessDocumentPdf()}
+            onCsv={() => {
+              const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+              const text = buildCsvWithMetadata(
+                [
                   ["Purchase order", po.poNumber ?? ""],
                   ["Status", resolvedStatusLabel],
-                  [],
-                  ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
-                  ...po.lines.map((line) => [
+                  ["Exported at", new Date().toISOString()],
+                ],
+                {
+                  headers: ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                  rows: po.lines.map((line) => [
                     line.nameSnapshot ?? "",
                     line.skuSnapshot ?? "",
                     line.orderedQty,
@@ -819,17 +773,36 @@ export function PurchaseOrderDetailPage() {
                     line.unitPurchaseCost,
                     line.lineTotal,
                   ]),
-                ]);
-                XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
-                const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
-                downloadBlob(
-                  `PO-${poPart}.xlsx`,
-                  buffer,
-                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                );
-              }}
-            />
-          </div>
+                },
+              );
+              downloadCsvFile(`PO-${poPart}.csv`, text);
+            }}
+            onXlsx={() => {
+              const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+              const workbook = XLSX.utils.book_new();
+              const sheet = XLSX.utils.aoa_to_sheet([
+                ["Purchase order", po.poNumber ?? ""],
+                ["Status", resolvedStatusLabel],
+                [],
+                ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                ...po.lines.map((line) => [
+                  line.nameSnapshot ?? "",
+                  line.skuSnapshot ?? "",
+                  line.orderedQty,
+                  line.uomSnapshot ?? "",
+                  line.unitPurchaseCost,
+                  line.lineTotal,
+                ]),
+              ]);
+              XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
+              const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+              downloadBlob(
+                `PO-${poPart}.xlsx`,
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              );
+            }}
+          />
         }
       />
 
@@ -1354,6 +1327,16 @@ export function PurchaseOrderDetailPage() {
 
       <div className="po-document-actions" data-testid="po-detail-actions">
         <div className="po-document-actions__primary">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={smartBack.onBack}
+            aria-label={t("purchasing.backOrders")}
+            data-testid="po-detail-footer-back"
+          >
+            <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+            {t("purchasing.backOrders")}
+          </Button>
           {canAcceptChanges ? (
             <>
               <Button

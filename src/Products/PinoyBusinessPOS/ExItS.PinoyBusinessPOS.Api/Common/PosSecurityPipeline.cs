@@ -106,6 +106,18 @@ internal static class PosSecurityPipeline
         {
             exceptionApp.Run(async context =>
             {
+                var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+                if (feature?.Error is not null)
+                {
+                    var logger = context.RequestServices.GetService<Microsoft.Extensions.Logging.ILoggerFactory>()
+                        ?.CreateLogger("PosUnhandledException");
+                    logger?.LogError(
+                        feature.Error,
+                        "Unhandled POS exception TraceId={TraceId} Path={Path}",
+                        context.TraceIdentifier,
+                        context.Request.Path.Value);
+                }
+
                 context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 context.Response.ContentType = "application/problem+json";
                 await context.Response.WriteAsJsonAsync(new

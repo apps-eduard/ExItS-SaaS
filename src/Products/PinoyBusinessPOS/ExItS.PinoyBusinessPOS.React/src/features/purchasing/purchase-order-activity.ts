@@ -362,6 +362,132 @@ export function buildPurchaseOrderActivityEvents(input: {
   });
 }
 
+/**
+ * Seller-side activity from a connected purchase order (+ embedded buyer receipts).
+ */
+export function buildConnectedPurchaseOrderActivityEvents(
+  order: {
+    connectedPurchaseOrderId?: string;
+    createdAtUtc?: string | null;
+    acceptedAtUtc?: string | null;
+    declinedAtUtc?: string | null;
+    preparingAtUtc?: string | null;
+    fulfilledAtUtc?: string | null;
+    withdrawnAtUtc?: string | null;
+    changesProposedAtUtc?: string | null;
+    remainingClosedAtUtc?: string | null;
+    financiallySettledAtUtc?: string | null;
+    sellerSettlementRemarks?: string | null;
+    financialSettlementStatus?: string | null;
+    buyerReceipts?: ReadonlyArray<{
+      goodsReceiptId: string;
+      grnNumber?: string | null;
+      status?: string | null;
+      receivedAtUtc?: string | null;
+    }> | null;
+  },
+): PurchaseOrderActivityEvent[] {
+  const id = order.connectedPurchaseOrderId ?? "connected-po";
+  const events: PurchaseOrderActivityEvent[] = [];
+
+  if (order.createdAtUtc?.trim()) {
+    events.push({
+      id: `created:${id}`,
+      kind: "created",
+      atUtc: order.createdAtUtc,
+    });
+    events.push({
+      id: `submitted:${id}`,
+      kind: "submitted",
+      atUtc: order.createdAtUtc,
+    });
+  }
+  if (order.acceptedAtUtc?.trim()) {
+    events.push({
+      id: `accepted:${id}`,
+      kind: "supplier_accepted",
+      atUtc: order.acceptedAtUtc,
+    });
+  }
+  if (order.declinedAtUtc?.trim()) {
+    events.push({
+      id: `declined:${id}`,
+      kind: "supplier_declined",
+      atUtc: order.declinedAtUtc,
+    });
+  }
+  if (order.preparingAtUtc?.trim()) {
+    events.push({
+      id: `preparing:${id}`,
+      kind: "supplier_preparing",
+      atUtc: order.preparingAtUtc,
+    });
+  }
+  if (order.fulfilledAtUtc?.trim()) {
+    events.push({
+      id: `fulfilled:${id}`,
+      kind: "supplier_ready",
+      atUtc: order.fulfilledAtUtc,
+    });
+  }
+  if (order.changesProposedAtUtc?.trim()) {
+    events.push({
+      id: `changes:${id}`,
+      kind: "changes_proposed",
+      atUtc: order.changesProposedAtUtc,
+    });
+  }
+  if (order.withdrawnAtUtc?.trim()) {
+    events.push({
+      id: `withdrawn:${id}`,
+      kind: "withdrawn",
+      atUtc: order.withdrawnAtUtc,
+    });
+  }
+  if (order.remainingClosedAtUtc?.trim()) {
+    events.push({
+      id: `remaining-closed:${id}`,
+      kind: "remaining_closed",
+      atUtc: order.remainingClosedAtUtc,
+    });
+  }
+  for (const receipt of order.buyerReceipts ?? []) {
+    if (receipt.receivedAtUtc?.trim()) {
+      events.push({
+        id: `receipt:${receipt.goodsReceiptId}`,
+        kind: "receipt",
+        atUtc: receipt.receivedAtUtc,
+        grnNumber: receipt.grnNumber ?? undefined,
+        receiptId: receipt.goodsReceiptId,
+        receiptStatus: receipt.status ?? undefined,
+      });
+    }
+  }
+  if (order.financialSettlementStatus === "AwaitingPayment" && order.fulfilledAtUtc?.trim()) {
+    events.push({
+      id: `awaiting-payment:${id}`,
+      kind: "awaiting_payment",
+      atUtc: order.fulfilledAtUtc,
+    });
+  }
+  if (order.financiallySettledAtUtc?.trim()) {
+    events.push({
+      id: `payment:${id}`,
+      kind: "payment_confirmed",
+      atUtc: order.financiallySettledAtUtc,
+      note: order.sellerSettlementRemarks ?? null,
+    });
+  }
+
+  return events.sort((a, b) => {
+    const byTime = compareUtc(a.atUtc, b.atUtc);
+    if (byTime !== 0) {
+      return byTime;
+    }
+    return a.id.localeCompare(b.id);
+  });
+}
+
 export function formatActivityDateTime(
   isoUtc: string,
   locale = "en-PH",

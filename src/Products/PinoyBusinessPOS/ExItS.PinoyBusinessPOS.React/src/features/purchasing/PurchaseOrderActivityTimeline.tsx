@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 type PurchaseOrderActivityTimelineProps = {
-  po: PosPurchaseOrderDto;
-  receipts: readonly PosGoodsReceiptDto[];
+  po?: PosPurchaseOrderDto;
+  receipts?: readonly PosGoodsReceiptDto[];
+  /** When set, used instead of building from po + receipts (seller / precomputed). */
+  events?: readonly PurchaseOrderActivityEvent[];
   resolveActor: ReturnType<typeof useActorDirectory>["resolve"];
   isResolving: boolean;
   /** Expand receipt detail (reverse / lines) when user opens a receipt node. */
@@ -77,15 +79,21 @@ function eventTitle(
 
 export function PurchaseOrderActivityTimeline({
   po,
-  receipts,
+  receipts = [],
+  events: eventsProp,
   resolveActor,
   isResolving,
   renderReceiptDetail,
 }: PurchaseOrderActivityTimelineProps) {
   const { t } = useI18n();
   const events = useMemo(
-    () => buildPurchaseOrderActivityEvents({ po, receipts }),
-    [po, receipts],
+    () =>
+      eventsProp
+        ? [...eventsProp]
+        : po
+          ? buildPurchaseOrderActivityEvents({ po, receipts })
+          : [],
+    [eventsProp, po, receipts],
   );
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
 

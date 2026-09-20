@@ -281,9 +281,13 @@ public static class PurchaseMapper
             CancelledRemainingValue: po.CancelledRemainingValue,
             RefundDueAmount: po.RefundDueAmount,
             AmountPaidSnapshot: po.AmountPaidSnapshot,
-            PaymentTiming: (connected?.EffectivePaymentTiming ?? po.PaymentTiming).ToString(),
+            PaymentTiming: (connected?.ConfirmedPaymentTiming
+                ?? connected?.EffectivePaymentTiming
+                ?? po.PaymentTiming).ToString(),
             PaymentTimingLabel: ConnectedPoPaymentTerms.ToUiLabel(
-                connected?.EffectivePaymentTiming ?? po.PaymentTiming),
+                connected?.ConfirmedPaymentTiming
+                ?? connected?.EffectivePaymentTiming
+                ?? po.PaymentTiming),
             FinancialSettlementStatus: po.FinancialSettlementStatus.ToString(),
             RemainingDueAmount: Math.Max(
                 0m,
@@ -1143,6 +1147,14 @@ public sealed class CreatePurchaseOrder
                         ? actingBranchId
                         : (Guid?)null;
 
+            if (connectedEligibility?.Value is not null
+                && !ConnectedPoDraftFulfillmentRules.IsMethodSelected(request.FulfillmentMethod))
+            {
+                return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                    ConnectedSupplierErrorCodes.FulfillmentNotReady,
+                    "Select Pickup or Delivery before saving this purchase order.");
+            }
+
             var paymentTerm = connectedEligibility?.Value is not null
                 ? ConnectedPoPaymentTerms.ParseRequired(request.PaymentTerm)
                 : ConnectedPoPaymentTerms.Parse(request.PaymentTerm);
@@ -1408,6 +1420,13 @@ public sealed class UpdatePurchaseOrder
             ConnectedPoPaymentTiming? paymentTiming = null;
             if (connectedEligibility?.Value is { Relationship: var timingRelationship })
             {
+                if (!ConnectedPoDraftFulfillmentRules.IsMethodSelected(request.FulfillmentMethod))
+                {
+                    return ApplicationResult<PosPurchaseOrderDto>.Failure(
+                        ConnectedSupplierErrorCodes.FulfillmentNotReady,
+                        "Select Pickup or Delivery before saving this purchase order.");
+                }
+
                 var utcNow = _clock.GetUtcNow();
                 var timingSettings = _connectedCommerceSettings is null
                     ? OrganizationConnectedCommerceSettings.CreateDefault(
@@ -2573,16 +2592,24 @@ public sealed class ReceivePurchaseOrder
                 })
                 .ToList();
 
-            var effectivePaymentTerm = connected?.EffectivePaymentTerm ?? existing.PaymentTerm;
-            var effectivePaymentTiming = connected?.EffectivePaymentTiming ?? existing.PaymentTiming;
+            var effectivePaymentTerm = connected is null
+                ? existing.PaymentTerm
+                : connected.ConfirmedPaymentTerm ?? existing.PaymentTerm;
+            // Timing-aware receipt lock: only connected POs pass timing.
+            // Non-connected drafts default PaymentTiming to PayBeforeFulfillment, which must NOT
+            // suppress Cash/GCash settlement at receipt. Prefer confirmed timing, then buyer PO.
+            ConnectedPoPaymentTiming? receiptPaymentTiming = connected is null
+                ? null
+                : connected.ConfirmedPaymentTiming ?? existing.PaymentTiming;
             var receivedAmountPreview = GoodsReceiptLine.SumGoodLineTotals(existing, receiveLines);
             var paymentResolution = PoReceiptPaymentMethodLock.Validate(
                 effectivePaymentTerm,
                 receivedAmountPreview,
                 request,
-                effectivePaymentTiming,
+                receiptPaymentTiming,
                 existing.AmountPaidSnapshot,
-                existing.FinancialSettlementStatus);
+                existing.FinancialSettlementStatus,
+                connected?.ConfirmedTotalAmount);
             if (!paymentResolution.IsSuccess)
             {
                 return ApplicationResult<PosGoodsReceiptDto>.Failure(
@@ -3215,5 +3242,24 @@ public sealed class VoidGoodsReceipt
         {
             return ApplicationResult<PosGoodsReceiptDto>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+}
+
+internal static class ConnectedPoDraftFulfillmentRules
+{
+    public static bool IsMethodSelected(string? fulfillmentMethod)
+    {
+        if (string.IsNullOrWhiteSpace(fulfillmentMethod))
+        {
+            return false;
+        }
+
+        var method = fulfillmentMethod.Trim();
+        return method.Equals(
+                   ConnectedSupplierCommerceReadiness.FulfillmentPickup,
+                   StringComparison.OrdinalIgnoreCase)
+               || method.Equals(
+                   ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+                   StringComparison.OrdinalIgnoreCase);
     }
 }

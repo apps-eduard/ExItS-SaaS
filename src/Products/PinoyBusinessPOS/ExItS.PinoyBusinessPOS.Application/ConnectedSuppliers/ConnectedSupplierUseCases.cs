@@ -113,7 +113,16 @@ public sealed record ConnectedBuyerProductShareDto(Guid ShareId, Guid Relationsh
     Guid SupplierOrganizationId, Guid SupplierProductId, bool IsShared, decimal? BuyerSpecificPoPrice,
     decimal? EffectiveSupplierOrderPrice, long SyncVersion, DateTimeOffset CreatedAtUtc, DateTimeOffset UpdatedAtUtc,
     string? SkuSnapshot = null, string? NameSnapshot = null, string? UnitOfMeasureCode = null, decimal? SellingPrice = null,
-    string? CategoryNameSnapshot = null, decimal? DefaultPoPrice = null, bool IsBlockedFromConnectedBuyers = false);
+    string? CategoryNameSnapshot = null, decimal? DefaultPoPrice = null, bool IsBlockedFromConnectedBuyers = false,
+    bool IsInventoryTracked = false,
+    bool IsEligible = false,
+    bool IsEffectivelyShared = false,
+    bool IsExplicitlyExcluded = false,
+    string SharingStatus = "NotShared",
+    bool HasValidPoPrice = false,
+    bool CanShare = false,
+    bool CanStopSharing = false,
+    decimal? ResolvedPoPrice = null);
 public sealed record SetBuyerProductShareItem(
     Guid SupplierProductId,
     bool IsShared,
@@ -298,7 +307,7 @@ public static class ConnectedSupplierMapper
     public static SupplierProductExposureDto Map(SupplierProductExposure x, decimal effectivePrice) =>
         Map(x) with { SupplierOrderPrice = effectivePrice, EffectiveSupplierOrderPrice = effectivePrice };
     public static ConnectedBuyerProductShareDto Map(ConnectedBuyerProductShare x, SupplierProductExposure? exposure = null,
-        CatalogProduct? product = null, string? categoryName = null) =>
+        CatalogProduct? product = null, string? categoryName = null, bool isInventoryTracked = false) =>
         MapForManagement(
             CatalogSharingMode.SelectedOnly,
             customerDiscountPercent: null,
@@ -311,14 +320,16 @@ public static class ConnectedSupplierMapper
             categoryName,
             shareId: x.Id.Value,
             createdAtUtc: x.CreatedAtUtc,
-            updatedAtUtc: x.UpdatedAtUtc);
+            updatedAtUtc: x.UpdatedAtUtc,
+            isInventoryTracked: isInventoryTracked);
 
     public static ConnectedBuyerProductShareDto MapUnshared(
         ConnectedSupplierRelationship relationship,
         PosOrganizationId supplier,
         CatalogProduct product,
         SupplierProductExposure? exposure,
-        string? categoryName) =>
+        string? categoryName,
+        bool isInventoryTracked = false) =>
         MapForManagement(
             relationship.CatalogSharingMode,
             relationship.CustomerDiscountPercent,
@@ -331,14 +342,16 @@ public static class ConnectedSupplierMapper
             categoryName,
             shareId: Guid.Empty,
             createdAtUtc: product.CreatedAtUtc,
-            updatedAtUtc: product.UpdatedAtUtc);
+            updatedAtUtc: product.UpdatedAtUtc,
+            isInventoryTracked: isInventoryTracked);
 
     public static ConnectedBuyerProductShareDto MapForManagement(
         ConnectedSupplierRelationship relationship,
         CatalogProduct product,
         ConnectedBuyerProductShare? share,
         SupplierProductExposure? exposure,
-        string? categoryName) =>
+        string? categoryName,
+        bool isInventoryTracked = false) =>
         MapForManagement(
             relationship.CatalogSharingMode,
             relationship.CustomerDiscountPercent,
@@ -351,7 +364,8 @@ public static class ConnectedSupplierMapper
             categoryName,
             shareId: share?.Id.Value ?? Guid.Empty,
             createdAtUtc: share?.CreatedAtUtc ?? product.CreatedAtUtc,
-            updatedAtUtc: share?.UpdatedAtUtc ?? product.UpdatedAtUtc);
+            updatedAtUtc: share?.UpdatedAtUtc ?? product.UpdatedAtUtc,
+            isInventoryTracked: isInventoryTracked);
 
     private static ConnectedBuyerProductShareDto MapForManagement(
         CatalogSharingMode mode,
@@ -365,15 +379,33 @@ public static class ConnectedSupplierMapper
         string? categoryName,
         Guid shareId,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc)
+        DateTimeOffset updatedAtUtc,
+        bool isInventoryTracked = false)
     {
-        var isShared = product?.IsBlockedFromConnectedBuyers != true
-            && product?.CanBeSold == true
-            && ConnectedPoPricing.IsProductShared(mode, share);
+        var isEligible = product is not null
+            && Catalog.ConnectedBuyerCatalogProjection.IsEligible(product, isInventoryTracked);
+        var isExplicitlyExcluded = Catalog.ConnectedBuyerCatalogProjection.IsExplicitlyExcluded(share);
+        var isEffectivelyShared = product is not null
+            && Catalog.ConnectedBuyerCatalogProjection.IsEffectivelyShared(
+                mode, product, isInventoryTracked, share);
+        var sharingStatus = product is null
+            ? "NotShared"
+            : Catalog.ConnectedBuyerCatalogProjection.SharingStatus(
+                mode, product, isInventoryTracked, share);
+        var resolvedPoPrice = product is null
+            ? null
+            : Catalog.ConnectedBuyerCatalogProjection.ResolvePoPrice(product, exposure);
+        var hasValidPoPrice = resolvedPoPrice is > 0m;
+        var canShare = product is not null
+            && Catalog.ConnectedBuyerCatalogProjection.CanShare(
+                mode, product, isInventoryTracked, share, exposure);
+        var canStopSharing = product is not null
+            && Catalog.ConnectedBuyerCatalogProjection.CanStopSharing(
+                mode, product, isInventoryTracked, share);
 
         decimal? effective = null;
         var selling = product?.SellingPrice;
-        if (isShared)
+        if (isEffectivelyShared)
         {
             if (exposure is not null
                 && ConnectedPoPricing.TryResolveEffectivePrice(
@@ -387,10 +419,10 @@ public static class ConnectedSupplierMapper
             {
                 effective = fromExposure;
             }
-            else if (selling is > 0m)
+            else if (resolvedPoPrice is > 0m)
             {
-                // AllEligible display path when Default PO / exposure is not staged yet.
-                var baseline = selling.Value;
+                // Prefer canonical resolved baseline when exposure is not staged yet.
+                var baseline = resolvedPoPrice.Value;
                 effective = customerDiscountPercent is decimal d && d > 0m
                     ? ConnectedPoPricing.RoundMoney(baseline * (1m - (d / 100m)))
                     : ConnectedPoPricing.RoundMoney(baseline);
@@ -417,7 +449,7 @@ public static class ConnectedSupplierMapper
             buyerOrganizationId,
             supplierOrganizationId,
             productId,
-            isShared,
+            isEffectivelyShared,
             share?.BuyerSpecificPoPrice,
             effective,
             share?.SyncVersion ?? 0,
@@ -429,7 +461,16 @@ public static class ConnectedSupplierMapper
             selling,
             category,
             defaultPo,
-            product?.IsBlockedFromConnectedBuyers ?? false);
+            product?.IsBlockedFromConnectedBuyers ?? false,
+            isInventoryTracked,
+            isEligible,
+            isEffectivelyShared,
+            isExplicitlyExcluded,
+            sharingStatus,
+            hasValidPoPrice,
+            canShare,
+            canStopSharing,
+            resolvedPoPrice);
     }
     public static BuyerSupplierProductLinkDto Map(BuyerSupplierProductLink x) => new(x.Id.Value,x.RelationshipId.Value,
         x.BuyerOrganizationId.Value,x.SupplierOrganizationId.Value,x.BuyerProductId.Value,x.SupplierProductId.Value,
@@ -1690,6 +1731,7 @@ public sealed class ListBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+
     public ListBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
@@ -1723,11 +1765,17 @@ public sealed class ListBuyerProductShares
                 relationship.Id, supplier, null, null, null, 0, 10_000, idsOnly: false, ct,
                 relationship.CatalogSharingMode)
             .ConfigureAwait(false);
+
         var result = new List<ConnectedBuyerProductShareDto>(page.Rows.Count);
         foreach (var row in page.Rows)
         {
             result.Add(ConnectedSupplierMapper.MapForManagement(
-                relationship, row.Product, row.Share, row.Exposure, row.CategoryName));
+                relationship,
+                row.Product,
+                row.Share,
+                row.Exposure,
+                row.CategoryName,
+                isInventoryTracked: row.IsInventoryTracked));
         }
 
         return ApplicationResult<IReadOnlyList<ConnectedBuyerProductShareDto>>.Success(result);
@@ -1865,25 +1913,82 @@ public sealed class SetBuyerProductShares
             }
 
             var share = await _shares.FindAsync(relationship.Id, productId, ct).ConfigureAwait(false);
-            if (share is null)
-            {
-                share = ConnectedBuyerProductShare.Share(
-                    relationship.Id, relationship.BuyerOrganizationId, supplier, productId, now, item.BuyerSpecificPoPrice);
-                if (!item.IsShared)
-                {
-                    share.Unshare(now);
-                }
+            var mode = relationship.CatalogSharingMode;
 
-                await _shares.AddAsync(share, ct).ConfigureAwait(false);
+            if (mode == CatalogSharingMode.AllEligible)
+            {
+                if (item.IsShared)
+                {
+                    // Clear explicit exclusion — absence of row = shared by default.
+                    if (share is { IsShared: false })
+                    {
+                        await _shares.RemoveAsync(share, ct).ConfigureAwait(false);
+                        share = null;
+                    }
+                    else if (share is { IsShared: true })
+                    {
+                        // Positive share row is optional under AllEligible; keep price overrides.
+                        share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice, now);
+                        await _shares.UpdateAsync(share, ct).ConfigureAwait(false);
+                    }
+                    // share is null → already inherited shared; nothing to persist.
+                }
+                else
+                {
+                    // Persist sparse exclusion.
+                    if (share is null)
+                    {
+                        share = ConnectedBuyerProductShare.Share(
+                            relationship.Id,
+                            relationship.BuyerOrganizationId,
+                            supplier,
+                            productId,
+                            now,
+                            item.BuyerSpecificPoPrice);
+                        share.Unshare(now);
+                        await _shares.AddAsync(share, ct).ConfigureAwait(false);
+                    }
+                    else if (share.IsShared)
+                    {
+                        share.Unshare(now, clearPrice: true);
+                        await _shares.UpdateAsync(share, ct).ConfigureAwait(false);
+                    }
+                }
             }
             else
             {
-                share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice, now);
-                share.SetShared(item.IsShared, now);
-                await _shares.UpdateAsync(share, ct).ConfigureAwait(false);
+                // SelectedOnly: explicit share rows required for visibility.
+                if (share is null)
+                {
+                    share = ConnectedBuyerProductShare.Share(
+                        relationship.Id,
+                        relationship.BuyerOrganizationId,
+                        supplier,
+                        productId,
+                        now,
+                        item.BuyerSpecificPoPrice);
+                    if (!item.IsShared)
+                    {
+                        share.Unshare(now);
+                    }
+
+                    await _shares.AddAsync(share, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    share.SetBuyerSpecificPoPrice(item.BuyerSpecificPoPrice, now);
+                    share.SetShared(item.IsShared, now);
+                    await _shares.UpdateAsync(share, ct).ConfigureAwait(false);
+                }
             }
 
-            result.Add(ConnectedSupplierMapper.Map(share, exposure, product));
+            result.Add(ConnectedSupplierMapper.MapForManagement(
+                relationship,
+                product,
+                share,
+                exposure,
+                categoryName: null,
+                isInventoryTracked: true));
         }
 
         await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
@@ -1929,32 +2034,94 @@ public sealed class SearchExposedCatalog
     private readonly IConnectedSupplierRelationshipRepository _relationships;private readonly ISupplierProductExposureRepository _exposures;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
-    public SearchExposedCatalog(IConnectedSupplierRelationshipRepository r,ISupplierProductExposureRepository e,IPosCommercialAccessAccessor a,
-        IConnectedBuyerProductShareRepository shares)
-    {_relationships=r;_exposures=e;_access=a;_shares=shares;}
-    public async Task<ApplicationResult<PagedResult<SupplierProductExposureDto>>> ExecuteAsync(Guid orgId,Guid relationshipId,string? query,string? category,int? page,int? pageSize,CancellationToken ct=default)
-    {var gate=ConnectedSupplierUseCaseGuard.Access(_access,UtangCapability.ViewPurchasing);
-     if(!gate.IsSuccess)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(gate.ErrorCode!,gate.ErrorMessage!);
-     var r=await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId),ct);var buyer=PosOrganizationId.From(orgId);
-     if(r is null||r.BuyerOrganizationId!=buyer)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.NotFound,"Relationship was not found.");
-     if(r.Status!=ConnectedSupplierRelationshipStatus.Active)return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(ConnectedSupplierErrorCodes.RelationshipInactive,"Relationship is not active.");
-     var p=Math.Max(page??1,1);var size=Math.Clamp(pageSize??25,1,50);
-     var (items,shares,total)=await _shares.SearchSharedCatalogAsync(
-         r.Id,r.SupplierOrganizationId,query,category,(p-1)*size,size,ct,r.CatalogSharingMode);
-     var sharesByProduct=shares.ToDictionary(x=>x.SupplierProductId.Value);
-     return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(x=>
-       {
-           sharesByProduct.TryGetValue(x.ProductId.Value, out var share);
-           var resolved = ConnectedPoPricing.TryResolveEffectivePrice(
-               x,
-               share,
-               r.CatalogSharingMode,
-               r.CustomerDiscountPercent,
-               sellingPrice: null,
-               out var price,
-               out _);
-           return ConnectedSupplierMapper.Map(x, resolved ? price : x.SupplierOrderPrice);
-       }).ToList(),total,p,size));}
+    private readonly ICatalogProductRepository? _products;
+    private readonly Inventory.IInventoryRepository? _inventory;
+    private readonly IPosUnitOfWork? _uow;
+
+    public SearchExposedCatalog(
+        IConnectedSupplierRelationshipRepository r,
+        ISupplierProductExposureRepository e,
+        IPosCommercialAccessAccessor a,
+        IConnectedBuyerProductShareRepository shares,
+        ICatalogProductRepository? products = null,
+        Inventory.IInventoryRepository? inventory = null,
+        IPosUnitOfWork? uow = null)
+    {
+        _relationships = r;
+        _exposures = e;
+        _access = a;
+        _shares = shares;
+        _products = products;
+        _inventory = inventory;
+        _uow = uow;
+    }
+
+    public async Task<ApplicationResult<PagedResult<SupplierProductExposureDto>>> ExecuteAsync(
+        Guid orgId,
+        Guid relationshipId,
+        string? query,
+        string? category,
+        int? page,
+        int? pageSize,
+        CancellationToken ct = default)
+    {
+        var gate = ConnectedSupplierUseCaseGuard.Access(_access, UtangCapability.ViewPurchasing);
+        if (!gate.IsSuccess)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(
+                gate.ErrorCode!, gate.ErrorMessage!);
+        }
+
+        var r = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct);
+        var buyer = PosOrganizationId.From(orgId);
+        if (r is null || r.BuyerOrganizationId != buyer)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(
+                ConnectedSupplierErrorCodes.NotFound, "Relationship was not found.");
+        }
+
+        if (r.Status != ConnectedSupplierRelationshipStatus.Active)
+        {
+            return ConnectedSupplierUseCaseGuard.Failure<PagedResult<SupplierProductExposureDto>>(
+                ConnectedSupplierErrorCodes.RelationshipInactive, "Relationship is not active.");
+        }
+
+        // Repair stale/missing exposures for AllEligible so newly tracked products appear
+        // without requiring the seller to open shared-products first.
+        if (r.CatalogSharingMode == CatalogSharingMode.AllEligible
+            && _products is not null
+            && _uow is not null)
+        {
+            await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                    r.SupplierOrganizationId,
+                    _products,
+                    _exposures,
+                    DateTimeOffset.UtcNow,
+                    ct,
+                    _inventory)
+                .ConfigureAwait(false);
+            await _uow.SaveChangesAsync(ct).ConfigureAwait(false);
+        }
+
+        var p = Math.Max(page ?? 1, 1);
+        var size = Math.Clamp(pageSize ?? 25, 1, 50);
+        var (items, shares, total) = await _shares.SearchSharedCatalogAsync(
+            r.Id, r.SupplierOrganizationId, query, category, (p - 1) * size, size, ct, r.CatalogSharingMode);
+        var sharesByProduct = shares.ToDictionary(x => x.SupplierProductId.Value);
+        return ApplicationResult<PagedResult<SupplierProductExposureDto>>.Success(new(items.Select(x =>
+        {
+            sharesByProduct.TryGetValue(x.ProductId.Value, out var share);
+            var resolved = ConnectedPoPricing.TryResolveEffectivePrice(
+                x,
+                share,
+                r.CatalogSharingMode,
+                r.CustomerDiscountPercent,
+                sellingPrice: null,
+                out var price,
+                out _);
+            return ConnectedSupplierMapper.Map(x, resolved ? price : x.SupplierOrderPrice);
+        }).ToList(), total, p, size));
+    }
 }
 
 public sealed class LinkProduct

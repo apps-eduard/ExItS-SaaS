@@ -167,6 +167,7 @@ public static class ApplicationErrorCodes
     public const string PurchasingReceivingBranchMismatch = "pos.purchasing.receiving_branch_mismatch";
     public const string PurchaseReceiptPaymentMethodMismatch = "pos.purchasing.receipt.payment_method_mismatch";
     public const string PurchaseReceiptPaymentInvalid = "pos.purchasing.receipt.payment_invalid";
+    public const string PurchaseReceiptPrepaymentMissing = "pos.purchasing.receipt.prepayment_missing";
     public const string PurchaseOrderNothingToCloseRemaining = "pos.purchasing.close_remaining.nothing_to_close";
     public const string PurchaseOrderCloseRemainingReasonRequired =
         "pos.purchasing.close_remaining.reason_required";

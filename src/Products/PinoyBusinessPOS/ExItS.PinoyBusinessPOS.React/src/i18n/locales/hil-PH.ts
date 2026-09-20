@@ -1779,6 +1779,22 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.customerPrice": "Customer price",
 
   "connected.excluded": "Excluded",
+  "connected.manageSharedIntent":
+    "Choose which eligible seller products this customer can order. All eligible products are shared by default unless explicitly excluded.",
+  "connected.inventoryNeverShared": "Inventory quantities are never shared.",
+  "connected.ineligible": "Ineligible",
+  "connected.needsPrice": "Needs price",
+  "connected.enableTrackingBeforeShare": "Enable inventory tracking before sharing this product.",
+  "connected.setPriceBeforeShare": "Set a selling or Default PO price before sharing.",
+  "connected.buyerContext.b2bConnected": "B2B · Connected",
+  "connected.buyerContext.organizationId": "Organization ID",
+  "connected.buyerContext.sellingBranch": "Selling branch",
+  "connected.buyerContext.catalogSharing": "Catalog sharing",
+  "connected.buyerContext.customerPricing": "Customer pricing",
+  "connected.buyerContext.branchUnset": "Not set",
+  "connected.buyerContext.viewCustomer": "View business customer",
+  "connected.filterIneligible": "Ineligible",
+  "connected.colSharing": "Sharing",
 
   "connected.filterExcluded": "Excluded",
 
@@ -2114,6 +2130,11 @@ export const hilPH: Record<keyof typeof en, string> = {
   "connected.colProduct": "Product",
   "connected.colSku": "SKU",
   "connected.colStatus": "Status",
+  "connected.colTracking": "Pagsubaybay",
+  "connected.trackProduct": "I-track",
+  "connected.untrackProduct": "I-untrack",
+  "connected.trackProductFailed": "Indi ma-enable ang inventory tracking.",
+  "connected.untrackProductFailed": "Indi ma-disable ang inventory tracking.",
 
   "connected.shared": "Shared",
 
@@ -13451,6 +13472,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "returns.connectedPo.refundAmountInvalid": "Enter a refund amount greater than zero.",
 
   "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillmentMethodRequired": "Select Pickup or Delivery before saving this purchase order.",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",
   "purchasing.fulfillment.deliveryUnavailableOrgOff":

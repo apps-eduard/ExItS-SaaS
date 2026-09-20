@@ -1,8 +1,12 @@
+using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Credit;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
+using ExItS.PinoyBusinessPOS.Application.Customers;
+using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Credit;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -44,7 +48,9 @@ public sealed record ConnectedSupplierCommerceReadinessDto(
     /// </summary>
     string? DeliveryUnavailableReason = null,
     /// <summary>Buyer-safe Pickup unavailability reason: BranchNotReady when not selectable.</summary>
-    string? PickupUnavailableReason = null);
+    string? PickupUnavailableReason = null,
+    /// <summary>Current buyer-orderable shared catalog product count (SearchSharedCatalog).</summary>
+    int BuyerOrderableCount = 0);
 
 /// <summary>
 /// Authoritative commerce readiness for connected supplier PO acceptance.
@@ -74,6 +80,11 @@ public sealed class ConnectedSupplierCommerceReadinessService
     private readonly IOrganizationFulfillmentSettingsRepository _fulfillmentSettings;
     private readonly IOrganizationConnectedCommerceSettingsRepository? _connectedCommerceSettings;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly ICatalogProductRepository? _products;
+    private readonly ISupplierProductExposureRepository? _exposures;
+    private readonly IInventoryRepository? _inventory;
+    private readonly IPosUnitOfWork? _uow;
+    private readonly TimeProvider _clock;
 
     public ConnectedSupplierCommerceReadinessService(
         IConnectedSupplierRelationshipRepository relationships,
@@ -83,7 +94,12 @@ public sealed class ConnectedSupplierCommerceReadinessService
         IBusinessCustomerCreditPolicyRepository creditPolicies,
         IPosCommercialAccessAccessor access,
         IOrganizationFulfillmentSettingsRepository? fulfillmentSettings = null,
-        IOrganizationConnectedCommerceSettingsRepository? connectedCommerceSettings = null)
+        IOrganizationConnectedCommerceSettingsRepository? connectedCommerceSettings = null,
+        ICatalogProductRepository? products = null,
+        ISupplierProductExposureRepository? exposures = null,
+        IInventoryRepository? inventory = null,
+        IPosUnitOfWork? uow = null,
+        TimeProvider? clock = null)
     {
         _relationships = relationships;
         _shares = shares;
@@ -93,6 +109,11 @@ public sealed class ConnectedSupplierCommerceReadinessService
         _fulfillmentSettings = fulfillmentSettings ?? new NullOrganizationFulfillmentSettingsRepository();
         _connectedCommerceSettings = connectedCommerceSettings;
         _access = access;
+        _products = products;
+        _exposures = exposures;
+        _inventory = inventory;
+        _uow = uow;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public async Task<ApplicationResult<ConnectedSupplierCommerceReadinessDto>> GetForBuyerAsync(
@@ -228,19 +249,26 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
     public async Task<ConnectedSupplierCommerceReadiness.Result> EvaluateAsync(
         ConnectedSupplierRelationship relationship,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool ensureAllEligibleExposures = true)
     {
-        var snapshot = await EvaluateSnapshotAsync(relationship, cancellationToken).ConfigureAwait(false);
+        var snapshot = await EvaluateSnapshotAsync(
+                relationship,
+                cancellationToken,
+                ensureAllEligibleExposures)
+            .ConfigureAwait(false);
         return snapshot.Result;
     }
 
     internal sealed record EvaluationSnapshot(
         ConnectedSupplierCommerceReadiness.Result Result,
-        ConnectedSupplierCommerceReadiness.BuyerFulfillmentOptions Options);
+        ConnectedSupplierCommerceReadiness.BuyerFulfillmentOptions Options,
+        int BuyerOrderableCount = 0);
 
     private async Task<EvaluationSnapshot> EvaluateSnapshotAsync(
         ConnectedSupplierRelationship relationship,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool ensureAllEligibleExposures = true)
     {
         var supplierOrg = relationship.SupplierOrganizationId;
         var hasBranch = relationship.SupplierBranchId is Guid branchId && branchId != Guid.Empty;
@@ -301,18 +329,55 @@ public sealed class ConnectedSupplierCommerceReadinessService
             hasValidCredit = policy is not null && policy.PermitsNewUtang;
         }
 
-        var eligibleCount = await _shares
-            .CountEligibleSupplierProductsAsync(supplierOrg, cancellationToken)
+        // Align AllEligible exposures with buyer Create PO / Shared Catalog bootstrap so
+        // SearchSharedCatalog does not report 0 while seller SharedCount already shows shared products.
+        // Skip on read-only callers (e.g. GetBusinessCustomer delivery enrichment) so parallel
+        // detail + commerce-readiness refreshes after share mutations cannot race on SaveChanges.
+        if (ensureAllEligibleExposures
+            && relationship.CatalogSharingMode == CatalogSharingMode.AllEligible
+            && _products is not null
+            && _exposures is not null
+            && _uow is not null)
+        {
+            await AllEligibleCatalogBootstrap.EnsureExposuresFromSellingPriceAsync(
+                    supplierOrg,
+                    _products,
+                    _exposures,
+                    _clock.GetUtcNow(),
+                    cancellationToken,
+                    _inventory)
+                .ConfigureAwait(false);
+            try
+            {
+                await _uow.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                // Parallel readiness evaluations may race on the same product/exposure rows.
+                // Catalog count below still reflects committed state.
+            }
+        }
+
+        // Authoritative CatalogReady = at least one current buyer-orderable product
+        // (same projection as Create PO Add products / SearchSharedCatalog).
+        var (_, _, buyerOrderableCount) = await _shares
+            .SearchSharedCatalogAsync(
+                relationship.Id,
+                supplierOrg,
+                query: null,
+                category: null,
+                skip: 0,
+                take: 1,
+                cancellationToken,
+                relationship.CatalogSharingMode)
             .ConfigureAwait(false);
-        var statsMap = await _shares
-            .ListShareStatsByRelationshipsAsync([relationship.Id.Value], cancellationToken)
+        var hasCatalog = buyerOrderableCount > 0;
+        var sharedCatalogDetail = await ResolveSharedCatalogDetailAsync(
+                relationship,
+                supplierOrg,
+                buyerOrderableCount,
+                cancellationToken)
             .ConfigureAwait(false);
-        var stats = statsMap.GetValueOrDefault(relationship.Id.Value, new BuyerRelationshipShareStats(0, 0, 0));
-        var hasCatalog = ConnectedSupplierCommerceReadiness.HasSharedCatalog(
-            relationship.CatalogSharingMode,
-            eligibleCount,
-            stats.ExplicitSharedCount,
-            stats.ExcludedCount);
 
         var hasContact = ConnectedSupplierCommerceReadiness.HasResponsibleContact(
             relationship.ContactPersonName,
@@ -321,7 +386,7 @@ public sealed class ConnectedSupplierCommerceReadinessService
             relationship.ContactSource,
             relationship.OrganizationMemberId);
 
-        var result = ConnectedSupplierCommerceReadiness.Evaluate(
+        var evaluated = ConnectedSupplierCommerceReadiness.Evaluate(
             new ConnectedSupplierCommerceReadiness.Input(
                 HasSellingBranch: hasBranch,
                 PickupEnabled: pickupEnabled,
@@ -335,6 +400,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
                 HasSharedCatalog: hasCatalog,
                 HasResponsibleContact: hasContact));
 
+        evaluated = WithSharedCatalogDetail(evaluated, sharedCatalogDetail);
+
         var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
             orgOfferDelivery: orgOfferDelivery,
             branchPickupEnabled: pickupEnabled,
@@ -345,7 +412,59 @@ public sealed class ConnectedSupplierCommerceReadinessService
 
         // Align selectable methods with Evaluate when relationship does not Block
         // (Evaluate already applied org+branch). Options refine Block + reasons.
-        return new EvaluationSnapshot(result, options);
+        return new EvaluationSnapshot(evaluated, options, buyerOrderableCount);
+    }
+
+    private static ConnectedSupplierCommerceReadiness.Result WithSharedCatalogDetail(
+        ConnectedSupplierCommerceReadiness.Result evaluated,
+        string detail)
+    {
+        var requirements = evaluated.Requirements
+            .Select(r => r.Code == ConnectedSupplierCommerceReadiness.SharedCatalog
+                ? r with { Detail = detail }
+                : r)
+            .ToList();
+        return evaluated with { Requirements = requirements };
+    }
+
+    private async Task<string> ResolveSharedCatalogDetailAsync(
+        ConnectedSupplierRelationship relationship,
+        PosOrganizationId supplierOrg,
+        int buyerOrderableCount,
+        CancellationToken cancellationToken)
+    {
+        if (buyerOrderableCount > 0)
+        {
+            return buyerOrderableCount == 1
+                ? "1 product available for purchase ordering."
+                : $"{buyerOrderableCount} products available for purchase ordering.";
+        }
+
+        var eligibleCount = await _shares
+            .CountEligibleSupplierProductsAsync(supplierOrg, cancellationToken)
+            .ConfigureAwait(false);
+        if (eligibleCount <= 0)
+        {
+            return "Enable inventory tracking on sellable products so they can be shared with this customer.";
+        }
+
+        var statsMap = await _shares
+            .ListShareStatsByRelationshipsAsync([relationship.Id.Value], cancellationToken)
+            .ConfigureAwait(false);
+        var stats = statsMap.GetValueOrDefault(relationship.Id.Value, new BuyerRelationshipShareStats(0, 0, 0));
+        if (relationship.CatalogSharingMode == CatalogSharingMode.AllEligible
+            && stats.ExcludedCount >= eligibleCount)
+        {
+            return "All eligible products are excluded. Share at least one product with this business customer.";
+        }
+
+        if (relationship.CatalogSharingMode == CatalogSharingMode.SelectedOnly
+            && stats.ExplicitSharedCount <= 0)
+        {
+            return "Share at least one product with this business customer.";
+        }
+
+        return "Set a selling or Default PO price on shared products so buyers can order them.";
     }
 
     /// <summary>
@@ -526,7 +645,8 @@ public sealed class ConnectedSupplierCommerceReadinessService
             options.BranchDeliveryReady,
             options.RelationshipDeliveryBlocked,
             options.DeliveryUnavailableReason,
-            options.PickupUnavailableReason);
+            options.PickupUnavailableReason,
+            snapshot.BuyerOrderableCount);
     }
 
     private static string? ActionPathFor(string code) =>

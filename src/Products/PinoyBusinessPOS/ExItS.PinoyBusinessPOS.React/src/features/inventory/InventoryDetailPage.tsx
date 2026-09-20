@@ -237,6 +237,9 @@ export function InventoryDetailPage() {
   async function invalidateInventory() {
     await queryClient.invalidateQueries({ queryKey: ["inventory"] });
     await queryClient.invalidateQueries({ queryKey: ["catalog"] });
+    await queryClient.invalidateQueries({ queryKey: ["connected-suppliers"] });
+    await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
+    await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
   }
 
   const enableMutation = useMutation({

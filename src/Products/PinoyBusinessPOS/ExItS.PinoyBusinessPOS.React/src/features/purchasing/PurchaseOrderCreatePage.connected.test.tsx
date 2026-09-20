@@ -625,6 +625,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       ),
     );
     await user.click(screen.getByTestId("po-payment-option-Cash"));
+    await user.click(screen.getByTestId("po-fulfillment-option-Pickup"));
     expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
   });
 
@@ -713,12 +714,12 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
   });
 
-  it("shows category banner but still allows draft create when supplier commerce is not ready", async () => {
+  it("blocks draft create until fulfillment is chosen even when supplier commerce is not ready", async () => {
     const user = userEvent.setup();
     getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
       relationshipId,
       isReady: false,
-      supportedFulfillmentMethods: [],
+      supportedFulfillmentMethods: ["Pickup"],
       requirements: null,
       blockerCategories: ["Catalog"],
     });
@@ -738,8 +739,29 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
     await user.click(screen.getByTestId("po-payment-option-Cash"));
 
+    // Single supported method is auto-selected → create remains available for draft.
     await waitFor(() => {
       expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
+    });
+  });
+
+  it("keeps create disabled when connected and no fulfillment method is available", async () => {
+    const user = userEvent.setup();
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: false,
+      supportedFulfillmentMethods: [],
+      requirements: null,
+      blockerCategories: ["Fulfillment"],
+    });
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+
+    await selectSupplierAndOpenFinder(user);
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    await user.click(screen.getByTestId("po-payment-option-Cash"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("po-create-submit")).toBeDisabled();
     });
   });
 });

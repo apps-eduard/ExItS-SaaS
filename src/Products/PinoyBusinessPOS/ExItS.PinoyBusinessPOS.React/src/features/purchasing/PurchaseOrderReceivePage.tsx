@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, Fragment } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Check, Eye, History, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, X } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
@@ -38,11 +38,9 @@ import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { QuantityInput } from "@/components/exits/MoneyQuantityInputs";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { StatusChip } from "@/components/exits/StatusChip";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
-import { DocumentActions } from "@/features/documents/DocumentActions";
 import {
   GoodsReceiptBusinessDocument,
   PurchaseOrderBusinessDocument,
@@ -50,7 +48,7 @@ import {
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
 import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
-import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
 import {
@@ -60,8 +58,8 @@ import {
   parseMoneyInput,
   resolveLockedReceivePaymentFromPo,
   roundMoney,
-  validateLockedSettlementFields,
-  validateReceivePaidNow,
+  shouldSkipReceiveSettlementPayload,
+  validateLockedReceivePaymentMatrix,
   type ReceivePaymentMethodCode,
   type ReceivePaymentMode,
   type ReceiveSettlementFields,
@@ -338,46 +336,19 @@ export function PurchaseOrderReceivePage() {
   function renderPoUtilityActions(options?: { includePreview?: boolean }) {
     const includePreview = options?.includePreview !== false;
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        {po ? <StatusChip tone={statusTone}>{statusLabel}</StatusChip> : null}
-        {hasTimeline ? (
-          <Button
-            type="button"
-            intent="neutral"
-            appearance="outline"
-            shape="soft"
-            onClick={() => setTimelineOpen(true)}
-            data-testid="po-timeline-open"
-          >
-            <History className="size-4 shrink-0" aria-hidden />
-            {t("purchasing.timeline")}
-          </Button>
-        ) : null}
-        {includePreview ? (
-          <Button
-            type="button"
-            intent="neutral"
-            appearance="outline"
-            shape="soft"
-            onClick={() => setDocumentPreviewOpen(true)}
-            data-testid="receive-po-preview-open"
-          >
-            <Eye className="size-4 shrink-0" aria-hidden />
-            {t("summary.preview")}
-          </Button>
-        ) : null}
-        <PoDocumentExportActions
-          printLabel={t("exitsTable.print")}
-          exportLabel={t("purchasing.export")}
-          csvLabel={t("exitsTable.exportCsv")}
-          xlsxLabel={t("exitsTable.exportExcel")}
-          pdfLabel={t("exitsTable.exportPdf")}
-          onPrint={() => runReceiveOutput("print")}
-          onCsv={() => runReceiveOutput("csv")}
-          onXlsx={() => runReceiveOutput("xlsx")}
-          onPdf={() => runReceiveOutput("pdf")}
-        />
-      </div>
+      <PoProcessHeaderActions
+        statusLabel={statusLabel}
+        statusTone={statusTone}
+        timelineEnabled={hasTimeline}
+        previewEnabled={includePreview}
+        onTimeline={() => setTimelineOpen(true)}
+        onPreview={() => setDocumentPreviewOpen(true)}
+        previewTestId="receive-po-preview-open"
+        onPrint={() => runReceiveOutput("print")}
+        onCsv={() => runReceiveOutput("csv")}
+        onXlsx={() => runReceiveOutput("xlsx")}
+        onPdf={() => runReceiveOutput("pdf")}
+      />
     );
   }
 
@@ -450,10 +421,14 @@ export function PurchaseOrderReceivePage() {
       amountPaidSnapshot: po.amountPaidSnapshot,
       confirmedTotalAmount: po.confirmedTotalAmount,
       financialSettlementStatus: po.financialSettlementStatus,
+      buyerPrepaymentReference: po.buyerPrepaymentReference,
+      buyerPrepaymentSubmittedAtUtc: po.buyerPrepaymentSubmittedAtUtc,
     });
   }, [
     estimatedTotal,
     po?.amountPaidSnapshot,
+    po?.buyerPrepaymentReference,
+    po?.buyerPrepaymentSubmittedAtUtc,
     po?.confirmedTotalAmount,
     po?.financialSettlementStatus,
     po?.paymentTerm,
@@ -566,7 +541,15 @@ export function PurchaseOrderReceivePage() {
   }, [lockedReceivePayment, po?.paymentTiming, t]);
 
   const prepaidView = useMemo(() => {
-    if (!po || !lockedReceivePayment?.prepaidSettled) {
+    if (!po || !lockedReceivePayment) {
+      return null;
+    }
+    const showPrepaid =
+      lockedReceivePayment.prepaidSettled ||
+      lockedReceivePayment.alreadySettledAtReceipt ||
+      (lockedReceivePayment.paymentTiming === "PayBeforeFulfillment" &&
+        !lockedReceivePayment.prepaidIntegrityMissing);
+    if (!showPrepaid) {
       return null;
     }
     const method = lockedReceivePayment.paymentMethod;
@@ -579,14 +562,21 @@ export function PurchaseOrderReceivePage() {
       referenceLabel = t("purchasing.checkReference");
     }
     return {
-      timingLabel: po.paymentTimingLabel?.trim() || t("connectedCommerce.timing.payBefore"),
+      timingLabel:
+        po.paymentTimingLabel?.trim() ||
+        (lockedReceivePayment.paymentTiming === "PayBeforeFulfillment"
+          ? t("connectedCommerce.timing.payBefore")
+          : t("purchasing.paymentAtReceipt")),
       methodLabel: po.paymentTermLabel?.trim() || po.paymentTerm || "—",
       statusLabel: t("purchasing.paymentSettled"),
       paidAmount: roundMoney(po.amountPaidSnapshot ?? po.confirmedTotalAmount ?? orderValue),
       referenceLabel,
       referenceValue: po.buyerPrepaymentReference?.trim() || null,
       confirmedBy: null,
-      confirmedAtUtc: po.financiallySettledAtUtc?.trim() || null,
+      confirmedAtUtc:
+        po.financiallySettledAtUtc?.trim() ||
+        po.buyerPrepaymentSubmittedAtUtc?.trim() ||
+        null,
       notes:
         po.sellerSettlementRemarks?.trim() ||
         po.buyerPrepaymentDetails?.trim() ||
@@ -598,28 +588,10 @@ export function PurchaseOrderReceivePage() {
     if (!lockedReceivePayment) {
       return true;
     }
-    if (lockedReceivePayment.prepaidIntegrityMissing) {
-      setError(t("purchasing.prepaidSettlementMissing"));
-      return false;
-    }
-    // Pay-before: never validate receipt settlement fields.
-    if (
-      lockedReceivePayment.paymentTiming === "PayBeforeFulfillment" ||
-      lockedReceivePayment.prepaidSettled ||
-      lockedReceivePayment.mode === "supplierCredit"
-    ) {
-      return true;
-    }
-    const paidNow = lockedReceivePayment.paidNow;
-    const paidError = validateReceivePaidNow(estimatedTotal, paidNow);
-    if (paidError) {
-      setError(t(paidError));
-      return false;
-    }
-    const settlementError = validateLockedSettlementFields(
-      lockedReceivePayment.paymentMethod,
+    const settlementError = validateLockedReceivePaymentMatrix(
+      lockedReceivePayment,
       settlementFields,
-      { skipSettlement: !lockedReceivePayment.requiresSettlement },
+      estimatedTotal,
     );
     if (settlementError) {
       setError(t(settlementError));
@@ -1007,10 +979,7 @@ export function PurchaseOrderReceivePage() {
         ? null
         : (lockedReceivePayment?.paymentMethod ?? paymentMethod);
     const settlementPayload = buildReceiveSettlementPayload(methodAtReceipt, settlementFields, {
-      skipSettlement:
-        lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
-        lockedReceivePayment?.prepaidSettled === true ||
-        lockedReceivePayment?.requiresSettlement === false,
+      skipSettlement: shouldSkipReceiveSettlementPayload(lockedReceivePayment),
     });
     if (!goodsReceiptIdRef.current) {
       const generated = createSecureMutationId();
@@ -1129,29 +1098,7 @@ export function PurchaseOrderReceivePage() {
           backTo={`/purchasing/${purchaseOrderId}`}
           backLabel={t("purchasing.backDetail")}
           backTestId="page-header-back-purchasing"
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusChip tone={statusTone}>{statusLabel}</StatusChip>
-              {hasTimeline ? (
-                <Button
-                  type="button"
-                  intent="neutral"
-                  appearance="outline"
-                  shape="soft"
-                  onClick={() => setTimelineOpen(true)}
-                  data-testid="po-timeline-open"
-                >
-                  <History className="size-4 shrink-0" aria-hidden />
-                  {t("purchasing.timeline")}
-                </Button>
-              ) : null}
-              <DocumentActions
-                printLabel={t("exitsTable.print")}
-                pdfLabel={t("exitsTable.exportPdf")}
-                testId="grn-business-document-actions"
-              />
-            </div>
-          }
+          actions={renderPoUtilityActions({ includePreview: false })}
         />
         <GoodsReceiptBusinessDocument
           receipt={completedReceipt}
@@ -2219,9 +2166,11 @@ export function PurchaseOrderReceivePage() {
                 paidNowValue={paidNowValue}
                 sectionTitle={paymentSectionTitle}
                 prepaidSettled={
-                lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
-                lockedReceivePayment?.prepaidSettled === true
-              }
+                  lockedReceivePayment?.prepaidSettled === true ||
+                  lockedReceivePayment?.alreadySettledAtReceipt === true ||
+                  (lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" &&
+                    lockedReceivePayment.prepaidIntegrityMissing !== true)
+                }
                 prepaidView={prepaidView}
                 prepaidIntegrityMissing={
                   lockedReceivePayment?.prepaidIntegrityMissing === true
@@ -2253,8 +2202,10 @@ export function PurchaseOrderReceivePage() {
               disabled={busy || statusLocked}
               sectionTitle={paymentSectionTitle}
               prepaidSettled={
-                lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" ||
-                lockedReceivePayment?.prepaidSettled === true
+                lockedReceivePayment?.prepaidSettled === true ||
+                lockedReceivePayment?.alreadySettledAtReceipt === true ||
+                (lockedReceivePayment?.paymentTiming === "PayBeforeFulfillment" &&
+                  lockedReceivePayment.prepaidIntegrityMissing !== true)
               }
               prepaidView={prepaidView}
               prepaidIntegrityMissing={
@@ -2269,14 +2220,14 @@ export function PurchaseOrderReceivePage() {
 
           <div className="receive-stock-actions">
             {reviewing ? (
-              <>
+              <div className="receive-stock-actions__primary">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => setReviewing(false)}
                   data-testid="receive-back-to-edit"
                 >
-                  <ArrowLeft className="size-4 shrink-0" aria-hidden />
+                  <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
                   {t("purchasing.backToReceipt")}
                 </Button>
                 <Button
@@ -2287,16 +2238,28 @@ export function PurchaseOrderReceivePage() {
                 >
                   {busy ? t("purchasing.receiving") : t("purchasing.confirmReceipt")}
                 </Button>
-              </>
+              </div>
             ) : (
-              <Button
-                type="button"
-                disabled={!canReceive || busy || hasMissingExpiryOnReceive}
-                onClick={onReview}
-                data-testid="receive-review"
-              >
-                {t("purchasing.reviewReceipt")}
-              </Button>
+              <div className="receive-stock-actions__primary">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => navigate(`/purchasing/${purchaseOrderId}`)}
+                  aria-label={t("purchasing.backDetail")}
+                  data-testid="receive-footer-back"
+                >
+                  <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+                  {t("purchasing.backDetail")}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={!canReceive || busy || hasMissingExpiryOnReceive}
+                  onClick={onReview}
+                  data-testid="receive-review"
+                >
+                  {t("purchasing.reviewReceipt")}
+                </Button>
+              </div>
             )}
           </div>
         </>

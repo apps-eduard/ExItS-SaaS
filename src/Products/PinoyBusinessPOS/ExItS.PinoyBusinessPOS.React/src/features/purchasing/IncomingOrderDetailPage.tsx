@@ -47,13 +47,17 @@ import {
 } from "@/features/purchasing/incoming-order-stock-review";
 import { buildProposalRevisionFromConnectedOrder } from "@/features/purchasing/po-proposal-revision";
 import { PoProposalRevisionPanel } from "@/features/purchasing/PoProposalRevisionPanel";
-import { PoDocumentExportActions } from "@/features/purchasing/PoDocumentExportActions";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { IncomingOrderFulfillmentProgress } from "@/features/purchasing/IncomingOrderFulfillmentProgress";
 import { IncomingOrderBuyerReceipts } from "@/features/purchasing/IncomingOrderBuyerReceipts";
 import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
 import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
+import { buildConnectedPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
@@ -212,6 +216,8 @@ export function IncomingOrderDetailPage() {
   const [settlementReference, setSettlementReference] = useState("");
   const [settlementSellerRemarks, setSettlementSellerRemarks] = useState("");
   const [settlementCheckCleared, setSettlementCheckCleared] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -220,6 +226,8 @@ export function IncomingOrderDetailPage() {
         : null,
     [boundWorkspace],
   );
+
+  const actors = useActorDirectory(workspace?.organizationId, []);
 
   const allowView = canViewPurchasing(sessionGrant);
   const allowManage = canManagePurchasing(sessionGrant);
@@ -524,6 +532,43 @@ export function IncomingOrderDetailPage() {
   const documentLines = toDocumentLines(order.lines);
   const resolvedStatusLabel = statusLabel(t, order.status, order.displayStatus);
   const statusTone = incomingOrderStatusTone(order.status, order.displayStatus);
+  const timelineEvents = buildConnectedPurchaseOrderActivityEvents(order);
+  const hasTimeline = timelineEvents.length > 0;
+
+  const printDocument = (
+    <div className="incoming-order-print-root" data-testid="incoming-order-print-root">
+      <h1>{printModel.poNumber}</h1>
+      <p>Buyer: {printModel.buyer}</p>
+      {printModel.branch ? <p>Fulfill from: {printModel.branch}</p> : null}
+      <p>Order date: {printModel.orderDate}</p>
+      {printModel.paymentTerm ? <p>Payment term: {printModel.paymentTerm}</p> : null}
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Quantity</th>
+            <th>Unit cost</th>
+            <th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {printModel.lines.map((line) => (
+            <tr key={line.productId}>
+              <td>{line.product}</td>
+              <td>{line.sku || "—"}</td>
+              <td>{line.unit ? `${line.quantity} ${line.unit}` : line.quantity}</td>
+              <td>{formatPeso(line.unitCost)}</td>
+              <td>{formatPeso(line.lineTotal)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>
+        <strong>{t("incomingOrders.orderTotal")}</strong> {formatPeso(printModel.orderTotal)}
+      </p>
+    </div>
+  );
 
   const summaryFields = [
     ...(order.supplierBranchName
@@ -586,62 +631,35 @@ export function IncomingOrderDetailPage() {
       className="incoming-order-detail-page exits-page flex min-w-0 flex-col gap-3"
       data-testid="incoming-order-detail-page"
     >
-      <div className="incoming-order-print-root" data-testid="incoming-order-print-root" aria-hidden>
-        <h1>{printModel.poNumber}</h1>
-        <p>Buyer: {printModel.buyer}</p>
-        {printModel.branch ? <p>Fulfill from: {printModel.branch}</p> : null}
-        <p>Order date: {printModel.orderDate}</p>
-        {printModel.paymentTerm ? <p>Payment term: {printModel.paymentTerm}</p> : null}
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>SKU</th>
-              <th>Quantity</th>
-              <th>Unit cost</th>
-              <th>Line total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {printModel.lines.map((line) => (
-              <tr key={line.productId}>
-                <td>{line.product}</td>
-                <td>{line.sku || "—"}</td>
-                <td>{line.unit ? `${line.quantity} ${line.unit}` : line.quantity}</td>
-                <td>{formatPeso(line.unitCost)}</td>
-                <td>{formatPeso(line.lineTotal)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p>
-          <strong>{t("incomingOrders.orderTotal")}</strong> {formatPeso(printModel.orderTotal)}
-        </p>
+      <div className="exits-bizdoc-print-host" aria-hidden>
+        {printDocument}
       </div>
 
       <PageHeader
         title={order.buyerPoNumber ?? t("incomingOrders.unnamedPo")}
         {...smartBack}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
-            {order.displayStatus === "PartiallyReceived" && outstandingQty > 0 ? (
-              <span className="text-[length:var(--exits-text-sm)] text-muted" data-testid="incoming-order-outstanding">
-                {t("purchasing.outstanding")}: {outstandingQty}
-              </span>
-            ) : null}
-            <PoDocumentExportActions
-              printLabel={t("exitsTable.print")}
-              exportLabel={t("purchasing.export")}
-              csvLabel={t("exitsTable.exportCsv")}
-              xlsxLabel={t("exitsTable.exportExcel")}
-              pdfLabel={t("exitsTable.exportPdf")}
-              onPrint={() => runOutput("print")}
-              onCsv={() => runOutput("csv")}
-              onXlsx={() => runOutput("xlsx")}
-              onPdf={() => runOutput("pdf")}
-            />
-          </div>
+          <PoProcessHeaderActions
+            statusLabel={resolvedStatusLabel}
+            statusTone={statusTone}
+            timelineEnabled={hasTimeline}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => void runOutput("print")}
+            onCsv={() => void runOutput("csv")}
+            onXlsx={() => void runOutput("xlsx")}
+            onPdf={() => void runOutput("pdf")}
+            trailing={
+              order.displayStatus === "PartiallyReceived" && outstandingQty > 0 ? (
+                <span
+                  className="text-[length:var(--exits-text-sm)] text-muted"
+                  data-testid="incoming-order-outstanding"
+                >
+                  {t("purchasing.outstanding")}: {outstandingQty}
+                </span>
+              ) : null
+            }
+          />
         }
       />
 
@@ -1738,6 +1756,30 @@ export function IncomingOrderDetailPage() {
             <BackActionButton />
           </div>
         </div>
+      ) : null}
+
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        titleHint={order.buyerPoNumber}
+        events={timelineEvents}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+      />
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={order.buyerPoNumber ?? t("incomingOrders.detailTitle")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          showPdf={false}
+          testId="incoming-order-document-preview"
+        >
+          {printDocument}
+        </BusinessDocumentPreview>
       ) : null}
     </div>
   );

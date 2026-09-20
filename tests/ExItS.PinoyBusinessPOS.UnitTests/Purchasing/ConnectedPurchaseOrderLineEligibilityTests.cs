@@ -513,6 +513,11 @@ public sealed class ConnectedPurchaseOrderLineEligibilityTests
             CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult(new BuyerProductShareSearchPage([], [], 0, 0, 0, []));
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
+        public Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)
+        {
+            _items.RemoveAll(x => x.Id == share.Id);
+            return Task.CompletedTask;
+        }
 
         public Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
             IReadOnlyList<Guid> relationshipIds,

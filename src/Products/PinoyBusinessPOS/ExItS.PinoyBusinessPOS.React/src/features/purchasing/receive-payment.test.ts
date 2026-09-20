@@ -14,6 +14,8 @@ import {
   remainingCredit,
   resolveLockedReceivePaymentFromPo,
   roundMoney,
+  shouldSkipReceiveSettlementPayload,
+  validateLockedReceivePaymentMatrix,
   validateLockedSettlementFields,
   validateReceivePaidNow,
 } from "@/features/purchasing/receive-payment";
@@ -113,15 +115,19 @@ describe("receive-payment helpers", () => {
     expect(prepaid.paidNow).toBe(0);
     expect(prepaid.paymentMethod).toBe("GCash");
     expect(
-      validateLockedSettlementFields("GCash", {
-        gCashReference: "",
-        bankName: "",
-        transferOrDepositReference: "",
-        settlementDate: "",
-        checkNumber: "",
-        checkDate: "",
-        settlementNotes: "",
-      }, { skipSettlement: true }),
+      validateLockedReceivePaymentMatrix(
+        prepaid,
+        {
+          gCashReference: "",
+          bankName: "",
+          transferOrDepositReference: "",
+          settlementDate: "",
+          checkNumber: "",
+          checkDate: "",
+          settlementNotes: "",
+        },
+        850,
+      ),
     ).toBeNull();
   });
 
@@ -135,6 +141,21 @@ describe("receive-payment helpers", () => {
     });
     expect(missing.prepaidSettled).toBe(false);
     expect(missing.prepaidIntegrityMissing).toBe(true);
+    expect(
+      validateLockedReceivePaymentMatrix(
+        missing,
+        {
+          gCashReference: "",
+          bankName: "",
+          transferOrDepositReference: "",
+          settlementDate: "",
+          checkNumber: "",
+          checkDate: "",
+          settlementNotes: "",
+        },
+        850,
+      ),
+    ).toBe("purchasing.prepaidSettlementMissing");
   });
 
   it("keeps PayOnDelivery GCash settlement required and Cash without GCash", () => {
@@ -147,6 +168,21 @@ describe("receive-payment helpers", () => {
     expect(gcash.prepaidSettled).toBe(false);
     expect(gcash.requiresSettlement).toBe(true);
     expect(gcash.paymentMethod).toBe("GCash");
+    expect(
+      validateLockedReceivePaymentMatrix(
+        gcash,
+        {
+          gCashReference: "",
+          bankName: "",
+          transferOrDepositReference: "",
+          settlementDate: "",
+          checkNumber: "",
+          checkDate: "",
+          settlementNotes: "",
+        },
+        200,
+      ),
+    ).toBe("purchasing.gcashReferenceRequired");
 
     const cash = resolveLockedReceivePaymentFromPo({
       paymentTerm: "Cash",
@@ -155,6 +191,21 @@ describe("receive-payment helpers", () => {
     });
     expect(cash.requiresSettlement).toBe(false);
     expect(cash.paymentMethod).toBe("Cash");
+    expect(
+      validateLockedReceivePaymentMatrix(
+        cash,
+        {
+          gCashReference: "",
+          bankName: "",
+          transferOrDepositReference: "",
+          settlementDate: "",
+          checkNumber: "",
+          checkDate: "",
+          settlementNotes: "",
+        },
+        200,
+      ),
+    ).toBeNull();
   });
 
   it("locks SupplierCredit without settlement fields", () => {
@@ -188,7 +239,7 @@ describe("receive-payment helpers", () => {
     expect(payload.checkClearingStatus).toBe("PendingClearing");
   });
 
-  it("treats all PayBefore timing as no receipt settlement required", () => {
+  it("treats PayBefore without snapshot as integrity missing and never requires GCash", () => {
     const unpaid = resolveLockedReceivePaymentFromPo({
       paymentTerm: "ManualGCash",
       paymentTiming: "PayBeforeFulfillment",
@@ -200,6 +251,7 @@ describe("receive-payment helpers", () => {
     expect(unpaid.paidNow).toBe(0);
     expect(unpaid.prepaidSettled).toBe(false);
     expect(unpaid.prepaidIntegrityMissing).toBe(true);
+    expect(shouldSkipReceiveSettlementPayload(unpaid)).toBe(true);
   });
 
   it("treats PayBefore financialSettlementStatus Settled as prepaid", () => {
@@ -213,5 +265,44 @@ describe("receive-payment helpers", () => {
     });
     expect(prepaid.prepaidSettled).toBe(true);
     expect(prepaid.requiresSettlement).toBe(false);
+  });
+
+  it("treats PayOnDelivery Settled as already settled — no duplicate GCash", () => {
+    const settled = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "ManualGCash",
+      paymentTiming: "PayOnDeliveryOrReceipt",
+      estimatedTotal: 200,
+      amountPaidSnapshot: 200,
+      financialSettlementStatus: "Settled",
+    });
+    expect(settled.alreadySettledAtReceipt).toBe(true);
+    expect(settled.requiresSettlement).toBe(false);
+    expect(
+      validateLockedReceivePaymentMatrix(
+        settled,
+        {
+          gCashReference: "",
+          bankName: "",
+          transferOrDepositReference: "",
+          settlementDate: "",
+          checkNumber: "",
+          checkDate: "",
+          settlementNotes: "",
+        },
+        200,
+      ),
+    ).toBeNull();
+  });
+
+  it("keeps pending Check as requiring settlement fields and not settled", () => {
+    const check = resolveLockedReceivePaymentFromPo({
+      paymentTerm: "Check",
+      paymentTiming: "PayOnDeliveryOrReceipt",
+      estimatedTotal: 250,
+      financialSettlementStatus: "AwaitingPayment",
+    });
+    expect(check.alreadySettledAtReceipt).toBe(false);
+    expect(check.requiresSettlement).toBe(true);
+    expect(check.paidNow).toBe(0);
   });
 });

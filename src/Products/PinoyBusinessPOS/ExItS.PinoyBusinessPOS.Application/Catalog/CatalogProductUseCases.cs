@@ -860,12 +860,13 @@ internal static class ConnectedProductExposureSync
         DateTimeOffset utcNow,
         CancellationToken ct,
         IInventoryRepository? inventory = null,
-        IProductCategoryRepository? categories = null)
+        IProductCategoryRepository? categories = null,
+        bool? knownIsTracked = null)
     {
         if (exposures is null) return;
 
-        var trackedOk = true;
-        if (inventory is not null)
+        var trackedOk = knownIsTracked ?? true;
+        if (knownIsTracked is null && inventory is not null)
         {
             trackedOk = await ConnectedBuyerSharingRules
                 .IsTrackedAsync(inventory, product.OrganizationId, product.Id, ct)

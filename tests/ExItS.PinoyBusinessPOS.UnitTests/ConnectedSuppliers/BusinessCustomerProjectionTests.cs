@@ -110,6 +110,12 @@ public sealed class BusinessCustomerProjectionTests
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) =>
             Task.CompletedTask;
 
+        public Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)
+        {
+            Items.RemoveAll(x => x.Id == share.Id);
+            return Task.CompletedTask;
+        }
+
         public Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
             IReadOnlyList<Guid> relationshipIds,
             CancellationToken ct = default) =>

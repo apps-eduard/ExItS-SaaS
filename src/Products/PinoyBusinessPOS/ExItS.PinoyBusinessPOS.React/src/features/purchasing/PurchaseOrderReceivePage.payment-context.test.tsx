@@ -61,10 +61,11 @@ describe("PurchaseOrderReceivePage payment context", () => {
       paymentTimingLabel: "Pay in advance",
       confirmedTotalAmount: 850,
       amountPaidSnapshot: 850,
-      financialSettlementStatus: "Settled",
+      financialSettlementStatus: "NotRequired",
       financiallySettledAtUtc: "2026-09-17T10:00:00Z",
       buyerPrepaymentReference: "GC-123456",
       buyerPrepaymentMethod: "ManualGCash",
+      buyerPrepaymentSubmittedAtUtc: "2026-09-16T12:00:00Z",
       supplierFulfilledAtUtc: "2026-09-18T09:00:00Z",
       canReceiveConnected: true,
       lines: [
