@@ -224,6 +224,13 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasConnectedPurchaseFulfillmentReconciliationAsync(
+        PosOrganizationId organizationId,
+        Guid receivingIssueLineId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
     /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
     /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.

@@ -36,6 +36,8 @@ public sealed class StockMovement
     public const string PurchaseReceiptReversalReason = "Purchase receipt reversed";
     public const string DirectPurchaseReceiptReversalReason = "Direct purchase reversed";
     public const string ConnectedPurchaseFulfillmentReason = "Connected purchase fulfillment";
+    public const string ConnectedPurchaseFulfillmentReconciliationReason =
+        "Connected purchase fulfillment reconciliation";
     public const string SaleReturnWriteOffReason = "Sale return write-off";
     public const string ConnectedPoReturnDispatchReason = "Connected PO return dispatched to supplier";
     public const string ConnectedPoReturnRestockReason = "Connected PO return restock";
@@ -1033,6 +1035,63 @@ public sealed class StockMovement
             ConnectedPurchaseFulfillmentReason,
             StockMovementSourceType.ConnectedPurchaseOrder,
             fulfillmentSourceId ?? connectedPurchaseOrderId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
+    /// <summary>
+    /// Compensating +qty seller movement for FoundAtSeller / NeverShipped receiving-issue resolutions.
+    /// <paramref name="receivingIssueLineId"/> is the idempotency SourceId; original fulfillment wave is in the reason.
+    /// </summary>
+    public static StockMovement ConnectedPurchaseFulfillmentReconciliation(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid receivingIssueLineId,
+        Guid originalFulfillmentSourceId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (receivingIssueLineId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReceivingIssueLineId,
+                "Receiving issue line id cannot be an empty GUID.");
+        }
+
+        if (originalFulfillmentSourceId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReceivingIssueFulfillmentSource,
+                "Original fulfillment source id cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reason =
+            $"{ConnectedPurchaseFulfillmentReconciliationReason} (fulfillmentSource={originalFulfillmentSourceId:D})";
+        if (reason.Length > ReasonMaxLength)
+        {
+            reason = reason[..ReasonMaxLength];
+        }
+
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ConnectedPurchaseFulfillmentReconciliation,
+            absolute,
+            reason,
+            StockMovementSourceType.ConnectedPurchaseOrder,
+            receivingIssueLineId,
             utcNow,
             actorId,
             branchId);

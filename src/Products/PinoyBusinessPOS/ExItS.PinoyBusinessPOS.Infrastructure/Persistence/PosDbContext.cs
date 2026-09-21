@@ -155,6 +155,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ConnectedPurchaseOrderRecord> ConnectedPurchaseOrders => Set<ConnectedPurchaseOrderRecord>();
     internal DbSet<ConnectedPurchaseOrderLineRecord> ConnectedPurchaseOrderLines => Set<ConnectedPurchaseOrderLineRecord>();
     internal DbSet<ConnectedPoInventoryReservationRecord> ConnectedPoInventoryReservations => Set<ConnectedPoInventoryReservationRecord>();
+    internal DbSet<ConnectedPoReceivingIssueRecord> ConnectedPoReceivingIssues => Set<ConnectedPoReceivingIssueRecord>();
+    internal DbSet<ConnectedPoReceivingIssueLineRecord> ConnectedPoReceivingIssueLines => Set<ConnectedPoReceivingIssueLineRecord>();
     internal DbSet<PurchaseOrderRecord> PurchaseOrders => Set<PurchaseOrderRecord>();
     internal DbSet<PurchaseOrderLineRecord> PurchaseOrderLines => Set<PurchaseOrderLineRecord>();
     internal DbSet<PurchaseOrderNumberSequenceRecord> PurchaseOrderNumberSequences => Set<PurchaseOrderNumberSequenceRecord>();
@@ -5945,6 +5947,114 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_connected_po_inv_res_order_status");
             entity.HasIndex(x => new { x.OrganizationId, x.BranchId, x.ProductId, x.Status })
                 .HasDatabaseName("ix_connected_po_inv_res_branch_product_status");
+        });
+        modelBuilder.Entity<ConnectedPoReceivingIssueRecord>(entity =>
+        {
+            entity.ToTable("connected_po_receiving_issues", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_status",
+                    $"status IN ({string.Join(", ", ConnectedPoReceivingIssueStatuses.Codes.Select(c => $"'{c}'"))})");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ConnectedPurchaseOrderId).HasColumnName("connected_purchase_order_id").IsRequired();
+            entity.Property(x => x.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
+            entity.Property(x => x.GoodsReceiptId).HasColumnName("goods_receipt_id").IsRequired();
+            entity.Property(x => x.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(x => x.FulfillmentSourceId).HasColumnName("fulfillment_source_id").IsRequired();
+            entity.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasMaxLength(ConnectedPoReceivingIssueStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            entity.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(x => x.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(x => x.ResolvedByUserId).HasColumnName("resolved_by_user_id");
+            entity.Property(x => x.SellerNotes)
+                .HasColumnName("seller_notes")
+                .HasMaxLength(ConnectedPoReceivingIssue.SellerNotesMaxLength);
+            entity.Property<uint>("xmin")
+                .HasColumnName("xmin")
+                .IsRowVersion();
+            entity.HasIndex(x => x.GoodsReceiptId)
+                .IsUnique()
+                .HasDatabaseName("ux_cpo_receiving_issues_goods_receipt");
+            entity.HasIndex(x => new { x.ConnectedPurchaseOrderId, x.Status })
+                .HasDatabaseName("ix_cpo_receiving_issues_order_status");
+            entity.HasIndex(x => new { x.SellerOrganizationId, x.Status, x.CreatedAtUtc })
+                .HasDatabaseName("ix_cpo_receiving_issues_seller_status");
+            entity.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.ReceivingIssueId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ConnectedPoReceivingIssueLineRecord>(entity =>
+        {
+            entity.ToTable("connected_po_receiving_issue_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_line_kind",
+                    $"line_kind IN ({string.Join(", ", ConnectedPoReceivingIssueLineKinds.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_missing_resolution",
+                    $"missing_resolution IS NULL OR missing_resolution IN ({string.Join(", ", ConnectedPoMissingResolutions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_damaged_resolution",
+                    $"damaged_resolution IS NULL OR damaged_resolution IN ({string.Join(", ", ConnectedPoDamagedResolutions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_resolution_qty",
+                    "resolution_qty >= 0");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ReceivingIssueId).HasColumnName("receiving_issue_id").IsRequired();
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(x => x.GoodsReceiptLineId).HasColumnName("goods_receipt_line_id").IsRequired();
+            entity.Property(x => x.PurchaseOrderLineId).HasColumnName("purchase_order_line_id").IsRequired();
+            entity.Property(x => x.SupplierProductId).HasColumnName("supplier_product_id").IsRequired();
+            entity.Property(x => x.BuyerProductId).HasColumnName("buyer_product_id");
+            entity.Property(x => x.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.NameMaxLength)
+                .IsRequired();
+            entity.Property(x => x.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(32).IsRequired();
+            entity.Property(x => x.FulfillmentSourceId).HasColumnName("fulfillment_source_id").IsRequired();
+            entity.Property(x => x.ShippedQty).HasColumnName("shipped_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.GoodQty).HasColumnName("good_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.DamagedQty).HasColumnName("damaged_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.MissingQty).HasColumnName("missing_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.LineKind)
+                .HasColumnName("line_kind")
+                .HasMaxLength(ConnectedPoReceivingIssueLineKinds.CodeMaxLength)
+                .IsRequired();
+            entity.Property(x => x.BuyerDiscrepancyKind)
+                .HasColumnName("buyer_discrepancy_kind")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(x => x.BuyerDiscrepancyNote)
+                .HasColumnName("buyer_discrepancy_note")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.DiscrepancyNoteMaxLength);
+            entity.Property(x => x.MissingResolution)
+                .HasColumnName("missing_resolution")
+                .HasMaxLength(ConnectedPoMissingResolutions.CodeMaxLength);
+            entity.Property(x => x.DamagedResolution)
+                .HasColumnName("damaged_resolution")
+                .HasMaxLength(ConnectedPoDamagedResolutions.CodeMaxLength);
+            entity.Property(x => x.ResolutionQty).HasColumnName("resolution_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.SellerNote)
+                .HasColumnName("seller_note")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.NoteMaxLength);
+            entity.Property(x => x.InventoryMovementId).HasColumnName("inventory_movement_id");
+            entity.Property(x => x.ReturnBatchId).HasColumnName("return_batch_id");
+            entity.Property(x => x.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(x => x.ResolvedByUserId).HasColumnName("resolved_by_user_id");
+            entity.HasIndex(x => new { x.ReceivingIssueId, x.GoodsReceiptLineId, x.LineKind })
+                .IsUnique()
+                .HasDatabaseName("ux_cpo_receiving_issue_lines_grn_kind");
+            entity.HasIndex(x => new { x.SellerOrganizationId, x.ResolvedAtUtc })
+                .HasDatabaseName("ix_cpo_receiving_issue_lines_seller_resolved");
         });
     }
 }

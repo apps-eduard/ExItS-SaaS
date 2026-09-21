@@ -1764,6 +1764,52 @@ export const incomingOrderBuyerReceiptSchema = z.object({
   lines: z.array(incomingOrderBuyerReceiptLineSchema),
 });
 
+export const connectedPoReceivingIssueLineSchema = z.object({
+  receivingIssueLineId: guidSchema,
+  goodsReceiptLineId: guidSchema,
+  purchaseOrderLineId: guidSchema,
+  supplierProductId: guidSchema,
+  buyerProductId: guidSchema.nullable().optional(),
+  nameSnapshot: z.string(),
+  uomSnapshot: z.string(),
+  fulfillmentSourceId: guidSchema,
+  shippedQty: z.number(),
+  goodQty: z.number(),
+  damagedQty: z.number(),
+  missingQty: z.number(),
+  lineKind: z.string(),
+  buyerDiscrepancyKind: z.string(),
+  buyerDiscrepancyNote: z.string().nullable().optional(),
+  missingResolution: z.string().nullable().optional(),
+  damagedResolution: z.string().nullable().optional(),
+  resolutionQty: z.number(),
+  sellerNote: z.string().nullable().optional(),
+  inventoryMovementId: guidSchema.nullable().optional(),
+  returnBatchId: guidSchema.nullable().optional(),
+  resolvedAtUtc: isoDateSchema.nullable().optional(),
+  resolvedByUserId: guidSchema.nullable().optional(),
+  isResolved: z.boolean(),
+  inventoryEffectPreview: z.string(),
+});
+
+export const connectedPoReceivingIssueSchema = z.object({
+  receivingIssueId: guidSchema,
+  connectedPurchaseOrderId: guidSchema,
+  purchaseOrderId: guidSchema,
+  goodsReceiptId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  fulfillmentSourceId: guidSchema,
+  status: z.string(),
+  createdAtUtc: isoDateSchema,
+  createdByUserId: guidSchema,
+  resolvedAtUtc: isoDateSchema.nullable().optional(),
+  resolvedByUserId: guidSchema.nullable().optional(),
+  sellerNotes: z.string().nullable().optional(),
+  unresolvedLineCount: z.number(),
+  lines: z.array(connectedPoReceivingIssueLineSchema),
+});
+
 export const connectedPurchaseOrderSchema = z.object({
   connectedPurchaseOrderId: guidSchema,
   relationshipId: guidSchema,
@@ -1822,11 +1868,16 @@ export const connectedPurchaseOrderSchema = z.object({
   buyerPrepaymentMethod: z.string().nullable().optional(),
   buyerPrepaymentReference: z.string().nullable().optional(),
   buyerPrepaymentDetails: z.string().nullable().optional(),
+  receivingIssues: z.array(connectedPoReceivingIssueSchema).nullable().optional(),
+  unresolvedReceivingIssueCount: z.number().optional().default(0),
+  hasPendingReceivingIssueReview: z.boolean().optional().default(false),
 });
 
 export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
 export type IncomingOrderBuyerReceipt = z.infer<typeof incomingOrderBuyerReceiptSchema>;
 export type IncomingOrderBuyerReceiptLine = z.infer<typeof incomingOrderBuyerReceiptLineSchema>;
+export type ConnectedPoReceivingIssue = z.infer<typeof connectedPoReceivingIssueSchema>;
+export type ConnectedPoReceivingIssueLine = z.infer<typeof connectedPoReceivingIssueLineSchema>;
 export type ConnectedPurchaseOrder = z.infer<typeof connectedPurchaseOrderSchema>;
 
 export type IncomingOrderStatusFilter =
@@ -2054,4 +2105,50 @@ export async function withdrawIncomingOrderProposal(
     path,
   });
   return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function listIncomingOrderReceivingIssues(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPoReceivingIssue[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/incoming-orders/${connectedPurchaseOrderId}/receiving-issues`,
+  });
+  return z.array(connectedPoReceivingIssueSchema).parse(raw);
+}
+
+export type ResolveConnectedPoReceivingIssueLineInput = {
+  receivingIssueLineId: string;
+  missingResolution?: string | null;
+  damagedResolution?: string | null;
+  resolutionQty?: number | null;
+  sellerNote?: string | null;
+};
+
+export async function resolveIncomingOrderReceivingIssue(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  receivingIssueId: string,
+  input: {
+    lines: ResolveConnectedPoReceivingIssueLineInput[];
+    sellerNotes?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPoReceivingIssue> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/receiving-issues/${receivingIssueId}/resolve`;
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      lines: input.lines,
+      sellerNotes: input.sellerNotes ?? null,
+    },
+  });
+  return connectedPoReceivingIssueSchema.parse(raw);
 }

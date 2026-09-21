@@ -2410,6 +2410,7 @@ public sealed class ReceivePurchaseOrder
     private readonly IBusinessCreditEntryRepository? _businessCredits;
     private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly ISupplierPayableRepository? _payables;
+    private readonly IConnectedPoReceivingIssueRepository? _receivingIssues;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -2425,7 +2426,8 @@ public sealed class ReceivePurchaseOrder
         PartyBranchAccessService? branchAccess = null,
         IBusinessCreditEntryRepository? businessCredits = null,
         ConnectedPoInventoryReservationService? reservations = null,
-        ISupplierPayableRepository? payables = null)
+        ISupplierPayableRepository? payables = null,
+        IConnectedPoReceivingIssueRepository? receivingIssues = null)
     {
         _orders = orders;
         _products = products;
@@ -2439,6 +2441,7 @@ public sealed class ReceivePurchaseOrder
         _businessCredits = businessCredits;
         _reservations = reservations;
         _payables = payables;
+        _receivingIssues = receivingIssues;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2758,6 +2761,39 @@ public sealed class ReceivePurchaseOrder
 
             if (connected is not null)
             {
+                if (_receivingIssues is not null)
+                {
+                    var existingIssue = await _receivingIssues
+                        .GetByGoodsReceiptAsync(receipt.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (existingIssue is null)
+                    {
+                        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null;
+                        if (_links is not null)
+                        {
+                            var linkList = await _links
+                                .ListAsync(connected.RelationshipId, connected.BuyerOrganizationId, cancellationToken)
+                                .ConfigureAwait(false);
+                            productLinks = ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps.FromLinks(linkList);
+                        }
+
+                        var fulfillmentSourceId =
+                            ConnectedPoReceivingIssueFactory.ResolveFulfillmentSourceIdForReceipt(connected);
+                        var issue = ConnectedPoReceivingIssueFactory.TryCreateFromReceipt(
+                            connected,
+                            receipt,
+                            existing,
+                            fulfillmentSourceId,
+                            actorId,
+                            utcNow,
+                            productLinks);
+                        if (issue is not null)
+                        {
+                            await _receivingIssues.AddAsync(issue, cancellationToken).ConfigureAwait(false);
+                        }
+                    }
+                }
+
                 var poLabel = existing.PoNumber ?? existing.Id.Value.ToString("D");
                 var hasIssues = receipt.Lines.Any(l =>
                     l.DamagedQty > 0m || l.RejectedQty > 0m || l.ShortClosedQty > 0m

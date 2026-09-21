@@ -159,3 +159,19 @@ public interface IConnectedPoInventoryReservationRepository
     Task AddAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
     Task UpdateAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
 }
+
+public interface IConnectedPoReceivingIssueRepository
+{
+    Task<ConnectedPoReceivingIssue?> GetAsync(ConnectedPoReceivingIssueId id, CancellationToken ct = default);
+
+    Task<ConnectedPoReceivingIssue?> GetByGoodsReceiptAsync(
+        GoodsReceiptId goodsReceiptId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<ConnectedPoReceivingIssue>> ListByConnectedOrderAsync(
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CancellationToken ct = default);
+
+    Task AddAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default);
+    Task UpdateAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default);
+}

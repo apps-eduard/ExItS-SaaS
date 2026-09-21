@@ -55,12 +55,18 @@ public enum StockMovementType
     /// <summary>Seller stock returns to on-hand for the sellable portion of a finalized connected-PO return.</summary>
     ConnectedPoReturnRestock = 27,
     /// <summary>Damaged portion of a finalized connected-PO return, written off on the seller side.</summary>
-    ConnectedPoReturnWriteOff = 28
+    ConnectedPoReturnWriteOff = 28,
+    /// <summary>
+    /// Compensating seller stock increase when a connected-PO receiving issue confirms goods remained
+    /// at the seller (FoundAtSeller / NeverShipped). Does not edit the original fulfillment movement.
+    /// </summary>
+    ConnectedPurchaseFulfillmentReconciliation = 29
 }
 
 public static class StockMovementTypes
 {
-    public const int CodeMaxLength = 32;
+    /// <summary>Fits longest code (ConnectedPurchaseFulfillmentReconciliation).</summary>
+    public const int CodeMaxLength = 48;
 
     public static IReadOnlyList<string> Codes { get; } =
     [
@@ -92,7 +98,8 @@ public static class StockMovementTypes
         nameof(StockMovementType.SaleReturnWriteOff),
         nameof(StockMovementType.ConnectedPoReturnDispatch),
         nameof(StockMovementType.ConnectedPoReturnRestock),
-        nameof(StockMovementType.ConnectedPoReturnWriteOff)
+        nameof(StockMovementType.ConnectedPoReturnWriteOff),
+        nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

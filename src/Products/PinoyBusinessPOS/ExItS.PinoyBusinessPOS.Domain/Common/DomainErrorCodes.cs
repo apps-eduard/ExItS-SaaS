@@ -653,4 +653,23 @@ public static class DomainErrorCodes
     public const string InvalidQuotationConvertedSaleId = "pos.quotation.converted_sale_id.invalid";
     public const string QuotationRequiresLines = "pos.quotation.lines.required";
     public const string QuotationDuplicateProduct = "pos.quotation.duplicate_product";
+
+    // Connected PO receiving-issue seller review
+    public const string InvalidConnectedPoReceivingIssueId = "pos.connected_po.receiving_issue.id.invalid";
+    public const string InvalidConnectedPoReceivingIssueLineId = "pos.connected_po.receiving_issue.line.id.invalid";
+    public const string InvalidConnectedPoReceivingIssueStatus = "pos.connected_po.receiving_issue.status.invalid";
+    public const string InvalidConnectedPoReceivingIssueLineKind = "pos.connected_po.receiving_issue.line_kind.invalid";
+    public const string InvalidConnectedPoMissingResolution = "pos.connected_po.receiving_issue.missing_resolution.invalid";
+    public const string InvalidConnectedPoDamagedResolution = "pos.connected_po.receiving_issue.damaged_resolution.invalid";
+    public const string InvalidConnectedPoReceivingIssueLine = "pos.connected_po.receiving_issue.line.invalid";
+    public const string InvalidConnectedPoReceivingIssueFulfillmentSource = "pos.connected_po.receiving_issue.fulfillment_source.invalid";
+    public const string InvalidConnectedPoReceivingIssueResolutionQty = "pos.connected_po.receiving_issue.resolution_qty.invalid";
+    public const string InvalidConnectedPoReceivingIssueSellerNote = "pos.connected_po.receiving_issue.seller_note.invalid";
+    public const string ConnectedPoReceivingIssueSellerNoteRequired = "pos.connected_po.receiving_issue.seller_note.required";
+    public const string ConnectedPoReceivingIssueAlreadyResolved = "pos.connected_po.receiving_issue.already_resolved";
+    public const string ConnectedPoReceivingIssueResolutionMismatch = "pos.connected_po.receiving_issue.resolution_mismatch";
+    public const string ConnectedPoReceivingIssueNotFound = "pos.connected_po.receiving_issue.not_found";
+    public const string ConnectedPoReceivingIssueLineNotFound = "pos.connected_po.receiving_issue.line_not_found";
+    public const string ConnectedPoReceivingIssueForbidden = "pos.connected_po.receiving_issue.forbidden";
+    public const string InvalidActorId = "pos.actor.id.invalid";
 }

@@ -51,6 +51,7 @@ import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { IncomingOrderFulfillmentProgress } from "@/features/purchasing/IncomingOrderFulfillmentProgress";
 import { IncomingOrderBuyerReceipts } from "@/features/purchasing/IncomingOrderBuyerReceipts";
+import { IncomingOrderReceivingIssuesPanel } from "@/features/purchasing/IncomingOrderReceivingIssuesPanel";
 import { PoDocumentLineItems } from "@/features/purchasing/PoDocumentLineItems";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
@@ -1430,6 +1431,15 @@ export function IncomingOrderDetailPage() {
               postedLabel={t("incomingOrders.receiptPosted")}
               voidedLabel={t("incomingOrders.receiptVoided")}
               emptyLabel={t("incomingOrders.noBuyerReceipts")}
+            />
+          ) : null}
+
+          {(order.receivingIssues?.length ?? 0) > 0 && workspace ? (
+            <IncomingOrderReceivingIssuesPanel
+              workspace={workspace}
+              orderId={order.connectedPurchaseOrderId}
+              issues={order.receivingIssues ?? []}
+              canManage={allowManage}
             />
           ) : null}
 

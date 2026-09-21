@@ -259,7 +259,10 @@ public sealed record ConnectedPurchaseOrderDto(
     DateTimeOffset? BuyerPrepaymentSubmittedAtUtc = null,
     string? BuyerPrepaymentMethod = null,
     string? BuyerPrepaymentReference = null,
-    string? BuyerPrepaymentDetails = null);
+    string? BuyerPrepaymentDetails = null,
+    IReadOnlyList<ConnectedPoReceivingIssueDto>? ReceivingIssues = null,
+    int UnresolvedReceivingIssueCount = 0,
+    bool HasPendingReceivingIssueReview = false);
 public sealed record DeclineIncomingOrderRequest(string? DeclineReason = null, string? DeclineNote = null);
 public sealed record CloseIncomingOrderRemainingRequest(string Reason);
 public sealed record ProposeIncomingOrderLineRequest(
@@ -486,7 +489,8 @@ public static class ConnectedSupplierMapper
         PurchaseOrder? buyerPo = null,
         IReadOnlyList<GoodsReceipt>? buyerReceipts = null,
         ConnectedPoShortCloseSettlement.Snapshot? settlementPreview = null,
-        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null)
+        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null,
+        IReadOnlyList<ConnectedPoReceivingIssue>? receivingIssues = null)
     {
         var display = ConnectedPoDisplayStatus.ForSupplier(x, buyerPo);
         var receiving = buyerReceivingStatus ?? (buyerPo is null ? null : display);
@@ -555,6 +559,9 @@ public static class ConnectedSupplierMapper
                     .Select(r => r.Notes?.Trim())
                     .Where(n => !string.IsNullOrWhiteSpace(n))!);
 
+        var issueDtos = receivingIssues?.Select(ConnectedPoReceivingIssueMapper.Map).ToList();
+        var unresolvedIssueCount = issueDtos?.Sum(i => i.UnresolvedLineCount) ?? 0;
+
         return new(
             x.Id.Value,
             x.RelationshipId.Value,
@@ -617,7 +624,10 @@ public static class ConnectedSupplierMapper
             buyerPo?.BuyerPrepaymentSubmittedAtUtc,
             buyerPo?.BuyerPrepaymentMethod,
             buyerPo?.BuyerPrepaymentReference,
-            buyerPo?.BuyerPrepaymentDetails);
+            buyerPo?.BuyerPrepaymentDetails,
+            issueDtos,
+            unresolvedIssueCount,
+            unresolvedIssueCount > 0);
     }
 
     public static ConnectedPurchaseOrderLineDto MapLine(
@@ -2334,6 +2344,7 @@ public sealed class GetIncomingOrder
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly IPosUnitOfWork? _uow;
+    private readonly IConnectedPoReceivingIssueRepository? _receivingIssues;
     private readonly TimeProvider _clock;
 
     public GetIncomingOrder(
@@ -2348,6 +2359,7 @@ public sealed class GetIncomingOrder
         IPosUnitOfWork? uow = null,
         ISupplierPayableRepository? payables = null,
         IBuyerSupplierProductLinkRepository? links = null,
+        IConnectedPoReceivingIssueRepository? receivingIssues = null,
         TimeProvider? clock = null)
     {
         _orders = orders;
@@ -2361,6 +2373,7 @@ public sealed class GetIncomingOrder
         _uow = uow;
         _payables = payables;
         _links = links;
+        _receivingIssues = receivingIssues;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2478,6 +2491,14 @@ public sealed class GetIncomingOrder
             productLinks = ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps.FromLinks(linkList);
         }
 
+        IReadOnlyList<ConnectedPoReceivingIssue>? receivingIssues = null;
+        if (_receivingIssues is not null)
+        {
+            receivingIssues = await _receivingIssues
+                .ListByConnectedOrderAsync(order.Id, ct)
+                .ConfigureAwait(false);
+        }
+
         return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
             ConnectedSupplierMapper.Map(
                 order,
@@ -2489,7 +2510,8 @@ public sealed class GetIncomingOrder
                 buyerPo,
                 buyerReceipts,
                 settlementPreview,
-                productLinks));
+                productLinks,
+                receivingIssues));
     }
 }
 

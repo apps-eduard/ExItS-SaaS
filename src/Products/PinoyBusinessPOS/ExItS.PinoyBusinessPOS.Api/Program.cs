@@ -532,6 +532,8 @@ builder.Services.AddScoped<GetConnectedSupplierOrderStock>();
 builder.Services.AddScoped<SyncLinkedProductsDelta>();
 builder.Services.AddScoped<SupplierIncomingOrderQuery>();
 builder.Services.AddScoped<GetIncomingOrder>();
+builder.Services.AddScoped<ListIncomingOrderReceivingIssues>();
+builder.Services.AddScoped<ResolveIncomingOrderReceivingIssue>();
 builder.Services.AddScoped<RespondIncomingOrder>();
 builder.Services.AddScoped<AcceptIncoming>();
 builder.Services.AddScoped<DeclineIncoming>();

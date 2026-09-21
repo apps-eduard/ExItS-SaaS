@@ -695,3 +695,59 @@ internal sealed class ConnectedPoInventoryReservationRepository(PosDbContext db)
         ConnectedSupplierEntityMapper.Apply(reservation, row);
     }
 }
+
+internal sealed class ConnectedPoReceivingIssueRepository(PosDbContext db) : IConnectedPoReceivingIssueRepository
+{
+    public async Task<ConnectedPoReceivingIssue?> GetAsync(
+        ConnectedPoReceivingIssueId id,
+        CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id.Value, ct)
+            .ConfigureAwait(false);
+        return row is null ? null : ConnectedPoReceivingIssueEntityMapper.ToDomain(row);
+    }
+
+    public async Task<ConnectedPoReceivingIssue?> GetByGoodsReceiptAsync(
+        GoodsReceiptId goodsReceiptId,
+        CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.GoodsReceiptId == goodsReceiptId.Value, ct)
+            .ConfigureAwait(false);
+        return row is null ? null : ConnectedPoReceivingIssueEntityMapper.ToDomain(row);
+    }
+
+    public async Task<IReadOnlyList<ConnectedPoReceivingIssue>> ListByConnectedOrderAsync(
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CancellationToken ct = default)
+    {
+        var rows = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .Where(x => x.ConnectedPurchaseOrderId == connectedPurchaseOrderId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        return rows.Select(ConnectedPoReceivingIssueEntityMapper.ToDomain).ToList();
+    }
+
+    public Task AddAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default)
+    {
+        db.ConnectedPoReceivingIssues.Add(ConnectedPoReceivingIssueEntityMapper.ToRecord(issue));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .SingleAsync(x => x.Id == issue.Id.Value, ct)
+            .ConfigureAwait(false);
+        ConnectedPoReceivingIssueEntityMapper.Apply(issue, row);
+    }
+}

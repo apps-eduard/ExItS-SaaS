@@ -714,6 +714,19 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillment),
             cancellationToken);
 
+    public Task<bool> HasConnectedPurchaseFulfillmentReconciliationAsync(
+        PosOrganizationId organizationId,
+        Guid receivingIssueLineId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == receivingIssueLineId
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.ConnectedPurchaseOrder)
+                && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation),
+            cancellationToken);
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
