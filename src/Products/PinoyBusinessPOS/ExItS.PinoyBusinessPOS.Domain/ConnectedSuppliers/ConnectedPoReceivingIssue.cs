@@ -120,7 +120,7 @@ public sealed class ConnectedPoReceivingIssue
                 draft.BuyerProductId,
                 draft.NameSnapshot,
                 draft.UomSnapshot,
-                fulfillmentSourceId,
+                draft.FulfillmentSourceId == Guid.Empty ? fulfillmentSourceId : draft.FulfillmentSourceId,
                 draft.ShippedQty,
                 draft.GoodQty,
                 draft.DamagedQty,
@@ -249,4 +249,5 @@ public sealed record ConnectedPoReceivingIssueLineDraft(
     decimal MissingQty,
     ConnectedPoReceivingIssueLineKind LineKind,
     ConnectedPoReceivingDiscrepancyKind BuyerDiscrepancyKind,
-    string? BuyerDiscrepancyNote);
+    string? BuyerDiscrepancyNote,
+    Guid FulfillmentSourceId = default);

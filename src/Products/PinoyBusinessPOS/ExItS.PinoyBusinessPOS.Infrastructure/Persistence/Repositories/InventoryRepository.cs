@@ -727,6 +727,38 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation),
             cancellationToken);
 
+    public async Task<Guid?> FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<Guid> candidateSourceIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (candidateSourceIds is null || candidateSourceIds.Count == 0)
+        {
+            return null;
+        }
+
+        var candidates = candidateSourceIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var fulfill = nameof(StockMovementType.ConnectedPurchaseFulfillment);
+        var connectedPo = nameof(StockMovementSourceType.ConnectedPurchaseOrder);
+        return await _db.StockMovements.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.SourceId != null
+                && candidates.Contains(m.SourceId.Value)
+                && m.SourceType == connectedPo
+                && m.MovementType == fulfill)
+            .OrderByDescending(m => m.RecordedAtUtc)
+            .Select(m => m.SourceId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

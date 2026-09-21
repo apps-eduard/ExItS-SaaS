@@ -264,6 +264,19 @@ internal class CostResolverInventoryStub : IInventoryRepository
         CancellationToken cancellationToken = default) =>
         Task.FromResult(false);
 
+    public virtual Task<bool> HasConnectedPurchaseFulfillmentReconciliationAsync(
+        PosOrganizationId organizationId,
+        Guid receivingIssueLineId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    public virtual Task<Guid?> FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<Guid> candidateSourceIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<Guid?>(null);
 
     public Task<bool> HasSaleReturnRestockAsync(
         PosOrganizationId organizationId,

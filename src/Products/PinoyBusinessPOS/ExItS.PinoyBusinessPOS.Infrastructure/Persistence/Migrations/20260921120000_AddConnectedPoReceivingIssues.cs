@@ -9,6 +9,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations;
 
 /// <summary>
 /// Seller receiving-issue review aggregate + ConnectedPurchaseFulfillmentReconciliation movement type.
+/// Npgsql system column <c>xmin</c> is mapped via Fluent <c>IsRowVersion</c> and is not created in Up.
+/// Also widens <c>inventory_lot_movements.movement_type</c> to 48 to match <see cref="StockMovementTypes.CodeMaxLength"/>.
 /// </summary>
 [DbContext(typeof(PosDbContext))]
 [Migration("20260921120000_AddConnectedPoReceivingIssues")]
@@ -27,6 +29,17 @@ public partial class AddConnectedPoReceivingIssues : Migration
             name: "movement_type",
             schema: "pos",
             table: "stock_movements",
+            type: "character varying(48)",
+            maxLength: 48,
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "character varying(32)",
+            oldMaxLength: 32);
+
+        migrationBuilder.AlterColumn<string>(
+            name: "movement_type",
+            schema: "pos",
+            table: "inventory_lot_movements",
             type: "character varying(48)",
             maxLength: 48,
             nullable: false,
@@ -192,6 +205,17 @@ public partial class AddConnectedPoReceivingIssues : Migration
             name: "movement_type",
             schema: "pos",
             table: "stock_movements",
+            type: "character varying(32)",
+            maxLength: 32,
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "character varying(48)",
+            oldMaxLength: 48);
+
+        migrationBuilder.AlterColumn<string>(
+            name: "movement_type",
+            schema: "pos",
+            table: "inventory_lot_movements",
             type: "character varying(32)",
             maxLength: 32,
             nullable: false,

@@ -232,6 +232,17 @@ public interface IInventoryRepository
         Task.FromResult(false);
 
     /// <summary>
+    /// Most recent <see cref="StockMovementType.ConnectedPurchaseFulfillment"/> SourceId for the product
+    /// among <paramref name="candidateSourceIds"/> (wave attribution). Null when none match.
+    /// </summary>
+    Task<Guid?> FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<Guid> candidateSourceIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<Guid?>(null);
+
+    /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
     /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.
     /// </summary>

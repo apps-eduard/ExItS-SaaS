@@ -59,6 +59,10 @@ public sealed record ConnectedPoReceivingIssueDto(
     int UnresolvedLineCount,
     IReadOnlyList<ConnectedPoReceivingIssueLineDto> Lines);
 
+/// <summary>
+/// Seller resolution payload. Inventory effects are derived server-side from the resolution
+/// code — callers must not send an inventory delta (no <c>inventoryDelta</c> field).
+/// </summary>
 public sealed record ResolveConnectedPoReceivingIssueLineRequest(
     Guid ReceivingIssueLineId,
     string? MissingResolution = null,
@@ -66,6 +70,10 @@ public sealed record ResolveConnectedPoReceivingIssueLineRequest(
     decimal? ResolutionQty = null,
     string? SellerNote = null);
 
+/// <summary>
+/// Batch resolve request. Intentionally has no inventoryDelta — stock adjustments are computed
+/// only from missing/damaged resolution rules on the server.
+/// </summary>
 public sealed record ResolveConnectedPoReceivingIssueRequest(
     IReadOnlyList<ResolveConnectedPoReceivingIssueLineRequest> Lines,
     string? SellerNotes = null);
@@ -159,7 +167,8 @@ public static class ConnectedPoReceivingIssueFactory
         Guid fulfillmentSourceId,
         Guid actorId,
         DateTimeOffset utcNow,
-        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null)
+        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null,
+        IReadOnlyDictionary<Guid, Guid>? fulfillmentSourceBySupplierProductId = null)
     {
         ArgumentNullException.ThrowIfNull(connected);
         ArgumentNullException.ThrowIfNull(receipt);
@@ -176,6 +185,11 @@ public static class ConnectedPoReceivingIssueFactory
             }
 
             var supplierProductId = ResolveSupplierProductId(grnLine, buyerPo, connected, links);
+            var lineSourceId = ResolveLineFulfillmentSourceId(
+                connected,
+                supplierProductId,
+                fulfillmentSourceId,
+                fulfillmentSourceBySupplierProductId);
             var cpoLine = connected.Lines.FirstOrDefault(l => l.ProductId == supplierProductId);
             var shipped = Math.Max(
                 grnLine.QuantityReceived + grnLine.DamagedQty + grnLine.RejectedQty,
@@ -200,7 +214,8 @@ public static class ConnectedPoReceivingIssueFactory
                     grnLine.DiscrepancyKind == ConnectedPoReceivingDiscrepancyKind.None
                         ? ConnectedPoReceivingDiscrepancyKind.Short
                         : grnLine.DiscrepancyKind,
-                    grnLine.DiscrepancyNote));
+                    grnLine.DiscrepancyNote,
+                    lineSourceId));
             }
 
             if (grnLine.DamagedQty > 0m)
@@ -220,7 +235,8 @@ public static class ConnectedPoReceivingIssueFactory
                     grnLine.DiscrepancyKind == ConnectedPoReceivingDiscrepancyKind.None
                         ? ConnectedPoReceivingDiscrepancyKind.Damaged
                         : grnLine.DiscrepancyKind,
-                    grnLine.DiscrepancyNote));
+                    grnLine.DiscrepancyNote,
+                    lineSourceId));
             }
         }
 
@@ -241,11 +257,57 @@ public static class ConnectedPoReceivingIssueFactory
             drafts);
     }
 
+    /// <summary>
+    /// Candidate fulfillment SourceIds for a connected PO: first wave uses <c>order.Id</c>;
+    /// remaining waves use <see cref="ConnectedPurchaseOrderFulfillStock.WaveFulfillmentSourceId"/>
+    /// for each reservation revision 1..<see cref="ConnectedPurchaseOrder.InventoryReservationRevision"/>.
+    /// </summary>
+    public static IReadOnlyList<Guid> BuildFulfillmentSourceCandidates(ConnectedPurchaseOrder order)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        var candidates = new List<Guid> { order.Id.Value };
+        for (var revision = 1; revision <= order.InventoryReservationRevision; revision++)
+        {
+            candidates.Add(
+                ConnectedPurchaseOrderFulfillStock.WaveFulfillmentSourceId(order.Id.Value, revision));
+        }
+
+        return candidates;
+    }
+
+    /// <summary>
+    /// Attribution rule (CreateFromGoodsReceipt / receiving-issue create):
+    /// For each supplier product, prefer the SourceId of the most recent
+    /// <c>ConnectedPurchaseFulfillment</c> stock movement among
+    /// <see cref="BuildFulfillmentSourceCandidates"/>. If no movement is found, fall back to
+    /// <see cref="ResolveFulfillmentSourceIdForReceipt"/> (revision heuristic).
+    /// This is deterministic for multi-wave receipts when fulfill movements exist; never guess with
+    /// the PO id alone when a later-wave movement is present.
+    /// </summary>
+    public static Guid ResolveLineFulfillmentSourceId(
+        ConnectedPurchaseOrder order,
+        CatalogProductId supplierProductId,
+        Guid fallbackFulfillmentSourceId,
+        IReadOnlyDictionary<Guid, Guid>? fulfillmentSourceBySupplierProductId)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        if (fulfillmentSourceBySupplierProductId is not null
+            && fulfillmentSourceBySupplierProductId.TryGetValue(supplierProductId.Value, out var attributed)
+            && attributed != Guid.Empty)
+        {
+            return attributed;
+        }
+
+        return fallbackFulfillmentSourceId == Guid.Empty
+            ? ResolveFulfillmentSourceIdForReceipt(order)
+            : fallbackFulfillmentSourceId;
+    }
+
     public static Guid ResolveFulfillmentSourceIdForReceipt(ConnectedPurchaseOrder order)
     {
+        // Heuristic fallback when no ConnectedPurchaseFulfillment movement is found for the product.
         // Reconstruct candidates for waves that may have deducted stock, then prefer
         // order.Id (first wave) when revision indicates no reopen-after-fulfill wave.
-        // Application layer may override via movement lookup; this is the deterministic fallback.
         if (order.FulfilledAtUtc is null)
         {
             return order.Id.Value;
@@ -467,6 +529,13 @@ public sealed class ResolveIncomingOrderReceivingIssue
                     }
 
                     var qty = lineReq.ResolutionQty ?? line.MissingQty;
+                    if (qty <= 0m || qty > line.MissingQty)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoReceivingIssueDto>(
+                            DomainErrorCodes.InvalidConnectedPoReceivingIssueResolutionQty,
+                            "Resolution quantity must be between 0 (exclusive) and the missing quantity.");
+                    }
+
                     Guid? movementId = null;
                     if (ConnectedPoMissingResolutions.RestoresSellerStock(missingRes))
                     {
@@ -495,8 +564,17 @@ public sealed class ResolveIncomingOrderReceivingIssue
                     }
 
                     var qty = lineReq.ResolutionQty ?? line.DamagedQty;
-                    Guid? returnBatchId = null;
-                    if (damagedRes == ConnectedPoDamagedResolution.ReturnRequested && _returnBatches is not null)
+                    if (qty <= 0m || qty > line.DamagedQty)
+                    {
+                        return ConnectedSupplierUseCaseGuard.Failure<ConnectedPoReceivingIssueDto>(
+                            DomainErrorCodes.InvalidConnectedPoReceivingIssueResolutionQty,
+                            "Resolution quantity must be between 0 (exclusive) and the damaged quantity.");
+                    }
+
+                    Guid? returnBatchId = line.ReturnBatchId;
+                    if (damagedRes == ConnectedPoDamagedResolution.ReturnRequested
+                        && _returnBatches is not null
+                        && returnBatchId is null)
                     {
                         returnBatchId = await TryCreateReturnBatchAsync(
                                 order,

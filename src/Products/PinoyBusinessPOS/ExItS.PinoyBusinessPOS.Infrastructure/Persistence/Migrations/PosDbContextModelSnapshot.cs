@@ -1867,6 +1867,229 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoReceivingIssueLineRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BuyerDiscrepancyKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("buyer_discrepancy_kind");
+
+                    b.Property<string>("BuyerDiscrepancyNote")
+                        .HasMaxLength(280)
+                        .HasColumnType("character varying(280)")
+                        .HasColumnName("buyer_discrepancy_note");
+
+                    b.Property<Guid?>("BuyerProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_product_id");
+
+                    b.Property<decimal>("DamagedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("damaged_qty");
+
+                    b.Property<string>("DamagedResolution")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("damaged_resolution");
+
+                    b.Property<Guid>("FulfillmentSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fulfillment_source_id");
+
+                    b.Property<decimal>("GoodQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("good_qty");
+
+                    b.Property<Guid>("GoodsReceiptLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("goods_receipt_line_id");
+
+                    b.Property<Guid?>("InventoryMovementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inventory_movement_id");
+
+                    b.Property<string>("LineKind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("line_kind");
+
+                    b.Property<decimal>("MissingQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("missing_qty");
+
+                    b.Property<string>("MissingResolution")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("missing_resolution");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid>("PurchaseOrderLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_order_line_id");
+
+                    b.Property<Guid>("ReceivingIssueId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receiving_issue_id");
+
+                    b.Property<decimal>("ResolutionQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("resolution_qty");
+
+                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<Guid?>("ReturnBatchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("return_batch_id");
+
+                    b.Property<string>("SellerNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("seller_note");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.Property<decimal>("ShippedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("shipped_qty");
+
+                    b.Property<Guid>("SupplierProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_product_id");
+
+                    b.Property<string>("UomSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("uom_snapshot");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SellerOrganizationId", "ResolvedAtUtc")
+                        .HasDatabaseName("ix_cpo_receiving_issue_lines_seller_resolved");
+
+                    b.HasIndex("ReceivingIssueId", "GoodsReceiptLineId", "LineKind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cpo_receiving_issue_lines_grn_kind");
+
+                    b.ToTable("connected_po_receiving_issue_lines", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_cpo_receiving_issue_damaged_resolution", "damaged_resolution IS NULL OR damaged_resolution IN ('AcceptedNoReturn', 'ReturnRequested', 'ReplacementApproved', 'Disputed', 'Other')");
+
+                            t.HasCheckConstraint("ck_cpo_receiving_issue_line_kind", "line_kind IN ('Missing', 'Damaged')");
+
+                            t.HasCheckConstraint("ck_cpo_receiving_issue_missing_resolution", "missing_resolution IS NULL OR missing_resolution IN ('FoundAtSeller', 'NeverShipped', 'LostInTransit', 'DeliveredDisputed', 'ReplacementPlanned', 'Other')");
+
+                            t.HasCheckConstraint("ck_cpo_receiving_issue_resolution_qty", "resolution_qty >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoReceivingIssueRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BuyerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("buyer_organization_id");
+
+                    b.Property<Guid>("ConnectedPurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connected_purchase_order_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("FulfillmentSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("fulfillment_source_id");
+
+                    b.Property<Guid>("GoodsReceiptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("goods_receipt_id");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<string>("SellerNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("seller_notes");
+
+                    b.Property<Guid>("SellerOrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("seller_organization_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoodsReceiptId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cpo_receiving_issues_goods_receipt");
+
+                    b.HasIndex("ConnectedPurchaseOrderId", "Status")
+                        .HasDatabaseName("ix_cpo_receiving_issues_order_status");
+
+                    b.HasIndex("SellerOrganizationId", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("ix_cpo_receiving_issues_seller_status");
+
+                    b.ToTable("connected_po_receiving_issues", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_cpo_receiving_issue_status", "status IN ('PendingSellerReview', 'Resolved')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
                 {
                     b.Property<Guid>("ConnectedPurchaseOrderId")
@@ -1991,6 +2214,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("changes_proposed_by_user_id");
 
+                    b.Property<string>("ConfirmedFulfillmentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("confirmed_fulfillment_method");
+
                     b.Property<int?>("ConfirmedPaymentTerm")
                         .HasColumnType("integer")
                         .HasColumnName("confirmed_payment_term");
@@ -1998,11 +2226,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ConfirmedPaymentTiming")
                         .HasColumnType("integer")
                         .HasColumnName("confirmed_payment_timing");
-
-                    b.Property<string>("ConfirmedFulfillmentMethod")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("confirmed_fulfillment_method");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -2031,6 +2254,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("FulfilledAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("fulfilled_at_utc");
+
+                    b.Property<string>("FulfillmentMethod")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("fulfillment_method");
 
                     b.Property<DateTimeOffset?>("InventoryReservationExpiresAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -2068,11 +2296,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("payment_timing");
-
-                    b.Property<string>("FulfillmentMethod")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("fulfillment_method");
 
                     b.Property<DateTimeOffset?>("PreparingAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -4131,8 +4354,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("MovementType")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(48)
+                        .HasColumnType("character varying(48)")
                         .HasColumnName("movement_type");
 
                     b.Property<Guid>("OrganizationId")
@@ -7629,14 +7852,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("financially_settled_by");
 
-                    b.Property<Guid?>("IntendedReceivingBranchId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("intended_receiving_branch_id");
-
                     b.Property<string>("FulfillmentMethod")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("fulfillment_method");
+
+                    b.Property<Guid?>("IntendedReceivingBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("intended_receiving_branch_id");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(512)
@@ -9824,6 +10047,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_product_units_products");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoReceivingIssueLineRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoReceivingIssueRecord", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("ReceivingIssueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderLineRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", null)
@@ -10564,6 +10796,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogImportJobRecord", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPoReceivingIssueRecord", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers.ConnectedPurchaseOrderRecord", b =>

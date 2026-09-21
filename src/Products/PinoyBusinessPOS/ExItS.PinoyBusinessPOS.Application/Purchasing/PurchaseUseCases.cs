@@ -2411,6 +2411,7 @@ public sealed class ReceivePurchaseOrder
     private readonly ConnectedPoInventoryReservationService? _reservations;
     private readonly ISupplierPayableRepository? _payables;
     private readonly IConnectedPoReceivingIssueRepository? _receivingIssues;
+    private readonly IInventoryRepository? _sellerInventory;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -2427,7 +2428,8 @@ public sealed class ReceivePurchaseOrder
         IBusinessCreditEntryRepository? businessCredits = null,
         ConnectedPoInventoryReservationService? reservations = null,
         ISupplierPayableRepository? payables = null,
-        IConnectedPoReceivingIssueRepository? receivingIssues = null)
+        IConnectedPoReceivingIssueRepository? receivingIssues = null,
+        IInventoryRepository? sellerInventory = null)
     {
         _orders = orders;
         _products = products;
@@ -2442,6 +2444,7 @@ public sealed class ReceivePurchaseOrder
         _reservations = reservations;
         _payables = payables;
         _receivingIssues = receivingIssues;
+        _sellerInventory = sellerInventory;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2779,6 +2782,28 @@ public sealed class ReceivePurchaseOrder
 
                         var fulfillmentSourceId =
                             ConnectedPoReceivingIssueFactory.ResolveFulfillmentSourceIdForReceipt(connected);
+                        Dictionary<Guid, Guid>? attributedSources = null;
+                        if (_sellerInventory is not null)
+                        {
+                            var candidates =
+                                ConnectedPoReceivingIssueFactory.BuildFulfillmentSourceCandidates(connected);
+                            attributedSources = new Dictionary<Guid, Guid>();
+                            foreach (var productId in connected.Lines.Select(l => l.ProductId).Distinct())
+                            {
+                                var latest = await _sellerInventory
+                                    .FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+                                        connected.SupplierOrganizationId,
+                                        productId,
+                                        candidates,
+                                        cancellationToken)
+                                    .ConfigureAwait(false);
+                                if (latest is Guid sourceId && sourceId != Guid.Empty)
+                                {
+                                    attributedSources[productId.Value] = sourceId;
+                                }
+                            }
+                        }
+
                         var issue = ConnectedPoReceivingIssueFactory.TryCreateFromReceipt(
                             connected,
                             receipt,
@@ -2786,7 +2811,8 @@ public sealed class ReceivePurchaseOrder
                             fulfillmentSourceId,
                             actorId,
                             utcNow,
-                            productLinks);
+                            productLinks,
+                            attributedSources);
                         if (issue is not null)
                         {
                             await _receivingIssues.AddAsync(issue, cancellationToken).ConfigureAwait(false);
