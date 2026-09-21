@@ -37,6 +37,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useToast } from "@/components/exits/ToastProvider";
 import { ConnectedCommerceFulfillmentPanel } from "@/features/connected-commerce/ConnectedCommerceFulfillmentPanel";
+import { CategoryReturnOverridesPanel } from "@/features/connected-commerce/CategoryReturnOverridesPanel";
 import {
   parseConnectedCommerceTab,
   type ConnectedCommerceTab,
@@ -135,7 +136,6 @@ export function ConnectedCommerceSettingsPage() {
 
   const [draft, setDraft] = useState<OrganizationConnectedCommerceSettingsDto | null>(null);
   const [addCategoryIds, setAddCategoryIds] = useState<string[]>([]);
-  const [addReturnCategoryIds, setAddReturnCategoryIds] = useState<string[]>([]);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -153,23 +153,10 @@ export function ConnectedCommerceSettingsPage() {
     [categoriesQuery.data, draft?.categoryRules],
   );
 
-  const availableReturnCatalogCategories = useMemo(
-    () =>
-      (categoriesQuery.data?.items ?? []).filter(
-        (c) => !(draft?.categoryReturnRules ?? []).some((r) => r.categoryId === c.categoryId),
-      ),
-    [categoriesQuery.data, draft?.categoryReturnRules],
-  );
-
   useEffect(() => {
     const available = new Set(availableCatalogCategories.map((c) => c.categoryId));
     setAddCategoryIds((current) => current.filter((id) => available.has(id)));
   }, [availableCatalogCategories]);
-
-  useEffect(() => {
-    const available = new Set(availableReturnCatalogCategories.map((c) => c.categoryId));
-    setAddReturnCategoryIds((current) => current.filter((id) => available.has(id)));
-  }, [availableReturnCatalogCategories]);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -806,175 +793,20 @@ export function ConnectedCommerceSettingsPage() {
               Delivery issues reported at goods receipt are never blocked by this return policy.
               Receiving-issue window is stored for future post-receipt reporting only.
             </Notice>
-            <div className="flex flex-col gap-2 border-t border-border pt-3">
-              <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                Category return overrides
-              </h3>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                Optional. Most specific wins: organization → category → product.
-              </p>
-              {(draft.categoryReturnRules ?? []).length === 0 ? (
-                <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                  No category overrides. Organization default applies.
-                </p>
-              ) : (
-                <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {(draft.categoryReturnRules ?? []).map((rule) => (
-                    <li
-                      key={rule.categoryId}
-                      className="flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border p-2"
-                      data-testid={`connected-commerce-category-return-${rule.categoryId}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[length:var(--exits-text-sm)] font-medium">
-                          {categoryNameById.get(rule.categoryId) ?? rule.categoryId}
-                        </span>
-                        <Button
-                          type="button"
-                          intent="danger"
-                          size="default"
-                          disabled={!canEdit}
-                          onClick={() =>
-                            setDraft((current) =>
-                              current
-                                ? {
-                                    ...current,
-                                    categoryReturnRules: (current.categoryReturnRules ?? []).filter(
-                                      (r) => r.categoryId !== rule.categoryId,
-                                    ),
-                                  }
-                                : current,
-                            )
-                          }
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                        Mode
-                        <select
-                          className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-                          value={rule.mode}
-                          disabled={!canEdit}
-                          onChange={(e) =>
-                            setDraft((current) =>
-                              current
-                                ? {
-                                    ...current,
-                                    categoryReturnRules: (current.categoryReturnRules ?? []).map(
-                                      (r) =>
-                                        r.categoryId === rule.categoryId
-                                          ? { ...r, mode: e.target.value }
-                                          : r,
-                                    ),
-                                  }
-                                : current,
-                            )
-                          }
-                        >
-                          <option value="UseDefault">Use organization default</option>
-                          <option value="Custom">Custom</option>
-                          <option value="NonReturnable">Non-returnable</option>
-                        </select>
-                      </label>
-                      {rule.mode === "Custom" ? (
-                        <Input
-                          label="Return window (days)"
-                          type="number"
-                          min={0}
-                          step={1}
-                          placeholder="Unlimited"
-                          value={rule.returnWindowDays ?? ""}
-                          disabled={!canEdit}
-                          onChange={(e) =>
-                            setDraft((current) =>
-                              current
-                                ? {
-                                    ...current,
-                                    categoryReturnRules: (current.categoryReturnRules ?? []).map(
-                                      (r) =>
-                                        r.categoryId === rule.categoryId
-                                          ? {
-                                              ...r,
-                                              returnsAllowed: true,
-                                              returnWindowDays:
-                                                e.target.value === ""
-                                                  ? null
-                                                  : Number(e.target.value),
-                                            }
-                                          : r,
-                                    ),
-                                  }
-                                : current,
-                            )
-                          }
-                        />
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {canEdit && availableReturnCatalogCategories.length > 0 ? (
-                <div className="mt-1 flex flex-col gap-2">
-                  <ProductCategoryMultiSelect
-                    label="Add category return override"
-                    categories={availableReturnCatalogCategories.map((c) => ({
-                      categoryId: c.categoryId,
-                      name: c.name,
-                    }))}
-                    selectedIds={addReturnCategoryIds}
-                    onChange={setAddReturnCategoryIds}
-                    placeholder={t("connectedCommerce.selectCategory")}
-                    selectedCountLabel={(count) =>
-                      t("purchasing.categoriesSelected").replace("{count}", String(count))
-                    }
-                    selectAllLabel={t("purchasing.selectAllCategories")}
-                    clearAllLabel={t("purchasing.deselectAllCategories")}
-                    searchPlaceholder={t("catalog.searchCategories")}
-                    menuLabel="Add category return override"
-                    testId="connected-commerce-add-return-category"
-                  />
-                  <Button
-                    type="button"
-                    appearance="outline"
-                    size="default"
-                    className="self-start"
-                    disabled={addReturnCategoryIds.length === 0}
-                    data-testid="connected-commerce-add-return-rule"
-                    onClick={() => {
-                      if (addReturnCategoryIds.length === 0) {
-                        return;
-                      }
-                      setDraft((current) => {
-                        if (!current) {
-                          return current;
-                        }
-                        const existing = new Set(
-                          (current.categoryReturnRules ?? []).map((r) => r.categoryId),
-                        );
-                        const additions = addReturnCategoryIds
-                          .filter((id) => !existing.has(id))
-                          .map((categoryId) => ({
-                            categoryId,
-                            mode: "NonReturnable",
-                            returnsAllowed: null,
-                            returnWindowDays: null,
-                          }));
-                        return {
-                          ...current,
-                          categoryReturnRules: [
-                            ...(current.categoryReturnRules ?? []),
-                            ...additions,
-                          ],
-                        };
-                      });
-                      setAddReturnCategoryIds([]);
-                    }}
-                  >
-                    Add category override
-                  </Button>
-                </div>
-              ) : null}
+            <div className="border-t border-border pt-3">
+              <CategoryReturnOverridesPanel
+                rules={draft.categoryReturnRules ?? []}
+                categories={(categoriesQuery.data?.items ?? []).map((c) => ({
+                  categoryId: c.categoryId,
+                  name: c.name,
+                }))}
+                canEdit={canEdit}
+                onChange={(next) =>
+                  setDraft((current) =>
+                    current ? { ...current, categoryReturnRules: next } : current,
+                  )
+                }
+              />
             </div>
           </Card>
           {canEdit ? (
