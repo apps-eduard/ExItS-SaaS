@@ -1,16 +1,12 @@
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
-  buildCategoryReturnOverrideDraft,
-  categoriesAvailableForReturnOverride,
-  filterCategoryReturnOverrides,
-  formatCategoryReturnPolicyLabel,
-  formatCategoryReturnWindowLabel,
-  normalizeCategoryReturnMode,
-  type CategoryReturnOverrideRule,
-  type CategoryReturnPolicyFilter,
-  type CategoryReturnPolicyMode,
-} from "@/features/connected-commerce/category-return-overrides";
+  buildCategoryPricingOverrideDraft,
+  categoriesAvailableForPricingOverride,
+  filterCategoryPricingOverrides,
+  formatCategoryPricingDiscountLabel,
+  type CategoryPricingOverrideRule,
+} from "@/features/connected-commerce/category-pricing-overrides";
 import {
   ExitsTable,
   ExitsTableActions,
@@ -26,7 +22,6 @@ import {
 } from "@/components/exits/ExitsTable";
 import { BottomSheet, ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
-import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { Button, buttonIconMotion } from "@/components/ui/button";
@@ -41,10 +36,10 @@ type EditorState =
   | null;
 
 type Props = {
-  rules: CategoryReturnOverrideRule[];
+  rules: CategoryPricingOverrideRule[];
   categories: CategoryOption[];
   canEdit: boolean;
-  onChange: (next: CategoryReturnOverrideRule[]) => void;
+  onChange: (next: CategoryPricingOverrideRule[]) => void;
 };
 
 function RowActionIcons({
@@ -98,17 +93,15 @@ function RowActionIcons({
   );
 }
 
-export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onChange }: Props) {
+export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onChange }: Props) {
   const { t } = useI18n();
   const [search, setSearch] = useState("");
-  const [policyFilter, setPolicyFilter] = useState<CategoryReturnPolicyFilter>("all");
   const [editor, setEditor] = useState<EditorState>(null);
   const [removeCategoryId, setRemoveCategoryId] = useState<string | null>(null);
 
   const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
   const [draftCategoryId, setDraftCategoryId] = useState("");
-  const [draftMode, setDraftMode] = useState<CategoryReturnPolicyMode>("NonReturnable");
-  const [draftWindowDays, setDraftWindowDays] = useState<number | null>(null);
+  const [draftDiscountPercent, setDraftDiscountPercent] = useState(0);
 
   const categoryNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -118,51 +111,35 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
     return map;
   }, [categories]);
 
-  const policyLabels = useMemo(
-    () => ({
-      useDefault: t("connectedCommerce.returnOverride.policyUseDefault"),
-      custom: t("connectedCommerce.returnOverride.policyCustom"),
-      nonReturnable: t("connectedCommerce.returnOverride.policyNonReturnable"),
-      days: (n: number) =>
-        t("connectedCommerce.returnOverride.days").replace("{n}", String(n)),
-      noTimeLimit: t("connectedCommerce.returnOverride.noTimeLimit"),
-      dash: "—",
-    }),
-    [t],
-  );
-
   const filtered = useMemo(
     () =>
-      filterCategoryReturnOverrides(rules, {
+      filterCategoryPricingOverrides(rules, {
         search,
-        policyFilter,
         categoryNameById,
       }).sort((a, b) => {
         const an = categoryNameById.get(a.categoryId) ?? a.categoryId;
         const bn = categoryNameById.get(b.categoryId) ?? b.categoryId;
         return an.localeCompare(bn);
       }),
-    [rules, search, policyFilter, categoryNameById],
+    [rules, search, categoryNameById],
   );
 
   const availableCategories = useMemo(
-    () => categoriesAvailableForReturnOverride(categories, rules),
+    () => categoriesAvailableForPricingOverride(categories, rules),
     [categories, rules],
   );
 
   function openAdd() {
     setDraftCategoryIds([]);
     setDraftCategoryId("");
-    setDraftMode("NonReturnable");
-    setDraftWindowDays(null);
+    setDraftDiscountPercent(0);
     setEditor({ kind: "add" });
   }
 
-  function openEdit(rule: CategoryReturnOverrideRule) {
+  function openEdit(rule: CategoryPricingOverrideRule) {
     setDraftCategoryIds([]);
     setDraftCategoryId(rule.categoryId);
-    setDraftMode(normalizeCategoryReturnMode(rule.mode));
-    setDraftWindowDays(rule.returnWindowDays ?? null);
+    setDraftDiscountPercent(rule.discountPercent);
     setEditor({ kind: "edit", categoryId: rule.categoryId });
   }
 
@@ -183,7 +160,7 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
       }
       onChange([
         ...rules,
-        ...toAdd.map((id) => buildCategoryReturnOverrideDraft(id, draftMode, draftWindowDays)),
+        ...toAdd.map((id) => buildCategoryPricingOverrideDraft(id, draftDiscountPercent)),
       ]);
       closeEditor();
       return;
@@ -192,7 +169,7 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
     onChange(
       rules.map((r) =>
         r.categoryId === editor.categoryId
-          ? buildCategoryReturnOverrideDraft(editor.categoryId, draftMode, draftWindowDays)
+          ? buildCategoryPricingOverrideDraft(editor.categoryId, draftDiscountPercent)
           : r,
       ),
     );
@@ -217,26 +194,26 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
       : (categoryNameById.get(removeCategoryId) ?? removeCategoryId);
 
   return (
-    <div className="flex flex-col gap-2" data-testid="category-return-overrides-panel">
+    <div className="flex flex-col gap-2" data-testid="category-pricing-overrides-panel">
       <div className="flex flex-col gap-1">
         <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("connectedCommerce.returnOverride.title")}
+          {t("connectedCommerce.categoryRules")}
         </h3>
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          {t("connectedCommerce.returnOverride.hierarchyHelp")}
+          {t("connectedCommerce.pricingOverride.hierarchyHelp")}
         </p>
       </div>
 
       {rules.length === 0 ? (
         <div
           className="flex flex-col items-start gap-2 rounded-[var(--exits-radius-md)] border border-dashed border-border p-3"
-          data-testid="category-return-overrides-empty"
+          data-testid="category-pricing-overrides-empty"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-            {t("connectedCommerce.returnOverride.emptyTitle")}
+            {t("connectedCommerce.pricingOverride.emptyTitle")}
           </p>
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("connectedCommerce.returnOverride.emptyDetail")}
+            {t("connectedCommerce.pricingOverride.emptyDetail")}
           </p>
           {canEdit ? (
             <Button
@@ -245,46 +222,25 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
               size="default"
               disabled={availableCategories.length === 0}
               onClick={openAdd}
-              data-testid="category-return-overrides-add"
+              data-testid="category-pricing-overrides-add"
             >
               <Plus className="size-4" aria-hidden />
-              {t("connectedCommerce.returnOverride.add")}
+              {t("connectedCommerce.pricingOverride.add")}
             </Button>
           ) : null}
         </div>
       ) : (
-        <ExitsTableContainer data-testid="category-return-overrides-table">
+        <ExitsTableContainer data-testid="category-pricing-overrides-table">
           <ExitsTableToolbar
             search={
               <SearchField
-                label={t("connectedCommerce.returnOverride.search")}
+                label={t("connectedCommerce.pricingOverride.search")}
                 value={search}
-                placeholder={t("connectedCommerce.returnOverride.search")}
+                placeholder={t("connectedCommerce.pricingOverride.search")}
                 onChange={(e) => setSearch(e.target.value)}
                 onClear={() => setSearch("")}
-                data-testid="category-return-overrides-search"
+                data-testid="category-pricing-overrides-search"
               />
-            }
-            filter={
-              <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                <span className="sr-only">{t("connectedCommerce.returnOverride.policyFilter")}</span>
-                <select
-                  className="exits-select"
-                  value={policyFilter}
-                  onChange={(e) => setPolicyFilter(e.target.value as CategoryReturnPolicyFilter)}
-                  aria-label={t("connectedCommerce.returnOverride.policyFilter")}
-                  data-testid="category-return-overrides-policy-filter"
-                >
-                  <option value="all">{t("connectedCommerce.returnOverride.filterAll")}</option>
-                  <option value="NonReturnable">
-                    {t("connectedCommerce.returnOverride.policyNonReturnable")}
-                  </option>
-                  <option value="Custom">{t("connectedCommerce.returnOverride.policyCustom")}</option>
-                  <option value="UseDefault">
-                    {t("connectedCommerce.returnOverride.policyUseDefault")}
-                  </option>
-                </select>
-              </label>
             }
           >
             {canEdit ? (
@@ -295,10 +251,10 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
                 className="min-h-8"
                 disabled={availableCategories.length === 0}
                 onClick={openAdd}
-                data-testid="category-return-overrides-add"
+                data-testid="category-pricing-overrides-add"
               >
                 <Plus className="size-4" aria-hidden />
-                {t("connectedCommerce.returnOverride.add")}
+                {t("connectedCommerce.pricingOverride.add")}
               </Button>
             ) : null}
           </ExitsTableToolbar>
@@ -306,26 +262,23 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
           {filtered.length === 0 ? (
             <p
               className="m-0 p-3 text-[length:var(--exits-text-sm)] text-muted"
-              data-testid="category-return-overrides-no-match"
+              data-testid="category-pricing-overrides-no-match"
             >
-              {t("connectedCommerce.returnOverride.noMatch")}
+              {t("connectedCommerce.pricingOverride.noMatch")}
             </p>
           ) : (
             <>
-              <ExitsTable data-testid="category-return-overrides-desktop">
+              <ExitsTable data-testid="category-pricing-overrides-desktop">
                 <ExitsTableHeader>
                   <ExitsTableRow>
                     <ExitsTableHead cellAlign="text">
-                      {t("connectedCommerce.returnOverride.colCategory")}
+                      {t("connectedCommerce.pricingOverride.colCategory")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="text">
-                      {t("connectedCommerce.returnOverride.colPolicy")}
-                    </ExitsTableHead>
-                    <ExitsTableHead cellAlign="text">
-                      {t("connectedCommerce.returnOverride.colWindow")}
+                      {t("connectedCommerce.pricingOverride.colDiscount")}
                     </ExitsTableHead>
                     <ExitsTableHead cellAlign="actions">
-                      {t("connectedCommerce.returnOverride.colActions")}
+                      {t("connectedCommerce.pricingOverride.colActions")}
                     </ExitsTableHead>
                   </ExitsTableRow>
                 </ExitsTableHeader>
@@ -335,24 +288,21 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
                     return (
                       <ExitsTableRow
                         key={rule.categoryId}
-                        data-testid={`category-return-override-row-${rule.categoryId}`}
+                        data-testid={`category-pricing-override-row-${rule.categoryId}`}
                       >
                         <ExitsTableCell cellAlign="text" className="font-medium">
                           {name}
                         </ExitsTableCell>
                         <ExitsTableCell cellAlign="text">
-                          {formatCategoryReturnPolicyLabel(rule, policyLabels)}
-                        </ExitsTableCell>
-                        <ExitsTableCell cellAlign="text">
-                          {formatCategoryReturnWindowLabel(rule, policyLabels)}
+                          {formatCategoryPricingDiscountLabel(rule)}
                         </ExitsTableCell>
                         <ExitsTableCell cellAlign="actions">
                           <RowActionIcons
                             disabled={!canEdit}
-                            editLabel={t("connectedCommerce.returnOverride.edit")}
-                            removeLabel={t("connectedCommerce.returnOverride.remove")}
-                            editTestId={`category-return-override-edit-${rule.categoryId}`}
-                            removeTestId={`category-return-override-remove-${rule.categoryId}`}
+                            editLabel={t("connectedCommerce.pricingOverride.edit")}
+                            removeLabel={t("connectedCommerce.pricingOverride.remove")}
+                            editTestId={`category-pricing-override-edit-${rule.categoryId}`}
+                            removeTestId={`category-pricing-override-remove-${rule.categoryId}`}
                             onEdit={() => openEdit(rule)}
                             onRemove={() => setRemoveCategoryId(rule.categoryId)}
                           />
@@ -363,28 +313,28 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
                 </ExitsTableBody>
               </ExitsTable>
 
-              <ExitsTableMobile data-testid="category-return-overrides-mobile">
+              <ExitsTableMobile data-testid="category-pricing-overrides-mobile">
                 {filtered.map((rule) => {
                   const name = categoryNameById.get(rule.categoryId) ?? rule.categoryId;
                   return (
                     <ExitsTableMobileRow
                       key={rule.categoryId}
-                      data-testid={`category-return-override-mobile-${rule.categoryId}`}
+                      data-testid={`category-pricing-override-mobile-${rule.categoryId}`}
                     >
                       <div className="exits-table-mobile__title-row">
                         <span className="exits-table-mobile__title">{name}</span>
                         <RowActionIcons
                           disabled={!canEdit}
-                          editLabel={t("connectedCommerce.returnOverride.edit")}
-                          removeLabel={t("connectedCommerce.returnOverride.remove")}
-                          editTestId={`category-return-override-mobile-edit-${rule.categoryId}`}
-                          removeTestId={`category-return-override-mobile-remove-${rule.categoryId}`}
+                          editLabel={t("connectedCommerce.pricingOverride.edit")}
+                          removeLabel={t("connectedCommerce.pricingOverride.remove")}
+                          editTestId={`category-pricing-override-mobile-edit-${rule.categoryId}`}
+                          removeTestId={`category-pricing-override-mobile-remove-${rule.categoryId}`}
                           onEdit={() => openEdit(rule)}
                           onRemove={() => setRemoveCategoryId(rule.categoryId)}
                         />
                       </div>
                       <p className="exits-table-mobile__meta m-0">
-                        {formatCategoryReturnPolicyLabel(rule, policyLabels)}
+                        {formatCategoryPricingDiscountLabel(rule)}
                       </p>
                     </ExitsTableMobileRow>
                   );
@@ -400,18 +350,18 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
         onClose={closeEditor}
         title={
           editor?.kind === "edit"
-            ? t("connectedCommerce.returnOverride.editTitle")
-            : t("connectedCommerce.returnOverride.addTitle")
+            ? t("connectedCommerce.pricingOverride.editTitle")
+            : t("connectedCommerce.pricingOverride.addTitle")
         }
-        panelId="category-return-override-editor"
-        testId="category-return-override-editor"
-        closeLabel={t("connectedCommerce.returnOverride.cancel")}
+        panelId="category-pricing-override-editor"
+        testId="category-pricing-override-editor"
+        closeLabel={t("connectedCommerce.pricingOverride.cancel")}
         presentation="sheet-mobile-dialog-desktop"
       >
         <div className="flex flex-col gap-3">
           {editor?.kind === "add" ? (
             <ProductCategoryMultiSelect
-              label={t("connectedCommerce.returnOverride.colCategory")}
+              label={t("connectedCommerce.pricingOverride.colCategory")}
               categories={availableCategories}
               selectedIds={draftCategoryIds}
               onChange={setDraftCategoryIds}
@@ -422,16 +372,16 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
               selectAllLabel={t("purchasing.selectAllCategories")}
               clearAllLabel={t("purchasing.deselectAllCategories")}
               searchPlaceholder={t("catalog.searchCategories")}
-              menuLabel={t("connectedCommerce.returnOverride.addTitle")}
-              testId="category-return-override-category"
+              menuLabel={t("connectedCommerce.pricingOverride.addTitle")}
+              testId="category-pricing-override-category"
             />
           ) : (
             <div
               className="flex flex-col gap-1.5"
-              data-testid="category-return-override-category-readonly"
+              data-testid="category-pricing-override-category-readonly"
             >
               <p className="m-0 text-[length:var(--exits-text-sm)] font-bold">
-                {t("connectedCommerce.returnOverride.colCategory")}
+                {t("connectedCommerce.pricingOverride.colCategory")}
               </p>
               <StatusChip
                 tone="primary"
@@ -444,64 +394,33 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
             </div>
           )}
 
-          <div className="flex flex-col gap-1.5">
-            <span className="exits-type-label" id="category-return-override-mode-label">
-              {t("connectedCommerce.returnOverride.colPolicy")}
-            </span>
-            <ExitsPillSelect
-              mode="single"
-              aria-label={t("connectedCommerce.returnOverride.colPolicy")}
-              value={draftMode}
-              onChange={setDraftMode}
-              options={[
-                {
-                  value: "UseDefault",
-                  label: t("connectedCommerce.returnOverride.modeUseDefault"),
-                },
-                {
-                  value: "Custom",
-                  label: t("connectedCommerce.returnOverride.modeCustom"),
-                },
-                {
-                  value: "NonReturnable",
-                  label: t("connectedCommerce.returnOverride.modeNonReturnable"),
-                },
-              ]}
-              testId="category-return-override-mode"
+          <div className="w-[20%] min-w-[4.5rem] max-w-full">
+            <Input
+              label={t("connectedCommerce.pricingOverride.discountLabel")}
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              value={draftDiscountPercent}
+              onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
+              data-testid="category-pricing-override-discount"
             />
           </div>
 
-          {draftMode === "Custom" ? (
-            <div className="w-[20%] min-w-[4.5rem] max-w-full">
-              <Input
-                label={t("connectedCommerce.returnOverride.windowLabel")}
-                type="number"
-                min={0}
-                step={1}
-                placeholder={t("connectedCommerce.returnOverride.noTimeLimit")}
-                value={draftWindowDays ?? ""}
-                onChange={(e) =>
-                  setDraftWindowDays(e.target.value === "" ? null : Number(e.target.value))
-                }
-                data-testid="category-return-override-window-days"
-              />
-            </div>
-          ) : null}
-
           <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
             <Button type="button" intent="danger" appearance="solid" onClick={closeEditor}>
-              {t("connectedCommerce.returnOverride.cancel")}
+              {t("connectedCommerce.pricingOverride.cancel")}
             </Button>
             <Button
               type="button"
               disabled={
                 editor?.kind === "add" &&
-                (availableCategories.length === 0 || draftCategoryIds.length === 0)
+                (draftCategoryIds.length === 0 || availableCategories.length === 0)
               }
               onClick={saveEditor}
-              data-testid="category-return-override-save"
+              data-testid="category-pricing-override-save"
             >
-              {t("connectedCommerce.returnOverride.save")}
+              {t("connectedCommerce.pricingOverride.save")}
             </Button>
           </div>
         </div>
@@ -509,18 +428,18 @@ export function CategoryReturnOverridesPanel({ rules, categories, canEdit, onCha
 
       <ConfirmationDialog
         open={removeCategoryId != null}
-        title={t("connectedCommerce.returnOverride.removeTitle")}
-        detail={t("connectedCommerce.returnOverride.removeDetail").replace(
+        title={t("connectedCommerce.pricingOverride.removeTitle")}
+        detail={t("connectedCommerce.pricingOverride.removeDetail").replace(
           "{category}",
           removeName,
         )}
-        confirmLabel={t("connectedCommerce.returnOverride.removeConfirm")}
-        cancelLabel={t("connectedCommerce.returnOverride.cancel")}
+        confirmLabel={t("connectedCommerce.pricingOverride.removeConfirm")}
+        cancelLabel={t("connectedCommerce.pricingOverride.cancel")}
         confirmTone="danger"
         cancelTone="danger-soft"
         onConfirm={confirmRemove}
         onCancel={() => setRemoveCategoryId(null)}
-        testId="category-return-override-remove-confirm"
+        testId="category-pricing-override-remove-confirm"
       />
     </div>
   );

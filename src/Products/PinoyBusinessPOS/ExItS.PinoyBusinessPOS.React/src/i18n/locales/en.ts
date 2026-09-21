@@ -2537,6 +2537,28 @@ export const en = {
   "connectedCommerce.saveFailed": "Could not save Connected Commerce settings.",
   "connectedCommerce.addCategoryRule": "Add category rule",
   "connectedCommerce.selectCategory": "Select category…",
+  "connectedCommerce.pricingOverride.hierarchyHelp":
+    "Optional. Most specific wins: Organization default → Category → Customer.",
+  "connectedCommerce.pricingOverride.search": "Search categories…",
+  "connectedCommerce.pricingOverride.add": "Add override",
+  "connectedCommerce.pricingOverride.addTitle": "Add category pricing override",
+  "connectedCommerce.pricingOverride.editTitle": "Edit category pricing override",
+  "connectedCommerce.pricingOverride.edit": "Edit",
+  "connectedCommerce.pricingOverride.remove": "Remove override",
+  "connectedCommerce.pricingOverride.emptyTitle": "No category pricing overrides",
+  "connectedCommerce.pricingOverride.emptyDetail":
+    "All categories currently use the organization default B2B discount.",
+  "connectedCommerce.pricingOverride.noMatch": "No overrides match your search.",
+  "connectedCommerce.pricingOverride.colCategory": "Category",
+  "connectedCommerce.pricingOverride.colDiscount": "Discount",
+  "connectedCommerce.pricingOverride.colActions": "Actions",
+  "connectedCommerce.pricingOverride.discountLabel": "Discount (%)",
+  "connectedCommerce.pricingOverride.cancel": "Cancel",
+  "connectedCommerce.pricingOverride.save": "Save",
+  "connectedCommerce.pricingOverride.removeTitle": "Remove category pricing override?",
+  "connectedCommerce.pricingOverride.removeDetail":
+    "{category} will fall back to the organization default B2B discount.",
+  "connectedCommerce.pricingOverride.removeConfirm": "Remove override",
   "connectedCommerce.returnOverride.title": "Category return overrides",
   "connectedCommerce.returnOverride.hierarchyHelp":
     "Optional. Most specific wins: Organization → Category → Product.",

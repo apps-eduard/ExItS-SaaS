@@ -115,17 +115,20 @@ describe("CategoryReturnOverridesPanel", () => {
     expect(within(desktop).queryByText("Beverages")).not.toBeInTheDocument();
   });
 
-  it("opens add editor and blocks duplicate configured categories", async () => {
+  it("opens add editor with multi-select and blocks already configured categories", async () => {
     const user = userEvent.setup();
     const { onChange } = renderPanel();
     await user.click(screen.getByTestId("category-return-overrides-add"));
     expect(screen.getByTestId("category-return-override-editor")).toBeInTheDocument();
 
-    const select = screen.getByTestId("category-return-override-category");
-    const options = within(select).getAllByRole("option");
-    expect(options.map((o) => o.textContent)).toEqual(["Condiments"]);
+    await user.click(screen.getByTestId("category-return-override-category"));
+    expect(screen.getByTestId(`category-return-override-category-option-${CAT_D}`)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`category-return-override-category-option-${CAT_A}`),
+    ).not.toBeInTheDocument();
 
-    await user.click(screen.getByTestId("category-return-override-mode-Custom"));
+    await user.click(screen.getByTestId(`category-return-override-category-option-${CAT_D}`));
+    await user.click(screen.getByTestId("category-return-override-mode-option-Custom"));
     expect(screen.getByTestId("category-return-override-window-days")).toBeInTheDocument();
     await user.clear(screen.getByTestId("category-return-override-window-days"));
     await user.type(screen.getByTestId("category-return-override-window-days"), "7");
@@ -150,18 +153,20 @@ describe("CategoryReturnOverridesPanel", () => {
     expect(screen.getByTestId("category-return-override-category-readonly")).toHaveTextContent(
       "Electronics",
     );
-    expect(screen.getByTestId("category-return-override-mode-Custom")).toBeChecked();
+    expect(screen.getByTestId("category-return-override-mode-option-Custom")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     expect(screen.getByTestId("category-return-override-window-days")).toHaveValue(14);
 
-    await user.click(screen.getByTestId("category-return-override-mode-NonReturnable"));
+    await user.click(screen.getByTestId("category-return-override-mode-option-NonReturnable"));
     expect(screen.queryByTestId("category-return-override-window-days")).not.toBeInTheDocument();
   });
 
   it("remove override confirms fallback to organization policy", async () => {
     const user = userEvent.setup();
     const { onChange } = renderPanel();
-    await user.click(screen.getByTestId(`category-return-override-more-${CAT_A}`));
-    await user.click(screen.getByRole("menuitem", { name: /Remove override/i }));
+    await user.click(screen.getByTestId(`category-return-override-remove-${CAT_A}`));
     expect(screen.getByTestId("category-return-override-remove-confirm")).toBeInTheDocument();
     expect(screen.getByText(/organization return policy/i)).toBeInTheDocument();
     await user.click(

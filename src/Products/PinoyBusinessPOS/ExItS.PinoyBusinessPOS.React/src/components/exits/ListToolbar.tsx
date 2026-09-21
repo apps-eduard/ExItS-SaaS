@@ -19,7 +19,7 @@ export function FilterButton({
       className={cn(exitsFilterPillClassName, "exits-filter-pill--button", className)}
       {...props}
     >
-      <Filter className="size-4 shrink-0" aria-hidden />
+      <Filter className="size-4 shrink-0 text-primary" aria-hidden />
       <span>{children}</span>
       {activeCount > 0 ? (
         <span className="exits-filter-pill__badge" aria-hidden>

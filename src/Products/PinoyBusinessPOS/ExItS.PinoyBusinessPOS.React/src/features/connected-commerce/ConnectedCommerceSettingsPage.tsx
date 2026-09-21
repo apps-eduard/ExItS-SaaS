@@ -32,11 +32,11 @@ import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
-import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { useToast } from "@/components/exits/ToastProvider";
 import { ConnectedCommerceFulfillmentPanel } from "@/features/connected-commerce/ConnectedCommerceFulfillmentPanel";
+import { CategoryPricingOverridesPanel } from "@/features/connected-commerce/CategoryPricingOverridesPanel";
 import { CategoryReturnOverridesPanel } from "@/features/connected-commerce/CategoryReturnOverridesPanel";
 import {
   parseConnectedCommerceTab,
@@ -135,28 +135,6 @@ export function ConnectedCommerceSettingsPage() {
   });
 
   const [draft, setDraft] = useState<OrganizationConnectedCommerceSettingsDto | null>(null);
-  const [addCategoryIds, setAddCategoryIds] = useState<string[]>([]);
-
-  const categoryNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const c of categoriesQuery.data?.items ?? []) {
-      map.set(c.categoryId, c.name);
-    }
-    return map;
-  }, [categoriesQuery.data]);
-
-  const availableCatalogCategories = useMemo(
-    () =>
-      (categoriesQuery.data?.items ?? []).filter(
-        (c) => !(draft?.categoryRules ?? []).some((r) => r.categoryId === c.categoryId),
-      ),
-    [categoriesQuery.data, draft?.categoryRules],
-  );
-
-  useEffect(() => {
-    const available = new Set(availableCatalogCategories.map((c) => c.categoryId));
-    setAddCategoryIds((current) => current.filter((id) => available.has(id)));
-  }, [availableCatalogCategories]);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -321,7 +299,7 @@ export function ConnectedCommerceSettingsPage() {
           ].map((card) => (
             <Card key={card.title} className="flex flex-col gap-2 p-3" treatment="bordered">
               <div className="flex items-center gap-2">
-                <card.icon className="size-4 text-muted" aria-hidden />
+                <card.icon className="size-4 text-primary" aria-hidden />
                 <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">{card.title}</h2>
               </div>
               <StatusChip tone={statusTone(card.status)} appearance="outline">
@@ -330,37 +308,49 @@ export function ConnectedCommerceSettingsPage() {
             </Card>
           ))}
 
-          <Card className="flex flex-col gap-2 p-3 md:col-span-2" treatment="bordered">
+          <Card className="flex flex-col gap-3 p-3 md:col-span-2" treatment="bordered">
             <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               {t("connectedCommerce.incompleteTitle")}
             </h2>
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              <li className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[length:var(--exits-text-sm)]">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Card
+                className="flex flex-col gap-2 p-3"
+                treatment="bordered"
+                data-testid="connected-commerce-actionable-branches"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
                   {t("connectedCommerce.linkBranches")}
-                </span>
-                <Button asChild appearance="outline" size="default">
+                </p>
+                <Button asChild appearance="outline" size="default" className="w-auto self-start">
                   <Link to="/org/branches">{t("connectedCommerce.open")}</Link>
                 </Button>
-              </li>
-              <li className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[length:var(--exits-text-sm)]">
+              </Card>
+              <Card
+                className="flex flex-col gap-2 p-3"
+                treatment="bordered"
+                data-testid="connected-commerce-actionable-payment-methods"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
                   {t("connectedCommerce.linkPaymentMethods")}
-                </span>
-                <Button asChild appearance="outline" size="default">
+                </p>
+                <Button asChild appearance="outline" size="default" className="w-auto self-start">
                   <Link to="/org/payment-methods">{t("connectedCommerce.open")}</Link>
                 </Button>
-              </li>
-              <li className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[length:var(--exits-text-sm)]">
+              </Card>
+              <Card
+                className="flex flex-col gap-2 p-3"
+                treatment="bordered"
+                data-testid="connected-commerce-actionable-online-payments"
+              >
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
                   {t("connectedCommerce.summary.onlinePayments")}{" "}
                   <span className="text-muted">({t("connectedCommerce.informational")})</span>
-                </span>
-                <StatusChip tone="neutral" appearance="outline">
+                </p>
+                <StatusChip tone="neutral" appearance="outline" className="self-start">
                   {onlinePaymentsQuery.data?.status ?? t("connectedCommerce.platformUnknown")}
                 </StatusChip>
-              </li>
-            </ul>
+              </Card>
+            </div>
           </Card>
         </div>
       ) : null}
@@ -445,11 +435,18 @@ export function ConnectedCommerceSettingsPage() {
               })}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[length:var(--exits-text-sm)] font-normal">
-                {t("connectedCommerce.defaultTiming")}
-              </span>
+            <Card
+              className="flex flex-col gap-2 p-3"
+              treatment="bordered"
+              data-testid="connected-commerce-default-timing-card"
+            >
+              <div className="min-w-0">
+                <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                  {t("connectedCommerce.defaultTiming")}
+                </h3>
+              </div>
               <ExitsPillSelect
+                appearance="tile"
                 aria-label={t("connectedCommerce.defaultTiming")}
                 value={
                   enabledDefaults.some(
@@ -469,21 +466,21 @@ export function ConnectedCommerceSettingsPage() {
                   label: t(option.labelKey),
                 }))}
                 className={cn(
-                  "w-full gap-2 [&>button]:min-w-0 [&>button]:w-full [&>button>span]:w-full",
+                  "w-full gap-2",
                   enabledDefaults.length >= 3
                     ? "grid grid-cols-3"
                     : enabledDefaults.length === 2
                       ? "grid grid-cols-2"
-                      : "flex",
+                      : "grid grid-cols-1",
                 )}
                 testId="connected-commerce-default-timing"
               />
-            </div>
+            </Card>
 
             {canEdit ? (
               <Button
                 type="button"
-                className="w-full"
+                className="w-auto self-end"
                 disabled={saveMutation.isPending}
                 onClick={() => saveMutation.mutate()}
                 data-testid="connected-commerce-payments-save"
@@ -493,18 +490,30 @@ export function ConnectedCommerceSettingsPage() {
             ) : null}
           </Card>
 
-          <Card className="flex flex-col gap-2 p-3" treatment="bordered">
+          <Card className="flex flex-col gap-3 p-3" treatment="bordered">
             <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               {t("connectedCommerce.acceptedMethods")}
             </h2>
-            <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[length:var(--exits-text-sm)]">
+            <div
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+              data-testid="connected-commerce-accepted-methods"
+            >
               {(paymentMethodsQuery.data ?? [])
                 .filter((m) => m.isEnabled || m.availability === "BuiltIn")
                 .map((m) => (
-                  <li key={m.methodCode}>{m.displayName ?? m.methodCode}</li>
+                  <Card
+                    key={m.methodCode}
+                    className="flex items-center p-3"
+                    treatment="bordered"
+                    data-testid={`connected-commerce-accepted-method-${m.methodCode}`}
+                  >
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                      {m.displayName ?? m.methodCode}
+                    </p>
+                  </Card>
                 ))}
-            </ul>
-            <Button asChild appearance="outline" size="default" className="self-start">
+            </div>
+            <Button asChild appearance="outline" size="default" className="w-auto self-start">
               <Link to="/org/payment-methods">{t("connectedCommerce.managePaymentMethods")}</Link>
             </Button>
           </Card>
@@ -526,156 +535,56 @@ export function ConnectedCommerceSettingsPage() {
       {!loading && tab === "catalog" && draft ? (
         <div className="flex flex-col gap-3" data-testid="connected-commerce-catalog">
           <Notice tone="info">{t("connectedCommerce.catalogHelp")}</Notice>
-          <Card className="flex flex-col gap-3 p-3" treatment="bordered">
-            <Input
-              label={t("connectedCommerce.defaultDiscount")}
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={draft.defaultB2bDiscountPercent}
-              disabled={!canEdit}
-              onChange={(e) =>
-                setDraft((current) =>
-                  current
-                    ? {
-                        ...current,
-                        defaultB2bDiscountPercent: Number(e.target.value || 0),
-                      }
-                    : current,
-                )
-              }
-              data-testid="connected-commerce-default-discount"
-            />
-            <div>
-              <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                {t("connectedCommerce.categoryRules")}
-              </h2>
-              <p className="mb-2 mt-1 text-[length:var(--exits-text-xs)] text-muted">
-                {t("connectedCommerce.categoryRulesCount").replace(
-                  "{n}",
-                  String(draft.categoryRules.length),
-                )}
-              </p>
-              {draft.categoryRules.length === 0 ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("connectedCommerce.noCategoryRules")}
-                </p>
-              ) : (
-                <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                  {draft.categoryRules.map((rule) => (
-                    <li
-                      key={rule.categoryId}
-                      className="grid grid-cols-[1fr_6rem_auto] items-center gap-2"
-                    >
-                      <span className="truncate text-[length:var(--exits-text-sm)]">
-                        {categoryNameById.get(rule.categoryId) ?? rule.categoryId}
-                      </span>
-                      <Input
-                        label="%"
-                        type="number"
-                        min={0}
-                        max={100}
-                        step="0.01"
-                        value={rule.discountPercent}
-                        disabled={!canEdit}
-                        onChange={(e) => {
-                          const next = Number(e.target.value || 0);
-                          setDraft((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  categoryRules: current.categoryRules.map((r) =>
-                                    r.categoryId === rule.categoryId
-                                      ? { ...r, discountPercent: next }
-                                      : r,
-                                  ),
-                                }
-                              : current,
-                          );
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        intent="danger"
-                        size="default"
-                        disabled={!canEdit}
-                        onClick={() =>
-                          setDraft((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  categoryRules: current.categoryRules.filter(
-                                    (r) => r.categoryId !== rule.categoryId,
-                                  ),
-                                }
-                              : current,
-                          )
-                        }
-                      >
-                        {t("connectedCommerce.removeRule")}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {canEdit && availableCatalogCategories.length > 0 ? (
-                <div className="mt-2 flex flex-col gap-2">
-                  <ProductCategoryMultiSelect
-                    label={t("connectedCommerce.addCategoryRule")}
-                    categories={availableCatalogCategories.map((c) => ({
-                      categoryId: c.categoryId,
-                      name: c.name,
-                    }))}
-                    selectedIds={addCategoryIds}
-                    onChange={setAddCategoryIds}
-                    placeholder={t("connectedCommerce.selectCategory")}
-                    selectedCountLabel={(count) =>
-                      t("purchasing.categoriesSelected").replace("{count}", String(count))
-                    }
-                    selectAllLabel={t("purchasing.selectAllCategories")}
-                    clearAllLabel={t("purchasing.deselectAllCategories")}
-                    searchPlaceholder={t("catalog.searchCategories")}
-                    menuLabel={t("connectedCommerce.addCategoryRule")}
-                    testId="connected-commerce-add-category"
-                  />
-                  <Button
-                    type="button"
-                    appearance="outline"
-                    size="default"
-                    className="self-start"
-                    disabled={addCategoryIds.length === 0}
-                    onClick={() => {
-                      if (addCategoryIds.length === 0) {
-                        return;
-                      }
-                      setDraft((current) => {
-                        if (!current) {
-                          return current;
-                        }
-                        const existing = new Set(current.categoryRules.map((r) => r.categoryId));
-                        const additions = addCategoryIds
-                          .filter((id) => !existing.has(id))
-                          .map((categoryId) => ({ categoryId, discountPercent: 0 }));
-                        return {
+          <Card
+            className="flex flex-col gap-3 p-3"
+            treatment="bordered"
+            data-testid="connected-commerce-default-pricing"
+          >
+            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("connectedCommerce.defaultDiscount")}
+            </h2>
+            <div className="w-[20%] min-w-[4.5rem] max-w-full">
+              <Input
+                label={t("connectedCommerce.pricingOverride.discountLabel")}
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={draft.defaultB2bDiscountPercent}
+                disabled={!canEdit}
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current
+                      ? {
                           ...current,
-                          categoryRules: [...current.categoryRules, ...additions],
-                        };
-                      });
-                      setAddCategoryIds([]);
-                    }}
-                    data-testid="connected-commerce-add-rule"
-                  >
-                    {t("connectedCommerce.addCategoryRule")}
-                  </Button>
-                </div>
-              ) : null}
+                          defaultB2bDiscountPercent: Number(e.target.value || 0),
+                        }
+                      : current,
+                  )
+                }
+                data-testid="connected-commerce-default-discount"
+              />
+            </div>
+            <div className="border-t border-border pt-3">
+              <CategoryPricingOverridesPanel
+                rules={draft.categoryRules ?? []}
+                categories={(categoriesQuery.data?.items ?? []).map((c) => ({
+                  categoryId: c.categoryId,
+                  name: c.name,
+                }))}
+                canEdit={canEdit}
+                onChange={(next) =>
+                  setDraft((current) =>
+                    current ? { ...current, categoryRules: next } : current,
+                  )
+                }
+              />
             </div>
           </Card>
           {canEdit ? (
             <Button
               type="button"
+              className="w-auto self-end"
               disabled={saveMutation.isPending}
               onClick={() => saveMutation.mutate()}
               data-testid="connected-commerce-catalog-save"
@@ -689,26 +598,28 @@ export function ConnectedCommerceSettingsPage() {
       {!loading && tab === "orders" && draft ? (
         <div className="flex flex-col gap-3" data-testid="connected-commerce-orders">
           <Card className="flex flex-col gap-3 p-3" treatment="bordered">
-            <Input
-              label={t("connectedCommerce.proposalHoldHours")}
-              type="number"
-              min={1}
-              max={72}
-              step={1}
-              value={draft.proposalReservationHoldHours}
-              disabled={!canEdit}
-              onChange={(e) =>
-                setDraft((current) =>
-                  current
-                    ? {
-                        ...current,
-                        proposalReservationHoldHours: Number(e.target.value || 24),
-                      }
-                    : current,
-                )
-              }
-              data-testid="connected-commerce-hold-hours"
-            />
+            <div className="w-[20%] min-w-[4.5rem] max-w-full">
+              <Input
+                label={t("connectedCommerce.proposalHoldHours")}
+                type="number"
+                min={1}
+                max={72}
+                step={1}
+                value={draft.proposalReservationHoldHours}
+                disabled={!canEdit}
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current
+                      ? {
+                          ...current,
+                          proposalReservationHoldHours: Number(e.target.value || 24),
+                        }
+                      : current,
+                  )
+                }
+                data-testid="connected-commerce-hold-hours"
+              />
+            </div>
             <Notice tone="info">{t("connectedCommerce.ordersRules")}</Notice>
           </Card>
           <Card
@@ -733,46 +644,50 @@ export function ConnectedCommerceSettingsPage() {
               />
               Allow normal returns
             </label>
-            <Input
-              label="Return period after receipt (days)"
-              type="number"
-              min={0}
-              step={1}
-              placeholder="Unlimited"
-              value={draft.returnWindowDays ?? ""}
-              disabled={!canEdit || !draft.returnsAllowed}
-              onChange={(e) =>
-                setDraft((current) =>
-                  current
-                    ? {
-                        ...current,
-                        returnWindowDays:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      }
-                    : current,
-                )
-              }
-              data-testid="connected-commerce-return-window-days"
-            />
-            <Input
-              label="Delivery issue reporting period (days)"
-              type="number"
-              min={0}
-              step={1}
-              value={draft.receivingIssueWindowDays}
-              disabled={!canEdit}
-              onChange={(e) =>
-                setDraft((current) =>
-                  current
-                    ? {
-                        ...current,
-                        receivingIssueWindowDays: Number(e.target.value || 2),
-                      }
-                    : current,
-                )
-              }
-              data-testid="connected-commerce-receiving-issue-window-days"
-            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input
+                label="Return period after receipt (days)"
+                type="number"
+                min={0}
+                step={1}
+                placeholder="Unlimited"
+                className="w-full"
+                value={draft.returnWindowDays ?? ""}
+                disabled={!canEdit || !draft.returnsAllowed}
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current
+                      ? {
+                          ...current,
+                          returnWindowDays:
+                            e.target.value === "" ? null : Number(e.target.value),
+                        }
+                      : current,
+                  )
+                }
+                data-testid="connected-commerce-return-window-days"
+              />
+              <Input
+                label="Delivery issue reporting period (days)"
+                type="number"
+                min={0}
+                step={1}
+                className="w-full"
+                value={draft.receivingIssueWindowDays}
+                disabled={!canEdit}
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current
+                      ? {
+                          ...current,
+                          receivingIssueWindowDays: Number(e.target.value || 2),
+                        }
+                      : current,
+                  )
+                }
+                data-testid="connected-commerce-receiving-issue-window-days"
+              />
+            </div>
             <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
               <input
                 type="checkbox"
@@ -812,6 +727,7 @@ export function ConnectedCommerceSettingsPage() {
           {canEdit ? (
             <Button
               type="button"
+              className="w-auto self-end"
               disabled={saveMutation.isPending}
               onClick={() => saveMutation.mutate()}
               data-testid="connected-commerce-orders-save"

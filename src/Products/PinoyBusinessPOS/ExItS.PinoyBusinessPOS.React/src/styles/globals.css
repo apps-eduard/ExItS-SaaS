@@ -15882,7 +15882,7 @@ textarea.exits-input {
   translate: 0 -50%;
   display: inline-flex;
   pointer-events: none;
-  color: var(--exits-text-muted);
+  color: var(--exits-primary);
 }
 
 .exits-search-field__icon,
@@ -17811,6 +17811,15 @@ a.exits-chip--primary:hover {
   stroke-width: 2.25;
 }
 
+/* Filter / page tabs (UnderlineTabBar): same Primary icon treatment. */
+.exits-chip-bar--filter .exits-chip__icon {
+  color: var(--exits-primary);
+}
+
+.exits-chip-bar--filter .exits-chip__icon > svg {
+  stroke-width: 2.25;
+}
+
 .exits-chip__icon > svg {
   width: 1em;
   height: 1em;
@@ -18479,18 +18488,79 @@ a.exits-chip--primary:hover {
   height: 1rem;
 }
 
+/*
+ * Button closed-field for ExitsSelect / ExitsMultiSelect.
+ * Native chrome only targets select.exits-select — without this, the trigger is a
+ * borderless “ghost” control (invisible in BottomSheet / form fields).
+ * Toolbar outline variant remains under .po-category-multiselect (more specific).
+ */
 .receive-stock-category-trigger.exits-select,
 .receive-stock-category-trigger.catalog-form-select {
+  box-sizing: border-box;
   display: inline-flex;
   width: 100%;
+  min-width: 0;
+  height: var(--exits-control-height);
+  min-height: var(--exits-control-height);
+  max-height: var(--exits-control-height);
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  margin: 0;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-field-radius, var(--exits-radius-md));
+  background-color: var(--exits-surface);
   /* Drop native select caret; Lucide ChevronDown is the single indicator. */
   background-image: none;
-  padding-inline-end: var(--exits-control-padding-x);
+  padding-block: 0;
+  padding-inline: var(--exits-control-padding-x);
+  font: inherit;
+  font-size: var(--exits-text-md);
+  font-weight: 400;
+  line-height: calc(var(--exits-control-height) - 2px);
+  color: var(--exits-text);
   text-align: start;
   cursor: pointer;
+  transition:
+    border-color var(--exits-motion-fast) ease,
+    box-shadow var(--exits-motion-fast) ease,
+    background-color var(--exits-motion-fast) ease;
+}
+
+.receive-stock-category-trigger.exits-select:hover:not(:disabled):not(:focus-visible),
+.receive-stock-category-trigger.catalog-form-select:hover:not(:disabled):not(:focus-visible) {
+  border-color: var(--exits-border-strong);
+}
+
+.receive-stock-category-trigger.exits-select:focus-visible,
+.receive-stock-category-trigger.catalog-form-select:focus-visible {
+  outline: none;
+  border-color: var(--exits-field-border-focus);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
+.receive-stock-category-trigger.exits-select[aria-invalid="true"],
+.receive-stock-category-trigger.catalog-form-select[aria-invalid="true"],
+.receive-stock-category-trigger.exits-select.border-destructive,
+.receive-stock-category-trigger.catalog-form-select.border-destructive {
+  border-color: var(--exits-field-border-error);
+}
+
+.receive-stock-category-trigger.exits-select[aria-invalid="true"]:focus-visible,
+.receive-stock-category-trigger.catalog-form-select[aria-invalid="true"]:focus-visible,
+.receive-stock-category-trigger.exits-select.border-destructive:focus-visible,
+.receive-stock-category-trigger.catalog-form-select.border-destructive:focus-visible {
+  outline: none;
+  border-color: var(--exits-field-border-error);
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring-error);
+}
+
+.receive-stock-category-trigger.exits-select:disabled,
+.receive-stock-category-trigger.catalog-form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background-color: var(--exits-surface-muted);
+  color: var(--exits-text-muted);
 }
 
 [data-theme="dark"] .receive-stock-category-trigger.exits-select,
