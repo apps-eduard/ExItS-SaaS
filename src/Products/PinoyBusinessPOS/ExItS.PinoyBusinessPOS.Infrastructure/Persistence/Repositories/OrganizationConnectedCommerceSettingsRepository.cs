@@ -15,6 +15,7 @@ internal sealed class OrganizationConnectedCommerceSettingsRepository(PosDbConte
     {
         var record = await db.OrganizationConnectedCommerceSettings
             .Include(x => x.CategoryRules)
+            .Include(x => x.CategoryReturnRules)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.OrganizationId == organizationId.Value, cancellationToken)
             .ConfigureAwait(false);
@@ -36,6 +37,7 @@ internal sealed class OrganizationConnectedCommerceSettingsRepository(PosDbConte
     {
         var record = await db.OrganizationConnectedCommerceSettings
             .Include(x => x.CategoryRules)
+            .Include(x => x.CategoryReturnRules)
             .FirstOrDefaultAsync(x => x.Id == settings.SettingId, cancellationToken)
             .ConfigureAwait(false);
 

@@ -6,6 +6,8 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Application.Parties;
+using ExItS.PinoyBusinessPOS.Application.Returns;
+using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
@@ -18,7 +20,6 @@ using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
 using ExItS.PinoyBusinessPOS.Domain.SupplierPayables;
 using ExItS.PinoyBusinessPOS.Domain.Suppliers;
-using ExItS.PinoyBusinessPOS.Application.SupplierPayables;
 
 namespace ExItS.PinoyBusinessPOS.Application.Purchasing;
 
@@ -2412,6 +2413,7 @@ public sealed class ReceivePurchaseOrder
     private readonly ISupplierPayableRepository? _payables;
     private readonly IConnectedPoReceivingIssueRepository? _receivingIssues;
     private readonly IInventoryRepository? _sellerInventory;
+    private readonly ConnectedPoReturnEligibilityService? _returnEligibility;
     private readonly TimeProvider _clock;
 
     public ReceivePurchaseOrder(
@@ -2429,7 +2431,8 @@ public sealed class ReceivePurchaseOrder
         ConnectedPoInventoryReservationService? reservations = null,
         ISupplierPayableRepository? payables = null,
         IConnectedPoReceivingIssueRepository? receivingIssues = null,
-        IInventoryRepository? sellerInventory = null)
+        IInventoryRepository? sellerInventory = null,
+        ConnectedPoReturnEligibilityService? returnEligibility = null)
     {
         _orders = orders;
         _products = products;
@@ -2445,6 +2448,7 @@ public sealed class ReceivePurchaseOrder
         _payables = payables;
         _receivingIssues = receivingIssues;
         _sellerInventory = sellerInventory;
+        _returnEligibility = returnEligibility;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2756,6 +2760,18 @@ public sealed class ReceivePurchaseOrder
                                     .ReleaseActiveAsync(connected, utcNow, ct)
                                     .ConfigureAwait(false);
                                 await _connectedOrders.UpdateAsync(connected, ct).ConfigureAwait(false);
+                            }
+
+                            if (_returnEligibility is not null)
+                            {
+                                await _returnEligibility
+                                    .CreateBucketsForConnectedReceiptAsync(
+                                        org,
+                                        connected.SupplierOrganizationId,
+                                        po,
+                                        grn,
+                                        ct)
+                                    .ConfigureAwait(false);
                             }
                         }
                     },

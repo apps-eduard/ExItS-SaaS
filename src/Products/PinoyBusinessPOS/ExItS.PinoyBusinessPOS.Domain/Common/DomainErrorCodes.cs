@@ -511,6 +511,16 @@ public static class DomainErrorCodes
     public const string ReturnBatchQuantityExceedsReceived = "pos.return_batch.quantity.exceeds_received";
     public const string ReturnBatchNotAwaitingSellerReceipt = "pos.return_batch.not_awaiting_seller_receipt";
     public const string ReturnBatchAwaitingSellerReceipt = "pos.return_batch.awaiting_seller_receipt";
+    public const string InvalidConnectedPoReturnWindowDays = "pos.connected_po_return.window_days.invalid";
+    public const string InvalidConnectedPoReceivingIssueWindowDays = "pos.connected_po_return.receiving_issue_window_days.invalid";
+    public const string InvalidConnectedPoReturnEligibilityBucketId = "pos.connected_po_return.eligibility_bucket.id.invalid";
+    public const string InvalidConnectedPoReturnEligibilityBucket = "pos.connected_po_return.eligibility_bucket.invalid";
+    public const string InvalidConnectedPoReturnAllocationId = "pos.connected_po_return.allocation.id.invalid";
+    public const string InvalidConnectedPoReturnAllocation = "pos.connected_po_return.allocation.invalid";
+    public const string ConnectedPoReturnQuantityExceedsEligible = "pos.connected_po_return.quantity.exceeds_eligible";
+    public const string ConnectedPoReturnNotAllowed = "pos.connected_po_return.not_allowed";
+    public const string ConnectedPoReturnWindowExpired = "pos.connected_po_return.window_expired";
+    public const string InvalidConnectedPoReturnPolicyMode = "pos.connected_po_return.policy_mode.invalid";
     public const string InvalidInventoryPendingReturnQuantity = "pos.inventory.pending_return.quantity.invalid";
 
     public const string InvalidPosRoleAssignmentId = "pos.role_assignment.id.invalid";

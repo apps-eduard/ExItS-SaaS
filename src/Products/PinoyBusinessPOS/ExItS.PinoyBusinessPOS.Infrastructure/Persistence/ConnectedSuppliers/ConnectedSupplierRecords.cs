@@ -65,9 +65,14 @@ internal sealed class OrganizationConnectedCommerceSettingsRecord
     public int DefaultPaymentTiming { get; set; } = (int)ConnectedPoPaymentTiming.PayBeforeFulfillment;
     public decimal DefaultB2bDiscountPercent { get; set; }
     public int ProposalReservationHoldHours { get; set; } = 24;
+    public bool ReturnsAllowed { get; set; } = true;
+    public int? ReturnWindowDays { get; set; }
+    public int ReceivingIssueWindowDays { get; set; } = 2;
+    public bool RequireReturnApproval { get; set; } = true;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public List<OrganizationConnectedCommerceCategoryRuleRecord> CategoryRules { get; set; } = [];
+    public List<OrganizationConnectedCommerceCategoryReturnRuleRecord> CategoryReturnRules { get; set; } = [];
 }
 
 internal sealed class OrganizationConnectedCommerceCategoryRuleRecord
@@ -75,6 +80,15 @@ internal sealed class OrganizationConnectedCommerceCategoryRuleRecord
     public Guid OrganizationConnectedCommerceSettingsId { get; set; }
     public Guid CategoryId { get; set; }
     public decimal DiscountPercent { get; set; }
+}
+
+internal sealed class OrganizationConnectedCommerceCategoryReturnRuleRecord
+{
+    public Guid OrganizationConnectedCommerceSettingsId { get; set; }
+    public Guid CategoryId { get; set; }
+    public short Mode { get; set; }
+    public bool? ReturnsAllowed { get; set; }
+    public int? ReturnWindowDays { get; set; }
 }
 internal sealed class SupplierProductExposureRecord
 {
@@ -275,7 +289,18 @@ internal static class ConnectedSupplierEntityMapper
                 .ToList(),
             record.ProposalReservationHoldHours,
             record.CreatedAtUtc,
-            record.UpdatedAtUtc);
+            record.UpdatedAtUtc,
+            record.ReturnsAllowed,
+            record.ReturnWindowDays,
+            record.ReceivingIssueWindowDays,
+            record.RequireReturnApproval,
+            record.CategoryReturnRules
+                .Select(r => new OrganizationConnectedCommerceCategoryReturnRule(
+                    r.CategoryId,
+                    (ConnectedPoReturnPolicyMode)r.Mode,
+                    r.ReturnsAllowed,
+                    r.ReturnWindowDays))
+                .ToList());
 
     public static OrganizationConnectedCommerceSettingsRecord ToRecord(OrganizationConnectedCommerceSettings settings) =>
         new()
@@ -288,6 +313,10 @@ internal static class ConnectedSupplierEntityMapper
             DefaultPaymentTiming = (int)settings.DefaultPaymentTiming,
             DefaultB2bDiscountPercent = settings.DefaultB2bDiscountPercent,
             ProposalReservationHoldHours = settings.ProposalReservationHoldHours,
+            ReturnsAllowed = settings.ReturnsAllowed,
+            ReturnWindowDays = settings.ReturnWindowDays,
+            ReceivingIssueWindowDays = settings.ReceivingIssueWindowDays,
+            RequireReturnApproval = settings.RequireReturnApproval,
             CreatedAtUtc = settings.CreatedAtUtc,
             UpdatedAtUtc = settings.UpdatedAtUtc,
             CategoryRules = settings.CategoryRules
@@ -296,6 +325,16 @@ internal static class ConnectedSupplierEntityMapper
                     OrganizationConnectedCommerceSettingsId = settings.SettingId,
                     CategoryId = r.CategoryId,
                     DiscountPercent = r.DiscountPercent
+                })
+                .ToList(),
+            CategoryReturnRules = settings.CategoryReturnRules
+                .Select(r => new OrganizationConnectedCommerceCategoryReturnRuleRecord
+                {
+                    OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                    CategoryId = r.CategoryId,
+                    Mode = (short)r.Mode,
+                    ReturnsAllowed = r.ReturnsAllowed,
+                    ReturnWindowDays = r.ReturnWindowDays
                 })
                 .ToList()
         };
@@ -308,6 +347,10 @@ internal static class ConnectedSupplierEntityMapper
         record.DefaultPaymentTiming = (int)settings.DefaultPaymentTiming;
         record.DefaultB2bDiscountPercent = settings.DefaultB2bDiscountPercent;
         record.ProposalReservationHoldHours = settings.ProposalReservationHoldHours;
+        record.ReturnsAllowed = settings.ReturnsAllowed;
+        record.ReturnWindowDays = settings.ReturnWindowDays;
+        record.ReceivingIssueWindowDays = settings.ReceivingIssueWindowDays;
+        record.RequireReturnApproval = settings.RequireReturnApproval;
         record.UpdatedAtUtc = settings.UpdatedAtUtc;
         record.CategoryRules = settings.CategoryRules
             .Select(r => new OrganizationConnectedCommerceCategoryRuleRecord
@@ -315,6 +358,16 @@ internal static class ConnectedSupplierEntityMapper
                 OrganizationConnectedCommerceSettingsId = settings.SettingId,
                 CategoryId = r.CategoryId,
                 DiscountPercent = r.DiscountPercent
+            })
+            .ToList();
+        record.CategoryReturnRules = settings.CategoryReturnRules
+            .Select(r => new OrganizationConnectedCommerceCategoryReturnRuleRecord
+            {
+                OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                CategoryId = r.CategoryId,
+                Mode = (short)r.Mode,
+                ReturnsAllowed = r.ReturnsAllowed,
+                ReturnWindowDays = r.ReturnWindowDays
             })
             .ToList();
     }

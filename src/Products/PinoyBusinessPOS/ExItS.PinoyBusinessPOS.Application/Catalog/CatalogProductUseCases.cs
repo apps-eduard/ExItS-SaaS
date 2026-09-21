@@ -262,7 +262,10 @@ public sealed class CatalogProductQueryService
                         product.IsProduced,
                         product.UsagePreset))),
             CatalogProductScopes.ToCode(product.Scope),
-            product.OriginBranchId?.Value);
+            product.OriginBranchId?.Value,
+            product.ReturnPolicyMode.ToString(),
+            product.ReturnPolicyReturnsAllowed,
+            product.ReturnPolicyWindowDays);
     }
 
     private async Task<string?> ResolveBrandNameAsync(
@@ -358,7 +361,10 @@ public sealed class CreateCatalogProduct
         decimal? defaultConnectedPoPrice = null,
         string? businessUsage = null,
         CancellationToken cancellationToken = default,
-        string? scope = null)
+        string? scope = null,
+        string returnPolicyMode = "UseDefault",
+        bool? returnPolicyReturnsAllowed = null,
+        int? returnPolicyWindowDays = null)
     {
         try
         {
@@ -424,9 +430,24 @@ public sealed class CreateCatalogProduct
                 return ApplicationResult<CatalogProduct>.Failure(staged.ErrorCode!, staged.ErrorMessage!);
             }
 
+            var created = staged.Value!;
+            if (!string.Equals(returnPolicyMode, nameof(ConnectedPoReturnPolicyMode.UseDefault), StringComparison.OrdinalIgnoreCase)
+                || returnPolicyReturnsAllowed is not null
+                || returnPolicyWindowDays is not null)
+            {
+                if (!Enum.TryParse<ConnectedPoReturnPolicyMode>(returnPolicyMode, ignoreCase: true, out var mode))
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        DomainErrorCodes.InvalidConnectedPoReturnPolicyMode,
+                        "Invalid product return policy mode.");
+                }
+
+                created.ConfigureReturnPolicy(mode, returnPolicyReturnsAllowed, returnPolicyWindowDays, _clock.UtcNow);
+                await _products.UpdateAsync(created, cancellationToken).ConfigureAwait(false);
+            }
+
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            var created = staged.Value!;
             if (created.CanBeUsedAsIngredient)
             {
                 if (_inventory is null)
@@ -548,7 +569,10 @@ public sealed class UpdateCatalogProduct
         bool? canExposeToConnectedBuyers = null,
         decimal? defaultConnectedPoPrice = null,
         string? businessUsage = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? returnPolicyMode = null,
+        bool? returnPolicyReturnsAllowed = null,
+        int? returnPolicyWindowDays = null)
     {
         var orgId = PosOrganizationId.From(organizationId);
         var product = await _products
@@ -771,6 +795,31 @@ public sealed class UpdateCatalogProduct
                 }
 
                 product.SetDefaultConnectedPoPrice(defaultConnectedPoPrice.Value, now);
+            }
+
+            if (returnPolicyMode is not null
+                || returnPolicyReturnsAllowed is not null
+                || returnPolicyWindowDays is not null)
+            {
+                var returnMode = ConnectedPoReturnPolicyMode.UseDefault;
+                if (!string.IsNullOrWhiteSpace(returnPolicyMode)
+                    && !Enum.TryParse(returnPolicyMode, ignoreCase: true, out returnMode))
+                {
+                    return ApplicationResult<CatalogProduct>.Failure(
+                        DomainErrorCodes.InvalidConnectedPoReturnPolicyMode,
+                        "Invalid product return policy mode.");
+                }
+
+                if (string.IsNullOrWhiteSpace(returnPolicyMode))
+                {
+                    returnMode = product.ReturnPolicyMode;
+                }
+
+                product.ConfigureReturnPolicy(
+                    returnMode,
+                    returnPolicyReturnsAllowed ?? product.ReturnPolicyReturnsAllowed,
+                    returnPolicyWindowDays ?? product.ReturnPolicyWindowDays,
+                    now);
             }
 
             if (units is { Count: > 0 })

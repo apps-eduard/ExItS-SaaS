@@ -563,7 +563,10 @@ internal static class CatalogEndpoints
                     body.DefaultConnectedPoPrice,
                     body.BusinessUsage,
                     ct,
-                    body.Scope)
+                    body.Scope,
+                    body.ReturnPolicyMode,
+                    body.ReturnPolicyReturnsAllowed,
+                    body.ReturnPolicyWindowDays)
                 .ConfigureAwait(false);
 
             if (!result.IsSuccess)
@@ -894,7 +897,10 @@ internal static class CatalogEndpoints
                     body.CanExposeToConnectedBuyers,
                     body.DefaultConnectedPoPrice,
                     body.BusinessUsage,
-                    ct)
+                    ct,
+                    body.ReturnPolicyMode,
+                    body.ReturnPolicyReturnsAllowed,
+                    body.ReturnPolicyWindowDays)
                 .ConfigureAwait(false);
 
             if (!result.IsSuccess)

@@ -120,6 +120,20 @@ public sealed record RecordReturnBatchRefundRequest(
     string? Note = null,
     string? ClientRefundId = null);
 
+public sealed record ConnectedPoReturnEligibilityBucketDto(
+    Guid BucketId,
+    Guid GoodsReceiptId,
+    Guid GoodsReceiptLineId,
+    decimal QuantityReceived,
+    decimal QuantityAllocated,
+    decimal RemainingQuantity,
+    DateTimeOffset ReceivedAtUtc,
+    DateTimeOffset? ReturnExpiresAtUtc,
+    bool ReturnsAllowed,
+    int? ReturnWindowDays,
+    string PolicySource,
+    bool IsEligible);
+
 public sealed record ConnectedPoReturnableLineDto(
     Guid PurchaseOrderLineId,
     Guid? ProductId,
@@ -129,7 +143,14 @@ public sealed record ConnectedPoReturnableLineDto(
     decimal UnitPurchaseCost,
     decimal ReceivedQuantity,
     decimal AlreadyReturnedQuantity,
-    decimal ReturnableQuantity);
+    decimal ReturnableQuantity,
+    bool ReturnsAllowed = true,
+    int? ReturnWindowDays = null,
+    DateTimeOffset? EarliestReturnExpiresAtUtc = null,
+    DateTimeOffset? LatestReturnExpiresAtUtc = null,
+    string? PolicySource = null,
+    string? LineBlockedReason = null,
+    IReadOnlyList<ConnectedPoReturnEligibilityBucketDto>? EligibilityBuckets = null);
 
 public sealed record ConnectedPoReturnEligibilityDto(
     Guid PurchaseOrderId,

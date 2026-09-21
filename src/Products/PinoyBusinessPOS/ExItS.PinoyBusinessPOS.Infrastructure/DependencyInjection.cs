@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IOrganizationPaymentMethodSettingRepository, OrganizationPaymentMethodSettingRepository>();
         services.AddScoped<IOrganizationFulfillmentSettingsRepository, OrganizationFulfillmentSettingsRepository>();
         services.AddScoped<IOrganizationConnectedCommerceSettingsRepository, OrganizationConnectedCommerceSettingsRepository>();
+        services.AddScoped<IConnectedPoReturnEligibilityBucketRepository, ConnectedPoReturnEligibilityBucketRepository>();
         services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
         services.AddScoped<IProductBrandRepository, ProductBrandRepository>();

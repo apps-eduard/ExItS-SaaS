@@ -9,6 +9,13 @@ export const connectedCommerceCategoryRuleSchema = z.object({
   discountPercent: z.number(),
 });
 
+export const connectedCommerceCategoryReturnRuleSchema = z.object({
+  categoryId: z.string().uuid(),
+  mode: z.string(),
+  returnsAllowed: z.boolean().nullable().optional(),
+  returnWindowDays: z.number().int().nullable().optional(),
+});
+
 export const organizationConnectedCommerceSettingsSchema = z.object({
   organizationId: z.string().uuid(),
   allowPayBeforeFulfillment: z.boolean(),
@@ -18,6 +25,11 @@ export const organizationConnectedCommerceSettingsSchema = z.object({
   defaultB2bDiscountPercent: z.number(),
   proposalReservationHoldHours: z.number().int(),
   categoryRules: z.array(connectedCommerceCategoryRuleSchema).default([]),
+  returnsAllowed: z.boolean().default(true),
+  returnWindowDays: z.number().int().nullable().optional(),
+  receivingIssueWindowDays: z.number().int().default(2),
+  requireReturnApproval: z.boolean().default(true),
+  categoryReturnRules: z.array(connectedCommerceCategoryReturnRuleSchema).default([]),
 });
 
 export type OrganizationConnectedCommerceSettingsDto = z.infer<
@@ -50,6 +62,18 @@ function normalizeSettings(raw: Record<string, unknown>): unknown {
         discountPercent: rule.discountPercent ?? rule.DiscountPercent,
       }),
     ),
+    returnsAllowed: raw.returnsAllowed ?? raw.ReturnsAllowed ?? true,
+    returnWindowDays: raw.returnWindowDays ?? raw.ReturnWindowDays ?? null,
+    receivingIssueWindowDays: raw.receivingIssueWindowDays ?? raw.ReceivingIssueWindowDays ?? 2,
+    requireReturnApproval: raw.requireReturnApproval ?? raw.RequireReturnApproval ?? true,
+    categoryReturnRules: (
+      (raw.categoryReturnRules ?? raw.CategoryReturnRules ?? []) as Record<string, unknown>[]
+    ).map((rule) => ({
+      categoryId: rule.categoryId ?? rule.CategoryId,
+      mode: rule.mode ?? rule.Mode ?? "UseDefault",
+      returnsAllowed: rule.returnsAllowed ?? rule.ReturnsAllowed ?? null,
+      returnWindowDays: rule.returnWindowDays ?? rule.ReturnWindowDays ?? null,
+    })),
   };
 }
 
@@ -94,6 +118,16 @@ export async function updateOrganizationConnectedCommerceSettings(
     defaultB2bDiscountPercent: number;
     proposalReservationHoldHours: number;
     categoryRules: Array<{ categoryId: string; discountPercent: number }>;
+    returnsAllowed?: boolean;
+    returnWindowDays?: number | null;
+    receivingIssueWindowDays?: number;
+    requireReturnApproval?: boolean;
+    categoryReturnRules?: Array<{
+      categoryId: string;
+      mode: string;
+      returnsAllowed?: boolean | null;
+      returnWindowDays?: number | null;
+    }>;
   },
   signal?: AbortSignal,
 ): Promise<OrganizationConnectedCommerceSettingsDto> {
@@ -109,6 +143,11 @@ export async function updateOrganizationConnectedCommerceSettings(
       defaultB2bDiscountPercent: body.defaultB2bDiscountPercent,
       proposalReservationHoldHours: body.proposalReservationHoldHours,
       categoryRules: body.categoryRules,
+      returnsAllowed: body.returnsAllowed ?? true,
+      returnWindowDays: body.returnWindowDays ?? null,
+      receivingIssueWindowDays: body.receivingIssueWindowDays ?? 2,
+      requireReturnApproval: body.requireReturnApproval ?? true,
+      categoryReturnRules: body.categoryReturnRules ?? [],
     },
     signal,
   });

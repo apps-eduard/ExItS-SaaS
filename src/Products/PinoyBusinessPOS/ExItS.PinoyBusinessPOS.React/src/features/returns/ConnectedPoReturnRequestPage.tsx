@@ -15,6 +15,7 @@ import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { describeReturnError } from "@/features/returns/return-errors";
+import { describeConnectedPoReturnLineEligibility } from "@/features/returns/connected-po-return-eligibility";
 import { useI18n } from "@/i18n/I18nProvider";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -54,9 +55,18 @@ export function ConnectedPoReturnRequestPage() {
   });
 
   const eligibility = eligibilityQuery.data;
+  const allLines = eligibility?.lines ?? [];
   const returnableLines = useMemo(
-    () => (eligibility?.lines ?? []).filter((line) => line.returnableQuantity > 0),
-    [eligibility?.lines],
+    () => allLines.filter((line) => describeConnectedPoReturnLineEligibility(line).showReturnAction),
+    [allLines],
+  );
+  const blockedLines = useMemo(
+    () =>
+      allLines.filter((line) => {
+        const view = describeConnectedPoReturnLineEligibility(line);
+        return view.status === "non_returnable" || view.status === "expired";
+      }),
+    [allLines],
   );
 
   const selected = useMemo(
@@ -162,6 +172,7 @@ export function ConnectedPoReturnRequestPage() {
         <ul className="m-0 flex list-none flex-col gap-3 p-0" data-testid="connected-po-return-lines">
           {returnableLines.map((line) => {
             const quantity = quantities[line.purchaseOrderLineId] ?? 0;
+            const view = describeConnectedPoReturnLineEligibility(line);
             return (
               <li key={line.purchaseOrderLineId}>
                 <Card className="p-3" data-testid={`connected-po-return-line-${line.purchaseOrderLineId}`}>
@@ -169,10 +180,13 @@ export function ConnectedPoReturnRequestPage() {
                     <div className="min-w-0">
                       <p className="m-0 font-semibold">{line.productName}</p>
                       <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                        Return eligible · {view.availableQty} {line.unitOfMeasure} available
+                        {view.expiresLabel ? ` · Until ${view.expiresLabel}` : ""}
+                      </p>
+                      <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                         {t("returns.connectedPo.receivedQty")}: {line.receivedQuantity}{" "}
                         {line.unitOfMeasure} · {t("returns.connectedPo.alreadyReturned")}:{" "}
-                        {line.alreadyReturnedQuantity} · {t("returns.connectedPo.returnableQty")}:{" "}
-                        {line.returnableQuantity}
+                        {line.alreadyReturnedQuantity}
                       </p>
                     </div>
                     <MoneyDisplay amount={line.unitPurchaseCost} />
@@ -221,6 +235,31 @@ export function ConnectedPoReturnRequestPage() {
           })}
         </ul>
       )}
+
+      {blockedLines.length > 0 ? (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="connected-po-return-blocked-lines">
+          {blockedLines.map((line) => {
+            const view = describeConnectedPoReturnLineEligibility(line);
+            return (
+              <li key={`blocked-${line.purchaseOrderLineId}`}>
+                <Card className="p-3" data-testid={`connected-po-return-blocked-${line.purchaseOrderLineId}`}>
+                  <p className="m-0 font-semibold">{line.productName}</p>
+                  <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                    {view.status === "non_returnable"
+                      ? "Non-returnable"
+                      : view.expiresLabel
+                        ? `Return period ended ${view.expiresLabel}`
+                        : "Return period ended"}
+                  </p>
+                  {view.helper ? (
+                    <p className="mb-0 mt-1 text-[length:var(--exits-text-xs)] text-muted">{view.helper}</p>
+                  ) : null}
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
 
       <section className="catalog-form-section exits-animate-panel gap-0">
         <label

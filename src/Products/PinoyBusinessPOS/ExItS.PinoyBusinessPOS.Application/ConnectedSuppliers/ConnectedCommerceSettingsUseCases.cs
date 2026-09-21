@@ -10,6 +10,12 @@ namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 
 public sealed record ConnectedCommerceCategoryDiscountRuleDto(Guid CategoryId, decimal DiscountPercent);
 
+public sealed record ConnectedCommerceCategoryReturnRuleDto(
+    Guid CategoryId,
+    string Mode,
+    bool? ReturnsAllowed = null,
+    int? ReturnWindowDays = null);
+
 public sealed record OrganizationConnectedCommerceSettingsDto(
     Guid OrganizationId,
     bool AllowPayBeforeFulfillment,
@@ -18,7 +24,12 @@ public sealed record OrganizationConnectedCommerceSettingsDto(
     string DefaultPaymentTiming,
     decimal DefaultB2bDiscountPercent,
     int ProposalReservationHoldHours,
-    IReadOnlyList<ConnectedCommerceCategoryDiscountRuleDto> CategoryRules);
+    IReadOnlyList<ConnectedCommerceCategoryDiscountRuleDto> CategoryRules,
+    bool ReturnsAllowed = true,
+    int? ReturnWindowDays = null,
+    int ReceivingIssueWindowDays = 2,
+    bool RequireReturnApproval = true,
+    IReadOnlyList<ConnectedCommerceCategoryReturnRuleDto>? CategoryReturnRules = null);
 
 public sealed record UpdateOrganizationConnectedCommerceSettingsRequest(
     bool AllowPayBeforeFulfillment,
@@ -27,7 +38,12 @@ public sealed record UpdateOrganizationConnectedCommerceSettingsRequest(
     string DefaultPaymentTiming,
     decimal DefaultB2bDiscountPercent,
     int ProposalReservationHoldHours,
-    IReadOnlyList<ConnectedCommerceCategoryDiscountRuleDto> CategoryRules);
+    IReadOnlyList<ConnectedCommerceCategoryDiscountRuleDto> CategoryRules,
+    bool ReturnsAllowed = true,
+    int? ReturnWindowDays = null,
+    int ReceivingIssueWindowDays = 2,
+    bool RequireReturnApproval = true,
+    IReadOnlyList<ConnectedCommerceCategoryReturnRuleDto>? CategoryReturnRules = null);
 
 public sealed record ConnectedCommerceOverviewDto(
     OrganizationConnectedCommerceSettingsDto Settings,
@@ -114,6 +130,17 @@ public sealed class GetOrganizationConnectedCommerceSettings(
             settingsRow.ProposalReservationHoldHours,
             settingsRow.CategoryRules
                 .Select(x => new ConnectedCommerceCategoryDiscountRuleDto(x.CategoryId, x.DiscountPercent))
+                .ToList(),
+            settingsRow.ReturnsAllowed,
+            settingsRow.ReturnWindowDays,
+            settingsRow.ReceivingIssueWindowDays,
+            settingsRow.RequireReturnApproval,
+            settingsRow.CategoryReturnRules
+                .Select(x => new ConnectedCommerceCategoryReturnRuleDto(
+                    x.CategoryId,
+                    x.Mode.ToString(),
+                    x.ReturnsAllowed,
+                    x.ReturnWindowDays))
                 .ToList());
 }
 
@@ -157,6 +184,13 @@ public sealed class UpdateOrganizationConnectedCommerceSettings(
                 request.CategoryRules?.Select(ToDomainRule).ToList() ?? [],
                 now);
             row.SetProposalReservationHoldHours(request.ProposalReservationHoldHours, now);
+            row.ConfigureReturnPolicy(
+                request.ReturnsAllowed,
+                request.ReturnWindowDays,
+                request.ReceivingIssueWindowDays,
+                request.RequireReturnApproval,
+                request.CategoryReturnRules?.Select(ToDomainReturnRule).ToList() ?? [],
+                now);
         }
         catch (DomainException ex)
         {
@@ -191,6 +225,23 @@ public sealed class UpdateOrganizationConnectedCommerceSettings(
 
     private static OrganizationConnectedCommerceCategoryRule ToDomainRule(ConnectedCommerceCategoryDiscountRuleDto dto) =>
         new(dto.CategoryId, dto.DiscountPercent);
+
+    private static OrganizationConnectedCommerceCategoryReturnRule ToDomainReturnRule(
+        ConnectedCommerceCategoryReturnRuleDto dto)
+    {
+        if (!Enum.TryParse<ConnectedPoReturnPolicyMode>(dto.Mode?.Trim(), ignoreCase: true, out var mode))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReturnPolicyMode,
+                "Invalid category return policy mode.");
+        }
+
+        return new OrganizationConnectedCommerceCategoryReturnRule(
+            dto.CategoryId,
+            mode,
+            dto.ReturnsAllowed,
+            dto.ReturnWindowDays);
+    }
 }
 
 public sealed class GetConnectedCommerceOverview(

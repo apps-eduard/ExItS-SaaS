@@ -16,7 +16,8 @@ public sealed record OrganizationConnectedCommerceCategoryRule(Guid CategoryId, 
 public sealed record ConnectedCustomerCategoryDiscountOverride(Guid CategoryId, decimal DiscountPercent);
 
 /// <summary>
-/// Organization-level defaults for connected-commerce payment timing, B2B pricing, and proposal hold SLA.
+/// Organization-level defaults for connected-commerce payment timing, B2B pricing,
+/// proposal hold SLA, and voluntary connected-PO return policy.
 /// </summary>
 public sealed class OrganizationConnectedCommerceSettings
 {
@@ -33,6 +34,11 @@ public sealed class OrganizationConnectedCommerceSettings
         decimal defaultB2bDiscountPercent,
         IReadOnlyList<OrganizationConnectedCommerceCategoryRule> categoryRules,
         int proposalReservationHoldHours,
+        bool returnsAllowed,
+        int? returnWindowDays,
+        int receivingIssueWindowDays,
+        bool requireReturnApproval,
+        IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule> categoryReturnRules,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -45,6 +51,11 @@ public sealed class OrganizationConnectedCommerceSettings
         DefaultB2bDiscountPercent = NormalizeDiscount(defaultB2bDiscountPercent);
         CategoryRules = NormalizeCategoryRules(categoryRules);
         ProposalReservationHoldHours = NormalizeProposalReservationHoldHours(proposalReservationHoldHours);
+        ReturnsAllowed = returnsAllowed;
+        ReturnWindowDays = NormalizeOptionalWindowDays(returnWindowDays, "Return window days");
+        ReceivingIssueWindowDays = NormalizeReceivingIssueWindowDays(receivingIssueWindowDays);
+        RequireReturnApproval = requireReturnApproval;
+        CategoryReturnRules = NormalizeCategoryReturnRules(categoryReturnRules);
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
         EnsureAtLeastOneAllowedPaymentTiming();
@@ -60,6 +71,24 @@ public sealed class OrganizationConnectedCommerceSettings
     public decimal DefaultB2bDiscountPercent { get; private set; }
     public IReadOnlyList<OrganizationConnectedCommerceCategoryRule> CategoryRules { get; private set; } = [];
     public int ProposalReservationHoldHours { get; private set; }
+
+    /// <summary>When false, voluntary normal returns are disallowed at org default.</summary>
+    public bool ReturnsAllowed { get; private set; }
+
+    /// <summary>Null = unlimited voluntary return window after goods receipt.</summary>
+    public int? ReturnWindowDays { get; private set; }
+
+    /// <summary>
+    /// Store-only SLA hint for post-receipt delivery-issue reporting.
+    /// Never blocks Goods Receipt posting; discrepancies remain capturable at GRN.
+    /// </summary>
+    public int ReceivingIssueWindowDays { get; private set; }
+
+    /// <summary>Informational; physical Connected PO ReturnBatch still awaits seller receipt.</summary>
+    public bool RequireReturnApproval { get; private set; }
+
+    public IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule> CategoryReturnRules { get; private set; } = [];
+
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -76,6 +105,11 @@ public sealed class OrganizationConnectedCommerceSettings
             defaultB2bDiscountPercent: 0m,
             categoryRules: [],
             proposalReservationHoldHours: 24,
+            returnsAllowed: true,
+            returnWindowDays: null,
+            receivingIssueWindowDays: ConnectedPoReturnPolicyResolver.DefaultReceivingIssueWindowDays,
+            requireReturnApproval: true,
+            categoryReturnRules: [],
             createdAtUtc: nowUtc,
             updatedAtUtc: nowUtc);
 
@@ -90,7 +124,12 @@ public sealed class OrganizationConnectedCommerceSettings
         IReadOnlyList<OrganizationConnectedCommerceCategoryRule> categoryRules,
         int proposalReservationHoldHours,
         DateTimeOffset createdAtUtc,
-        DateTimeOffset updatedAtUtc) =>
+        DateTimeOffset updatedAtUtc,
+        bool returnsAllowed = true,
+        int? returnWindowDays = null,
+        int receivingIssueWindowDays = ConnectedPoReturnPolicyResolver.DefaultReceivingIssueWindowDays,
+        bool requireReturnApproval = true,
+        IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule>? categoryReturnRules = null) =>
         new(
             settingId,
             organizationId,
@@ -101,6 +140,11 @@ public sealed class OrganizationConnectedCommerceSettings
             defaultB2bDiscountPercent,
             categoryRules,
             proposalReservationHoldHours,
+            returnsAllowed,
+            returnWindowDays,
+            receivingIssueWindowDays,
+            requireReturnApproval,
+            categoryReturnRules ?? [],
             createdAtUtc,
             updatedAtUtc);
 
@@ -136,6 +180,22 @@ public sealed class OrganizationConnectedCommerceSettings
         UpdatedAtUtc = nowUtc;
     }
 
+    public void ConfigureReturnPolicy(
+        bool returnsAllowed,
+        int? returnWindowDays,
+        int receivingIssueWindowDays,
+        bool requireReturnApproval,
+        IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule> categoryReturnRules,
+        DateTimeOffset nowUtc)
+    {
+        ReturnsAllowed = returnsAllowed;
+        ReturnWindowDays = NormalizeOptionalWindowDays(returnWindowDays, "Return window days");
+        ReceivingIssueWindowDays = NormalizeReceivingIssueWindowDays(receivingIssueWindowDays);
+        RequireReturnApproval = requireReturnApproval;
+        CategoryReturnRules = NormalizeCategoryReturnRules(categoryReturnRules);
+        UpdatedAtUtc = nowUtc;
+    }
+
     public bool IsAllowed(ConnectedPoPaymentTiming timing) =>
         timing switch
         {
@@ -154,6 +214,16 @@ public sealed class OrganizationConnectedCommerceSettings
 
         var match = CategoryRules.FirstOrDefault(r => r.CategoryId == categoryId.Value);
         return match?.DiscountPercent;
+    }
+
+    public OrganizationConnectedCommerceCategoryReturnRule? FindCategoryReturnRule(Guid? categoryId)
+    {
+        if (categoryId is null || categoryId == Guid.Empty)
+        {
+            return null;
+        }
+
+        return CategoryReturnRules.FirstOrDefault(r => r.CategoryId == categoryId.Value);
     }
 
     private void EnsureAtLeastOneAllowedPaymentTiming()
@@ -201,6 +271,30 @@ public sealed class OrganizationConnectedCommerceSettings
         return rounded;
     }
 
+    private static int? NormalizeOptionalWindowDays(int? days, string label)
+    {
+        if (days is < 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReturnWindowDays,
+                $"{label} cannot be negative.");
+        }
+
+        return days;
+    }
+
+    private static int NormalizeReceivingIssueWindowDays(int days)
+    {
+        if (days < 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReceivingIssueWindowDays,
+                "Receiving issue window days cannot be negative.");
+        }
+
+        return days;
+    }
+
     private static IReadOnlyList<OrganizationConnectedCommerceCategoryRule> NormalizeCategoryRules(
         IReadOnlyList<OrganizationConnectedCommerceCategoryRule> rules)
     {
@@ -222,6 +316,47 @@ public sealed class OrganizationConnectedCommerceSettings
                 throw new DomainException(
                     ConnectedSupplierDomainErrorCodes.InvalidOffer,
                     "Duplicate category discount rules are not allowed.");
+            }
+        }
+
+        return normalized.Values.OrderBy(x => x.CategoryId).ToArray();
+    }
+
+    private static IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule> NormalizeCategoryReturnRules(
+        IReadOnlyList<OrganizationConnectedCommerceCategoryReturnRule> rules)
+    {
+        var normalized = new Dictionary<Guid, OrganizationConnectedCommerceCategoryReturnRule>();
+        foreach (var rule in rules ?? [])
+        {
+            if (rule.CategoryId == Guid.Empty)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOffer,
+                    "Category return rule requires a category id.");
+            }
+
+            if (!Enum.IsDefined(rule.Mode))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidConnectedPoReturnPolicyMode,
+                    "Invalid category return policy mode.");
+            }
+
+            if (rule.Mode == ConnectedPoReturnPolicyMode.Custom)
+            {
+                NormalizeOptionalWindowDays(rule.ReturnWindowDays, "Category return window days");
+            }
+
+            var next = new OrganizationConnectedCommerceCategoryReturnRule(
+                rule.CategoryId,
+                rule.Mode,
+                rule.Mode == ConnectedPoReturnPolicyMode.Custom ? rule.ReturnsAllowed : null,
+                rule.Mode == ConnectedPoReturnPolicyMode.Custom ? rule.ReturnWindowDays : null);
+            if (!normalized.TryAdd(rule.CategoryId, next))
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOffer,
+                    "Duplicate category return rules are not allowed.");
             }
         }
 

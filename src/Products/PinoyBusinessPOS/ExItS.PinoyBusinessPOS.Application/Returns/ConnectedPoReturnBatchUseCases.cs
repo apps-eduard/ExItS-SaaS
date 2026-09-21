@@ -380,17 +380,23 @@ public sealed class ConnectedPoReturnQueryService
     private readonly IPurchaseOrderRepository _orders;
     private readonly IConnectedPurchaseOrderRepository _connectedOrders;
     private readonly ISupplierPayableRepository? _payables;
+    private readonly IConnectedPoReturnEligibilityBucketRepository? _eligibilityBuckets;
+    private readonly TimeProvider _clock;
 
     public ConnectedPoReturnQueryService(
         IReturnBatchRepository batches,
         IPurchaseOrderRepository orders,
         IConnectedPurchaseOrderRepository connectedOrders,
-        ISupplierPayableRepository? payables = null)
+        ISupplierPayableRepository? payables = null,
+        IConnectedPoReturnEligibilityBucketRepository? eligibilityBuckets = null,
+        TimeProvider? clock = null)
     {
         _batches = batches;
         _orders = orders;
         _connectedOrders = connectedOrders;
         _payables = payables;
+        _eligibilityBuckets = eligibilityBuckets;
+        _clock = clock ?? TimeProvider.System;
     }
 
     public async Task<ConnectedPoReturnEligibilityDto?> GetEligibilityAsync(
@@ -413,6 +419,16 @@ public sealed class ConnectedPoReturnQueryService
             .ListByPurchaseOrderIdAsync(orgId, poId, cancellationToken)
             .ConfigureAwait(false);
         var priorByLine = SumReturnedByPurchaseOrderLine(existing);
+        var utcNow = _clock.GetUtcNow();
+
+        var buckets = _eligibilityBuckets is null
+            ? []
+            : await _eligibilityBuckets
+                .ListByPurchaseOrderAsync(orgId, poId, cancellationToken)
+                .ConfigureAwait(false);
+        var bucketsByLine = buckets
+            .GroupBy(b => b.PurchaseOrderLineId.Value)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<ConnectedPoReturnEligibilityBucket>)g.ToList());
 
         var blockedReason = connected is null
             ? "not_connected"
@@ -428,6 +444,85 @@ public sealed class ConnectedPoReturnQueryService
             .Select(l =>
             {
                 priorByLine.TryGetValue(l.Id.Value, out var prior);
+                bucketsByLine.TryGetValue(l.Id.Value, out var lineBuckets);
+                lineBuckets ??= Array.Empty<ConnectedPoReturnEligibilityBucket>();
+
+                var eligibleRemaining = lineBuckets
+                    .Where(b => b.IsVoluntarilyEligibleAt(utcNow))
+                    .Sum(b => b.RemainingQuantity);
+                // Secondary over-return guard: never exceed ReceivedQty - prior across all batches.
+                var qtyCap = Math.Max(0m, l.ReceivedQty - prior);
+                var returnable = Math.Min(eligibleRemaining, qtyCap);
+
+                var anyNonReturnable = lineBuckets.Count > 0
+                    && lineBuckets.All(b => !b.PolicyReturnsAllowed);
+                var anyExpired = lineBuckets.Count > 0
+                    && lineBuckets.All(b =>
+                        b.PolicyReturnsAllowed
+                        && b.ReturnExpiresAtUtc is not null
+                        && utcNow > b.ReturnExpiresAtUtc.Value);
+                string? lineBlocked = null;
+                if (returnable <= 0m)
+                {
+                    if (anyNonReturnable)
+                    {
+                        lineBlocked = "non_returnable";
+                    }
+                    else if (anyExpired)
+                    {
+                        lineBlocked = "window_expired";
+                    }
+                    else if (qtyCap <= 0m)
+                    {
+                        lineBlocked = "already_returned";
+                    }
+                    else if (lineBuckets.Count == 0)
+                    {
+                        // Legacy/missing buckets: fall back to qty-only compatibility.
+                        returnable = qtyCap;
+                    }
+                    else
+                    {
+                        lineBlocked = "nothing_returnable";
+                    }
+                }
+
+                var eligibleBuckets = lineBuckets
+                    .Select(b => new ConnectedPoReturnEligibilityBucketDto(
+                        b.Id.Value,
+                        b.GoodsReceiptId.Value,
+                        b.GoodsReceiptLineId.Value,
+                        b.QuantityReceived,
+                        b.QuantityAllocated,
+                        b.RemainingQuantity,
+                        b.ReceivedAtUtc,
+                        b.ReturnExpiresAtUtc,
+                        b.PolicyReturnsAllowed,
+                        b.PolicyReturnWindowDays,
+                        b.PolicySource.ToString(),
+                        b.IsVoluntarilyEligibleAt(utcNow)))
+                    .ToList();
+
+                var policySource = lineBuckets.FirstOrDefault()?.PolicySource.ToString();
+                var windowDays = lineBuckets.FirstOrDefault()?.PolicyReturnWindowDays;
+                var returnsAllowed = lineBuckets.Count == 0 || lineBuckets.Any(b => b.PolicyReturnsAllowed);
+                DateTimeOffset? earliest = null;
+                DateTimeOffset? latest = null;
+                foreach (var b in lineBuckets.Where(x => x.IsVoluntarilyEligibleAt(utcNow)))
+                {
+                    if (b.ReturnExpiresAtUtc is null)
+                    {
+                        continue;
+                    }
+
+                    earliest = earliest is null || b.ReturnExpiresAtUtc < earliest
+                        ? b.ReturnExpiresAtUtc
+                        : earliest;
+                    latest = latest is null || b.ReturnExpiresAtUtc > latest
+                        ? b.ReturnExpiresAtUtc
+                        : latest;
+                }
+
                 return new ConnectedPoReturnableLineDto(
                     l.Id.Value,
                     l.ProductId?.Value,
@@ -437,7 +532,14 @@ public sealed class ConnectedPoReturnQueryService
                     l.UnitPurchaseCost,
                     l.ReceivedQty,
                     prior,
-                    Math.Max(0m, l.ReceivedQty - prior));
+                    returnable,
+                    returnsAllowed,
+                    windowDays,
+                    earliest,
+                    latest,
+                    policySource,
+                    lineBlocked,
+                    eligibleBuckets);
             })
             .ToList();
 
@@ -582,6 +684,7 @@ public sealed class RequestConnectedPoReturnBatch
     private readonly ConnectedPoReturnInventoryService _inventory;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly IConnectedPoReturnEligibilityBucketRepository? _eligibilityBuckets;
 
     public RequestConnectedPoReturnBatch(
         IReturnBatchRepository batches,
@@ -589,7 +692,8 @@ public sealed class RequestConnectedPoReturnBatch
         IConnectedPurchaseOrderRepository connectedOrders,
         ConnectedPoReturnInventoryService inventory,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        IConnectedPoReturnEligibilityBucketRepository? eligibilityBuckets = null)
     {
         _batches = batches;
         _orders = orders;
@@ -597,6 +701,7 @@ public sealed class RequestConnectedPoReturnBatch
         _inventory = inventory;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _eligibilityBuckets = eligibilityBuckets;
     }
 
     public async Task<ApplicationResult<ReturnBatch>> ExecuteAsync(
@@ -669,6 +774,39 @@ public sealed class RequestConnectedPoReturnBatch
                 var utcNow = _clock.UtcNow;
                 var sellerOrg = connected.SupplierOrganizationId;
 
+                var plannedAllocations =
+                    new List<(PurchaseOrderLineId PoLineId, IReadOnlyList<ConnectedPoReturnBucketAllocator.AllocationSlice> Slices)>();
+                if (_eligibilityBuckets is not null)
+                {
+                    var allBuckets = await _eligibilityBuckets
+                        .ListByPurchaseOrderAsync(buyerOrg, poId, ct)
+                        .ConfigureAwait(false);
+                    foreach (var draft in drafts)
+                    {
+                        var lineBuckets = allBuckets
+                            .Where(b => b.PurchaseOrderLineId == draft.PurchaseOrderLineId)
+                            .ToList();
+                        if (lineBuckets.Count == 0)
+                        {
+                            // Compatibility: no buckets yet (legacy GRN). Qty guard via prior remains.
+                            continue;
+                        }
+
+                        if (lineBuckets.All(b => !b.PolicyReturnsAllowed))
+                        {
+                            return ApplicationResult<ReturnBatch>.Failure(
+                                DomainErrorCodes.ConnectedPoReturnNotAllowed,
+                                "This product is non-returnable under the supplier return policy.");
+                        }
+
+                        var slices = ConnectedPoReturnBucketAllocator.AllocateFifo(
+                            lineBuckets,
+                            draft.AcceptedQuantity,
+                            utcNow);
+                        plannedAllocations.Add((draft.PurchaseOrderLineId, slices));
+                    }
+                }
+
                 var created = await _batches
                     .CreateAsync(
                         sellerOrg,
@@ -696,6 +834,28 @@ public sealed class RequestConnectedPoReturnBatch
                         (batch, afterCt) => _inventory.IncreaseBuyerPendingReturnAsync(batch, utcNow, afterCt),
                         ct)
                     .ConfigureAwait(false);
+
+                if (_eligibilityBuckets is not null && plannedAllocations.Count > 0)
+                {
+                    foreach (var (poLineId, slices) in plannedAllocations)
+                    {
+                        var batchLine = created.Lines.First(l => l.PurchaseOrderLineId == poLineId);
+                        foreach (var slice in slices)
+                        {
+                            slice.Bucket.Allocate(slice.Quantity);
+                            await _eligibilityBuckets.UpdateAsync(slice.Bucket, ct).ConfigureAwait(false);
+                            await _eligibilityBuckets
+                                .AddAllocationAsync(
+                                    ConnectedPoReturnAllocation.Create(
+                                        batchLine.Id,
+                                        slice.Bucket.Id,
+                                        slice.Quantity,
+                                        utcNow),
+                                    ct)
+                                .ConfigureAwait(false);
+                        }
+                    }
+                }
 
                 await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                 return ApplicationResult<ReturnBatch>.Success(created);

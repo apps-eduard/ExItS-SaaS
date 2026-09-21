@@ -147,6 +147,12 @@ public sealed class PosDbContext : DbContext
         Set<OrganizationConnectedCommerceSettingsRecord>();
     internal DbSet<OrganizationConnectedCommerceCategoryRuleRecord> OrganizationConnectedCommerceCategoryRules =>
         Set<OrganizationConnectedCommerceCategoryRuleRecord>();
+    internal DbSet<OrganizationConnectedCommerceCategoryReturnRuleRecord> OrganizationConnectedCommerceCategoryReturnRules =>
+        Set<OrganizationConnectedCommerceCategoryReturnRuleRecord>();
+    internal DbSet<ConnectedPoReturnEligibilityBucketRecord> ConnectedPoReturnEligibilityBuckets =>
+        Set<ConnectedPoReturnEligibilityBucketRecord>();
+    internal DbSet<ConnectedPoReturnAllocationRecord> ConnectedPoReturnAllocations =>
+        Set<ConnectedPoReturnAllocationRecord>();
     internal DbSet<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord> ConnectedSupplierRelationshipCategoryDiscountOverrides =>
         Set<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord>();
     internal DbSet<SupplierProductExposureRecord> SupplierProductExposures => Set<SupplierProductExposureRecord>();
@@ -1211,6 +1217,14 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.DefaultConnectedPoPrice)
                 .HasColumnName("default_connected_po_price")
                 .HasPrecision(18, 2);
+            entity.Property(e => e.ReturnPolicyMode)
+                .HasColumnName("return_policy_mode")
+                .HasDefaultValue((short)0)
+                .IsRequired();
+            entity.Property(e => e.ReturnPolicyReturnsAllowed)
+                .HasColumnName("return_policy_returns_allowed");
+            entity.Property(e => e.ReturnPolicyWindowDays)
+                .HasColumnName("return_policy_window_days");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id");
             entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
@@ -5784,12 +5798,20 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.DefaultPaymentTiming).HasColumnName("default_payment_timing").HasDefaultValue((int)ConnectedPoPaymentTiming.PayBeforeFulfillment);
             entity.Property(x => x.DefaultB2bDiscountPercent).HasColumnName("default_b2b_discount_percent").HasPrecision(5, 2).HasDefaultValue(0m);
             entity.Property(x => x.ProposalReservationHoldHours).HasColumnName("proposal_reservation_hold_hours").HasDefaultValue(24);
+            entity.Property(x => x.ReturnsAllowed).HasColumnName("returns_allowed").HasDefaultValue(true);
+            entity.Property(x => x.ReturnWindowDays).HasColumnName("return_window_days");
+            entity.Property(x => x.ReceivingIssueWindowDays).HasColumnName("receiving_issue_window_days").HasDefaultValue(2);
+            entity.Property(x => x.RequireReturnApproval).HasColumnName("require_return_approval").HasDefaultValue(true);
             entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(x => x.OrganizationId)
                 .IsUnique()
                 .HasDatabaseName("ux_org_connected_commerce_settings_org");
             entity.HasMany(x => x.CategoryRules)
+                .WithOne()
+                .HasForeignKey(x => x.OrganizationConnectedCommerceSettingsId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(x => x.CategoryReturnRules)
                 .WithOne()
                 .HasForeignKey(x => x.OrganizationConnectedCommerceSettingsId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -5802,6 +5824,65 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.CategoryId).HasColumnName("category_id");
             entity.Property(x => x.DiscountPercent).HasColumnName("discount_percent").HasPrecision(5, 2);
             entity.HasIndex(x => x.CategoryId).HasDatabaseName("ix_org_connected_commerce_category_rules_category");
+        });
+        modelBuilder.Entity<OrganizationConnectedCommerceCategoryReturnRuleRecord>(entity =>
+        {
+            entity.ToTable("organization_connected_commerce_category_return_rules");
+            entity.HasKey(x => new { x.OrganizationConnectedCommerceSettingsId, x.CategoryId });
+            entity.Property(x => x.OrganizationConnectedCommerceSettingsId)
+                .HasColumnName("organization_connected_commerce_settings_id");
+            entity.Property(x => x.CategoryId).HasColumnName("category_id");
+            entity.Property(x => x.Mode).HasColumnName("mode").HasDefaultValue((short)0);
+            entity.Property(x => x.ReturnsAllowed).HasColumnName("returns_allowed");
+            entity.Property(x => x.ReturnWindowDays).HasColumnName("return_window_days");
+            entity.HasIndex(x => x.CategoryId)
+                .HasDatabaseName("ix_org_connected_commerce_category_return_rules_category");
+        });
+        modelBuilder.Entity<ConnectedPoReturnEligibilityBucketRecord>(entity =>
+        {
+            entity.ToTable("connected_po_return_eligibility_buckets");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id");
+            entity.Property(x => x.PurchaseOrderId).HasColumnName("purchase_order_id");
+            entity.Property(x => x.PurchaseOrderLineId).HasColumnName("purchase_order_line_id");
+            entity.Property(x => x.GoodsReceiptId).HasColumnName("goods_receipt_id");
+            entity.Property(x => x.GoodsReceiptLineId).HasColumnName("goods_receipt_line_id");
+            entity.Property(x => x.BuyerProductId).HasColumnName("buyer_product_id");
+            entity.Property(x => x.SupplierProductId).HasColumnName("supplier_product_id");
+            entity.Property(x => x.QuantityReceived).HasColumnName("quantity_received").HasPrecision(18, 3);
+            entity.Property(x => x.QuantityAllocated).HasColumnName("quantity_allocated").HasPrecision(18, 3);
+            entity.Property(x => x.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(x => x.PolicyReturnsAllowed).HasColumnName("policy_returns_allowed");
+            entity.Property(x => x.PolicyReturnWindowDays).HasColumnName("policy_return_window_days");
+            entity.Property(x => x.PolicyReceivingIssueWindowDays).HasColumnName("policy_receiving_issue_window_days");
+            entity.Property(x => x.PolicyRequireReturnApproval).HasColumnName("policy_require_return_approval");
+            entity.Property(x => x.PolicySource).HasColumnName("policy_source");
+            entity.Property(x => x.ReturnExpiresAtUtc).HasColumnName("return_expires_at_utc");
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(x => x.GoodsReceiptLineId)
+                .IsUnique()
+                .HasDatabaseName("ux_connected_po_return_eligibility_buckets_gr_line");
+            entity.HasIndex(x => new { x.BuyerOrganizationId, x.PurchaseOrderId })
+                .HasDatabaseName("ix_connected_po_return_eligibility_buckets_buyer_po");
+            entity.HasIndex(x => new { x.BuyerOrganizationId, x.PurchaseOrderLineId, x.ReceivedAtUtc })
+                .HasDatabaseName("ix_connected_po_return_eligibility_buckets_po_line");
+        });
+        modelBuilder.Entity<ConnectedPoReturnAllocationRecord>(entity =>
+        {
+            entity.ToTable("connected_po_return_allocations");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ReturnBatchLineId).HasColumnName("return_batch_line_id");
+            entity.Property(x => x.EligibilityBucketId).HasColumnName("eligibility_bucket_id");
+            entity.Property(x => x.Quantity).HasColumnName("quantity").HasPrecision(18, 3);
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(x => new { x.ReturnBatchLineId, x.EligibilityBucketId })
+                .IsUnique()
+                .HasDatabaseName("ux_connected_po_return_allocations_line_bucket");
+            entity.HasIndex(x => x.EligibilityBucketId)
+                .HasDatabaseName("ix_connected_po_return_allocations_bucket");
         });
         modelBuilder.Entity<SupplierProductExposureRecord>(entity =>
         {

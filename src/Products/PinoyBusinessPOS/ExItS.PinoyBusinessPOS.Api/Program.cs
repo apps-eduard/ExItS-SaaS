@@ -364,6 +364,7 @@ builder.Services.AddScoped<FinalizeReturnBatch>();
 builder.Services.AddScoped<RecordReturnBatchRefund>();
 builder.Services.AddScoped<ConnectedPoReturnInventoryService>();
 builder.Services.AddScoped<ConnectedPoReturnQueryService>();
+builder.Services.AddScoped<ConnectedPoReturnEligibilityService>();
 builder.Services.AddScoped<RequestConnectedPoReturnBatch>();
 builder.Services.AddScoped<ReceiveConnectedPoReturnBatch>();
 builder.Services.AddScoped<FinalizeConnectedPoReturnBatch>();

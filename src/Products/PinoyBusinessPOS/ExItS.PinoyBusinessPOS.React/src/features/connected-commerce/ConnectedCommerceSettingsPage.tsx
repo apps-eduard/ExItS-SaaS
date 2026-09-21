@@ -206,6 +206,16 @@ export function ConnectedCommerceSettingsPage() {
           categoryId: r.categoryId,
           discountPercent: r.discountPercent,
         })),
+        returnsAllowed: draft.returnsAllowed,
+        returnWindowDays: draft.returnWindowDays ?? null,
+        receivingIssueWindowDays: draft.receivingIssueWindowDays,
+        requireReturnApproval: draft.requireReturnApproval,
+        categoryReturnRules: (draft.categoryReturnRules ?? []).map((r) => ({
+          categoryId: r.categoryId,
+          mode: r.mode,
+          returnsAllowed: r.returnsAllowed ?? null,
+          returnWindowDays: r.returnWindowDays ?? null,
+        })),
       });
     },
     onSuccess: (saved) => {
@@ -699,6 +709,89 @@ export function ConnectedCommerceSettingsPage() {
               data-testid="connected-commerce-hold-hours"
             />
             <Notice tone="info">{t("connectedCommerce.ordersRules")}</Notice>
+          </Card>
+          <Card
+            className="flex flex-col gap-3 p-3"
+            treatment="bordered"
+            data-testid="connected-commerce-return-policy"
+          >
+            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              Return Policy
+            </h2>
+            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <input
+                type="checkbox"
+                checked={draft.returnsAllowed}
+                disabled={!canEdit}
+                data-testid="connected-commerce-returns-allowed"
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current ? { ...current, returnsAllowed: e.target.checked } : current,
+                  )
+                }
+              />
+              Allow normal returns
+            </label>
+            <Input
+              label="Return period after receipt (days)"
+              type="number"
+              min={0}
+              step={1}
+              placeholder="Unlimited"
+              value={draft.returnWindowDays ?? ""}
+              disabled={!canEdit || !draft.returnsAllowed}
+              onChange={(e) =>
+                setDraft((current) =>
+                  current
+                    ? {
+                        ...current,
+                        returnWindowDays:
+                          e.target.value === "" ? null : Number(e.target.value),
+                      }
+                    : current,
+                )
+              }
+              data-testid="connected-commerce-return-window-days"
+            />
+            <Input
+              label="Delivery issue reporting period (days)"
+              type="number"
+              min={0}
+              step={1}
+              value={draft.receivingIssueWindowDays}
+              disabled={!canEdit}
+              onChange={(e) =>
+                setDraft((current) =>
+                  current
+                    ? {
+                        ...current,
+                        receivingIssueWindowDays: Number(e.target.value || 2),
+                      }
+                    : current,
+                )
+              }
+              data-testid="connected-commerce-receiving-issue-window-days"
+            />
+            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+              <input
+                type="checkbox"
+                checked={draft.requireReturnApproval}
+                disabled={!canEdit}
+                data-testid="connected-commerce-require-return-approval"
+                onChange={(e) =>
+                  setDraft((current) =>
+                    current
+                      ? { ...current, requireReturnApproval: e.target.checked }
+                      : current,
+                  )
+                }
+              />
+              Require seller approval
+            </label>
+            <Notice tone="info">
+              Delivery issues reported at goods receipt are never blocked by this return policy.
+              Receiving-issue window is stored for future post-receipt reporting only.
+            </Notice>
           </Card>
           {canEdit ? (
             <Button

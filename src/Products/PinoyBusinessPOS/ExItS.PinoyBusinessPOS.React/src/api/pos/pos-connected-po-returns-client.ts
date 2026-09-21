@@ -20,6 +20,12 @@ export const connectedPoReturnableLineDtoSchema = z.object({
   receivedQuantity: z.number(),
   alreadyReturnedQuantity: z.number(),
   returnableQuantity: z.number(),
+  returnsAllowed: z.boolean().optional().default(true),
+  returnWindowDays: z.number().int().nullable().optional(),
+  earliestReturnExpiresAtUtc: z.string().nullable().optional(),
+  latestReturnExpiresAtUtc: z.string().nullable().optional(),
+  policySource: z.string().nullable().optional(),
+  lineBlockedReason: z.string().nullable().optional(),
 });
 
 export const connectedPoReturnEligibilityDtoSchema = z.object({

@@ -1,4 +1,5 @@
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog;
@@ -111,7 +112,10 @@ internal static class CatalogEntityMapper
             originBranchId: record.OriginBranchId is null
                 ? null
                 : PosBranchId.From(record.OriginBranchId.Value),
-            normalizedName: record.NormalizedName);
+            normalizedName: record.NormalizedName,
+            returnPolicyMode: (ConnectedPoReturnPolicyMode)record.ReturnPolicyMode,
+            returnPolicyReturnsAllowed: record.ReturnPolicyReturnsAllowed,
+            returnPolicyWindowDays: record.ReturnPolicyWindowDays);
 
     public static CatalogProductRecord ToRecord(CatalogProduct product) =>
         new()
@@ -150,6 +154,9 @@ internal static class CatalogEntityMapper
             CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers,
             IsBlockedFromConnectedBuyers = product.IsBlockedFromConnectedBuyers,
             DefaultConnectedPoPrice = product.DefaultConnectedPoPrice,
+            ReturnPolicyMode = (short)product.ReturnPolicyMode,
+            ReturnPolicyReturnsAllowed = product.ReturnPolicyReturnsAllowed,
+            ReturnPolicyWindowDays = product.ReturnPolicyWindowDays,
             CreatedAtUtc = product.CreatedAtUtc,
             UpdatedAtUtc = product.UpdatedAtUtc
         };
@@ -188,6 +195,9 @@ internal static class CatalogEntityMapper
         record.CanExposeToConnectedBuyers = product.CanExposeToConnectedBuyers;
         record.IsBlockedFromConnectedBuyers = product.IsBlockedFromConnectedBuyers;
         record.DefaultConnectedPoPrice = product.DefaultConnectedPoPrice;
+        record.ReturnPolicyMode = (short)product.ReturnPolicyMode;
+        record.ReturnPolicyReturnsAllowed = product.ReturnPolicyReturnsAllowed;
+        record.ReturnPolicyWindowDays = product.ReturnPolicyWindowDays;
         record.UpdatedAtUtc = product.UpdatedAtUtc;
     }
 
