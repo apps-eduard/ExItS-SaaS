@@ -40,6 +40,16 @@ type Props = {
   categories: CategoryOption[];
   canEdit: boolean;
   onChange: (next: CategoryPricingOverrideRule[]) => void;
+  /** Optional copy overrides (e.g. customer-level pricing surfaces). */
+  title?: string;
+  hierarchyHelp?: string;
+  emptyTitle?: string;
+  emptyDetail?: string;
+  removeDetail?: string;
+  /** When false, omit the panel title/help (e.g. host modal already titled). Default true. */
+  showHeader?: boolean;
+  /** Raise nested editor/confirm sheet above a host BottomSheet. */
+  nested?: boolean;
 };
 
 function RowActionIcons({
@@ -93,8 +103,29 @@ function RowActionIcons({
   );
 }
 
-export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onChange }: Props) {
+export function CategoryPricingOverridesPanel({
+  rules,
+  categories,
+  canEdit,
+  onChange,
+  title,
+  hierarchyHelp,
+  emptyTitle,
+  emptyDetail,
+  removeDetail,
+  showHeader = true,
+  nested = false,
+}: Props) {
   const { t } = useI18n();
+  const panelTitle = title ?? t("connectedCommerce.categoryRules");
+  const panelHelp = hierarchyHelp ?? t("connectedCommerce.pricingOverride.hierarchyHelp");
+  const panelEmptyTitle = emptyTitle ?? t("connectedCommerce.pricingOverride.emptyTitle");
+  const panelEmptyDetail = emptyDetail ?? t("connectedCommerce.pricingOverride.emptyDetail");
+  const panelRemoveDetail =
+    removeDetail ?? t("connectedCommerce.pricingOverride.removeDetail");
+  const nestedBackdropClass = nested ? "!z-[85]" : undefined;
+  const nestedPanelClass = nested ? "!z-[90]" : undefined;
+  const nestedConfirmClass = nested ? "!z-[95]" : undefined;
   const [search, setSearch] = useState("");
   const [editor, setEditor] = useState<EditorState>(null);
   const [removeCategoryId, setRemoveCategoryId] = useState<string | null>(null);
@@ -195,14 +226,18 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
 
   return (
     <div className="flex flex-col gap-2" data-testid="category-pricing-overrides-panel">
-      <div className="flex flex-col gap-1">
-        <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-          {t("connectedCommerce.categoryRules")}
-        </h3>
-        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-          {t("connectedCommerce.pricingOverride.hierarchyHelp")}
-        </p>
-      </div>
+      {showHeader ? (
+        <div className="flex flex-col gap-1">
+          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {panelTitle}
+          </h3>
+          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+            {panelHelp}
+          </p>
+        </div>
+      ) : panelHelp ? (
+        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{panelHelp}</p>
+      ) : null}
 
       {rules.length === 0 ? (
         <div
@@ -210,10 +245,10 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
           data-testid="category-pricing-overrides-empty"
         >
           <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-            {t("connectedCommerce.pricingOverride.emptyTitle")}
+            {panelEmptyTitle}
           </p>
           <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-            {t("connectedCommerce.pricingOverride.emptyDetail")}
+            {panelEmptyDetail}
           </p>
           {canEdit ? (
             <Button
@@ -271,13 +306,13 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
               <ExitsTable data-testid="category-pricing-overrides-desktop">
                 <ExitsTableHeader>
                   <ExitsTableRow>
-                    <ExitsTableHead cellAlign="text">
+                    <ExitsTableHead cellAlign="text" className="category-pricing-col--name">
                       {t("connectedCommerce.pricingOverride.colCategory")}
                     </ExitsTableHead>
-                    <ExitsTableHead cellAlign="text">
+                    <ExitsTableHead cellAlign="text" className="category-pricing-col--discount">
                       {t("connectedCommerce.pricingOverride.colDiscount")}
                     </ExitsTableHead>
-                    <ExitsTableHead cellAlign="actions">
+                    <ExitsTableHead cellAlign="actions" className="category-pricing-col--actions">
                       {t("connectedCommerce.pricingOverride.colActions")}
                     </ExitsTableHead>
                   </ExitsTableRow>
@@ -290,13 +325,18 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
                         key={rule.categoryId}
                         data-testid={`category-pricing-override-row-${rule.categoryId}`}
                       >
-                        <ExitsTableCell cellAlign="text" className="font-medium">
+                        <ExitsTableCell
+                          cellAlign="text"
+                          className="category-pricing-col--name font-medium"
+                          truncate
+                          title={name}
+                        >
                           {name}
                         </ExitsTableCell>
-                        <ExitsTableCell cellAlign="text">
+                        <ExitsTableCell cellAlign="text" className="category-pricing-col--discount">
                           {formatCategoryPricingDiscountLabel(rule)}
                         </ExitsTableCell>
-                        <ExitsTableCell cellAlign="actions">
+                        <ExitsTableCell cellAlign="actions" className="category-pricing-col--actions">
                           <RowActionIcons
                             disabled={!canEdit}
                             editLabel={t("connectedCommerce.pricingOverride.edit")}
@@ -357,55 +397,76 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
         testId="category-pricing-override-editor"
         closeLabel={t("connectedCommerce.pricingOverride.cancel")}
         presentation="sheet-mobile-dialog-desktop"
+        backdropClassName={nestedBackdropClass}
+        panelClassName={nestedPanelClass}
       >
         <div className="flex flex-col gap-3">
           {editor?.kind === "add" ? (
-            <ProductCategoryMultiSelect
-              label={t("connectedCommerce.pricingOverride.colCategory")}
-              categories={availableCategories}
-              selectedIds={draftCategoryIds}
-              onChange={setDraftCategoryIds}
-              placeholder={t("connectedCommerce.selectCategory")}
-              selectedCountLabel={(count) =>
-                t("purchasing.categoriesSelected").replace("{count}", String(count))
-              }
-              selectAllLabel={t("purchasing.selectAllCategories")}
-              clearAllLabel={t("purchasing.deselectAllCategories")}
-              searchPlaceholder={t("catalog.searchCategories")}
-              menuLabel={t("connectedCommerce.pricingOverride.addTitle")}
-              testId="category-pricing-override-category"
-            />
+            <>
+              <ProductCategoryMultiSelect
+                label={t("connectedCommerce.pricingOverride.colCategory")}
+                categories={availableCategories}
+                selectedIds={draftCategoryIds}
+                onChange={setDraftCategoryIds}
+                placeholder={t("connectedCommerce.selectCategory")}
+                selectedCountLabel={(count) =>
+                  t("purchasing.categoriesSelected").replace("{count}", String(count))
+                }
+                selectAllLabel={t("purchasing.selectAllCategories")}
+                clearAllLabel={t("purchasing.deselectAllCategories")}
+                searchPlaceholder={t("catalog.searchCategories")}
+                menuLabel={t("connectedCommerce.pricingOverride.addTitle")}
+                testId="category-pricing-override-category"
+              />
+              <div className="w-[20%] min-w-[4.5rem] max-w-full">
+                <Input
+                  label={t("connectedCommerce.pricingOverride.discountLabel")}
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  value={draftDiscountPercent}
+                  onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
+                  data-testid="category-pricing-override-discount"
+                />
+              </div>
+            </>
           ) : (
-            <div
-              className="flex flex-col gap-1.5"
-              data-testid="category-pricing-override-category-readonly"
-            >
-              <p className="m-0 text-[length:var(--exits-text-sm)] font-bold">
-                {t("connectedCommerce.pricingOverride.colCategory")}
-              </p>
-              <StatusChip
-                tone="primary"
-                shape="standard"
-                appearance="soft"
-                className="w-fit max-w-full self-start [--exits-status-chip-font-size:var(--exits-text-md)] [--exits-status-chip-height:2.125rem] [--exits-status-chip-padding-x:0.75rem]"
+            <div className="grid w-full grid-cols-1 items-start gap-3 sm:grid-cols-2">
+              <div
+                className="flex min-w-0 w-full flex-col gap-1.5"
+                data-testid="category-pricing-override-category-readonly"
               >
-                {editorCategoryName}
-              </StatusChip>
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-bold">
+                  {t("connectedCommerce.pricingOverride.colCategory")}
+                </p>
+                <StatusChip
+                  tone="primary"
+                  shape="standard"
+                  appearance="soft"
+                  className="w-full max-w-full justify-start [--exits-status-chip-font-size:var(--exits-text-md)] [--exits-status-chip-height:2.125rem] [--exits-status-chip-padding-x:0.75rem]"
+                >
+                  {editorCategoryName}
+                </StatusChip>
+              </div>
+              <div className="flex min-w-0 w-full flex-col gap-1.5">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-bold">
+                  {t("connectedCommerce.pricingOverride.discountLabel")}
+                </p>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.01"
+                  className="exits-input h-[var(--exits-control-height)] min-h-[var(--exits-control-height)] w-full rounded-[var(--exits-field-radius)] border border-border bg-surface px-[var(--exits-control-padding-x)] text-[length:var(--exits-text-md)] text-foreground"
+                  value={draftDiscountPercent}
+                  onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
+                  data-testid="category-pricing-override-discount"
+                  aria-label={t("connectedCommerce.pricingOverride.discountLabel")}
+                />
+              </div>
             </div>
           )}
-
-          <div className="w-[20%] min-w-[4.5rem] max-w-full">
-            <Input
-              label={t("connectedCommerce.pricingOverride.discountLabel")}
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              value={draftDiscountPercent}
-              onChange={(e) => setDraftDiscountPercent(Number(e.target.value || 0))}
-              data-testid="category-pricing-override-discount"
-            />
-          </div>
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-3">
             <Button type="button" intent="danger" appearance="solid" onClick={closeEditor}>
@@ -429,10 +490,7 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
       <ConfirmationDialog
         open={removeCategoryId != null}
         title={t("connectedCommerce.pricingOverride.removeTitle")}
-        detail={t("connectedCommerce.pricingOverride.removeDetail").replace(
-          "{category}",
-          removeName,
-        )}
+        detail={panelRemoveDetail.replace("{category}", removeName)}
         confirmLabel={t("connectedCommerce.pricingOverride.removeConfirm")}
         cancelLabel={t("connectedCommerce.pricingOverride.cancel")}
         confirmTone="danger"
@@ -440,6 +498,7 @@ export function CategoryPricingOverridesPanel({ rules, categories, canEdit, onCh
         onConfirm={confirmRemove}
         onCancel={() => setRemoveCategoryId(null)}
         testId="category-pricing-override-remove-confirm"
+        className={nestedConfirmClass}
       />
     </div>
   );

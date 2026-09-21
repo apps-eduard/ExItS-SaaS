@@ -8,6 +8,8 @@ import { useI18n } from "@/i18n/I18nProvider";
 export type PoProcessHeaderActionsProps = {
   statusLabel: string;
   statusTone: StatusChipTone;
+  /** Leading status icon — matches Timeline/Preview button affordance. */
+  statusIcon?: ReactNode;
   onTimeline: () => void;
   onPreview: () => void;
   onPrint: () => void | Promise<void>;
@@ -34,6 +36,7 @@ export type PoProcessHeaderActionsProps = {
 export function PoProcessHeaderActions({
   statusLabel,
   statusTone,
+  statusIcon,
   onTimeline,
   onPreview,
   onPrint,
@@ -51,7 +54,15 @@ export function PoProcessHeaderActions({
 
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid="po-process-header-actions">
-      <StatusChip tone={statusTone}>{statusLabel}</StatusChip>
+      <StatusChip
+        tone={statusTone}
+        appearance="soft"
+        shape="soft"
+        icon={statusIcon}
+        className="exits-status-chip--control"
+      >
+        {statusLabel}
+      </StatusChip>
       {trailing}
       <Button
         type="button"

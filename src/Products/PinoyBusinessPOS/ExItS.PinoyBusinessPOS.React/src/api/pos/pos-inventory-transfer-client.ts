@@ -50,6 +50,8 @@ export const inventoryTransferLineDtoSchema = z.object({
   sourceLotId: guidSchema.nullable().optional(),
   lotNumber: z.string().nullable().optional(),
   expirationDate: z.string().nullable().optional(),
+  unitCostSnapshot: z.number().nullable().optional(),
+  sku: z.string().nullable().optional(),
 });
 
 export const inventoryTransferDtoSchema = z.object({

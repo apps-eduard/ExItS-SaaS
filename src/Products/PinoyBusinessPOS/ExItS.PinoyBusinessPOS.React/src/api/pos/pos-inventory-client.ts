@@ -262,13 +262,22 @@ export type EnableExpirationTrackingResponse = {
 
 function appendQuery(
   path: string,
-  params: Record<string, string | number | boolean | undefined>,
+  params: Record<string, string | number | boolean | ReadonlyArray<string> | undefined>,
 ): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      query.set(key, String(value));
+    if (value === undefined || value === "") {
+      continue;
     }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (item) {
+          query.append(key, item);
+        }
+      }
+      continue;
+    }
+    query.set(key, String(value));
   }
   const serialized = query.toString();
   return serialized ? `${path}?${serialized}` : path;
@@ -287,6 +296,10 @@ export function listInventory(
     stockStatus?: string;
     monitoringMode?: string;
     categoryId?: string;
+    /** When set (non-empty), filters to products in any of these categories. */
+    categoryIds?: ReadonlyArray<string>;
+    /** When set (non-empty), filters to products in any of these brands. */
+    brandIds?: ReadonlyArray<string>;
   } = {},
   signal?: AbortSignal,
 ): Promise<PosInventoryPagedResult> {
@@ -302,7 +315,18 @@ export function listInventory(
       lowStock: options.lowStock,
       stockStatus: options.stockStatus,
       monitoringMode: options.monitoringMode,
-      categoryId: options.categoryId,
+      categoryId:
+        options.categoryIds && options.categoryIds.length > 0
+          ? undefined
+          : options.categoryId,
+      categoryIds:
+        options.categoryIds && options.categoryIds.length > 0
+          ? options.categoryIds
+          : undefined,
+      brandIds:
+        options.brandIds && options.brandIds.length > 0
+          ? options.brandIds
+          : undefined,
     }),
   });
 }

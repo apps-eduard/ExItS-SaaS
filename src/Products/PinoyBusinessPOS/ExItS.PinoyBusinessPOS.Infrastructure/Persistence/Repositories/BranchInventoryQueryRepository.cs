@@ -158,9 +158,20 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 || (p.Barcode != null && p.Barcode.Contains(term)));
         }
 
-        if (filter.CategoryId is Guid categoryId)
+        if (filter.CategoryIds is { Count: > 0 } categoryIds)
+        {
+            var idSet = categoryIds.Distinct().ToList();
+            products = products.Where(p => p.CategoryId != null && idSet.Contains(p.CategoryId.Value));
+        }
+        else if (filter.CategoryId is Guid categoryId)
         {
             products = products.Where(p => p.CategoryId == categoryId);
+        }
+
+        if (filter.BrandIds is { Count: > 0 } brandIds)
+        {
+            var brandIdSet = brandIds.Distinct().ToList();
+            products = products.Where(p => p.BrandId != null && brandIdSet.Contains(p.BrandId.Value));
         }
 
         var explicitBalances = _db.InventoryBranchBalances.AsNoTracking()
@@ -475,7 +486,12 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 || (p.Barcode != null && p.Barcode.Contains(term)));
         }
 
-        if (filter.CategoryId is Guid categoryId)
+        if (filter.CategoryIds is { Count: > 0 } categoryIds)
+        {
+            var idSet = categoryIds.Distinct().ToList();
+            products = products.Where(p => p.CategoryId != null && idSet.Contains(p.CategoryId.Value));
+        }
+        else if (filter.CategoryId is Guid categoryId)
         {
             products = products.Where(p => p.CategoryId == categoryId);
         }

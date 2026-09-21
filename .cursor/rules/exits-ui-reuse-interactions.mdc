@@ -55,6 +55,7 @@ Do **not** force identity/profile components together merely because they visual
 | Confirm destructive/status | `ConfirmActionDialog` |
 | Toast feedback | `useExitsToast()` |
 | Status display | `StatusChip` |
+| Quantity ± / editable qty | `QuantityStepper` with `variant="auto"` (default) |
 | Collections | `ExitsResponsiveDataView` |
 
 ## Preferences & a11y

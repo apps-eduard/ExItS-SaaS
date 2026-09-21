@@ -465,7 +465,9 @@ export function IncomingOrderDetailPage() {
     return (
       <Button
         type="button"
-        variant="ghost"
+        intent="primary"
+        appearance="ghost"
+        className="font-semibold"
         onClick={smartBack.onBack}
         aria-label={t("shell.back")}
         data-testid="incoming-order-footer-back"

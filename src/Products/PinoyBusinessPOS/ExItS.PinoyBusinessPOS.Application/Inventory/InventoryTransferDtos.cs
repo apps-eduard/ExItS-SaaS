@@ -40,7 +40,8 @@ public sealed record InventoryTransferLineDto(
     Guid? SourceLotId = null,
     string? LotNumber = null,
     DateOnly? ExpirationDate = null,
-    decimal? UnitCostSnapshot = null);
+    decimal? UnitCostSnapshot = null,
+    string? Sku = null);
 
 public sealed record InventoryTransferDto(
     Guid TransferId,

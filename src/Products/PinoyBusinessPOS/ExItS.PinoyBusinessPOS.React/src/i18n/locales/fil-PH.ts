@@ -4581,8 +4581,16 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
-
+  "transfer.needsClassification": "Needs reason",
+  "transfer.classifyDiscrepancyTitle": "Classify discrepancy",
+  "transfer.classifyDiscrepancyHint": "Received {received} of {sent}. Choose why the remainder was not accepted.",
+  "transfer.classifyDiscrepancyConfirm": "Save classification",
+  "transfer.receiveNow": "Receive now",
+  "transfer.editReceiveQty": "Edit receive quantity",
+  "transfer.saveReceiveQty": "Save receive quantity",
+  "transfer.resetReceiveQty": "Reset receive quantity",
   "transfer.items": "Items",
+  "transfer.units": "Units",
 
   "transfer.lede": "Ilipat ang stock sa pagitan ng mga branch sa inyong organisasyon.",
 
@@ -4688,6 +4696,19 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "transfer.available": "Available: {qty} {uom}",
   "transfer.colAvailable": "Available at source",
+  "transfer.colNumber": "Transfer #",
+  "transfer.colRoute": "Route",
+  "transfer.colUpdated": "Updated",
+  "transfer.timelineTitle": "Transfer timeline",
+  "transfer.activity.empty": "No timeline events yet.",
+  "transfer.activity.created": "Transfer created",
+  "transfer.activity.createdDetail": "A draft branch transfer was created.",
+  "transfer.activity.dispatched": "Dispatched",
+  "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
+  "transfer.activity.received": "Received",
+  "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.cancelled": "Cancelled",
+  "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
   "transfer.outOfStock": "Out of stock",
 
@@ -5441,6 +5462,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.tracked": "Tracked",
 
   "inventory.trackingFilter": "Tracking status",
+  "inventory.categoryFilter": "Categories",
+  "inventory.brandFilter": "Mga brand",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
   "inventory.missingExpirationShort": "Missing expiry",
@@ -10210,6 +10233,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.categoriesTriggerCount": "Categories Ã‚Â· {count}",
   "purchasing.selectAllCategories": "Piliin lahat",
   "purchasing.deselectAllCategories": "Alisin ang lahat",
+  "purchasing.brandsPlaceholder": "Pumili ng brand",
+  "purchasing.brandsSelected": "{count} napili",
+  "purchasing.selectAllBrands": "Piliin lahat",
+  "purchasing.deselectAllBrands": "Alisin ang lahat",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -11113,6 +11140,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "returns.sellableAgain": "Sellable again",
   "returns.damagedWriteOff": "Damaged / write-off",
   "returns.totalClassified": "Total classified must match returned quantity.",
+  "returns.classifiedProgress": "Na-classify {classified} / {returned}",
   "returns.saveClassification": "Save classification",
   "returns.reviewReturn": "Review return",
   "returns.finalizeReturns": "Finalize returns",
@@ -12864,6 +12892,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.create.creating": "Gumagawa?",
 
   "branches.create.failed": "Hindi magawa ang branch.",
+  "branches.create.deliveryRequiresCoordinates":
+    "I-enable ang delivery pagkatapos magtakda ng wastong branch coordinates.",
 
   "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
 
@@ -13560,11 +13590,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "returns.connectedPo.awaitingSellerReceipt": "Hinihintay tanggapin ng supplier",
   "returns.connectedPo.statusReturnsPending": "May nakabinbing return",
   "returns.connectedPo.statusReturnsProcessed": "Naprosesong return",
+  "returns.connectedPo.summaryTitle": "Buod ng return",
   "returns.connectedPo.poNumber": "PO number",
   "returns.connectedPo.returnValue": "Halaga ng return",
   "returns.connectedPo.refundDue": "Refund na babayaran",
   "returns.connectedPo.recordRefund": "Itala ang refund",
   "returns.connectedPo.inspect": "Inspeksyunin",
+  "returns.connectedPo.colProduct": "Produkto",
+  "returns.connectedPo.colInspection": "Inspeksyon",
+  "returns.connectedPo.colActions": "Mga aksyon",
   "returns.connectedPo.reviewAndFinalize": "Suriin at tapusin",
   "returns.connectedPo.loadError": "Hindi ma-load ang supplier return.",
   "returns.connectedPo.processTitle": "Iproseso ang return ng buyer",

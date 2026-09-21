@@ -241,8 +241,8 @@ describe("Inventory Transfer React flow", () => {
         "data-status",
         "InTransit",
       );
+      expect(screen.getByTestId("transfer-number-summary")).toHaveTextContent("TR-20260829-0001");
     });
-    expect(await screen.findByText("TR-20260829-0001")).toBeInTheDocument();
     expect(screen.queryByTestId("transfer-dispatch")).not.toBeInTheDocument();
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ["inventory-transfers"] }),
@@ -368,6 +368,7 @@ describe("Inventory Transfer React flow", () => {
         },
       ],
     } as never);
+    const user = userEvent.setup();
     render(
       <AppProviders>
         <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
@@ -377,17 +378,21 @@ describe("Inventory Transfer React flow", () => {
         </MemoryRouter>
       </AppProviders>,
     );
-    await userEvent.click(await screen.findByTestId("transfer-receive"));
+    await user.click(await screen.findByTestId("transfer-receive"));
     expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
-    const qty = screen.getByTestId(`transfer-receive-qty-${lineId}`);
+    expect(screen.getByTestId(`transfer-receive-row-${lineId}`)).toHaveTextContent("24");
+    await user.click(screen.getByTestId(`transfer-receive-edit-menu-${lineId}`));
+    const qty = await screen.findByTestId(`transfer-receive-qty-${lineId}`);
     expect(qty).toHaveValue("24");
-    await userEvent.clear(qty);
-    await userEvent.type(qty, "22");
-    expect(screen.getByTestId("transfer-receive-submit")).toBeDisabled();
-    await userEvent.selectOptions(screen.getByTestId(`transfer-discrepancy-${lineId}`), "ShortShipment");
+    await user.clear(qty);
+    await user.type(qty, "22");
+    await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
+    expect(await screen.findByTestId("transfer-discrepancy-dialog")).toBeInTheDocument();
+    await user.selectOptions(screen.getByTestId("transfer-discrepancy-dialog-reason"), "ShortShipment");
+    await user.click(screen.getByTestId("transfer-discrepancy-dialog-confirm"));
     expect(screen.getByTestId("transfer-receive-submit")).toBeEnabled();
-    await userEvent.click(screen.getByTestId("transfer-receive-submit"));
-    await userEvent.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
+    await user.click(screen.getByTestId("transfer-receive-submit"));
+    await user.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
     await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
     expect(receiveSpy.mock.calls[0]?.[2]).toEqual({
       lines: [
@@ -405,6 +410,7 @@ describe("Inventory Transfer React flow", () => {
     workspaceMock.boundWorkspace.branchId = branchBId;
     workspaceMock.boundWorkspace.branchName = "Branch B";
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    const user = userEvent.setup();
     render(
       <AppProviders>
         <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
@@ -414,10 +420,12 @@ describe("Inventory Transfer React flow", () => {
         </MemoryRouter>
       </AppProviders>,
     );
-    await userEvent.click(await screen.findByTestId("transfer-receive"));
+    await user.click(await screen.findByTestId("transfer-receive"));
+    await user.click(await screen.findByTestId(`transfer-receive-edit-menu-${lineId}`));
     const qty = await screen.findByTestId(`transfer-receive-qty-${lineId}`);
-    await userEvent.clear(qty);
-    await userEvent.type(qty, "25");
+    await user.clear(qty);
+    await user.type(qty, "25");
+    await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
     expect(await screen.findByTestId(`transfer-receive-qty-error-${lineId}`)).toHaveTextContent(
       "Received quantity cannot exceed sent quantity (24)",
     );

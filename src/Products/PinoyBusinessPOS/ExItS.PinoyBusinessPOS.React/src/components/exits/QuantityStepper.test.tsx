@@ -66,6 +66,51 @@ describe("QuantityStepper editable mode", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("allows explicit min={0} for classification / write-off quantities", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <QuantityStepper
+        value={1}
+        onChange={onChange}
+        min={0}
+        max={5}
+        step={1}
+        precision={3}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+        variant="auto"
+      />,
+    );
+
+    await user.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    rerender(
+      <QuantityStepper
+        value={0}
+        onChange={onChange}
+        min={0}
+        max={5}
+        step={1}
+        precision={3}
+        decreaseLabel="Decrease"
+        increaseLabel="Increase"
+        ariaLabel="Qty"
+        valueTestId="qty"
+        variant="auto"
+      />,
+    );
+    expect(screen.getByLabelText("Decrease")).toBeDisabled();
+
+    const input = screen.getByTestId("qty");
+    await user.clear(input);
+    await user.type(input, "0");
+    await user.tab();
+    expect(onChange).toHaveBeenLastCalledWith(0);
+  });
+
   it("normalizes zero/negative manual input to minimum on blur", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

@@ -2252,7 +2252,9 @@ export function PurchaseOrderCreatePage() {
             <div className="receive-stock-actions__primary">
               <Button
                 type="button"
-                variant="ghost"
+                intent="primary"
+                appearance="ghost"
+                className="font-semibold"
                 onClick={() => navigate(detailBackTo)}
                 aria-label={t(isEdit ? "purchasing.backDetail" : "purchasing.backOrders")}
                 data-testid="po-create-footer-back"

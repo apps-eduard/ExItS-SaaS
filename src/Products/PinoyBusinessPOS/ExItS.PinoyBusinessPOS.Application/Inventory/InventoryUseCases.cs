@@ -142,7 +142,9 @@ public sealed class InventoryQueryService
             filter.ProductStatus,
             filter.StockStatus,
             filter.MonitoringMode,
-            filter.CategoryId);
+            filter.CategoryId,
+            filter.CategoryIds,
+            filter.BrandIds);
         var (rows, total) = await _branchInventory
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);

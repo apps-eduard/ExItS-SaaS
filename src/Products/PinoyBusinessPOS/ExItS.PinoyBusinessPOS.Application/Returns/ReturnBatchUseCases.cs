@@ -460,7 +460,7 @@ public sealed class ClassifyReturnBatchLine
                     "Return batch was not found.");
             }
 
-            if (expectedUpdatedAtUtc is not null && batch.UpdatedAtUtc != expectedUpdatedAtUtc.Value)
+            if (ReturnBatchConcurrency.IsMismatch(batch.UpdatedAtUtc, expectedUpdatedAtUtc))
             {
                 return ApplicationResult<ReturnBatch>.Failure(
                     ApplicationErrorCodes.ConcurrencyConflict,
@@ -558,7 +558,7 @@ public sealed class FinalizeReturnBatch
                     return ApplicationResult<ReturnBatch>.Success(batch);
                 }
 
-                if (batch.UpdatedAtUtc != expectedUpdatedAtUtc)
+                if (ReturnBatchConcurrency.IsMismatch(batch.UpdatedAtUtc, expectedUpdatedAtUtc))
                 {
                     return ApplicationResult<ReturnBatch>.Failure(
                         ApplicationErrorCodes.ConcurrencyConflict,

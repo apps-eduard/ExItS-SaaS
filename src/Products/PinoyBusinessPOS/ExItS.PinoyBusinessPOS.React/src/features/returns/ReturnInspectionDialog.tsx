@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import {
   classifyReturnBatchLine,
+  getReturnBatch,
   type ReturnBatchDto,
   type ReturnBatchLineDto,
 } from "@/api/pos/pos-return-batches-client";
+import { isStaleReturnConflict } from "@/api/pos/pos-sale-returns-client";
 import { BottomSheet } from "@/components/exits/SheetDialog";
 import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n/I18nProvider";
 import {
+  allocateComplementaryReturnQuantity,
   isValidClassificationTotal,
-  parseReturnQuantityInput,
   roundReturnQuantity,
 } from "@/features/returns/return-classification";
+import { describeReturnError } from "@/features/returns/return-errors";
 
 type Props = {
   open: boolean;
@@ -31,28 +34,66 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
   const [inspectionNote, setInspectionNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState(batch.updatedAtUtc);
+
+  const returnedQuantity = useMemo(() => roundReturnQuantity(line?.acceptedQuantity ?? 0), [line]);
 
   useEffect(() => {
     if (!line || !open) {
       return;
     }
-    setSellableQuantity(roundReturnQuantity(line.sellableQuantity ?? line.acceptedQuantity));
-    setDamagedQuantity(roundReturnQuantity(line.damagedQuantity ?? 0));
+    const fromSellable = allocateComplementaryReturnQuantity(
+      line.acceptedQuantity,
+      line.sellableQuantity ?? line.acceptedQuantity,
+    );
+    setSellableQuantity(fromSellable.primary);
+    setDamagedQuantity(fromSellable.complementary);
     setInspectionNote(line.inspectionNote ?? "");
+    setExpectedUpdatedAtUtc(batch.updatedAtUtc);
     setError(null);
-  }, [line, open]);
+  }, [line, open, batch.updatedAtUtc]);
 
-  const returnedQuantity = useMemo(() => roundReturnQuantity(line?.acceptedQuantity ?? 0), [line]);
   const totalClassified = useMemo(
     () => roundReturnQuantity(sellableQuantity + damagedQuantity),
     [sellableQuantity, damagedQuantity],
   );
+
+  function setSellableLinked(next: number) {
+    const allocated = allocateComplementaryReturnQuantity(returnedQuantity, next);
+    setSellableQuantity(allocated.primary);
+    setDamagedQuantity(allocated.complementary);
+    setError(null);
+  }
+
+  function setDamagedLinked(next: number) {
+    const allocated = allocateComplementaryReturnQuantity(returnedQuantity, next);
+    setDamagedQuantity(allocated.primary);
+    setSellableQuantity(allocated.complementary);
+    setError(null);
+  }
 
   if (!line) {
     return null;
   }
 
   const validTotal = isValidClassificationTotal(returnedQuantity, sellableQuantity, damagedQuantity);
+
+  async function classifyOnce(updatedAtUtc: string) {
+    if (!line) {
+      throw new Error("Missing return line.");
+    }
+    return classifyReturnBatchLine(
+      workspace,
+      batch.returnBatchId,
+      line.returnBatchLineId,
+      {
+        sellableQuantity,
+        damagedQuantity,
+        inspectionNote: inspectionNote.trim() || undefined,
+        expectedUpdatedAtUtc: updatedAtUtc,
+      },
+    );
+  }
 
   async function onSave() {
     if (!line) {
@@ -69,21 +110,23 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
     setSaving(true);
     setError(null);
     try {
-      const updated = await classifyReturnBatchLine(
-        workspace,
-        batch.returnBatchId,
-        line.returnBatchLineId,
-        {
-          sellableQuantity,
-          damagedQuantity,
-          inspectionNote: inspectionNote.trim() || undefined,
-          expectedUpdatedAtUtc: batch.updatedAtUtc,
-        },
-      );
+      let updated: ReturnBatchDto;
+      try {
+        updated = await classifyOnce(expectedUpdatedAtUtc);
+      } catch (err) {
+        if (!isStaleReturnConflict(err)) {
+          throw err;
+        }
+        // Refresh snapshot and retry once (covers true concurrent edits).
+        const fresh = await getReturnBatch(workspace, batch.returnBatchId);
+        onSaved(fresh);
+        setExpectedUpdatedAtUtc(fresh.updatedAtUtc);
+        updated = await classifyOnce(fresh.updatedAtUtc);
+      }
       onSaved(updated);
       onClose();
     } catch (err) {
-      setError((err as Error).message || t("error.title"));
+      setError(describeReturnError(err, t));
     } finally {
       setSaving(false);
     }
@@ -104,55 +147,58 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
           {t("returns.returnedQuantity")}: {returnedQuantity} {line.unitOfMeasure}
         </p>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
             {t("returns.sellableAgain")}
-            <input
-              type="number"
-              min={0}
-              step={0.001}
-              value={sellableQuantity || ""}
-              data-testid="return-inspection-sellable-input"
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setSellableQuantity(parseReturnQuantityInput(event.target.value))}
-            />
+            <span className="flex w-fit flex-col items-center gap-1">
+              <QuantityStepper
+                variant="auto"
+                value={sellableQuantity}
+                onChange={setSellableLinked}
+                min={0}
+                max={returnedQuantity}
+                step={1}
+                precision={3}
+                decreaseLabel={t("returns.decreaseQty")}
+                increaseLabel={t("returns.increaseQty")}
+                ariaLabel={t("returns.sellableAgain")}
+                valueTestId="return-inspection-sellable-input"
+              />
+              <span className="text-[length:var(--exits-text-xs)] font-bold text-muted">
+                {line.unitOfMeasure}
+              </span>
+            </span>
           </label>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+          <label className="flex flex-col gap-1.5 text-[length:var(--exits-text-sm)]">
             {t("returns.damagedWriteOff")}
-            <input
-              type="number"
-              min={0}
-              step={0.001}
-              value={damagedQuantity || ""}
-              data-testid="return-inspection-damaged-input"
-              className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3"
-              onChange={(event) => setDamagedQuantity(parseReturnQuantityInput(event.target.value))}
-            />
+            <span className="flex w-fit flex-col items-center gap-1">
+              <QuantityStepper
+                variant="auto"
+                value={damagedQuantity}
+                onChange={setDamagedLinked}
+                min={0}
+                max={returnedQuantity}
+                step={1}
+                precision={3}
+                decreaseLabel={t("returns.decreaseQty")}
+                increaseLabel={t("returns.increaseQty")}
+                ariaLabel={t("returns.damagedWriteOff")}
+                valueTestId="return-inspection-damaged-input"
+              />
+              <span className="text-[length:var(--exits-text-xs)] font-bold text-muted">
+                {line.unitOfMeasure}
+              </span>
+            </span>
           </label>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <QuantityStepper
-            value={sellableQuantity}
-            increaseLabel={t("returns.increaseQty")}
-            decreaseLabel={t("returns.decreaseQty")}
-            onIncrement={() => setSellableQuantity((prev) => roundReturnQuantity(prev + 1))}
-            onDecrement={() => setSellableQuantity((prev) => Math.max(0, roundReturnQuantity(prev - 1)))}
-          />
-          <QuantityStepper
-            value={damagedQuantity}
-            increaseLabel={t("returns.increaseQty")}
-            decreaseLabel={t("returns.decreaseQty")}
-            onIncrement={() => setDamagedQuantity((prev) => roundReturnQuantity(prev + 1))}
-            onDecrement={() => setDamagedQuantity((prev) => Math.max(0, roundReturnQuantity(prev - 1)))}
-          />
         </div>
 
         <p
           className="m-0 text-[length:var(--exits-text-sm)]"
           data-testid="return-inspection-total-classified"
         >
-          {t("returns.totalClassified")}: {totalClassified} / {returnedQuantity}
+          {t("returns.classifiedProgress")
+            .replace("{classified}", String(totalClassified))
+            .replace("{returned}", String(returnedQuantity))}
         </p>
 
         <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]" htmlFor="return-inspection-note">
@@ -177,7 +223,14 @@ export function ReturnInspectionDialog({ open, workspace, batch, line, onClose, 
         ) : null}
 
         <div className="mt-1 flex flex-wrap justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          <Button
+            type="button"
+            intent="danger"
+            appearance="solid"
+            onClick={onClose}
+            disabled={saving}
+            data-testid="return-inspection-cancel"
+          >
             {t("sell.cancel")}
           </Button>
           <Button

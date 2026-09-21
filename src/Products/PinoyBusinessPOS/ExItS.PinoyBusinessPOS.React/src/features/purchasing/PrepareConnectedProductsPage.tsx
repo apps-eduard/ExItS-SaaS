@@ -561,7 +561,9 @@ export function PrepareConnectedProductsPage() {
         <div className="receive-stock-actions__primary">
           <Button
             type="button"
-            variant="ghost"
+            intent="primary"
+            appearance="ghost"
+            className="font-semibold"
             onClick={() => navigate(`/purchasing/${purchaseOrderId}`)}
             aria-label={t("purchasing.backDetail")}
             data-testid="prepare-footer-back"

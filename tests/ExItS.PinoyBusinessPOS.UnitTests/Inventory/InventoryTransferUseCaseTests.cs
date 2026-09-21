@@ -633,7 +633,7 @@ public sealed class InventoryTransferUseCaseTests
                 UnitOfWork,
                 Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
-            Queries = new InventoryTransferQueryService(Transfers, Branches);
+            Queries = new InventoryTransferQueryService(Transfers, Branches, Products);
             DispatchStockRequest = new DispatchStockRequest(
                 StockRequests,
                 Transfers,

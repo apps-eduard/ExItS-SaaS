@@ -52,7 +52,7 @@ export function PurchaseOrderTimelineDrawer({
       testId="po-timeline-drawer"
       closeLabel={t("purchasing.timelineClose")}
       closeTestId="po-timeline-drawer-close"
-      panelClassName="exits-form-drawer__panel exits-form-drawer__panel--md"
+      panelClassName="exits-form-drawer__panel exits-form-drawer__panel--lg"
     >
       <div className="exits-form-drawer" data-testid="po-timeline-drawer-content">
         <div className="exits-form-drawer__body">

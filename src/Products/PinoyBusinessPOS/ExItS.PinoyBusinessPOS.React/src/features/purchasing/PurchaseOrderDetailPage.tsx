@@ -18,6 +18,7 @@ import {
   submitPurchaseOrder,
   voidGoodsReceipt,
   type PosGoodsReceiptDto,
+  type PosGoodsReceiptLineDto,
   type PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
 import {
@@ -27,6 +28,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
@@ -67,6 +79,45 @@ import { buildProposalRevisionFromBuyerPo } from "@/features/purchasing/po-propo
 import { PoProposalRevisionPanel } from "@/features/purchasing/PoProposalRevisionPanel";
 
 const RECEIPT_VOID_REASON_MAX = 512;
+
+function goodsReceiptLineDetailParts(
+  line: PosGoodsReceiptLineDto,
+  t: (key: MessageKey) => string,
+): string[] {
+  const damaged = line.damagedQty ?? 0;
+  const rejected = line.rejectedQty ?? 0;
+  const shortClosed = line.shortClosedQty ?? 0;
+  const discrepancyNote = line.discrepancyNote?.trim();
+  const parts: string[] = [];
+  if (line.expiryDate) {
+    parts.push(`${t("purchasing.expiryDate")}: ${line.expiryDate}`);
+  }
+  if (line.lotNumber?.trim()) {
+    parts.push(`${t("purchasing.lotNumber")}: ${line.lotNumber.trim()}`);
+  }
+  if (damaged > 0) {
+    parts.push(`${t("purchasing.damaged")}: ${damaged} ${line.uomSnapshot}`);
+  }
+  if (rejected > 0) {
+    parts.push(`${t("purchasing.rejected")}: ${rejected} ${line.uomSnapshot}`);
+  }
+  if (shortClosed > 0) {
+    parts.push(`${t("purchasing.cancelRemaining")}: ${shortClosed} ${line.uomSnapshot}`);
+  }
+  if (line.discrepancyKind && line.discrepancyKind !== "None") {
+    parts.push(
+      `${t("purchasing.discrepancy")}: ${
+        line.discrepancyKind === "Short"
+          ? t("purchasing.cancelRemaining")
+          : line.discrepancyKind
+      }`,
+    );
+  }
+  if (discrepancyNote) {
+    parts.push(`${t("purchasing.discrepancyNote")}: ${discrepancyNote}`);
+  }
+  return parts;
+}
 
 function buyerStatusTone(status: string, displayStatus: string): "success" | "warning" | "info" | "danger" {
   const key = displayStatus || status;
@@ -259,79 +310,94 @@ function GoodsReceiptCard({
         <span className="text-muted">{t("purchasing.receiptValue")}</span>
         <MoneyDisplay amount={receiptValue} testId={`po-receipt-value-${receipt.goodsReceiptId}`} />
       </div>
-      <ul className="m-0 flex list-none flex-col gap-3 border-t border-border pt-3 p-0">
-        {receipt.lines.map((line) => {
-          const goodQty = line.quantityReceived;
-          const damaged = line.damagedQty ?? 0;
-          const rejected = line.rejectedQty ?? 0;
-          const shortClosed = line.shortClosedQty ?? 0;
-          const discrepancyNote = line.discrepancyNote?.trim();
-          const showExpiryLot = Boolean(line.expiryDate) || Boolean(line.lotNumber);
-          return (
-            <li
-              key={line.lineId}
-              className="text-[length:var(--exits-text-sm)]"
-              data-testid={`po-receipt-line-${line.lineId}`}
-            >
-              <p className="m-0 font-medium">{line.nameSnapshot}</p>
-              <p className="mt-1 mb-0 text-muted">
-                {t("purchasing.receivedGood")}: {goodQty} {line.uomSnapshot}
-              </p>
-              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted">{t("purchasing.unitPurchaseCost")}</span>
-                <span>
+      <ExitsTableContainer
+        className="border-t border-border pt-3"
+        data-testid={`po-receipt-lines-${receipt.goodsReceiptId}`}
+      >
+        <ExitsTable data-testid={`po-receipt-lines-desktop-${receipt.goodsReceiptId}`}>
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead cellAlign="text" colSize="flex">
+                {t("purchasing.colProduct")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                {t("purchasing.goodReceived")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="text" colSize="numeric">
+                {t("purchasing.unit")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="money" colSize="money">
+                {t("purchasing.unitCost")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="money" colSize="money">
+                {t("purchasing.lineTotal")}
+              </ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            {receipt.lines.map((line) => {
+              const detailParts = goodsReceiptLineDetailParts(line, t);
+              return (
+                <ExitsTableRow
+                  key={line.lineId}
+                  data-testid={`po-receipt-line-${line.lineId}`}
+                >
+                  <ExitsTableCell cellAlign="text" className="font-medium">
+                    <div>{line.nameSnapshot}</div>
+                    {detailParts.length > 0 ? (
+                      <div className="mt-1 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                        {detailParts.join(" · ")}
+                      </div>
+                    ) : null}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                    {line.quantityReceived}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="text" className="text-muted">
+                    {line.uomSnapshot || "—"}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" className="tabular-nums">
+                    <MoneyDisplay amount={line.unitPurchaseCostSnapshot} />
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" className="tabular-nums font-medium">
+                    <MoneyDisplay amount={line.lineTotalSnapshot} />
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              );
+            })}
+          </ExitsTableBody>
+        </ExitsTable>
+
+        <ExitsTableMobile data-testid={`po-receipt-lines-mobile-${receipt.goodsReceiptId}`}>
+          {receipt.lines.map((line) => {
+            const detailParts = goodsReceiptLineDetailParts(line, t);
+            return (
+              <ExitsTableMobileRow
+                key={line.lineId}
+                data-testid={`po-receipt-line-${line.lineId}`}
+              >
+                <p className="exits-table-mobile__title m-0">{line.nameSnapshot}</p>
+                <p className="exits-table-mobile__math mt-1 mb-0">
+                  {t("purchasing.goodReceived")}: {line.quantityReceived} {line.uomSnapshot}
+                  {" · "}
+                  {t("purchasing.lineTotal")}:{" "}
+                  <MoneyDisplay amount={line.lineTotalSnapshot} />
+                </p>
+                <p className="exits-table-mobile__meta mt-1 mb-0">
+                  {t("purchasing.unitCost")}:{" "}
                   <MoneyDisplay amount={line.unitPurchaseCostSnapshot} />
                   <span className="text-muted"> / {line.uomSnapshot}</span>
-                </span>
-              </p>
-              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted">{t("purchasing.lineTotal")}</span>
-                <MoneyDisplay amount={line.lineTotalSnapshot} />
-              </p>
-              {showExpiryLot ? (
-                <>
-                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.expiryDate")}</span>
-                    <span>{line.expiryDate ?? "—"}</span>
+                </p>
+                {detailParts.length > 0 ? (
+                  <p className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {detailParts.join(" · ")}
                   </p>
-                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.lotNumber")}</span>
-                    <span>{line.lotNumber?.trim() || "—"}</span>
-                  </p>
-                </>
-              ) : null}
-              {damaged > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.damaged")}: {damaged} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {rejected > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.rejected")}: {rejected} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {shortClosed > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.cancelRemaining")}: {shortClosed} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {line.discrepancyKind && line.discrepancyKind !== "None" ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.discrepancy")}:{" "}
-                  {line.discrepancyKind === "Short"
-                    ? t("purchasing.cancelRemaining")
-                    : line.discrepancyKind}
-                </p>
-              ) : null}
-              {discrepancyNote ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.discrepancyNote")}: {discrepancyNote}
-                </p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+                ) : null}
+              </ExitsTableMobileRow>
+            );
+          })}
+        </ExitsTableMobile>
+      </ExitsTableContainer>
       {notes ? (
         <p className="m-0 border-t border-border pt-2 text-[length:var(--exits-text-sm)] text-muted">
           {t("purchasing.notes")}: {notes}
@@ -1356,7 +1422,9 @@ export function PurchaseOrderDetailPage() {
         <div className="po-document-actions__primary">
           <Button
             type="button"
-            variant="ghost"
+            intent="primary"
+            appearance="ghost"
+            className="font-semibold"
             onClick={smartBack.onBack}
             aria-label={t("purchasing.backOrders")}
             data-testid="po-detail-footer-back"

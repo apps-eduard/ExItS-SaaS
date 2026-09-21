@@ -236,8 +236,9 @@ export function QuantityStepper({
     node.select();
   }, [editOnClick, clickEditing]);
 
-  // Effective minimum: explicit/domain min. Whole → typically 1; measured → typically 0.01 (not forced to 1).
-  const floor = min > 0 ? min : precision > 0 ? minPositiveQuantity(precision) : 1;
+  // Effective minimum: respect explicit `min` (including 0 for classification / write-off).
+  // When omitted, `min` already defaults to 1 (whole) or measured min-positive.
+  const floor = min;
   const adaptiveWeightSteps = usesAdaptiveWeightSteps({ unitOfMeasure, sellingMode });
   const atMin = numeric <= floor + 1e-12;
   const atMax = max != null && numeric >= max - 1e-12;

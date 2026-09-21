@@ -8,7 +8,19 @@ import {
   type ReturnBatchDto,
 } from "@/api/pos/pos-return-batches-client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingSkeleton } from "@/components/exits/FoundationStates";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { PageHeader } from "@/components/exits/PageHeader";
@@ -163,67 +175,172 @@ export function ConnectedPoReturnProcessPage() {
         {...headerBack}
       />
 
-      <section className="catalog-form-section exits-animate-panel gap-0">
-        <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("returns.connectedPo.poNumber")}</dt>
-            <dd className="m-0 font-semibold">{batch.poNumberSnapshot ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("returns.reason")}</dt>
-            <dd className="m-0">{batch.reason}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("returns.connectedPo.returnValue")}</dt>
-            <dd className="m-0">
+      <section
+        className="exits-animate-panel flex flex-col gap-3"
+        data-testid="connected-po-return-summary"
+      >
+        <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+          {t("returns.connectedPo.summaryTitle")}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Card
+            className="flex flex-col gap-2 p-3"
+            treatment="bordered"
+            data-testid="connected-po-return-summary-po"
+          >
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("returns.connectedPo.poNumber")}
+            </h3>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {batch.poNumberSnapshot ?? "—"}
+            </p>
+          </Card>
+          <Card
+            className="flex flex-col gap-2 p-3"
+            treatment="bordered"
+            data-testid="connected-po-return-summary-reason"
+          >
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("returns.reason")}
+            </h3>
+            <p className="m-0 break-words text-[length:var(--exits-text-sm)] font-semibold">
+              {batch.reason}
+            </p>
+          </Card>
+          <Card
+            className="flex flex-col gap-2 p-3"
+            treatment="bordered"
+            data-testid="connected-po-return-summary-value"
+          >
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("returns.connectedPo.returnValue")}
+            </h3>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               <MoneyDisplay amount={batch.acceptedReturnValue} />
-            </dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-muted">{t("returns.connectedPo.refundDue")}</dt>
-            <dd className="m-0">
+            </p>
+          </Card>
+          <Card
+            className="flex flex-col gap-2 p-3"
+            treatment="bordered"
+            data-testid="connected-po-return-summary-refund"
+          >
+            <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-muted">
+              {t("returns.connectedPo.refundDue")}
+            </h3>
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
               <MoneyDisplay amount={batch.financialSummary.refundRemaining} />
-            </dd>
-          </div>
-        </dl>
+            </p>
+          </Card>
+        </div>
       </section>
 
-      <section className="catalog-form-section exits-animate-panel gap-0">
-        <h2 className="catalog-form-section__title">{t("returns.linesTitle")}</h2>
-        <ul className="mb-0 mt-3 list-none space-y-2 p-0" data-testid="connected-po-return-process-lines">
-          {batch.lines.map((line) => (
-            <li
-              key={line.returnBatchLineId}
-              className="flex flex-wrap items-center justify-between gap-2 text-[length:var(--exits-text-sm)]"
-            >
-              <span className="min-w-0">
-                <span className="font-semibold">{line.productNameSnapshot}</span>
-                <span className="text-muted">
-                  {" "}
-                  · {t("returns.returnedQuantity")}: {line.acceptedQuantity} {line.unitOfMeasure}
-                </span>
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="text-muted">
-                  {line.sellableQuantity == null
+      <Card
+        className="exits-animate-panel flex flex-col gap-3 p-3"
+        treatment="bordered"
+        data-testid="connected-po-return-lines-card"
+      >
+        <CardHeader>
+          <CardTitle as="h2">{t("returns.linesTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ExitsTableContainer data-testid="connected-po-return-process-lines">
+            <ExitsTable data-testid="connected-po-return-process-lines-desktop">
+              <ExitsTableHeader>
+                <ExitsTableRow>
+                  <ExitsTableHead cellAlign="text">
+                    {t("returns.connectedPo.colProduct")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">
+                    {t("returns.returnedQuantity")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="text">
+                    {t("returns.connectedPo.colInspection")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="actions">
+                    {t("returns.connectedPo.colActions")}
+                  </ExitsTableHead>
+                </ExitsTableRow>
+              </ExitsTableHeader>
+              <ExitsTableBody>
+                {batch.lines.map((line) => {
+                  const inspectDisabled =
+                    awaitingReceipt || batch.status === "Finalized";
+                  const inspectionLabel =
+                    line.sellableQuantity == null
+                      ? t("returns.pendingInspection")
+                      : `${t("returns.sellableAgain")}: ${line.sellableQuantity} · ${t("returns.damagedWriteOff")}: ${line.damagedQuantity ?? 0}`;
+                  return (
+                    <ExitsTableRow
+                      key={line.returnBatchLineId}
+                      data-testid={`connected-po-return-line-row-${line.returnBatchLineId}`}
+                    >
+                      <ExitsTableCell cellAlign="text" className="font-medium">
+                        {line.productNameSnapshot}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="text">
+                        {line.acceptedQuantity} {line.unitOfMeasure}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="text" className="text-muted">
+                        {inspectionLabel}
+                      </ExitsTableCell>
+                      <ExitsTableCell cellAlign="actions">
+                        <Button
+                          type="button"
+                          appearance="ghost"
+                          className="h-8 px-2"
+                          disabled={inspectDisabled}
+                          data-testid={`connected-po-return-inspect-${line.returnBatchLineId}`}
+                          onClick={() => setInspectionLineId(line.returnBatchLineId)}
+                        >
+                          {t("returns.connectedPo.inspect")}
+                        </Button>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  );
+                })}
+              </ExitsTableBody>
+            </ExitsTable>
+
+            <ExitsTableMobile data-testid="connected-po-return-process-lines-mobile">
+              {batch.lines.map((line) => {
+                const inspectDisabled =
+                  awaitingReceipt || batch.status === "Finalized";
+                const inspectionLabel =
+                  line.sellableQuantity == null
                     ? t("returns.pendingInspection")
-                    : `${t("returns.sellableAgain")}: ${line.sellableQuantity} · ${t("returns.damagedWriteOff")}: ${line.damagedQuantity ?? 0}`}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-8 px-2"
-                  disabled={awaitingReceipt || batch.status === "Finalized"}
-                  data-testid={`connected-po-return-inspect-${line.returnBatchLineId}`}
-                  onClick={() => setInspectionLineId(line.returnBatchLineId)}
-                >
-                  {t("returns.connectedPo.inspect")}
-                </Button>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+                    : `${t("returns.sellableAgain")}: ${line.sellableQuantity} · ${t("returns.damagedWriteOff")}: ${line.damagedQuantity ?? 0}`;
+                return (
+                  <ExitsTableMobileRow
+                    key={line.returnBatchLineId}
+                    data-testid={`connected-po-return-line-mobile-${line.returnBatchLineId}`}
+                  >
+                    <div className="exits-table-mobile__title-row">
+                      <span className="exits-table-mobile__title">
+                        {line.productNameSnapshot}
+                      </span>
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        className="h-8 px-2"
+                        disabled={inspectDisabled}
+                        data-testid={`connected-po-return-inspect-${line.returnBatchLineId}`}
+                        onClick={() => setInspectionLineId(line.returnBatchLineId)}
+                      >
+                        {t("returns.connectedPo.inspect")}
+                      </Button>
+                    </div>
+                    <p className="exits-table-mobile__meta m-0">
+                      {t("returns.returnedQuantity")}: {line.acceptedQuantity}{" "}
+                      {line.unitOfMeasure}
+                    </p>
+                    <p className="exits-table-mobile__meta m-0">{inspectionLabel}</p>
+                  </ExitsTableMobileRow>
+                );
+              })}
+            </ExitsTableMobile>
+          </ExitsTableContainer>
+        </CardContent>
+      </Card>
 
       {actionError ? (
         <p

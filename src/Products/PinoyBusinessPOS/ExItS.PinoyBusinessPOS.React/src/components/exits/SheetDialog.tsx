@@ -15,6 +15,7 @@ export function BottomSheet({
   testId = "bottom-sheet",
   closeLabel = "Close",
   panelClassName,
+  backdropClassName,
   /** Mobile bottom sheet; from md+ optionally center as a compact dialog. */
   presentation = "sheet",
 }: {
@@ -27,6 +28,8 @@ export function BottomSheet({
   closeLabel?: string;
   /** Extra classes for the dialog panel (e.g. desktop max-width). */
   panelClassName?: string;
+  /** Extra classes for the dimmed backdrop (e.g. nested stack z-index). */
+  backdropClassName?: string;
   presentation?: BottomSheetPresentation;
 }) {
   useBodyScrollLock(open);
@@ -55,7 +58,7 @@ export function BottomSheet({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-[60] bg-black/40"
+        className={cn("fixed inset-0 z-[60] bg-black/40", backdropClassName)}
         role="presentation"
         onClick={onClose}
         data-testid={`${testId}-backdrop`}
@@ -113,6 +116,7 @@ export function ConfirmationDialog({
   confirmDisabled = false,
   confirmPendingLabel,
   testId = "confirmation-dialog",
+  className,
 }: {
   open: boolean;
   title: string;
@@ -133,6 +137,8 @@ export function ConfirmationDialog({
   /** Shown on the confirm button while `busy` (falls back to confirmLabel). */
   confirmPendingLabel?: string;
   testId?: string;
+  /** Extra classes on the portal root (e.g. nested stack z-index). */
+  className?: string;
 }) {
   useBodyScrollLock(open);
 
@@ -146,7 +152,10 @@ export function ConfirmationDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className={cn(
+        "fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center",
+        className,
+      )}
       role="presentation"
       onClick={() => {
         if (!busy) {

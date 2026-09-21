@@ -4625,8 +4625,16 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
-
+  "transfer.needsClassification": "Needs reason",
+  "transfer.classifyDiscrepancyTitle": "Classify discrepancy",
+  "transfer.classifyDiscrepancyHint": "Received {received} of {sent}. Choose why the remainder was not accepted.",
+  "transfer.classifyDiscrepancyConfirm": "Save classification",
+  "transfer.receiveNow": "Receive now",
+  "transfer.editReceiveQty": "Edit receive quantity",
+  "transfer.saveReceiveQty": "Save receive quantity",
+  "transfer.resetReceiveQty": "Reset receive quantity",
   "transfer.items": "Items",
+  "transfer.units": "Units",
 
   "transfer.lede": "Iyalis ti stock iti nagbaetan dagiti branch iti organisasionyo.",
 
@@ -4732,6 +4740,19 @@ export const iloPH: Record<keyof typeof en, string> = {
 
   "transfer.available": "Available: {qty} {uom}",
   "transfer.colAvailable": "Available at source",
+  "transfer.colNumber": "Transfer #",
+  "transfer.colRoute": "Route",
+  "transfer.colUpdated": "Updated",
+  "transfer.timelineTitle": "Transfer timeline",
+  "transfer.activity.empty": "No timeline events yet.",
+  "transfer.activity.created": "Transfer created",
+  "transfer.activity.createdDetail": "A draft branch transfer was created.",
+  "transfer.activity.dispatched": "Dispatched",
+  "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
+  "transfer.activity.received": "Received",
+  "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.cancelled": "Cancelled",
+  "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
   "transfer.outOfStock": "Out of stock",
 
@@ -5467,6 +5488,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "inventory.tracked": "Gi-track",
 
   "inventory.trackingFilter": "Tracking status",
+  "inventory.categoryFilter": "Categories",
+  "inventory.brandFilter": "Brands",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
   "inventory.missingExpirationShort": "Missing expiry",
@@ -10155,6 +10178,10 @@ export const iloPH: Record<keyof typeof en, string> = {
   "purchasing.categoriesTriggerCount": "Categories Â· {count}",
   "purchasing.selectAllCategories": "Pilien amin",
   "purchasing.deselectAllCategories": "Ikkaten amin",
+  "purchasing.brandsPlaceholder": "Select brands",
+  "purchasing.brandsSelected": "{count} selected",
+  "purchasing.selectAllBrands": "Select all",
+  "purchasing.deselectAllBrands": "Ikkaten amin",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -11057,6 +11084,7 @@ export const iloPH: Record<keyof typeof en, string> = {
   "returns.sellableAgain": "Sellable again",
   "returns.damagedWriteOff": "Damaged / write-off",
   "returns.totalClassified": "Total classified must match returned quantity.",
+  "returns.classifiedProgress": "Classified {classified} / {returned}",
   "returns.saveClassification": "Save classification",
   "returns.reviewReturn": "Review return",
   "returns.finalizeReturns": "Finalize returns",
@@ -12808,6 +12836,8 @@ export const iloPH: Record<keyof typeof en, string> = {
   "branches.create.creating": "Creating???",
 
   "branches.create.failed": "Could not create branch.",
+  "branches.create.deliveryRequiresCoordinates":
+    "Enable delivery only after setting valid branch coordinates.",
 
   "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
 
@@ -13504,11 +13534,15 @@ export const iloPH: Record<keyof typeof en, string> = {
   "returns.connectedPo.awaitingSellerReceipt": "Awaiting supplier receipt",
   "returns.connectedPo.statusReturnsPending": "Returns pending",
   "returns.connectedPo.statusReturnsProcessed": "Returns processed",
+  "returns.connectedPo.summaryTitle": "Return summary",
   "returns.connectedPo.poNumber": "PO number",
   "returns.connectedPo.returnValue": "Return value",
   "returns.connectedPo.refundDue": "Refund due",
   "returns.connectedPo.recordRefund": "Record refund",
   "returns.connectedPo.inspect": "Inspect",
+  "returns.connectedPo.colProduct": "Product",
+  "returns.connectedPo.colInspection": "Inspection",
+  "returns.connectedPo.colActions": "Actions",
   "returns.connectedPo.reviewAndFinalize": "Review and finalize",
   "returns.connectedPo.loadError": "Could not load the supplier return.",
   "returns.connectedPo.processTitle": "Process buyer return",

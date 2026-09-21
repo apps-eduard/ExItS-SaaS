@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,7 +11,8 @@ import {
 import { listCatalogCategories } from "@/api/pos/pos-catalog-client";
 import { PosApiError, type PosWorkspaceScope } from "@/api/pos/pos-http";
 import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
-import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
+import { CategoryPricingOverridesPanel } from "@/features/connected-commerce/CategoryPricingOverridesPanel";
+import { BottomSheet } from "@/components/exits/SheetDialog";
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -102,7 +103,7 @@ export function BusinessCustomerConnectedCommerceSection({
   const [categoryOverrides, setCategoryOverrides] = useState<
     Array<{ categoryId: string; discountPercent: number }>
   >([]);
-  const [addCategoryIds, setAddCategoryIds] = useState<string[]>([]);
+  const [categoryOverridesOpen, setCategoryOverridesOpen] = useState(false);
 
   useEffect(() => {
     if (!timingQuery.data) {
@@ -128,26 +129,6 @@ export function BusinessCustomerConnectedCommerceSection({
   }, [pricingQuery.data]);
 
   const org = orgSettingsQuery.data;
-  const categoryNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const c of categoriesQuery.data?.items ?? []) {
-      map.set(c.categoryId, c.name);
-    }
-    return map;
-  }, [categoriesQuery.data]);
-
-  const availableCategories = useMemo(
-    () =>
-      (categoriesQuery.data?.items ?? []).filter(
-        (c) => !categoryOverrides.some((r) => r.categoryId === c.categoryId),
-      ),
-    [categoriesQuery.data, categoryOverrides],
-  );
-
-  useEffect(() => {
-    const available = new Set(availableCategories.map((c) => c.categoryId));
-    setAddCategoryIds((current) => current.filter((id) => available.has(id)));
-  }, [availableCategories]);
 
   const timingMutation = useMutation({
     mutationFn: () =>
@@ -459,112 +440,66 @@ export function BusinessCustomerConnectedCommerceSection({
           data-testid="business-pricing-customer-discount"
         />
 
-        <div>
-          <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-            {t("customers.business.connectedCommerce.categoryOverrides")}
-          </h3>
-          {categoryOverrides.length === 0 ? (
-            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("customers.business.connectedCommerce.noCategoryOverrides")}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              {t("customers.business.connectedCommerce.categoryOverrides")}
             </p>
-          ) : (
-            <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">
-              {categoryOverrides.map((rule) => (
-                <li
-                  key={rule.categoryId}
-                  className="grid grid-cols-[1fr_6rem_auto] items-center gap-2"
-                >
-                  <span className="truncate text-[length:var(--exits-text-sm)]">
-                    {categoryNameById.get(rule.categoryId) ?? rule.categoryId}
-                  </span>
-                  <Input
-                    label="%"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step="0.01"
-                    value={rule.discountPercent}
-                    disabled={!canManage || pricingMutation.isPending}
-                    onChange={(e) => {
-                      const next = Number(e.target.value || 0);
-                      setCategoryOverrides((current) =>
-                        current.map((r) =>
-                          r.categoryId === rule.categoryId
-                            ? { ...r, discountPercent: next }
-                            : r,
-                        ),
-                      );
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    appearance="ghost"
-                    intent="danger"
-                    size="default"
-                    disabled={!canManage || pricingMutation.isPending}
-                    onClick={() =>
-                      setCategoryOverrides((current) =>
-                        current.filter((r) => r.categoryId !== rule.categoryId),
-                      )
-                    }
-                  >
-                    {t("connectedCommerce.removeRule")}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {canManage && availableCategories.length > 0 ? (
-            <div className="mt-2 flex flex-col gap-2">
-              <ProductCategoryMultiSelect
-                label={t("customers.business.connectedCommerce.addCategory")}
-                categories={availableCategories.map((c) => ({
-                  categoryId: c.categoryId,
-                  name: c.name,
-                }))}
-                selectedIds={addCategoryIds}
-                onChange={setAddCategoryIds}
-                placeholder={t("customers.business.connectedCommerce.selectCategory")}
-                selectedCountLabel={(count) =>
-                  t("purchasing.categoriesSelected").replace("{count}", String(count))
-                }
-                selectAllLabel={t("purchasing.selectAllCategories")}
-                clearAllLabel={t("purchasing.deselectAllCategories")}
-                searchPlaceholder={t("catalog.searchCategories")}
-                menuLabel={t("customers.business.connectedCommerce.addCategory")}
-                testId="business-pricing-add-category"
-              />
-              <Button
-                type="button"
-                appearance="outline"
-                size="default"
-                className="self-start"
-                disabled={addCategoryIds.length === 0}
-                onClick={() => {
-                  if (addCategoryIds.length === 0) {
-                    return;
-                  }
-                  setCategoryOverrides((current) => {
-                    const existing = new Set(current.map((r) => r.categoryId));
-                    const additions = addCategoryIds
-                      .filter((id) => !existing.has(id))
-                      .map((categoryId) => ({ categoryId, discountPercent: 0 }));
-                    return [...current, ...additions];
-                  });
-                  setAddCategoryIds([]);
-                }}
-                data-testid="business-pricing-add-rule"
-              >
-                {t("customers.business.connectedCommerce.addRule")}
-              </Button>
-            </div>
-          ) : null}
+            <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+              {categoryOverrides.length === 0
+                ? t("customers.business.connectedCommerce.noCategoryOverrides")
+                : t("customers.business.connectedCommerce.categoryOverridesCount").replace(
+                    "{n}",
+                    String(categoryOverrides.length),
+                  )}
+            </p>
+          </div>
+          <Button
+            type="button"
+            appearance="outline"
+            size="default"
+            className="w-auto shrink-0"
+            disabled={!canManage || pricingMutation.isPending}
+            onClick={() => setCategoryOverridesOpen(true)}
+            data-testid="business-pricing-open-category-overrides"
+          >
+            {categoryOverrides.length === 0
+              ? t("connectedCommerce.pricingOverride.add")
+              : t("customers.business.connectedCommerce.manageCategoryOverrides")}
+          </Button>
         </div>
+
+        <BottomSheet
+          open={categoryOverridesOpen}
+          onClose={() => setCategoryOverridesOpen(false)}
+          title={t("customers.business.connectedCommerce.categoryOverrides")}
+          panelId="business-pricing-category-overrides-sheet"
+          testId="business-pricing-category-overrides-sheet"
+          closeLabel={t("connectedCommerce.pricingOverride.cancel")}
+          presentation="sheet-mobile-dialog-desktop"
+          panelClassName="md:w-[min(100%-2rem,36rem)] md:max-h-[85vh]"
+        >
+          <CategoryPricingOverridesPanel
+            rules={categoryOverrides}
+            categories={(categoriesQuery.data?.items ?? []).map((c) => ({
+              categoryId: c.categoryId,
+              name: c.name,
+            }))}
+            canEdit={canManage && !pricingMutation.isPending}
+            onChange={setCategoryOverrides}
+            showHeader={false}
+            nested
+            hierarchyHelp={t("customers.business.connectedCommerce.pricingHelp")}
+            emptyTitle={t("customers.business.connectedCommerce.categoryOverrideEmptyTitle")}
+            emptyDetail={t("customers.business.connectedCommerce.noCategoryOverrides")}
+            removeDetail={t("customers.business.connectedCommerce.categoryOverrideRemoveDetail")}
+          />
+        </BottomSheet>
 
         {canManage ? (
           <Button
             type="button"
+            className="w-auto self-end"
             disabled={!online || pricingMutation.isPending}
             onClick={() => pricingMutation.mutate()}
             data-testid="business-pricing-save"

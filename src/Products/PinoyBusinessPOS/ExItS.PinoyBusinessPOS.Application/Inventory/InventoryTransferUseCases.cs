@@ -14,13 +14,16 @@ public sealed class InventoryTransferQueryService
 {
     private readonly IInventoryTransferRepository _transfers;
     private readonly IOrganizationBranchDirectory _branches;
+    private readonly ICatalogProductRepository _products;
 
     public InventoryTransferQueryService(
         IInventoryTransferRepository transfers,
-        IOrganizationBranchDirectory branches)
+        IOrganizationBranchDirectory branches,
+        ICatalogProductRepository products)
     {
         _transfers = transfers;
         _branches = branches;
+        _products = products;
     }
 
     public async Task<InventoryTransferDto?> GetByIdAsync(
@@ -39,7 +42,14 @@ public sealed class InventoryTransferQueryService
         var names = await _branches
             .GetNamesAsync(organizationId, [transfer.SourceBranchId.Value, transfer.DestinationBranchId.Value], cancellationToken)
             .ConfigureAwait(false);
-        return Map(transfer, names);
+        var productIds = transfer.Lines.Select(l => l.ProductId).Distinct().ToList();
+        var skuByProduct = (await _products.ListByIdsAsync(
+                PosOrganizationId.From(organizationId),
+                productIds,
+                cancellationToken)
+            .ConfigureAwait(false))
+            .ToDictionary(p => p.Id.Value, p => p.Sku);
+        return Map(transfer, names, skuByProduct);
     }
 
     public async Task<PagedResult<InventoryTransferListItemDto>> ListAsync(
@@ -67,7 +77,8 @@ public sealed class InventoryTransferQueryService
 
     internal static InventoryTransferDto Map(
         InventoryTransfer transfer,
-        IReadOnlyDictionary<Guid, string> names) =>
+        IReadOnlyDictionary<Guid, string> names,
+        IReadOnlyDictionary<Guid, string?>? skuByProduct = null) =>
         new(
             transfer.Id.Value,
             transfer.OrganizationId.Value,
@@ -106,7 +117,10 @@ public sealed class InventoryTransferQueryService
                 l.SourceLotId?.Value,
                 l.LotNumber,
                 l.ExpirationDate,
-                l.UnitCostSnapshot)).ToList());
+                l.UnitCostSnapshot,
+                skuByProduct is not null && skuByProduct.TryGetValue(l.ProductId.Value, out var sku)
+                    ? sku
+                    : null)).ToList());
 
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,

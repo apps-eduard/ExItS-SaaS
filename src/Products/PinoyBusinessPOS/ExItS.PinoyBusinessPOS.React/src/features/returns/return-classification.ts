@@ -15,6 +15,20 @@ export function parseReturnQuantityInput(raw: string): number {
   return Math.max(0, roundReturnQuantity(parsed));
 }
 
+/**
+ * Keep sellable + damaged = returned. Changing one side auto-fills the other.
+ * Example: returned 4, sellable 3 → damaged 1.
+ */
+export function allocateComplementaryReturnQuantity(
+  returnedQuantity: number,
+  primaryQuantity: number,
+): { primary: number; complementary: number } {
+  const returned = Math.max(0, roundReturnQuantity(returnedQuantity));
+  const primary = Math.min(returned, Math.max(0, roundReturnQuantity(primaryQuantity)));
+  const complementary = roundReturnQuantity(returned - primary);
+  return { primary, complementary };
+}
+
 export function isValidClassificationTotal(
   returnedQuantity: number,
   sellableQuantity: number,

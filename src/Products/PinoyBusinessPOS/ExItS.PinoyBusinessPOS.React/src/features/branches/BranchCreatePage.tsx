@@ -121,7 +121,8 @@ export function BranchCreatePage() {
         countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
         pickupEnabled: defaultsQuery.data?.defaultPickupEnabled === true,
-        deliveryEnabled: defaultsQuery.data?.defaultDeliveryEnabled === true,
+        // Delivery requires map coordinates; enable later on the branch fulfillment page.
+        deliveryEnabled: false,
         customerOrderingEnabled: defaultsQuery.data?.defaultOnlineOrdersEnabled === true,
       });
       if (!result.ok) {
@@ -134,6 +135,9 @@ export function BranchCreatePage() {
         }
         if (codeHint.includes("warehouse_entitlement")) {
           throw new Error(t("branches.create.warehouseEntitlement"));
+        }
+        if (codeHint.includes("delivery_location_required")) {
+          throw new Error(t("branches.create.deliveryRequiresCoordinates"));
         }
         throw new Error(result.body?.detail ?? t("branches.create.failed"));
       }
@@ -190,6 +194,12 @@ export function BranchCreatePage() {
         backLabel={t("branches.backList")}
         backTestId="page-header-back-branches"
       />
+
+      {branchType === "Retail" ? (
+        <Notice tone="info" testId="branch-create-delivery-coordinates-hint">
+          {t("branches.create.deliveryRequiresCoordinates")}
+        </Notice>
+      ) : null}
 
       <form
         className="branch-create-form flex flex-col gap-3"

@@ -920,7 +920,7 @@ public sealed class ReceiveConnectedPoReturnBatch
                         "Only the seller organization can receive this return.");
                 }
 
-                if (expectedUpdatedAtUtc is not null && batch.UpdatedAtUtc != expectedUpdatedAtUtc.Value)
+                if (ReturnBatchConcurrency.IsMismatch(batch.UpdatedAtUtc, expectedUpdatedAtUtc))
                 {
                     return ApplicationResult<ReturnBatch>.Failure(
                         ApplicationErrorCodes.ConcurrencyConflict,
@@ -1021,7 +1021,7 @@ public sealed class FinalizeConnectedPoReturnBatch
                         "Only the seller organization can finalize this return.");
                 }
 
-                if (batch.UpdatedAtUtc != expectedUpdatedAtUtc)
+                if (ReturnBatchConcurrency.IsMismatch(batch.UpdatedAtUtc, expectedUpdatedAtUtc))
                 {
                     return ApplicationResult<ReturnBatch>.Failure(
                         ApplicationErrorCodes.ConcurrencyConflict,

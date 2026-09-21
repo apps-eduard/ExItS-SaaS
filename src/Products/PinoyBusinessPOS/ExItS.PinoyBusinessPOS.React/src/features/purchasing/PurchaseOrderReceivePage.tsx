@@ -1395,46 +1395,103 @@ export function PurchaseOrderReceivePage() {
       ) : null}
 
       {trackingConfirm ? (
-        <Card data-testid="receive-tracking-confirm">
-          <ul className="m-0 flex list-none flex-col gap-4 p-0">
-            {untrackedReceivingLines.map((line) => (
-              <li key={line.productId} data-testid={`receive-tracking-line-${line.productId}`}>
-                <div className="font-medium">{line.name}</div>
-                <p className="mt-1 mb-1 text-[length:var(--exits-text-sm)]">
-                  {t("purchasing.received")}: {line.receivedQty} {line.uom}
-                </p>
-                <p className="mt-0 mb-1 flex flex-wrap items-baseline gap-1 text-[length:var(--exits-text-sm)]">
-                  <span className="text-muted">{t("purchasing.purchasePrice")}:</span>
-                  <MoneyDisplay amount={line.unitPurchaseCost} />
-                </p>
-                <p className="mt-0 mb-2 flex flex-wrap items-baseline gap-1 text-[length:var(--exits-text-sm)]">
-                  <span className="text-muted">{t("purchasing.purchaseAmount")}:</span>
-                  <MoneyDisplay amount={line.purchaseAmount} />
-                </p>
-                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t("purchasing.inventoryNotCurrentlyTracked")}
-                </p>
-                <p className="mt-2 mb-1 text-[length:var(--exits-text-sm)] font-medium">
-                  {t("purchasing.receivingWill")}
-                </p>
-                <ul className="m-0 list-disc pl-5 text-[length:var(--exits-text-sm)]">
+        <Card className="flex flex-col gap-3 p-3" data-testid="receive-tracking-confirm">
+          <Notice tone="info" testId="receive-tracking-info">
+            <div className="flex flex-col gap-2">
+              <p className="font-medium">{t("purchasing.inventoryNotCurrentlyTracked")}</p>
+              <div>
+                <p className="font-medium">{t("purchasing.receivingWill")}</p>
+                <ul className="mt-1 mb-0 list-disc pl-5">
                   <li>{t("purchasing.enableInventoryTracking")}</li>
                   <li>{t("purchasing.trackingStartsWithReceived")}</li>
                   <li>
                     {t("purchasing.addStockToBranch").replace("{name}", branchName || "—")}
                   </li>
                 </ul>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
+              </div>
+            </div>
+          </Notice>
+
+          <ExitsTableContainer data-testid="receive-tracking-lines-table">
+            <ExitsTable data-testid="receive-tracking-lines-desktop">
+              <ExitsTableHeader>
+                <ExitsTableRow>
+                  <ExitsTableHead cellAlign="text" colSize="flex">
+                    {t("purchasing.receiveProduct")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                    {t("purchasing.received")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="text" colSize="numeric">
+                    {t("purchasing.unit")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="money" colSize="money">
+                    {t("purchasing.purchasePrice")}
+                  </ExitsTableHead>
+                  <ExitsTableHead cellAlign="money" colSize="money">
+                    {t("purchasing.purchaseAmount")}
+                  </ExitsTableHead>
+                </ExitsTableRow>
+              </ExitsTableHeader>
+              <ExitsTableBody>
+                {untrackedReceivingLines.map((line) => (
+                  <ExitsTableRow
+                    key={line.productId}
+                    data-testid={`receive-tracking-line-${line.productId}`}
+                  >
+                    <ExitsTableCell cellAlign="text" className="font-medium">
+                      {line.name}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                      {line.receivedQty}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text" className="text-muted">
+                      {line.uom || "—"}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" className="tabular-nums">
+                      <MoneyDisplay amount={line.unitPurchaseCost} />
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="money" className="tabular-nums font-medium">
+                      <MoneyDisplay amount={line.purchaseAmount} />
+                    </ExitsTableCell>
+                  </ExitsTableRow>
+                ))}
+              </ExitsTableBody>
+            </ExitsTable>
+
+            <ExitsTableMobile data-testid="receive-tracking-lines-mobile">
+              {untrackedReceivingLines.map((line) => (
+                <ExitsTableMobileRow
+                  key={line.productId}
+                  data-testid={`receive-tracking-line-mobile-${line.productId}`}
+                >
+                  <p className="exits-table-mobile__title m-0">{line.name}</p>
+                  <p className="exits-table-mobile__math mt-1 mb-0">
+                    {t("purchasing.received")}: {line.receivedQty} {line.uom}
+                    {" · "}
+                    {t("purchasing.purchaseAmount")}:{" "}
+                    <MoneyDisplay amount={line.purchaseAmount} />
+                  </p>
+                  <p className="exits-table-mobile__meta mt-1 mb-0">
+                    {t("purchasing.purchasePrice")}:{" "}
+                    <MoneyDisplay amount={line.unitPurchaseCost} />
+                  </p>
+                </ExitsTableMobileRow>
+              ))}
+            </ExitsTableMobile>
+          </ExitsTableContainer>
+
+          <div className="mt-1 flex flex-wrap items-center justify-end gap-2">
             <Button
               type="button"
-              variant="ghost"
+              intent="primary"
+              appearance="ghost"
+              className="font-semibold"
               disabled={busy || statusLocked}
               onClick={() => setTrackingConfirm(false)}
               data-testid="receive-tracking-back"
             >
+              <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
               {t("purchasing.backToReceipt")}
             </Button>
             <Button
@@ -2308,7 +2365,9 @@ export function PurchaseOrderReceivePage() {
               <div className="receive-stock-actions__primary">
                 <Button
                   type="button"
-                  variant="ghost"
+                  intent="primary"
+                  appearance="ghost"
+                  className="font-semibold"
                   onClick={() => setReviewing(false)}
                   data-testid="receive-back-to-edit"
                 >
@@ -2328,7 +2387,9 @@ export function PurchaseOrderReceivePage() {
               <div className="receive-stock-actions__primary">
                 <Button
                   type="button"
-                  variant="ghost"
+                  intent="primary"
+                  appearance="ghost"
+                  className="font-semibold"
                   onClick={() => navigate(`/purchasing/${purchaseOrderId}`)}
                   aria-label={t("purchasing.backDetail")}
                   data-testid="receive-footer-back"
