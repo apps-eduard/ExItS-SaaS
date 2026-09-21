@@ -9732,13 +9732,22 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.editReceiveNow": "I-edit ang receive quantity",
 
-  "purchasing.deliverLater": "Ihatid / palitan mamaya",
+  "purchasing.deliverLater": "Palitan mamaya",
+
+  "purchasing.replaceLater": "Palitan mamaya",
 
   "purchasing.cancelRemaining": "Kanselahin ang natitira",
 
   "purchasing.remainingQuestion": "Ano ang gagawin sa natitirang {qty}?",
 
   "purchasing.remainingDecisionTitle": "Natitirang dami",
+  "purchasing.remainingDecisionSummary": "{products} produkto · {units} units ang kailangan ng desisyon",
+  "purchasing.remainingDecisionSummaryOne": "1 produkto · {units} units ang kailangan ng desisyon",
+  "purchasing.remainingApplyToAll": "Ilapat sa lahat",
+  "purchasing.remainingDecisionRequired": "Piliin kung ano ang dapat gawin sa lahat ng natitirang dami.",
+  "purchasing.remainingDecisionCol": "Desisyon",
+  "purchasing.remainingIssueCol": "Isyu",
+  "purchasing.remainingCol": "Natitira",
   "purchasing.discrepancyClassifyTitle": "Uriin ang discrepancy",
   "purchasing.discrepancyClassifyHint": "Uriin ang natitirang dami.",
   "purchasing.notAcceptedQty": "Hindi tinanggap ang {qty}",
@@ -10269,6 +10278,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.reviewDirect": "I-review ang receipt",
 
   "purchasing.reviewReceipt": "I-review ang receipt",
+  "purchasing.receiptSummaryTitle": "Buod ng receipt",
 
   "purchasing.saveFailed": "Hindi magawa ang purchase order.",
 

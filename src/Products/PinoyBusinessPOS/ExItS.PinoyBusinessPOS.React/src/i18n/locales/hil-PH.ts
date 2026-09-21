@@ -9757,13 +9757,22 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "purchasing.editReceiveNow": "Edit receive quantity",
 
-  "purchasing.deliverLater": "Deliver / replace later",
+  "purchasing.deliverLater": "Replace later",
+
+  "purchasing.replaceLater": "Replace later",
 
   "purchasing.cancelRemaining": "Cancel remaining",
 
   "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
 
   "purchasing.remainingDecisionTitle": "Remaining quantity",
+  "purchasing.remainingDecisionSummary": "{products} products · {units} units need a decision",
+  "purchasing.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "purchasing.remainingApplyToAll": "Apply to all",
+  "purchasing.remainingDecisionRequired": "Choose what should happen to all remaining quantities.",
+  "purchasing.remainingDecisionCol": "Decision",
+  "purchasing.remainingIssueCol": "Issue",
+  "purchasing.remainingCol": "Remaining",
   "purchasing.discrepancyClassifyTitle": "Classify discrepancy",
   "purchasing.discrepancyClassifyHint": "Classify the remaining quantity.",
   "purchasing.notAcceptedQty": "{qty} was not accepted",
@@ -10213,6 +10222,7 @@ export const hilPH: Record<keyof typeof en, string> = {
   "purchasing.reviewDirect": "Review receipt",
 
   "purchasing.reviewReceipt": "Review receipt",
+  "purchasing.receiptSummaryTitle": "Receipt summary",
 
   "purchasing.saveFailed": "Could not create the purchase order.",
 

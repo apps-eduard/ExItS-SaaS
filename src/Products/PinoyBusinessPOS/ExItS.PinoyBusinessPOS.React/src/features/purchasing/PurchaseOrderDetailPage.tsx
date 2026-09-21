@@ -689,9 +689,7 @@ export function PurchaseOrderDetailPage() {
 
   const resolvedStatusLabel = buyerStatusLabel(t, po.status, displayStatus);
   const statusTone = buyerStatusTone(po.status, displayStatus);
-  const sellerName = po.supplierBranchName
-    ? `${po.supplierName ?? t("purchasing.unknownSupplier")} — ${po.supplierBranchName}`
-    : (po.supplierName ?? t("purchasing.unknownSupplier"));
+  const sellerName = po.supplierName ?? t("purchasing.unknownSupplier");
   const documentLines = toBuyerDocumentLines(po);
   const proposalRevision = needsApproval ? buildProposalRevisionFromBuyerPo(po) : null;
   const isShortClosed =
@@ -868,7 +866,7 @@ export function PurchaseOrderDetailPage() {
         </Notice>
       ) : null}
       {payBeforeDue ? (
-        <Card className="flex flex-col gap-3 p-3" data-testid="po-pay-before-card">
+        <Card className="flex w-full min-w-0 flex-col gap-3 p-3 md:w-1/2" data-testid="po-pay-before-card">
           <div className="flex flex-wrap items-center gap-2">
             <p className="m-0 font-medium">{t("purchasing.payBeforeTitle")}</p>
             <StatusChip tone="warning">
@@ -882,28 +880,26 @@ export function PurchaseOrderDetailPage() {
               ? t("purchasing.paymentSubmittedWaitingBody")
               : t("purchasing.payBeforeBody")}
           </p>
-          <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
-            <div className="flex justify-between gap-2">
-              <dt>{t("purchasing.orderTotal")}</dt>
-              <dd className="m-0 font-medium">
-                <MoneyDisplay amount={payBeforeAmountDue} />
-              </dd>
-            </div>
-            {po.buyerPrepaymentSubmittedAtUtc ? (
-              <>
+          <p className="m-0 text-[length:var(--exits-text-sm)] tabular-nums">
+            <span>{t("purchasing.orderTotal")}: </span>
+            <span className="font-semibold">
+              <MoneyDisplay amount={payBeforeAmountDue} />
+            </span>
+          </p>
+          {po.buyerPrepaymentSubmittedAtUtc ? (
+            <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+              <div className="flex justify-between gap-2">
+                <dt>{t("purchasing.paymentMethod")}</dt>
+                <dd className="m-0">{po.buyerPrepaymentMethod ?? "—"}</dd>
+              </div>
+              {po.buyerPrepaymentReference ? (
                 <div className="flex justify-between gap-2">
-                  <dt>{t("purchasing.paymentMethod")}</dt>
-                  <dd className="m-0">{po.buyerPrepaymentMethod ?? "—"}</dd>
+                  <dt>{t("purchasing.paymentReference")}</dt>
+                  <dd className="m-0">{po.buyerPrepaymentReference}</dd>
                 </div>
-                {po.buyerPrepaymentReference ? (
-                  <div className="flex justify-between gap-2">
-                    <dt>{t("purchasing.paymentReference")}</dt>
-                    <dd className="m-0">{po.buyerPrepaymentReference}</dd>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
-          </dl>
+              ) : null}
+            </dl>
+          ) : null}
           {allowManage && online && (!po.buyerPrepaymentSubmittedAtUtc || showPayForm) ? (
             showPayForm ? (
               <div className="flex flex-col gap-3" data-testid="po-pay-before-form">
@@ -955,6 +951,7 @@ export function PurchaseOrderDetailPage() {
                   <Button
                     type="button"
                     variant="secondary"
+                    className="w-auto"
                     disabled={busy}
                     onClick={() => {
                       setShowPayForm(false);
@@ -965,6 +962,7 @@ export function PurchaseOrderDetailPage() {
                   </Button>
                   <Button
                     type="button"
+                    className="w-auto"
                     disabled={busy}
                     data-testid="po-pay-before-submit"
                     onClick={() => void submitPayBeforeProof()}
@@ -976,6 +974,7 @@ export function PurchaseOrderDetailPage() {
             ) : (
               <Button
                 type="button"
+                className="w-auto self-start"
                 data-testid="po-pay-now"
                 onClick={() => {
                   const term = po.paymentTerm || "Cash";
@@ -1004,6 +1003,7 @@ export function PurchaseOrderDetailPage() {
             <Button
               type="button"
               variant="outline"
+              className="w-auto self-start"
               data-testid="po-pay-before-update"
               onClick={() => {
                 setPayMethod(po.buyerPrepaymentMethod || "Cash");
@@ -1105,11 +1105,19 @@ export function PurchaseOrderDetailPage() {
       ) : null}
 
       <PoDocumentSummary
-        counterpartyLabel={t("purchasing.seller")}
-        counterpartyIcon={<Store className="size-5" strokeWidth={1.75} />}
-        counterpartyName={sellerName}
-        status={{ label: resolvedStatusLabel, tone: statusTone }}
+        className="po-document-summary--meta-cards"
+        title={t("incomingOrders.orderInfoTitle")}
         fields={[
+          {
+            key: "seller",
+            label: t("purchasing.seller"),
+            value: (
+              <span className="inline-flex min-w-0 items-center gap-2">
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">{sellerName}</span>
+              </span>
+            ),
+          },
           {
             key: "receiving",
             label: t("purchasing.receivingAt"),
@@ -1120,21 +1128,39 @@ export function PurchaseOrderDetailPage() {
             label: t("purchasing.paymentTerm"),
             value: po.paymentTermLabel || po.paymentTerm || "Cash",
           },
-          ...(po.paymentTiming
+          {
+            key: "paymentTiming",
+            label: t("purchasing.paymentTiming"),
+            value:
+              po.paymentTimingLabel ||
+              (po.paymentTiming === "PayOnDeliveryOrReceipt"
+                ? t("connectedCommerce.timing.payOnDelivery")
+                : po.paymentTiming === "SupplierCredit"
+                  ? t("connectedCommerce.timing.supplierCredit")
+                  : po.paymentTiming === "PayBeforeFulfillment"
+                    ? t("connectedCommerce.timing.payBefore")
+                    : "—"),
+          },
+          ...(po.fulfillmentMethod === "Pickup" || po.fulfillmentMethod === "Delivery"
             ? [
                 {
-                  key: "paymentTiming",
-                  label: t("purchasing.paymentTiming"),
+                  key: "fulfillment",
+                  label: t("purchasing.fulfillmentMethod"),
                   value:
-                    po.paymentTimingLabel ||
-                    (po.paymentTiming === "PayOnDeliveryOrReceipt"
-                      ? t("connectedCommerce.timing.payOnDelivery")
-                      : po.paymentTiming === "SupplierCredit"
-                        ? t("connectedCommerce.timing.supplierCredit")
-                        : t("connectedCommerce.timing.payBefore")),
+                    po.fulfillmentMethod === "Pickup"
+                      ? t("purchasing.fulfillment.pickup")
+                      : t("purchasing.fulfillment.delivery"),
                 },
               ]
-            : []),
+            : po.fulfillmentMethod?.trim()
+              ? [
+                  {
+                    key: "fulfillment",
+                    label: t("purchasing.fulfillmentMethod"),
+                    value: po.fulfillmentMethod.trim(),
+                  },
+                ]
+              : []),
           {
             key: "orderDate",
             label: t("purchasing.fieldOrderDate"),

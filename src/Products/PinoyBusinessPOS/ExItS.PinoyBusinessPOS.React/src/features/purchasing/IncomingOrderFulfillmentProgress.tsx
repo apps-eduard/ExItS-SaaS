@@ -81,7 +81,7 @@ function QtyWithUnit({
 /**
  * Seller fulfillment-progress table after buyer partial/full receipt.
  * Cumulative: Ordered / Good received / Damaged / Missing? / Outstanding / Unit cost / Remaining value.
- * Unit sits under Ordered (xs). Outstanding > 0 is emphasized for prepare-remaining.
+ * Unit sits beside Ordered (xs, start-aligned). Outstanding > 0 is emphasized for prepare-remaining.
  */
 export function IncomingOrderFulfillmentProgress({
   lines,

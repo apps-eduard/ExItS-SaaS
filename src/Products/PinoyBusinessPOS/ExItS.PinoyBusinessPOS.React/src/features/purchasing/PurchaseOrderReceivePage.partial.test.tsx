@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
@@ -180,8 +180,14 @@ describe("PurchaseOrderReceivePage discrepancy classification", () => {
       expect(screen.getByTestId("receive-review-summary")).toBeInTheDocument();
       expect(screen.getByTestId("receive-remaining-decisions")).toBeInTheDocument();
     });
-    expect(screen.getByTestId(`receive-deliver-later-${productId}`)).toBeChecked();
-    await user.click(screen.getByTestId(`receive-cancel-remaining-${productId}`));
+    const remaining = screen.getByTestId("receive-remaining-decisions");
+    expect(within(remaining).getByRole("table")).toBeInTheDocument();
+    expect(
+      screen.getByTestId(`receive-remaining-decisions-choice-${productId}-option-replace_later`),
+    ).toHaveAttribute("data-selected", "false");
+    await user.click(
+      screen.getByTestId(`receive-remaining-decisions-choice-${productId}-option-cancel_remaining`),
+    );
     await user.click(screen.getByTestId("receive-confirm"));
 
     await waitFor(() => {

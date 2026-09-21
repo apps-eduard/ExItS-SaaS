@@ -146,59 +146,77 @@ export function ReceivePaymentSection({
         ) : null}
 
         {prepaidSettled && prepaidView ? (
-          <div className="grid gap-2 text-[length:var(--exits-text-sm)]" data-testid={`${testIdPrefix}-prepaid`}>
+          <div className="receive-payment-prepaid grid gap-3" data-testid={`${testIdPrefix}-prepaid`}>
             <p className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-status`}>
               {prepaidView.timingLabel}
               {" · "}
               {prepaidView.statusLabel}
             </p>
-            <dl className="m-0 grid gap-2 sm:grid-cols-2">
-              <div>
-                <dt className="text-muted">{t("purchasing.paymentMethod")}</dt>
-                <dd className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-method`}>
+            <dl className="receive-payment-prepaid__meta m-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.paymentMethod")}
+                </dt>
+                <dd className="m-0 font-semibold" data-testid={`${testIdPrefix}-prepaid-method`}>
                   {prepaidView.methodLabel}
                 </dd>
               </div>
-              <div>
-                <dt className="text-muted">{t("purchasing.amountPaid")}</dt>
-                <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-amount`}>
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.amountPaid")}
+                </dt>
+                <dd className="m-0 font-semibold tabular-nums" data-testid={`${testIdPrefix}-prepaid-amount`}>
                   <MoneyDisplay amount={prepaidView.paidAmount} />
                 </dd>
               </div>
               {prepaidView.referenceValue ? (
-                <div>
-                  <dt className="text-muted">
+                <div className="receive-payment-prepaid__field min-w-0">
+                  <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                     {prepaidView.referenceLabel ?? t("purchasing.gcashReference")}
                   </dt>
-                  <dd className="m-0 font-medium" data-testid={`${testIdPrefix}-prepaid-reference`}>
+                  <dd
+                    className="m-0 truncate font-semibold"
+                    title={prepaidView.referenceValue}
+                    data-testid={`${testIdPrefix}-prepaid-reference`}
+                  >
                     {prepaidView.referenceValue}
                   </dd>
                 </div>
               ) : null}
-              <div>
-                <dt className="text-muted">{t("purchasing.paymentStatus")}</dt>
-                <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-settlement-status`}>
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.paymentStatus")}
+                </dt>
+                <dd className="m-0 font-semibold" data-testid={`${testIdPrefix}-prepaid-settlement-status`}>
                   {prepaidView.statusLabel}
                 </dd>
               </div>
               {prepaidView.confirmedBy ? (
-                <div>
-                  <dt className="text-muted">{t("purchasing.confirmedBy")}</dt>
-                  <dd className="m-0">{prepaidView.confirmedBy}</dd>
+                <div className="receive-payment-prepaid__field min-w-0">
+                  <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("purchasing.confirmedBy")}
+                  </dt>
+                  <dd className="m-0 truncate font-semibold" title={prepaidView.confirmedBy}>
+                    {prepaidView.confirmedBy}
+                  </dd>
                 </div>
               ) : null}
               {prepaidView.confirmedAtUtc ? (
-                <div>
-                  <dt className="text-muted">{t("purchasing.confirmedAt")}</dt>
-                  <dd className="m-0" data-testid={`${testIdPrefix}-prepaid-confirmed-at`}>
+                <div className="receive-payment-prepaid__field min-w-0">
+                  <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("purchasing.confirmedAt")}
+                  </dt>
+                  <dd className="m-0 font-semibold" data-testid={`${testIdPrefix}-prepaid-confirmed-at`}>
                     {new Date(prepaidView.confirmedAtUtc).toLocaleString()}
                   </dd>
                 </div>
               ) : null}
               {prepaidView.notes ? (
-                <div className="sm:col-span-2">
-                  <dt className="text-muted">{t("purchasing.settlementNotes")}</dt>
-                  <dd className="m-0 whitespace-pre-wrap">{prepaidView.notes}</dd>
+                <div className="receive-payment-prepaid__field min-w-0 sm:col-span-2 lg:col-span-3">
+                  <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("purchasing.settlementNotes")}
+                  </dt>
+                  <dd className="m-0 whitespace-pre-wrap font-semibold">{prepaidView.notes}</dd>
                 </div>
               ) : null}
             </dl>

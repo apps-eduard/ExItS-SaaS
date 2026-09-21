@@ -617,6 +617,26 @@ export function IncomingOrderDetailPage() {
             ? t("connectedCommerce.timing.supplierCredit")
             : t("connectedCommerce.timing.payBefore"),
     },
+    ...(order.fulfillmentMethod === "Pickup" || order.fulfillmentMethod === "Delivery"
+      ? [
+          {
+            key: "fulfillment",
+            label: t("purchasing.fulfillmentMethod"),
+            value:
+              order.fulfillmentMethod === "Pickup"
+                ? t("purchasing.fulfillment.pickup")
+                : t("purchasing.fulfillment.delivery"),
+          },
+        ]
+      : order.fulfillmentMethod?.trim()
+        ? [
+            {
+              key: "fulfillment",
+              label: t("purchasing.fulfillmentMethod"),
+              value: order.fulfillmentMethod.trim(),
+            },
+          ]
+        : []),
     {
       key: "orderDate",
       label: t("incomingOrders.orderDate"),
@@ -824,128 +844,146 @@ export function IncomingOrderDetailPage() {
         </Card>
       ) : null}
 
-      {showPayBeforeConfirmCard ? (
-        <Card className="flex flex-col gap-3 p-3" data-testid="incoming-order-pay-before-confirm">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="m-0 font-medium">{t("incomingOrders.payBeforeConfirmTitle")}</p>
-            <StatusChip tone="warning">
-              {order.buyerPrepaymentSubmittedAtUtc
-                ? t("incomingOrders.buyerPaymentSubmitted")
-                : t("incomingOrders.waitingForBuyerPayment")}
-            </StatusChip>
-          </div>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("incomingOrders.payBeforeConfirmBody")}
-          </p>
-          <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
-            <div className="flex justify-between gap-2">
-              <dt>{t("incomingOrders.orderTotal")}</dt>
-              <dd className="m-0 font-medium">
-                <MoneyDisplay
-                  amount={
-                    order.confirmedTotalAmount > 0 ? order.confirmedTotalAmount : order.totalAmount
-                  }
-                />
-              </dd>
-            </div>
-            {order.buyerPrepaymentSubmittedAtUtc ? (
-              <>
-                <div className="flex justify-between gap-2">
-                  <dt>{t("purchasing.paymentMethod")}</dt>
-                  <dd className="m-0">{order.buyerPrepaymentMethod ?? "—"}</dd>
-                </div>
-                {order.buyerPrepaymentReference ? (
-                  <div className="flex justify-between gap-2">
-                    <dt>{t("purchasing.paymentReference")}</dt>
-                    <dd className="m-0">{order.buyerPrepaymentReference}</dd>
-                  </div>
-                ) : null}
-                {order.buyerPrepaymentDetails ? (
-                  <div className="flex justify-between gap-2">
-                    <dt>{t("purchasing.paymentDetails")}</dt>
-                    <dd className="m-0 whitespace-pre-wrap">{order.buyerPrepaymentDetails}</dd>
-                  </div>
-                ) : null}
-              </>
-            ) : (
+      {showPayBeforeConfirmCard || showConfirmPayBefore ? (
+        <div
+          className="flex flex-col gap-3 md:flex-row md:items-start"
+          data-testid="incoming-order-pay-before-row"
+        >
+          {showConfirmPayBefore ? (
+            <Card
+              className="flex min-w-0 w-full flex-col gap-3 p-4 md:w-1/2"
+              data-testid="incoming-order-confirm-pay-before-dialog"
+            >
+              <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
+                {t("incomingOrders.confirmPayBeforePayment")}
+              </h2>
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                {t("incomingOrders.waitingForBuyerPaymentHelp")}
+                {t("incomingOrders.payBeforeConfirmBody")}
               </p>
-            )}
-          </dl>
-          {canAct && !showConfirmPayBefore ? (
-            <Button
-              type="button"
-              data-testid="incoming-order-confirm-pay-before-btn"
-              disabled={!order.buyerPrepaymentSubmittedAtUtc && order.paymentTerm !== "Cash"}
-              onClick={() => {
-                setSettlementAmount(
-                  String(
-                    order.confirmedTotalAmount > 0 ? order.confirmedTotalAmount : order.totalAmount,
-                  ),
-                );
-                setSettlementCheckCleared(false);
-                setShowConfirmPayBefore(true);
-              }}
-            >
-              {t("incomingOrders.confirmPayBeforePayment")}
-            </Button>
+              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                <span>{t("incomingOrders.settlementAmount")}</span>
+                <input
+                  className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                  inputMode="decimal"
+                  data-testid="incoming-order-pay-before-amount"
+                  value={settlementAmount}
+                  onChange={(e) => setSettlementAmount(e.target.value)}
+                />
+              </label>
+              {order.paymentTerm === "Check" ? (
+                <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                  <input
+                    type="checkbox"
+                    data-testid="incoming-order-pay-before-check-cleared"
+                    checked={settlementCheckCleared}
+                    onChange={(e) => setSettlementCheckCleared(e.target.checked)}
+                  />
+                  <span>{t("incomingOrders.settlementCheckCleared")}</span>
+                </label>
+              ) : null}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-auto"
+                  disabled={confirmPayBeforeMutation.isPending}
+                  onClick={() => setShowConfirmPayBefore(false)}
+                >
+                  {t("purchasing.cancel")}
+                </Button>
+                <Button
+                  type="button"
+                  className="w-auto"
+                  data-testid="incoming-order-pay-before-settlement-submit"
+                  disabled={
+                    !canAct ||
+                    confirmPayBeforeMutation.isPending ||
+                    (order.paymentTerm === "Check" && !settlementCheckCleared)
+                  }
+                  onClick={() => confirmPayBeforeMutation.mutate()}
+                >
+                  {t("incomingOrders.confirmPayBeforePayment")}
+                </Button>
+              </div>
+            </Card>
           ) : null}
-        </Card>
-      ) : null}
 
-      {showConfirmPayBefore ? (
-        <Card className="flex flex-col gap-3 p-4" data-testid="incoming-order-confirm-pay-before-dialog">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
-            {t("incomingOrders.confirmPayBeforePayment")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("incomingOrders.payBeforeConfirmBody")}
-          </p>
-          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-            <span>{t("incomingOrders.settlementAmount")}</span>
-            <input
-              className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
-              inputMode="decimal"
-              data-testid="incoming-order-pay-before-amount"
-              value={settlementAmount}
-              onChange={(e) => setSettlementAmount(e.target.value)}
-            />
-          </label>
-          {order.paymentTerm === "Check" ? (
-            <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-              <input
-                type="checkbox"
-                data-testid="incoming-order-pay-before-check-cleared"
-                checked={settlementCheckCleared}
-                onChange={(e) => setSettlementCheckCleared(e.target.checked)}
-              />
-              <span>{t("incomingOrders.settlementCheckCleared")}</span>
-            </label>
+          {showPayBeforeConfirmCard ? (
+            <Card
+              className="flex min-w-0 w-full flex-col gap-3 p-3 md:w-1/2"
+              data-testid="incoming-order-pay-before-confirm"
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="m-0 font-medium">{t("incomingOrders.payBeforeConfirmTitle")}</p>
+                <StatusChip tone="warning">
+                  {order.buyerPrepaymentSubmittedAtUtc
+                    ? t("incomingOrders.buyerPaymentSubmitted")
+                    : t("incomingOrders.waitingForBuyerPayment")}
+                </StatusChip>
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                {t("incomingOrders.payBeforeConfirmBody")}
+              </p>
+              <p className="m-0 text-[length:var(--exits-text-sm)] tabular-nums">
+                <span>{t("incomingOrders.orderTotal")}: </span>
+                <span className="font-semibold">
+                  <MoneyDisplay
+                    amount={
+                      order.confirmedTotalAmount > 0
+                        ? order.confirmedTotalAmount
+                        : order.totalAmount
+                    }
+                  />
+                </span>
+              </p>
+              {order.buyerPrepaymentSubmittedAtUtc ? (
+                <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+                  <div className="flex justify-between gap-2">
+                    <dt>{t("purchasing.paymentMethod")}</dt>
+                    <dd className="m-0">{order.buyerPrepaymentMethod ?? "—"}</dd>
+                  </div>
+                  {order.buyerPrepaymentReference ? (
+                    <div className="flex justify-between gap-2">
+                      <dt>{t("purchasing.paymentReference")}</dt>
+                      <dd className="m-0">{order.buyerPrepaymentReference}</dd>
+                    </div>
+                  ) : null}
+                  {order.buyerPrepaymentDetails ? (
+                    <div className="flex justify-between gap-2">
+                      <dt>{t("purchasing.paymentDetails")}</dt>
+                      <dd className="m-0 whitespace-pre-wrap">{order.buyerPrepaymentDetails}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              ) : (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("incomingOrders.waitingForBuyerPaymentHelp")}
+                </p>
+              )}
+              {canAct && !showConfirmPayBefore ? (
+                <Button
+                  type="button"
+                  className="w-auto self-start"
+                  data-testid="incoming-order-confirm-pay-before-btn"
+                  disabled={!order.buyerPrepaymentSubmittedAtUtc && order.paymentTerm !== "Cash"}
+                  onClick={() => {
+                    setSettlementAmount(
+                      String(
+                        order.confirmedTotalAmount > 0
+                          ? order.confirmedTotalAmount
+                          : order.totalAmount,
+                      ),
+                    );
+                    setSettlementCheckCleared(false);
+                    setShowConfirmPayBefore(true);
+                  }}
+                >
+                  {t("incomingOrders.confirmPayBeforePayment")}
+                </Button>
+              ) : null}
+            </Card>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={confirmPayBeforeMutation.isPending}
-              onClick={() => setShowConfirmPayBefore(false)}
-            >
-              {t("purchasing.cancel")}
-            </Button>
-            <Button
-              type="button"
-              data-testid="incoming-order-pay-before-settlement-submit"
-              disabled={
-                !canAct ||
-                confirmPayBeforeMutation.isPending ||
-                (order.paymentTerm === "Check" && !settlementCheckCleared)
-              }
-              onClick={() => confirmPayBeforeMutation.mutate()}
-            >
-              {t("incomingOrders.confirmPayBeforePayment")}
-            </Button>
-          </div>
-        </Card>
+        </div>
       ) : null}
 
       {showConfirmPayment ? (
@@ -1107,16 +1145,16 @@ export function IncomingOrderDetailPage() {
                 <thead>
                   <tr>
                     <th scope="col">{t("purchasing.colProduct")}</th>
-                    <th scope="col" className="po-document-lines__num">
+                    <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                       {t("incomingOrders.colRequestedQty")}
                     </th>
-                    <th scope="col" className="po-document-lines__num">
+                    <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                       {t("incomingOrders.colReserved")}
                     </th>
-                    <th scope="col" className="po-document-lines__num">
+                    <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                       {t("incomingOrders.colAvailableStock")}
                     </th>
-                    <th scope="col" className="po-document-lines__num">
+                    <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                       {t("incomingOrders.colConfirmQty")}
                     </th>
                     <th scope="col" className="po-document-lines__num">
@@ -1146,19 +1184,19 @@ export function IncomingOrderDetailPage() {
                             <div className="text-[length:var(--exits-text-xs)] text-muted">{line.skuSnapshot}</div>
                           ) : null}
                         </td>
-                        <td className="po-document-lines__num">
+                        <td className="po-document-lines__num po-document-lines__num--start">
                           <ShortageQty
                             label={formatStockQtyLabel(line.qty, line.unitOfMeasureCode)}
                             warning={shortage}
                             testId={`incoming-order-requested-qty-${line.productId}`}
                           />
                         </td>
-                        <td className="po-document-lines__num">
+                        <td className="po-document-lines__num po-document-lines__num--start">
                           {line.reservedQuantity == null
                             ? "—"
                             : formatStockQtyLabel(line.reservedQuantity, line.unitOfMeasureCode)}
                         </td>
-                        <td className="po-document-lines__num">
+                        <td className="po-document-lines__num po-document-lines__num--start">
                           {line.availableToPromise == null ? (
                             "—"
                           ) : (
@@ -1172,7 +1210,7 @@ export function IncomingOrderDetailPage() {
                             />
                           )}
                         </td>
-                        <td className="po-document-lines__num">
+                        <td className="po-document-lines__num po-document-lines__num--start">
                           {confirmEditable ? (
                             <div className="incoming-order-confirm-qty">
                               <QuantityStepper

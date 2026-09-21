@@ -51,6 +51,13 @@ import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { ReceivePaymentSection } from "@/features/purchasing/ReceivePaymentSection";
+import { ReceiveRemainingQuantityTable } from "@/features/purchasing/ReceiveRemainingQuantityTable";
+import {
+  buildRemainingDecisionRows,
+  countUnresolvedRemaining,
+  sumRemainingUnits,
+  type RemainingDecisionAction,
+} from "@/features/purchasing/receive-remaining-decision";
 import {
   buildReceiveSettlementPayload,
   EMPTY_RECEIVE_SETTLEMENT,
@@ -196,8 +203,8 @@ type LineEdit = {
   damagedText: string;
   notDeliveredText: string;
   remarksText: string;
-  /** false = Deliver later; true = Cancel remaining (maps to shortClosedQty). */
-  cancelRemaining: boolean;
+  /** null = unresolved; replace_later keeps outstanding; cancel_remaining → shortClosedQty. */
+  remainingAction: RemainingDecisionAction | null;
   expiryDate: string;
   lotNumber: string;
 };
@@ -241,6 +248,7 @@ export function PurchaseOrderReceivePage() {
   const [discrepancyOpen, setDiscrepancyOpen] = useState(false);
   const [discrepancyTargetProductId, setDiscrepancyTargetProductId] = useState<string | null>(null);
   const [highlightUnclassified, setHighlightUnclassified] = useState(false);
+  const [highlightUnresolvedRemaining, setHighlightUnresolvedRemaining] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
   const goodsReceiptIdRef = useRef<string | null>(null);
@@ -281,7 +289,7 @@ export function PurchaseOrderReceivePage() {
           damagedText: "0",
           notDeliveredText: "0",
           remarksText: "",
-          cancelRemaining: false,
+          remainingAction: null,
           expiryDate: "",
           lotNumber: "",
         })),
@@ -447,18 +455,29 @@ export function PurchaseOrderReceivePage() {
     return filteredSortedLines.slice(start, start + pageSize);
   }, [filteredSortedLines, page, pageSize]);
 
-  const remainingDecisionLines = useMemo(() => {
+  const remainingDecisionRows = useMemo(() => {
     if (!lines || !reviewing) {
       return [];
     }
-    return lines
-      .map((line) => {
-        const good = parseNonNegativeQty(line.goodText) ?? 0;
-        const remaining = receiveDiscrepancyQty(line.outstandingQty, good);
-        return { line, remaining };
-      })
-      .filter((entry) => entry.remaining > 1e-9);
-  }, [lines, reviewing]);
+    return buildRemainingDecisionRows(lines, {
+      damaged: t("purchasing.damaged"),
+      notDelivered: t("purchasing.notDelivered"),
+    });
+  }, [lines, reviewing, t]);
+
+  const remainingDecisionSummary = useMemo(() => {
+    const products = remainingDecisionRows.length;
+    if (products === 0) {
+      return "";
+    }
+    const units = formatStockQtyLabel(sumRemainingUnits(remainingDecisionRows));
+    if (products === 1) {
+      return t("purchasing.remainingDecisionSummaryOne").replace("{units}", units);
+    }
+    return t("purchasing.remainingDecisionSummary")
+      .replace("{products}", String(products))
+      .replace("{units}", units);
+  }, [remainingDecisionRows, t]);
 
   const discrepancyLines = useMemo(() => {
     if (!lines) {
@@ -712,7 +731,7 @@ export function PurchaseOrderReceivePage() {
         damagedText: "0",
         notDeliveredText: "0",
         remarksText: "",
-        cancelRemaining: false,
+        remainingAction: null,
       });
     }
     if (mobile) cancelReceiveMobileEdit();
@@ -855,7 +874,7 @@ export function PurchaseOrderReceivePage() {
         goodQty: good!,
         damagedQty: damaged!,
         notDeliveredQty: notDelivered!,
-        cancelRemaining: line.cancelRemaining,
+        cancelRemaining: line.remainingAction === "cancel_remaining",
       })),
     );
     if (!result.ok) {
@@ -918,6 +937,7 @@ export function PurchaseOrderReceivePage() {
     }
     setError(null);
     setHighlightUnclassified(false);
+    setHighlightUnresolvedRemaining(false);
     setTrackingConfirm(false);
     setReviewing(true);
   }
@@ -944,6 +964,17 @@ export function PurchaseOrderReceivePage() {
     if (!lines) {
       return;
     }
+    const remainingRows = buildRemainingDecisionRows(lines, {
+      damaged: t("purchasing.damaged"),
+      notDelivered: t("purchasing.notDelivered"),
+    });
+    if (countUnresolvedRemaining(remainingRows) > 0) {
+      setHighlightUnresolvedRemaining(true);
+      setError(t("purchasing.remainingDecisionRequired"));
+      setTrackingConfirm(false);
+      return;
+    }
+    setHighlightUnresolvedRemaining(false);
     if (!tryPlan()) {
       return;
     }
@@ -1283,11 +1314,22 @@ export function PurchaseOrderReceivePage() {
         actions={renderPoUtilityActions()}
       />
       {po.paymentTerm || po.paymentTiming ? (
-        <Card data-testid="receive-po-context">
-          <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <dt className="text-muted">{t("purchasing.paymentTiming")}</dt>
-              <dd className="m-0 font-medium" data-testid="receive-context-timing">
+        <Card
+          className="po-document-summary po-document-summary--meta-cards po-document-summary--meta-cards-4 grid gap-3 p-3"
+          data-testid="receive-po-context"
+        >
+          <h2
+            className="po-document-summary__title m-0"
+            data-testid="receive-po-context-title"
+          >
+            {t("incomingOrders.orderInfoTitle")}
+          </h2>
+          <dl className="po-document-summary__meta m-0">
+            <div className="po-document-summary__field po-document-summary__field--paymentTiming min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("purchasing.paymentTiming")}
+              </dt>
+              <dd className="m-0 font-semibold" data-testid="receive-context-timing">
                 {po.paymentTimingLabel?.trim() ||
                   (po.paymentTiming === "PayBeforeFulfillment"
                     ? t("connectedCommerce.timing.payBefore")
@@ -1299,9 +1341,11 @@ export function PurchaseOrderReceivePage() {
                   "—"}
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("purchasing.paymentStatus")}</dt>
-              <dd className="m-0 font-medium" data-testid="receive-context-payment-status">
+            <div className="po-document-summary__field po-document-summary__field--paymentStatus min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("purchasing.paymentStatus")}
+              </dt>
+              <dd className="m-0 font-semibold" data-testid="receive-context-payment-status">
                 {lockedReceivePayment?.prepaidSettled
                   ? t("purchasing.paymentSettled")
                   : po.financialSettlementStatus === "Settled"
@@ -1311,17 +1355,23 @@ export function PurchaseOrderReceivePage() {
                       : po.paymentTermLabel || po.paymentTerm || "—"}
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("purchasing.fulfillmentStatus")}</dt>
-              <dd className="m-0 font-medium" data-testid="receive-context-fulfillment">
-                {po.supplierFulfilledAtUtc
-                  ? t("purchasing.readyForReceipt")
-                  : po.connectedStatus || po.displayStatus || po.status}
+            <div className="po-document-summary__field po-document-summary__field--fulfillment min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("purchasing.fulfillmentMethod")}
+              </dt>
+              <dd className="m-0 font-semibold" data-testid="receive-context-fulfillment">
+                {po.fulfillmentMethod === "Pickup"
+                  ? t("purchasing.fulfillment.pickup")
+                  : po.fulfillmentMethod === "Delivery"
+                    ? t("purchasing.fulfillment.delivery")
+                    : po.fulfillmentMethod?.trim() || "—"}
               </dd>
             </div>
-            <div>
-              <dt className="text-muted">{t("purchasing.receivingStatus")}</dt>
-              <dd className="m-0 font-medium" data-testid="receive-context-receiving">
+            <div className="po-document-summary__field po-document-summary__field--receiving min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("purchasing.receivingStatus")}
+              </dt>
+              <dd className="m-0 font-semibold" data-testid="receive-context-receiving">
                 {t("purchasing.awaitingGoodsReceipt")}
               </dd>
             </div>
@@ -1850,36 +1900,60 @@ export function PurchaseOrderReceivePage() {
               </>
             )}
           </ExitsTableContainer>
-          <Card data-testid="receive-value-summary">
-            <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <dt className="text-muted">{t("purchasing.orderedValue")}</dt>
-                <dd className="m-0 font-medium tabular-nums" data-testid="receive-order-value">
+          <Card data-testid="receive-value-summary" className="grid gap-3 p-3">
+            <dl className="receive-value-summary__meta receive-payment-prepaid__meta m-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.deliveryReference")}
+                </dt>
+                <dd className="m-0">
+                  {canReceive ? (
+                    <input
+                      className="exits-input w-full min-w-0"
+                      value={deliveryReference}
+                      onChange={(e) => setDeliveryReference(e.target.value)}
+                      data-testid="receive-delivery-reference"
+                      aria-label={t("purchasing.deliveryReference")}
+                    />
+                  ) : (
+                    <span className="font-semibold">{deliveryReference.trim() || "—"}</span>
+                  )}
+                </dd>
+              </div>
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.orderedValue")}
+                </dt>
+                <dd className="m-0 font-semibold tabular-nums" data-testid="receive-order-value">
                   <MoneyDisplay amount={orderValue} />
                 </dd>
               </div>
-              {isPartialReceiptSummary && previouslyReceivedValue > 0.0000001 ? (
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <dt className="text-muted">{t("purchasing.previouslyReceivedValue")}</dt>
-                  <dd
-                    className="m-0 font-medium tabular-nums"
-                    data-testid="receive-previously-received-value"
-                  >
-                    <MoneyDisplay amount={previouslyReceivedValue} />
-                  </dd>
-                </div>
-              ) : null}
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <dt className="text-muted">{t("purchasing.thisReceipt")}</dt>
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.thisReceipt")}
+                </dt>
                 <dd className="m-0 font-semibold tabular-nums" data-testid="receive-this-receipt-value">
                   <MoneyDisplay amount={estimatedTotal} />
                 </dd>
               </div>
-              {isPartialReceiptSummary && remainingValue > 0.0000001 ? (
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <dt className="text-muted">{t("purchasing.remainingValue")}</dt>
-                  <dd className="m-0 font-medium tabular-nums" data-testid="receive-remaining-value">
-                    <MoneyDisplay amount={remainingValue} />
+              <div className="receive-payment-prepaid__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                  {t("purchasing.remainingValue")}
+                </dt>
+                <dd className="m-0 font-semibold tabular-nums" data-testid="receive-remaining-value">
+                  <MoneyDisplay amount={remainingValue} />
+                </dd>
+              </div>
+              {isPartialReceiptSummary && previouslyReceivedValue > 0.0000001 ? (
+                <div className="receive-payment-prepaid__field min-w-0 sm:col-span-2 lg:col-span-4">
+                  <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("purchasing.previouslyReceivedValue")}
+                  </dt>
+                  <dd
+                    className="m-0 font-semibold tabular-nums"
+                    data-testid="receive-previously-received-value"
+                  >
+                    <MoneyDisplay amount={previouslyReceivedValue} />
                   </dd>
                 </div>
               ) : null}
@@ -1941,9 +2015,11 @@ export function PurchaseOrderReceivePage() {
                                   ? `${t("purchasing.discrepancy")}: ${discrepancySummary}`
                                   : null}
                                 {` · ${
-                                  line.cancelRemaining
+                                  line.remainingAction === "cancel_remaining"
                                     ? t("purchasing.cancelRemaining")
-                                    : t("purchasing.deliverLater")
+                                    : line.remainingAction === "replace_later"
+                                      ? t("purchasing.replaceLater")
+                                      : t("purchasing.remainingDecisionCol")
                                 }`}
                                 {line.remarksText.trim()
                                   ? ` · ${line.remarksText.trim()}`
@@ -2047,99 +2123,108 @@ export function PurchaseOrderReceivePage() {
                 </ExitsTableMobile>
               </ExitsTableContainer>
 
-              <Card>
-                <dl className="m-0 grid gap-2 text-[length:var(--exits-text-sm)]">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <dt className="text-muted">{t("purchasing.receiptTotal")}</dt>
-                    <dd className="m-0 font-semibold tabular-nums">
+              <Card
+                className="po-document-summary po-document-summary--meta-cards po-document-summary--meta-cards-4 grid gap-3 p-3"
+                data-testid="receive-review-meta"
+              >
+                <h2
+                  className="po-document-summary__title m-0"
+                  data-testid="receive-review-meta-title"
+                >
+                  {t("purchasing.receiptSummaryTitle")}
+                </h2>
+                <dl className="po-document-summary__meta m-0">
+                  <div className="po-document-summary__field min-w-0">
+                    <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("purchasing.deliveryReference")}
+                    </dt>
+                    <dd
+                      className="m-0 truncate font-semibold"
+                      title={deliveryReference.trim() || undefined}
+                      data-testid="receive-review-delivery-reference"
+                    >
+                      {deliveryReference.trim() || "—"}
+                    </dd>
+                  </div>
+                  <div className="po-document-summary__field min-w-0">
+                    <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("purchasing.orderedValue")}
+                    </dt>
+                    <dd
+                      className="m-0 font-semibold tabular-nums"
+                      data-testid="receive-review-order-value"
+                    >
+                      <MoneyDisplay amount={orderValue} />
+                    </dd>
+                  </div>
+                  <div className="po-document-summary__field min-w-0">
+                    <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("purchasing.receiptTotal")}
+                    </dt>
+                    <dd
+                      className="m-0 font-semibold tabular-nums"
+                      data-testid="receive-review-receipt-total"
+                    >
                       <MoneyDisplay amount={estimatedTotal} />
                     </dd>
                   </div>
-                  {po.paymentTermLabel ? (
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.paymentMethod")}</dt>
-                      <dd className="m-0">{po.paymentTermLabel}</dd>
-                    </div>
-                  ) : null}
-                  {deliveryReference.trim() ? (
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.deliveryReference")}</dt>
-                      <dd className="m-0">{deliveryReference.trim()}</dd>
-                    </div>
-                  ) : null}
-                  {notes.trim() ? (
-                    <div className="flex flex-wrap justify-between gap-2">
-                      <dt className="text-muted">{t("purchasing.receiveNotes")}</dt>
-                      <dd className="m-0 text-right">{notes.trim()}</dd>
-                    </div>
-                  ) : null}
+                  <div className="po-document-summary__field min-w-0">
+                    <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("purchasing.paymentMethod")}
+                    </dt>
+                    <dd className="m-0 font-semibold" data-testid="receive-review-payment-method">
+                      {po.paymentTermLabel || po.paymentTerm || "—"}
+                    </dd>
+                  </div>
                 </dl>
+                {notes.trim() ? (
+                  <div className="po-document-summary__field min-w-0">
+                    <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                      {t("purchasing.receiveNotes")}
+                    </dt>
+                    <dd className="m-0 whitespace-pre-wrap font-semibold">{notes.trim()}</dd>
+                  </div>
+                ) : null}
               </Card>
             </div>
           )}
 
-          {reviewing && remainingDecisionLines.length > 0 ? (
-            <Card data-testid="receive-remaining-decisions">
-              <h2 className="m-0 mb-3 text-[length:var(--exits-text-md)] font-medium">
-                {t("purchasing.remainingDecisionTitle")}
-              </h2>
-              <ul className="m-0 flex list-none flex-col gap-4 p-0">
-                {remainingDecisionLines.map(({ line, remaining }) => (
-                  <li
-                    key={line.productId}
-                    className="rounded-md border border-border p-3"
-                    data-testid={`receive-remaining-${line.productId}`}
-                  >
-                    <p className="m-0 font-medium">{line.name}</p>
-                    <p className="mt-1 mb-2 text-[length:var(--exits-text-sm)] text-muted">
-                      {t("purchasing.remainingQuestion").replace("{qty}", `${remaining} ${line.uom}`)}
-                    </p>
-                    <div
-                      className="flex flex-col gap-2"
-                      role="radiogroup"
-                      aria-label={t("purchasing.remainingDecisionTitle")}
-                    >
-                      <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                        <input
-                          type="radio"
-                          name={`receive-remaining-${line.productId}`}
-                          checked={!line.cancelRemaining}
-                          onChange={() =>
-                            updateLine(line.productId, { cancelRemaining: false })
-                          }
-                          data-testid={`receive-deliver-later-${line.productId}`}
-                        />
-                        {t("purchasing.deliverLater")}
-                      </label>
-                      <label className="flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                        <input
-                          type="radio"
-                          name={`receive-remaining-${line.productId}`}
-                          checked={line.cancelRemaining}
-                          onChange={() =>
-                            updateLine(line.productId, { cancelRemaining: true })
-                          }
-                          data-testid={`receive-cancel-remaining-${line.productId}`}
-                        />
-                        {t("purchasing.cancelRemaining")}
-                      </label>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Card>
+          {reviewing && remainingDecisionRows.length > 0 ? (
+            <ReceiveRemainingQuantityTable
+              title={t("purchasing.remainingDecisionTitle")}
+              summaryText={remainingDecisionSummary}
+              applyToAllLabel={t("purchasing.remainingApplyToAll")}
+              productColLabel={t("purchasing.colProduct")}
+              remainingColLabel={t("purchasing.remainingCol")}
+              issueColLabel={t("purchasing.remainingIssueCol")}
+              decisionColLabel={t("purchasing.remainingDecisionCol")}
+              replaceLaterLabel={t("purchasing.replaceLater")}
+              cancelRemainingLabel={t("purchasing.cancelRemaining")}
+              rows={remainingDecisionRows}
+              highlightUnresolved={highlightUnresolvedRemaining}
+              onDecisionChange={(productId, action) => {
+                setHighlightUnresolvedRemaining(false);
+                setError(null);
+                updateLine(productId, { remainingAction: action });
+              }}
+              onApplyToAll={(action) => {
+                setHighlightUnresolvedRemaining(false);
+                setError(null);
+                setLines((prev) => {
+                  if (!prev) {
+                    return prev;
+                  }
+                  const remainingIds = new Set(remainingDecisionRows.map((row) => row.productId));
+                  return prev.map((line) =>
+                    remainingIds.has(line.productId) ? { ...line, remainingAction: action } : line,
+                  );
+                });
+              }}
+            />
           ) : null}
 
           {!reviewing && canReceive ? (
             <div className="grid gap-2">
-              <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                {t("purchasing.deliveryReference")}
-                <input
-                  className="exits-input"
-                  value={deliveryReference}
-                  onChange={(e) => setDeliveryReference(e.target.value)}
-                />
-              </label>
               <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
                 {t("purchasing.receiveNotes")}
                 <textarea

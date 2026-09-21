@@ -77,7 +77,7 @@ export function PoDocumentLineItems({
                 <tr>
                   <th scope="col">{productColLabel}</th>
                   <th scope="col">{skuColLabel}</th>
-                  <th scope="col" className="po-document-lines__num">
+                  <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                     {qtyColLabel}
                   </th>
                   <th scope="col" className="po-document-lines__num">
@@ -93,8 +93,8 @@ export function PoDocumentLineItems({
                   <tr key={line.id} data-testid={`${lineTestIdPrefix}-${line.id}`}>
                     <td className="po-document-lines__product font-medium">{line.productName}</td>
                     <td className="text-muted">{line.sku?.trim() || "—"}</td>
-                    <td className="po-document-lines__num">
-                      <span className="inline-flex flex-col items-end gap-0.5 leading-tight">
+                    <td className="po-document-lines__num po-document-lines__num--start">
+                      <span className="inline-flex items-baseline justify-start gap-1 leading-tight">
                         <span className="tabular-nums">{line.quantityLabel}</span>
                         {line.unitLabel?.trim() ? (
                           <span className="text-[length:var(--exits-text-xs)] text-muted">

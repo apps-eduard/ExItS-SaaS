@@ -764,4 +764,40 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
       expect(screen.getByTestId("po-create-submit")).toBeDisabled();
     });
   });
+
+  it("auto-selects Delivery fulfillment when Pay on Delivery timing is chosen", async () => {
+    const user = userEvent.setup();
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: true,
+      supportedFulfillmentMethods: ["Pickup", "Delivery"],
+      allowPayBeforeFulfillment: true,
+      allowPayOnDeliveryOrReceipt: true,
+      allowSupplierCredit: false,
+      defaultPaymentTiming: "PayBeforeFulfillment",
+      requirements: null,
+    });
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+
+    await selectSupplierAndOpenFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId("po-fulfillment-option-Pickup")).toHaveAttribute(
+        "data-selected",
+        "true",
+      );
+    });
+
+    await user.click(screen.getByTestId("po-payment-timing-select-option-PayOnDeliveryOrReceipt"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("po-fulfillment-option-Delivery")).toHaveAttribute(
+        "data-selected",
+        "true",
+      );
+    });
+    expect(screen.getByTestId("po-fulfillment-option-Pickup")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
+  });
 });

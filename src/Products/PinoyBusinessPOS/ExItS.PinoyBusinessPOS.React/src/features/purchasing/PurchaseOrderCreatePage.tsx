@@ -483,6 +483,9 @@ export function PurchaseOrderCreatePage() {
       if (prev && methods.includes(prev)) {
         return prev;
       }
+      if (paymentTiming === "PayOnDeliveryOrReceipt" && methods.includes("Delivery")) {
+        return "Delivery";
+      }
       if (methods.includes("Pickup")) {
         return "Pickup";
       }
@@ -491,7 +494,7 @@ export function PurchaseOrderCreatePage() {
       }
       return "";
     });
-  }, [connected, fulfillmentUi.choosable.join("|")]);
+  }, [connected, fulfillmentUi.choosable.join("|"), paymentTiming]);
 
   const effectivePaymentTimings = useMemo(() => {
     const data = commerceReadinessQuery.data;
@@ -2132,6 +2135,12 @@ export function PurchaseOrderCreatePage() {
                         return;
                       }
                       setPaymentTiming(next);
+                      if (
+                        next === "PayOnDeliveryOrReceipt" &&
+                        fulfillmentUi.choosable.includes("Delivery")
+                      ) {
+                        setFulfillmentMethod("Delivery");
+                      }
                     }}
                     disabled={!allowManage}
                     options={effectivePaymentTimings.map((option) => {
