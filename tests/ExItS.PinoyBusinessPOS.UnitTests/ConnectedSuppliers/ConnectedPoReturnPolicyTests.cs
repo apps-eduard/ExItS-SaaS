@@ -208,6 +208,42 @@ public sealed class ConnectedPoReturnPolicyTests
         Assert.Equal(14, product.ReturnPolicyWindowDays);
     }
 
+    [Fact]
+    public void NonReturnable_blocks_voluntary_but_receiving_issue_codes_remain_independent()
+    {
+        // Voluntary policy NonReturnable must not remove receiving-discrepancy kinds.
+        Assert.Contains(
+            nameof(ConnectedPoReceivingIssueLineKind.Damaged),
+            ConnectedPoReceivingIssueLineKinds.Codes);
+        Assert.Contains(
+            nameof(ConnectedPoReceivingIssueLineKind.Missing),
+            ConnectedPoReceivingIssueLineKinds.Codes);
+        Assert.Contains(
+            nameof(ConnectedPoDamagedResolution.ReturnRequested),
+            ConnectedPoDamagedResolutions.Codes);
+
+        var voluntary = ConnectedPoReturnPolicyResolver.Resolve(
+            organizationReturnsAllowed: true,
+            organizationReturnWindowDays: 7,
+            organizationReceivingIssueWindowDays: 2,
+            organizationRequireReturnApproval: true,
+            categoryRule: null,
+            productMode: ConnectedPoReturnPolicyMode.NonReturnable,
+            productReturnsAllowed: null,
+            productReturnWindowDays: null);
+        Assert.False(voluntary.ReturnsAllowed);
+    }
+
+    [Fact]
+    public void Default_org_policy_preserves_unrestricted_compatibility()
+    {
+        var settings = OrganizationConnectedCommerceSettings.CreateDefault(Seller, ReceivedAt);
+        Assert.True(settings.ReturnsAllowed);
+        Assert.Null(settings.ReturnWindowDays);
+        Assert.Equal(2, settings.ReceivingIssueWindowDays);
+        Assert.True(settings.RequireReturnApproval);
+    }
+
     private static ConnectedPoReturnEligibilityBucket BuildBucket(
         PurchaseOrderId purchaseOrderId,
         PurchaseOrderLineId purchaseOrderLineId,

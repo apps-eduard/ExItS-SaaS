@@ -47,3 +47,9 @@ Damaged / missing / wrong / expired remain receiving-discrepancy / seller-review
 - ReceivingIssueWindowDays not enforced against GRN posting
 - RequireReturnApproval does not skip AwaitingSellerReceipt
 - Non-connected POs unchanged
+
+## Invariant
+
+Buyer receiving evidence and seller inventory reconciliation remain separate from voluntary
+normal returns. Good receipt qty funds return eligibility; damaged/missing stay on the
+discrepancy path. NonReturnable blocks voluntary returns only.
