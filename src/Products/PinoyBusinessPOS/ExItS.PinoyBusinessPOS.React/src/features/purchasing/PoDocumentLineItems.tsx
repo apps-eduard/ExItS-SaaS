@@ -93,7 +93,16 @@ export function PoDocumentLineItems({
                   <tr key={line.id} data-testid={`${lineTestIdPrefix}-${line.id}`}>
                     <td className="po-document-lines__product font-medium">{line.productName}</td>
                     <td className="text-muted">{line.sku?.trim() || "—"}</td>
-                    <td className="po-document-lines__num tabular-nums">{line.quantityLabel}</td>
+                    <td className="po-document-lines__num">
+                      <span className="inline-flex flex-col items-end gap-0.5 leading-tight">
+                        <span className="tabular-nums">{line.quantityLabel}</span>
+                        {line.unitLabel?.trim() ? (
+                          <span className="text-[length:var(--exits-text-xs)] text-muted">
+                            {line.unitLabel.trim()}
+                          </span>
+                        ) : null}
+                      </span>
+                    </td>
                     <td className="po-document-lines__num tabular-nums">
                       <MoneyDisplay amount={line.unitCost} />
                     </td>
@@ -129,7 +138,11 @@ export function PoDocumentLineItems({
                   <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{line.sku.trim()}</p>
                 ) : null}
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted tabular-nums">
-                  {line.quantityLabel} × <MoneyDisplay amount={line.unitCost} />
+                  {line.quantityLabel}
+                  {line.unitLabel?.trim() ? (
+                    <span className="ml-1 text-[length:var(--exits-text-xs)]">{line.unitLabel.trim()}</span>
+                  ) : null}{" "}
+                  × <MoneyDisplay amount={line.unitCost} />
                 </p>
               </li>
             ))}

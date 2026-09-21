@@ -82,6 +82,7 @@ import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrder
 import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
   CONNECTED_PO_PAYMENT_OPTIONS,
+  resolveConnectedPoPaymentHelpKey,
   resolvePoUtangEligibility,
   type ConnectedPoPaymentMethodCode,
 } from "@/features/purchasing/po-payment-methods";
@@ -309,6 +310,9 @@ export function PurchaseOrderCreatePage() {
     if (po.paymentTiming) {
       setPaymentTiming(po.paymentTiming);
     }
+    if (po.fulfillmentMethod === "Pickup" || po.fulfillmentMethod === "Delivery") {
+      setFulfillmentMethod(po.fulfillmentMethod);
+    }
     setExpectedUpdatedAtUtc(po.updatedAtUtc);
     setEditMetaHydrated(true);
   }, [isEdit, editMetaHydrated, existingOrderQuery.data, navigate]);
@@ -475,13 +479,18 @@ export function PurchaseOrderCreatePage() {
       return;
     }
     const methods = fulfillmentUi.choosable;
-    if (methods.length === 1) {
-      setFulfillmentMethod(methods[0]!);
-      return;
-    }
-    setFulfillmentMethod((prev) =>
-      prev && methods.includes(prev) ? prev : "",
-    );
+    setFulfillmentMethod((prev) => {
+      if (prev && methods.includes(prev)) {
+        return prev;
+      }
+      if (methods.includes("Pickup")) {
+        return "Pickup";
+      }
+      if (methods.includes("Delivery")) {
+        return "Delivery";
+      }
+      return "";
+    });
   }, [connected, fulfillmentUi.choosable.join("|")]);
 
   const effectivePaymentTimings = useMemo(() => {
@@ -943,13 +952,38 @@ export function PurchaseOrderCreatePage() {
       allowManage,
     ],
   );
-  const selectedPaymentHelp = CONNECTED_PO_PAYMENT_OPTIONS.find((o) => o.code === paymentTerm)?.helpKey;
+  const selectedPaymentHelp = resolveConnectedPoPaymentHelpKey(
+    paymentTerm || "Cash",
+    paymentTiming,
+  );
   const unitCount = orderUnitCount(activeLines);
   const editPo = existingOrderQuery.data;
   const hasTimeline = useMemo(
     () => (editPo ? buildPurchaseOrderActivityEvents({ po: editPo, receipts: [] }).length > 0 : false),
     [editPo],
   );
+
+  // Supplier Utang timing stays listed when org-enabled, but cannot be chosen without buyer credit.
+  useEffect(() => {
+    if (!connected || utangEligibility.eligible) {
+      return;
+    }
+    if (paymentTiming === "SupplierCredit") {
+      const fallback =
+        effectivePaymentTimings.find((option) => option.code !== "SupplierCredit")?.code ??
+        "PayBeforeFulfillment";
+      setPaymentTiming(fallback);
+    }
+    if (paymentTerm === "Utang") {
+      setPaymentTerm("Cash");
+    }
+  }, [
+    connected,
+    utangEligibility.eligible,
+    paymentTiming,
+    paymentTerm,
+    effectivePaymentTimings,
+  ]);
 
   function runDraftOutput(action: "csv" | "xlsx" | "pdf" | "print") {
     const poLabel =
@@ -1089,6 +1123,10 @@ export function PurchaseOrderCreatePage() {
       }
       if (!paymentTiming) {
         setError(t("purchasing.paymentTimingRequired"));
+        return;
+      }
+      if (paymentTiming === "SupplierCredit" && !utangEligibility.eligible) {
+        setError(t(utangEligibility.reasonKey));
         return;
       }
       if (paymentTerm === "Utang" && !utangEligibility.eligible) {
@@ -1987,6 +2025,9 @@ export function PurchaseOrderCreatePage() {
                   >
                     {t("purchasing.fulfillmentMethod")}
                   </h3>
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("purchasing.fulfillmentMethodHelp")}
+                  </p>
 
                   {fulfillmentUi.choosable.length > 0 ? (
                     <ExitsPillSelect<"Pickup" | "Delivery">
@@ -2086,12 +2127,24 @@ export function PurchaseOrderCreatePage() {
                         ? paymentTiming
                         : (effectivePaymentTimings[0]?.code ?? paymentTiming)
                     }
-                    onChange={setPaymentTiming}
+                    onChange={(next) => {
+                      if (next === "SupplierCredit" && !utangEligibility.eligible) {
+                        return;
+                      }
+                      setPaymentTiming(next);
+                    }}
                     disabled={!allowManage}
-                    options={effectivePaymentTimings.map((option) => ({
-                      value: option.code,
-                      label: t(option.labelKey),
-                    }))}
+                    options={effectivePaymentTimings.map((option) => {
+                      const creditBlocked =
+                        option.code === "SupplierCredit" && !utangEligibility.eligible;
+                      return {
+                        value: option.code,
+                        label: creditBlocked
+                          ? `${t(option.labelKey)} — ${t("purchasing.utang.unavailable")}`
+                          : t(option.labelKey),
+                        disabled: creditBlocked,
+                      };
+                    })}
                     testId="po-payment-timing-select"
                   />
                 </section>
@@ -2131,7 +2184,7 @@ export function PurchaseOrderCreatePage() {
               />
               {selectedPaymentHelp ? (
                 <Notice tone="info" testId="po-payment-help">
-                  {t(selectedPaymentHelp)}
+                  {t(selectedPaymentHelp as Parameters<typeof t>[0])}
                 </Notice>
               ) : null}
               {paymentTerm === "Utang" && !utangEligibility.eligible ? (

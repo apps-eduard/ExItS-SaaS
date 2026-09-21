@@ -5408,6 +5408,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.notFound": "Wala makita ang incoming order.",
 
   "incomingOrders.orderDate": "Petsa sa order",
+  "incomingOrders.orderInfoTitle": "Impormasyon sa order",
   "incomingOrders.orderTotal": "Order total",
 
   "incomingOrders.review": "Susiha ang order",
@@ -9971,14 +9972,45 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethod.utang": "Utang / Credit",
 
-  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
-
-  "purchasing.paymentHelp.bankTransfer":
-    "Payment can be completed after the supplier confirms the order.",
-
-  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
-
+  "purchasing.paymentHelp.cod.payBefore":
+    "Payment will be collected before fulfillment starts.",
+  "purchasing.paymentHelp.cod.payOnDelivery":
+    "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.cod.supplierCredit":
+    "Cash remains the intended settlement method when payment is due under supplier credit.",
+  "purchasing.paymentHelp.bankDeposit.payBefore":
+    "Payment will be recorded as a bank deposit before fulfillment.",
+  "purchasing.paymentHelp.bankDeposit.payOnDelivery":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.bankDeposit.supplierCredit":
+    "Payment will be recorded as a bank deposit when due under supplier credit.",
+  "purchasing.paymentHelp.check.payBefore":
+    "A check received before fulfillment stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.payOnDelivery":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.supplierCredit":
+    "A check under supplier credit stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer.payBefore":
+    "Payment can be completed before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.bankTransfer.payOnDelivery":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.bankTransfer.supplierCredit":
+    "Payment can be completed when due under supplier credit after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payBefore":
+    "Payment can be recorded before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payOnDelivery":
+    "Payment can be recorded when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash.supplierCredit":
+    "Payment can be recorded when due under supplier credit after the supplier confirms the order.",
   "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.bankDeposit":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.check":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash": "Payment can be recorded when goods are delivered or received.",
 
   "purchasing.utang.unavailable": "unavailable",
 
@@ -13472,6 +13504,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "returns.connectedPo.refundAmountInvalid": "Enter a refund amount greater than zero.",
 
   "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillmentMethodHelp":
+    "Choose how this connected purchase order should be fulfilled.",
   "purchasing.fulfillmentMethodRequired": "Select Pickup or Delivery before saving this purchase order.",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",

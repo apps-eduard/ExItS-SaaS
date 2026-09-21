@@ -14,7 +14,10 @@ export type PoDocumentLine = {
   id: string;
   productName: string;
   sku?: string | null;
+  /** Numeric qty only; unit renders below in xs when `unitLabel` is set. */
   quantityLabel: string;
+  /** Optional UOM under quantity (xs muted). */
+  unitLabel?: string | null;
   unitCost: number;
   lineTotal: number;
 };

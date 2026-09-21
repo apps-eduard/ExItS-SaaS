@@ -2081,6 +2081,93 @@ html {
   min-width: 0;
 }
 
+/* Incoming / prepare-remaining: titled card with inner meta fact cards. */
+.po-document-summary--meta-cards {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface, #fff);
+  box-shadow: none;
+}
+
+.po-document-summary--meta-cards .po-document-summary__title {
+  color: var(--exits-primary);
+  font-size: var(--exits-text-md);
+  font-weight: 600;
+}
+
+.po-document-summary--meta-cards .po-document-summary__meta {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 40rem) {
+  .po-document-summary--meta-cards .po-document-summary__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .po-document-summary--meta-cards .po-document-summary__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 80rem) {
+  .po-document-summary--meta-cards .po-document-summary__meta {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.po-document-summary--meta-cards .po-document-summary__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface, #fff);
+}
+
+.po-document-summary--meta-cards .po-document-summary__field dt {
+  font-size: var(--exits-text-xs);
+  line-height: 1.2;
+}
+
+.po-document-summary--meta-cards .po-document-summary__field dd {
+  font-size: var(--exits-text-sm);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.po-document-summary--meta-cards .po-document-summary__field--buyer {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface, #fff));
+}
+
+/* Latest goods receipt: bold title + inner meta cards (same language as order info). */
+.incoming-order-latest-receipt__title {
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.incoming-order-latest-receipt__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--exits-border);
+  border-radius: var(--exits-radius-md);
+  background: var(--exits-surface, #fff);
+}
+
+.incoming-order-latest-receipt__field--buyer {
+  border-color: color-mix(in srgb, var(--exits-primary) 28%, var(--exits-border));
+  background: color-mix(in srgb, var(--exits-primary) 6%, var(--exits-surface, #fff));
+}
+
 .po-document-summary--create .po-document-summary__meta {
   grid-template-columns: 1fr;
 }
@@ -2163,6 +2250,16 @@ html {
   text-align: end;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.po-document-lines__table thead th.po-document-lines__num--start,
+.po-document-lines__num--start {
+  text-align: start;
+}
+
+.po-document-lines__table thead th.po-document-lines__num--center,
+.po-document-lines__num--center {
+  text-align: center;
 }
 
 .po-document-lines__actions {

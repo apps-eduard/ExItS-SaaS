@@ -6133,6 +6133,7 @@ export const en = {
   "incomingOrders.noMatchHelp": "Try another buyer name or PO number.",
   "incomingOrders.notFound": "Incoming order was not found.",
   "incomingOrders.orderDate": "Order date",
+  "incomingOrders.orderInfoTitle": "Order info",
   "incomingOrders.orderTotal": "Order total",
   "incomingOrders.review": "Review order",
   "incomingOrders.search": "Search by buyer or PO number",
@@ -6437,15 +6438,46 @@ export const en = {
   "purchasing.paymentMethod.check": "Check",
   "purchasing.paymentMethod.gcash": "GCash / Manual e-wallet",
   "purchasing.paymentMethod.utang": "Utang / Credit",
-  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
+  "purchasing.paymentHelp.cod.payBefore":
+    "Payment will be collected before fulfillment starts.",
+  "purchasing.paymentHelp.cod.payOnDelivery":
+    "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.cod.supplierCredit":
+    "Cash remains the intended settlement method when payment is due under supplier credit.",
+  "purchasing.paymentHelp.bankDeposit.payBefore":
+    "Payment will be recorded as a bank deposit before fulfillment.",
+  "purchasing.paymentHelp.bankDeposit.payOnDelivery":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.bankDeposit.supplierCredit":
+    "Payment will be recorded as a bank deposit when due under supplier credit.",
+  "purchasing.paymentHelp.check.payBefore":
+    "A check received before fulfillment stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.payOnDelivery":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.supplierCredit":
+    "A check under supplier credit stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer.payBefore":
+    "Payment can be completed before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.bankTransfer.payOnDelivery":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.bankTransfer.supplierCredit":
+    "Payment can be completed when due under supplier credit after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payBefore":
+    "Payment can be recorded before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payOnDelivery":
+    "Payment can be recorded when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash.supplierCredit":
+    "Payment can be recorded when due under supplier credit after the supplier confirms the order.",
+  "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+  /** @deprecated Prefer timing-specific keys via resolveConnectedPoPaymentHelpKey. */
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered or received.",
   "purchasing.paymentHelp.bankDeposit":
     "Payment will be recorded as a bank deposit when goods are received.",
   "purchasing.paymentHelp.check":
     "A check received at delivery stays pending clearing until it clears.",
   "purchasing.paymentHelp.bankTransfer":
-    "Payment can be completed after the supplier confirms the order.",
-  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
-  "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash": "Payment can be recorded when goods are delivered or received.",
   "purchasing.utang.unavailable": "unavailable",
   "purchasing.utang.notConnected": "Utang is only available for connected suppliers.",
   "purchasing.utang.permissionDenied": "You do not have permission to use Utang on purchase orders.",
@@ -6494,6 +6526,8 @@ export const en = {
   "purchasing.supplierNotReady.reason.multiple": "You can save a draft now. Submit will stay blocked due to {reasons} setup - contact your supplier.",
   "purchasing.readyForPurchaseOrders": "Ready for purchase orders",
   "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillmentMethodHelp":
+    "Choose how this connected purchase order should be fulfilled.",
   "purchasing.fulfillmentMethodRequired": "Select Pickup or Delivery before saving this purchase order.",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",

@@ -146,12 +146,13 @@ function resolveOrderTotal(po: PosPurchaseOrderDto): {
 
 function toBuyerDocumentLines(po: PosPurchaseOrderDto): PoDocumentLine[] {
   return po.lines.map((line) => {
-    const uom = line.uomSnapshot ?? "";
+    const uom = line.uomSnapshot?.trim() || "";
     return {
       id: line.lineId,
       productName: line.nameSnapshot ?? line.productId ?? "—",
       sku: line.skuSnapshot,
-      quantityLabel: uom ? `${line.orderedQty} ${uom}` : String(line.orderedQty),
+      quantityLabel: String(line.orderedQty),
+      unitLabel: uom || null,
       unitCost: line.unitPurchaseCost,
       lineTotal: line.lineTotal,
     };

@@ -62,9 +62,10 @@ import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { formatPeso } from "@/lib/format-money";
 import { roundMoneyAmount } from "@/lib/money-input";
-import { maxQuantityDecimals } from "@/lib/quantity-rules";
+import { formatQuantityValue, maxQuantityDecimals } from "@/lib/quantity-rules";
 import { cn } from "@/lib/cn";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { formatUnitOfMeasureLabel } from "@/features/purchasing/purchase-order-create-connected";
 
 function lineQtyLabel(line: ConnectedPurchaseOrderLine): string {
   return formatStockQtyLabel(line.qty, line.unitOfMeasureCode);
@@ -155,14 +156,22 @@ function declineReasonLabel(t: (key: MessageKey) => string, reason: string): str
 }
 
 function toDocumentLines(lines: ConnectedPurchaseOrderLine[]): PoDocumentLine[] {
-  return lines.map((line) => ({
-    id: line.productId,
-    productName: line.nameSnapshot,
-    sku: line.skuSnapshot,
-    quantityLabel: lineQtyLabel(line),
-    unitCost: line.unitPriceSnapshot,
-    lineTotal: line.lineTotal,
-  }));
+  return lines.map((line) => {
+    const precision = maxQuantityDecimals(line.unitOfMeasureCode);
+    const qty = formatQuantityValue(line.qty, precision);
+    const uom = line.unitOfMeasureCode?.trim()
+      ? formatUnitOfMeasureLabel(line.unitOfMeasureCode)
+      : "";
+    return {
+      id: line.productId,
+      productName: line.nameSnapshot,
+      sku: line.skuSnapshot,
+      quantityLabel: qty,
+      unitLabel: uom || null,
+      unitCost: line.unitPriceSnapshot,
+      lineTotal: line.lineTotal,
+    };
+  });
 }
 
 function ShortageQty({
@@ -507,16 +516,21 @@ export function IncomingOrderDetailPage() {
     outstandingQty > 0 &&
     (order.displayStatus === "PartiallyReceived" ||
       order.buyerReceivingStatus === "PartiallyReceived");
-  const showFulfillmentProgress =
+  // Good / Damaged / Outstanding / Remaining value + Latest GRN after buyer receipt progress
+  // (partial/full), including prepare-remaining while seller is Preparing again.
+  const isMarkRemainingReady = isPreparing && Boolean(order.fulfilledAtUtc);
+  const showBuyerReceiptProgress =
     order.displayStatus === "PartiallyReceived" ||
     order.displayStatus === "Completed" ||
     order.displayStatus === "CompletedRemainingCancelled" ||
     order.displayStatus === "ReceivedWithIssues" ||
+    order.buyerReceivingStatus === "PartiallyReceived" ||
     (order.buyerReceipts?.length ?? 0) > 0 ||
-    order.lines.some((line) => (line.goodReceivedQty ?? 0) > 0 || (line.outstandingQty ?? 0) > 0);
+    needsPrepareRemaining ||
+    isMarkRemainingReady ||
+    (Boolean(order.fulfilledAtUtc) && outstandingQty > 0);
   const remainingLines = order.lines.filter((line) => (line.outstandingQty ?? 0) > 0);
   const remainingTotal = remainingLines.reduce((sum, line) => sum + (line.outstandingQty ?? 0), 0);
-  const isMarkRemainingReady = isPreparing && Boolean(order.fulfilledAtUtc);
   const canAct = allowManage && online && !busy;
   const hasShortage = order.lines.some(lineHasShortage);
   const shortageCount = countShortageLines(order.lines);
@@ -571,15 +585,23 @@ export function IncomingOrderDetailPage() {
   );
 
   const summaryFields = [
-    ...(order.supplierBranchName
-      ? [
-          {
-            key: "fulfill",
-            label: t("incomingOrders.deliverTo"),
-            value: order.supplierBranchName,
-          },
-        ]
-      : []),
+    {
+      key: "buyer",
+      label: t("incomingOrders.buyer"),
+      value: (
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <Building2 className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+          <span className="min-w-0 truncate">
+            {order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: "fulfill",
+      label: t("incomingOrders.deliverTo"),
+      value: order.supplierBranchName?.trim() || "—",
+    },
     {
       key: "payment",
       label: t("purchasing.paymentTerm"),
@@ -1014,32 +1036,20 @@ export function IncomingOrderDetailPage() {
       ) : null}
 
       <PoDocumentSummary
-        counterpartyLabel={t("incomingOrders.buyer")}
-        counterpartyIcon={<Building2 className="size-5" strokeWidth={1.75} />}
-        counterpartyName={order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}
-        status={{ label: resolvedStatusLabel, tone: statusTone }}
+        className="po-document-summary--meta-cards"
+        title={t("incomingOrders.orderInfoTitle")}
         fields={summaryFields}
         testId="incoming-order-summary"
         footer={
-          <>
-            {order.buyerReceivingStatus ? (
-              <p
-                className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-                data-testid="incoming-order-receiving"
-              >
-                {statusLabel(t, order.status, order.buyerReceivingStatus)}
-              </p>
-            ) : null}
-            {isDeclined && (order.declineReason || order.declineNote) ? (
-              <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="incoming-order-decline-info">
-                {order.declineReason
-                  ? declineReasonLabel(t, order.declineReason)
-                  : null}
-                {order.declineReason && order.declineNote ? " — " : null}
-                {order.declineNote}
-              </p>
-            ) : null}
-          </>
+          isDeclined && (order.declineReason || order.declineNote) ? (
+            <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="incoming-order-decline-info">
+              {order.declineReason
+                ? declineReasonLabel(t, order.declineReason)
+                : null}
+              {order.declineReason && order.declineNote ? " — " : null}
+              {order.declineNote}
+            </p>
+          ) : null
         }
       />
 
@@ -1335,7 +1345,7 @@ export function IncomingOrderDetailPage() {
         />
       ) : (
         <>
-          {showFulfillmentProgress ? (
+          {showBuyerReceiptProgress ? (
             <IncomingOrderFulfillmentProgress
               lines={order.lines}
               title={t("incomingOrders.fulfillmentProgress")}
@@ -1344,7 +1354,7 @@ export function IncomingOrderDetailPage() {
               goodLabel={t("incomingOrders.colGoodReceived")}
               damagedLabel={t("incomingOrders.colDamaged")}
               missingLabel={t("incomingOrders.colMissing")}
-              unitLabel={t("purchasing.unit")}
+              outstandingLabel={t("purchasing.outstanding")}
               unitCostLabel={t("purchasing.unitCost")}
               remainingValueLabel={t("incomingOrders.colRemainingValue")}
             />
@@ -1364,7 +1374,7 @@ export function IncomingOrderDetailPage() {
             />
           )}
 
-          {(order.buyerReceipts?.length ?? 0) > 0 || showFulfillmentProgress ? (
+          {(order.buyerReceipts?.length ?? 0) > 0 && showBuyerReceiptProgress ? (
             <IncomingOrderBuyerReceipts
               receipts={order.buyerReceipts ?? []}
               buyerName={order.buyerDisplayName?.trim() || t("incomingOrders.buyerUnknown")}

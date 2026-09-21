@@ -485,7 +485,8 @@ public static class ConnectedSupplierMapper
         IReadOnlyDictionary<Guid, ConnectedPurchaseOrderSupplierStock.StockSnapshot>? stockByProduct = null,
         PurchaseOrder? buyerPo = null,
         IReadOnlyList<GoodsReceipt>? buyerReceipts = null,
-        ConnectedPoShortCloseSettlement.Snapshot? settlementPreview = null)
+        ConnectedPoShortCloseSettlement.Snapshot? settlementPreview = null,
+        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null)
     {
         var display = ConnectedPoDisplayStatus.ForSupplier(x, buyerPo);
         var receiving = buyerReceivingStatus ?? (buyerPo is null ? null : display);
@@ -497,7 +498,11 @@ public static class ConnectedSupplierMapper
         IReadOnlyList<IncomingOrderBuyerReceiptDto>? receiptDtos = null;
         if (buyerPo is not null && buyerReceipts is not null)
         {
-            progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(x, buyerPo, buyerReceipts);
+            progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(
+                x,
+                buyerPo,
+                buyerReceipts,
+                productLinks);
             receiptDtos = ConnectedIncomingOrderFulfillmentProjection
                 .ProjectReceipts(buyerReceipts, outstanding ?? 0m)
                 .Select(r => new IncomingOrderBuyerReceiptDto(
@@ -530,7 +535,8 @@ public static class ConnectedSupplierMapper
             progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(
                 x,
                 buyerPo,
-                Array.Empty<GoodsReceipt>());
+                Array.Empty<GoodsReceipt>(),
+                productLinks);
         }
 
         var balanceDue = buyerPo is null
@@ -2320,6 +2326,7 @@ public sealed class GetIncomingOrder
     private readonly IConnectedPurchaseOrderRepository _orders;
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IPurchaseOrderRepository? _buyerOrders;
+    private readonly IBuyerSupplierProductLinkRepository? _links;
     private readonly ISupplierPayableRepository? _payables;
     private readonly IPosCommercialAccessAccessor _access;
     private readonly IInventoryRepository? _inventory;
@@ -2340,6 +2347,7 @@ public sealed class GetIncomingOrder
         ConnectedPoInventoryReservationService? reservations = null,
         IPosUnitOfWork? uow = null,
         ISupplierPayableRepository? payables = null,
+        IBuyerSupplierProductLinkRepository? links = null,
         TimeProvider? clock = null)
     {
         _orders = orders;
@@ -2352,6 +2360,7 @@ public sealed class GetIncomingOrder
         _reservations = reservations;
         _uow = uow;
         _payables = payables;
+        _links = links;
         _clock = clock ?? TimeProvider.System;
     }
 
@@ -2460,6 +2469,15 @@ public sealed class GetIncomingOrder
                 treatOutstandingAsCancelled: true);
         }
 
+        ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps? productLinks = null;
+        if (_links is not null)
+        {
+            var linkList = await _links
+                .ListAsync(order.RelationshipId, order.BuyerOrganizationId, ct)
+                .ConfigureAwait(false);
+            productLinks = ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps.FromLinks(linkList);
+        }
+
         return ApplicationResult<ConnectedPurchaseOrderDto>.Success(
             ConnectedSupplierMapper.Map(
                 order,
@@ -2470,7 +2488,8 @@ public sealed class GetIncomingOrder
                 stock,
                 buyerPo,
                 buyerReceipts,
-                settlementPreview));
+                settlementPreview,
+                productLinks));
     }
 }
 

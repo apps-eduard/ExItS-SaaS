@@ -293,6 +293,30 @@ describe("IncomingOrders React flow", () => {
     await waitFor(() => expect(screen.queryByTestId("incoming-order-decline")).not.toBeInTheDocument());
   });
 
+  it("renders buyer and commercial meta as summary cards", async () => {
+    getIncomingOrder.mockResolvedValue({
+      ...pendingOrder("Accepted"),
+      buyerDisplayName: "Paul Store",
+      supplierBranchName: "Main warehouse",
+      paymentTermLabel: "Cash on delivery",
+      paymentTiming: "PayOnDeliveryOrReceipt",
+      orderDate: "2026-09-20",
+      displayStatus: "PartiallyReceived",
+      buyerOutstandingQty: 1,
+      fulfilledAtUtc: "2026-09-17T01:00:00Z",
+    });
+    renderDetail();
+    await waitFor(() => screen.getByTestId("incoming-order-summary"));
+    expect(screen.getByTestId("incoming-order-summary-title")).toHaveTextContent("Order info");
+    expect(screen.queryByTestId("incoming-order-summary-status")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-receiving")).not.toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-summary-buyer")).toHaveTextContent("Paul Store");
+    expect(screen.getByTestId("incoming-order-summary-fulfill")).toHaveTextContent("Main warehouse");
+    expect(screen.getByTestId("incoming-order-summary-payment")).toHaveTextContent("Cash on delivery");
+    expect(screen.getByTestId("incoming-order-summary-paymentTiming")).toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-summary-orderDate")).toHaveTextContent("2026-09-20");
+  });
+
   it("supports prepare then fulfill", async () => {
     const user = userEvent.setup();
     getIncomingOrder
@@ -306,6 +330,37 @@ describe("IncomingOrders React flow", () => {
     await user.click(screen.getByTestId("incoming-order-fulfill"));
     await waitFor(() => expect(fulfillIncomingOrder).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByTestId("incoming-order-fulfill")).not.toBeInTheDocument());
+  });
+
+  it("hides good/damaged columns and latest receipt on first prepare", async () => {
+    getIncomingOrder.mockResolvedValue({
+      ...pendingOrder("Accepted", [
+        {
+          productId,
+          nameSnapshot: "Apple",
+          skuSnapshot: "PH-FRU-APPLE",
+          qty: 4,
+          unitPriceSnapshot: 10,
+          lineTotal: 40,
+          unitOfMeasureCode: "Piece",
+          orderedQty: 4,
+          goodReceivedQty: 0,
+          damagedQty: 0,
+          missingQty: 0,
+          outstandingQty: 4,
+          remainingValue: 40,
+        },
+      ]),
+      buyerOutstandingQty: 4,
+      buyerReceipts: [],
+    });
+    renderDetail();
+    await waitFor(() => screen.getByTestId("incoming-order-prepare"));
+    expect(screen.getByTestId("incoming-order-lines")).toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-fulfillment-progress")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("incoming-order-latest-receipt")).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Good received" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Damaged" })).not.toBeInTheDocument();
   });
 
   it("renders stock review for pending orders and document lines after accept", async () => {
@@ -529,16 +584,78 @@ describe("IncomingOrders React flow", () => {
     await waitFor(() => screen.getByTestId("incoming-order-fulfillment-progress"));
     expect(screen.getAllByText("Partially received").length).toBeGreaterThan(0);
     expect(screen.queryByText("PartiallyReceived")).not.toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Good received" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Damaged" })).toBeInTheDocument();
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-good-${productId}`)).toHaveTextContent("3");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-damaged-${productId}`)).toHaveTextContent("1");
     expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${productId}`)).toHaveTextContent(
       "1",
     );
     expect(
       screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${productIdBanana}`),
     ).toHaveTextContent("2");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-remaining-value-${productId}`)).toHaveTextContent(
+      "₱10.00",
+    );
     expect(screen.getByTestId("incoming-order-latest-receipt")).toBeInTheDocument();
     expect(screen.getByText(/GRN-20260917-000001/)).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-view-latest-receipt")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-prepare-remaining")).toBeInTheDocument();
+  });
+
+  it("keeps fulfillment progress columns while preparing remaining", async () => {
+    getIncomingOrder.mockResolvedValue({
+      ...pendingOrder("Preparing", [
+        {
+          productId,
+          nameSnapshot: "Apple",
+          skuSnapshot: "PH-FRU-APPLE",
+          qty: 4,
+          unitPriceSnapshot: 10,
+          lineTotal: 40,
+          unitOfMeasureCode: "Piece",
+          orderedQty: 4,
+          goodReceivedQty: 3,
+          damagedQty: 1,
+          missingQty: 0,
+          outstandingQty: 1,
+          remainingValue: 10,
+        },
+      ]),
+      displayStatus: "Preparing",
+      buyerReceivingStatus: "PartiallyReceived",
+      buyerOutstandingQty: 1,
+      fulfilledAtUtc: "2026-09-17T01:00:00Z",
+      buyerReceipts: [
+        {
+          goodsReceiptId: "99999999-9999-4999-8999-999999999999",
+          grnNumber: "GRN-20260917-000001",
+          receivedDate: "2026-09-17",
+          receivedAtUtc: "2026-09-17T12:00:00Z",
+          deliveryReference: null,
+          notes: null,
+          status: "Posted",
+          goodQtyTotal: 3,
+          damagedQtyTotal: 1,
+          missingQtyTotal: 0,
+          cancelledRemainingTotal: 0,
+          lines: [],
+        },
+      ],
+    });
+
+    renderDetail();
+    await waitFor(() => screen.getByTestId("incoming-order-fulfillment-progress"));
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-good-${productId}`)).toHaveTextContent("3");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-damaged-${productId}`)).toHaveTextContent("1");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${productId}`)).toHaveTextContent(
+      "1",
+    );
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-remaining-value-${productId}`)).toHaveTextContent(
+      "₱10.00",
+    );
+    expect(screen.getByTestId("incoming-order-latest-receipt")).toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-fulfill")).toHaveTextContent("Mark remaining ready");
   });
 
   it("confirms mark remaining ready with outstanding quantities only", async () => {

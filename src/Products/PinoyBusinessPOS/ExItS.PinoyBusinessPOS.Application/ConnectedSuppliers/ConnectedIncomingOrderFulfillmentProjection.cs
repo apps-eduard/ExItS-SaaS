@@ -8,6 +8,8 @@ namespace ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 /// <summary>
 /// Seller-facing fulfillment progress from buyer PO lines + goods receipts.
 /// Damaged/rejected come from GRN lines; outstanding from buyer PO.
+/// Buyer catalog product ids differ from supplier product ids — match via
+/// <see cref="SupplierProductId"/> on the buyer line and/or active product links.
 /// </summary>
 public static class ConnectedIncomingOrderFulfillmentProjection
 {
@@ -48,21 +50,52 @@ public static class ConnectedIncomingOrderFulfillmentProjection
         decimal CancelledRemainingTotal,
         IReadOnlyList<ReceiptLineSummary> Lines);
 
+    /// <summary>
+    /// Active buyer↔supplier catalog links for matching CPO lines to buyer PO / GRN lines.
+    /// </summary>
+    public sealed record ProductLinkMaps(
+        IReadOnlyDictionary<Guid, Guid> SupplierToBuyerProductId,
+        IReadOnlyDictionary<Guid, Guid> BuyerToSupplierProductId)
+    {
+        public static ProductLinkMaps Empty { get; } = new(
+            new Dictionary<Guid, Guid>(),
+            new Dictionary<Guid, Guid>());
+
+        public static ProductLinkMaps FromLinks(IEnumerable<BuyerSupplierProductLink> links)
+        {
+            var active = links.Where(x => x.IsActive).ToList();
+            var supplierToBuyer = active
+                .GroupBy(x => x.SupplierProductId.Value)
+                .ToDictionary(g => g.Key, g => g.First().BuyerProductId.Value);
+            var buyerToSupplier = active
+                .GroupBy(x => x.BuyerProductId.Value)
+                .ToDictionary(g => g.Key, g => g.First().SupplierProductId.Value);
+            return new ProductLinkMaps(supplierToBuyer, buyerToSupplier);
+        }
+    }
+
     public static IReadOnlyDictionary<Guid, LineProgress> ProjectLineProgress(
         ConnectedPurchaseOrder order,
         PurchaseOrder buyerPo,
-        IReadOnlyList<GoodsReceipt> receipts)
+        IReadOnlyList<GoodsReceipt> receipts,
+        ProductLinkMaps? productLinks = null)
     {
+        var links = productLinks ?? ProductLinkMaps.Empty;
         var posted = receipts
             .Where(r => r.Status == GoodsReceiptStatus.Posted)
             .ToList();
 
+        // Prefer PO-line id (stable across buyer/supplier catalog ids).
+        var damagedByPoLineId = new Dictionary<Guid, decimal>();
+        var missingByPoLineId = new Dictionary<Guid, decimal>();
         var damagedByBuyerProduct = new Dictionary<Guid, decimal>();
         var missingByBuyerProduct = new Dictionary<Guid, decimal>();
         foreach (var receipt in posted)
         {
             foreach (var line in receipt.Lines)
             {
+                Add(damagedByPoLineId, line.PurchaseOrderLineId.Value, line.DamagedQty);
+                Add(missingByPoLineId, line.PurchaseOrderLineId.Value, line.RejectedQty);
                 Add(damagedByBuyerProduct, line.ProductId.Value, line.DamagedQty);
                 Add(missingByBuyerProduct, line.ProductId.Value, line.RejectedQty);
             }
@@ -76,18 +109,36 @@ public static class ConnectedIncomingOrderFulfillmentProjection
                 ? cpoLine.EffectiveConfirmedUnitPrice
                 : cpoLine.UnitPriceSnapshot;
 
-            var poLine = FindBuyerLine(buyerPo, cpoLine.ProductId);
+            var poLine = FindBuyerLine(buyerPo, cpoLine.ProductId, links);
             var good = poLine?.ReceivedQty ?? 0m;
             var cancelled = poLine?.ClosedShortQty ?? 0m;
             var outstanding = poLine?.OutstandingQty
                 ?? Math.Max(0m, ordered - good - cancelled);
-            var buyerProductId = poLine?.ProductId?.Value;
-            var damaged = buyerProductId is Guid bp && damagedByBuyerProduct.TryGetValue(bp, out var d)
-                ? d
-                : 0m;
-            var missing = buyerProductId is Guid bp2 && missingByBuyerProduct.TryGetValue(bp2, out var m)
-                ? m
-                : 0m;
+
+            var damaged = 0m;
+            var missing = 0m;
+            if (poLine is not null)
+            {
+                if (damagedByPoLineId.TryGetValue(poLine.Id.Value, out var dByLine))
+                {
+                    damaged = dByLine;
+                }
+                else if (poLine.ProductId is { } buyerProduct
+                         && damagedByBuyerProduct.TryGetValue(buyerProduct.Value, out var dByProduct))
+                {
+                    damaged = dByProduct;
+                }
+
+                if (missingByPoLineId.TryGetValue(poLine.Id.Value, out var mByLine))
+                {
+                    missing = mByLine;
+                }
+                else if (poLine.ProductId is { } buyerProduct2
+                         && missingByBuyerProduct.TryGetValue(buyerProduct2.Value, out var mByProduct))
+                {
+                    missing = mByProduct;
+                }
+            }
 
             bySupplier[cpoLine.ProductId.Value] = new LineProgress(
                 cpoLine.ProductId.Value,
@@ -148,11 +199,24 @@ public static class ConnectedIncomingOrderFulfillmentProjection
             .ToList();
     }
 
-    private static PurchaseOrderLine? FindBuyerLine(PurchaseOrder buyerPo, CatalogProductId supplierProductId)
+    internal static PurchaseOrderLine? FindBuyerLine(
+        PurchaseOrder buyerPo,
+        CatalogProductId supplierProductId,
+        ProductLinkMaps links)
     {
+        Guid? linkedBuyerProductId = null;
+        if (links.SupplierToBuyerProductId.TryGetValue(supplierProductId.Value, out var mappedBuyer))
+        {
+            linkedBuyerProductId = mappedBuyer;
+        }
+
         return buyerPo.Lines.FirstOrDefault(l =>
             l.SupplierProductId == supplierProductId
-            || l.ProductId == supplierProductId);
+            || l.ProductId == supplierProductId
+            || (linkedBuyerProductId is Guid buyerId && l.ProductId?.Value == buyerId)
+            || (l.ProductId is { } bp
+                && links.BuyerToSupplierProductId.TryGetValue(bp.Value, out var mappedSupplier)
+                && mappedSupplier == supplierProductId.Value));
     }
 
     private static void Add(Dictionary<Guid, decimal> map, Guid key, decimal qty)

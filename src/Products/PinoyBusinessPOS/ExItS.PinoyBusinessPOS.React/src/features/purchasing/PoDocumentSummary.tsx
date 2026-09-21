@@ -5,6 +5,8 @@ import { cn } from "@/lib/cn";
 import type { PoDocumentMetaField, PoDocumentStatus } from "@/features/purchasing/po-document-types";
 
 export type PoDocumentSummaryProps = {
+  /** Optional section title above the meta grid / counterparty. */
+  title?: string;
   /** Buyer or Seller counterparty label (perspective-aware). Omit with `counterpartyName` for field-only layouts. */
   counterpartyLabel?: string;
   /** Optional leading icon beside the counterparty name (store/branch line). */
@@ -24,6 +26,7 @@ export type PoDocumentSummaryProps = {
  * Not a nested card stack; single bordered summary surface.
  */
 export function PoDocumentSummary({
+  title,
   counterpartyLabel,
   counterpartyIcon,
   counterpartyName,
@@ -37,11 +40,19 @@ export function PoDocumentSummary({
 
   return (
     <Card className={cn("po-document-summary grid gap-3 p-3", className)} data-testid={testId}>
+      {title ? (
+        <h2 className="po-document-summary__title m-0" data-testid={`${testId}-title`}>
+          {title}
+        </h2>
+      ) : null}
+
       {showCounterparty || status ? (
         <div className="flex flex-wrap items-start justify-between gap-2">
           {showCounterparty ? (
             <div className="min-w-0">
-              <h2 className="po-document-summary__title m-0">{counterpartyLabel}</h2>
+              {!title ? <h2 className="po-document-summary__title m-0">{counterpartyLabel}</h2> : (
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{counterpartyLabel}</p>
+              )}
               <p
                 className="m-0 mt-1 flex items-center gap-2 font-semibold"
                 data-testid={`${testId}-counterparty`}
