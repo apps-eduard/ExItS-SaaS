@@ -81,7 +81,8 @@ function QtyWithUnit({
 /**
  * Seller fulfillment-progress table after buyer partial/full receipt.
  * Cumulative: Ordered / Good received / Damaged / Missing? / Outstanding / Unit cost / Remaining value.
- * Unit sits beside Ordered (xs, start-aligned). Outstanding > 0 is emphasized for prepare-remaining.
+ * Unit sits beside Ordered (xs, start-aligned). Good / Damaged / Missing values are start-aligned.
+ * Outstanding > 0 is emphasized for prepare-remaining.
  */
 export function IncomingOrderFulfillmentProgress({
   lines,
@@ -115,14 +116,14 @@ export function IncomingOrderFulfillmentProgress({
               <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                 {orderedLabel}
               </th>
-              <th scope="col" className="po-document-lines__num po-document-lines__num--center">
+              <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                 {goodLabel}
               </th>
-              <th scope="col" className="po-document-lines__num po-document-lines__num--center">
+              <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                 {damagedLabel}
               </th>
               {showMissing ? (
-                <th scope="col" className="po-document-lines__num po-document-lines__num--center">
+                <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                   {missingLabel}
                 </th>
               ) : null}
@@ -154,20 +155,20 @@ export function IncomingOrderFulfillmentProgress({
                     <QtyWithUnit value={qty(orderedQty(line))} unit={unit} />
                   </td>
                   <td
-                    className="po-document-lines__num po-document-lines__num--center tabular-nums"
+                    className="po-document-lines__num po-document-lines__num--start tabular-nums"
                     data-testid={`${testId}-good-${line.productId}`}
                   >
                     {qty(goodQty(line))}
                   </td>
                   <td
-                    className="po-document-lines__num po-document-lines__num--center tabular-nums"
+                    className="po-document-lines__num po-document-lines__num--start tabular-nums"
                     data-testid={`${testId}-damaged-${line.productId}`}
                   >
                     {qty(damagedQty(line))}
                   </td>
                   {showMissing ? (
                     <td
-                      className="po-document-lines__num po-document-lines__num--center tabular-nums"
+                      className="po-document-lines__num po-document-lines__num--start tabular-nums"
                       data-testid={`${testId}-missing-${line.productId}`}
                     >
                       {qty(missingQty(line))}

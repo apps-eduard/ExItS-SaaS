@@ -114,7 +114,7 @@ export function IncomingOrderBuyerReceipts({
           </div>
 
           <dl
-            className="incoming-order-latest-receipt__meta m-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            className="incoming-order-latest-receipt__meta m-0"
             data-testid="incoming-order-latest-receipt-meta"
           >
             <div className="incoming-order-latest-receipt__field incoming-order-latest-receipt__field--buyer min-w-0">
@@ -142,7 +142,7 @@ export function IncomingOrderBuyerReceipts({
               </dd>
             </div>
             {latest.missingQtyTotal > 0 ? (
-              <div className="incoming-order-latest-receipt__field min-w-0 lg:col-span-4 sm:col-span-2">
+              <div className="incoming-order-latest-receipt__field min-w-0">
                 <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{missingLabel}</dt>
                 <dd className="m-0 tabular-nums font-semibold">
                   {formatStockQtyLabel(latest.missingQtyTotal)}
@@ -150,9 +150,11 @@ export function IncomingOrderBuyerReceipts({
               </div>
             ) : null}
             {latest.notes?.trim() ? (
-              <div className="incoming-order-latest-receipt__field min-w-0 lg:col-span-4 sm:col-span-2">
+              <div className="incoming-order-latest-receipt__field min-w-0">
                 <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{notesLabel}</dt>
-                <dd className="m-0 font-medium">{latest.notes.trim()}</dd>
+                <dd className="m-0 truncate font-medium" title={latest.notes.trim()}>
+                  {latest.notes.trim()}
+                </dd>
               </div>
             ) : null}
           </dl>

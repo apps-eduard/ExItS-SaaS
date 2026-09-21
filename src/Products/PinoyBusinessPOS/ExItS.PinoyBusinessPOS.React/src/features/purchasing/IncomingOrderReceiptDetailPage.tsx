@@ -281,13 +281,13 @@ export function IncomingOrderReceiptDetailPage() {
             <thead>
               <tr>
                 <th scope="col">{t("purchasing.colProduct")}</th>
-                <th scope="col" className="po-document-lines__num">
+                <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                   {t("incomingOrders.colGoodReceived")}
                 </th>
-                <th scope="col" className="po-document-lines__num">
+                <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                   {t("incomingOrders.colDamaged")}
                 </th>
-                <th scope="col" className="po-document-lines__num">
+                <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                   {t("incomingOrders.colMissing")}
                 </th>
                 <th scope="col">{t("purchasing.remainingDecisionTitle")}</th>
@@ -297,13 +297,13 @@ export function IncomingOrderReceiptDetailPage() {
               {receipt.lines.map((line) => (
                 <tr key={`${line.productId}-${line.nameSnapshot}`}>
                   <td className="font-medium">{line.nameSnapshot}</td>
-                  <td className="po-document-lines__num tabular-nums">
+                  <td className="po-document-lines__num po-document-lines__num--start tabular-nums">
                     {formatStockQtyLabel(line.goodQty, line.uomSnapshot)}
                   </td>
-                  <td className="po-document-lines__num tabular-nums">
+                  <td className="po-document-lines__num po-document-lines__num--start tabular-nums">
                     {formatStockQtyLabel(line.damagedQty, line.uomSnapshot)}
                   </td>
-                  <td className="po-document-lines__num tabular-nums">
+                  <td className="po-document-lines__num po-document-lines__num--start tabular-nums">
                     {formatStockQtyLabel(line.missingQty, line.uomSnapshot)}
                   </td>
                   <td className="text-[length:var(--exits-text-sm)]">

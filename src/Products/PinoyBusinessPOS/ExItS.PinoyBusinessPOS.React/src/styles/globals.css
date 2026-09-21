@@ -2172,6 +2172,26 @@ html {
   line-height: 1.25;
 }
 
+.incoming-order-latest-receipt__meta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 40rem) {
+  .incoming-order-latest-receipt__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .incoming-order-latest-receipt__meta {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+}
+
 .incoming-order-latest-receipt__field,
 .receive-payment-prepaid__field {
   display: flex;
