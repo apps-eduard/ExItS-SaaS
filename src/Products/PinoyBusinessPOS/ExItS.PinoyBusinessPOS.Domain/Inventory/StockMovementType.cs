@@ -60,7 +60,17 @@ public enum StockMovementType
     /// Compensating seller stock increase when a connected-PO receiving issue confirms goods remained
     /// at the seller (FoundAtSeller / NeverShipped). Does not edit the original fulfillment movement.
     /// </summary>
-    ConnectedPurchaseFulfillmentReconciliation = 29
+    ConnectedPurchaseFulfillmentReconciliation = 29,
+    /// <summary>Damaged qty placed into branch inspection hold after transfer receive (keep or before return).</summary>
+    TransferDamageHold = 30,
+    /// <summary>Inspection recovers sellable qty from transfer damage hold into sellable on-hand.</summary>
+    TransferDamageRecovery = 31,
+    /// <summary>Destination ships damaged custody back toward source.</summary>
+    TransferDamageReturnOut = 32,
+    /// <summary>Source receives returned damaged custody into inspection hold.</summary>
+    TransferDamageReturnIn = 33,
+    /// <summary>Inspection confirms non-sellable damaged qty (hold → damaged bucket).</summary>
+    TransferDamageWriteOff = 34
 }
 
 public static class StockMovementTypes
@@ -99,7 +109,12 @@ public static class StockMovementTypes
         nameof(StockMovementType.ConnectedPoReturnDispatch),
         nameof(StockMovementType.ConnectedPoReturnRestock),
         nameof(StockMovementType.ConnectedPoReturnWriteOff),
-        nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation)
+        nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation),
+        nameof(StockMovementType.TransferDamageHold),
+        nameof(StockMovementType.TransferDamageRecovery),
+        nameof(StockMovementType.TransferDamageReturnOut),
+        nameof(StockMovementType.TransferDamageReturnIn),
+        nameof(StockMovementType.TransferDamageWriteOff)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

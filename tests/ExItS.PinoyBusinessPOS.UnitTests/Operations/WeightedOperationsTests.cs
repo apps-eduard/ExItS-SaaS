@@ -57,7 +57,7 @@ public sealed class WeightedOperationsTests
             Now);
 
         po.Submit(
-            "PO-20260811-000001",
+            "260811-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     TomatoId,
@@ -89,7 +89,7 @@ public sealed class WeightedOperationsTests
             [new PurchaseOrderLineDraft(TomatoId, 1m, 80m)],
             Now);
         po.Submit(
-            "PO-20260811-000002",
+            "260811-002",
             [
                 new PurchaseOrderLineSnapshotInput(
                     TomatoId,
@@ -118,7 +118,7 @@ public sealed class WeightedOperationsTests
             Now);
 
         var ex = Assert.Throws<DomainException>(() => po.Submit(
-            "PO-20260811-000003",
+            "260811-003",
             [
                 new PurchaseOrderLineSnapshotInput(
                     TomatoId,

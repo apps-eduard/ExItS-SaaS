@@ -71,7 +71,7 @@ function completedSale(overrides: Record<string, unknown> = {}) {
   return {
     saleId,
     organizationId: "11111111-1111-1111-1111-111111111111",
-    saleNumber: "SALE-20260906-000001",
+    saleNumber: "260906-001",
     status: "Completed",
     paymentMethod: "Cash",
     subtotal: 103.5,
@@ -84,7 +84,7 @@ function completedSale(overrides: Record<string, unknown> = {}) {
     voidedAtUtc: null,
     voidedBy: null,
     voidReason: null,
-    shiftNumber: "SHIFT-20260906-000002",
+    shiftNumber: "260906-002",
     costStatus: "Complete",
     totalCostSnapshot: 40,
     grossProfit: 63.5,
@@ -167,8 +167,8 @@ describe("TransactionSummaryPage post-pay cleanup", () => {
     expect(within(header).getByTestId("summary-return-items")).toBeInTheDocument();
     expect(within(header).getByTestId("summary-void-trigger")).toBeInTheDocument();
 
-    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("SALE-20260906-000001");
-    expect(screen.getByTestId("summary-shift")).toHaveTextContent("SHIFT-20260906-000002");
+    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("260906-001");
+    expect(screen.getByTestId("summary-shift")).toHaveTextContent("260906-002");
     expect(screen.getByTestId("summary-sold-by")).toHaveTextContent("Mica Uy");
     expect(screen.getByTestId("summary-status")).toHaveTextContent("Completed");
     expect(screen.getByTestId("summary-total")).toHaveTextContent("103.50");

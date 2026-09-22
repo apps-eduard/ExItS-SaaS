@@ -372,6 +372,7 @@ public sealed class PlaceCustomerOrder
             var created = await _orders
                 .PlaceAsync(
                     orgId,
+                    CustomerOrderNumbers.BusinessDateOf(now),
                     number => CustomerOrder.CreateSubmitted(
                         orgId,
                         number,

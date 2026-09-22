@@ -97,12 +97,12 @@ describe("stock-request-helpers", () => {
       openCoveringTransferMessage([
         {
           transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-          transferNumber: "TR-20260922-000001",
+          transferNumber: "260922-001",
           status: "PartiallyReceived",
           totalOutstandingQty: 30,
         },
       ]),
-    ).toEqual({ transferLabel: "TR-20260922-000001", outstandingQty: 30 });
+    ).toEqual({ transferLabel: "260922-001", outstandingQty: 30 });
   });
 
   it("detects no configured internal source", () => {

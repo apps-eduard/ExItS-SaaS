@@ -40,7 +40,7 @@ const order = {
   buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
   supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
   buyerPurchaseOrderId: "ffffffff-ffff-4fff-8fff-ffffffffffff",
-  buyerPoNumber: "PO-20260911-000001",
+  buyerPoNumber: "260911-001",
   orderDate: "2026-09-04",
   notes: null,
   status: "New",

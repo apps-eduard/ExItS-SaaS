@@ -1,57 +1,45 @@
-using System.Globalization;
-using System.Text.RegularExpressions;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
-/// Organization-scoped transfer number: <c>TR-YYYYMMDD-NNNNNN</c>. Allocated on dispatch.
+/// Organization-scoped transfer number: <c>YYMMDD-NNN</c> for roots,
+/// and <c>{root}-Rn</c> for replacement children. Allocated on dispatch.
+/// Relationship is stored on <see cref="InventoryTransfer.RootTransferId"/> — never parse numbers to infer family.
 /// </summary>
-public static partial class InventoryTransferNumbers
+public static class InventoryTransferNumbers
 {
-    public const string Prefix = "TR";
-    public const int SequenceDigits = 6;
-    public const int MaxLength = 32;
-    public const long MaxSequence = 999_999L;
+    public const int MaxLength = PosDocumentNumbers.MaxLength;
+    public const long MaxSequence = PosDocumentNumbers.MaxSequence;
+    public const int MaxReplacementSequence = PosDocumentNumbers.MaxChildSequence;
 
-    private static readonly Regex ValidPattern = CreateValidPattern();
+    public static string Format(DateOnly businessDate, long sequence) =>
+        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
 
-    public static string Format(DateOnly businessDate, long sequence)
+    public static string FormatReplacement(string rootTransferNumber, int replacementSequence) =>
+        Map(() => PosDocumentNumbers.FormatChild(rootTransferNumber, replacementSequence));
+
+    public static string Normalize(string? transferNumber) =>
+        Map(() => PosDocumentNumbers.Normalize(transferNumber));
+
+    public static string NormalizeRoot(string? transferNumber) =>
+        Map(() => PosDocumentNumbers.NormalizeRoot(transferNumber));
+
+    public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
+
+    private static string Map(Func<string> action)
     {
-        if (sequence is < 1 or > MaxSequence)
+        try
         {
-            throw new DomainException(
-                DomainErrorCodes.InvalidInventoryTransferNumber,
-                $"Transfer sequence must be between 1 and {MaxSequence} for a single business date.");
+            return action();
         }
-
-        return string.Create(
-            CultureInfo.InvariantCulture,
-            $"{Prefix}-{businessDate:yyyyMMdd}-{sequence.ToString($"D{SequenceDigits}", CultureInfo.InvariantCulture)}");
+        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.InvalidPosDocumentChildSequence)
+        {
+            throw new DomainException(DomainErrorCodes.InvalidInventoryTransferReplacementSequence, ex.Message);
+        }
+        catch (DomainException ex) when (ex.ErrorCode == DomainErrorCodes.InvalidPosDocumentNumber)
+        {
+            throw new DomainException(DomainErrorCodes.InvalidInventoryTransferNumber, ex.Message);
+        }
     }
-
-    public static string Normalize(string? transferNumber)
-    {
-        if (string.IsNullOrWhiteSpace(transferNumber))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidInventoryTransferNumber,
-                "Transfer number is required.");
-        }
-
-        var trimmed = transferNumber.Trim().ToUpperInvariant();
-        if (trimmed.Length > MaxLength || !ValidPattern.IsMatch(trimmed))
-        {
-            throw new DomainException(
-                DomainErrorCodes.InvalidInventoryTransferNumber,
-                "Transfer number must look like TR-YYYYMMDD-NNNNNN.");
-        }
-
-        return trimmed;
-    }
-
-    public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => DateOnly.FromDateTime(utcNow.UtcDateTime);
-
-    [GeneratedRegex(@"^TR-\d{8}-\d{6,}$", RegexOptions.CultureInvariant)]
-    private static partial Regex CreateValidPattern();
 }

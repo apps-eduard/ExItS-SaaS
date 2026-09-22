@@ -241,8 +241,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("OrderNumber")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("order_number");
 
                     b.Property<DateTimeOffset?>("OutForDeliveryAtUtc")
@@ -682,8 +682,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ShiftNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("shift_number");
 
                     b.Property<string>("Status")
@@ -3647,15 +3647,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.CustomerOrdering.CustomerOrderNumberSequenceRecord", b =>
                 {
                     b.Property<Guid>("OrganizationId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
+
+                    b.Property<DateOnly>("BusinessDate")
+                        .HasColumnType("date")
+                        .HasColumnName("business_date");
 
                     b.Property<long>("LastValue")
                         .HasColumnType("bigint")
                         .HasColumnName("last_value");
 
-                    b.HasKey("OrganizationId")
+                    b.HasKey("OrganizationId", "BusinessDate")
                         .HasName("pk_customer_order_number_sequences");
 
                     b.ToTable("customer_order_number_sequences", "pos", t =>
@@ -3900,8 +3903,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ExpenseNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("expense_number");
 
                     b.Property<string>("GcashReference")
@@ -4227,8 +4230,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ReceiptNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("receipt_number");
 
                     b.Property<Guid?>("ReceivingBranchId")
@@ -4419,6 +4422,20 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
 
+                    b.Property<decimal>("DamagedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("damaged_quantity");
+
+                    b.Property<decimal>("InspectionHoldQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("inspection_hold_quantity");
+
                     b.Property<decimal>("OnHandQuantity")
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)")
@@ -4445,13 +4462,17 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("inventory_branch_balances", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_inventory_branch_balances_buckets_not_over_on_hand", "reserved_quantity + pending_return_quantity + inspection_hold_quantity + damaged_quantity <= on_hand_quantity");
+
+                            t.HasCheckConstraint("ck_inventory_branch_balances_damaged_non_negative", "damaged_quantity >= 0");
+
+                            t.HasCheckConstraint("ck_inventory_branch_balances_inspection_hold_non_negative", "inspection_hold_quantity >= 0");
+
                             t.HasCheckConstraint("ck_inventory_branch_balances_on_hand_non_negative", "on_hand_quantity >= 0");
 
                             t.HasCheckConstraint("ck_inventory_branch_balances_pending_return_non_negative", "pending_return_quantity >= 0");
 
                             t.HasCheckConstraint("ck_inventory_branch_balances_reserved_non_negative", "reserved_quantity >= 0");
-
-                            t.HasCheckConstraint("ck_inventory_branch_balances_reserved_not_over_on_hand", "reserved_quantity <= on_hand_quantity");
                         });
                 });
 
@@ -4757,6 +4778,141 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                     b.ToTable("inventory_reorder_changes", "pos");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferDamageCustodyRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ConfirmedDamagedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("confirmed_damaged_qty");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("decision");
+
+                    b.Property<string>("FollowUpIntent")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("follow_up_intent");
+
+                    b.Property<Guid>("HeldBranchId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("held_branch_id");
+
+                    b.Property<DateTimeOffset?>("InspectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("inspected_at_utc");
+
+                    b.Property<Guid?>("InspectedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("inspected_by");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("ReceiptLineId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("receipt_line_id");
+
+                    b.Property<decimal>("RecoveredSellableQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("recovered_sellable_qty");
+
+                    b.Property<DateTimeOffset?>("ReturnDispatchedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_dispatched_at_utc");
+
+                    b.Property<Guid?>("ReturnDispatchedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("return_dispatched_by");
+
+                    b.Property<DateTimeOffset?>("ReturnReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("return_received_at_utc");
+
+                    b.Property<Guid?>("ReturnReceivedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("return_received_by");
+
+                    b.Property<Guid>("RootTransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_transfer_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transfer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<decimal>("WaivedQty")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasColumnName("waived_qty");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiptLineId");
+
+                    b.HasIndex("TransferId");
+
+                    b.HasIndex("OrganizationId", "ReceiptLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_itdc_org_receipt_line");
+
+                    b.HasIndex("OrganizationId", "RootTransferId")
+                        .HasDatabaseName("ix_itdc_org_root");
+
+                    b.HasIndex("OrganizationId", "TransferId")
+                        .HasDatabaseName("ix_itdc_org_transfer");
+
+                    b.ToTable("inventory_transfer_damage_custodies", "pos", t =>
+                        {
+                            t.HasCheckConstraint("ck_itdc_decision", "decision IN ('KeepAtDestination', 'ReturnToSource')");
+
+                            t.HasCheckConstraint("ck_itdc_follow_up", "follow_up_intent IN ('RequestReplacement', 'AcceptShortage')");
+
+                            t.HasCheckConstraint("ck_itdc_inspection_split", "recovered_sellable_qty >= 0 AND confirmed_damaged_qty >= 0 AND waived_qty >= 0");
+
+                            t.HasCheckConstraint("ck_itdc_quantity_positive", "quantity > 0");
+
+                            t.HasCheckConstraint("ck_itdc_status", "status IN ('HeldAtDestination', 'AwaitingReturn', 'ReturnInTransit', 'ReceivedAtSource', 'AwaitingInspection', 'Inspected')");
+                        });
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferLineRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5053,6 +5209,14 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DamageHandlingPolicy")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("ReceiverMayDecide")
+                        .HasColumnName("damage_handling_policy");
+
                     b.Property<Guid>("DestinationBranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("destination_branch_id");
@@ -5082,6 +5246,19 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("received_by");
 
+                    b.Property<string>("ReplacementReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("replacement_reason");
+
+                    b.Property<int?>("ReplacementSequence")
+                        .HasColumnType("integer")
+                        .HasColumnName("replacement_sequence");
+
+                    b.Property<Guid?>("RootTransferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("root_transfer_id");
+
                     b.Property<Guid>("SourceBranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("source_branch_id");
@@ -5097,8 +5274,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("stock_request_id");
 
                     b.Property<string>("TransferNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("transfer_number");
 
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
@@ -5113,10 +5290,15 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("RootTransferId");
+
                     b.HasIndex("StockRequestId");
 
                     b.HasIndex("OrganizationId", "DestinationBranchId")
                         .HasDatabaseName("ix_inventory_transfers_org_destination");
+
+                    b.HasIndex("OrganizationId", "RootTransferId")
+                        .HasDatabaseName("ix_inventory_transfers_org_root");
 
                     b.HasIndex("OrganizationId", "SourceBranchId")
                         .HasDatabaseName("ix_inventory_transfers_org_source");
@@ -5132,9 +5314,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_inventory_transfers_org_transfer_number")
                         .HasFilter("transfer_number IS NOT NULL");
 
+                    b.HasIndex("OrganizationId", "RootTransferId", "ReplacementSequence")
+                        .IsUnique()
+                        .HasDatabaseName("ux_inventory_transfers_org_root_replacement_sequence")
+                        .HasFilter("root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL");
+
                     b.ToTable("inventory_transfers", "pos", t =>
                         {
+                            t.HasCheckConstraint("ck_inventory_transfers_damage_handling_policy", "damage_handling_policy IN ('ReceiverMayDecide', 'ReturnToSourceRequired', 'KeepAtDestination')");
+
                             t.HasCheckConstraint("ck_inventory_transfers_distinct_branches", "source_branch_id <> destination_branch_id");
+
+                            t.HasCheckConstraint("ck_inventory_transfers_replacement_shape", "(root_transfer_id IS NULL AND replacement_sequence IS NULL) OR (root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL AND replacement_sequence >= 1)");
 
                             t.HasCheckConstraint("ck_inventory_transfers_status", "status IN ('Draft', 'InTransit', 'PartiallyReceived', 'Received', 'Cancelled', 'ClosedWithDiscrepancy')");
                         });
@@ -5537,8 +5728,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ProductionNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("production_number");
 
                     b.Property<string>("ReferenceNumber")
@@ -5712,8 +5903,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("count_date");
 
                     b.Property<string>("CountNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("count_number");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
@@ -5885,7 +6076,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("stock_movements", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal', 'ConnectedPurchaseFulfillment', 'SaleReturnWriteOff', 'ConnectedPoReturnDispatch', 'ConnectedPoReturnRestock', 'ConnectedPoReturnWriteOff', 'ConnectedPurchaseFulfillmentReconciliation')");
+                            t.HasCheckConstraint("ck_stock_movements_movement_type", "movement_type IN ('OpeningStock', 'ManualIncrease', 'ManualDecrease', 'SaleDeduction', 'SaleVoidRestoration', 'PurchaseReceipt', 'StockCountVarianceIncrease', 'StockCountVarianceDecrease', 'SaleReturnRestock', 'TransferOut', 'TransferIn', 'TransferCancelRestore', 'DirectPurchaseReceipt', 'ExpirationInitialization', 'StockUse', 'StockUseVoidRestoration', 'ProductionMaterialConsumption', 'ProductionMaterialRestoration', 'ProductionOutput', 'ProductionOutputReversal', 'WasteLoss', 'WasteLossVoidRestoration', 'PurchaseReceiptReversal', 'DirectPurchaseReceiptReversal', 'ConnectedPurchaseFulfillment', 'SaleReturnWriteOff', 'ConnectedPoReturnDispatch', 'ConnectedPoReturnRestock', 'ConnectedPoReturnWriteOff', 'ConnectedPurchaseFulfillmentReconciliation', 'TransferDamageHold', 'TransferDamageRecovery', 'TransferDamageReturnOut', 'TransferDamageReturnIn', 'TransferDamageWriteOff')");
 
                             t.HasCheckConstraint("ck_stock_movements_quantity_effect_nonzero", "quantity_effect <> 0");
 
@@ -6051,8 +6242,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("rejection_reason");
 
                     b.Property<string>("RequestNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("request_number");
 
                     b.Property<Guid>("RequestedBy")
@@ -6276,8 +6467,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("StockUseNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("stock_use_number");
 
                     b.Property<DateTimeOffset?>("VoidedAtUtc")
@@ -6575,8 +6766,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("WasteLossNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("waste_loss_number");
 
                     b.HasKey("Id");
@@ -7920,8 +8111,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("GrnNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("grn_number");
 
                     b.Property<string>("Notes")
@@ -8272,8 +8463,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("payment_timing");
 
                     b.Property<string>("PoNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("po_number");
 
                     b.Property<decimal>("RefundDueAmount")
@@ -8530,8 +8721,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnName("prepared_by");
 
                     b.Property<string>("QuotationNumber")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("quotation_number");
 
                     b.Property<string>("Reference")
@@ -8892,8 +9083,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("BatchNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("batch_number");
 
                     b.Property<Guid?>("BranchId")
@@ -9309,8 +9500,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("ReturnNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("return_number");
 
                     b.Property<Guid>("SaleId")
@@ -9799,8 +9990,8 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("SaleNumber")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)")
                         .HasColumnName("sale_number");
 
                     b.Property<string>("SellerDocumentIdentityJson")
@@ -10654,6 +10845,23 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_inventory_reorder_changes_accounts");
                 });
 
+            modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferDamageCustodyRecord", b =>
+                {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferReceiptLineRecord", null)
+                        .WithMany()
+                        .HasForeignKey("ReceiptLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_itdc_receipt_line");
+
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferRecord", null)
+                        .WithMany()
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_itdc_transfer");
+                });
+
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferLineRecord", b =>
                 {
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Catalog.CatalogProductRecord", null)
@@ -10706,6 +10914,12 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferRecord", b =>
                 {
+                    b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.InventoryTransferRecord", null)
+                        .WithMany()
+                        .HasForeignKey("RootTransferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_inventory_transfers_root_transfer");
+
                     b.HasOne("ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory.StockRequestRecord", null)
                         .WithMany()
                         .HasForeignKey("StockRequestId")

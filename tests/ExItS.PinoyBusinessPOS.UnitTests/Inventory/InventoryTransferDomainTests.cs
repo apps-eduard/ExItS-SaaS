@@ -18,8 +18,10 @@ public sealed class InventoryTransferDomainTests
     [Fact]
     public void Transfer_number_formats()
     {
-        Assert.Equal("TR-20260813-000001", InventoryTransferNumbers.Format(new DateOnly(2026, 8, 13), 1));
-        Assert.Equal("TR-20260813-000001", InventoryTransferNumbers.Normalize(" tr-20260813-000001 "));
+        Assert.Equal("260813-001", InventoryTransferNumbers.Format(new DateOnly(2026, 8, 13), 1));
+        Assert.Equal("260813-001", InventoryTransferNumbers.Normalize(" 260813-001 "));
+        Assert.Equal("260813-001-R1", InventoryTransferNumbers.FormatReplacement("260813-001", 1));
+        Assert.Equal("260813-001-R1", InventoryTransferNumbers.Normalize(" 260813-001-r1 "));
     }
 
     [Fact]
@@ -62,7 +64,7 @@ public sealed class InventoryTransferDomainTests
             [Line(Coke, 20m, "Coke"), Line(Sprite, 10m, "Sprite")],
             Actor,
             Utc);
-        transfer.Dispatch("TR-20260813-000123", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-123", Actor, Utc.AddMinutes(1));
         Assert.Equal(InventoryTransferStatus.InTransit, transfer.Status);
 
         var receipt1 = transfer.Receive(
@@ -120,7 +122,7 @@ public sealed class InventoryTransferDomainTests
             [Line(Coke, 10m, "Coke"), Line(Sprite, 5m, "Sprite")],
             Actor,
             Utc);
-        transfer.Dispatch("TR-20260813-000001", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-001", Actor, Utc.AddMinutes(1));
 
         var receipt = transfer.Receive(
             [
@@ -143,7 +145,7 @@ public sealed class InventoryTransferDomainTests
     public void Close_remainder_requires_discrepancy_and_sets_closed_with_discrepancy()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 10m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000010", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-010", Actor, Utc.AddMinutes(1));
         transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 7m)], Actor, Utc.AddMinutes(2));
 
         var missingReason = Assert.Throws<DomainException>(() =>
@@ -182,7 +184,7 @@ public sealed class InventoryTransferDomainTests
             [Line(Coke, 10m, "Coke"), Line(Sprite, 5m, "Sprite")],
             Actor,
             Utc);
-        transfer.Dispatch("TR-20260813-000011", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-011", Actor, Utc.AddMinutes(1));
         transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 10m)], Actor, Utc.AddMinutes(2));
 
         transfer.CloseRemainder(
@@ -205,7 +207,7 @@ public sealed class InventoryTransferDomainTests
     public void Partial_receive_does_not_require_discrepancy_reason()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000004", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-004", Actor, Utc.AddMinutes(1));
 
         var receipt = transfer.Receive(
             [new InventoryTransferReceiveLineDraft(Coke, 4m)],
@@ -221,7 +223,7 @@ public sealed class InventoryTransferDomainTests
     public void Cancelled_in_transit_cannot_be_received()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000002", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-002", Actor, Utc.AddMinutes(1));
         transfer.Cancel(Actor, Utc.AddMinutes(2));
 
         var ex = Assert.Throws<DomainException>(() =>
@@ -233,7 +235,7 @@ public sealed class InventoryTransferDomainTests
     public void Cancel_blocked_after_any_receipt()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000020", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-020", Actor, Utc.AddMinutes(1));
         transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 2m)], Actor, Utc.AddMinutes(2));
 
         var ex = Assert.Throws<DomainException>(() => transfer.Cancel(Actor, Utc.AddMinutes(3)));
@@ -244,7 +246,7 @@ public sealed class InventoryTransferDomainTests
     public void Receive_rejects_qty_above_outstanding()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000003", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-003", Actor, Utc.AddMinutes(1));
         transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 3m)], Actor, Utc.AddMinutes(2));
 
         var ex = Assert.Throws<DomainException>(() =>
@@ -256,7 +258,7 @@ public sealed class InventoryTransferDomainTests
     public void Receive_rejects_qty_above_sent_on_first_wave()
     {
         var transfer = InventoryTransfer.CreateDraft(Org, BranchA, BranchB, [Line(Coke, 5m, "Coke")], Actor, Utc);
-        transfer.Dispatch("TR-20260813-000003", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260813-003", Actor, Utc.AddMinutes(1));
         var ex = Assert.Throws<DomainException>(() =>
             transfer.Receive([new InventoryTransferReceiveLineDraft(Coke, 6m)], Actor, Utc.AddMinutes(2)));
         Assert.Equal(DomainErrorCodes.InvalidInventoryTransferReceiveQty, ex.ErrorCode);

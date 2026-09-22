@@ -44,7 +44,7 @@ public sealed class LinkedCustomerSaleProjectionTests
         // Correlation: PlatformBusinessCustomerId on the exact POSCustomer used at checkout.
         Assert.Equal(MicaPlatformCustomer, harness.MicaPosCustomer.PlatformBusinessCustomerId);
 
-        var sale = CashSale(harness.MicaPosCustomer.Id, 75.50m, saleNumber: "SALE-20260812-000101");
+        var sale = CashSale(harness.MicaPosCustomer.Id, 75.50m, saleNumber: "260812-101");
         await harness.Sales.AddAsync(sale);
 
         // Selected customer ID survived into sale persistence (stable id, not name).
@@ -172,7 +172,7 @@ public sealed class LinkedCustomerSaleProjectionTests
         await harness.Customers.AddAsync(otherOrgCustomer);
         var sale = Sale.Checkout(
             PosOrganizationId.From(OrgOther),
-            "SALE-20260812-000201",
+            "260812-201",
             SalePaymentMethod.Cash,
             [Line(20m)],
             Actor,

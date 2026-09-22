@@ -1,4 +1,5 @@
 import type {
+  InventoryTransferDamagedCustodyDecisionCode,
   InventoryTransferDto,
   InventoryTransferLineDto,
 } from "@/api/pos/pos-inventory-transfer-client";
@@ -29,6 +30,7 @@ export type TransferReceiveLineEdit = {
   missingFollowUp: TransferMissingFollowUp | null;
   damagedFollowUp: TransferDamagedOtherFollowUp | null;
   otherFollowUp: TransferDamagedOtherFollowUp | null;
+  damagedCustodyDecision: InventoryTransferDamagedCustodyDecisionCode | null;
 };
 
 export function lineClosedQty(line: InventoryTransferLineDto): number {
@@ -145,6 +147,7 @@ export function buildTransferReceiveLineEdits(
       missingFollowUp: defaults?.missingFollowUp ?? null,
       damagedFollowUp: defaults?.damagedFollowUp ?? null,
       otherFollowUp: defaults?.otherFollowUp ?? null,
+      damagedCustodyDecision: "KeepAtDestination",
     };
   });
 }

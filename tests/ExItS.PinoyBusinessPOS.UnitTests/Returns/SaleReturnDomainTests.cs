@@ -140,7 +140,7 @@ public sealed class SaleReturnDomainTests
         return Sale.Rehydrate(
             saleId,
             Org,
-            "SALE-20260731-000001",
+            "260731-001",
             SaleStatus.Completed,
             SalePaymentMethod.Cash,
             net,

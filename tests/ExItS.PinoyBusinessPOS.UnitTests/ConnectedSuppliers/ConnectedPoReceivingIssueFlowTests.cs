@@ -476,7 +476,7 @@ public sealed class ConnectedPoReceivingIssueFlowTests
             Now,
             intendedReceivingBranchId: BuyerBranchId);
         buyerPo.Submit(
-            "PO-20260921-000001",
+            "260921-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,
@@ -492,7 +492,7 @@ public sealed class ConnectedPoReceivingIssueFlowTests
         var order = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
             relationship,
             buyerPo.Id,
-            buyerPo.PoNumber ?? "PO-20260921-000001",
+            buyerPo.PoNumber ?? "260921-001",
             DateOnly.FromDateTime(Now.UtcDateTime),
             null,
             [line],
@@ -994,7 +994,7 @@ public sealed class ConnectedPoReceivingIssueFlowTests
             Func<ReturnBatch, CancellationToken, Task>? afterCreated = null,
             CancellationToken cancellationToken = default)
         {
-            var batch = createBatch($"RB-20260921-{Created.Count + 1:000000}");
+            var batch = createBatch(ReturnBatchNumbers.Format(new DateOnly(2026, 9, 21), Created.Count + 1));
             Created.Add(batch);
             return Task.FromResult(batch);
         }

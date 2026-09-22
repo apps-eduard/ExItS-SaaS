@@ -17,8 +17,11 @@ import {
   cancelInventoryTransfer,
   closeRemainderInventoryTransfer,
   dispatchInventoryTransfer,
+  dispatchInventoryTransferDamageReturn,
   getInventoryTransfer,
+  inspectInventoryTransferDamageCustody,
   receiveInventoryTransfer,
+  receiveInventoryTransferDamageReturn,
   type InventoryTransferDto,
   type ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
@@ -133,6 +136,9 @@ export function InventoryTransferDetailPage() {
   const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [inspectCustodyId, setInspectCustodyId] = useState<string | null>(null);
+  const [inspectRecoveredText, setInspectRecoveredText] = useState("0");
+  const [inspectConfirmedText, setInspectConfirmedText] = useState("0");
 
   const workspace = useMemo(
     () =>
@@ -181,7 +187,7 @@ export function InventoryTransferDetailPage() {
   }, [transfer?.transferId, transfer?.status, transfer?.updatedAtUtc, transfer?.totalReceivedQty]);
 
   async function refreshAfter(
-    mutation: () => Promise<InventoryTransferDto>,
+    mutation: () => Promise<unknown>,
     successMessage: string,
     failureTitle: string,
   ) {
@@ -193,10 +199,22 @@ export function InventoryTransferDetailPage() {
     setLocalError(null);
     try {
       const updated = await mutation();
-      queryClient.setQueryData(
-        ["inventory-transfer", workspace.organizationId, transferId],
-        updated,
-      );
+      if (
+        updated &&
+        typeof updated === "object" &&
+        "transferId" in updated &&
+        "status" in updated &&
+        "lines" in updated
+      ) {
+        queryClient.setQueryData(
+          ["inventory-transfer", workspace.organizationId, transferId],
+          updated,
+        );
+      } else {
+        await queryClient.invalidateQueries({
+          queryKey: ["inventory-transfer", workspace.organizationId, transferId],
+        });
+      }
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
@@ -302,6 +320,50 @@ export function InventoryTransferDetailPage() {
       busyRef.current = false;
       setBusy(false);
     }
+  }
+
+  async function onDispatchDamageReturn(custodyId: string) {
+    if (!workspace || busyRef.current) {
+      return;
+    }
+    await refreshAfter(
+      () => dispatchInventoryTransferDamageReturn(workspace, custodyId),
+      "Damage return dispatched",
+      t("transfer.actionFailed"),
+    );
+  }
+
+  async function onReceiveDamageReturn(custodyId: string) {
+    if (!workspace || busyRef.current) {
+      return;
+    }
+    await refreshAfter(
+      () => receiveInventoryTransferDamageReturn(workspace, custodyId),
+      "Damage return received",
+      t("transfer.actionFailed"),
+    );
+  }
+
+  async function onInspectDamageCustody() {
+    if (!workspace || !inspectCustodyId || busyRef.current) {
+      return;
+    }
+    const recovered = Number(inspectRecoveredText);
+    const confirmed = Number(inspectConfirmedText);
+    if (!Number.isFinite(recovered) || recovered < 0 || !Number.isFinite(confirmed) || confirmed < 0) {
+      showToast("Enter valid inspection quantities", "error");
+      return;
+    }
+    await refreshAfter(
+      () =>
+        inspectInventoryTransferDamageCustody(workspace, inspectCustodyId, {
+          recoveredSellableQty: recovered,
+          confirmedDamagedQty: confirmed,
+        }),
+      "Damage custody inspected",
+      t("transfer.actionFailed"),
+    );
+    setInspectCustodyId(null);
   }
 
   if (!workspace) {
@@ -641,6 +703,181 @@ export function InventoryTransferDetailPage() {
             {t("transfer.stockRequest")}
           </Link>
         </p>
+      ) : null}
+
+      {transfer.rootTransferId ? (
+        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-replacement-banner">
+          Replacement for{" "}
+          <Link className="underline" to={`/inventory/transfers/${transfer.rootTransferId}`}>
+            root transfer
+          </Link>
+          {transfer.replacementReason ? ` — ${transfer.replacementReason}` : null}
+        </p>
+      ) : null}
+
+      {(transfer.familyMembers?.length ?? 0) > 1 ||
+      (transfer.satisfiedAtDestinationQty ?? 0) > 0 ||
+      (transfer.remainingToDispatchQty ?? 0) > 0 ? (
+        <Card
+          className="flex min-w-0 flex-col gap-2 p-3"
+          treatment="bordered"
+          data-testid="transfer-family-coverage"
+        >
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Satisfied</p>
+              <p className="m-0 font-semibold tabular-nums">
+                {formatTransferQty(transfer.satisfiedAtDestinationQty ?? 0)}
+              </p>
+            </div>
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Still in transit</p>
+              <p className="m-0 font-semibold tabular-nums">
+                {formatTransferQty(transfer.openInTransitQty ?? 0)}
+              </p>
+            </div>
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Needs fulfillment</p>
+              <p className="m-0 font-semibold tabular-nums">
+                {formatTransferQty(transfer.remainingToDispatchQty ?? 0)}
+              </p>
+            </div>
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Waived</p>
+              <p className="m-0 font-semibold tabular-nums">
+                {formatTransferQty(transfer.waivedQty ?? 0)}
+              </p>
+            </div>
+          </div>
+          {(transfer.familyMembers?.length ?? 0) > 0 ? (
+            <ul className="m-0 list-none p-0" data-testid="transfer-family-members">
+              {transfer.familyMembers!.map((member) => (
+                <li key={member.transferId} className="text-[length:var(--exits-text-sm)]">
+                  <Link className="underline" to={`/inventory/transfers/${member.transferId}`}>
+                    {member.isRoot
+                      ? `Original ${member.transferNumber ?? member.transferId.slice(0, 8)}`
+                      : `Replacement ${member.transferNumber ?? `R${member.replacementSequence}`}`}
+                  </Link>{" "}
+                  <span className="text-muted">({member.status})</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {(transfer.damageCustodies?.length ?? 0) > 0 ? (
+            <ul className="m-0 list-none p-0" data-testid="transfer-damage-custodies">
+              {inspectCustodyId ? (
+                <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
+                  <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                    Inspect damage custody
+                  </p>
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    Recovered sellable
+                    <input
+                      className="rounded-md border border-border px-2 py-1"
+                      inputMode="decimal"
+                      value={inspectRecoveredText}
+                      onChange={(e) => setInspectRecoveredText(e.target.value)}
+                      data-testid="transfer-custody-inspect-recovered"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    Confirmed damaged
+                    <input
+                      className="rounded-md border border-border px-2 py-1"
+                      inputMode="decimal"
+                      value={inspectConfirmedText}
+                      onChange={(e) => setInspectConfirmedText(e.target.value)}
+                      data-testid="transfer-custody-inspect-confirmed"
+                    />
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void onInspectDamageCustody()}
+                      data-testid="transfer-custody-inspect-confirm"
+                    >
+                      Confirm inspection
+                    </Button>
+                    <Button
+                      type="button"
+                      appearance="ghost"
+                      disabled={busy}
+                      onClick={() => setInspectCustodyId(null)}
+                      data-testid="transfer-custody-inspect-cancel"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </li>
+              ) : null}
+              {transfer.damageCustodies!.map((c) => {
+                const canDispatchReturn =
+                  canMutate &&
+                  isDestination &&
+                  c.decision === "ReturnToSource" &&
+                  (c.status === "AwaitingReturn" || c.status === "HeldAtDestination");
+                const canReceiveReturn =
+                  canMutate && isSource && c.status === "ReturnInTransit";
+                const canInspect =
+                  canMutate &&
+                  ((isDestination &&
+                    c.decision === "KeepAtDestination" &&
+                    (c.status === "HeldAtDestination" || c.status === "AwaitingInspection")) ||
+                    (isSource &&
+                      c.decision === "ReturnToSource" &&
+                      (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection")));
+                return (
+                  <li
+                    key={c.custodyId}
+                    className="flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]"
+                  >
+                    <span className="text-muted">
+                      Damage custody {c.status}: {formatTransferQty(c.quantity)} ({c.decision})
+                    </span>
+                    {canDispatchReturn ? (
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => void onDispatchDamageReturn(c.custodyId)}
+                        data-testid={`transfer-custody-dispatch-return-${c.custodyId}`}
+                      >
+                        Dispatch return
+                      </Button>
+                    ) : null}
+                    {canReceiveReturn ? (
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => void onReceiveDamageReturn(c.custodyId)}
+                        data-testid={`transfer-custody-receive-return-${c.custodyId}`}
+                      >
+                        Receive return
+                      </Button>
+                    ) : null}
+                    {canInspect ? (
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => {
+                          setInspectCustodyId(c.custodyId);
+                          setInspectRecoveredText("0");
+                          setInspectConfirmedText(String(c.quantity));
+                        }}
+                        data-testid={`transfer-custody-inspect-${c.custodyId}`}
+                      >
+                        Inspect
+                      </Button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </Card>
       ) : null}
 
       {transfer.notes ? (

@@ -17,7 +17,7 @@ function proposedOrder(): ConnectedPurchaseOrder {
     buyerOrganizationId: "11111111-1111-4111-8111-111111111111",
     supplierOrganizationId: "22222222-2222-4222-8222-222222222222",
     buyerPurchaseOrderId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-    buyerPoNumber: "PO-20260917-000001",
+    buyerPoNumber: "260917-001",
     orderDate: "2026-09-17",
     notes: null,
     status: "ChangesProposed",

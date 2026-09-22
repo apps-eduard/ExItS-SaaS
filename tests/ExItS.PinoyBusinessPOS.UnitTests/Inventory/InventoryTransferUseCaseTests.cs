@@ -25,7 +25,7 @@ public sealed class InventoryTransferUseCaseTests
     private static readonly Guid BranchOtherOrg = Guid.Parse("33333333-3333-3333-3333-333333333333");
     private static readonly Guid ActorA = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
     private static readonly Guid ActorB = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
-    private static readonly DateTimeOffset Utc = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
+    internal static readonly DateTimeOffset Utc = new(2026, 8, 13, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public async Task Same_org_transfer_full_receive_updates_ledger_and_not_destination_before_receive()
@@ -594,7 +594,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260906-000001");
+            "260906-001");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 8m });
         await fx.StockRequests.AddAsync(request);
 
@@ -638,7 +638,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000099");
+            "260922-099");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -760,7 +760,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000101");
+            "260922-101");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -807,13 +807,16 @@ public sealed class InventoryTransferUseCaseTests
                     fx.CokeId,
                     GoodQty: 70m,
                     DamagedQty: 30m,
-                    DamagedFollowUp: "RequestReplacement")
+                    DamagedFollowUp: "RequestReplacement",
+                    DamagedCustodyDecision: "KeepAtDestination")
             ]),
             ActorB,
             BranchB);
         Assert.True(received.IsSuccess);
         Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, received.Value!.Status);
-        Assert.Equal(70m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(100m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(70m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(30m, fx.Balances.InspectionHold(BranchB, fx.CokeId));
         Assert.Equal(70m, fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferIn).Sum(m => m.QuantityEffect));
         Assert.DoesNotContain(
             fx.Inventory.Movements,
@@ -831,7 +834,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000103");
+            "260922-103");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -848,6 +851,7 @@ public sealed class InventoryTransferUseCaseTests
                     GoodQty: 70m,
                     DamagedQty: 20m,
                     DamagedFollowUp: "RequestReplacement",
+                    DamagedCustodyDecision: "ReturnToSource",
                     MissingQty: 10m,
                     MissingDisposition: "ExpectedLater")
             ]),
@@ -882,7 +886,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000102");
+            "260922-102");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -936,7 +940,7 @@ public sealed class InventoryTransferUseCaseTests
             ],
             ActorA,
             Utc,
-            "SR-20260922-000103");
+            "260922-103");
         request.Approve(
             ActorA,
             Utc.AddMinutes(1),
@@ -990,7 +994,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000201");
+            "260922-201");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 8m });
         await fx.StockRequests.AddAsync(request);
 
@@ -1027,7 +1031,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000202");
+            "260922-202");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -1084,7 +1088,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000203");
+            "260922-203");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
         await fx.StockRequests.AddAsync(request);
 
@@ -1106,7 +1110,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000204");
+            "260922-204");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
         await fx.StockRequests.AddAsync(request);
 
@@ -1150,7 +1154,7 @@ public sealed class InventoryTransferUseCaseTests
             [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
             ActorA,
             Utc,
-            "SR-20260922-000104");
+            "260922-104");
         request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
         await fx.StockRequests.AddAsync(request);
 
@@ -1164,7 +1168,286 @@ public sealed class InventoryTransferUseCaseTests
         Assert.NotEqual(first.Value.TransferId, again.Value.TransferId);
     }
 
+    [Fact]
+    public async Task B_Keep_at_destination_inspection_updates_balances_and_coverage()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 20m, "Coke", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 20m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.True(prep.IsSuccess, prep.ErrorMessage);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess);
+
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 10m,
+                    DamagedQty: 5m,
+                    MissingQty: 5m,
+                    MissingDisposition: nameof(InventoryTransferMissingDisposition.ExpectedLater),
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.KeepAtDestination))
+            ]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess, received.ErrorMessage);
+        Assert.Equal(80m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(10m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.InspectionHold(BranchB, fx.CokeId));
+
+        var custody = fx.DamageCustodies.Items.Single();
+        Assert.True((await fx.InspectDamageCustody.ExecuteAsync(
+            OrgA,
+            custody.Id.Value,
+            new InspectInventoryTransferDamageCustodyRequest(2m, 3m),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        Assert.Equal(80m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(12m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(3m, fx.Balances.Damaged(BranchB, fx.CokeId));
+        var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(12m, dto!.SatisfiedAtDestinationQty);
+        Assert.Equal(5m, dto.OpenInTransitQty);
+        Assert.Equal(3m, dto.RemainingToDispatchQty);
+    }
+
+    [Fact]
+    public async Task C_Return_to_source_inspection_updates_balances_and_coverage()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 20m, "Coke", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 20m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 10m,
+                    DamagedQty: 5m,
+                    MissingQty: 5m,
+                    MissingDisposition: nameof(InventoryTransferMissingDisposition.ExpectedLater),
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.ReturnToSource))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var custody = fx.DamageCustodies.Items.Single();
+        Assert.True((await fx.DispatchDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorB, BranchB)).IsSuccess);
+        Assert.True((await fx.ReceiveDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorA, BranchA)).IsSuccess);
+        Assert.True((await fx.InspectDamageCustody.ExecuteAsync(
+            OrgA,
+            custody.Id.Value,
+            new InspectInventoryTransferDamageCustodyRequest(2m, 3m),
+            ActorA,
+            BranchA)).IsSuccess);
+
+        Assert.Equal(82m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(10m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(3m, fx.Balances.Damaged(BranchA, fx.CokeId));
+        var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(10m, dto!.SatisfiedAtDestinationQty);
+        Assert.Equal(5m, dto.OpenInTransitQty);
+        Assert.Equal(5m, dto.RemainingToDispatchQty);
+    }
+
+    [Fact]
+    public async Task A_Child_replacement_numbering_reuses_draft()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 20m, "Coke", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 20m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var rootPrep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var root = await fx.Dispatch.ExecuteAsync(OrgA, rootPrep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            root.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 10m,
+                    DamagedQty: 5m,
+                    MissingQty: 5m,
+                    MissingDisposition: nameof(InventoryTransferMissingDisposition.ExpectedLater),
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.ReturnToSource))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var custody = fx.DamageCustodies.Items.Single();
+        await fx.DispatchDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorB, BranchB);
+        await fx.ReceiveDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorA, BranchA);
+        await fx.InspectDamageCustody.ExecuteAsync(
+            OrgA,
+            custody.Id.Value,
+            new InspectInventoryTransferDamageCustodyRequest(2m, 3m),
+            ActorA,
+            BranchA);
+
+        var r1Prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.True(r1Prep.IsSuccess, r1Prep.ErrorMessage);
+        Assert.Equal(root.Value.Id.Value, r1Prep.Value!.RootTransferId);
+        Assert.Equal(1, r1Prep.Value.ReplacementSequence);
+        var r1Again = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.Equal(r1Prep.Value.TransferId, r1Again.Value!.TransferId);
+
+        var r1 = await fx.Dispatch.ExecuteAsync(OrgA, r1Prep.Value.TransferId, ActorA, BranchA);
+        Assert.True(r1.IsSuccess, r1.ErrorMessage);
+        Assert.Equal($"{root.Value.TransferNumber}-R1", r1.Value!.TransferNumber);
+    }
+
+    [Fact]
+    public async Task D_Accept_shortage_waives_and_blocks_remaining_prepare()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 20m, "Coke", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 20m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 12m,
+                    DamagedQty: 3m,
+                    MissingQty: 5m,
+                    MissingDisposition: nameof(InventoryTransferMissingDisposition.AcceptShortage),
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.AcceptShortage),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.KeepAtDestination))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(8m, dto!.WaivedQty);
+        Assert.Equal(0m, dto.RemainingToDispatchQty);
+        Assert.Equal(12m, dto.SatisfiedAtDestinationQty);
+
+        var again = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.False(again.IsSuccess);
+        Assert.Equal(DomainErrorCodes.StockRequestNoRemainingToDispatch, again.ErrorCode);
+    }
+
+    [Fact]
+    public async Task E_Keep_and_return_post_transfer_damage_ledger_types()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 20m, "Coke", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 20m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 10m,
+                    DamagedQty: 5m,
+                    MissingQty: 5m,
+                    MissingDisposition: nameof(InventoryTransferMissingDisposition.ExpectedLater),
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.KeepAtDestination))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageHold);
+        var keepCustody = fx.DamageCustodies.Items.Single();
+        Assert.True((await fx.InspectDamageCustody.ExecuteAsync(
+            OrgA,
+            keepCustody.Id.Value,
+            new InspectInventoryTransferDamageCustodyRequest(2m, 3m),
+            ActorB,
+            BranchB)).IsSuccess);
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageRecovery);
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageWriteOff);
+
+        var r1Prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.True(r1Prep.IsSuccess, r1Prep.ErrorMessage);
+        var r1 = await fx.Dispatch.ExecuteAsync(OrgA, r1Prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            r1.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 0m,
+                    DamagedQty: 3m,
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.ReturnToSource))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var returnCustody = fx.DamageCustodies.Items.Single(c => c.Decision == InventoryTransferDamagedCustodyDecision.ReturnToSource);
+        Assert.True((await fx.DispatchDamageReturn.ExecuteAsync(OrgA, returnCustody.Id.Value, ActorB, BranchB)).IsSuccess);
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageReturnOut);
+        Assert.True((await fx.ReceiveDamageReturn.ExecuteAsync(OrgA, returnCustody.Id.Value, ActorA, BranchA)).IsSuccess);
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageReturnIn);
+    }
+
     private static async Task<Fixture> SeedAsync(
+        decimal cokeOnHand,
+        decimal spriteOnHand = 0m,
+        decimal waterOnHand = 0m,
+        decimal extraBranchB = 0m)
+    {
+        return await SeedCoreAsync(cokeOnHand, spriteOnHand, waterOnHand, extraBranchB).ConfigureAwait(false);
+    }
+
+    private static async Task<Fixture> SeedCoreAsync(
         decimal cokeOnHand,
         decimal spriteOnHand = 0m,
         decimal waterOnHand = 0m,
@@ -1209,6 +1492,7 @@ public sealed class InventoryTransferUseCaseTests
         public InMemoryCatalog Products { get; } = new();
         public InMemoryInventory Inventory { get; } = new();
         public InMemoryTransfers Transfers { get; } = new();
+        public InMemoryDamageCustodies DamageCustodies { get; }
         public InMemoryBalances Balances { get; } = new();
         public InMemoryLots Lots { get; } = new();
         public CapturingAlerts Alerts { get; } = new();
@@ -1226,9 +1510,13 @@ public sealed class InventoryTransferUseCaseTests
         public DispatchStockRequest DispatchStockRequest { get; }
         public PrepareStockRequestTransfer PrepareStockRequestTransfer { get; }
         public GetStockRequestActivity StockRequestActivity { get; }
+        public DispatchInventoryTransferDamageReturn DispatchDamageReturn { get; }
+        public ReceiveInventoryTransferDamageReturn ReceiveDamageReturn { get; }
+        public InspectInventoryTransferDamageCustody InspectDamageCustody { get; }
 
         public Fixture()
         {
+            DamageCustodies = new InMemoryDamageCustodies(Transfers);
             var lotStock = new InventoryLotStockService(Lots);
             Create = new CreateInventoryTransfer(Transfers, Inventory, Balances, Products, Lots, Branches, UnitOfWork, Clock);
             Dispatch = new DispatchInventoryTransfer(
@@ -1246,6 +1534,7 @@ public sealed class InventoryTransferUseCaseTests
                 Clock);
             Receive = new ReceiveInventoryTransfer(
                 Transfers,
+                DamageCustodies,
                 Inventory,
                 Balances,
                 Products,
@@ -1259,10 +1548,11 @@ public sealed class InventoryTransferUseCaseTests
                 Clock);
             CloseRemainder = new CloseRemainderInventoryTransfer(Transfers, Branches, StockRequests, UnitOfWork, Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
-            Queries = new InventoryTransferQueryService(Transfers, Branches, Products);
+            Queries = new InventoryTransferQueryService(Transfers, DamageCustodies, Branches, Products);
             DispatchStockRequest = new DispatchStockRequest(
                 StockRequests,
                 Transfers,
+                DamageCustodies,
                 Create,
                 Dispatch,
                 Queries,
@@ -1272,11 +1562,18 @@ public sealed class InventoryTransferUseCaseTests
             PrepareStockRequestTransfer = new PrepareStockRequestTransfer(
                 StockRequests,
                 Transfers,
+                DamageCustodies,
                 Create,
                 Queries,
                 UnitOfWork,
                 Clock);
             StockRequestActivity = new GetStockRequestActivity(StockRequests, Transfers);
+            DispatchDamageReturn = new DispatchInventoryTransferDamageReturn(
+                DamageCustodies, Transfers, Inventory, Balances, Products, UnitOfWork, Clock);
+            ReceiveDamageReturn = new ReceiveInventoryTransferDamageReturn(
+                DamageCustodies, Transfers, Inventory, Balances, Products, UnitOfWork, Clock);
+            InspectDamageCustody = new InspectInventoryTransferDamageCustody(
+                DamageCustodies, Transfers, Inventory, Balances, Products, UnitOfWork, Clock);
         }
 
         public async Task EnableAsync(Guid productId, string name, decimal opening)
@@ -1647,6 +1944,17 @@ public sealed class InventoryTransferUseCaseTests
             Task.FromResult<IReadOnlyList<InventoryTransfer>>(
                 _items.Where(t => t.OrganizationId == organizationId && t.StockRequestId == stockRequestId).ToList());
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId rootTransferId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                _items.Where(t =>
+                        t.OrganizationId == organizationId
+                        && (t.Id == rootTransferId || t.RootTransferId == rootTransferId))
+                    .OrderBy(t => t.ReplacementSequence ?? 0)
+                    .ToList());
+
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
         {
             _items.Add(transfer);
@@ -1797,6 +2105,15 @@ public sealed class InventoryTransferUseCaseTests
         public decimal OnHand(Guid branchId, Guid productId) =>
             Items.FirstOrDefault(b => b.BranchId.Value == branchId && b.ProductId.Value == productId)?.OnHandQuantity ?? 0m;
 
+        public decimal Available(Guid branchId, Guid productId) =>
+            Items.FirstOrDefault(b => b.BranchId.Value == branchId && b.ProductId.Value == productId)?.AvailableQuantity ?? 0m;
+
+        public decimal InspectionHold(Guid branchId, Guid productId) =>
+            Items.FirstOrDefault(b => b.BranchId.Value == branchId && b.ProductId.Value == productId)?.InspectionHoldQuantity ?? 0m;
+
+        public decimal Damaged(Guid branchId, Guid productId) =>
+            Items.FirstOrDefault(b => b.BranchId.Value == branchId && b.ProductId.Value == productId)?.DamagedQuantity ?? 0m;
+
         public Task<InventoryBranchBalance?> GetAsync(PosOrganizationId organizationId, PosBranchId branchId, CatalogProductId productId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Items.FirstOrDefault(b => b.OrganizationId == organizationId && b.BranchId == branchId && b.ProductId == productId));
 
@@ -1824,6 +2141,57 @@ public sealed class InventoryTransferUseCaseTests
 
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class InMemoryDamageCustodies : IInventoryTransferDamageCustodyRepository
+    {
+        private readonly InMemoryTransfers _transfers;
+
+        public InMemoryDamageCustodies(InMemoryTransfers transfers) => _transfers = transfers;
+
+        public List<InventoryTransferDamageCustody> Items { get; } = [];
+
+        public Task<InventoryTransferDamageCustody?> GetByIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferDamageCustodyId custodyId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.FirstOrDefault(c => c.OrganizationId == organizationId && c.Id == custodyId));
+
+        public Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByTransferIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId transferId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferDamageCustody>>(
+                Items.Where(c => c.OrganizationId == organizationId && c.TransferId == transferId).ToList());
+
+        public Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByRootTransferIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId rootTransferId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferDamageCustody>>(
+                Items.Where(c => c.OrganizationId == organizationId && c.RootTransferId == rootTransferId).ToList());
+
+        public Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByStockRequestIdAsync(
+            PosOrganizationId organizationId,
+            StockRequestId stockRequestId,
+            CancellationToken cancellationToken = default)
+        {
+            var transferIds = _transfers.Items
+                .Where(t => t.OrganizationId == organizationId && t.StockRequestId == stockRequestId)
+                .Select(t => t.Id)
+                .ToHashSet();
+            return Task.FromResult<IReadOnlyList<InventoryTransferDamageCustody>>(
+                Items.Where(c => c.OrganizationId == organizationId && transferIds.Contains(c.TransferId)).ToList());
+        }
+
+        public Task AddAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default)
+        {
+            Items.Add(custody);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class InMemoryStockRequests : IStockRequestRepository

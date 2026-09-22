@@ -350,6 +350,7 @@ export function InventoryTransferReceiveMode({
         missingFollowUp: null,
         damagedFollowUp: null,
         otherFollowUp: null,
+        damagedCustodyDecision: "KeepAtDestination",
       });
     }
     if (mobile) cancelMobileEdit();
@@ -906,6 +907,13 @@ export function InventoryTransferReceiveMode({
           waitOriginalLabel={t("transfer.followUp.waitOriginal")}
           requestReplacementLabel={t("transfer.followUp.requestReplacement")}
           acceptShortageLabel={t("transfer.followUp.acceptShortage")}
+          allowCustodyDecision={
+            !transfer.damageHandlingPolicy ||
+            transfer.damageHandlingPolicy === "ReceiverMayDecide"
+          }
+          custodyDecisionByProductId={
+            new Map(lines.map((line) => [line.productId, line.damagedCustodyDecision]))
+          }
           linkedStockRequest={linkedStockRequest}
           rows={followUpRows}
           highlightUnresolved={highlightUnresolvedRemaining}
@@ -923,6 +931,9 @@ export function InventoryTransferReceiveMode({
             } else {
               updateLine(row.productId, { otherFollowUp: action as typeof followUpDefaults.otherFollowUp });
             }
+          }}
+          onCustodyDecisionChange={(productId, decision) => {
+            updateLine(productId, { damagedCustodyDecision: decision });
           }}
           testId="transfer-receive-follow-up"
         />

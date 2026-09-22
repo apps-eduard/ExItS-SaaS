@@ -247,7 +247,7 @@ public sealed class ConnectedPoPostReceiptFinancialCompletionTests
             Now,
             paymentTiming: ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt);
         po.Submit(
-            "PO-20260918-000101",
+            "260918-101",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,

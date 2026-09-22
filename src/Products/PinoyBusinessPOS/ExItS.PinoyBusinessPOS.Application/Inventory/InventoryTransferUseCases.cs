@@ -13,15 +13,18 @@ namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 public sealed class InventoryTransferQueryService
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly ICatalogProductRepository _products;
 
     public InventoryTransferQueryService(
         IInventoryTransferRepository transfers,
+        IInventoryTransferDamageCustodyRepository damageCustodies,
         IOrganizationBranchDirectory branches,
         ICatalogProductRepository products)
     {
         _transfers = transfers;
+        _damageCustodies = damageCustodies;
         _branches = branches;
         _products = products;
     }
@@ -31,8 +34,9 @@ public sealed class InventoryTransferQueryService
         Guid transferId,
         CancellationToken cancellationToken = default)
     {
+        var orgId = PosOrganizationId.From(organizationId);
         var transfer = await _transfers
-            .GetByIdAsync(PosOrganizationId.From(organizationId), InventoryTransferId.From(transferId), cancellationToken)
+            .GetByIdAsync(orgId, InventoryTransferId.From(transferId), cancellationToken)
             .ConfigureAwait(false);
         if (transfer is null)
         {
@@ -43,13 +47,59 @@ public sealed class InventoryTransferQueryService
             .GetNamesAsync(organizationId, [transfer.SourceBranchId.Value, transfer.DestinationBranchId.Value], cancellationToken)
             .ConfigureAwait(false);
         var productIds = transfer.Lines.Select(l => l.ProductId).Distinct().ToList();
-        var skuByProduct = (await _products.ListByIdsAsync(
-                PosOrganizationId.From(organizationId),
-                productIds,
-                cancellationToken)
-            .ConfigureAwait(false))
+        var skuByProduct = (await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
             .ToDictionary(p => p.Id.Value, p => p.Sku);
-        return Map(transfer, names, skuByProduct);
+
+        var family = await _transfers
+            .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
+            .ConfigureAwait(false);
+        if (family.Count == 0)
+        {
+            family = [transfer];
+        }
+
+        var custodies = await _damageCustodies
+            .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var goodReceived = family.Where(t => t.Status != InventoryTransferStatus.Cancelled)
+            .SelectMany(t => t.Lines)
+            .Sum(l => l.ReceivedQty);
+        var destRecovered = custodies.Sum(c => c.DestinationRecoveredSellableQty);
+        var openInTransit = family
+            .Where(t => t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived)
+            .SelectMany(t => t.Lines)
+            .Sum(l => Math.Max(0m, l.OutstandingQty));
+        var waived = family.Where(t => t.Status != InventoryTransferStatus.Cancelled)
+            .SelectMany(t => t.Lines)
+            .Sum(l => l.WaivedQty);
+        var uninspectedKeep = custodies
+            .Where(c =>
+                c.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
+                && c.Status != InventoryTransferDamageCustodyStatus.Inspected
+                && c.FollowUpIntent != InventoryTransferDiscrepancyFollowUp.AcceptShortage)
+            .Sum(c => c.Quantity);
+        var target = family.Where(t => t.RootTransferId is null).SelectMany(t => t.Lines).Sum(l => l.SentQty);
+        var remaining = Math.Max(0m, target - goodReceived - destRecovered - openInTransit - waived - uninspectedKeep);
+
+        return Map(
+            transfer,
+            names,
+            skuByProduct,
+            family.Select(t => new InventoryTransferFamilyMemberDto(
+                t.Id.Value,
+                t.TransferNumber,
+                InventoryTransferStatuses.ToCode(t.Status),
+                t.ReplacementSequence,
+                t.RootTransferId is null,
+                t.TotalSentQty,
+                t.TotalReceivedQty,
+                t.TotalOutstandingQty)).ToList(),
+            custodies.Select(InventoryTransferDamageCustodyMapping.Map).ToList(),
+            goodReceived + destRecovered,
+            openInTransit,
+            remaining,
+            waived);
     }
 
     public async Task<PagedResult<InventoryTransferListItemDto>> ListAsync(
@@ -78,7 +128,13 @@ public sealed class InventoryTransferQueryService
     internal static InventoryTransferDto Map(
         InventoryTransfer transfer,
         IReadOnlyDictionary<Guid, string> names,
-        IReadOnlyDictionary<Guid, string?>? skuByProduct = null) =>
+        IReadOnlyDictionary<Guid, string?>? skuByProduct = null,
+        IReadOnlyList<InventoryTransferFamilyMemberDto>? familyMembers = null,
+        IReadOnlyList<InventoryTransferDamageCustodyDto>? damageCustodies = null,
+        decimal satisfiedAtDestinationQty = 0,
+        decimal openInTransitQty = 0,
+        decimal remainingToDispatchQty = 0,
+        decimal waivedQty = 0) =>
         new(
             transfer.Id.Value,
             transfer.OrganizationId.Value,
@@ -155,8 +211,17 @@ public sealed class InventoryTransferQueryService
                 l.UnitCostSnapshot,
                 skuByProduct is not null && skuByProduct.TryGetValue(l.ProductId.Value, out var sku)
                     ? sku
-                    : null)).ToList());
-
+                    : null)).ToList(),
+            transfer.RootTransferId?.Value,
+            transfer.ReplacementSequence,
+            transfer.ReplacementReason,
+            InventoryTransferDamageHandlingPolicies.ToCode(transfer.DamageHandlingPolicy),
+            familyMembers,
+            damageCustodies,
+            satisfiedAtDestinationQty,
+            openInTransitQty,
+            remainingToDispatchQty,
+            waivedQty);
     private static InventoryTransferListItemDto MapListItem(
         InventoryTransfer transfer,
         IReadOnlyDictionary<Guid, string> names) =>
@@ -266,7 +331,15 @@ public sealed class CreateInventoryTransfer
                 request.Notes,
                 stockRequestId: request.StockRequestId is Guid requestId && requestId != Guid.Empty
                     ? StockRequestId.From(requestId)
-                    : null);
+                    : null,
+                rootTransferId: request.RootTransferId is Guid rootId && rootId != Guid.Empty
+                    ? InventoryTransferId.From(rootId)
+                    : null,
+                replacementSequence: request.ReplacementSequence,
+                replacementReason: request.ReplacementReason,
+                damageHandlingPolicy: string.IsNullOrWhiteSpace(request.DamageHandlingPolicy)
+                    ? InventoryTransferDamageHandlingPolicy.ReceiverMayDecide
+                    : InventoryTransferDamageHandlingPolicies.Parse(request.DamageHandlingPolicy));
 
             var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
             var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
@@ -466,9 +539,11 @@ public sealed class DispatchInventoryTransfer
                 return stockGuard;
             }
 
-            var number = await _transfers
-                .AllocateNextNumberAsync(orgId, InventoryTransferNumbers.BusinessDateOf(utcNow), ct)
-                .ConfigureAwait(false);
+            var number = transfer.IsReplacementChild
+                ? await AllocateReplacementNumberAsync(orgId, transfer, ct).ConfigureAwait(false)
+                : await _transfers
+                    .AllocateNextNumberAsync(orgId, InventoryTransferNumbers.BusinessDateOf(utcNow), ct)
+                    .ConfigureAwait(false);
 
             // Dispatch-time acquisition costs are authoritative (draft may have sat).
             var dispatchCosts = await _costs
@@ -612,11 +687,37 @@ public sealed class DispatchInventoryTransfer
             return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
         }
     }
+
+    private async Task<string> AllocateReplacementNumberAsync(
+        PosOrganizationId orgId,
+        InventoryTransfer transfer,
+        CancellationToken cancellationToken)
+    {
+        var rootId = transfer.RootTransferId
+            ?? throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement children require a root transfer id.");
+        var sequence = transfer.ReplacementSequence
+            ?? throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement children require a replacement sequence.");
+
+        var root = await _transfers.GetByIdAsync(orgId, rootId, cancellationToken).ConfigureAwait(false);
+        if (root is null || string.IsNullOrWhiteSpace(root.TransferNumber))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferNumber,
+                "Root transfer must be dispatched before a replacement child can be numbered.");
+        }
+
+        return InventoryTransferNumbers.FormatReplacement(root.TransferNumber, sequence);
+    }
 }
 
 public sealed class ReceiveInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
@@ -631,6 +732,7 @@ public sealed class ReceiveInventoryTransfer
 
     public ReceiveInventoryTransfer(
         IInventoryTransferRepository transfers,
+        IInventoryTransferDamageCustodyRepository damageCustodies,
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
@@ -644,6 +746,7 @@ public sealed class ReceiveInventoryTransfer
         IClock clock)
     {
         _transfers = transfers;
+        _damageCustodies = damageCustodies;
         _inventory = inventory;
         _balances = balances;
         _products = products;
@@ -767,6 +870,19 @@ public sealed class ReceiveInventoryTransfer
                 otherFollowUp = parsedOther;
             }
 
+            InventoryTransferDamagedCustodyDecision? damagedDecision = null;
+            if (!string.IsNullOrWhiteSpace(line.DamagedCustodyDecision))
+            {
+                if (!InventoryTransferDamagedCustodyDecisions.TryParse(line.DamagedCustodyDecision, out var parsedDecision))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferDamagedCustodyDecision,
+                        "Damaged custody decision is not recognized.");
+                }
+
+                damagedDecision = parsedDecision;
+            }
+
             receiveDrafts.Add(new InventoryTransferReceiveLineDraft(
                 CatalogProductId.From(line.ProductId),
                 goodQty,
@@ -780,7 +896,8 @@ public sealed class ReceiveInventoryTransfer
                 OtherReasonNote: line.OtherReasonNote,
                 MissingDisposition: missingDisposition,
                 DamagedFollowUp: damagedFollowUp,
-                OtherFollowUp: otherFollowUp));
+                OtherFollowUp: otherFollowUp,
+                DamagedCustodyDecision: damagedDecision));
         }
 
         var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
@@ -899,6 +1016,114 @@ public sealed class ReceiveInventoryTransfer
                 destBalance.Apply(movement.QuantityEffect, utcNow);
                 await _inventory.UpdateAccountAsync(account, ct).ConfigureAwait(false);
                 await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
+                await _balances.UpsertAsync(destBalance, ct).ConfigureAwait(false);
+            }
+
+            var decisionByLineId = receiveDrafts
+                .Where(d => d.LineId is not null)
+                .ToDictionary(d => d.LineId!.Value, d => d.DamagedCustodyDecision);
+            var decisionByProduct = receiveDrafts
+                .GroupBy(d => d.ProductId.Value)
+                .ToDictionary(g => g.Key, g => g.Last().DamagedCustodyDecision);
+
+            foreach (var receiptLine in receipt.Lines)
+            {
+                if (receiptLine.QuantityDamaged <= 0m)
+                {
+                    continue;
+                }
+
+                if (!lineById.TryGetValue(receiptLine.TransferLineId, out var line))
+                {
+                    continue;
+                }
+
+                if (!catalog.TryGetValue(line.ProductId.Value, out var product))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InventoryProductNotFound,
+                        $"Product '{line.NameSnapshot}' was not found.");
+                }
+
+                if (!accounts.TryGetValue(line.ProductId.Value, out var account))
+                {
+                    account = InventoryAccount.CreateUntracked(orgId, line.ProductId, utcNow);
+                    account.Enable(0m, product.UnitOfMeasure, actorId, utcNow, hasOpeningStockAlready: false, product.SellingMode);
+                    await _inventory.AddAccountAsync(account, ct).ConfigureAwait(false);
+                    accounts[line.ProductId.Value] = account;
+                }
+
+                if (await _inventory
+                        .HasInventoryTransferSourceMovementAsync(
+                            orgId,
+                            receiptLine.Id.Value,
+                            line.ProductId,
+                            StockMovementType.TransferDamageHold,
+                            line.SourceLotId,
+                            ct)
+                        .ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                decisionByLineId.TryGetValue(receiptLine.TransferLineId.Value, out var requestedDecision);
+                if (requestedDecision is null)
+                {
+                    decisionByProduct.TryGetValue(line.ProductId.Value, out requestedDecision);
+                }
+
+                InventoryTransferDamagedCustodyDecision decision;
+                try
+                {
+                    decision = InventoryTransferDamagedCustodyDecisions.Resolve(
+                        transfer.DamageHandlingPolicy,
+                        requestedDecision);
+                }
+                catch (DomainException ex)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
+                }
+
+                var followUp = receiptLine.DamagedFollowUp
+                    ?? InventoryTransferDiscrepancyFollowUp.RequestReplacement;
+                var custody = InventoryTransferDamageCustody.Open(
+                    orgId,
+                    transfer.Id,
+                    transfer.FamilyRootId,
+                    receiptLine.Id,
+                    line.ProductId,
+                    receiptLine.QuantityDamaged,
+                    decision,
+                    followUp,
+                    transfer.DestinationBranchId,
+                    actorId,
+                    utcNow);
+
+                var holdMovement = StockMovement.TransferDamageCustody(
+                    orgId,
+                    line.ProductId,
+                    account.Id,
+                    transfer.DestinationBranchId,
+                    StockMovementType.TransferDamageHold,
+                    receiptLine.QuantityDamaged,
+                    line.UnitOfMeasure,
+                    receiptLine.Id.Value,
+                    transfer.TransferNumber!,
+                    actorId,
+                    utcNow,
+                    sellingMode: product.SellingMode);
+
+                var destBalance = InventoryTransferStock.EnsureBalance(
+                    orgId,
+                    transfer.DestinationBranchId,
+                    line.ProductId,
+                    balances,
+                    utcNow);
+                destBalance.Apply(holdMovement.QuantityEffect, utcNow);
+                destBalance.IncreaseInspectionHold(receiptLine.QuantityDamaged, utcNow);
+
+                await _damageCustodies.AddAsync(custody, ct).ConfigureAwait(false);
+                await _inventory.AddMovementAsync(holdMovement, ct).ConfigureAwait(false);
                 await _balances.UpsertAsync(destBalance, ct).ConfigureAwait(false);
             }
 

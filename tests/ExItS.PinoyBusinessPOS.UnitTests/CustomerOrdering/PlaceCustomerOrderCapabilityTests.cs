@@ -87,7 +87,7 @@ public sealed class PlaceCustomerOrderCapabilityTests
     {
         var order = CustomerOrder.CreateSubmitted(
             PosOrganizationId.From(Seller),
-            "SO-000001",
+            "260816-001",
             CustomerOrderParty.Personal(Actor, "Ana"),
             CustomerOrderFulfillmentType.Pickup,
             Branch,
@@ -389,12 +389,13 @@ public sealed class PlaceCustomerOrderCapabilityTests
 
         public Task<CustomerOrder> PlaceAsync(
             PosOrganizationId sellerOrganizationId,
+            DateOnly businessDateUtc,
             Func<string, CustomerOrder> createOrder,
             Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
             CancellationToken cancellationToken = default)
         {
             PlaceCount++;
-            var order = createOrder("SO-000001");
+            var order = createOrder("260816-001");
             if (!string.IsNullOrWhiteSpace(order.IdempotencyKey))
             {
                 _byIdempotency[order.IdempotencyKey] = order;

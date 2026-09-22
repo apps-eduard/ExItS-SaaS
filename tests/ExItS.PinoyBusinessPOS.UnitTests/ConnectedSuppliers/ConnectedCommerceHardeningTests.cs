@@ -169,7 +169,7 @@ public sealed class ConnectedCommerceHardeningTests
             ],
             Now);
         po.Submit(
-            "PO-20260918-000101",
+            "260918-101",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,
@@ -397,7 +397,7 @@ public sealed class ConnectedCommerceHardeningTests
             paymentTerm: term,
             paymentTiming: timing);
         buyerPo.Submit(
-            "PO-20260918-000042",
+            "260918-042",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,

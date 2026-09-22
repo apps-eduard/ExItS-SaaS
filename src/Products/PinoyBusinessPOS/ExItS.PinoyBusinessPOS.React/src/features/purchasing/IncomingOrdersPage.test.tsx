@@ -565,7 +565,7 @@ describe("IncomingOrders React flow", () => {
       buyerReceipts: [
         {
           goodsReceiptId: receiptId,
-          grnNumber: "GRN-20260917-000001",
+          grnNumber: "260917-001",
           receivedDate: "2026-09-17",
           receivedAtUtc: "2026-09-17T12:00:00Z",
           deliveryReference: "DRV-1",
@@ -598,7 +598,7 @@ describe("IncomingOrders React flow", () => {
       "₱10.00",
     );
     expect(screen.getByTestId("incoming-order-latest-receipt")).toBeInTheDocument();
-    expect(screen.getByText(/GRN-20260917-000001/)).toBeInTheDocument();
+    expect(screen.getByText(/260917-001/)).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-view-latest-receipt")).toBeInTheDocument();
     expect(screen.getByTestId("incoming-order-prepare-remaining")).toBeInTheDocument();
   });
@@ -629,7 +629,7 @@ describe("IncomingOrders React flow", () => {
       buyerReceipts: [
         {
           goodsReceiptId: "99999999-9999-4999-8999-999999999999",
-          grnNumber: "GRN-20260917-000001",
+          grnNumber: "260917-001",
           receivedDate: "2026-09-17",
           receivedAtUtc: "2026-09-17T12:00:00Z",
           deliveryReference: null,

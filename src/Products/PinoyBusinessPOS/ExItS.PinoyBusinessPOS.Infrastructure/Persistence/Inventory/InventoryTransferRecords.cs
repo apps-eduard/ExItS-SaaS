@@ -21,6 +21,10 @@ internal sealed class InventoryTransferRecord
     public Guid? CancelledBy { get; set; }
     public DateTimeOffset? ClosedAtUtc { get; set; }
     public Guid? ClosedBy { get; set; }
+    public Guid? RootTransferId { get; set; }
+    public int? ReplacementSequence { get; set; }
+    public string? ReplacementReason { get; set; }
+    public string DamageHandlingPolicy { get; set; } = "ReceiverMayDecide";
     public uint Xmin { get; set; }
 }
 
@@ -150,7 +154,36 @@ internal sealed class InventoryBranchBalanceRecord
     public decimal OnHandQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
     public decimal PendingReturnQuantity { get; set; }
+    public decimal InspectionHoldQuantity { get; set; }
+    public decimal DamagedQuantity { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
+internal sealed class InventoryTransferDamageCustodyRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid TransferId { get; set; }
+    public Guid RootTransferId { get; set; }
+    public Guid ReceiptLineId { get; set; }
+    public Guid ProductId { get; set; }
+    public decimal Quantity { get; set; }
+    public string Decision { get; set; } = string.Empty;
+    public string FollowUpIntent { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public Guid HeldBranchId { get; set; }
+    public decimal RecoveredSellableQty { get; set; }
+    public decimal ConfirmedDamagedQty { get; set; }
+    public decimal WaivedQty { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public Guid CreatedBy { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? ReturnDispatchedAtUtc { get; set; }
+    public Guid? ReturnDispatchedBy { get; set; }
+    public DateTimeOffset? ReturnReceivedAtUtc { get; set; }
+    public Guid? ReturnReceivedBy { get; set; }
+    public DateTimeOffset? InspectedAtUtc { get; set; }
+    public Guid? InspectedBy { get; set; }
 }
 
 internal sealed class InventoryBranchReorderSettingRecord

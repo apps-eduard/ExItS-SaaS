@@ -54,7 +54,7 @@ function completedSale() {
   return {
     saleId,
     organizationId: "11111111-1111-1111-1111-111111111111",
-    saleNumber: "SALE-20260906-000001",
+    saleNumber: "260906-001",
     status: "Completed",
     paymentMethod: "Cash",
     subtotal: 103.5,

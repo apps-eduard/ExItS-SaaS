@@ -337,7 +337,7 @@ public sealed class ConnectedPoReturnBatchTests
         ReturnBatch.CreateAcceptedForConnectedPurchaseOrder(
             SellerOrg,
             BuyerOrg,
-            "RB-20260918-000001",
+            "260918-001",
             po,
             [new ReturnBatchConnectedPoLineDraft(po.Lines[0].Id, quantity)],
             prior ?? new Dictionary<Guid, decimal>(),
@@ -427,7 +427,7 @@ public sealed class ConnectedPoReturnBatchTests
             ],
             Now);
         draft.Submit(
-            "PO-20260918-000001",
+            "260918-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,

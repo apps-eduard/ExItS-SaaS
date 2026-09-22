@@ -431,7 +431,7 @@ public sealed class SaleCommercialDiscountDomainTests
         var sale = Sale.Rehydrate(
             saleId,
             Org,
-            "SALE-20260730-000001",
+            "260730-001",
             SaleStatus.Completed,
             SalePaymentMethod.Cash,
             subtotal: 50m,

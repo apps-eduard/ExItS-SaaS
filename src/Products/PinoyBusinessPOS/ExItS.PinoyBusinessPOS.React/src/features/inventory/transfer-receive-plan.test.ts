@@ -25,6 +25,7 @@ function baseEdit(overrides: Partial<TransferReceiveLineEdit> = {}): TransferRec
     missingFollowUp: "wait_original",
     damagedFollowUp: "request_replacement",
     otherFollowUp: "request_replacement",
+    damagedCustodyDecision: "KeepAtDestination",
     ...overrides,
   };
 }
@@ -44,6 +45,7 @@ describe("transfer-receive-plan", () => {
         receivedQty: 22,
         damagedQty: 1,
         damagedFollowUp: "RequestReplacement",
+        damagedCustodyDecision: "KeepAtDestination",
         missingQty: 1,
         missingDisposition: "ExpectedLater",
         discrepancyNote: "Mixed",

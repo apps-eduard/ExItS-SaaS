@@ -114,7 +114,7 @@ function draftTransfer() {
 function inTransitTransfer() {
   return {
     ...draftTransfer(),
-    transferNumber: "TR-20260829-0001",
+    transferNumber: "260829-001",
     status: "InTransit",
     dispatchedAtUtc: "2026-08-29T09:00:00Z",
     dispatchedBy: "99999999-9999-9999-9999-999999999999",
@@ -241,7 +241,7 @@ describe("Inventory Transfer React flow", () => {
         "data-status",
         "InTransit",
       );
-      expect(screen.getByTestId("transfer-number-summary")).toHaveTextContent("TR-20260829-0001");
+      expect(screen.getByTestId("transfer-number-summary")).toHaveTextContent("260829-001");
     });
     expect(screen.queryByTestId("transfer-dispatch")).not.toBeInTheDocument();
     expect(invalidateSpy).toHaveBeenCalledWith(
@@ -459,12 +459,86 @@ describe("Inventory Transfer React flow", () => {
           goodQty: 20,
           damagedQty: 1,
           damagedFollowUp: "AcceptShortage",
+          damagedCustodyDecision: "KeepAtDestination",
           missingQty: 3,
           missingDisposition: "ExpectedLater",
           discrepancyNote: "Mixed receipt",
         }),
       ],
     });
+  });
+
+  it("shows replacement family coverage panel", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    const familyTransfer = {
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalReceivedQty: 10,
+      totalOutstandingQty: 5,
+      satisfiedAtDestinationQty: 12,
+      openInTransitQty: 5,
+      remainingToDispatchQty: 3,
+      waivedQty: 0,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 24,
+          totalReceivedQty: 10,
+          totalOutstandingQty: 5,
+        },
+        {
+          transferId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+          transferNumber: "260829-001-R1",
+          status: "Draft",
+          replacementSequence: 1,
+          isRoot: false,
+          totalSentQty: 3,
+          totalReceivedQty: 0,
+          totalOutstandingQty: 3,
+        },
+      ],
+      damageCustodies: [
+        {
+          custodyId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          productId: cokeId,
+          quantity: 5,
+          decision: "KeepAtDestination",
+          followUpIntent: "RequestReplacement",
+          status: "HeldAtDestination",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedDamagedQty: 0,
+          waivedQty: 0,
+          destinationRecoveredSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(familyTransfer as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("transfer-family-coverage")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-family-members")).toBeInTheDocument();
+    expect(screen.getByText(/Replacement 260829-001-R1/)).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-damage-custodies")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-custody-inspect-ffffffff-ffff-ffff-ffff-ffffffffffff")).toBeInTheDocument();
   });
 
   it("rejects received quantity above sent and disables receive", async () => {

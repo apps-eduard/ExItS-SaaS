@@ -759,12 +759,13 @@ public sealed class PersonalStorefrontAuthorizationTests
 
         public Task<CustomerOrder> PlaceAsync(
             PosOrganizationId sellerOrganizationId,
+            DateOnly businessDateUtc,
             Func<string, CustomerOrder> createOrder,
             Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
             CancellationToken cancellationToken = default)
         {
             PlaceCount++;
-            return Task.FromResult(createOrder("SO-000001"));
+            return Task.FromResult(createOrder("260816-001"));
         }
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>

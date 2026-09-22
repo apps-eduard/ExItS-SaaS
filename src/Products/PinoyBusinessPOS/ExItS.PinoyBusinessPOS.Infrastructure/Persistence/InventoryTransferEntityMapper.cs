@@ -35,7 +35,13 @@ internal static class InventoryTransferEntityMapper
             record.ClosedAtUtc,
             record.ClosedBy,
             lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
-            receiptDomains);
+            receiptDomains,
+            record.RootTransferId is null ? null : InventoryTransferId.From(record.RootTransferId.Value),
+            record.ReplacementSequence,
+            record.ReplacementReason,
+            string.IsNullOrWhiteSpace(record.DamageHandlingPolicy)
+                ? InventoryTransferDamageHandlingPolicy.ReceiverMayDecide
+                : InventoryTransferDamageHandlingPolicies.Parse(record.DamageHandlingPolicy));
     }
 
     private static IReadOnlyList<InventoryTransferReceipt> BuildReceipts(
@@ -133,7 +139,11 @@ internal static class InventoryTransferEntityMapper
             CancelledAtUtc = transfer.CancelledAtUtc,
             CancelledBy = transfer.CancelledBy,
             ClosedAtUtc = transfer.ClosedAtUtc,
-            ClosedBy = transfer.ClosedBy
+            ClosedBy = transfer.ClosedBy,
+            RootTransferId = transfer.RootTransferId?.Value,
+            ReplacementSequence = transfer.ReplacementSequence,
+            ReplacementReason = transfer.ReplacementReason,
+            DamageHandlingPolicy = InventoryTransferDamageHandlingPolicies.ToCode(transfer.DamageHandlingPolicy)
         };
 
     public static void ApplyToRecord(InventoryTransfer transfer, InventoryTransferRecord record)
@@ -151,6 +161,10 @@ internal static class InventoryTransferEntityMapper
         record.CancelledBy = transfer.CancelledBy;
         record.ClosedAtUtc = transfer.ClosedAtUtc;
         record.ClosedBy = transfer.ClosedBy;
+        record.RootTransferId = transfer.RootTransferId?.Value;
+        record.ReplacementSequence = transfer.ReplacementSequence;
+        record.ReplacementReason = transfer.ReplacementReason;
+        record.DamageHandlingPolicy = InventoryTransferDamageHandlingPolicies.ToCode(transfer.DamageHandlingPolicy);
     }
 
     public static InventoryTransferLineRecord ToRecord(InventoryTransferLine line) =>
@@ -222,7 +236,9 @@ internal static class InventoryTransferEntityMapper
             record.OnHandQuantity,
             record.UpdatedAtUtc,
             record.ReservedQuantity,
-            record.PendingReturnQuantity);
+            record.PendingReturnQuantity,
+            record.InspectionHoldQuantity,
+            record.DamagedQuantity);
 
     public static InventoryBranchBalanceRecord ToRecord(InventoryBranchBalance balance) =>
         new()
@@ -233,6 +249,8 @@ internal static class InventoryTransferEntityMapper
             OnHandQuantity = balance.OnHandQuantity,
             ReservedQuantity = balance.ReservedQuantity,
             PendingReturnQuantity = balance.PendingReturnQuantity,
+            InspectionHoldQuantity = balance.InspectionHoldQuantity,
+            DamagedQuantity = balance.DamagedQuantity,
             UpdatedAtUtc = balance.UpdatedAtUtc
         };
 
@@ -241,7 +259,79 @@ internal static class InventoryTransferEntityMapper
         record.OnHandQuantity = balance.OnHandQuantity;
         record.ReservedQuantity = balance.ReservedQuantity;
         record.PendingReturnQuantity = balance.PendingReturnQuantity;
+        record.InspectionHoldQuantity = balance.InspectionHoldQuantity;
+        record.DamagedQuantity = balance.DamagedQuantity;
         record.UpdatedAtUtc = balance.UpdatedAtUtc;
+    }
+
+    public static InventoryTransferDamageCustody ToDomain(InventoryTransferDamageCustodyRecord record) =>
+        InventoryTransferDamageCustody.Rehydrate(
+            InventoryTransferDamageCustodyId.From(record.Id),
+            PosOrganizationId.From(record.OrganizationId),
+            InventoryTransferId.From(record.TransferId),
+            InventoryTransferId.From(record.RootTransferId),
+            InventoryTransferReceiptLineId.From(record.ReceiptLineId),
+            CatalogProductId.From(record.ProductId),
+            record.Quantity,
+            InventoryTransferDamagedCustodyDecisions.Parse(record.Decision),
+            InventoryTransferDiscrepancyFollowUps.Parse(record.FollowUpIntent),
+            InventoryTransferDamageCustodyStatuses.Parse(record.Status),
+            PosBranchId.From(record.HeldBranchId),
+            record.RecoveredSellableQty,
+            record.ConfirmedDamagedQty,
+            record.WaivedQty,
+            record.CreatedAtUtc,
+            record.CreatedBy,
+            record.UpdatedAtUtc,
+            record.ReturnDispatchedAtUtc,
+            record.ReturnDispatchedBy,
+            record.ReturnReceivedAtUtc,
+            record.ReturnReceivedBy,
+            record.InspectedAtUtc,
+            record.InspectedBy);
+
+    public static InventoryTransferDamageCustodyRecord ToRecord(InventoryTransferDamageCustody custody) =>
+        new()
+        {
+            Id = custody.Id.Value,
+            OrganizationId = custody.OrganizationId.Value,
+            TransferId = custody.TransferId.Value,
+            RootTransferId = custody.RootTransferId.Value,
+            ReceiptLineId = custody.ReceiptLineId.Value,
+            ProductId = custody.ProductId.Value,
+            Quantity = custody.Quantity,
+            Decision = InventoryTransferDamagedCustodyDecisions.ToCode(custody.Decision),
+            FollowUpIntent = InventoryTransferDiscrepancyFollowUps.ToCode(custody.FollowUpIntent),
+            Status = InventoryTransferDamageCustodyStatuses.ToCode(custody.Status),
+            HeldBranchId = custody.HeldBranchId.Value,
+            RecoveredSellableQty = custody.RecoveredSellableQty,
+            ConfirmedDamagedQty = custody.ConfirmedDamagedQty,
+            WaivedQty = custody.WaivedQty,
+            CreatedAtUtc = custody.CreatedAtUtc,
+            CreatedBy = custody.CreatedBy,
+            UpdatedAtUtc = custody.UpdatedAtUtc,
+            ReturnDispatchedAtUtc = custody.ReturnDispatchedAtUtc,
+            ReturnDispatchedBy = custody.ReturnDispatchedBy,
+            ReturnReceivedAtUtc = custody.ReturnReceivedAtUtc,
+            ReturnReceivedBy = custody.ReturnReceivedBy,
+            InspectedAtUtc = custody.InspectedAtUtc,
+            InspectedBy = custody.InspectedBy
+        };
+
+    public static void ApplyToRecord(InventoryTransferDamageCustody custody, InventoryTransferDamageCustodyRecord record)
+    {
+        record.Status = InventoryTransferDamageCustodyStatuses.ToCode(custody.Status);
+        record.HeldBranchId = custody.HeldBranchId.Value;
+        record.RecoveredSellableQty = custody.RecoveredSellableQty;
+        record.ConfirmedDamagedQty = custody.ConfirmedDamagedQty;
+        record.WaivedQty = custody.WaivedQty;
+        record.UpdatedAtUtc = custody.UpdatedAtUtc;
+        record.ReturnDispatchedAtUtc = custody.ReturnDispatchedAtUtc;
+        record.ReturnDispatchedBy = custody.ReturnDispatchedBy;
+        record.ReturnReceivedAtUtc = custody.ReturnReceivedAtUtc;
+        record.ReturnReceivedBy = custody.ReturnReceivedBy;
+        record.InspectedAtUtc = custody.InspectedAtUtc;
+        record.InspectedBy = custody.InspectedBy;
     }
 
     public static InventoryBranchReorderSetting ToDomain(InventoryBranchReorderSettingRecord record) =>

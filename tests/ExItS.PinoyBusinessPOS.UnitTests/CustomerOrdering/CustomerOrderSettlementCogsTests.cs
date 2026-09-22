@@ -276,7 +276,7 @@ public sealed class CustomerOrderSettlementCogsTests
     {
         var order = CustomerOrder.CreateSubmitted(
             Org,
-            "SO-000002",
+            "260816-002",
             CustomerOrderParty.Personal(PersonalUser, "Ana"),
             CustomerOrderFulfillmentType.Pickup,
             Branch,
@@ -300,7 +300,7 @@ public sealed class CustomerOrderSettlementCogsTests
     {
         var order = CustomerOrder.CreateSubmitted(
             Org,
-            "SO-000010",
+            "260816-010",
             CustomerOrderParty.Personal(PersonalUser, "Ana"),
             CustomerOrderFulfillmentType.Delivery,
             Branch,
@@ -346,7 +346,7 @@ public sealed class CustomerOrderSettlementCogsTests
         decimal unitPrice = 500m) =>
         CustomerOrder.CreateSubmitted(
             Org,
-            "SO-000001",
+            "260816-001",
             CustomerOrderParty.Personal(PersonalUser, "Ana"),
             CustomerOrderFulfillmentType.Pickup,
             Branch,

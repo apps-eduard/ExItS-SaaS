@@ -116,6 +116,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryTransferReceiptRecord> InventoryTransferReceipts => Set<InventoryTransferReceiptRecord>();
     internal DbSet<InventoryTransferReceiptLineRecord> InventoryTransferReceiptLines => Set<InventoryTransferReceiptLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
+    internal DbSet<InventoryTransferDamageCustodyRecord> InventoryTransferDamageCustodies => Set<InventoryTransferDamageCustodyRecord>();
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
     internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
@@ -2294,9 +2295,10 @@ public sealed class PosDbContext : DbContext
                     "last_value > 0");
             });
 
-            entity.HasKey(e => e.OrganizationId)
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_customer_order_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
@@ -3327,6 +3329,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_inventory_transfers_distinct_branches",
                     "source_branch_id <> destination_branch_id");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_damage_handling_policy",
+                    $"damage_handling_policy IN ({string.Join(", ", InventoryTransferDamageHandlingPolicies.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_replacement_shape",
+                    "(root_transfer_id IS NULL AND replacement_sequence IS NULL) OR (root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL AND replacement_sequence >= 1)");
             });
 
             entity.HasKey(e => e.Id);
@@ -3356,6 +3364,17 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
             entity.Property(e => e.ClosedAtUtc).HasColumnName("closed_at_utc");
             entity.Property(e => e.ClosedBy).HasColumnName("closed_by");
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id");
+            entity.Property(e => e.ReplacementSequence).HasColumnName("replacement_sequence");
+            entity.Property(e => e.ReplacementReason)
+                .HasColumnName("replacement_reason")
+                .HasMaxLength(InventoryTransfer.NotesMaxLength);
+            entity.Property(e => e.DamageHandlingPolicy)
+                .HasColumnName("damage_handling_policy")
+                .HasMaxLength(InventoryTransferDamageHandlingPolicies.CodeMaxLength)
+                .IsRequired()
+                .HasDefaultValue(InventoryTransferDamageHandlingPolicies.ToCode(
+                    InventoryTransferDamageHandlingPolicy.ReceiverMayDecide));
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -3374,12 +3393,23 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_inventory_transfers_org_status");
             entity.HasIndex(e => new { e.OrganizationId, e.StockRequestId })
                 .HasDatabaseName("ix_inventory_transfers_org_stock_request");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_inventory_transfers_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId, e.ReplacementSequence })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfers_org_root_replacement_sequence")
+                .HasFilter("root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL");
 
             entity.HasOne<StockRequestRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.StockRequestId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_inventory_transfers_stock_requests");
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RootTransferId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfers_root_transfer");
         });
 
         modelBuilder.Entity<InventoryTransferLineRecord>(entity =>
@@ -4347,11 +4377,17 @@ public sealed class PosDbContext : DbContext
                     "ck_inventory_branch_balances_reserved_non_negative",
                     "reserved_quantity >= 0");
                 tb.HasCheckConstraint(
-                    "ck_inventory_branch_balances_reserved_not_over_on_hand",
-                    "reserved_quantity <= on_hand_quantity");
-                tb.HasCheckConstraint(
                     "ck_inventory_branch_balances_pending_return_non_negative",
                     "pending_return_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_inspection_hold_non_negative",
+                    "inspection_hold_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_damaged_non_negative",
+                    "damaged_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_buckets_not_over_on_hand",
+                    "reserved_quantity + pending_return_quantity + inspection_hold_quantity + damaged_quantity <= on_hand_quantity");
             });
 
             entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
@@ -4371,6 +4407,16 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("pending_return_quantity")
                 .HasPrecision(18, 3)
                 .IsRequired();
+            entity.Property(e => e.InspectionHoldQuantity)
+                .HasColumnName("inspection_hold_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.DamagedQuantity)
+                .HasColumnName("damaged_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
 
             entity.HasOne<CatalogProductRecord>()
@@ -4378,6 +4424,90 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_branch_balances_products");
+        });
+
+        modelBuilder.Entity<InventoryTransferDamageCustodyRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_damage_custodies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_itdc_quantity_positive",
+                    "quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_itdc_decision",
+                    $"decision IN ({string.Join(", ", InventoryTransferDamagedCustodyDecisions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_follow_up",
+                    $"follow_up_intent IN ({string.Join(", ", InventoryTransferDiscrepancyFollowUps.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_status",
+                    $"status IN ({string.Join(", ", InventoryTransferDamageCustodyStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_inspection_split",
+                    "recovered_sellable_qty >= 0 AND confirmed_damaged_qty >= 0 AND waived_qty >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id").IsRequired();
+            entity.Property(e => e.ReceiptLineId).HasColumnName("receipt_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.Decision)
+                .HasColumnName("decision")
+                .HasMaxLength(InventoryTransferDamagedCustodyDecisions.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.FollowUpIntent)
+                .HasColumnName("follow_up_intent")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(InventoryTransferDamageCustodyStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.HeldBranchId).HasColumnName("held_branch_id").IsRequired();
+            entity.Property(e => e.RecoveredSellableQty)
+                .HasColumnName("recovered_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ConfirmedDamagedQty)
+                .HasColumnName("confirmed_damaged_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.WaivedQty)
+                .HasColumnName("waived_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ReturnDispatchedAtUtc).HasColumnName("return_dispatched_at_utc");
+            entity.Property(e => e.ReturnDispatchedBy).HasColumnName("return_dispatched_by");
+            entity.Property(e => e.ReturnReceivedAtUtc).HasColumnName("return_received_at_utc");
+            entity.Property(e => e.ReturnReceivedBy).HasColumnName("return_received_by");
+            entity.Property(e => e.InspectedAtUtc).HasColumnName("inspected_at_utc");
+            entity.Property(e => e.InspectedBy).HasColumnName("inspected_by");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_itdc_org_transfer");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_itdc_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceiptLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_itdc_org_receipt_line");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_itdc_transfer");
+            entity.HasOne<InventoryTransferReceiptLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_itdc_receipt_line");
         });
 
         modelBuilder.Entity<InventoryBranchReorderSettingRecord>(entity =>

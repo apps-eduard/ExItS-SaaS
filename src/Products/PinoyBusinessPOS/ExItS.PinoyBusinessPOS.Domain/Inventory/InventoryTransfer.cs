@@ -26,6 +26,12 @@ public sealed class InventoryTransfer
     public PosBranchId DestinationBranchId { get; }
     public InventoryTransferStatus Status { get; private set; }
     public string? Notes { get; private set; }
+    /// <summary>Null for the original transfer; children point at the family root.</summary>
+    public InventoryTransferId? RootTransferId { get; private set; }
+    /// <summary>1-based replacement index for children; null on the root.</summary>
+    public int? ReplacementSequence { get; private set; }
+    public string? ReplacementReason { get; private set; }
+    public InventoryTransferDamageHandlingPolicy DamageHandlingPolicy { get; private set; }
     public Guid CreatedBy { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -37,6 +43,9 @@ public sealed class InventoryTransfer
     public Guid? CancelledBy { get; private set; }
     public DateTimeOffset? ClosedAtUtc { get; private set; }
     public Guid? ClosedBy { get; private set; }
+
+    public bool IsReplacementChild => RootTransferId is not null;
+    public InventoryTransferId FamilyRootId => RootTransferId ?? Id;
 
     public IReadOnlyList<InventoryTransferLine> Lines => _lines;
 
@@ -73,8 +82,34 @@ public sealed class InventoryTransfer
         DateTimeOffset? closedAtUtc,
         Guid? closedBy,
         List<InventoryTransferLine> lines,
-        List<InventoryTransferReceipt>? receipts = null)
+        List<InventoryTransferReceipt>? receipts = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide)
     {
+        if (rootTransferId is not null && replacementSequence is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement children require a replacement sequence.");
+        }
+
+        if (rootTransferId is null && replacementSequence is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Root transfers cannot have a replacement sequence.");
+        }
+
+        if (replacementSequence is < 1)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement sequence must be at least 1.");
+        }
+
         Id = id;
         OrganizationId = organizationId;
         StockRequestId = stockRequestId;
@@ -83,6 +118,10 @@ public sealed class InventoryTransfer
         DestinationBranchId = destinationBranchId;
         Status = status;
         Notes = notes;
+        RootTransferId = rootTransferId;
+        ReplacementSequence = replacementSequence;
+        ReplacementReason = NormalizeReplacementReason(replacementReason);
+        DamageHandlingPolicy = damageHandlingPolicy;
         CreatedBy = createdBy;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -107,7 +146,12 @@ public sealed class InventoryTransfer
         DateTimeOffset utcNow,
         string? notes = null,
         InventoryTransferId? id = null,
-        StockRequestId? stockRequestId = null)
+        StockRequestId? stockRequestId = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(createdBy);
@@ -135,13 +179,25 @@ public sealed class InventoryTransfer
             cancelledBy: null,
             closedAtUtc: null,
             closedBy: null,
-            BuildDraftLines(transferId, organizationId, lines));
+            BuildDraftLines(transferId, organizationId, lines),
+            rootTransferId: rootTransferId,
+            replacementSequence: replacementSequence,
+            replacementReason: replacementReason,
+            damageHandlingPolicy: damageHandlingPolicy);
     }
 
     public InventoryTransfer WithStockRequest(StockRequestId stockRequestId)
     {
         StockRequestId = stockRequestId;
         return this;
+    }
+
+    public void SetDamageHandlingPolicy(InventoryTransferDamageHandlingPolicy policy, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        EnsureDraft();
+        DamageHandlingPolicy = policy;
+        UpdatedAtUtc = utcNow;
     }
 
     public void UpdateDraft(
@@ -454,7 +510,12 @@ public sealed class InventoryTransfer
         DateTimeOffset? closedAtUtc,
         Guid? closedBy,
         IReadOnlyList<InventoryTransferLine> lines,
-        IReadOnlyList<InventoryTransferReceipt>? receipts = null) =>
+        IReadOnlyList<InventoryTransferReceipt>? receipts = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide) =>
         new(
             id,
             organizationId,
@@ -476,7 +537,11 @@ public sealed class InventoryTransfer
             closedAtUtc,
             closedBy,
             lines.ToList(),
-            receipts?.OrderBy(r => r.Sequence).ToList());
+            receipts?.OrderBy(r => r.Sequence).ToList(),
+            rootTransferId,
+            replacementSequence,
+            replacementReason,
+            damageHandlingPolicy);
 
     private static InventoryTransferLine ResolveLine(
         InventoryTransferLineId? lineId,
@@ -590,6 +655,24 @@ public sealed class InventoryTransfer
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferNotes,
                 $"Notes must be at most {NotesMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
+    private static string? NormalizeReplacementReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return null;
+        }
+
+        var trimmed = reason.Trim();
+        if (trimmed.Length > NotesMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferNotes,
+                $"Replacement reason must be at most {NotesMaxLength} characters.");
         }
 
         return trimmed;

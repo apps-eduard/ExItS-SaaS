@@ -13,7 +13,11 @@ public sealed record CreateInventoryTransferRequest(
     Guid DestinationBranchId,
     IReadOnlyList<InventoryTransferLineRequest> Lines,
     string? Notes = null,
-    Guid? StockRequestId = null);
+    Guid? StockRequestId = null,
+    Guid? RootTransferId = null,
+    int? ReplacementSequence = null,
+    string? ReplacementReason = null,
+    string? DamageHandlingPolicy = null);
 
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
@@ -29,7 +33,8 @@ public sealed record InventoryTransferReceiveLineRequest(
     string? OtherReasonNote = null,
     string? MissingDisposition = null,
     string? DamagedFollowUp = null,
-    string? OtherFollowUp = null);
+    string? OtherFollowUp = null,
+    string? DamagedCustodyDecision = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -119,7 +124,54 @@ public sealed record InventoryTransferDto(
     int ReceiptCount,
     DateTimeOffset? LastReceiptAtUtc,
     IReadOnlyList<InventoryTransferReceiptDto> Receipts,
-    IReadOnlyList<InventoryTransferLineDto> Lines);
+    IReadOnlyList<InventoryTransferLineDto> Lines,
+    Guid? RootTransferId = null,
+    int? ReplacementSequence = null,
+    string? ReplacementReason = null,
+    string DamageHandlingPolicy = nameof(InventoryTransferDamageHandlingPolicy.ReceiverMayDecide),
+    IReadOnlyList<InventoryTransferFamilyMemberDto>? FamilyMembers = null,
+    IReadOnlyList<InventoryTransferDamageCustodyDto>? DamageCustodies = null,
+    decimal SatisfiedAtDestinationQty = 0,
+    decimal OpenInTransitQty = 0,
+    decimal RemainingToDispatchQty = 0,
+    decimal WaivedQty = 0);
+
+public sealed record InventoryTransferFamilyMemberDto(
+    Guid TransferId,
+    string? TransferNumber,
+    string Status,
+    int? ReplacementSequence,
+    bool IsRoot,
+    decimal TotalSentQty,
+    decimal TotalReceivedQty,
+    decimal TotalOutstandingQty);
+
+public sealed record InventoryTransferDamageCustodyDto(
+    Guid CustodyId,
+    Guid TransferId,
+    Guid RootTransferId,
+    Guid ReceiptLineId,
+    Guid ProductId,
+    decimal Quantity,
+    string Decision,
+    string FollowUpIntent,
+    string Status,
+    Guid HeldBranchId,
+    decimal RecoveredSellableQty,
+    decimal ConfirmedDamagedQty,
+    decimal WaivedQty,
+    decimal DestinationRecoveredSellableQty,
+    decimal ReplacementDemandQty,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? ReturnDispatchedAtUtc = null,
+    DateTimeOffset? ReturnReceivedAtUtc = null,
+    DateTimeOffset? InspectedAtUtc = null);
+
+public sealed record InspectInventoryTransferDamageCustodyRequest(
+    decimal RecoveredSellableQty,
+    decimal ConfirmedDamagedQty,
+    string? FollowUpOverride = null);
 
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,

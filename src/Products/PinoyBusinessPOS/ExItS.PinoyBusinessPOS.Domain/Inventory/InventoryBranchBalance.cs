@@ -7,6 +7,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 /// <summary>
 /// Per-branch physical on-hand and reservation overlay for one catalog product.
 /// <see cref="OnHandQuantity"/> is physical stock only; reservations never reduce it.
+/// Inspection hold and confirmed damaged carve sellable availability without leaving on-hand.
 /// </summary>
 public sealed class InventoryBranchBalance
 {
@@ -16,10 +17,17 @@ public sealed class InventoryBranchBalance
     public decimal OnHandQuantity { get; private set; }
     public decimal ReservedQuantity { get; private set; }
     public decimal PendingReturnQuantity { get; private set; }
+    public decimal InspectionHoldQuantity { get; private set; }
+    public decimal DamagedQuantity { get; private set; }
     /// <summary>
-    /// Sellable stock. Pending returns are excluded until disposition finalizes sellable qty.
+    /// Sellable stock. Pending returns, inspection hold, and confirmed damaged are excluded.
     /// </summary>
-    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity - PendingReturnQuantity;
+    public decimal AvailableQuantity =>
+        OnHandQuantity
+        - ReservedQuantity
+        - PendingReturnQuantity
+        - InspectionHoldQuantity
+        - DamagedQuantity;
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
     private InventoryBranchBalance(
@@ -29,6 +37,8 @@ public sealed class InventoryBranchBalance
         decimal onHandQuantity,
         decimal reservedQuantity,
         decimal pendingReturnQuantity,
+        decimal inspectionHoldQuantity,
+        decimal damagedQuantity,
         DateTimeOffset updatedAtUtc)
     {
         OrganizationId = organizationId;
@@ -37,6 +47,8 @@ public sealed class InventoryBranchBalance
         OnHandQuantity = onHandQuantity;
         ReservedQuantity = reservedQuantity;
         PendingReturnQuantity = pendingReturnQuantity;
+        InspectionHoldQuantity = inspectionHoldQuantity;
+        DamagedQuantity = damagedQuantity;
         UpdatedAtUtc = updatedAtUtc;
     }
 
@@ -47,7 +59,9 @@ public sealed class InventoryBranchBalance
         decimal onHandQuantity,
         DateTimeOffset utcNow,
         decimal reservedQuantity = 0m,
-        decimal pendingReturnQuantity = 0m)
+        decimal pendingReturnQuantity = 0m,
+        decimal inspectionHoldQuantity = 0m,
+        decimal damagedQuantity = 0m)
     {
         EnsureUtc(utcNow);
         if (onHandQuantity < 0m)
@@ -64,19 +78,28 @@ public sealed class InventoryBranchBalance
                 "Branch reserved quantity cannot be negative.");
         }
 
-        if (reservedQuantity > onHandQuantity)
-        {
-            throw new DomainException(
-                DomainErrorCodes.InventoryInsufficientStock,
-                "Branch reserved quantity cannot exceed on-hand.");
-        }
-
         if (pendingReturnQuantity < 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
                 "Branch pending return quantity cannot be negative.");
         }
+
+        if (inspectionHoldQuantity < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryInspectionHoldQuantity,
+                "Branch inspection hold quantity cannot be negative.");
+        }
+
+        if (damagedQuantity < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryDamagedQuantity,
+                "Branch damaged quantity cannot be negative.");
+        }
+
+        EnsureBucketsCovered(onHandQuantity, reservedQuantity, pendingReturnQuantity, inspectionHoldQuantity, damagedQuantity);
 
         return new InventoryBranchBalance(
             organizationId,
@@ -85,6 +108,8 @@ public sealed class InventoryBranchBalance
             onHandQuantity,
             reservedQuantity,
             pendingReturnQuantity,
+            inspectionHoldQuantity,
+            damagedQuantity,
             utcNow);
     }
 
@@ -95,8 +120,19 @@ public sealed class InventoryBranchBalance
         decimal onHandQuantity,
         DateTimeOffset updatedAtUtc,
         decimal reservedQuantity = 0m,
-        decimal pendingReturnQuantity = 0m) =>
-        new(organizationId, branchId, productId, onHandQuantity, reservedQuantity, pendingReturnQuantity, updatedAtUtc);
+        decimal pendingReturnQuantity = 0m,
+        decimal inspectionHoldQuantity = 0m,
+        decimal damagedQuantity = 0m) =>
+        new(
+            organizationId,
+            branchId,
+            productId,
+            onHandQuantity,
+            reservedQuantity,
+            pendingReturnQuantity,
+            inspectionHoldQuantity,
+            damagedQuantity,
+            updatedAtUtc);
 
     public void Apply(decimal signedQuantity, DateTimeOffset utcNow)
     {
@@ -114,12 +150,12 @@ public sealed class InventoryBranchBalance
                 "Insufficient branch stock for this movement.");
         }
 
-        if (next < ReservedQuantity)
-        {
-            throw new DomainException(
-                DomainErrorCodes.InventoryInsufficientStock,
-                "Stock movement would leave branch reserved quantity uncovered.");
-        }
+        EnsureBucketsCovered(
+            next,
+            ReservedQuantity,
+            PendingReturnQuantity,
+            InspectionHoldQuantity,
+            DamagedQuantity);
 
         OnHandQuantity = next;
         UpdatedAtUtc = utcNow;
@@ -174,6 +210,12 @@ public sealed class InventoryBranchBalance
     {
         EnsureUtc(utcNow);
         EnsurePositivePendingReturnQuantity(quantity);
+        EnsureBucketsCovered(
+            OnHandQuantity,
+            ReservedQuantity,
+            PendingReturnQuantity + quantity,
+            InspectionHoldQuantity,
+            DamagedQuantity);
         PendingReturnQuantity += quantity;
         UpdatedAtUtc = utcNow;
     }
@@ -193,6 +235,86 @@ public sealed class InventoryBranchBalance
         UpdatedAtUtc = utcNow;
     }
 
+    public void IncreaseInspectionHold(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositiveInspectionHoldQuantity(quantity);
+        EnsureBucketsCovered(
+            OnHandQuantity,
+            ReservedQuantity,
+            PendingReturnQuantity,
+            InspectionHoldQuantity + quantity,
+            DamagedQuantity);
+        InspectionHoldQuantity += quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void DecreaseInspectionHold(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositiveInspectionHoldQuantity(quantity);
+        if (InspectionHoldQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryInspectionHoldQuantity,
+                "Cannot decrease more than branch inspection hold quantity.");
+        }
+
+        InspectionHoldQuantity -= quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void IncreaseDamaged(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositiveDamagedQuantity(quantity);
+        EnsureBucketsCovered(
+            OnHandQuantity,
+            ReservedQuantity,
+            PendingReturnQuantity,
+            InspectionHoldQuantity,
+            DamagedQuantity + quantity);
+        DamagedQuantity += quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void DecreaseDamaged(decimal quantity, DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        EnsurePositiveDamagedQuantity(quantity);
+        if (DamagedQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryDamagedQuantity,
+                "Cannot decrease more than branch damaged quantity.");
+        }
+
+        DamagedQuantity -= quantity;
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Moves quantity from inspection hold into confirmed damaged (physical on-hand unchanged).</summary>
+    public void ConfirmDamagedFromHold(decimal quantity, DateTimeOffset utcNow)
+    {
+        DecreaseInspectionHold(quantity, utcNow);
+        IncreaseDamaged(quantity, utcNow);
+    }
+
+    private static void EnsureBucketsCovered(
+        decimal onHand,
+        decimal reserved,
+        decimal pendingReturn,
+        decimal inspectionHold,
+        decimal damaged)
+    {
+        if (reserved + pendingReturn + inspectionHold + damaged > onHand)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InventoryInsufficientStock,
+                "Branch reserved, pending return, inspection hold, and damaged quantities cannot exceed on-hand.");
+        }
+    }
+
     private static void EnsurePositiveReservationQuantity(decimal quantity)
     {
         if (quantity <= 0m)
@@ -210,6 +332,26 @@ public sealed class InventoryBranchBalance
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
                 "Pending return quantity must be greater than zero.");
+        }
+    }
+
+    private static void EnsurePositiveInspectionHoldQuantity(decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryInspectionHoldQuantity,
+                "Inspection hold quantity must be greater than zero.");
+        }
+    }
+
+    private static void EnsurePositiveDamagedQuantity(decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryDamagedQuantity,
+                "Damaged quantity must be greater than zero.");
         }
     }
 

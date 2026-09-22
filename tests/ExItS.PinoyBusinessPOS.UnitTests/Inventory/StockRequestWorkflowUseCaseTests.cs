@@ -574,6 +574,13 @@ public sealed class StockRequestWorkflowUseCaseTests
             Task.FromResult<IReadOnlyList<InventoryTransfer>>(
                 Items.Where(t => t.StockRequestId == stockRequestId).ToList());
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId rootTransferId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>(
+                Items.Where(t => t.Id == rootTransferId || t.RootTransferId == rootTransferId).ToList());
+
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
         {
             Items.Add(transfer);

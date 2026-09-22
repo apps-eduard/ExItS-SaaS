@@ -240,7 +240,7 @@ public sealed class ConnectedPoFulfillmentReadinessAndPaymentGateTests
             supplierBranchId: BranchId,
             supplierBranchName: "Main Branch");
         buyerPo.Submit(
-            "PO-20260918-000201",
+            "260918-201",
             [new PurchaseOrderLineSnapshotInput(productId, "Item", UnitOfMeasure.Piece, 1m, total)],
             Guid.NewGuid(),
             Now.AddMinutes(1));

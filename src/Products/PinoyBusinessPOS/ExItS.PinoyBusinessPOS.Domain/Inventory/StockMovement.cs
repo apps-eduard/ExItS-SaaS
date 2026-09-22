@@ -42,6 +42,11 @@ public sealed class StockMovement
     public const string ConnectedPoReturnDispatchReason = "Connected PO return dispatched to supplier";
     public const string ConnectedPoReturnRestockReason = "Connected PO return restock";
     public const string ConnectedPoReturnWriteOffReason = "Connected PO return write-off";
+    public const string TransferDamageHoldReasonPrefix = "Transfer damage hold";
+    public const string TransferDamageRecoveryReasonPrefix = "Transfer damage recovery";
+    public const string TransferDamageReturnOutReasonPrefix = "Transfer damage return out";
+    public const string TransferDamageReturnInReasonPrefix = "Transfer damage return in";
+    public const string TransferDamageWriteOffReasonPrefix = "Transfer damage write-off";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -1202,6 +1207,62 @@ public sealed class StockMovement
             BranchId,
             lotId,
             UnitCost);
+
+    /// <summary>
+    /// Transfer damage custody ledger movement. Quantity effect is signed for audit;
+    /// callers decide whether org <see cref="InventoryAccount"/> sellable is updated.
+    /// </summary>
+    public static StockMovement TransferDamageCustody(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        StockMovementType movementType,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid custodyOrReceiptLineId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (custodyOrReceiptLineId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
+                "Damage custody / receipt line source id must be a non-empty GUID.");
+        }
+
+        var (reasonPrefix, sign) = movementType switch
+        {
+            StockMovementType.TransferDamageHold => (TransferDamageHoldReasonPrefix, 1m),
+            StockMovementType.TransferDamageRecovery => (TransferDamageRecoveryReasonPrefix, 1m),
+            StockMovementType.TransferDamageReturnOut => (TransferDamageReturnOutReasonPrefix, -1m),
+            StockMovementType.TransferDamageReturnIn => (TransferDamageReturnInReasonPrefix, 1m),
+            StockMovementType.TransferDamageWriteOff => (TransferDamageWriteOffReasonPrefix, -1m),
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidInventoryMovementType,
+                "Movement type is not a transfer damage custody movement.")
+        };
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            movementType,
+            sign * absolute,
+            TransferReason(reasonPrefix, transferNumber),
+            StockMovementSourceType.InventoryTransfer,
+            custodyOrReceiptLineId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
 
     public StockMovement WithBranch(Guid? branchId) =>
         new(

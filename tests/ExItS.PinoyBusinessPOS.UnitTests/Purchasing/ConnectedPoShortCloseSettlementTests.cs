@@ -192,7 +192,7 @@ public sealed class ConnectedPoShortCloseSettlementTests
             ],
             Now);
         draft.Submit(
-            "PO-20260918-000001",
+            "260918-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,
@@ -250,7 +250,7 @@ public sealed class ConnectedPoShortCloseSettlementTests
             ],
             Now);
         draft.Submit(
-            "PO-20260918-000002",
+            "260918-002",
             [
                 new PurchaseOrderLineSnapshotInput(
                     productId,

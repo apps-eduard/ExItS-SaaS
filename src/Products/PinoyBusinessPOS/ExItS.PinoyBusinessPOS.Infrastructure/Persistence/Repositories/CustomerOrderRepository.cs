@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
@@ -232,13 +233,19 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
 
     public async Task<CustomerOrder> PlaceAsync(
         PosOrganizationId sellerOrganizationId,
+        DateOnly businessDateUtc,
         Func<string, CustomerOrder> createOrder,
         Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
         CancellationToken cancellationToken = default)
     {
         if (_db.Database.CurrentTransaction is not null)
         {
-            return await CompletePlaceAsync(sellerOrganizationId, createOrder, afterCreated, cancellationToken)
+            return await CompletePlaceAsync(
+                    sellerOrganizationId,
+                    businessDateUtc,
+                    createOrder,
+                    afterCreated,
+                    cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -252,6 +259,7 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
             {
                 var order = await CompletePlaceAsync(
                         sellerOrganizationId,
+                        businessDateUtc,
                         createOrder,
                         afterCreated,
                         cancellationToken)
@@ -276,15 +284,16 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
 
     private async Task<CustomerOrder> CompletePlaceAsync(
         PosOrganizationId sellerOrganizationId,
+        DateOnly businessDateUtc,
         Func<string, CustomerOrder> createOrder,
         Func<CustomerOrder, CancellationToken, Task>? afterCreated,
         CancellationToken cancellationToken)
     {
         try
         {
-            var sequence = await ReserveNextSequenceAsync(sellerOrganizationId, cancellationToken)
+            var sequence = await ReserveNextSequenceAsync(sellerOrganizationId, businessDateUtc, cancellationToken)
                 .ConfigureAwait(false);
-            var order = createOrder(CustomerOrderNumbers.Format(sequence));
+            var order = createOrder(CustomerOrderNumbers.Format(businessDateUtc, sequence));
 
             _db.CustomerOrders.Add(CustomerOrderEntityMapper.ToRecord(order));
             foreach (var line in order.Lines)
@@ -329,14 +338,20 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
 
     private async Task<long> ReserveNextSequenceAsync(
         PosOrganizationId organizationId,
+        DateOnly businessDateUtc,
         CancellationToken cancellationToken)
     {
         await _db.Database
-            .ExecuteSqlRawAsync(LockSequenceSql, [SequenceLockKey(organizationId)], cancellationToken)
+            .ExecuteSqlRawAsync(
+                LockSequenceSql,
+                [SequenceLockKey(organizationId, businessDateUtc)],
+                cancellationToken)
             .ConfigureAwait(false);
 
         var sequence = await _db.CustomerOrderNumberSequences
-            .FirstOrDefaultAsync(s => s.OrganizationId == organizationId.Value, cancellationToken)
+            .FirstOrDefaultAsync(
+                s => s.OrganizationId == organizationId.Value && s.BusinessDate == businessDateUtc,
+                cancellationToken)
             .ConfigureAwait(false);
 
         if (sequence is null)
@@ -344,6 +359,7 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
             _db.CustomerOrderNumberSequences.Add(new CustomerOrderNumberSequenceRecord
             {
                 OrganizationId = organizationId.Value,
+                BusinessDate = businessDateUtc,
                 LastValue = 1
             });
             return 1;
@@ -353,10 +369,12 @@ internal sealed class CustomerOrderRepository : ICustomerOrderRepository
         return sequence.LastValue;
     }
 
-    private static long SequenceLockKey(PosOrganizationId organizationId)
+    private static long SequenceLockKey(PosOrganizationId organizationId, DateOnly businessDateUtc)
     {
-        Span<byte> bytes = stackalloc byte[16];
-        organizationId.Value.TryWriteBytes(bytes);
+        Span<byte> bytes = stackalloc byte[20];
+        organizationId.Value.TryWriteBytes(bytes[..16]);
+        BinaryPrimitives.WriteInt32LittleEndian(bytes[16..], businessDateUtc.DayNumber);
+
         unchecked
         {
             var hash = 0xcbf29ce484222325UL;

@@ -117,7 +117,7 @@ public sealed class InventoryTransferReceiveClassificationTests
             [new StockRequestLineDraft(Coke, 100m, "Coke", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "SR-20260922-000200");
+            "260922-200");
         request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Coke.Value] = 100m });
         request.MarkDispatched(Actor, Utc.AddMinutes(1), transfer.Id.Value);
 
@@ -198,7 +198,7 @@ public sealed class InventoryTransferReceiveClassificationTests
             [new InventoryTransferLineDraft(Coke, sentQty, "Coke", UnitOfMeasure.Piece)],
             Actor,
             Utc);
-        transfer.Dispatch("TR-20260922-000001", Actor, Utc.AddMinutes(1));
+        transfer.Dispatch("260922-001", Actor, Utc.AddMinutes(1));
         return transfer;
     }
 
@@ -288,7 +288,7 @@ public sealed class InventoryTransferReceiveClassificationTests
             [new StockRequestLineDraft(Coke, approvedQty, "Coke", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "SR-20260922-000300");
+            "260922-300");
         request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Coke.Value] = approvedQty });
         request.MarkDispatched(Actor, Utc.AddMinutes(1), transfer.Id.Value);
         return request;

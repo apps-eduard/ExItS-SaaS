@@ -86,7 +86,7 @@ public sealed class StockCountUxContractTests
             StockCountId.New(),
             Org,
             Branch,
-            "CNT-20260801-000001",
+            "260801-001",
             StockCountStatus.Completed,
             new DateOnly(2026, 8, 1),
             title: null,
@@ -102,25 +102,25 @@ public sealed class StockCountUxContractTests
             updatedAtUtc: Utc.AddMinutes(20),
             lines: []);
         Assert.Equal(StockCount.HistoricalTitle, count.Title);
-        Assert.Equal("CNT-20260801-000001", count.CountNumber);
+        Assert.Equal("260801-001", count.CountNumber);
     }
 
     [Fact]
-    public void StockCountNumbers_format_uses_two_digit_sequence_and_expands_naturally()
+    public void StockCountNumbers_format_uses_three_digit_sequence_and_expands_naturally()
     {
         var day = new DateOnly(2026, 8, 14);
-        Assert.Equal("CNT-20260814-01", StockCountNumbers.Format(day, 1));
-        Assert.Equal("CNT-20260814-02", StockCountNumbers.Format(day, 2));
-        Assert.Equal("CNT-20260814-100", StockCountNumbers.Format(day, 100));
-        Assert.Equal("CNT-20260815-01", StockCountNumbers.Format(new DateOnly(2026, 8, 15), 1));
+        Assert.Equal("260814-001", StockCountNumbers.Format(day, 1));
+        Assert.Equal("260814-002", StockCountNumbers.Format(day, 2));
+        Assert.Equal("260814-100", StockCountNumbers.Format(day, 100));
+        Assert.Equal("260815-001", StockCountNumbers.Format(new DateOnly(2026, 8, 15), 1));
     }
 
     [Fact]
-    public void StockCountNumbers_normalize_keeps_historical_six_digit_references_readable()
+    public void StockCountNumbers_normalize_accepts_shared_document_format()
     {
-        Assert.Equal("CNT-20260814-000001", StockCountNumbers.Normalize("cnt-20260814-000001"));
-        Assert.Equal("CNT-20260814-01", StockCountNumbers.Normalize("CNT-20260814-01"));
-        Assert.Throws<DomainException>(() => StockCountNumbers.Normalize("CNT-20260814-1"));
+        Assert.Equal("260814-001", StockCountNumbers.Normalize(" 260814-001 "));
+        Assert.Equal("260814-1000", StockCountNumbers.Normalize("260814-1000"));
+        Assert.Throws<DomainException>(() => StockCountNumbers.Normalize("260814-1"));
     }
 
     [Fact]

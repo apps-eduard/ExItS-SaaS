@@ -81,6 +81,7 @@ export function buildTransferReceivePayload(
     }
     if (planned.damagedQty > 1e-9) {
       entry.damagedFollowUp = damagedOtherFollowUpToApi(edit.damagedFollowUp);
+      entry.damagedCustodyDecision = edit.damagedCustodyDecision ?? "KeepAtDestination";
     }
     if (planned.otherQty > 1e-9) {
       entry.otherQty = planned.otherQty;

@@ -1072,6 +1072,7 @@ public sealed class PrepareStockRequestTransfer
 {
     private readonly IStockRequestRepository _requests;
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly CreateInventoryTransfer _createTransfer;
     private readonly InventoryTransferQueryService _transferQueries;
     private readonly IPosUnitOfWork _unitOfWork;
@@ -1080,6 +1081,7 @@ public sealed class PrepareStockRequestTransfer
     public PrepareStockRequestTransfer(
         IStockRequestRepository requests,
         IInventoryTransferRepository transfers,
+        IInventoryTransferDamageCustodyRepository damageCustodies,
         CreateInventoryTransfer createTransfer,
         InventoryTransferQueryService transferQueries,
         IPosUnitOfWork unitOfWork,
@@ -1087,6 +1089,7 @@ public sealed class PrepareStockRequestTransfer
     {
         _requests = requests;
         _transfers = transfers;
+        _damageCustodies = damageCustodies;
         _createTransfer = createTransfer;
         _transferQueries = transferQueries;
         _unitOfWork = unitOfWork;
@@ -1190,7 +1193,12 @@ public sealed class PrepareStockRequestTransfer
                 : ApplicationResult<InventoryTransferDto>.Success(existingDto);
         }
 
-        var remainingLines = StockRequestDispatchCoverage.BuildRemainingDispatchLines(stockRequest, linkedTransfers);
+        var remainingLines = StockRequestDispatchCoverage.BuildRemainingDispatchLines(
+            stockRequest,
+            linkedTransfers,
+            await _damageCustodies
+                .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                .ConfigureAwait(false));
         if (remainingLines.Count == 0)
         {
             var openCovering = linkedTransfers.FirstOrDefault(t =>
@@ -1209,12 +1217,34 @@ public sealed class PrepareStockRequestTransfer
                 "No remaining stock is available to prepare. Outstanding quantity is already covered by an open transfer.");
         }
 
+        var root = linkedTransfers
+            .Where(t => t.RootTransferId is null)
+            .OrderBy(t => t.CreatedAtUtc)
+            .FirstOrDefault();
+        var rootId = root?.Id ?? linkedTransfers
+            .Select(t => t.RootTransferId)
+            .FirstOrDefault(id => id is not null);
+        var nextSequence = rootId is null
+            ? (int?)null
+            : linkedTransfers
+                .Where(t => t.RootTransferId == rootId || t.Id == rootId)
+                .Select(t => t.ReplacementSequence ?? 0)
+                .DefaultIfEmpty(0)
+                .Max() + 1;
+        var damagePolicy = root is null
+            ? null
+            : InventoryTransferDamageHandlingPolicies.ToCode(root.DamageHandlingPolicy);
+
         var createRequest = new CreateInventoryTransferRequest(
             stockRequest.RequestedSourceLocationId.Value,
             stockRequest.DestinationLocationId.Value,
             remainingLines,
             stockRequest.Notes,
-            stockRequest.Id.Value);
+            stockRequest.Id.Value,
+            RootTransferId: rootId?.Value,
+            ReplacementSequence: nextSequence,
+            ReplacementReason: nextSequence is null ? null : "Replacement for remaining / discrepancy fulfillment",
+            DamageHandlingPolicy: damagePolicy);
         var created = await _createTransfer
             .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
             .ConfigureAwait(false);
@@ -1242,6 +1272,7 @@ public sealed class DispatchStockRequest
 {
     private readonly IStockRequestRepository _requests;
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
     private readonly CreateInventoryTransfer _createTransfer;
     private readonly DispatchInventoryTransfer _dispatchTransfer;
     private readonly InventoryTransferQueryService _transferQueries;
@@ -1252,6 +1283,7 @@ public sealed class DispatchStockRequest
     public DispatchStockRequest(
         IStockRequestRepository requests,
         IInventoryTransferRepository transfers,
+        IInventoryTransferDamageCustodyRepository damageCustodies,
         CreateInventoryTransfer createTransfer,
         DispatchInventoryTransfer dispatchTransfer,
         InventoryTransferQueryService transferQueries,
@@ -1261,6 +1293,7 @@ public sealed class DispatchStockRequest
     {
         _requests = requests;
         _transfers = transfers;
+        _damageCustodies = damageCustodies;
         _createTransfer = createTransfer;
         _dispatchTransfer = dispatchTransfer;
         _transferQueries = transferQueries;
@@ -1362,8 +1395,11 @@ public sealed class DispatchStockRequest
             var createdNewTransfer = false;
             if (transfer is null)
             {
+                var custodies = await _damageCustodies
+                    .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
+                    .ConfigureAwait(false);
                 var remainingLines = StockRequestDispatchCoverage
-                    .BuildRemainingDispatchLines(stockRequest, linkedTransfers);
+                    .BuildRemainingDispatchLines(stockRequest, linkedTransfers, custodies);
                 if (remainingLines.Count == 0)
                 {
                     var openCovering = linkedTransfers.FirstOrDefault(t =>
@@ -1394,12 +1430,35 @@ public sealed class DispatchStockRequest
                 }
                 else
                 {
+                    var root = linkedTransfers
+                        .Where(t => t.RootTransferId is null)
+                        .OrderBy(t => t.CreatedAtUtc)
+                        .FirstOrDefault();
+                    var rootId = root?.Id ?? linkedTransfers
+                        .Where(t => t.RootTransferId is not null)
+                        .Select(t => t.RootTransferId!)
+                        .FirstOrDefault();
+                    var nextSequence = rootId is null
+                        ? (int?)null
+                        : linkedTransfers
+                            .Where(t => t.RootTransferId == rootId || t.Id == rootId)
+                            .Select(t => t.ReplacementSequence ?? 0)
+                            .DefaultIfEmpty(0)
+                            .Max() + 1;
+                    var damagePolicy = root is null
+                        ? null
+                        : InventoryTransferDamageHandlingPolicies.ToCode(root.DamageHandlingPolicy);
+
                     var createRequest = new CreateInventoryTransferRequest(
                         stockRequest.RequestedSourceLocationId.Value,
                         stockRequest.DestinationLocationId.Value,
                         remainingLines,
                         stockRequest.Notes,
-                        stockRequest.Id.Value);
+                        stockRequest.Id.Value,
+                        RootTransferId: rootId?.Value,
+                        ReplacementSequence: nextSequence,
+                        ReplacementReason: nextSequence is null ? null : "Replacement for remaining / discrepancy fulfillment",
+                        DamageHandlingPolicy: damagePolicy);
                     var created = await _createTransfer
                         .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
                         .ConfigureAwait(false);
@@ -1475,9 +1534,13 @@ public sealed class DispatchStockRequest
 
 /// <summary>
 /// Authoritative stock-request dispatch coverage.
-/// RemainingToDispatch = MAX(0, Approved − Received − OpenInTransit − Waived) where OpenInTransit is outstanding
-/// on InTransit/PartiallyReceived transfers only (not Draft, Received, ClosedWithDiscrepancy, Cancelled).
+/// SatisfiedAtDestination = GoodReceived + DestinationRecoveredSellable.
+/// RemainingToDispatch = MAX(0, Approved − Satisfied − OpenInTransit − Waived − UninspectedKeepHold)
+/// where OpenInTransit is outstanding on InTransit/PartiallyReceived transfers only
+/// (not Draft, Received, ClosedWithDiscrepancy, Cancelled).
 /// Waived = sum of WaivedQty on non-cancelled linked transfer lines.
+/// UninspectedKeepHold blocks premature replacement of keep-at-destination damage until inspection.
+/// Source recovered sellable never counts as destination satisfaction.
 /// </summary>
 internal static class StockRequestDispatchCoverage
 {
@@ -1485,13 +1548,17 @@ internal static class StockRequestDispatchCoverage
         IReadOnlyDictionary<Guid, decimal> ReceivedByProduct,
         IReadOnlyDictionary<Guid, decimal> OpenInTransitByProduct,
         IReadOnlyDictionary<Guid, decimal> WaivedByProduct,
+        IReadOnlyDictionary<Guid, decimal> DestinationRecoveredByProduct,
+        IReadOnlyDictionary<Guid, decimal> UninspectedKeepHoldByProduct,
         IReadOnlyDictionary<Guid, decimal> RemainingToDispatchByProduct);
 
     internal static Snapshot Compute(
         StockRequest stockRequest,
-        IReadOnlyList<InventoryTransfer> linkedTransfers)
+        IReadOnlyList<InventoryTransfer> linkedTransfers,
+        IReadOnlyList<InventoryTransferDamageCustody>? damageCustodies = null)
     {
         var active = linkedTransfers.Where(t => t.Status != InventoryTransferStatus.Cancelled).ToList();
+        var custodies = damageCustodies ?? [];
 
         var receivedByProduct = active
             .SelectMany(t => t.Lines)
@@ -1509,27 +1576,49 @@ internal static class StockRequestDispatchCoverage
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.WaivedQty));
 
+        var destinationRecoveredByProduct = custodies
+            .GroupBy(c => c.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.DestinationRecoveredSellableQty));
+
+        var uninspectedKeepHoldByProduct = custodies
+            .Where(c =>
+                c.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
+                && c.Status != InventoryTransferDamageCustodyStatus.Inspected
+                && c.FollowUpIntent != InventoryTransferDiscrepancyFollowUp.AcceptShortage)
+            .GroupBy(c => c.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
+
         var remainingByProduct = new Dictionary<Guid, decimal>();
         foreach (var line in stockRequest.Lines)
         {
             var productId = line.ProductId.Value;
+            var satisfied = receivedByProduct.GetValueOrDefault(productId)
+                + destinationRecoveredByProduct.GetValueOrDefault(productId);
             var remaining = Math.Max(
                 0m,
                 line.FulfillmentTargetQuantity
-                - receivedByProduct.GetValueOrDefault(productId)
+                - satisfied
                 - openInTransitByProduct.GetValueOrDefault(productId)
-                - waivedByProduct.GetValueOrDefault(productId));
+                - waivedByProduct.GetValueOrDefault(productId)
+                - uninspectedKeepHoldByProduct.GetValueOrDefault(productId));
             remainingByProduct[productId] = remaining;
         }
 
-        return new Snapshot(receivedByProduct, openInTransitByProduct, waivedByProduct, remainingByProduct);
+        return new Snapshot(
+            receivedByProduct,
+            openInTransitByProduct,
+            waivedByProduct,
+            destinationRecoveredByProduct,
+            uninspectedKeepHoldByProduct,
+            remainingByProduct);
     }
 
     internal static List<InventoryTransferLineRequest> BuildRemainingDispatchLines(
         StockRequest stockRequest,
-        IReadOnlyList<InventoryTransfer> linkedTransfers)
+        IReadOnlyList<InventoryTransfer> linkedTransfers,
+        IReadOnlyList<InventoryTransferDamageCustody>? damageCustodies = null)
     {
-        var coverage = Compute(stockRequest, linkedTransfers);
+        var coverage = Compute(stockRequest, linkedTransfers, damageCustodies);
         var lines = new List<InventoryTransferLineRequest>();
         foreach (var line in stockRequest.Lines)
         {

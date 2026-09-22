@@ -22,6 +22,11 @@ public interface IInventoryTransferRepository
         StockRequestId stockRequestId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId rootTransferId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);

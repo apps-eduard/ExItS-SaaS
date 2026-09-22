@@ -106,6 +106,8 @@ public static class DomainErrorCodes
     public const string InvalidSaleId = "pos.sale.id.invalid";
     public const string InvalidSaleLineId = "pos.sale_line.id.invalid";
     public const string InvalidSaleNumber = "pos.sale.number.invalid";
+    public const string InvalidPosDocumentNumber = "pos.document.number.invalid";
+    public const string InvalidPosDocumentChildSequence = "pos.document.child_sequence.invalid";
     public const string InvalidSaleStatus = "pos.sale.status.invalid";
     public const string InvalidSaleStatusTransition = "pos.sale.status.invalid_transition";
     public const string InvalidSalePaymentMethod = "pos.sale.payment_method.invalid";
@@ -280,6 +282,13 @@ public static class DomainErrorCodes
     public const string InvalidInventoryTransferReceiveQty = "pos.inventory.transfer.receive_qty.invalid";
     public const string InvalidInventoryTransferMissingDisposition = "pos.inventory.transfer.missing_disposition.invalid";
     public const string InvalidInventoryTransferDiscrepancyFollowUp = "pos.inventory.transfer.discrepancy_follow_up.invalid";
+    public const string InvalidInventoryTransferDamageHandlingPolicy = "pos.inventory.transfer.damage_handling_policy.invalid";
+    public const string InvalidInventoryTransferDamagedCustodyDecision = "pos.inventory.transfer.damaged_custody_decision.invalid";
+    public const string InvalidInventoryTransferDamageCustodyStatus = "pos.inventory.transfer.damage_custody.status.invalid";
+    public const string InvalidInventoryTransferDamageCustodyId = "pos.inventory.transfer.damage_custody.id.invalid";
+    public const string InvalidInventoryTransferReplacementSequence = "pos.inventory.transfer.replacement_sequence.invalid";
+    public const string InvalidInventoryInspectionHoldQuantity = "pos.inventory.inspection_hold.quantity.invalid";
+    public const string InvalidInventoryDamagedQuantity = "pos.inventory.damaged.quantity.invalid";
     public const string InvalidInventoryTransferReceiveClassification = "pos.inventory.transfer.receive_classification.invalid";
     public const string InvalidInventoryTransferLine = "pos.inventory.transfer.line.invalid";
     public const string InvalidInventoryTransferNotes = "pos.inventory.transfer.notes.invalid";

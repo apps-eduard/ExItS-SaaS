@@ -205,7 +205,7 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
             Seller,
             Buyer,
             815m,
-            ProductBasedUtangRemarks.ForSaleNumber("SALE-20260917-000815"),
+            ProductBasedUtangRemarks.ForSaleNumber("260917-815"),
             Now,
             relationship.Id.Value,
             sourceSaleId: SaleId.From(saleId));
@@ -379,7 +379,7 @@ public sealed class ConnectedB2bDirectPurchaseCreditSyncTests
         var unitCost = totalCost;
         return DirectPurchaseReceipt.Create(
             Buyer,
-            "DPR-20260916-000001",
+            "260916-001",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [
                 new DirectPurchaseReceiptLineDraft(

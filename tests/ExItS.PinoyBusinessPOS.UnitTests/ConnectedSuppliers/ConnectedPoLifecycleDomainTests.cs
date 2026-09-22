@@ -39,7 +39,7 @@ public sealed class ConnectedPoLifecycleDomainTests
             [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), orderedQty, 10m)],
             Now);
         po.Submit(
-            "PO-20260816-001042",
+            "260816-1042",
             [new PurchaseOrderLineSnapshotInput(
                 CatalogProductId.From(ProductA),
                 "Coke",

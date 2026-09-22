@@ -195,7 +195,7 @@ public sealed class FinalizeReturnBatchUseCaseTests
 
         var batch = ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000001",
+            "260918-001",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, acceptedQty)],
             new Dictionary<Guid, (decimal, decimal)>(),
@@ -261,7 +261,7 @@ public sealed class FinalizeReturnBatchUseCaseTests
         var sale = Sale.Rehydrate(
             saleId,
             Org,
-            "SALE-20260918-000100",
+            "260918-100",
             SaleStatus.Completed,
             paymentMethod,
             lineTotal,
@@ -378,7 +378,7 @@ public sealed class FinalizeReturnBatchUseCaseTests
             Func<SaleReturn, CancellationToken, Task>? afterReturnCreated = null,
             CancellationToken cancellationToken = default)
         {
-            LastCreated = createReturn("RET-20260918-000001");
+            LastCreated = createReturn("260918-001");
             if (afterReturnCreated is not null)
             {
                 await afterReturnCreated(LastCreated, cancellationToken).ConfigureAwait(false);

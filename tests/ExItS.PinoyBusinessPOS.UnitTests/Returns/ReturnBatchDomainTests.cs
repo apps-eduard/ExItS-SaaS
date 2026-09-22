@@ -19,7 +19,7 @@ public sealed class ReturnBatchDomainTests
         var sale = BuildCompletedSale(10m, 10m);
         var batch = ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000001",
+            "260918-001",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, 10m)],
             new Dictionary<Guid, (decimal, decimal)>(),
@@ -38,7 +38,7 @@ public sealed class ReturnBatchDomainTests
         var sale = BuildCompletedSale(10m, 10m);
         var batch = ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000002",
+            "260918-002",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, 10m)],
             new Dictionary<Guid, (decimal, decimal)>(),
@@ -126,7 +126,7 @@ public sealed class ReturnBatchDomainTests
         var sale = BuildCompletedSale(10m, 100m);
         var batch = ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000050",
+            "260918-050",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, 5m)],
             new Dictionary<Guid, (decimal, decimal)>(),
@@ -155,7 +155,7 @@ public sealed class ReturnBatchDomainTests
 
         var ex = Assert.Throws<DomainException>(() => ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000060",
+            "260918-060",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, 3m)],
             prior,
@@ -170,7 +170,7 @@ public sealed class ReturnBatchDomainTests
         var sale = BuildCompletedSale(40m, 400m);
         var batch = ReturnBatch.CreateAccepted(
             Org,
-            "RB-20260918-000040",
+            "260918-040",
             sale,
             [new ReturnBatchAcceptedLineDraft(sale.Lines[0].Id, 40m)],
             new Dictionary<Guid, (decimal, decimal)>(),
@@ -203,7 +203,7 @@ public sealed class ReturnBatchDomainTests
         return Sale.Rehydrate(
             saleId,
             Org,
-            "SALE-20260918-000001",
+            "260918-001",
             SaleStatus.Completed,
             SalePaymentMethod.ManualGCash,
             lineTotal,

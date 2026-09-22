@@ -1,6 +1,7 @@
 import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import type { InventoryTransferDamagedCustodyDecisionCode } from "@/api/pos/pos-inventory-transfer-client";
 import type {
   TransferDamagedOtherFollowUp,
   TransferFollowUpRow,
@@ -17,12 +18,21 @@ export type TransferReceiveFollowUpTableProps = {
   waitOriginalLabel: string;
   requestReplacementLabel: string;
   acceptShortageLabel: string;
+  keepAtDestinationLabel?: string;
+  returnToSourceLabel?: string;
+  custodyDecisionColLabel?: string;
+  allowCustodyDecision?: boolean;
+  custodyDecisionByProductId?: ReadonlyMap<string, InventoryTransferDamagedCustodyDecisionCode | null>;
   linkedStockRequest: boolean;
   rows: readonly TransferFollowUpRow[];
   highlightUnresolved: boolean;
   onDecisionChange: (
     rowKey: string,
     action: TransferMissingFollowUp | TransferDamagedOtherFollowUp,
+  ) => void;
+  onCustodyDecisionChange?: (
+    productId: string,
+    decision: InventoryTransferDamagedCustodyDecisionCode,
   ) => void;
   testId?: string;
 };
@@ -37,15 +47,24 @@ export function TransferReceiveFollowUpTable({
   waitOriginalLabel,
   requestReplacementLabel,
   acceptShortageLabel,
+  keepAtDestinationLabel = "Keep at destination",
+  returnToSourceLabel = "Return to source",
+  custodyDecisionColLabel = "Damage custody",
+  allowCustodyDecision = false,
+  custodyDecisionByProductId,
   linkedStockRequest,
   rows,
   highlightUnresolved,
   onDecisionChange,
+  onCustodyDecisionChange,
   testId = "transfer-receive-follow-up",
 }: TransferReceiveFollowUpTableProps) {
   if (rows.length === 0) {
     return null;
   }
+
+  const showCustodyCol =
+    allowCustodyDecision && rows.some((row) => row.issueKind === "damaged");
 
   return (
     <Card className="receive-remaining-table flex flex-col gap-3 p-3" data-testid={testId}>
@@ -72,6 +91,11 @@ export function TransferReceiveFollowUpTable({
               <th scope="col" className="px-3 py-2 text-start font-medium">
                 {decisionColLabel}
               </th>
+              {showCustodyCol ? (
+                <th scope="col" className="px-3 py-2 text-start font-medium">
+                  {custodyDecisionColLabel}
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -92,6 +116,8 @@ export function TransferReceiveFollowUpTable({
                 { value: "accept_shortage" as const, label: acceptShortageLabel },
               ];
               const options = row.issueKind === "missing" ? missingOptions : damagedOtherOptions;
+              const custodyValue =
+                custodyDecisionByProductId?.get(row.productId) ?? "KeepAtDestination";
 
               return (
                 <tr
@@ -133,6 +159,25 @@ export function TransferReceiveFollowUpTable({
                       testId={`${testId}-choice-${row.rowKey}`}
                     />
                   </td>
+                  {showCustodyCol ? (
+                    <td className="px-3 py-2 text-start align-middle">
+                      {row.issueKind === "damaged" ? (
+                        <ExitsPillSelect<InventoryTransferDamagedCustodyDecisionCode>
+                          className="receive-remaining-choice"
+                          aria-label={`${row.name}: ${custodyDecisionColLabel}`}
+                          value={custodyValue}
+                          onChange={(next) => onCustodyDecisionChange?.(row.productId, next)}
+                          options={[
+                            { value: "KeepAtDestination", label: keepAtDestinationLabel },
+                            { value: "ReturnToSource", label: returnToSourceLabel },
+                          ]}
+                          testId={`${testId}-custody-${row.productId}`}
+                        />
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}

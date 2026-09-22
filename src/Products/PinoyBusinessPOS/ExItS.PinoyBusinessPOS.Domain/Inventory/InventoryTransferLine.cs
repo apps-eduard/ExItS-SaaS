@@ -34,7 +34,8 @@ public sealed record InventoryTransferReceiveLineDraft(
     string? OtherReasonNote = null,
     InventoryTransferMissingDisposition? MissingDisposition = null,
     InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
-    InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null)
+    InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null,
+    InventoryTransferDamagedCustodyDecision? DamagedCustodyDecision = null)
 {
     /// <summary>Backward-compatible alias for <see cref="GoodQty"/>.</summary>
     public decimal ReceivedQty => GoodQty;
