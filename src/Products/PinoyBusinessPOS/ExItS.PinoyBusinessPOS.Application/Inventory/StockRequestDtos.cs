@@ -55,6 +55,7 @@ public sealed record StockRequestLineDto(
     decimal FulfilledQuantity,
     decimal InProgressQuantity,
     decimal RemainingToDispatchQuantity,
+    decimal WaivedQuantity,
     string NameSnapshot,
     string UnitOfMeasure);
 

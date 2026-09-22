@@ -32,23 +32,24 @@ import {
 } from "@/features/inventory/inventory-transfer-labels";
 import {
   buildTransferReceiveLineEdits,
-  buildTransferRemainingDecisionRows,
   lineOutstandingQty,
   type TransferReceiveLineEdit,
 } from "@/features/inventory/inventory-transfer-receive-helpers";
+import { TransferReceiveFollowUpTable } from "@/features/inventory/TransferReceiveFollowUpTable";
+import {
+  buildTransferFollowUpRows,
+  countUnresolvedTransferFollowUp,
+  defaultTransferFollowUps,
+  sumTransferFollowUpUnits,
+  type TransferFollowUpIssueKind,
+} from "@/features/inventory/transfer-receive-follow-up";
 import { buildTransferReceivePayload } from "@/features/inventory/transfer-receive-plan";
 import { ReceiveDiscrepancyDialog } from "@/features/purchasing/ReceiveDiscrepancyDialog";
-import { ReceiveRemainingQuantityTable } from "@/features/purchasing/ReceiveRemainingQuantityTable";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import {
   parseNonNegativeQty,
   receiveDiscrepancyQty,
 } from "@/features/purchasing/receive-math";
-import {
-  countUnresolvedRemaining,
-  sumRemainingUnits,
-  type RemainingDecisionAction,
-} from "@/features/purchasing/receive-remaining-decision";
 import {
   formatReceiveDiscrepancySummary,
   isReceiveDiscrepancyClassified,
@@ -123,8 +124,13 @@ export function InventoryTransferReceiveMode({
   onSubmitReceive,
 }: InventoryTransferReceiveModeProps) {
   const { t } = useI18n();
+  const linkedStockRequest = Boolean(transfer.stockRequestId);
+  const followUpDefaults = useMemo(
+    () => defaultTransferFollowUps(linkedStockRequest),
+    [linkedStockRequest],
+  );
   const [lines, setLines] = useState<TransferReceiveLineEdit[]>(() =>
-    buildTransferReceiveLineEdits(transfer),
+    buildTransferReceiveLineEdits(transfer, followUpDefaults),
   );
   const [reviewing, setReviewing] = useState(false);
   const [flowError, setFlowError] = useState<string | null>(null);
@@ -144,7 +150,7 @@ export function InventoryTransferReceiveMode({
   const [highlightUnresolvedRemaining, setHighlightUnresolvedRemaining] = useState(false);
 
   useEffect(() => {
-    setLines(buildTransferReceiveLineEdits(transfer));
+    setLines(buildTransferReceiveLineEdits(transfer, followUpDefaults));
     setReviewing(false);
     setFlowError(null);
     setDiscrepancyOpen(false);
@@ -153,7 +159,7 @@ export function InventoryTransferReceiveMode({
     setHighlightUnresolvedRemaining(false);
     cancelRowEdit();
     cancelMobileEdit();
-  }, [transfer.transferId, transfer.status, transfer.updatedAtUtc, transfer.totalReceivedQty]);
+  }, [transfer.transferId, transfer.status, transfer.updatedAtUtc, transfer.totalReceivedQty, followUpDefaults]);
 
   const receiveEditableFields = useMemo<ReadonlyArray<ExitsTableEditableField>>(
     () => [{ key: "receiveNow", label: t("transfer.goodReceivedNow") }],
@@ -181,26 +187,58 @@ export function InventoryTransferReceiveMode({
     [lines],
   );
 
-  const remainingDecisionRows = useMemo(() => {
+  const followUpRows = useMemo(() => {
     if (!reviewing) {
       return [];
     }
-    return buildTransferRemainingDecisionRows(lines, discrepancyLabels);
+    return buildTransferFollowUpRows(lines, discrepancyLabels);
   }, [lines, reviewing, discrepancyLabels]);
 
-  const remainingDecisionSummary = useMemo(() => {
-    const products = remainingDecisionRows.length;
+  const followUpSummary = useMemo(() => {
+    const products = followUpRows.length;
     if (products === 0) {
       return "";
     }
-    const units = formatStockQtyLabel(sumRemainingUnits(remainingDecisionRows));
+    const units = formatStockQtyLabel(sumTransferFollowUpUnits(followUpRows));
     if (products === 1) {
       return t("purchasing.remainingDecisionSummaryOne").replace("{units}", units);
     }
     return t("purchasing.remainingDecisionSummary")
       .replace("{products}", String(products))
       .replace("{units}", units);
-  }, [remainingDecisionRows, t]);
+  }, [followUpRows, t]);
+
+  function followUpLabel(
+    line: TransferReceiveLineEdit,
+    kind: TransferFollowUpIssueKind,
+  ): string {
+    if (kind === "missing") {
+      if (line.missingFollowUp === "wait_original") {
+        return t("transfer.followUp.waitOriginal");
+      }
+      if (line.missingFollowUp === "request_replacement") {
+        return t("transfer.followUp.requestReplacement");
+      }
+      if (line.missingFollowUp === "accept_shortage") {
+        return t("transfer.followUp.acceptShortage");
+      }
+    } else if (kind === "damaged") {
+      if (line.damagedFollowUp === "request_replacement") {
+        return t("transfer.followUp.requestReplacement");
+      }
+      if (line.damagedFollowUp === "accept_shortage") {
+        return t("transfer.followUp.acceptShortage");
+      }
+    } else {
+      if (line.otherFollowUp === "request_replacement") {
+        return t("transfer.followUp.requestReplacement");
+      }
+      if (line.otherFollowUp === "accept_shortage") {
+        return t("transfer.followUp.acceptShortage");
+      }
+    }
+    return t("purchasing.remainingDecisionCol");
+  }
 
   const discrepancyLines = useMemo(() => {
     return lines
@@ -309,7 +347,9 @@ export function InventoryTransferReceiveMode({
         otherReasonText: "",
         otherExpanded: false,
         remarksText: "",
-        remainingAction: null,
+        missingFollowUp: null,
+        damagedFollowUp: null,
+        otherFollowUp: null,
       });
     }
     if (mobile) cancelMobileEdit();
@@ -347,6 +387,16 @@ export function InventoryTransferReceiveMode({
       setFlowError(t("transfer.discrepancyNoteRequired"));
       return;
     }
+    const missing = parseNonNegativeQty(target.notDeliveredText) ?? 0;
+    const damaged = parseNonNegativeQty(target.damagedText) ?? 0;
+    const other = parseNonNegativeQty(target.otherText ?? "0") ?? 0;
+    updateLine(target.productId, {
+      missingFollowUp:
+        missing > 1e-9 ? target.missingFollowUp ?? followUpDefaults.missingFollowUp : null,
+      damagedFollowUp:
+        damaged > 1e-9 ? target.damagedFollowUp ?? followUpDefaults.damagedFollowUp : null,
+      otherFollowUp: other > 1e-9 ? target.otherFollowUp ?? followUpDefaults.otherFollowUp : null,
+    });
     setFlowError(null);
     setHighlightUnclassified(false);
     closeDiscrepancyDialog();
@@ -405,8 +455,8 @@ export function InventoryTransferReceiveMode({
   }
 
   function onConfirmReceive() {
-    const remainingRows = buildTransferRemainingDecisionRows(lines, discrepancyLabels);
-    if (countUnresolvedRemaining(remainingRows) > 0) {
+    const remainingRows = buildTransferFollowUpRows(lines, discrepancyLabels);
+    if (countUnresolvedTransferFollowUp(remainingRows) > 0) {
       setHighlightUnresolvedRemaining(true);
       setFlowError(t("purchasing.remainingDecisionRequired"));
       return;
@@ -817,24 +867,17 @@ export function InventoryTransferReceiveMode({
                               {discrepancySummary
                                 ? `${t("transfer.discrepancy")}: ${discrepancySummary}`
                                 : null}
-                              {` · ${
-                                line.remainingAction === "cancel_remaining"
-                                  ? t("purchasing.cancelRemaining")
-                                  : line.remainingAction === "replace_later"
-                                    ? t("purchasing.replaceLater")
-                                    : t("purchasing.remainingDecisionCol")
-                              }`}
                               {line.remarksText.trim()
                                 ? ` · ${line.remarksText.trim()}`
                                 : ""}
                               {damaged > 0
-                                ? ` · ${t("transfer.damaged")}: ${formatStockQtyLabel(damaged, line.uom)}`
+                                ? ` · ${t("transfer.damaged")}: ${formatStockQtyLabel(damaged, line.uom)} (${followUpLabel(line, "damaged")})`
                                 : ""}
                               {notDelivered > 0
-                                ? ` · ${t("transfer.notDelivered")}: ${formatStockQtyLabel(notDelivered, line.uom)}`
+                                ? ` · ${t("transfer.notDelivered")}: ${formatStockQtyLabel(notDelivered, line.uom)} (${followUpLabel(line, "missing")})`
                                 : ""}
                               {other > 0
-                                ? ` · ${t("purchasing.otherDiscrepancy")}: ${formatStockQtyLabel(other, line.uom)}`
+                                ? ` · ${t("purchasing.otherDiscrepancy")}: ${formatStockQtyLabel(other, line.uom)} (${followUpLabel(line, "other")})`
                                 : ""}
                             </div>
                           ) : null}
@@ -852,35 +895,36 @@ export function InventoryTransferReceiveMode({
         </div>
       )}
 
-      {reviewing && remainingDecisionRows.length > 0 ? (
-        <ReceiveRemainingQuantityTable
-          title={t("purchasing.remainingDecisionTitle")}
-          summaryText={remainingDecisionSummary}
-          applyToAllLabel={t("purchasing.remainingApplyToAll")}
+      {reviewing && followUpRows.length > 0 ? (
+        <TransferReceiveFollowUpTable
+          title={t("transfer.followUp.title")}
+          summaryText={followUpSummary}
           productColLabel={t("transfer.product")}
-          remainingColLabel={t("purchasing.remainingCol")}
+          qtyColLabel={t("purchasing.remainingCol")}
           issueColLabel={t("purchasing.remainingIssueCol")}
-          decisionColLabel={t("purchasing.remainingDecisionCol")}
-          replaceLaterLabel={t("purchasing.replaceLater")}
-          cancelRemainingLabel={t("purchasing.cancelRemaining")}
-          rows={remainingDecisionRows}
+          decisionColLabel={t("transfer.followUp.decisionCol")}
+          waitOriginalLabel={t("transfer.followUp.waitOriginal")}
+          requestReplacementLabel={t("transfer.followUp.requestReplacement")}
+          acceptShortageLabel={t("transfer.followUp.acceptShortage")}
+          linkedStockRequest={linkedStockRequest}
+          rows={followUpRows}
           highlightUnresolved={highlightUnresolvedRemaining}
-          onDecisionChange={(productId, action: RemainingDecisionAction) => {
+          onDecisionChange={(rowKey, action) => {
             setHighlightUnresolvedRemaining(false);
             setFlowError(null);
-            updateLine(productId, { remainingAction: action });
+            const row = followUpRows.find((entry) => entry.rowKey === rowKey);
+            if (!row) {
+              return;
+            }
+            if (row.issueKind === "missing") {
+              updateLine(row.productId, { missingFollowUp: action as typeof followUpDefaults.missingFollowUp });
+            } else if (row.issueKind === "damaged") {
+              updateLine(row.productId, { damagedFollowUp: action as typeof followUpDefaults.damagedFollowUp });
+            } else {
+              updateLine(row.productId, { otherFollowUp: action as typeof followUpDefaults.otherFollowUp });
+            }
           }}
-          onApplyToAll={(action) => {
-            setHighlightUnresolvedRemaining(false);
-            setFlowError(null);
-            const remainingIds = new Set(remainingDecisionRows.map((row) => row.productId));
-            setLines((prev) =>
-              prev.map((line) =>
-                remainingIds.has(line.productId) ? { ...line, remainingAction: action } : line,
-              ),
-            );
-          }}
-          testId="transfer-receive-remaining-decisions"
+          testId="transfer-receive-follow-up"
         />
       ) : null}
 

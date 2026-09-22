@@ -447,12 +447,7 @@ describe("Inventory Transfer React flow", () => {
     await classifyTransferLine(user, "20", "Mixed receipt", { damaged: "1", missing: "3" });
     await user.click(screen.getByTestId("transfer-receive-review"));
     await waitFor(() =>
-      expect(screen.getByTestId("transfer-receive-remaining-decisions")).toBeInTheDocument(),
-    );
-    await user.click(
-      screen.getByTestId(
-        `transfer-receive-remaining-decisions-choice-${cokeId}-option-replace_later`,
-      ),
+      expect(screen.getByTestId("transfer-receive-follow-up")).toBeInTheDocument(),
     );
     await user.click(screen.getByTestId("transfer-receive-confirm"));
     await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
@@ -463,6 +458,7 @@ describe("Inventory Transfer React flow", () => {
           productId: cokeId,
           goodQty: 20,
           damagedQty: 1,
+          damagedFollowUp: "AcceptShortage",
           missingQty: 3,
           missingDisposition: "ExpectedLater",
           discrepancyNote: "Mixed receipt",

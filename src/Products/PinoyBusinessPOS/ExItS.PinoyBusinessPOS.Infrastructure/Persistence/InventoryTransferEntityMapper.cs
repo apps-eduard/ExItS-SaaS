@@ -85,7 +85,8 @@ internal static class InventoryTransferEntityMapper
             record.LotNumber,
             record.ExpirationDate,
             record.UnitCostSnapshot,
-            record.ClosedQty);
+            record.ClosedQty,
+            record.WaivedQty);
 
     public static InventoryTransferReceiptLine ToDomain(InventoryTransferReceiptLineRecord record) =>
         InventoryTransferReceiptLine.Rehydrate(
@@ -102,6 +103,13 @@ internal static class InventoryTransferEntityMapper
             string.IsNullOrWhiteSpace(record.MissingDisposition)
                 ? null
                 : InventoryTransferMissingDispositions.Parse(record.MissingDisposition),
+            string.IsNullOrWhiteSpace(record.DamagedFollowUp)
+                ? null
+                : InventoryTransferDiscrepancyFollowUps.Parse(record.DamagedFollowUp),
+            string.IsNullOrWhiteSpace(record.OtherFollowUp)
+                ? null
+                : InventoryTransferDiscrepancyFollowUps.Parse(record.OtherFollowUp),
+            record.QuantityWaived,
             record.Note);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
@@ -158,6 +166,7 @@ internal static class InventoryTransferEntityMapper
             SentQty = line.SentQty,
             ReceivedQty = line.ReceivedQty,
             ClosedQty = line.ClosedQty,
+            WaivedQty = line.WaivedQty,
             DiscrepancyReason = line.DiscrepancyReason is null
                 ? null
                 : InventoryTransferDiscrepancyReasons.ToCode(line.DiscrepancyReason.Value),
@@ -195,6 +204,13 @@ internal static class InventoryTransferEntityMapper
             MissingDisposition = line.MissingDisposition is null
                 ? null
                 : InventoryTransferMissingDispositions.ToCode(line.MissingDisposition.Value),
+            DamagedFollowUp = line.DamagedFollowUp is null
+                ? null
+                : InventoryTransferDiscrepancyFollowUps.ToCode(line.DamagedFollowUp.Value),
+            OtherFollowUp = line.OtherFollowUp is null
+                ? null
+                : InventoryTransferDiscrepancyFollowUps.ToCode(line.OtherFollowUp.Value),
+            QuantityWaived = line.QuantityWaived,
             Note = line.Note
         };
 

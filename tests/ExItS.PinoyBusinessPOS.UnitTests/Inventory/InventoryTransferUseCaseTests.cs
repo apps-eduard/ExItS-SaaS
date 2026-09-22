@@ -806,7 +806,8 @@ public sealed class InventoryTransferUseCaseTests
                 new InventoryTransferReceiveLineRequest(
                     fx.CokeId,
                     GoodQty: 70m,
-                    DamagedQty: 30m)
+                    DamagedQty: 30m,
+                    DamagedFollowUp: "RequestReplacement")
             ]),
             ActorB,
             BranchB);
@@ -846,6 +847,7 @@ public sealed class InventoryTransferUseCaseTests
                     fx.CokeId,
                     GoodQty: 70m,
                     DamagedQty: 20m,
+                    DamagedFollowUp: "RequestReplacement",
                     MissingQty: 10m,
                     MissingDisposition: "ExpectedLater")
             ]),

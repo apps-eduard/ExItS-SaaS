@@ -214,7 +214,7 @@ export function StockRequestDetailPage() {
   const canPrepareTransferAction =
     allowManage &&
     isSource &&
-    canPrepareTransfer(dto.status, dto.lines, Boolean(openCover));
+    canPrepareTransfer(dto.status, dto.lines);
   const remainingDispatchQty = totalRemainingToDispatch(dto.lines);
   const prepareTransferLabelKey = prepareTransferPrimaryLabelKey(
     dto.status,

@@ -46,6 +46,7 @@ export const inventoryTransferLineDtoSchema = z.object({
   receivedQty: z.number(),
   outstandingQty: z.number().optional(),
   closedQty: z.number().optional(),
+  waivedQty: z.number().optional(),
   differenceQty: z.number(),
   lineStatus: z.string(),
   discrepancyReason: z.string().nullable().optional(),
@@ -57,7 +58,17 @@ export const inventoryTransferLineDtoSchema = z.object({
   sku: z.string().nullable().optional(),
 });
 
-export const INVENTORY_TRANSFER_MISSING_DISPOSITIONS = ["ExpectedLater", "CloseMissing"] as const;
+export const INVENTORY_TRANSFER_MISSING_DISPOSITIONS = [
+  "ExpectedLater",
+  "CloseMissing",
+  "AcceptShortage",
+] as const;
+export const INVENTORY_TRANSFER_DISCREPANCY_FOLLOW_UPS = [
+  "RequestReplacement",
+  "AcceptShortage",
+] as const;
+export type InventoryTransferDiscrepancyFollowUpCode =
+  (typeof INVENTORY_TRANSFER_DISCREPANCY_FOLLOW_UPS)[number];
 export type InventoryTransferMissingDispositionCode =
   (typeof INVENTORY_TRANSFER_MISSING_DISPOSITIONS)[number];
 
@@ -72,6 +83,9 @@ export const inventoryTransferReceiptLineDtoSchema = z.object({
   otherReasonCode: z.string().nullable().optional(),
   otherReasonNote: z.string().nullable().optional(),
   missingDisposition: z.string().nullable().optional(),
+  damagedFollowUp: z.string().nullable().optional(),
+  otherFollowUp: z.string().nullable().optional(),
+  quantityWaived: z.number().optional(),
   note: z.string().nullable().optional(),
 });
 
@@ -176,6 +190,8 @@ export type InventoryTransferReceiveLineRequest = {
   otherReasonCode?: string | null;
   otherReasonNote?: string | null;
   missingDisposition?: InventoryTransferMissingDispositionCode | string | null;
+  damagedFollowUp?: InventoryTransferDiscrepancyFollowUpCode | string | null;
+  otherFollowUp?: InventoryTransferDiscrepancyFollowUpCode | string | null;
   discrepancyReason?: string | null;
   discrepancyNote?: string | null;
   lineId?: string | null;

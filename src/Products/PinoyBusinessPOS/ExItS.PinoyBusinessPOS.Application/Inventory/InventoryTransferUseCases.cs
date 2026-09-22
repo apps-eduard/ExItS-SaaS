@@ -126,6 +126,13 @@ public sealed class InventoryTransferQueryService
                     rl.MissingDisposition is null
                         ? null
                         : InventoryTransferMissingDispositions.ToCode(rl.MissingDisposition.Value),
+                    rl.DamagedFollowUp is null
+                        ? null
+                        : InventoryTransferDiscrepancyFollowUps.ToCode(rl.DamagedFollowUp.Value),
+                    rl.OtherFollowUp is null
+                        ? null
+                        : InventoryTransferDiscrepancyFollowUps.ToCode(rl.OtherFollowUp.Value),
+                    rl.QuantityWaived,
                     rl.Note)).ToList())).ToList(),
             transfer.Lines.Select(l => new InventoryTransferLineDto(
                 l.Id.Value,
@@ -137,6 +144,7 @@ public sealed class InventoryTransferQueryService
                 l.ReceivedQty,
                 l.OutstandingQty,
                 l.ClosedQty,
+                l.WaivedQty,
                 l.DifferenceQty,
                 l.LineStatus,
                 l.DiscrepancyReason is null ? null : InventoryTransferDiscrepancyReasons.ToCode(l.DiscrepancyReason.Value),
@@ -733,6 +741,32 @@ public sealed class ReceiveInventoryTransfer
                 missingDisposition = parsedMissing;
             }
 
+            InventoryTransferDiscrepancyFollowUp? damagedFollowUp = null;
+            if (!string.IsNullOrWhiteSpace(line.DamagedFollowUp))
+            {
+                if (!InventoryTransferDiscrepancyFollowUps.TryParse(line.DamagedFollowUp, out var parsedDamaged))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                        "Damaged follow-up is not recognized.");
+                }
+
+                damagedFollowUp = parsedDamaged;
+            }
+
+            InventoryTransferDiscrepancyFollowUp? otherFollowUp = null;
+            if (!string.IsNullOrWhiteSpace(line.OtherFollowUp))
+            {
+                if (!InventoryTransferDiscrepancyFollowUps.TryParse(line.OtherFollowUp, out var parsedOther))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                        "Other follow-up is not recognized.");
+                }
+
+                otherFollowUp = parsedOther;
+            }
+
             receiveDrafts.Add(new InventoryTransferReceiveLineDraft(
                 CatalogProductId.From(line.ProductId),
                 goodQty,
@@ -744,7 +778,9 @@ public sealed class ReceiveInventoryTransfer
                 OtherQty: line.OtherQty,
                 OtherReasonCode: line.OtherReasonCode,
                 OtherReasonNote: line.OtherReasonNote,
-                MissingDisposition: missingDisposition));
+                MissingDisposition: missingDisposition,
+                DamagedFollowUp: damagedFollowUp,
+                OtherFollowUp: otherFollowUp));
         }
 
         var productIds = transfer.Lines.Select(l => l.ProductId).ToList();

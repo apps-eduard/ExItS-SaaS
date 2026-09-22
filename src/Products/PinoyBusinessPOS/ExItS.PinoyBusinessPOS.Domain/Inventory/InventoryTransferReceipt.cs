@@ -77,6 +77,9 @@ public sealed class InventoryTransferReceipt
                 line.OtherReasonCode,
                 line.OtherReasonNote,
                 line.MissingDisposition,
+                line.DamagedFollowUp,
+                line.OtherFollowUp,
+                line.QuantityWaived,
                 line.Note));
         }
 
@@ -118,6 +121,9 @@ internal sealed record InventoryTransferReceiptLineDraft(
     string? OtherReasonCode = null,
     string? OtherReasonNote = null,
     InventoryTransferMissingDisposition? MissingDisposition = null,
+    InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
+    InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null,
+    decimal QuantityWaived = 0m,
     string? Note = null);
 
 public sealed class InventoryTransferReceiptLine
@@ -134,6 +140,9 @@ public sealed class InventoryTransferReceiptLine
     public string? OtherReasonCode { get; }
     public string? OtherReasonNote { get; }
     public InventoryTransferMissingDisposition? MissingDisposition { get; }
+    public InventoryTransferDiscrepancyFollowUp? DamagedFollowUp { get; }
+    public InventoryTransferDiscrepancyFollowUp? OtherFollowUp { get; }
+    public decimal QuantityWaived { get; }
     public string? Note { get; }
 
     private InventoryTransferReceiptLine(
@@ -148,6 +157,9 @@ public sealed class InventoryTransferReceiptLine
         string? otherReasonCode,
         string? otherReasonNote,
         InventoryTransferMissingDisposition? missingDisposition,
+        InventoryTransferDiscrepancyFollowUp? damagedFollowUp,
+        InventoryTransferDiscrepancyFollowUp? otherFollowUp,
+        decimal quantityWaived,
         string? note)
     {
         Id = id;
@@ -161,6 +173,9 @@ public sealed class InventoryTransferReceiptLine
         OtherReasonCode = otherReasonCode;
         OtherReasonNote = otherReasonNote;
         MissingDisposition = missingDisposition;
+        DamagedFollowUp = damagedFollowUp;
+        OtherFollowUp = otherFollowUp;
+        QuantityWaived = quantityWaived;
         Note = note;
     }
 
@@ -175,10 +190,13 @@ public sealed class InventoryTransferReceiptLine
         string? otherReasonCode = null,
         string? otherReasonNote = null,
         InventoryTransferMissingDisposition? missingDisposition = null,
+        InventoryTransferDiscrepancyFollowUp? damagedFollowUp = null,
+        InventoryTransferDiscrepancyFollowUp? otherFollowUp = null,
+        decimal quantityWaived = 0m,
         string? note = null,
         InventoryTransferReceiptLineId? id = null)
     {
-        if (quantityReceived < 0m || quantityDamaged < 0m || quantityMissing < 0m || quantityOther < 0m)
+        if (quantityReceived < 0m || quantityDamaged < 0m || quantityMissing < 0m || quantityOther < 0m || quantityWaived < 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferReceiveQty,
@@ -204,6 +222,20 @@ public sealed class InventoryTransferReceiptLine
                 "Missing disposition is required when missing quantity is greater than zero.");
         }
 
+        if (quantityDamaged > 0m && damagedFollowUp is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                "Damaged follow-up is required when damaged quantity is greater than zero.");
+        }
+
+        if (quantityOther > 0m && otherFollowUp is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                "Other follow-up is required when other quantity is greater than zero.");
+        }
+
         return new InventoryTransferReceiptLine(
             id ?? InventoryTransferReceiptLineId.New(),
             receiptId,
@@ -216,6 +248,9 @@ public sealed class InventoryTransferReceiptLine
             otherReasonCode,
             ExItS.PinoyBusinessPOS.Domain.Purchasing.ReceiveDiscrepancyOtherReason.NormalizeNote(otherReasonNote),
             missingDisposition,
+            damagedFollowUp,
+            otherFollowUp,
+            quantityWaived,
             note);
     }
 
@@ -231,6 +266,9 @@ public sealed class InventoryTransferReceiptLine
         string? otherReasonCode = null,
         string? otherReasonNote = null,
         InventoryTransferMissingDisposition? missingDisposition = null,
+        InventoryTransferDiscrepancyFollowUp? damagedFollowUp = null,
+        InventoryTransferDiscrepancyFollowUp? otherFollowUp = null,
+        decimal quantityWaived = 0m,
         string? note = null) =>
         new(
             id,
@@ -244,5 +282,8 @@ public sealed class InventoryTransferReceiptLine
             otherReasonCode,
             otherReasonNote,
             missingDisposition,
+            damagedFollowUp,
+            otherFollowUp,
+            quantityWaived,
             note);
 }

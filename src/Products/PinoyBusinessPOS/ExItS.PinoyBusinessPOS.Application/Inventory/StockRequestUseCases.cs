@@ -495,6 +495,7 @@ public sealed class StockRequestQueryService
                 var received = coverage.ReceivedByProduct.GetValueOrDefault(productId);
                 var openInTransit = coverage.OpenInTransitByProduct.GetValueOrDefault(productId);
                 var remaining = coverage.RemainingToDispatchByProduct.GetValueOrDefault(productId);
+                var waived = coverage.WaivedByProduct.GetValueOrDefault(productId);
                 return new StockRequestLineDto(
                     line.Id.Value,
                     productId,
@@ -504,6 +505,7 @@ public sealed class StockRequestQueryService
                     received,
                     openInTransit,
                     remaining,
+                    waived,
                     line.NameSnapshot,
                     UnitOfMeasures.ToCode(line.UnitOfMeasure));
             }).ToList(),
@@ -1473,14 +1475,16 @@ public sealed class DispatchStockRequest
 
 /// <summary>
 /// Authoritative stock-request dispatch coverage.
-/// RemainingToDispatch = MAX(0, Approved − Received − OpenInTransit) where OpenInTransit is outstanding
+/// RemainingToDispatch = MAX(0, Approved − Received − OpenInTransit − Waived) where OpenInTransit is outstanding
 /// on InTransit/PartiallyReceived transfers only (not Draft, Received, ClosedWithDiscrepancy, Cancelled).
+/// Waived = sum of WaivedQty on non-cancelled linked transfer lines.
 /// </summary>
 internal static class StockRequestDispatchCoverage
 {
     internal sealed record Snapshot(
         IReadOnlyDictionary<Guid, decimal> ReceivedByProduct,
         IReadOnlyDictionary<Guid, decimal> OpenInTransitByProduct,
+        IReadOnlyDictionary<Guid, decimal> WaivedByProduct,
         IReadOnlyDictionary<Guid, decimal> RemainingToDispatchByProduct);
 
     internal static Snapshot Compute(
@@ -1500,6 +1504,11 @@ internal static class StockRequestDispatchCoverage
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.Sum(x => Math.Max(0m, x.OutstandingQty)));
 
+        var waivedByProduct = active
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.WaivedQty));
+
         var remainingByProduct = new Dictionary<Guid, decimal>();
         foreach (var line in stockRequest.Lines)
         {
@@ -1508,11 +1517,12 @@ internal static class StockRequestDispatchCoverage
                 0m,
                 line.FulfillmentTargetQuantity
                 - receivedByProduct.GetValueOrDefault(productId)
-                - openInTransitByProduct.GetValueOrDefault(productId));
+                - openInTransitByProduct.GetValueOrDefault(productId)
+                - waivedByProduct.GetValueOrDefault(productId));
             remainingByProduct[productId] = remaining;
         }
 
-        return new Snapshot(receivedByProduct, openInTransitByProduct, remainingByProduct);
+        return new Snapshot(receivedByProduct, openInTransitByProduct, waivedByProduct, remainingByProduct);
     }
 
     internal static List<InventoryTransferLineRequest> BuildRemainingDispatchLines(

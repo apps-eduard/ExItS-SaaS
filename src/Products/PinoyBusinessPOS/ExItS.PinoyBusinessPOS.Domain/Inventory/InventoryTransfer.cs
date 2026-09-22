@@ -234,7 +234,7 @@ public sealed class InventoryTransfer
                     "Receive lines cannot repeat the same transfer line.");
             }
 
-            var (goodDelta, damagedWave, missingWave, otherWave, _) = line.ApplyReceiptClassification(receive);
+            var (goodDelta, damagedWave, missingWave, otherWave, _, waivedDelta) = line.ApplyReceiptClassification(receive);
             applied.Add(new InventoryTransferReceiptLineDraft(
                 line.Id,
                 line.ProductId,
@@ -245,6 +245,9 @@ public sealed class InventoryTransfer
                 receive.OtherReasonCode,
                 receive.OtherReasonNote,
                 receive.MissingDisposition,
+                receive.DamagedFollowUp,
+                receive.OtherFollowUp,
+                waivedDelta,
                 receive.DiscrepancyNote));
         }
 

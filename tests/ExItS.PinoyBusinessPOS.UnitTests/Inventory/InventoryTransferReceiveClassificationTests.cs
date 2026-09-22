@@ -202,6 +202,98 @@ public sealed class InventoryTransferReceiveClassificationTests
         return transfer;
     }
 
+    [Fact]
+    public void I_missing_request_replacement_increases_stock_request_remaining()
+    {
+        var transfer = DispatchSingleLine(100m);
+        transfer.Receive(
+            [Classify(Coke, good: 70m, missing: 30m, missingDisposition: InventoryTransferMissingDisposition.CloseMissing)],
+            Actor,
+            Utc.AddMinutes(2));
+
+        var request = LinkedStockRequest(transfer, 100m);
+        var coverage = StockRequestDispatchCoverage.Compute(request, [transfer]);
+        Assert.Equal(30m, coverage.RemainingToDispatchByProduct[Coke.Value]);
+    }
+
+    [Fact]
+    public void J_damaged_replacement_increases_stock_request_remaining()
+    {
+        var transfer = DispatchSingleLine(100m);
+        transfer.Receive(
+            [Classify(Coke, good: 70m, damaged: 30m)],
+            Actor,
+            Utc.AddMinutes(2));
+
+        var request = LinkedStockRequest(transfer, 100m);
+        var coverage = StockRequestDispatchCoverage.Compute(request, [transfer]);
+        Assert.Equal(30m, coverage.RemainingToDispatchByProduct[Coke.Value]);
+        Assert.Equal(0m, coverage.WaivedByProduct.GetValueOrDefault(Coke.Value));
+    }
+
+    [Fact]
+    public void K_accept_shortage_waives_and_does_not_increase_remaining()
+    {
+        var transfer = DispatchSingleLine(100m);
+        transfer.Receive(
+            [
+                Classify(
+                    Coke,
+                    good: 60m,
+                    missing: 20m,
+                    damaged: 20m,
+                    missingDisposition: InventoryTransferMissingDisposition.AcceptShortage,
+                    damagedFollowUp: InventoryTransferDiscrepancyFollowUp.AcceptShortage)
+            ],
+            Actor,
+            Utc.AddMinutes(2));
+
+        var line = transfer.Lines.Single();
+        Assert.Equal(40m, line.WaivedQty);
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, transfer.Status);
+
+        var request = LinkedStockRequest(transfer, 100m);
+        var coverage = StockRequestDispatchCoverage.Compute(request, [transfer]);
+        Assert.Equal(0m, coverage.RemainingToDispatchByProduct[Coke.Value]);
+        Assert.Equal(40m, coverage.WaivedByProduct[Coke.Value]);
+    }
+
+    [Fact]
+    public void L_other_wrong_item_closes_with_replacement_remaining()
+    {
+        var transfer = DispatchSingleLine(100m);
+        transfer.Receive(
+            [
+                Classify(
+                    Coke,
+                    good: 99m,
+                    other: 1m,
+                    otherReasonCode: ReceiveDiscrepancyOtherReason.WrongItem)
+            ],
+            Actor,
+            Utc.AddMinutes(2));
+
+        var request = LinkedStockRequest(transfer, 100m);
+        var coverage = StockRequestDispatchCoverage.Compute(request, [transfer]);
+        Assert.Equal(1m, coverage.RemainingToDispatchByProduct[Coke.Value]);
+        Assert.Equal(InventoryTransferDiscrepancyReason.WrongItem, transfer.Lines.Single().DiscrepancyReason);
+    }
+
+    private static StockRequest LinkedStockRequest(InventoryTransfer transfer, decimal approvedQty)
+    {
+        var request = StockRequest.Create(
+            Org,
+            BranchB,
+            BranchA,
+            [new StockRequestLineDraft(Coke, approvedQty, "Coke", UnitOfMeasure.Piece)],
+            Actor,
+            Utc,
+            "SR-20260922-000300");
+        request.Approve(Actor, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [Coke.Value] = approvedQty });
+        request.MarkDispatched(Actor, Utc.AddMinutes(1), transfer.Id.Value);
+        return request;
+    }
+
     private static InventoryTransferReceiveLineDraft Classify(
         CatalogProductId productId,
         decimal good = 0m,
@@ -209,7 +301,9 @@ public sealed class InventoryTransferReceiveClassificationTests
         decimal missing = 0m,
         decimal other = 0m,
         string? otherReasonCode = null,
-        InventoryTransferMissingDisposition? missingDisposition = null) =>
+        InventoryTransferMissingDisposition? missingDisposition = null,
+        InventoryTransferDiscrepancyFollowUp? damagedFollowUp = null,
+        InventoryTransferDiscrepancyFollowUp? otherFollowUp = null) =>
         new(
             productId,
             GoodQty: good,
@@ -217,5 +311,11 @@ public sealed class InventoryTransferReceiveClassificationTests
             MissingQty: missing,
             OtherQty: other,
             OtherReasonCode: otherReasonCode,
-            MissingDisposition: missingDisposition);
+            MissingDisposition: missingDisposition,
+            DamagedFollowUp: damaged > 0m
+                ? damagedFollowUp ?? InventoryTransferDiscrepancyFollowUp.RequestReplacement
+                : null,
+            OtherFollowUp: other > 0m
+                ? otherFollowUp ?? InventoryTransferDiscrepancyFollowUp.RequestReplacement
+                : null);
 }

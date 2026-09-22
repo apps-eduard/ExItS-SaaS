@@ -33,18 +33,22 @@ describe("stock-request-helpers", () => {
     );
   });
 
-  it("computes remaining to dispatch as approved − received − open in transit", () => {
+  it("computes remaining to dispatch as approved − received − open in transit − waived", () => {
     expect(remainingRequestQty(100, 70, 30)).toBe(0);
     expect(remainingRequestQty(100, 70, 0)).toBe(30);
+    expect(remainingRequestQty(100, 70, 0, 30)).toBe(0);
     expect(remainingRequestQty(10, 0, 6)).toBe(4);
     expect(remainingRequestQty(10, 6, 0)).toBe(4);
     expect(remainingRequestQty(10, 10, 0)).toBe(0);
   });
 
-  it("allows prepare/fulfill only when remaining to dispatch is positive and no open cover", () => {
+  it("allows prepare when remaining is positive even with open in-transit cover", () => {
     const lines = [{ remainingToDispatchQuantity: 30 }];
     expect(canPrepareTransfer("PartiallyFulfilled", lines, false)).toBe(true);
-    expect(canPrepareTransfer("PartiallyFulfilled", lines, true)).toBe(false);
+    expect(canPrepareTransfer("PartiallyFulfilled", lines, true)).toBe(true);
+    expect(canPrepareTransfer("PartiallyFulfilled", [{ remainingToDispatchQuantity: 0 }], true)).toBe(
+      false,
+    );
     expect(canFulfillRemaining("PartiallyFulfilled", lines, false)).toBe(true);
     expect(canFulfillRemaining("Approved", lines, false)).toBe(false);
     expect(

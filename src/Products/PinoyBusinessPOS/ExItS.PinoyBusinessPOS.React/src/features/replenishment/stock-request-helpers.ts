@@ -46,8 +46,13 @@ export function pickPreferredSourceId(
   return active.find((r) => r.isPreferred)?.sourceLocationId ?? active[0]?.sourceLocationId ?? null;
 }
 
-export function remainingRequestQty(approvedOrRequested: number, received: number, openInTransit: number): number {
-  return Math.max(0, approvedOrRequested - received - openInTransit);
+export function remainingRequestQty(
+  approvedOrRequested: number,
+  received: number,
+  openInTransit: number,
+  waived = 0,
+): number {
+  return Math.max(0, approvedOrRequested - received - openInTransit - waived);
 }
 
 const SOURCE_PREPARE_TRANSFER_STATUSES = new Set([
@@ -78,15 +83,12 @@ function sourceMayPrepareTransfer(
   return lines.some((l) => (l.remainingToDispatchQuantity ?? 0) > 0);
 }
 
-/** True when source may create or reopen a draft transfer for remaining qty (no open in-transit cover). */
+/** True when source may create or reopen a draft transfer for remaining qty. */
 export function canPrepareTransfer(
   status: string,
   lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
-  hasOpenCoveringTransfer: boolean,
+  _hasOpenCoveringTransfer = false,
 ): boolean {
-  if (hasOpenCoveringTransfer) {
-    return false;
-  }
   return sourceMayPrepareTransfer(status, lines);
 }
 
@@ -94,7 +96,7 @@ export function canPrepareTransfer(
 export function canFulfillRemaining(
   status: string,
   lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
-  hasOpenCoveringTransfer: boolean,
+  hasOpenCoveringTransfer = false,
 ): boolean {
   if (!canPrepareTransfer(status, lines, hasOpenCoveringTransfer)) {
     return false;

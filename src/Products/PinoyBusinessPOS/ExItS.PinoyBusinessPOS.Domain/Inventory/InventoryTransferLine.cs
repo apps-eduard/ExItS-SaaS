@@ -32,7 +32,9 @@ public sealed record InventoryTransferReceiveLineDraft(
     decimal OtherQty = 0m,
     string? OtherReasonCode = null,
     string? OtherReasonNote = null,
-    InventoryTransferMissingDisposition? MissingDisposition = null)
+    InventoryTransferMissingDisposition? MissingDisposition = null,
+    InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
+    InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null)
 {
     /// <summary>Backward-compatible alias for <see cref="GoodQty"/>.</summary>
     public decimal ReceivedQty => GoodQty;
@@ -61,6 +63,8 @@ public sealed class InventoryTransferLine
     public decimal ReceivedQty { get; private set; }
     /// <summary>Quantity closed as discrepancy (not received). Set by <see cref="CloseRemainder"/>.</summary>
     public decimal ClosedQty { get; private set; }
+    /// <summary>Quantity permanently accepted as shortage (does not increase remaining to dispatch).</summary>
+    public decimal WaivedQty { get; private set; }
     public InventoryTransferDiscrepancyReason? DiscrepancyReason { get; private set; }
     public string? DiscrepancyNote { get; private set; }
     public InventoryLotId? SourceLotId { get; }
@@ -112,7 +116,8 @@ public sealed class InventoryTransferLine
         InventoryLotId? sourceLotId = null,
         string? lotNumber = null,
         DateOnly? expirationDate = null,
-        decimal? unitCostSnapshot = null)
+        decimal? unitCostSnapshot = null,
+        decimal waivedQty = 0m)
     {
         Id = id;
         TransferId = transferId;
@@ -124,6 +129,7 @@ public sealed class InventoryTransferLine
         SentQty = sentQty;
         ReceivedQty = receivedQty;
         ClosedQty = closedQty;
+        WaivedQty = waivedQty;
         DiscrepancyReason = discrepancyReason;
         DiscrepancyNote = discrepancyNote;
         SourceLotId = sourceLotId;
@@ -189,7 +195,7 @@ public sealed class InventoryTransferLine
     /// <summary>
     /// Classifies outstanding quantity for one receive wave. Returns good, damaged-closed, and missing-closed deltas.
     /// </summary>
-    internal (decimal GoodDelta, decimal DamagedWave, decimal MissingWave, decimal OtherWave, decimal MissingClosed) ApplyReceiptClassification(
+    internal (decimal GoodDelta, decimal DamagedWave, decimal MissingWave, decimal OtherWave, decimal MissingClosed, decimal WaivedDelta) ApplyReceiptClassification(
         InventoryTransferReceiveLineDraft receive)
     {
         var outstandingBefore = OutstandingQty;
@@ -229,6 +235,20 @@ public sealed class InventoryTransferLine
                 "Missing disposition is required when missing quantity is greater than zero.");
         }
 
+        if (damaged > 0m && receive.DamagedFollowUp is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                "Damaged follow-up is required when damaged quantity is greater than zero.");
+        }
+
+        if (other > 0m && receive.OtherFollowUp is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
+                "Other follow-up is required when other quantity is greater than zero.");
+        }
+
         var difference = outstandingBefore - good;
         if (damaged + missing + other > difference)
         {
@@ -244,9 +264,26 @@ public sealed class InventoryTransferLine
                 "When classifying a shortfall, damaged plus missing plus other must equal the discrepancy quantity.");
         }
 
-        var missingClosed = receive.MissingDisposition == InventoryTransferMissingDisposition.CloseMissing
+        var missingClosed = receive.MissingDisposition is InventoryTransferMissingDisposition.CloseMissing
+            or InventoryTransferMissingDisposition.AcceptShortage
             ? missing
             : 0m;
+
+        var waivedDelta = 0m;
+        if (missing > 0m && receive.MissingDisposition == InventoryTransferMissingDisposition.AcceptShortage)
+        {
+            waivedDelta += missing;
+        }
+
+        if (damaged > 0m && receive.DamagedFollowUp == InventoryTransferDiscrepancyFollowUp.AcceptShortage)
+        {
+            waivedDelta += damaged;
+        }
+
+        if (other > 0m && receive.OtherFollowUp == InventoryTransferDiscrepancyFollowUp.AcceptShortage)
+        {
+            waivedDelta += other;
+        }
 
         ReceivedQty += good;
         var closedDelta = damaged + other + missingClosed;
@@ -273,7 +310,12 @@ public sealed class InventoryTransferLine
             }
         }
 
-        return (good, damaged, missing, other, missingClosed);
+        if (waivedDelta > 0m)
+        {
+            WaivedQty += waivedDelta;
+        }
+
+        return (good, damaged, missing, other, missingClosed, waivedDelta);
     }
 
     private decimal NormalizeWaveQty(decimal qty, SellingMode sellingMode) =>
@@ -309,7 +351,8 @@ public sealed class InventoryTransferLine
         string? lotNumber = null,
         DateOnly? expirationDate = null,
         decimal? unitCostSnapshot = null,
-        decimal closedQty = 0m) =>
+        decimal closedQty = 0m,
+        decimal waivedQty = 0m) =>
         new(
             id,
             transferId,
@@ -326,7 +369,8 @@ public sealed class InventoryTransferLine
             sourceLotId,
             lotNumber,
             expirationDate,
-            unitCostSnapshot);
+            unitCostSnapshot,
+            waivedQty);
 
     private static decimal? NormalizeOptionalUnitCost(decimal? unitCost)
     {

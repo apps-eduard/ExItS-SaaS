@@ -5,7 +5,8 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 public enum InventoryTransferMissingDisposition
 {
     ExpectedLater = 0,
-    CloseMissing = 1
+    CloseMissing = 1,
+    AcceptShortage = 2
 }
 
 public static class InventoryTransferMissingDispositions
@@ -15,7 +16,8 @@ public static class InventoryTransferMissingDispositions
     public static IReadOnlyList<string> Codes { get; } =
     [
         nameof(InventoryTransferMissingDisposition.ExpectedLater),
-        nameof(InventoryTransferMissingDisposition.CloseMissing)
+        nameof(InventoryTransferMissingDisposition.CloseMissing),
+        nameof(InventoryTransferMissingDisposition.AcceptShortage)
     ];
 
     public static string ToCode(InventoryTransferMissingDisposition disposition) => disposition.ToString();

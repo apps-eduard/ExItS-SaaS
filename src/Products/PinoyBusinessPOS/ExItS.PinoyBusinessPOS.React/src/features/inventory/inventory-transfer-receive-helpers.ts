@@ -4,11 +4,10 @@ import type {
 } from "@/api/pos/pos-inventory-transfer-client";
 import type { ReceivedQuantityParse } from "@/features/inventory/inventory-transfer-labels";
 import { parseNonNegativeQty } from "@/features/purchasing/receive-math";
-import {
-  buildRemainingDecisionRows,
-  type RemainingDecisionAction,
-  type RemainingDecisionRow,
-} from "@/features/purchasing/receive-remaining-decision";
+import type {
+  TransferDamagedOtherFollowUp,
+  TransferMissingFollowUp,
+} from "@/features/inventory/transfer-receive-follow-up";
 
 export type TransferReceiveLineEdit = {
   lineId: string;
@@ -27,7 +26,9 @@ export type TransferReceiveLineEdit = {
   otherReasonText: string;
   otherExpanded?: boolean;
   remarksText: string;
-  remainingAction: RemainingDecisionAction | null;
+  missingFollowUp: TransferMissingFollowUp | null;
+  damagedFollowUp: TransferDamagedOtherFollowUp | null;
+  otherFollowUp: TransferDamagedOtherFollowUp | null;
 };
 
 export function lineClosedQty(line: InventoryTransferLineDto): number {
@@ -115,7 +116,14 @@ export function defaultReceiveNowByLine(transfer: InventoryTransferDto): Record<
   return next;
 }
 
-export function buildTransferReceiveLineEdits(transfer: InventoryTransferDto): TransferReceiveLineEdit[] {
+export function buildTransferReceiveLineEdits(
+  transfer: InventoryTransferDto,
+  defaults?: {
+    missingFollowUp?: TransferMissingFollowUp | null;
+    damagedFollowUp?: TransferDamagedOtherFollowUp | null;
+    otherFollowUp?: TransferDamagedOtherFollowUp | null;
+  },
+): TransferReceiveLineEdit[] {
   return transfer.lines.map((line) => {
     const outstanding = lineOutstandingQty(line);
     return {
@@ -134,36 +142,9 @@ export function buildTransferReceiveLineEdits(transfer: InventoryTransferDto): T
       otherReasonCode: "",
       otherReasonText: "",
       remarksText: "",
-      remainingAction: null,
+      missingFollowUp: defaults?.missingFollowUp ?? null,
+      damagedFollowUp: defaults?.damagedFollowUp ?? null,
+      otherFollowUp: defaults?.otherFollowUp ?? null,
     };
   });
-}
-
-/** Remaining decisions match PO: any shortfall (outstanding − good) needs replace later / cancel. */
-export function buildTransferRemainingDecisionRows(
-  lines: readonly TransferReceiveLineEdit[],
-  labels: {
-    damaged: string;
-    notDelivered: string;
-    otherReasons?: Record<string, string>;
-    otherFallback?: string;
-  },
-): RemainingDecisionRow[] {
-  return buildRemainingDecisionRows(
-    lines.map((line) => ({
-      productId: line.productId,
-      name: line.name,
-      sku: line.sku,
-      uom: line.uom,
-      outstandingQty: line.outstandingQty,
-      goodText: line.goodText,
-      damagedText: line.damagedText,
-      notDeliveredText: line.notDeliveredText,
-      otherText: line.otherText,
-      otherReasonCode: line.otherReasonCode,
-      remarksText: line.remarksText,
-      remainingAction: line.remainingAction,
-    })),
-    labels,
-  );
 }

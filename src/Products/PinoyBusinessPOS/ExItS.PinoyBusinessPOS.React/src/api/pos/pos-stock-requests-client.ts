@@ -22,6 +22,7 @@ export const stockRequestLineDtoSchema = z.object({
   fulfilledQuantity: z.number(),
   inProgressQuantity: z.number(),
   remainingToDispatchQuantity: z.number().optional().default(0),
+  waivedQuantity: z.number().optional().default(0),
   nameSnapshot: z.string(),
   unitOfMeasure: z.string(),
 });

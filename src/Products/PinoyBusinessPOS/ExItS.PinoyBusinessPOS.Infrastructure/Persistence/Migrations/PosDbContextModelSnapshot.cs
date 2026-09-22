@@ -4835,6 +4835,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(32)")
                         .HasColumnName("unit_of_measure");
 
+                    b.Property<decimal>("WaivedQty")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("waived_qty");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId")
@@ -4884,6 +4891,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("DamagedFollowUp")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("damaged_follow_up");
+
                     b.Property<string>("MissingDisposition")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
@@ -4893,6 +4905,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("note");
+
+                    b.Property<string>("OtherFollowUp")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("other_follow_up");
 
                     b.Property<string>("OtherReasonCode")
                         .HasMaxLength(32)
@@ -4933,6 +4950,13 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)")
                         .HasColumnName("quantity_received");
+
+                    b.Property<decimal>("QuantityWaived")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("quantity_waived");
 
                     b.Property<Guid>("ReceiptId")
                         .HasColumnType("uuid")

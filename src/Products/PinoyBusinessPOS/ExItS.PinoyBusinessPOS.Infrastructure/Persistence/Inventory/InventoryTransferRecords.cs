@@ -97,6 +97,7 @@ internal sealed class InventoryTransferLineRecord
     public decimal SentQty { get; set; }
     public decimal ReceivedQty { get; set; }
     public decimal ClosedQty { get; set; }
+    public decimal WaivedQty { get; set; }
     public string? DiscrepancyReason { get; set; }
     public string? DiscrepancyNote { get; set; }
     public Guid? SourceLotId { get; set; }
@@ -135,6 +136,9 @@ internal sealed class InventoryTransferReceiptLineRecord
     public string? OtherReasonCode { get; set; }
     public string? OtherReasonNote { get; set; }
     public string? MissingDisposition { get; set; }
+    public string? DamagedFollowUp { get; set; }
+    public string? OtherFollowUp { get; set; }
+    public decimal QuantityWaived { get; set; }
     public string? Note { get; set; }
 }
 

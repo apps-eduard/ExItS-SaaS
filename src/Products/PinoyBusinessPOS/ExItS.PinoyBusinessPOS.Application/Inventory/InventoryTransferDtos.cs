@@ -27,7 +27,9 @@ public sealed record InventoryTransferReceiveLineRequest(
     decimal OtherQty = 0,
     string? OtherReasonCode = null,
     string? OtherReasonNote = null,
-    string? MissingDisposition = null);
+    string? MissingDisposition = null,
+    string? DamagedFollowUp = null,
+    string? OtherFollowUp = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -54,6 +56,9 @@ public sealed record InventoryTransferReceiptLineDto(
     string? OtherReasonCode = null,
     string? OtherReasonNote = null,
     string? MissingDisposition = null,
+    string? DamagedFollowUp = null,
+    string? OtherFollowUp = null,
+    decimal QuantityWaived = 0,
     string? Note = null);
 
 public sealed record InventoryTransferReceiptDto(
@@ -73,6 +78,7 @@ public sealed record InventoryTransferLineDto(
     decimal ReceivedQty,
     decimal OutstandingQty,
     decimal ClosedQty,
+    decimal WaivedQty,
     decimal DifferenceQty,
     string LineStatus,
     string? DiscrepancyReason,

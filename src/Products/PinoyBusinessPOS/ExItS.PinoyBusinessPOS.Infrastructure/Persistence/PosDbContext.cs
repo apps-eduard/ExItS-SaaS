@@ -3411,6 +3411,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.SentQty).HasColumnName("sent_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.ClosedQty).HasColumnName("closed_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.WaivedQty)
+                .HasColumnName("waived_qty")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.DiscrepancyReason)
                 .HasColumnName("discrepancy_reason")
                 .HasMaxLength(InventoryTransferDiscrepancyReasons.CodeMaxLength);
@@ -3522,6 +3527,17 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.MissingDisposition)
                 .HasColumnName("missing_disposition")
                 .HasMaxLength(InventoryTransferMissingDispositions.CodeMaxLength);
+            entity.Property(e => e.DamagedFollowUp)
+                .HasColumnName("damaged_follow_up")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength);
+            entity.Property(e => e.OtherFollowUp)
+                .HasColumnName("other_follow_up")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength);
+            entity.Property(e => e.QuantityWaived)
+                .HasColumnName("quantity_waived")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.Note)
                 .HasColumnName("note")
                 .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);

@@ -279,6 +279,7 @@ public static class DomainErrorCodes
     public const string InvalidInventoryTransferQuantity = "pos.inventory.transfer.quantity.invalid";
     public const string InvalidInventoryTransferReceiveQty = "pos.inventory.transfer.receive_qty.invalid";
     public const string InvalidInventoryTransferMissingDisposition = "pos.inventory.transfer.missing_disposition.invalid";
+    public const string InvalidInventoryTransferDiscrepancyFollowUp = "pos.inventory.transfer.discrepancy_follow_up.invalid";
     public const string InvalidInventoryTransferReceiveClassification = "pos.inventory.transfer.receive_classification.invalid";
     public const string InvalidInventoryTransferLine = "pos.inventory.transfer.line.invalid";
     public const string InvalidInventoryTransferNotes = "pos.inventory.transfer.notes.invalid";
