@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   canCancelStockRequestAsDestination,
+  canDispatchRemainingStockRequest,
   filterStockRequestsByTab,
   hasConfiguredInternalSource,
+  openCoveringTransferMessage,
   pickPreferredSourceId,
   remainingRequestQty,
   stockRequestMatchesTab,
@@ -26,10 +28,37 @@ describe("stock-request-helpers", () => {
     );
   });
 
-  it("computes remaining qty from fulfilled and in-progress", () => {
+  it("computes remaining to dispatch as approved − received − open in transit", () => {
+    expect(remainingRequestQty(100, 70, 30)).toBe(0);
+    expect(remainingRequestQty(100, 70, 0)).toBe(30);
     expect(remainingRequestQty(10, 0, 6)).toBe(4);
     expect(remainingRequestQty(10, 6, 0)).toBe(4);
     expect(remainingRequestQty(10, 10, 0)).toBe(0);
+  });
+
+  it("allows dispatch only when remaining to dispatch is positive", () => {
+    expect(
+      canDispatchRemainingStockRequest("PartiallyFulfilled", [{ remainingToDispatchQuantity: 0 }]),
+    ).toBe(false);
+    expect(
+      canDispatchRemainingStockRequest("PartiallyFulfilled", [{ remainingToDispatchQuantity: 30 }]),
+    ).toBe(true);
+    expect(canDispatchRemainingStockRequest("Fulfilled", [{ remainingToDispatchQuantity: 10 }])).toBe(
+      false,
+    );
+  });
+
+  it("surfaces open covering transfer for replacement guard copy", () => {
+    expect(
+      openCoveringTransferMessage([
+        {
+          transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          transferNumber: "TR-20260922-000001",
+          status: "PartiallyReceived",
+          totalOutstandingQty: 30,
+        },
+      ]),
+    ).toEqual({ transferLabel: "TR-20260922-000001", outstandingQty: 30 });
   });
 
   it("detects no configured internal source", () => {
@@ -54,6 +83,8 @@ describe("stock-request-helpers", () => {
     expect(stockRequestMatchesTab("Pending", "incoming", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("Approved", "preparing", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("InTransit", "dispatched", "warehouse")).toBe(true);
+    expect(stockRequestMatchesTab("PartiallyFulfilled", "dispatched", "warehouse")).toBe(true);
+    expect(stockRequestMatchesTab("PartiallyFulfilled", "history", "warehouse")).toBe(false);
     expect(stockRequestMatchesTab("Cancelled", "history", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("Pending", "history", "warehouse")).toBe(false);
   });

@@ -50,6 +50,7 @@ const STATUS_FILTERS = [
   { value: "InTransit", labelKey: "transfer.status.inTransit" as const },
   { value: "PartiallyReceived", labelKey: "transfer.status.partiallyReceived" as const },
   { value: "Received", labelKey: "transfer.status.received" as const },
+  { value: "ClosedWithDiscrepancy", labelKey: "transfer.status.closedWithDiscrepancy" as const },
   { value: "Cancelled", labelKey: "transfer.status.cancelled" as const },
 ];
 

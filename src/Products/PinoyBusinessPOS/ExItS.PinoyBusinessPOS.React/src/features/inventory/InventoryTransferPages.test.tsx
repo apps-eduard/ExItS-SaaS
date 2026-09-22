@@ -349,7 +349,7 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.queryByTestId("transfer-cancel")).not.toBeInTheDocument();
   });
 
-  it("receive defaults sent qty and submits discrepancy-capable payload", async () => {
+  it("receive defaults outstanding qty and submits receive-now payload", async () => {
     workspaceMock.boundWorkspace.branchId = branchBId;
     workspaceMock.boundWorkspace.branchName = "Branch B";
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
@@ -387,9 +387,6 @@ describe("Inventory Transfer React flow", () => {
     await user.clear(qty);
     await user.type(qty, "22");
     await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
-    expect(await screen.findByTestId("transfer-discrepancy-dialog")).toBeInTheDocument();
-    await user.selectOptions(screen.getByTestId("transfer-discrepancy-dialog-reason"), "ShortShipment");
-    await user.click(screen.getByTestId("transfer-discrepancy-dialog-confirm"));
     expect(screen.getByTestId("transfer-receive-submit")).toBeEnabled();
     await user.click(screen.getByTestId("transfer-receive-submit"));
     await user.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
@@ -400,7 +397,6 @@ describe("Inventory Transfer React flow", () => {
           lineId,
           productId: cokeId,
           receivedQty: 22,
-          discrepancyReason: "ShortShipment",
         }),
       ],
     });
@@ -427,8 +423,74 @@ describe("Inventory Transfer React flow", () => {
     await user.type(qty, "25");
     await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
     expect(await screen.findByTestId(`transfer-receive-qty-error-${lineId}`)).toHaveTextContent(
-      "Received quantity cannot exceed sent quantity (24)",
+      "Receive now cannot exceed outstanding quantity (24)",
     );
     expect(screen.getByTestId("transfer-receive-submit")).toBeDisabled();
+  });
+
+  it("partially received destination can receive remaining and close remainder", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    const partial = {
+      ...inTransitTransfer(),
+      status: "PartiallyReceived",
+      totalReceivedQty: 10,
+      totalOutstandingQty: 14,
+      lines: [
+        {
+          ...inTransitTransfer().lines[0]!,
+          receivedQty: 10,
+          outstandingQty: 14,
+          closedQty: 0,
+          differenceQty: 14,
+        },
+      ],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(partial as never);
+    const closeSpy = vi
+      .spyOn(transferClient, "closeRemainderInventoryTransfer")
+      .mockResolvedValue({
+        ...partial,
+        status: "ClosedWithDiscrepancy",
+        totalOutstandingQty: 0,
+        totalClosedQty: 14,
+        lines: [
+          {
+            ...partial.lines[0]!,
+            closedQty: 14,
+            outstandingQty: 0,
+            discrepancyReason: "ShortShipment",
+          },
+        ],
+      } as never);
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+      "data-status",
+      "PartiallyReceived",
+    );
+    expect(screen.getByTestId("transfer-receive")).toHaveTextContent("Receive remaining");
+    expect(screen.getByTestId("transfer-close-remainder")).toBeInTheDocument();
+    await user.click(screen.getByTestId("transfer-close-remainder"));
+    await user.selectOptions(
+      await screen.findByTestId(`transfer-close-reason-${lineId}`),
+      "ShortShipment",
+    );
+    await user.click(screen.getByTestId("transfer-close-remainder-confirm"));
+    await waitFor(() => expect(closeSpy).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+        "data-status",
+        "ClosedWithDiscrepancy",
+      ),
+    );
   });
 });

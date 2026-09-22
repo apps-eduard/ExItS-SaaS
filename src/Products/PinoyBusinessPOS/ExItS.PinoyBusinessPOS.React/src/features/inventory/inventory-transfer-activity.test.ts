@@ -31,6 +31,24 @@ describe("buildTransferActivityEvents", () => {
     expect(events.map((e) => e.kind)).toEqual(["created", "dispatched", "received"]);
   });
 
+  it("emits receipt waves from receipt history", () => {
+    const events = buildTransferActivityEvents({
+      ...base,
+      status: "PartiallyReceived",
+      receipts: [
+        {
+          receiptId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+          sequence: 1,
+          receivedAtUtc: "2026-03-03T10:00:00Z",
+          receivedBy: "33333333-3333-3333-3333-333333333333",
+          lines: [],
+        },
+      ],
+    });
+
+    expect(events.map((e) => e.kind)).toEqual(["created", "receipt"]);
+  });
+
   it("includes cancelled when present", () => {
     const events = buildTransferActivityEvents({
       ...base,

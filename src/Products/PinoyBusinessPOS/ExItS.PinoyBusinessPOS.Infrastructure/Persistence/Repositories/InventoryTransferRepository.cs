@@ -34,9 +34,13 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         }
 
         var lines = await LoadLinesAsync([record.Id], organizationId, cancellationToken).ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync([record.Id], organizationId, cancellationToken)
+            .ConfigureAwait(false);
         return InventoryTransferEntityMapper.ToDomain(
             record,
-            lines.TryGetValue(record.Id, out var found) ? found : []);
+            lines.TryGetValue(record.Id, out var found) ? found : [],
+            receipts.TryGetValue(record.Id, out var receiptRecords) ? receiptRecords : [],
+            receiptLines);
     }
 
     public async Task<(IReadOnlyList<InventoryTransfer> Items, int TotalCount)> ListAsync(
@@ -94,7 +98,8 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             {
                 query = query.Where(t =>
                     t.DestinationBranchId == incomingId
-                    && t.Status == nameof(InventoryTransferStatus.InTransit));
+                    && (t.Status == nameof(InventoryTransferStatus.InTransit)
+                        || t.Status == nameof(InventoryTransferStatus.PartiallyReceived)));
             }
         }
         else if (string.Equals(direction, "history", StringComparison.OrdinalIgnoreCase))
@@ -102,6 +107,7 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             query = query.Where(t =>
                 t.Status == nameof(InventoryTransferStatus.Received)
                 || t.Status == nameof(InventoryTransferStatus.PartiallyReceived)
+                || t.Status == nameof(InventoryTransferStatus.ClosedWithDiscrepancy)
                 || t.Status == nameof(InventoryTransferStatus.Cancelled));
             if (acting is Guid involved)
             {
@@ -123,10 +129,17 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             return ([], total);
         }
 
-        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+        var transferIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync(transferIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
         var items = records
-            .Select(r => InventoryTransferEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => InventoryTransferEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var found) ? found : [],
+                receipts.TryGetValue(r.Id, out var receiptRecords) ? receiptRecords : [],
+                receiptLines))
             .ToList();
         return (items, total);
     }
@@ -146,10 +159,17 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             return [];
         }
 
-        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+        var transferIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync(transferIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
         return records
-            .Select(r => InventoryTransferEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => InventoryTransferEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var found) ? found : [],
+                receipts.TryGetValue(r.Id, out var receiptRecords) ? receiptRecords : [],
+                receiptLines))
             .ToList();
     }
 
@@ -159,6 +179,15 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         foreach (var line in transfer.Lines)
         {
             _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+        }
+
+        foreach (var receipt in transfer.Receipts)
+        {
+            _db.InventoryTransferReceipts.Add(InventoryTransferEntityMapper.ToRecord(receipt));
+            foreach (var receiptLine in receipt.Lines)
+            {
+                _db.InventoryTransferReceiptLines.Add(InventoryTransferEntityMapper.ToRecord(receiptLine));
+            }
         }
 
         return Task.CompletedTask;
@@ -179,14 +208,48 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         }
 
         InventoryTransferEntityMapper.ApplyToRecord(transfer, record);
+
         var existingLines = await _db.InventoryTransferLines
             .Where(l => l.TransferId == transfer.Id.Value)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        _db.InventoryTransferLines.RemoveRange(existingLines);
+        var lineById = existingLines.ToDictionary(l => l.Id);
         foreach (var line in transfer.Lines)
         {
-            _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+            if (lineById.TryGetValue(line.Id.Value, out var existingLine))
+            {
+                var updated = InventoryTransferEntityMapper.ToRecord(line);
+                existingLine.SentQty = updated.SentQty;
+                existingLine.ReceivedQty = updated.ReceivedQty;
+                existingLine.ClosedQty = updated.ClosedQty;
+                existingLine.DiscrepancyReason = updated.DiscrepancyReason;
+                existingLine.DiscrepancyNote = updated.DiscrepancyNote;
+                existingLine.UnitCostSnapshot = updated.UnitCostSnapshot;
+            }
+            else
+            {
+                _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+            }
+        }
+
+        var existingReceiptIds = await _db.InventoryTransferReceipts
+            .Where(r => r.TransferId == transfer.Id.Value)
+            .Select(r => r.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var knownReceiptIds = existingReceiptIds.ToHashSet();
+        foreach (var receipt in transfer.Receipts)
+        {
+            if (knownReceiptIds.Contains(receipt.Id.Value))
+            {
+                continue;
+            }
+
+            _db.InventoryTransferReceipts.Add(InventoryTransferEntityMapper.ToRecord(receipt));
+            foreach (var receiptLine in receipt.Lines)
+            {
+                _db.InventoryTransferReceiptLines.Add(InventoryTransferEntityMapper.ToRecord(receiptLine));
+            }
         }
     }
 
@@ -257,6 +320,35 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         return records
             .GroupBy(l => l.TransferId)
             .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private async Task<(
+        Dictionary<Guid, List<InventoryTransferReceiptRecord>> Receipts,
+        IReadOnlyList<InventoryTransferReceiptLineRecord> ReceiptLines)> LoadReceiptsAsync(
+        IReadOnlyCollection<Guid> transferIds,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var records = await _db.InventoryTransferReceipts.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && transferIds.Contains(r.TransferId))
+            .OrderBy(r => r.Sequence)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count == 0)
+        {
+            return ([], []);
+        }
+
+        var receiptIds = records.Select(r => r.Id).ToList();
+        var lineRecords = await _db.InventoryTransferReceiptLines.AsNoTracking()
+            .Where(l => receiptIds.Contains(l.ReceiptId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var byTransfer = records
+            .GroupBy(r => r.TransferId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        return (byTransfer, lineRecords);
     }
 }
 

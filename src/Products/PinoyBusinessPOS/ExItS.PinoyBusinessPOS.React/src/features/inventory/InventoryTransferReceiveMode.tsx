@@ -24,12 +24,13 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
 import {
   formatTransferQty,
-  inventoryTransferDiscrepancyLabelKey,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
-  parseReceivedQuantity,
 } from "@/features/inventory/inventory-transfer-labels";
-import { TransferReceiveDiscrepancyDialog } from "@/features/inventory/TransferReceiveDiscrepancyDialog";
+import {
+  lineOutstandingQty,
+  parseReceiveNowQuantity,
+} from "@/features/inventory/inventory-transfer-receive-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 
 type ReceiveEditFieldKey = "receiveNow";
@@ -75,11 +76,7 @@ export type InventoryTransferReceiveModeProps = {
   statusLabel: string;
   statusIcon: ReactNode;
   receivedByLine: Record<string, string>;
-  reasonByLine: Record<string, string>;
-  noteByLine: Record<string, string>;
   setReceivedByLine: Dispatch<SetStateAction<Record<string, string>>>;
-  setReasonByLine: Dispatch<SetStateAction<Record<string, string>>>;
-  setNoteByLine: Dispatch<SetStateAction<Record<string, string>>>;
   canSubmitReceive: boolean;
   busy: boolean;
   online: boolean;
@@ -96,11 +93,7 @@ export function InventoryTransferReceiveMode({
   statusLabel,
   statusIcon,
   receivedByLine,
-  reasonByLine,
-  noteByLine,
   setReceivedByLine,
-  setReasonByLine,
-  setNoteByLine,
   canSubmitReceive,
   busy,
   online,
@@ -118,8 +111,6 @@ export function InventoryTransferReceiveMode({
   );
   const [editBaseline, setEditBaseline] = useState<string | null>(null);
   const [editErrors, setEditErrors] = useState<{ receiveNow?: string }>({});
-  const [discrepancyLineId, setDiscrepancyLineId] = useState<string | null>(null);
-  const [highlightUnresolved, setHighlightUnresolved] = useState(false);
 
   const receiveEditableFields = useMemo<ReadonlyArray<ExitsTableEditableField>>(
     () => [{ key: "receiveNow", label: t("transfer.receiveNow") }],
@@ -127,30 +118,19 @@ export function InventoryTransferReceiveMode({
   );
 
   const statusTone = inventoryTransferStatusTone(transfer.status);
-  const discrepancyLine = transfer.lines.find((line) => line.lineId === discrepancyLineId) ?? null;
 
-  function qtyErrorFor(lineId: string, sentQty: number): string | null {
-    const parsed = parseReceivedQuantity(receivedByLine[lineId] ?? "", sentQty);
+  function qtyErrorFor(lineId: string, outstandingQty: number): string | null {
+    const parsed = parseReceiveNowQuantity(receivedByLine[lineId] ?? "", outstandingQty);
     if (parsed === "exceeds") {
-      return t("transfer.receivedExceedsSent").replace("{sent}", formatTransferQty(sentQty));
+      return t("transfer.receiveExceedsOutstanding").replace(
+        "{outstanding}",
+        formatTransferQty(outstandingQty),
+      );
     }
     if (parsed === "invalid" || parsed === "empty") {
-      return t("transfer.invalidReceivedQuantity");
+      return t("transfer.invalidReceiveNowQuantity");
     }
     return null;
-  }
-
-  function clearDiscrepancy(lineId: string) {
-    setReasonByLine((prev) => {
-      const next = { ...prev };
-      delete next[lineId];
-      return next;
-    });
-    setNoteByLine((prev) => {
-      const next = { ...prev };
-      delete next[lineId];
-      return next;
-    });
   }
 
   function cancelRowEdit() {
@@ -184,26 +164,20 @@ export function InventoryTransferReceiveMode({
     }
   }
 
-  function finishEdit(lineId: string, sentQty: number, mobile = false) {
+  function finishEdit(lineId: string, outstandingQty: number, mobile = false) {
     const text = receivedByLine[lineId] ?? "";
-    const error = qtyErrorFor(lineId, sentQty);
+    const error = qtyErrorFor(lineId, outstandingQty);
     if (error) {
       setEditErrors({ receiveNow: error });
       return;
     }
-    const parsed = parseReceivedQuantity(text, sentQty);
+    const parsed = parseReceiveNowQuantity(text, outstandingQty);
     if (typeof parsed !== "number") {
-      setEditErrors({ receiveNow: t("transfer.invalidReceivedQuantity") });
+      setEditErrors({ receiveNow: t("transfer.invalidReceiveNowQuantity") });
       return;
-    }
-    if (parsed >= sentQty) {
-      clearDiscrepancy(lineId);
     }
     if (mobile) cancelMobileEdit();
     else cancelRowEdit();
-    if (parsed < sentQty) {
-      setDiscrepancyLineId(lineId);
-    }
   }
 
   function resetEdit(lineId: string, mobile = false) {
@@ -261,57 +235,17 @@ export function InventoryTransferReceiveMode({
     return () => window.clearTimeout(timer);
   }, [mobileEditingLineId, mobileEditingFields]);
 
-  function trySubmit() {
-    setHighlightUnresolved(true);
-    if (!canSubmitReceive) {
-      const firstShort = transfer.lines.find((line) => {
-        const parsed = parseReceivedQuantity(receivedByLine[line.lineId] ?? "", line.sentQty);
-        return typeof parsed === "number" && parsed < line.sentQty && !reasonByLine[line.lineId]?.trim();
-      });
-      if (firstShort) {
-        setDiscrepancyLineId(firstShort.lineId);
-      }
-      return;
-    }
-    onSubmit();
-  }
-
-  function renderDiscrepancyLink(lineId: string, sentQty: number, editing: boolean) {
-    if (editing) return null;
-    const parsed = parseReceivedQuantity(receivedByLine[lineId] ?? "", sentQty);
-    if (typeof parsed !== "number" || parsed >= sentQty) return null;
-    const reason = reasonByLine[lineId]?.trim() ?? "";
-    const needs = !reason;
-    const highlight = highlightUnresolved && needs;
-    return (
-      <button
-        type="button"
-        className={`mt-1 block max-w-full truncate border-0 bg-transparent p-0 text-start text-[length:var(--exits-text-xs)] underline-offset-2 hover:underline${
-          highlight ? " text-[var(--exits-warning)]" : needs ? " text-[var(--exits-warning)]" : " text-muted"
-        }`}
-        onClick={() => setDiscrepancyLineId(lineId)}
-        data-testid={`transfer-discrepancy-summary-${lineId}`}
-      >
-        {needs ? (
-          <span>
-            {t("transfer.discrepancy")}: {t("transfer.needsClassification")} ⚠
-          </span>
-        ) : (
-          <span>
-            {t("transfer.discrepancy")}: {t(inventoryTransferDiscrepancyLabelKey(reason))} ✓
-          </span>
-        )}
-      </button>
-    );
-  }
-
   return (
     <div
       className="inventory-transfer-receive-page exits-page flex min-w-0 flex-col gap-3 pb-4"
       data-testid="inventory-transfer-receive-page"
     >
       <PageHeader
-        title={t("transfer.receiveTitle")}
+        title={
+          transfer.status === "PartiallyReceived"
+            ? t("transfer.receiveRemainingTitle")
+            : t("transfer.receiveTitle")
+        }
         description={`${transfer.transferNumber ?? t("transfer.draftNumber")} · ${sourceName} → ${destName}`}
         backTo={`/inventory/transfers/${transfer.transferId}`}
         backLabel={t("transfer.backToTransfer")}
@@ -361,8 +295,8 @@ export function InventoryTransferReceiveMode({
           {t("transfer.offline")}
         </Notice>
       ) : null}
-      <Notice tone="info" testId="transfer-receive-final-hint">
-        {t("transfer.receiveFinalHint")}
+      <Notice tone="info" testId="transfer-receive-wave-hint">
+        {t("transfer.receiveWaveHint")}
       </Notice>
       {localErrorAlert}
 
@@ -373,17 +307,17 @@ export function InventoryTransferReceiveMode({
               <ExitsTableHead cellAlign="text" colSize="flex">
                 {t("transfer.product")}
               </ExitsTableHead>
-              <ExitsTableHead cellAlign="text" colSize="sku">
-                {t("purchasing.colSku")}
-              </ExitsTableHead>
               <ExitsTableHead cellAlign="center" colSize="numeric">
                 {t("transfer.sent")}
               </ExitsTableHead>
               <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.received")}
+                {t("transfer.previouslyReceived")}
               </ExitsTableHead>
               <ExitsTableHead cellAlign="center" colSize="numeric">
-                {t("transfer.difference")}
+                {t("transfer.outstanding")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.receiveNow")}
               </ExitsTableHead>
               <ExitsTableHead cellAlign="text">{t("purchasing.colUnit")}</ExitsTableHead>
               <ExitsTableHead cellAlign="actions" colSize="actions" />
@@ -391,120 +325,115 @@ export function InventoryTransferReceiveMode({
           </ExitsTableHeader>
           <ExitsTableBody>
             {transfer.lines.map((line) => {
+              const outstanding = lineOutstandingQty(line);
               const text = receivedByLine[line.lineId] ?? "";
-              const parsed = parseReceivedQuantity(text, line.sentQty);
-              const qtyReady = typeof parsed === "number";
-              const diff = qtyReady ? line.sentQty - parsed : null;
               const editing = editingLineId === line.lineId;
               const editReceiveNow = editing && editingFields.has("receiveNow");
               const rowValidationId = `transfer-receive-qty-error-${line.lineId}`;
-              const needsReason =
-                qtyReady && parsed < line.sentQty && !reasonByLine[line.lineId]?.trim();
-              const highlight = highlightUnresolved && needsReason;
               const showRowValidation = editing && Boolean(editErrors.receiveNow);
+              const canEditLine = outstanding > 0;
 
               return (
                 <Fragment key={line.lineId}>
-                <ExitsTableRow
-                  editing={editing}
-                  error={highlight}
-                  data-testid={`transfer-receive-row-${line.lineId}`}
-                >
-                  <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
-                    <div>{line.productName}</div>
-                    {line.lotNumber || line.expirationDate ? (
-                      <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-                        {line.lotNumber ?? "—"} · {line.expirationDate ?? "—"}
-                      </div>
-                    ) : null}
-                    {renderDiscrepancyLink(line.lineId, line.sentQty, editing)}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="text" colSize="sku" className="text-muted tabular-nums">
-                    {line.sku?.trim() || "—"}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                    {formatTransferQty(line.sentQty)}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="center" colSize="numeric">
-                    {editReceiveNow ? (
-                      <ExitsTableInlineEditor
-                        invalid={Boolean(editErrors.receiveNow)}
-                        errorId={editErrors.receiveNow ? rowValidationId : undefined}
-                      >
-                        <QuantityInput
-                          label={t("transfer.receiveNow")}
-                          value={text}
-                          onChange={(e) => {
-                            setReceivedByLine((prev) => ({
-                              ...prev,
-                              [line.lineId]: e.target.value,
-                            }));
-                            clearDiscrepancy(line.lineId);
-                            setEditErrors((prev) => ({ ...prev, receiveNow: undefined }));
-                          }}
-                          aria-invalid={Boolean(editErrors.receiveNow)}
-                          aria-describedby={editErrors.receiveNow ? rowValidationId : undefined}
-                          data-testid={`transfer-receive-qty-${line.lineId}`}
-                        />
-                      </ExitsTableInlineEditor>
-                    ) : (
-                      <span className="tabular-nums">{text || "0"}</span>
-                    )}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                    {diff == null ? "—" : formatTransferQty(diff)}
-                  </ExitsTableCell>
-                  <ExitsTableCell cellAlign="text">{line.unitOfMeasure}</ExitsTableCell>
-                  <ExitsTableCell cellAlign="actions" colSize="actions">
-                    <ExitsTableActions data-testid={`transfer-receive-actions-${line.lineId}`}>
-                      {editing ? (
-                        <>
-                          <ReceiveIconAction
-                            label={t("transfer.saveReceiveQty")}
-                            variant="success"
-                            data-testid={`transfer-receive-edit-save-${line.lineId}`}
-                            onClick={() => finishEdit(line.lineId, line.sentQty)}
-                          >
-                            <Check className="size-4" aria-hidden />
-                          </ReceiveIconAction>
-                          <ReceiveIconAction
-                            label={t("transfer.resetReceiveQty")}
-                            title={t("transfer.resetReceiveQty")}
-                            className="exits-table__action-reset"
-                            data-testid={`transfer-receive-edit-reset-${line.lineId}`}
-                            onClick={() => resetEdit(line.lineId)}
-                          >
-                            <RotateCcw className="size-4" aria-hidden />
-                          </ReceiveIconAction>
-                        </>
+                  <ExitsTableRow
+                    editing={editing}
+                    data-testid={`transfer-receive-row-${line.lineId}`}
+                  >
+                    <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                      <div>{line.productName}</div>
+                      {line.lotNumber || line.expirationDate ? (
+                        <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+                          {line.lotNumber ?? "—"} · {line.expirationDate ?? "—"}
+                        </div>
+                      ) : null}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                      {formatTransferQty(line.sentQty)}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                      {formatTransferQty(line.receivedQty)}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                      {formatTransferQty(outstanding)}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="center" colSize="numeric">
+                      {editReceiveNow ? (
+                        <ExitsTableInlineEditor
+                          invalid={Boolean(editErrors.receiveNow)}
+                          errorId={editErrors.receiveNow ? rowValidationId : undefined}
+                        >
+                          <QuantityInput
+                            label={t("transfer.receiveNow")}
+                            value={text}
+                            onChange={(e) => {
+                              setReceivedByLine((prev) => ({
+                                ...prev,
+                                [line.lineId]: e.target.value,
+                              }));
+                              setEditErrors((prev) => ({ ...prev, receiveNow: undefined }));
+                            }}
+                            aria-invalid={Boolean(editErrors.receiveNow)}
+                            aria-describedby={editErrors.receiveNow ? rowValidationId : undefined}
+                            data-testid={`transfer-receive-qty-${line.lineId}`}
+                          />
+                        </ExitsTableInlineEditor>
                       ) : (
-                      <ExitsTableEditMenu
-                          fields={receiveEditableFields}
-                          ariaLabel={t("transfer.editReceiveQty")}
-                          data-testid={`transfer-receive-edit-menu-${line.lineId}`}
-                          onSelectField={() => startFieldEdit(line.lineId)}
-                          onEditAll={() => startFieldEdit(line.lineId)}
-                        />
+                        <span className="tabular-nums">{text || "0"}</span>
                       )}
-                    </ExitsTableActions>
-                  </ExitsTableCell>
-                </ExitsTableRow>
-                {showRowValidation ? (
-                  <ExitsTableRow error>
-                    <ExitsTableCell colSpan={7}>
-                      <div
-                        id={rowValidationId}
-                        className="exits-table__row-validation"
-                        role="alert"
-                        data-testid={rowValidationId}
-                      >
-                        <span className="exits-table__row-validation-message">
-                          {editErrors.receiveNow}
-                        </span>
-                      </div>
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="text">{line.unitOfMeasure}</ExitsTableCell>
+                    <ExitsTableCell cellAlign="actions" colSize="actions">
+                      <ExitsTableActions data-testid={`transfer-receive-actions-${line.lineId}`}>
+                        {canEditLine ? (
+                          editing ? (
+                            <>
+                              <ReceiveIconAction
+                                label={t("transfer.saveReceiveQty")}
+                                variant="success"
+                                data-testid={`transfer-receive-edit-save-${line.lineId}`}
+                                onClick={() => finishEdit(line.lineId, outstanding)}
+                              >
+                                <Check className="size-4" aria-hidden />
+                              </ReceiveIconAction>
+                              <ReceiveIconAction
+                                label={t("transfer.resetReceiveQty")}
+                                title={t("transfer.resetReceiveQty")}
+                                className="exits-table__action-reset"
+                                data-testid={`transfer-receive-edit-reset-${line.lineId}`}
+                                onClick={() => resetEdit(line.lineId)}
+                              >
+                                <RotateCcw className="size-4" aria-hidden />
+                              </ReceiveIconAction>
+                            </>
+                          ) : (
+                            <ExitsTableEditMenu
+                              fields={receiveEditableFields}
+                              ariaLabel={t("transfer.editReceiveQty")}
+                              data-testid={`transfer-receive-edit-menu-${line.lineId}`}
+                              onSelectField={() => startFieldEdit(line.lineId)}
+                              onEditAll={() => startFieldEdit(line.lineId)}
+                            />
+                          )
+                        ) : null}
+                      </ExitsTableActions>
                     </ExitsTableCell>
                   </ExitsTableRow>
-                ) : null}
+                  {showRowValidation ? (
+                    <ExitsTableRow error>
+                      <ExitsTableCell colSpan={7}>
+                        <div
+                          id={rowValidationId}
+                          className="exits-table__row-validation"
+                          role="alert"
+                          data-testid={rowValidationId}
+                        >
+                          <span className="exits-table__row-validation-message">
+                            {editErrors.receiveNow}
+                          </span>
+                        </div>
+                      </ExitsTableCell>
+                    </ExitsTableRow>
+                  ) : null}
                 </Fragment>
               );
             })}
@@ -513,12 +442,11 @@ export function InventoryTransferReceiveMode({
 
         <ExitsTableMobile data-testid="transfer-receive-mobile">
           {transfer.lines.map((line) => {
+            const outstanding = lineOutstandingQty(line);
             const text = receivedByLine[line.lineId] ?? "";
-            const parsed = parseReceivedQuantity(text, line.sentQty);
-            const qtyReady = typeof parsed === "number";
-            const diff = qtyReady ? line.sentQty - parsed : null;
             const editing = mobileEditingLineId === line.lineId;
             const editReceiveNow = editing && mobileEditingFields.has("receiveNow");
+            const canEditLine = outstanding > 0;
 
             return (
               <ExitsTableMobileRow
@@ -528,44 +456,45 @@ export function InventoryTransferReceiveMode({
               >
                 <div className="exits-table-mobile__title-row">
                   <span className="exits-table-mobile__title">{line.productName}</span>
-                  <ExitsTableActions>
-                    {editing ? (
-                      <>
-                        <ReceiveIconAction
-                          label={t("transfer.saveReceiveQty")}
-                          variant="success"
-                          data-testid={`transfer-receive-edit-save-mobile-${line.lineId}`}
-                          onClick={() => finishEdit(line.lineId, line.sentQty, true)}
-                        >
-                          <Check className="size-4" aria-hidden />
-                        </ReceiveIconAction>
-                        <ReceiveIconAction
-                          label={t("transfer.resetReceiveQty")}
-                          className="exits-table__action-reset"
-                          data-testid={`transfer-receive-edit-reset-mobile-${line.lineId}`}
-                          onClick={() => resetEdit(line.lineId, true)}
-                        >
-                          <RotateCcw className="size-4" aria-hidden />
-                        </ReceiveIconAction>
-                      </>
-                    ) : (
-                      <ExitsTableEditMenu
-                        fields={receiveEditableFields}
-                        ariaLabel={t("transfer.editReceiveQty")}
-                        data-testid={`transfer-receive-edit-menu-mobile-${line.lineId}`}
-                        onSelectField={() => startFieldEdit(line.lineId, true)}
-                        onEditAll={() => startFieldEdit(line.lineId, true)}
-                      />
-                    )}
-                  </ExitsTableActions>
+                  {canEditLine ? (
+                    <ExitsTableActions>
+                      {editing ? (
+                        <>
+                          <ReceiveIconAction
+                            label={t("transfer.saveReceiveQty")}
+                            variant="success"
+                            data-testid={`transfer-receive-edit-save-mobile-${line.lineId}`}
+                            onClick={() => finishEdit(line.lineId, outstanding, true)}
+                          >
+                            <Check className="size-4" aria-hidden />
+                          </ReceiveIconAction>
+                          <ReceiveIconAction
+                            label={t("transfer.resetReceiveQty")}
+                            className="exits-table__action-reset"
+                            data-testid={`transfer-receive-edit-reset-mobile-${line.lineId}`}
+                            onClick={() => resetEdit(line.lineId, true)}
+                          >
+                            <RotateCcw className="size-4" aria-hidden />
+                          </ReceiveIconAction>
+                        </>
+                      ) : (
+                        <ExitsTableEditMenu
+                          fields={receiveEditableFields}
+                          ariaLabel={t("transfer.editReceiveQty")}
+                          data-testid={`transfer-receive-edit-menu-mobile-${line.lineId}`}
+                          onSelectField={() => startFieldEdit(line.lineId, true)}
+                          onEditAll={() => startFieldEdit(line.lineId, true)}
+                        />
+                      )}
+                    </ExitsTableActions>
+                  ) : null}
                 </div>
-                <p className="exits-table-mobile__meta m-0">
-                  {line.sku?.trim() || "—"} · {line.unitOfMeasure}
-                </p>
                 <p className="exits-table-mobile__math mt-1 mb-0">
                   {t("transfer.sent")}: {formatTransferQty(line.sentQty)}
                   {" · "}
-                  {t("transfer.difference")}: {diff == null ? "—" : formatTransferQty(diff)}
+                  {t("transfer.previouslyReceived")}: {formatTransferQty(line.receivedQty)}
+                  {" · "}
+                  {t("transfer.outstanding")}: {formatTransferQty(outstanding)}
                 </p>
                 {editReceiveNow ? (
                   <div className="mt-2">
@@ -577,7 +506,6 @@ export function InventoryTransferReceiveMode({
                           ...prev,
                           [line.lineId]: e.target.value,
                         }));
-                        clearDiscrepancy(line.lineId);
                         setEditErrors({});
                       }}
                       data-testid={`transfer-receive-qty-mobile-${line.lineId}`}
@@ -593,10 +521,9 @@ export function InventoryTransferReceiveMode({
                   </div>
                 ) : (
                   <p className="mt-1 mb-0 tabular-nums">
-                    {t("transfer.received")}: {text || "0"}
+                    {t("transfer.receiveNow")}: {text || "0"}
                   </p>
                 )}
-                {renderDiscrepancyLink(line.lineId, line.sentQty, editing)}
               </ExitsTableMobileRow>
             );
           })}
@@ -619,48 +546,13 @@ export function InventoryTransferReceiveMode({
           <Button
             type="button"
             disabled={busy || !canSubmitReceive}
-            onClick={trySubmit}
+            onClick={onSubmit}
             data-testid="transfer-receive-submit"
           >
             {busy ? t("transfer.receiving") : t("transfer.receive")}
           </Button>
         </div>
       </div>
-
-      {discrepancyLine ? (
-        <TransferReceiveDiscrepancyDialog
-          open
-          productName={discrepancyLine.productName}
-          unitOfMeasure={discrepancyLine.unitOfMeasure}
-          sentQty={discrepancyLine.sentQty}
-          receivedQty={
-            typeof parseReceivedQuantity(
-              receivedByLine[discrepancyLine.lineId] ?? "",
-              discrepancyLine.sentQty,
-            ) === "number"
-              ? (parseReceivedQuantity(
-                  receivedByLine[discrepancyLine.lineId] ?? "",
-                  discrepancyLine.sentQty,
-                ) as number)
-              : 0
-          }
-          reason={reasonByLine[discrepancyLine.lineId] ?? ""}
-          note={noteByLine[discrepancyLine.lineId] ?? ""}
-          onReasonChange={(reason) =>
-            setReasonByLine((prev) => ({ ...prev, [discrepancyLine.lineId]: reason }))
-          }
-          onNoteChange={(note) =>
-            setNoteByLine((prev) => ({ ...prev, [discrepancyLine.lineId]: note }))
-          }
-          onCancel={() => setDiscrepancyLineId(null)}
-          onConfirm={() => {
-            if (!(reasonByLine[discrepancyLine.lineId] ?? "").trim()) {
-              return;
-            }
-            setDiscrepancyLineId(null);
-          }}
-        />
-      ) : null}
 
       {confirmDialog}
     </div>

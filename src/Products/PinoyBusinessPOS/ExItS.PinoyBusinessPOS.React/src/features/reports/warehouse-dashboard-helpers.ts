@@ -33,7 +33,9 @@ export function classifyTransferBuckets(items: ReadonlyArray<TransferListItem>, 
       ? items.filter((i) => i.status === "InTransit" || i.status === "PartiallyReceived").length
       : 0;
   const partiallyReceived = items.filter((i) => i.status === "PartiallyReceived").length;
-  const received = items.filter((i) => i.status === "Received").length;
+  const received = items.filter(
+    (i) => i.status === "Received" || i.status === "ClosedWithDiscrepancy",
+  ).length;
   return { awaitingDispatch, inTransit, incomingToReceive, partiallyReceived, received };
 }
 

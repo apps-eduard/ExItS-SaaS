@@ -502,6 +502,9 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for inventory transfer receive. Online-only.</summary>
     public const string InventoryTransferReceive = "inventory_transfer.receive";
 
+    /// <summary>Server-side idempotency for inventory transfer close-remainder. Online-only.</summary>
+    public const string InventoryTransferCloseRemainder = "inventory_transfer.close_remainder";
+
     /// <summary>Server-side idempotency for inventory transfer cancel. Online-only.</summary>
     public const string InventoryTransferCancel = "inventory_transfer.cancel";
 

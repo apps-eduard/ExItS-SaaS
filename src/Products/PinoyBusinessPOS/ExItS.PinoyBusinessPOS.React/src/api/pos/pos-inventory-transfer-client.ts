@@ -17,6 +17,7 @@ export const INVENTORY_TRANSFER_STATUSES = [
   "InTransit",
   "PartiallyReceived",
   "Received",
+  "ClosedWithDiscrepancy",
   "Cancelled",
 ] as const;
 export type InventoryTransferStatusCode = (typeof INVENTORY_TRANSFER_STATUSES)[number];
@@ -43,6 +44,8 @@ export const inventoryTransferLineDtoSchema = z.object({
   lineNumber: z.number(),
   sentQty: z.number(),
   receivedQty: z.number(),
+  outstandingQty: z.number().optional(),
+  closedQty: z.number().optional(),
   differenceQty: z.number(),
   lineStatus: z.string(),
   discrepancyReason: z.string().nullable().optional(),
@@ -52,6 +55,21 @@ export const inventoryTransferLineDtoSchema = z.object({
   expirationDate: z.string().nullable().optional(),
   unitCostSnapshot: z.number().nullable().optional(),
   sku: z.string().nullable().optional(),
+});
+
+export const inventoryTransferReceiptLineDtoSchema = z.object({
+  receiptLineId: guidSchema,
+  lineId: guidSchema,
+  productId: guidSchema,
+  quantityReceived: z.number(),
+});
+
+export const inventoryTransferReceiptDtoSchema = z.object({
+  receiptId: guidSchema,
+  sequence: z.number(),
+  receivedAtUtc: z.string(),
+  receivedBy: guidSchema,
+  lines: z.array(inventoryTransferReceiptLineDtoSchema),
 });
 
 export const inventoryTransferDtoSchema = z.object({
@@ -76,7 +94,12 @@ export const inventoryTransferDtoSchema = z.object({
   cancelledBy: guidSchema.nullable().optional(),
   totalSentQty: z.number(),
   totalReceivedQty: z.number(),
+  totalClosedQty: z.number().optional(),
+  totalOutstandingQty: z.number().optional(),
   totalDifferenceQty: z.number(),
+  receiptCount: z.number().optional(),
+  lastReceiptAtUtc: z.string().nullable().optional(),
+  receipts: z.array(inventoryTransferReceiptDtoSchema).optional(),
   lines: z.array(inventoryTransferLineDtoSchema),
 });
 
@@ -108,6 +131,8 @@ export const inventoryTransferPagedResultSchema = z.object({
 });
 
 export type InventoryTransferLineDto = z.infer<typeof inventoryTransferLineDtoSchema>;
+export type InventoryTransferReceiptLineDto = z.infer<typeof inventoryTransferReceiptLineDtoSchema>;
+export type InventoryTransferReceiptDto = z.infer<typeof inventoryTransferReceiptDtoSchema>;
 export type InventoryTransferDto = z.infer<typeof inventoryTransferDtoSchema>;
 export type InventoryTransferListItemDto = z.infer<typeof inventoryTransferListItemDtoSchema>;
 export type InventoryTransferPagedResult = z.infer<typeof inventoryTransferPagedResultSchema>;
@@ -137,6 +162,19 @@ export type InventoryTransferReceiveLineRequest = {
 
 export type ReceiveInventoryTransferRequest = {
   lines: InventoryTransferReceiveLineRequest[];
+};
+
+export type CloseRemainderInventoryTransferLineRequest = {
+  lineId?: string | null;
+  productId?: string | null;
+  discrepancyReason: string;
+  discrepancyNote?: string | null;
+};
+
+export type CloseRemainderInventoryTransferRequest = {
+  lines?: CloseRemainderInventoryTransferLineRequest[] | null;
+  discrepancyReason?: string | null;
+  discrepancyNote?: string | null;
 };
 
 export type ListInventoryTransfersOptions = {
@@ -303,6 +341,56 @@ export async function receiveInventoryTransfer(
     workspace,
     signal,
     path: `${PATH}/${transferId}/receive`,
+    body: payload,
+    headers,
+  });
+  return inventoryTransferDtoSchema.parse(raw);
+}
+
+export async function closeRemainderInventoryTransfer(
+  workspace: PosWorkspaceScope,
+  transferId: string,
+  body: CloseRemainderInventoryTransferRequest,
+  signal?: AbortSignal,
+): Promise<InventoryTransferDto> {
+  const payload: Record<string, unknown> = {};
+  const transferReason = trimOrUndef(body.discrepancyReason);
+  if (transferReason) {
+    payload.discrepancyReason = transferReason;
+  }
+  const transferNote = trimOrUndef(body.discrepancyNote);
+  if (transferNote) {
+    payload.discrepancyNote = transferNote;
+  }
+  if (body.lines?.length) {
+    payload.lines = body.lines.map((line) => {
+      const entry: Record<string, unknown> = {
+        discrepancyReason: line.discrepancyReason,
+      };
+      if (line.lineId) {
+        entry.lineId = line.lineId;
+      }
+      if (line.productId) {
+        entry.productId = line.productId;
+      }
+      const note = trimOrUndef(line.discrepancyNote);
+      if (note) {
+        entry.discrepancyNote = note;
+      }
+      return entry;
+    });
+  }
+
+  const headers = await buildPosMutationIdempotencyHeaders(
+    transferId,
+    JSON.stringify(payload),
+    OFFLINE_OPERATION_TYPES.InventoryTransferCloseRemainder,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/${transferId}/close-remainder`,
     body: payload,
     headers,
   });

@@ -54,6 +54,7 @@ public sealed record StockRequestLineDto(
     decimal? ApprovedQuantity,
     decimal FulfilledQuantity,
     decimal InProgressQuantity,
+    decimal RemainingToDispatchQuantity,
     string NameSnapshot,
     string UnitOfMeasure);
 
@@ -63,6 +64,7 @@ public sealed record StockRequestLinkedTransferDto(
     string Status,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
+    decimal TotalOutstandingQty,
     DateTimeOffset UpdatedAtUtc);
 
 public sealed record StockRequestDto(

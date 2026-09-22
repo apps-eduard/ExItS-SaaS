@@ -25,6 +25,30 @@ public sealed record InventoryTransferReceiveLineRequest(
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
 
+public sealed record CloseRemainderInventoryTransferLineRequest(
+    string DiscrepancyReason,
+    string? DiscrepancyNote = null,
+    Guid? LineId = null,
+    Guid? ProductId = null);
+
+public sealed record CloseRemainderInventoryTransferRequest(
+    IReadOnlyList<CloseRemainderInventoryTransferLineRequest>? Lines = null,
+    string? DiscrepancyReason = null,
+    string? DiscrepancyNote = null);
+
+public sealed record InventoryTransferReceiptLineDto(
+    Guid ReceiptLineId,
+    Guid LineId,
+    Guid ProductId,
+    decimal QuantityReceived);
+
+public sealed record InventoryTransferReceiptDto(
+    Guid ReceiptId,
+    int Sequence,
+    DateTimeOffset ReceivedAtUtc,
+    Guid ReceivedBy,
+    IReadOnlyList<InventoryTransferReceiptLineDto> Lines);
+
 public sealed record InventoryTransferLineDto(
     Guid LineId,
     Guid ProductId,
@@ -33,6 +57,8 @@ public sealed record InventoryTransferLineDto(
     int LineNumber,
     decimal SentQty,
     decimal ReceivedQty,
+    decimal OutstandingQty,
+    decimal ClosedQty,
     decimal DifferenceQty,
     string LineStatus,
     string? DiscrepancyReason,
@@ -65,7 +91,12 @@ public sealed record InventoryTransferDto(
     Guid? CancelledBy,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
+    decimal TotalClosedQty,
+    decimal TotalOutstandingQty,
     decimal TotalDifferenceQty,
+    int ReceiptCount,
+    DateTimeOffset? LastReceiptAtUtc,
+    IReadOnlyList<InventoryTransferReceiptDto> Receipts,
     IReadOnlyList<InventoryTransferLineDto> Lines);
 
 public sealed record InventoryTransferListItemDto(

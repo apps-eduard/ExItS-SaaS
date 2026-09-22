@@ -5,6 +5,7 @@ using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.CustomerOrdering;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
@@ -200,10 +201,10 @@ public sealed class InventoryTransferUseCaseTests
             ]),
             ActorB,
             BranchB);
-        Assert.True(received.IsSuccess);
+        Assert.False(received.IsSuccess);
+        Assert.Equal(Domain.Common.DomainErrorCodes.InventoryTransferReceiveRequiresLines, received.ErrorCode);
         Assert.Equal(0m, fx.Balances.OnHand(BranchB, fx.CokeId));
         Assert.DoesNotContain(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferIn);
-        Assert.Equal(10m, received.Value!.Lines[0].DifferenceQty);
     }
 
     [Fact]
@@ -511,6 +512,78 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Two_stage_receive_credits_each_wave_and_uses_receipt_source_ids()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+
+        var wave1 = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 4m)]),
+            ActorB,
+            BranchB);
+        Assert.True(wave1.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, wave1.Value!.Status);
+        Assert.Equal(4m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Single(fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferIn));
+
+        var wave2 = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 6m)]),
+            ActorB,
+            BranchB);
+        Assert.True(wave2.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.Received, wave2.Value!.Status);
+        Assert.Equal(10m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(2, wave2.Value.Receipts.Count);
+        var transferIns = fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferIn).ToList();
+        Assert.Equal(2, transferIns.Count);
+        Assert.Equal(4m, transferIns[0].QuantityEffect);
+        Assert.Equal(6m, transferIns[1].QuantityEffect);
+        Assert.NotEqual(transferIns[0].SourceId, transferIns[1].SourceId);
+        Assert.All(transferIns, m => Assert.NotEqual(created.Value.Id.Value, m.SourceId));
+    }
+
+    [Fact]
+    public async Task Close_remainder_after_partial_receive_finalizes_without_extra_stock()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 7m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var onHandBefore = fx.Balances.OnHand(BranchB, fx.CokeId);
+        var closed = await fx.CloseRemainder.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new CloseRemainderInventoryTransferRequest(DiscrepancyReason: "ShortShipment"),
+            ActorB,
+            BranchB);
+        Assert.True(closed.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, closed.Value!.Status);
+        Assert.Equal(3m, closed.Value.Lines.Single().ClosedQty);
+        Assert.Equal(0m, closed.Value.Lines.Single().OutstandingQty);
+        Assert.Equal(onHandBefore, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(1, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.TransferIn));
+    }
+
+    [Fact]
     public async Task Stock_request_dispatch_is_idempotent_and_receive_syncs_status()
     {
         var fx = await SeedAsync(cokeOnHand: 40m);
@@ -552,6 +625,300 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Contains(
             fx.Notifications.Items,
             n => n.RelatedType == StockRequestNotificationTypes.Received && n.TargetBranchId == BranchA);
+    }
+
+    [Fact]
+    public async Task Stock_request_supports_cumulative_fulfillment_across_multiple_transfers()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-20260922-000099");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
+        await fx.StockRequests.AddAsync(request);
+
+        var firstDispatch = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 70m)],
+                StockRequestId: request.Id.Value),
+            ActorA,
+            BranchA);
+        Assert.True(firstDispatch.IsSuccess);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, firstDispatch.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+        request.MarkDispatched(ActorA, Utc.AddMinutes(2), firstDispatch.Value.Id.Value);
+        await fx.StockRequests.UpdateAsync(request);
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            firstDispatch.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 70m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var afterFirst = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.PartiallyFulfilled, afterFirst!.Status);
+
+        var second = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
+        Assert.Equal(30m, second.Value!.TotalSentQty);
+        Assert.NotEqual(firstDispatch.Value.Id.Value, second.Value.TransferId);
+        Assert.Equal(firstDispatch.Value.Id.Value, afterFirst.LinkedInventoryTransferId);
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            second.Value.TransferId,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 30m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var fulfilled = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.Fulfilled, fulfilled!.Status);
+        Assert.Equal(100m, fx.Balances.OnHand(BranchB, fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Proof_receive_20_then_12_then_8_reaches_received()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 20m)]),
+            ActorA,
+            BranchA);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+
+        var wave1 = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 12m)]),
+            ActorB,
+            BranchB);
+        Assert.True(wave1.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, wave1.Value!.Status);
+        Assert.Equal(8m, wave1.Value.Lines.Single().OutstandingQty);
+
+        var wave2 = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 8m)]),
+            ActorB,
+            BranchB);
+        Assert.True(wave2.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.Received, wave2.Value!.Status);
+        Assert.Equal(20m, wave2.Value.TotalReceivedQty);
+        Assert.Equal(20m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(2, fx.Inventory.Movements.Count(m => m.MovementType == StockMovementType.TransferIn));
+    }
+
+    [Fact]
+    public async Task Proof_receive_8_of_10_then_close_remainder_lost_in_transit()
+    {
+        var fx = await SeedAsync(cokeOnHand: 10m);
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(BranchA, BranchB, [new InventoryTransferLineRequest(fx.CokeId, 10m)]),
+            ActorA,
+            BranchA);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 8m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var closed = await fx.CloseRemainder.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new CloseRemainderInventoryTransferRequest(DiscrepancyReason: "LostInTransit"),
+            ActorB,
+            BranchB);
+        Assert.True(closed.IsSuccess);
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, closed.Value!.Status);
+        Assert.Equal(8m, closed.Value.TotalReceivedQty);
+        Assert.Equal(2m, closed.Value.Lines.Single().ClosedQty);
+        Assert.Equal(8m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(0m, fx.Balances.OnHand(BranchA, fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Proof_open_partial_blocks_replacement_dispatch()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-20260922-000101");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
+        await fx.StockRequests.AddAsync(request);
+
+        var first = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(first.IsSuccess, $"{first.ErrorCode}: {first.ErrorMessage}");
+        Assert.Equal(100m, first.Value!.TotalSentQty);
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            first.Value.TransferId,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 70m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var partial = await fx.Transfers.GetByIdAsync(
+            PosOrganizationId.From(OrgA),
+            InventoryTransferId.From(first.Value.TransferId));
+        Assert.Equal(InventoryTransferStatus.PartiallyReceived, partial!.Status);
+        Assert.Equal(30m, partial.Lines.Single().OutstandingQty);
+
+        var blocked = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.False(blocked.IsSuccess);
+        Assert.Equal(DomainErrorCodes.StockRequestNoRemainingToDispatch, blocked.ErrorCode);
+        Assert.Equal(1, fx.Transfers.Items.Count(t => t.Status != InventoryTransferStatus.Cancelled));
+    }
+
+    [Fact]
+    public async Task Proof_close_remainder_enables_replacement_then_fulfill()
+    {
+        // Extra 30 remains at source after Transfer #1 ships 100 (shortage is not auto-restored).
+        var fx = await SeedAsync(cokeOnHand: 130m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-20260922-000102");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
+        await fx.StockRequests.AddAsync(request);
+
+        var first = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(first.IsSuccess);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            first.Value!.TransferId,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 70m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        Assert.True((await fx.CloseRemainder.ExecuteAsync(
+            OrgA,
+            first.Value.TransferId,
+            new CloseRemainderInventoryTransferRequest(DiscrepancyReason: "LostInTransit"),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var afterClose = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.PartiallyFulfilled, afterClose!.Status);
+
+        var second = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
+        Assert.Equal(30m, second.Value!.TotalSentQty);
+        Assert.NotEqual(first.Value.TransferId, second.Value.TransferId);
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            second.Value.TransferId,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 30m)]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        var fulfilled = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), request.Id);
+        Assert.Equal(StockRequestStatus.Fulfilled, fulfilled!.Status);
+        Assert.Equal(100m, fx.Balances.OnHand(BranchB, fx.CokeId));
+    }
+
+    [Fact]
+    public async Task Multi_product_dispatch_only_includes_dispatchable_lines()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m, spriteOnHand: 50m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [
+                new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece),
+                new StockRequestLineDraft(CatalogProductId.From(fx.SpriteId), 50m, "Sprite", UnitOfMeasure.Piece)
+            ],
+            ActorA,
+            Utc,
+            "SR-20260922-000103");
+        request.Approve(
+            ActorA,
+            Utc.AddMinutes(1),
+            new Dictionary<Guid, decimal> { [fx.CokeId] = 100m, [fx.SpriteId] = 50m });
+        await fx.StockRequests.AddAsync(request);
+
+        var first = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [
+                    new InventoryTransferLineRequest(fx.CokeId, 100m),
+                    new InventoryTransferLineRequest(fx.SpriteId, 30m)
+                ],
+                StockRequestId: request.Id.Value),
+            ActorA,
+            BranchA);
+        Assert.True(first.IsSuccess);
+        Assert.True((await fx.Dispatch.ExecuteAsync(OrgA, first.Value!.Id.Value, ActorA, BranchA)).IsSuccess);
+        request.MarkDispatched(ActorA, Utc.AddMinutes(2), first.Value.Id.Value);
+        await fx.StockRequests.UpdateAsync(request);
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            first.Value.Id.Value,
+            new ReceiveInventoryTransferRequest(
+            [
+                new InventoryTransferReceiveLineRequest(fx.CokeId, 80m),
+                new InventoryTransferReceiveLineRequest(fx.SpriteId, 30m)
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        // Coke: received 80 + open 20 = 100 → remaining 0; Sprite: received 30 + open 0 = 30 → remaining 20
+        var second = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(second.IsSuccess, $"{second.ErrorCode}: {second.ErrorMessage}");
+        Assert.Single(second.Value!.Lines);
+        Assert.Equal(fx.SpriteId, second.Value.Lines[0].ProductId);
+        Assert.Equal(20m, second.Value.Lines[0].SentQty);
+    }
+
+    [Fact]
+    public async Task Cancelled_open_transfer_releases_dispatchable_qty()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var request = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 100m, "Coke", UnitOfMeasure.Piece)],
+            ActorA,
+            Utc,
+            "SR-20260922-000104");
+        request.Approve(ActorA, Utc.AddMinutes(1), new Dictionary<Guid, decimal> { [fx.CokeId] = 100m });
+        await fx.StockRequests.AddAsync(request);
+
+        var first = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(first.IsSuccess);
+        Assert.True((await fx.Cancel.ExecuteAsync(OrgA, first.Value!.TransferId, ActorA, BranchA)).IsSuccess);
+
+        var again = await fx.DispatchStockRequest.ExecuteAsync(OrgA, request.Id.Value, ActorA, BranchA);
+        Assert.True(again.IsSuccess, $"{again.ErrorCode}: {again.ErrorMessage}");
+        Assert.Equal(100m, again.Value!.TotalSentQty);
+        Assert.NotEqual(first.Value.TransferId, again.Value.TransferId);
     }
 
     private static async Task<Fixture> SeedAsync(
@@ -610,6 +977,7 @@ public sealed class InventoryTransferUseCaseTests
         public CreateInventoryTransfer Create { get; }
         public DispatchInventoryTransfer Dispatch { get; }
         public ReceiveInventoryTransfer Receive { get; }
+        public CloseRemainderInventoryTransfer CloseRemainder { get; }
         public CancelInventoryTransfer Cancel { get; }
         public InventoryTransferQueryService Queries { get; }
         public DispatchStockRequest DispatchStockRequest { get; }
@@ -632,6 +1000,7 @@ public sealed class InventoryTransferUseCaseTests
                 Notifications,
                 UnitOfWork,
                 Clock);
+            CloseRemainder = new CloseRemainderInventoryTransfer(Transfers, Branches, StockRequests, UnitOfWork, Clock);
             Cancel = new CancelInventoryTransfer(Transfers, Inventory, Balances, Products, lotStock, Branches, UnitOfWork, Clock);
             Queries = new InventoryTransferQueryService(Transfers, Branches, Products);
             DispatchStockRequest = new DispatchStockRequest(
@@ -873,10 +1242,25 @@ public sealed class InventoryTransferUseCaseTests
             StockMovementType movementType,
             InventoryLotId? lotId = null,
             CancellationToken cancellationToken = default) =>
+            HasInventoryTransferSourceMovementAsync(
+                organizationId,
+                transferId.Value,
+                productId,
+                movementType,
+                lotId,
+                cancellationToken);
+
+        public Task<bool> HasInventoryTransferSourceMovementAsync(
+            PosOrganizationId organizationId,
+            Guid sourceId,
+            CatalogProductId productId,
+            StockMovementType movementType,
+            InventoryLotId? lotId = null,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult(Movements.Any(m =>
                 m.OrganizationId == organizationId
                 && m.ProductId == productId
-                && m.SourceId == transferId.Value
+                && m.SourceId == sourceId
                 && m.MovementType == movementType
                 && m.InventoryLotId == lotId));
 

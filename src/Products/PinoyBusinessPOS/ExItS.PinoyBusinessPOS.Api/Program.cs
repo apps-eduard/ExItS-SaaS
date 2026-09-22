@@ -419,6 +419,7 @@ builder.Services.AddScoped<InventoryTransferQueryService>();
 builder.Services.AddScoped<CreateInventoryTransfer>();
 builder.Services.AddScoped<DispatchInventoryTransfer>();
 builder.Services.AddScoped<ReceiveInventoryTransfer>();
+builder.Services.AddScoped<CloseRemainderInventoryTransfer>();
 builder.Services.AddScoped<CancelInventoryTransfer>();
 builder.Services.AddScoped<SupplyRouteQueryService>();
 builder.Services.AddScoped<UpsertSupplyRoutes>();

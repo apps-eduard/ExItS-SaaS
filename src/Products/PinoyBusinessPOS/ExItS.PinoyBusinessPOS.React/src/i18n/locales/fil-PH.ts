@@ -4492,6 +4492,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
     "Receiving this transfer is final. Verify the quantities before confirming.",
 
+  "transfer.receiveWaveConfirmDetail":
+    "Kumpirmahin ang receive-now na dami para sa resibong ito. Maaari mong tanggapin ang natitira mamaya o isara ang natitira na may dahilan.",
+
   "transfer.resetCreate": "Reset",
 
   "transfer.summaryTitle": "Transfer summary",
@@ -4579,6 +4582,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.invalidReceivedQuantity": "Received quantity must be between zero and the sent quantity.",
 
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
+  "transfer.receiveExceedsOutstanding":
+    "Ang receive now ay hindi maaaring lumampas sa outstanding na dami ({outstanding}).",
+  "transfer.invalidReceiveNowQuantity":
+    "Ang receive now ay dapat nasa pagitan ng zero at outstanding na dami.",
+  "transfer.receiveRequiresPositiveQty":
+    "Maglagay ng receive-now na dami na mas mataas sa zero sa kahit isang linya.",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
   "transfer.needsClassification": "Needs reason",
@@ -4645,6 +4654,23 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.receivedSuccess": "Transfer received. Inventory was added to {destination}.",
 
   "transfer.receiveFinalHint": "Receiving this transfer is final. Verify the quantities before confirming.",
+  "transfer.receiveWaveHint":
+    "Ilagay kung magkano ang tinatanggap sa resibong ito. Maaaring tanggapin mamaya ang outstanding o isara ito na may discrepancy reason.",
+  "transfer.receiveWaveSuccess": "Naitala ang resibo. Suriin ang na-update na dami sa transfer.",
+  "transfer.receiveRemainingTitle": "Tanggapin ang natitira",
+  "transfer.receiveRemaining": "Tanggapin ang natitira",
+  "transfer.previouslyReceived": "Naunang natanggap",
+  "transfer.outstanding": "Outstanding",
+  "transfer.closedShort": "Isasarang kulang",
+  "transfer.closeRemainder": "Isara ang natitira",
+  "transfer.closeRemainderTitle": "Isara ang natitirang dami?",
+  "transfer.closeRemainderBody":
+    "Itala kung bakit hindi na matatanggap ang outstanding na dami. Isasara ang transfer na may discrepancy.",
+  "transfer.closeRemainderConfirm": "Isara ang natitira",
+  "transfer.closingRemainder": "Isinasara…",
+  "transfer.closeRemainderSuccess":
+    "Isinara ang transfer na may discrepancy. Naitala ang outstanding na dami.",
+  "transfer.closeRemainderFailedTitle": "Hindi maisara ang natitirang dami",
 
   "transfer.receiveTitle": "Receive transfer",
 
@@ -4687,6 +4713,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Bahagyang natanggap",
 
   "transfer.status.received": "Received",
+  "transfer.status.closedWithDiscrepancy": "Isinara na may discrepancy",
+  "transfer.byPartiallyReceived": "Bahagyang natanggap ni",
+  "transfer.byClosedWithDiscrepancy": "Isinara ni",
 
   "transfer.title": "Mga Inventory Transfer",
 
@@ -4707,6 +4736,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
   "transfer.activity.received": "Received",
   "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.receipt": "Naitala ang resibo",
+  "transfer.activity.receiptDetail": "Naitala ng destination branch ang resibo #{sequence}.",
+  "transfer.activity.closedRemainder": "Isinara ang natitira",
+  "transfer.activity.closedRemainderDetail":
+    "Isinara ang outstanding na dami na may discrepancy reason.",
   "transfer.activity.cancelled": "Cancelled",
   "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
@@ -13302,6 +13336,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.approved": "Naaprubahan",
   "stockRequest.approvedQty": "Naaprubahang dami",
   "stockRequest.fulfilled": "Natupad",
+  "stockRequest.received": "Natanggap",
+  "stockRequest.stillInTransit": "Nasa transit pa",
+  "stockRequest.remainingToDispatch": "Natitira para i-dispatch",
+  "stockRequest.unit": "Yunit",
+  "stockRequest.openTransferBlocksDispatch":
+    "{qty} units ang outstanding pa sa Transfer {transfer}. Tanggapin o isara muna ang transfer bago magpadala ng kapalit.",
   "stockRequest.inProgress": "Kasalukuyan",
   "stockRequest.fulfillQty": "Dami na itutupad",
   "stockRequest.linkedTransfers": "Naka-link na transfer",

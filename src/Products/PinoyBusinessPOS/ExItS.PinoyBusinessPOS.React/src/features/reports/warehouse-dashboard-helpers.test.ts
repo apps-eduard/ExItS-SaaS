@@ -29,6 +29,22 @@ describe("warehouse-dashboard-helpers", () => {
     );
     expect(incoming.incomingToReceive).toBe(2);
     expect(incoming.partiallyReceived).toBe(1);
+
+    const completed = classifyTransferBuckets(
+      [
+        { transferId: "5", sourceBranchId: "a", destinationBranchId: "b", status: "Received", totalSentQty: 1 },
+        {
+          transferId: "6",
+          sourceBranchId: "a",
+          destinationBranchId: "b",
+          status: "ClosedWithDiscrepancy",
+          totalSentQty: 2,
+        },
+      ],
+      "incoming",
+    );
+    expect(completed.received).toBe(2);
+    expect(completed.incomingToReceive).toBe(0);
   });
 
   it("ranks destinations from outgoing transfer qty", () => {

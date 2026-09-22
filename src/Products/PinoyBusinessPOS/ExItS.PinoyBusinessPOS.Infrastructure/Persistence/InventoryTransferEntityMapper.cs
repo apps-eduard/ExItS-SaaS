@@ -9,8 +9,12 @@ internal static class InventoryTransferEntityMapper
 {
     public static InventoryTransfer ToDomain(
         InventoryTransferRecord record,
-        IReadOnlyList<InventoryTransferLineRecord> lines) =>
-        InventoryTransfer.Rehydrate(
+        IReadOnlyList<InventoryTransferLineRecord> lines,
+        IReadOnlyList<InventoryTransferReceiptRecord>? receipts = null,
+        IReadOnlyList<InventoryTransferReceiptLineRecord>? receiptLines = null)
+    {
+        var receiptDomains = BuildReceipts(receipts, receiptLines);
+        return InventoryTransfer.Rehydrate(
             InventoryTransferId.From(record.Id),
             PosOrganizationId.From(record.OrganizationId),
             record.StockRequestId is null ? null : StockRequestId.From(record.StockRequestId.Value),
@@ -28,7 +32,37 @@ internal static class InventoryTransferEntityMapper
             record.ReceivedBy,
             record.CancelledAtUtc,
             record.CancelledBy,
-            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList());
+            lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
+            receiptDomains);
+    }
+
+    private static IReadOnlyList<InventoryTransferReceipt> BuildReceipts(
+        IReadOnlyList<InventoryTransferReceiptRecord>? receipts,
+        IReadOnlyList<InventoryTransferReceiptLineRecord>? receiptLines)
+    {
+        if (receipts is null || receipts.Count == 0)
+        {
+            return [];
+        }
+
+        var linesByReceipt = (receiptLines ?? [])
+            .GroupBy(l => l.ReceiptId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return receipts
+            .OrderBy(r => r.Sequence)
+            .Select(r => InventoryTransferReceipt.Rehydrate(
+                InventoryTransferReceiptId.From(r.Id),
+                PosOrganizationId.From(r.OrganizationId),
+                InventoryTransferId.From(r.TransferId),
+                r.Sequence,
+                r.ReceivedAtUtc,
+                r.ReceivedBy,
+                linesByReceipt.TryGetValue(r.Id, out var lines)
+                    ? lines.Select(ToDomain).ToList()
+                    : []))
+            .ToList();
+    }
 
     public static InventoryTransferLine ToDomain(InventoryTransferLineRecord record) =>
         InventoryTransferLine.Rehydrate(
@@ -48,7 +82,16 @@ internal static class InventoryTransferEntityMapper
             record.SourceLotId is null ? null : InventoryLotId.From(record.SourceLotId.Value),
             record.LotNumber,
             record.ExpirationDate,
-            record.UnitCostSnapshot);
+            record.UnitCostSnapshot,
+            record.ClosedQty);
+
+    public static InventoryTransferReceiptLine ToDomain(InventoryTransferReceiptLineRecord record) =>
+        InventoryTransferReceiptLine.Rehydrate(
+            InventoryTransferReceiptLineId.From(record.Id),
+            InventoryTransferReceiptId.From(record.ReceiptId),
+            InventoryTransferLineId.From(record.TransferLineId),
+            CatalogProductId.From(record.ProductId),
+            record.QuantityReceived);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
@@ -99,6 +142,7 @@ internal static class InventoryTransferEntityMapper
             UnitOfMeasure = line.UnitOfMeasure.ToString(),
             SentQty = line.SentQty,
             ReceivedQty = line.ReceivedQty,
+            ClosedQty = line.ClosedQty,
             DiscrepancyReason = line.DiscrepancyReason is null
                 ? null
                 : InventoryTransferDiscrepancyReasons.ToCode(line.DiscrepancyReason.Value),
@@ -107,6 +151,27 @@ internal static class InventoryTransferEntityMapper
             LotNumber = line.LotNumber,
             ExpirationDate = line.ExpirationDate,
             UnitCostSnapshot = line.UnitCostSnapshot
+        };
+
+    public static InventoryTransferReceiptRecord ToRecord(InventoryTransferReceipt receipt) =>
+        new()
+        {
+            Id = receipt.Id.Value,
+            OrganizationId = receipt.OrganizationId.Value,
+            TransferId = receipt.TransferId.Value,
+            Sequence = receipt.Sequence,
+            ReceivedAtUtc = receipt.ReceivedAtUtc,
+            ReceivedBy = receipt.ReceivedBy
+        };
+
+    public static InventoryTransferReceiptLineRecord ToRecord(InventoryTransferReceiptLine line) =>
+        new()
+        {
+            Id = line.Id.Value,
+            ReceiptId = line.ReceiptId.Value,
+            TransferLineId = line.TransferLineId.Value,
+            ProductId = line.ProductId.Value,
+            QuantityReceived = line.QuantityReceived
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>

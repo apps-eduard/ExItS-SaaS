@@ -852,6 +852,21 @@ internal sealed class InventoryRepository : IInventoryRepository
         CatalogProductId productId,
         StockMovementType movementType,
         InventoryLotId? lotId = null,
+        CancellationToken cancellationToken = default) =>
+        HasInventoryTransferSourceMovementAsync(
+            organizationId,
+            transferId.Value,
+            productId,
+            movementType,
+            lotId,
+            cancellationToken);
+
+    public Task<bool> HasInventoryTransferSourceMovementAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        InventoryLotId? lotId = null,
         CancellationToken cancellationToken = default)
     {
         var type = StockMovementTypes.ToCode(movementType);
@@ -860,7 +875,7 @@ internal sealed class InventoryRepository : IInventoryRepository
             m => m.OrganizationId == organizationId.Value
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.InventoryTransfer)
-                && m.SourceId == transferId.Value
+                && m.SourceId == sourceId
                 && m.MovementType == type
                 && m.InventoryLotId == lot,
             cancellationToken);

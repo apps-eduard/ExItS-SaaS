@@ -113,6 +113,8 @@ public sealed class PosDbContext : DbContext
     internal DbSet<StockRequestNumberSequenceRecord> StockRequestNumberSequences => Set<StockRequestNumberSequenceRecord>();
     internal DbSet<InventoryTransferRecord> InventoryTransfers => Set<InventoryTransferRecord>();
     internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
+    internal DbSet<InventoryTransferReceiptRecord> InventoryTransferReceipts => Set<InventoryTransferReceiptRecord>();
+    internal DbSet<InventoryTransferReceiptLineRecord> InventoryTransferReceiptLines => Set<InventoryTransferReceiptLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
@@ -3387,7 +3389,7 @@ public sealed class PosDbContext : DbContext
                     "sent_qty > 0");
                 tb.HasCheckConstraint(
                     "ck_inventory_transfer_lines_received_range",
-                    "received_qty >= 0 AND received_qty <= sent_qty");
+                    "received_qty >= 0 AND closed_qty >= 0 AND received_qty + closed_qty <= sent_qty");
             });
 
             entity.HasKey(e => e.Id);
@@ -3406,6 +3408,7 @@ public sealed class PosDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.SentQty).HasColumnName("sent_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ClosedQty).HasColumnName("closed_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.DiscrepancyReason)
                 .HasColumnName("discrepancy_reason")
                 .HasMaxLength(InventoryTransferDiscrepancyReasons.CodeMaxLength);
@@ -3443,6 +3446,72 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_transfer_lines_products");
+        });
+
+        modelBuilder.Entity<InventoryTransferReceiptRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_receipts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_receipts_sequence_positive",
+                    "sequence >= 1");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.Sequence).HasColumnName("sequence").IsRequired();
+            entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
+
+            entity.HasIndex(e => new { e.TransferId, e.Sequence })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfer_receipts_transfer_sequence");
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_inventory_transfer_receipts_org_transfer");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_inventory_transfer_receipts_transfers");
+        });
+
+        modelBuilder.Entity<InventoryTransferReceiptLineRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_receipt_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_receipt_lines_qty_positive",
+                    "quantity_received > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiptId).HasColumnName("receipt_id").IsRequired();
+            entity.Property(e => e.TransferLineId).HasColumnName("transfer_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.QuantityReceived)
+                .HasColumnName("quantity_received")
+                .HasPrecision(18, 3)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.ReceiptId, e.TransferLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfer_receipt_lines_receipt_line");
+
+            entity.HasOne<InventoryTransferReceiptRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_inventory_transfer_receipt_lines_receipts");
+
+            entity.HasOne<InventoryTransferLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfer_receipt_lines_transfer_lines");
         });
 
         modelBuilder.Entity<InventoryTransferNumberSequenceRecord>(entity =>

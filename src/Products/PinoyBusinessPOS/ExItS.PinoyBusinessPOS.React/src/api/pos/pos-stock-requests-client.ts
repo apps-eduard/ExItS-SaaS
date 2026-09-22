@@ -21,6 +21,7 @@ export const stockRequestLineDtoSchema = z.object({
   approvedQuantity: z.number().nullable().optional(),
   fulfilledQuantity: z.number(),
   inProgressQuantity: z.number(),
+  remainingToDispatchQuantity: z.number().optional().default(0),
   nameSnapshot: z.string(),
   unitOfMeasure: z.string(),
 });
@@ -31,6 +32,7 @@ export const stockRequestLinkedTransferDtoSchema = z.object({
   status: z.string(),
   totalSentQty: z.number(),
   totalReceivedQty: z.number(),
+  totalOutstandingQty: z.number().optional().default(0),
   updatedAtUtc: z.string(),
 });
 

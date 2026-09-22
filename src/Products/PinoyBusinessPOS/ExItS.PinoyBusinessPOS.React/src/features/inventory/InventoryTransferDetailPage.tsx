@@ -15,6 +15,7 @@ import { canManageInventory } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
 import {
   cancelInventoryTransfer,
+  closeRemainderInventoryTransfer,
   dispatchInventoryTransfer,
   getInventoryTransfer,
   receiveInventoryTransfer,
@@ -53,9 +54,17 @@ import {
   inventoryTransferDiscrepancyLabelKey,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
-  isReceiveLineReady,
-  parseReceivedQuantity,
 } from "@/features/inventory/inventory-transfer-labels";
+import {
+  canDestinationCloseRemainder,
+  canDestinationReceiveTransfer,
+  defaultReceiveNowByLine,
+  isReceiveSubmissionReady,
+  isTransferTerminalStatus,
+  lineOutstandingQty,
+  parseReceiveNowQuantity,
+} from "@/features/inventory/inventory-transfer-receive-helpers";
+import { TransferCloseRemainderDialog } from "@/features/inventory/TransferCloseRemainderDialog";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { useI18n } from "@/i18n/I18nProvider";
 import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
@@ -64,6 +73,7 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Mode = "detail" | "receive";
 type ConfirmKind = "dispatch" | "cancel" | "receive" | null;
+type CloseRemainderOpen = boolean;
 type LocalError = { title: string; detail: string };
 
 function resolveTransferActionError(err: unknown, fallback: string): string {
@@ -91,6 +101,8 @@ function inventoryTransferStatusIcon(status: string) {
       return <PackageOpen aria-hidden />;
     case "Received":
       return <PackageCheck aria-hidden />;
+    case "ClosedWithDiscrepancy":
+      return <PackageOpen aria-hidden />;
     case "Cancelled":
       return <Ban aria-hidden />;
     case "Draft":
@@ -121,8 +133,7 @@ export function InventoryTransferDetailPage() {
   const [mode, setMode] = useState<Mode>("detail");
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [receivedByLine, setReceivedByLine] = useState<Record<string, string>>({});
-  const [reasonByLine, setReasonByLine] = useState<Record<string, string>>({});
-  const [noteByLine, setNoteByLine] = useState<Record<string, string>>({});
+  const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
@@ -166,18 +177,12 @@ export function InventoryTransferDetailPage() {
   }, [location.pathname, location.state, navigate, showToast, t]);
 
   useEffect(() => {
-    if (!transfer || transfer.status !== "InTransit") {
+    if (!transfer || !canDestinationReceiveTransfer(transfer)) {
       return;
     }
-    const next: Record<string, string> = {};
-    for (const line of transfer.lines) {
-      next[line.lineId] = String(line.sentQty);
-    }
-    setReceivedByLine(next);
-    setReasonByLine({});
-    setNoteByLine({});
+    setReceivedByLine(defaultReceiveNowByLine(transfer));
     setMode("detail");
-  }, [transfer?.transferId, transfer?.status, transfer?.updatedAtUtc]);
+  }, [transfer?.transferId, transfer?.status, transfer?.updatedAtUtc, transfer?.totalReceivedQty]);
 
   async function refreshAfter(
     mutation: () => Promise<InventoryTransferDto>,
@@ -242,6 +247,25 @@ export function InventoryTransferDetailPage() {
     );
   }
 
+  async function onCloseRemainder(
+    closeLines: Array<{
+      lineId: string;
+      productId: string;
+      discrepancyReason: string;
+      discrepancyNote?: string | null;
+    }>,
+  ) {
+    if (!workspace || !transfer || busyRef.current) {
+      return;
+    }
+    await refreshAfter(
+      () => closeRemainderInventoryTransfer(workspace, transfer.transferId, { lines: closeLines }),
+      t("transfer.closeRemainderSuccess"),
+      t("transfer.closeRemainderFailedTitle"),
+    );
+    setCloseRemainderOpen(false);
+  }
+
   async function onReceive() {
     if (!workspace || !transfer || busyRef.current) {
       return;
@@ -254,11 +278,12 @@ export function InventoryTransferDetailPage() {
       discrepancyNote?: string | null;
     }> = [];
     for (const line of transfer.lines) {
-      const parsed = parseReceivedQuantity(receivedByLine[line.lineId] ?? "", line.sentQty);
+      const outstanding = lineOutstandingQty(line);
+      const parsed = parseReceiveNowQuantity(receivedByLine[line.lineId] ?? "", outstanding);
       if (parsed === "empty" || parsed === "invalid") {
         setLocalError({
           title: t("transfer.receiveFailedTitle"),
-          detail: t("transfer.invalidReceivedQuantity"),
+          detail: t("transfer.invalidReceiveNowQuantity"),
         });
         setConfirmKind(null);
         return;
@@ -266,36 +291,30 @@ export function InventoryTransferDetailPage() {
       if (parsed === "exceeds") {
         setLocalError({
           title: t("transfer.receiveFailedTitle"),
-          detail: t("transfer.receivedExceedsSent").replace(
-            "{sent}",
-            formatTransferQty(line.sentQty),
+          detail: t("transfer.receiveExceedsOutstanding").replace(
+            "{outstanding}",
+            formatTransferQty(outstanding),
           ),
         });
         setConfirmKind(null);
         return;
       }
-      const entry: (typeof lines)[number] = {
+      if (parsed === 0) {
+        continue;
+      }
+      lines.push({
         productId: line.productId,
         receivedQty: parsed,
         lineId: line.lineId,
-      };
-      if (parsed < line.sentQty) {
-        const reason = reasonByLine[line.lineId]?.trim();
-        if (!reason) {
-          setLocalError({
-            title: t("transfer.receiveFailedTitle"),
-            detail: t("transfer.discrepancyReasonRequired"),
-          });
-          setConfirmKind(null);
-          return;
-        }
-        entry.discrepancyReason = reason;
-        const note = noteByLine[line.lineId]?.trim();
-        if (note) {
-          entry.discrepancyNote = note;
-        }
-      }
-      lines.push(entry);
+      });
+    }
+    if (lines.length === 0) {
+      setLocalError({
+        title: t("transfer.receiveFailedTitle"),
+        detail: t("transfer.receiveRequiresPositiveQty"),
+      });
+      setConfirmKind(null);
+      return;
     }
 
     busyRef.current = true;
@@ -311,9 +330,9 @@ export function InventoryTransferDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       const dest = branchDisplayName(updated.destinationBranchName, updated.destinationBranchId);
       showToast(
-        updated.status === "PartiallyReceived"
-          ? t("transfer.partiallyReceivedSuccess")
-          : t("transfer.receivedSuccess").replace("{destination}", dest),
+        updated.status === "Received"
+          ? t("transfer.receivedSuccess").replace("{destination}", dest)
+          : t("transfer.receiveWaveSuccess"),
         "success",
       );
       setMode("detail");
@@ -354,22 +373,18 @@ export function InventoryTransferDetailPage() {
   const isDestination = actingBranchId === transfer.destinationBranchId;
   const isDraft = transfer.status === "Draft";
   const isInTransit = transfer.status === "InTransit";
-  const isFinal =
-    transfer.status === "Received" ||
-    transfer.status === "PartiallyReceived" ||
-    transfer.status === "Cancelled";
+  const isPartiallyReceived = transfer.status === "PartiallyReceived";
+  const isFinal = isTransferTerminalStatus(transfer.status);
+  const showReceiptProgress = isInTransit || isPartiallyReceived || isFinal;
   const canMutate = allowManage && online && !busy;
   const canDispatch = canMutate && isSource && isDraft;
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
-  const canReceive = canMutate && isDestination && isInTransit;
-  const receiveFormReady = transfer.lines.every((line) =>
-    isReceiveLineReady(
-      receivedByLine[line.lineId] ?? "",
-      line.sentQty,
-      reasonByLine[line.lineId],
-    ),
-  );
+  const canReceive = canMutate && isDestination && canDestinationReceiveTransfer(transfer);
+  const canCloseRemainder = canMutate && isDestination && canDestinationCloseRemainder(transfer);
+  const receiveFormReady = isReceiveSubmissionReady(transfer.lines, receivedByLine);
   const canSubmitReceive = canReceive && receiveFormReady;
+  const receiveButtonLabel =
+    isPartiallyReceived ? t("transfer.receiveRemaining") : t("transfer.receive");
 
   const statusLabel = t(inventoryTransferStatusLabelKey(transfer.status));
   const statusTone = inventoryTransferStatusTone(transfer.status);
@@ -564,7 +579,7 @@ export function InventoryTransferDetailPage() {
       <ConfirmationDialog
         open
         title={t("transfer.receiveConfirmTitle")}
-        detail={t("transfer.receiveFinalConfirmDetail")}
+        detail={t("transfer.receiveWaveConfirmDetail")}
         confirmLabel={t("transfer.receive")}
         confirmPendingLabel={t("transfer.receiving")}
         confirmIcon={<PackageCheck className="size-4 shrink-0" aria-hidden />}
@@ -582,7 +597,7 @@ export function InventoryTransferDetailPage() {
       />
     ) : null;
 
-  if (mode === "receive" && isInTransit) {
+  if (mode === "receive" && canReceive) {
     return (
       <InventoryTransferReceiveMode
         transfer={transfer}
@@ -591,11 +606,7 @@ export function InventoryTransferDetailPage() {
         statusLabel={statusLabel}
         statusIcon={inventoryTransferStatusIcon(transfer.status)}
         receivedByLine={receivedByLine}
-        reasonByLine={reasonByLine}
-        noteByLine={noteByLine}
         setReceivedByLine={setReceivedByLine}
-        setReasonByLine={setReasonByLine}
-        setNoteByLine={setNoteByLine}
         canSubmitReceive={canSubmitReceive}
         busy={busy}
         online={online}
@@ -731,6 +742,11 @@ export function InventoryTransferDetailPage() {
                 <ExitsTableHead cellAlign="center" colSize="numeric">
                   {t("transfer.received")}
                 </ExitsTableHead>
+                {showReceiptProgress ? (
+                  <ExitsTableHead cellAlign="center" colSize="numeric">
+                    {t("transfer.outstanding")}
+                  </ExitsTableHead>
+                ) : null}
                 <ExitsTableHead cellAlign="center" colSize="numeric">
                   {t("transfer.difference")}
                 </ExitsTableHead>
@@ -739,7 +755,8 @@ export function InventoryTransferDetailPage() {
             </ExitsTableHeader>
             <ExitsTableBody>
               {transfer.lines.map((line) => {
-                const showReceived = isFinal || isInTransit;
+                const showReceived = showReceiptProgress;
+                const outstanding = lineOutstandingQty(line);
                 return (
                   <ExitsTableRow
                     key={line.lineId}
@@ -765,6 +782,11 @@ export function InventoryTransferDetailPage() {
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
                       {showReceived ? formatTransferQty(line.receivedQty) : "—"}
                     </ExitsTableCell>
+                    {showReceiptProgress ? (
+                      <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                        {formatTransferQty(outstanding)}
+                      </ExitsTableCell>
+                    ) : null}
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
                       {line.differenceQty !== 0 ? formatTransferQty(line.differenceQty) : "—"}
                     </ExitsTableCell>
@@ -781,7 +803,8 @@ export function InventoryTransferDetailPage() {
 
           <ExitsTableMobile data-testid="transfer-lines-mobile">
             {transfer.lines.map((line) => {
-              const showReceived = isFinal || isInTransit;
+              const showReceived = showReceiptProgress;
+              const outstanding = lineOutstandingQty(line);
               return (
                 <ExitsTableMobileRow
                   key={line.lineId}
@@ -799,6 +822,9 @@ export function InventoryTransferDetailPage() {
                     {t("transfer.sent")}: {formatTransferQty(line.sentQty)}
                     {showReceived
                       ? ` · ${t("transfer.received")}: ${formatTransferQty(line.receivedQty)}`
+                      : ""}
+                    {showReceived
+                      ? ` · ${t("transfer.outstanding")}: ${formatTransferQty(outstanding)}`
                       : ""}
                     {line.differenceQty !== 0
                       ? ` · ${t("transfer.difference")}: ${formatTransferQty(line.differenceQty)}`
@@ -824,7 +850,7 @@ export function InventoryTransferDetailPage() {
         </ExitsTableContainer>
       </section>
 
-      {canCancel || canDispatch || canReceive ? (
+      {canCancel || canDispatch || canReceive || canCloseRemainder ? (
         <div className="receive-stock-actions" data-testid="transfer-detail-actions">
           {isDraft ? (
             <p className="m-0 me-auto text-[length:var(--exits-text-xs)] text-muted">
@@ -864,12 +890,28 @@ export function InventoryTransferDetailPage() {
                 disabled={!canMutate}
                 onClick={() => {
                   setLocalError(null);
+                  setReceivedByLine(defaultReceiveNowByLine(transfer));
                   setMode("receive");
                 }}
                 data-testid="transfer-receive"
               >
                 <PackageCheck className="size-4 shrink-0" aria-hidden />
-                {t("transfer.receive")}
+                {receiveButtonLabel}
+              </Button>
+            ) : null}
+            {canCloseRemainder ? (
+              <Button
+                type="button"
+                intent="danger"
+                appearance="outline"
+                disabled={!canMutate}
+                onClick={() => {
+                  setLocalError(null);
+                  setCloseRemainderOpen(true);
+                }}
+                data-testid="transfer-close-remainder"
+              >
+                {t("transfer.closeRemainder")}
               </Button>
             ) : null}
             {canDispatch ? (
@@ -892,6 +934,20 @@ export function InventoryTransferDetailPage() {
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.draftNoEdit")}</p>
       ) : null}
       {confirmDialog}
+
+      {closeRemainderOpen ? (
+        <TransferCloseRemainderDialog
+          open
+          transfer={transfer}
+          busy={busy}
+          onCancel={() => {
+            if (!busy) {
+              setCloseRemainderOpen(false);
+            }
+          }}
+          onConfirm={(lines) => void onCloseRemainder(lines)}
+        />
+      ) : null}
 
       <SideDrawer
         open={timelineOpen}

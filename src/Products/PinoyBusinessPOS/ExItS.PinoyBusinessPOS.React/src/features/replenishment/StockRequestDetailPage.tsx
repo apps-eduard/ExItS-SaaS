@@ -22,6 +22,8 @@ import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { formatTransferTimestamp } from "@/features/inventory/inventory-transfer-labels";
 import {
   canCancelStockRequestAsDestination,
+  canDispatchRemainingStockRequest,
+  openCoveringTransferMessage,
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
 } from "@/features/replenishment/stock-request-helpers";
@@ -184,8 +186,22 @@ export function StockRequestDetailPage() {
     allowManage &&
     isSource &&
     (dto.status === "Approved" || dto.status === "Preparing" || dto.status === "InProgress");
+  const canDispatchRemaining =
+    allowManage && isSource && canDispatchRemainingStockRequest(dto.status, dto.lines);
+  const openCover = openCoveringTransferMessage(dto.linkedTransfers);
   const canReceive =
-    allowManage && isDestination && dto.status === "InTransit" && Boolean(linkedTransferId);
+    allowManage &&
+    isDestination &&
+    (dto.status === "InTransit" || dto.status === "PartiallyFulfilled") &&
+    Boolean(
+      dto.linkedTransfers.find(
+        (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
+      )?.transferId ?? linkedTransferId,
+    );
+  const receiveTransferId =
+    dto.linkedTransfers.find(
+      (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
+    )?.transferId ?? linkedTransferId;
   const canCancel =
     allowManage && isDestination && canCancelStockRequestAsDestination(dto.status);
 
@@ -213,23 +229,47 @@ export function StockRequestDetailPage() {
 
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {dto.lines.map((line) => (
-          <li key={line.lineId} className="rounded-[var(--exits-radius-md)] border border-border p-3">
+          <li
+            key={line.lineId}
+            className="rounded-[var(--exits-radius-md)] border border-border p-3"
+            data-testid={`stock-request-line-${line.productId}`}
+          >
             <div className="font-medium">{line.nameSnapshot}</div>
-            <div className="mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("stockRequest.requested")}: {line.requestedQuantity}
-              {" · "}
-              {t("stockRequest.approved")}: {line.approvedQuantity ?? "—"}
-              {" · "}
-              {t("stockRequest.fulfilled")}: {line.fulfilledQuantity}
-              {line.inProgressQuantity > 0 ? (
-                <>
-                  {" · "}
-                  {t("stockRequest.inProgress")}: {line.inProgressQuantity}
-                </>
-              ) : null}
-              {" · "}
-              {line.unitOfMeasure}
-            </div>
+            <dl className="mt-2 m-0 grid grid-cols-2 gap-x-3 gap-y-1 text-[length:var(--exits-text-sm)] text-muted sm:grid-cols-3">
+              <div>
+                <dt className="inline">{t("stockRequest.requested")}: </dt>
+                <dd className="inline m-0">{line.requestedQuantity}</dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.approved")}: </dt>
+                <dd className="inline m-0">{line.approvedQuantity ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.received")}: </dt>
+                <dd className="inline m-0" data-testid={`stock-request-received-${line.productId}`}>
+                  {line.fulfilledQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.stillInTransit")}: </dt>
+                <dd className="inline m-0" data-testid={`stock-request-in-transit-${line.productId}`}>
+                  {line.inProgressQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.remainingToDispatch")}: </dt>
+                <dd
+                  className="inline m-0"
+                  data-testid={`stock-request-remaining-dispatch-${line.productId}`}
+                >
+                  {line.remainingToDispatchQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.unit")}: </dt>
+                <dd className="inline m-0">{line.unitOfMeasure}</dd>
+              </div>
+            </dl>
             {pendingAtSource ? (
               <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)]">
                 <span>{t("stockRequest.approvedQty")}</span>
@@ -247,6 +287,18 @@ export function StockRequestDetailPage() {
           </li>
         ))}
       </ul>
+
+      {openCover ? (
+        <p
+          className="m-0 rounded-[var(--exits-radius-md)] border border-border bg-muted/40 p-3 text-[length:var(--exits-text-sm)]"
+          data-testid="stock-request-open-transfer-guard"
+          role="status"
+        >
+          {t("stockRequest.openTransferBlocksDispatch")
+            .replace("{qty}", String(openCover.outstandingQty))
+            .replace("{transfer}", openCover.transferLabel)}
+        </p>
+      ) : null}
 
       <section className="rounded-[var(--exits-radius-md)] border border-border p-3" data-testid="stock-request-activity">
         <h2 className="exits-type-label m-0 mb-2">{t("stockRequest.activity")}</h2>
@@ -352,9 +404,9 @@ export function StockRequestDetailPage() {
         </div>
       ) : null}
 
-      {preparingAtSource ? (
+      {preparingAtSource || canDispatchRemaining ? (
         <div className="flex flex-wrap gap-2" data-testid="stock-request-dispatch-actions">
-          {dto.status === "Approved" ? (
+          {preparingAtSource && dto.status === "Approved" ? (
             <Button
               type="button"
               variant="secondary"
@@ -365,20 +417,22 @@ export function StockRequestDetailPage() {
               {t("stockRequest.startPreparing")}
             </Button>
           ) : null}
-          <Button
-            type="button"
-            onClick={() => dispatchMutation.mutate()}
-            disabled={dispatchMutation.isPending || prepareMutation.isPending}
-            data-testid="stock-request-dispatch"
-          >
-            {t("stockRequest.dispatchStock")}
-          </Button>
+          {canDispatchRemaining ? (
+            <Button
+              type="button"
+              onClick={() => dispatchMutation.mutate()}
+              disabled={dispatchMutation.isPending || prepareMutation.isPending}
+              data-testid="stock-request-dispatch"
+            >
+              {t("stockRequest.dispatchStock")}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
-      {canReceive ? (
+      {canReceive && receiveTransferId ? (
         <Button asChild data-testid="stock-request-receive">
-          <Link to={`/inventory/transfers/${linkedTransferId}`}>{t("stockRequest.receiveLinked")}</Link>
+          <Link to={`/inventory/transfers/${receiveTransferId}`}>{t("stockRequest.receiveLinked")}</Link>
         </Button>
       ) : null}
 

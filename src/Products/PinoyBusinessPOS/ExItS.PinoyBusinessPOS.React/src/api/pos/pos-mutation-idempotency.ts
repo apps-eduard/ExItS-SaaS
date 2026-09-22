@@ -31,6 +31,7 @@ export const OFFLINE_OPERATION_TYPES = {
   InventoryTransferCreate: "inventory_transfer.create",
   InventoryTransferDispatch: "inventory_transfer.dispatch",
   InventoryTransferReceive: "inventory_transfer.receive",
+  InventoryTransferCloseRemainder: "inventory_transfer.close_remainder",
   InventoryTransferCancel: "inventory_transfer.cancel",
   StockRequestCreate: "stock_request.create",
   StockRequestApprove: "stock_request.approve",

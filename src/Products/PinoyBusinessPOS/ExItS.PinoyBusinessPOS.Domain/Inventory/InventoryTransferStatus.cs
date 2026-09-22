@@ -9,7 +9,8 @@ public enum InventoryTransferStatus
     InTransit = 1,
     PartiallyReceived = 2,
     Received = 3,
-    Cancelled = 4
+    Cancelled = 4,
+    ClosedWithDiscrepancy = 5
 }
 
 public static class InventoryTransferStatuses
@@ -22,7 +23,8 @@ public static class InventoryTransferStatuses
         nameof(InventoryTransferStatus.InTransit),
         nameof(InventoryTransferStatus.PartiallyReceived),
         nameof(InventoryTransferStatus.Received),
-        nameof(InventoryTransferStatus.Cancelled)
+        nameof(InventoryTransferStatus.Cancelled),
+        nameof(InventoryTransferStatus.ClosedWithDiscrepancy)
     ];
 
     public static string ToCode(InventoryTransferStatus status) => status.ToString();

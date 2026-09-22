@@ -14,6 +14,9 @@ describe("inventory-transfer-labels", () => {
     expect(inventoryTransferStatusLabelKey("PartiallyReceived")).toBe(
       "transfer.status.partiallyReceived",
     );
+    expect(inventoryTransferStatusLabelKey("ClosedWithDiscrepancy")).toBe(
+      "transfer.status.closedWithDiscrepancy",
+    );
     expect(inventoryTransferDiscrepancyLabelKey("ShortShipment")).toBe(
       "transfer.discrepancy.shortShipment",
     );

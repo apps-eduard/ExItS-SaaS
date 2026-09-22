@@ -17,6 +17,10 @@ public sealed record InventoryTransferLineDraft(
     DateOnly? ExpirationDate = null,
     decimal? UnitCostSnapshot = null);
 
+/// <summary>
+/// One receive-wave line. <see cref="ReceivedQty"/> is the quantity received in this wave (ReceiveNowQty),
+/// not the cumulative total on the transfer line.
+/// </summary>
 public sealed record InventoryTransferReceiveLineDraft(
     CatalogProductId ProductId,
     decimal ReceivedQty,
@@ -24,6 +28,13 @@ public sealed record InventoryTransferReceiveLineDraft(
     string? DiscrepancyNote = null,
     SellingMode SellingMode = SellingMode.PerItem,
     InventoryTransferLineId? LineId = null);
+
+/// <summary>Per-line close of remaining outstanding quantity after one or more receive waves.</summary>
+public sealed record InventoryTransferCloseRemainderLineDraft(
+    InventoryTransferDiscrepancyReason DiscrepancyReason,
+    string? DiscrepancyNote = null,
+    InventoryTransferLineId? LineId = null,
+    CatalogProductId? ProductId = null);
 
 public sealed class InventoryTransferLine
 {
@@ -39,6 +50,8 @@ public sealed class InventoryTransferLine
     public UnitOfMeasure UnitOfMeasure { get; }
     public decimal SentQty { get; private set; }
     public decimal ReceivedQty { get; private set; }
+    /// <summary>Quantity closed as discrepancy (not received). Set by <see cref="CloseRemainder"/>.</summary>
+    public decimal ClosedQty { get; private set; }
     public InventoryTransferDiscrepancyReason? DiscrepancyReason { get; private set; }
     public string? DiscrepancyNote { get; private set; }
     public InventoryLotId? SourceLotId { get; }
@@ -50,14 +63,29 @@ public sealed class InventoryTransferLine
     /// </summary>
     public decimal? UnitCostSnapshot { get; private set; }
 
+    /// <summary>Sent minus received (display shortage; does not subtract closed qty).</summary>
     public decimal DifferenceQty => SentQty - ReceivedQty;
 
-    public string LineStatus =>
-        ReceivedQty <= 0m && SentQty > 0m
-            ? "Missing"
-            : DifferenceQty > 0m
-                ? "Short"
-                : "Received";
+    /// <summary>Remaining open quantity that can still be received or closed.</summary>
+    public decimal OutstandingQty => SentQty - ReceivedQty - ClosedQty;
+
+    public string LineStatus
+    {
+        get
+        {
+            if (OutstandingQty > 0m)
+            {
+                return ReceivedQty <= 0m ? "Missing" : "Short";
+            }
+
+            if (ClosedQty > 0m)
+            {
+                return ReceivedQty <= 0m ? "Missing" : "ClosedShort";
+            }
+
+            return "Received";
+        }
+    }
 
     private InventoryTransferLine(
         InventoryTransferLineId id,
@@ -69,6 +97,7 @@ public sealed class InventoryTransferLine
         UnitOfMeasure unitOfMeasure,
         decimal sentQty,
         decimal receivedQty,
+        decimal closedQty,
         InventoryTransferDiscrepancyReason? discrepancyReason,
         string? discrepancyNote,
         InventoryLotId? sourceLotId = null,
@@ -85,6 +114,7 @@ public sealed class InventoryTransferLine
         UnitOfMeasure = unitOfMeasure;
         SentQty = sentQty;
         ReceivedQty = receivedQty;
+        ClosedQty = closedQty;
         DiscrepancyReason = discrepancyReason;
         DiscrepancyNote = discrepancyNote;
         SourceLotId = sourceLotId;
@@ -120,6 +150,7 @@ public sealed class InventoryTransferLine
             draft.UnitOfMeasure,
             qty,
             receivedQty: 0m,
+            closedQty: 0m,
             discrepancyReason: null,
             discrepancyNote: null,
             draft.SourceLotId,
@@ -146,37 +177,39 @@ public sealed class InventoryTransferLine
     internal void SetUnitCostSnapshot(decimal? unitCostSnapshot) =>
         UnitCostSnapshot = NormalizeOptionalUnitCost(unitCostSnapshot);
 
-    internal void ApplyReceipt(InventoryTransferReceiveLineDraft receive)
+    /// <summary>
+    /// Accumulates a receive-wave quantity. Discrepancy reason is not required here;
+    /// use <see cref="CloseRemainder"/> to close remaining outstanding with a reason.
+    /// </summary>
+    internal decimal ApplyReceiptDelta(InventoryTransferReceiveLineDraft receive)
     {
         var qty = receive.ReceivedQty == 0m
             ? 0m
             : SaleLine.NormalizeQuantity(receive.ReceivedQty, UnitOfMeasure, receive.SellingMode);
 
-        if (qty < 0m || qty > SentQty)
+        if (qty <= 0m || qty > OutstandingQty)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferReceiveQty,
-                "Received quantity must be between zero and the sent quantity.");
+                "Receive quantity must be greater than zero and not exceed outstanding quantity.");
         }
 
-        ReceivedQty = qty;
-        DiscrepancyNote = NormalizeNote(receive.DiscrepancyNote);
-        if (qty < SentQty)
-        {
-            if (receive.DiscrepancyReason is null)
-            {
-                throw new DomainException(
-                    DomainErrorCodes.InvalidInventoryTransferDiscrepancyReason,
-                    "Discrepancy reason is required when received quantity is less than sent.");
-            }
+        ReceivedQty += qty;
+        return qty;
+    }
 
-            DiscrepancyReason = receive.DiscrepancyReason;
-        }
-        else
+    /// <summary>Closes all remaining outstanding quantity as discrepancy.</summary>
+    internal void CloseRemainder(InventoryTransferDiscrepancyReason reason, string? note)
+    {
+        var outstanding = OutstandingQty;
+        if (outstanding <= 0m)
         {
-            DiscrepancyReason = null;
-            DiscrepancyNote = null;
+            return;
         }
+
+        ClosedQty += outstanding;
+        DiscrepancyReason = reason;
+        DiscrepancyNote = NormalizeNote(note);
     }
 
     public static InventoryTransferLine Rehydrate(
@@ -194,7 +227,8 @@ public sealed class InventoryTransferLine
         InventoryLotId? sourceLotId = null,
         string? lotNumber = null,
         DateOnly? expirationDate = null,
-        decimal? unitCostSnapshot = null) =>
+        decimal? unitCostSnapshot = null,
+        decimal closedQty = 0m) =>
         new(
             id,
             transferId,
@@ -205,6 +239,7 @@ public sealed class InventoryTransferLine
             unitOfMeasure,
             sentQty,
             receivedQty,
+            closedQty,
             discrepancyReason,
             discrepancyNote,
             sourceLotId,

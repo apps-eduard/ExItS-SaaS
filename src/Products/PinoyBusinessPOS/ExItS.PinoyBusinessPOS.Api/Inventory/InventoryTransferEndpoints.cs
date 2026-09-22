@@ -16,7 +16,9 @@ internal static class InventoryTransferEndpoints
         group.MapPost("/transfers", CreateTransfer);
         group.MapGet("/transfers/{transferId:guid}", GetTransfer);
         group.MapPost("/transfers/{transferId:guid}/dispatch", DispatchTransfer);
+        // Receive-now: body line quantities apply to this wave only (not cumulative totals).
         group.MapPost("/transfers/{transferId:guid}/receive", ReceiveTransfer);
+        group.MapPost("/transfers/{transferId:guid}/close-remainder", CloseRemainderTransfer);
         group.MapPost("/transfers/{transferId:guid}/cancel", CancelTransfer);
     }
 
@@ -156,6 +158,39 @@ internal static class InventoryTransferEndpoints
                 request,
                 organizationId,
                 OfflineOperationTypes.InventoryTransferReceive,
+                idempotency,
+                ct2 => ToDtoAsync(
+                    useCase.ExecuteAsync(organizationId, transferId, body, actorId, branchId, ct2),
+                    organizationId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> CloseRemainderTransfer(
+        HttpRequest request,
+        Guid transferId,
+        CloseRemainderInventoryTransferRequest body,
+        CloseRemainderInventoryTransfer useCase,
+        InventoryTransferQueryService queries,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferCloseRemainder,
                 idempotency,
                 ct2 => ToDtoAsync(
                     useCase.ExecuteAsync(organizationId, transferId, body, actorId, branchId, ct2),

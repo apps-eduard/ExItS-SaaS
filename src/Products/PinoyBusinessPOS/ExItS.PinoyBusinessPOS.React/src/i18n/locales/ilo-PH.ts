@@ -4536,6 +4536,9 @@ export const iloPH: Record<keyof typeof en, string> = {
 
     "Receiving this transfer is final. Verify the quantities before confirming.",
 
+  "transfer.receiveWaveConfirmDetail":
+    "Confirm the receive-now quantities for this receipt. You can receive the rest later or close remaining with a reason.",
+
   "transfer.resetCreate": "Reset",
 
   "transfer.summaryTitle": "Transfer summary",
@@ -4623,6 +4626,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.invalidReceivedQuantity": "Received quantity must be between zero and the sent quantity.",
 
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
+  "transfer.receiveExceedsOutstanding":
+    "Receive now cannot exceed outstanding quantity ({outstanding}).",
+  "transfer.invalidReceiveNowQuantity":
+    "Receive now must be between zero and the outstanding quantity.",
+  "transfer.receiveRequiresPositiveQty": "Enter a receive-now quantity greater than zero on at least one line.",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
   "transfer.needsClassification": "Needs reason",
@@ -4689,6 +4697,22 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.receivedSuccess": "Transfer received. Inventory was added to {destination}.",
 
   "transfer.receiveFinalHint": "Receiving this transfer is final. Verify the quantities before confirming.",
+  "transfer.receiveWaveHint":
+    "Enter how much you are receiving in this receipt. Outstanding quantities can be received later or closed with a discrepancy reason.",
+  "transfer.receiveWaveSuccess": "Receipt recorded. Review updated quantities on the transfer.",
+  "transfer.receiveRemainingTitle": "Receive remaining",
+  "transfer.receiveRemaining": "Receive remaining",
+  "transfer.previouslyReceived": "Previously received",
+  "transfer.outstanding": "Outstanding",
+  "transfer.closedShort": "Closing short",
+  "transfer.closeRemainder": "Close remaining",
+  "transfer.closeRemainderTitle": "Close remaining quantity?",
+  "transfer.closeRemainderBody":
+    "Record why the outstanding quantity will not be received. This closes the transfer with a discrepancy.",
+  "transfer.closeRemainderConfirm": "Close remaining",
+  "transfer.closingRemainder": "Closing…",
+  "transfer.closeRemainderSuccess": "Transfer closed with discrepancy. Outstanding quantity was recorded.",
+  "transfer.closeRemainderFailedTitle": "Cannot close remaining quantity",
 
   "transfer.receiveTitle": "Receive transfer",
 
@@ -4731,6 +4755,9 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Partially received",
 
   "transfer.status.received": "Received",
+  "transfer.status.closedWithDiscrepancy": "Closed with discrepancy",
+  "transfer.byPartiallyReceived": "Partially received by",
+  "transfer.byClosedWithDiscrepancy": "Closed by",
 
   "transfer.title": "Dagiti Inventory Transfer",
 
@@ -4751,6 +4778,11 @@ export const iloPH: Record<keyof typeof en, string> = {
   "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
   "transfer.activity.received": "Received",
   "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.receipt": "Receipt recorded",
+  "transfer.activity.receiptDetail": "Destination branch recorded receipt #{sequence}.",
+  "transfer.activity.closedRemainder": "Remaining closed",
+  "transfer.activity.closedRemainderDetail":
+    "Outstanding quantity was closed with a discrepancy reason.",
   "transfer.activity.cancelled": "Cancelled",
   "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
@@ -13246,6 +13278,12 @@ export const iloPH: Record<keyof typeof en, string> = {
   "stockRequest.approved": "Naaprubahan",
   "stockRequest.approvedQty": "Naaprubahan a kaadu",
   "stockRequest.fulfilled": "Natungpal",
+  "stockRequest.received": "Naawat",
+  "stockRequest.stillInTransit": "Adda pay iti transit",
+  "stockRequest.remainingToDispatch": "Nabati a ma-dispatch",
+  "stockRequest.unit": "Unit",
+  "stockRequest.openTransferBlocksDispatch":
+    "{qty} units ti outstanding pay iti Transfer {transfer}. Awaten wenno irikep nga umuna ti transfer sakbay nga agipatulod ti kapada.",
   "stockRequest.inProgress": "Agdama",
   "stockRequest.fulfillQty": "Kaadu a tungpalen",
   "stockRequest.linkedTransfers": "Naka-link a transfer",

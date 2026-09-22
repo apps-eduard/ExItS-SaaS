@@ -9,6 +9,8 @@ const TITLE_KEY: Record<TransferActivityEvent["kind"], MessageKey> = {
   created: "transfer.activity.created",
   dispatched: "transfer.activity.dispatched",
   received: "transfer.activity.received",
+  receipt: "transfer.activity.receipt",
+  closedRemainder: "transfer.activity.closedRemainder",
   cancelled: "transfer.activity.cancelled",
 };
 
@@ -16,6 +18,8 @@ const DETAIL_KEY: Record<TransferActivityEvent["kind"], MessageKey> = {
   created: "transfer.activity.createdDetail",
   dispatched: "transfer.activity.dispatchedDetail",
   received: "transfer.activity.receivedDetail",
+  receipt: "transfer.activity.receiptDetail",
+  closedRemainder: "transfer.activity.closedRemainderDetail",
   cancelled: "transfer.activity.cancelledDetail",
 };
 
@@ -26,7 +30,10 @@ function transferTone(kind: TransferActivityEvent["kind"]) {
     case "dispatched":
       return "warning" as const;
     case "received":
+    case "receipt":
       return "success" as const;
+    case "closedRemainder":
+      return "warning" as const;
     case "cancelled":
       return "danger" as const;
   }
@@ -40,7 +47,10 @@ function transferIcon(kind: TransferActivityEvent["kind"]) {
     case "dispatched":
       return <Truck className={className} aria-hidden />;
     case "received":
+    case "receipt":
       return <CheckCircle2 className={className} aria-hidden />;
+    case "closedRemainder":
+      return <Ban className={className} aria-hidden />;
     case "cancelled":
       return <Ban className={className} aria-hidden />;
   }
@@ -80,7 +90,10 @@ export function InventoryTransferActivityTimeline({
           id: event.id,
           atUtc: event.atUtc,
           title: t(TITLE_KEY[event.kind]),
-          description: t(DETAIL_KEY[event.kind]),
+          description:
+            event.kind === "receipt" && event.receiptSequence != null
+              ? t(DETAIL_KEY[event.kind]).replace("{sequence}", String(event.receiptSequence))
+              : t(DETAIL_KEY[event.kind]),
           tone: transferTone(event.kind),
           icon: transferIcon(event.kind),
           actorName,

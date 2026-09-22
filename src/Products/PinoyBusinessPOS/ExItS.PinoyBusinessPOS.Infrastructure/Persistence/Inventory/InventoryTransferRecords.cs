@@ -94,6 +94,7 @@ internal sealed class InventoryTransferLineRecord
     public string UnitOfMeasure { get; set; } = string.Empty;
     public decimal SentQty { get; set; }
     public decimal ReceivedQty { get; set; }
+    public decimal ClosedQty { get; set; }
     public string? DiscrepancyReason { get; set; }
     public string? DiscrepancyNote { get; set; }
     public Guid? SourceLotId { get; set; }
@@ -107,6 +108,25 @@ internal sealed class InventoryTransferNumberSequenceRecord
     public Guid OrganizationId { get; set; }
     public DateOnly BusinessDate { get; set; }
     public long LastValue { get; set; }
+}
+
+internal sealed class InventoryTransferReceiptRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid TransferId { get; set; }
+    public int Sequence { get; set; }
+    public DateTimeOffset ReceivedAtUtc { get; set; }
+    public Guid ReceivedBy { get; set; }
+}
+
+internal sealed class InventoryTransferReceiptLineRecord
+{
+    public Guid Id { get; set; }
+    public Guid ReceiptId { get; set; }
+    public Guid TransferLineId { get; set; }
+    public Guid ProductId { get; set; }
+    public decimal QuantityReceived { get; set; }
 }
 
 internal sealed class InventoryBranchBalanceRecord

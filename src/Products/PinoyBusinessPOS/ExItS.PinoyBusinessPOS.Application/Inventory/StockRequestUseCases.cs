@@ -460,15 +460,7 @@ public sealed class StockRequestQueryService
         IReadOnlyList<InventoryTransfer> linkedTransfers,
         IReadOnlyDictionary<Guid, string> names)
     {
-        var activeTransfers = linkedTransfers.Where(t => t.Status != InventoryTransferStatus.Cancelled).ToList();
-        var fulfilledByProduct = activeTransfers
-            .SelectMany(t => t.Lines)
-            .GroupBy(l => l.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
-        var inProgressByProduct = activeTransfers
-            .SelectMany(t => t.Lines)
-            .GroupBy(l => l.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => Math.Max(0m, x.SentQty - x.ReceivedQty)));
+        var coverage = StockRequestDispatchCoverage.Compute(request, linkedTransfers);
 
         return new(
             request.Id.Value,
@@ -495,16 +487,24 @@ public sealed class StockRequestQueryService
             request.RejectionReason,
             request.CancelledBy,
             request.CancelledAtUtc,
-            request.Lines.Select(line => new StockRequestLineDto(
-                line.Id.Value,
-                line.ProductId.Value,
-                line.LineNumber,
-                line.RequestedQuantity,
-                line.ApprovedQuantity,
-                fulfilledByProduct.GetValueOrDefault(line.ProductId.Value),
-                inProgressByProduct.GetValueOrDefault(line.ProductId.Value),
-                line.NameSnapshot,
-                UnitOfMeasures.ToCode(line.UnitOfMeasure))).ToList(),
+            request.Lines.Select(line =>
+            {
+                var productId = line.ProductId.Value;
+                var received = coverage.ReceivedByProduct.GetValueOrDefault(productId);
+                var openInTransit = coverage.OpenInTransitByProduct.GetValueOrDefault(productId);
+                var remaining = coverage.RemainingToDispatchByProduct.GetValueOrDefault(productId);
+                return new StockRequestLineDto(
+                    line.Id.Value,
+                    productId,
+                    line.LineNumber,
+                    line.RequestedQuantity,
+                    line.ApprovedQuantity,
+                    received,
+                    openInTransit,
+                    remaining,
+                    line.NameSnapshot,
+                    UnitOfMeasures.ToCode(line.UnitOfMeasure));
+            }).ToList(),
             linkedTransfers
                 .OrderByDescending(t => t.UpdatedAtUtc)
                 .Select(t => new StockRequestLinkedTransferDto(
@@ -513,6 +513,9 @@ public sealed class StockRequestQueryService
                     InventoryTransferStatuses.ToCode(t.Status),
                     t.TotalSentQty,
                     t.TotalReceivedQty,
+                    t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived
+                        ? t.Lines.Sum(l => Math.Max(0m, l.OutstandingQty))
+                        : 0m,
                     t.UpdatedAtUtc))
                 .ToList());
     }
@@ -1109,6 +1112,39 @@ public sealed class DispatchStockRequest
 
         try
         {
+            return await _unitOfWork.ExecuteInSerializableTransactionAsync(
+                ct => DispatchCoreAsync(organizationId, orgId, stockRequestId, actorId, actingBranchId, ct),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (DomainException ex)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+        catch (PersistenceConflictException ex)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+        }
+    }
+
+    private async Task<ApplicationResult<InventoryTransferDto>> DispatchCoreAsync(
+        Guid organizationId,
+        PosOrganizationId orgId,
+        Guid stockRequestId,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken)
+    {
+            // Reload inside the serializable transaction so RemainingToDispatch cannot race.
+            var stockRequest = await _requests
+                .GetByIdAsync(orgId, StockRequestId.From(stockRequestId), cancellationToken)
+                .ConfigureAwait(false);
+            if (stockRequest is null)
+            {
+                return ApplicationResult<InventoryTransferDto>.Failure(
+                    "pos.inventory.stock_request.not_found",
+                    "Stock request was not found.");
+            }
+
             if (stockRequest.Status == StockRequestStatus.Approved)
             {
                 stockRequest.StartPreparing(actorId, _clock.UtcNow);
@@ -1116,61 +1152,82 @@ public sealed class DispatchStockRequest
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            if (stockRequest.Status is not (StockRequestStatus.Approved or StockRequestStatus.Preparing or StockRequestStatus.InTransit))
+            if (stockRequest.Status is not (
+                StockRequestStatus.Approved
+                or StockRequestStatus.Preparing
+                or StockRequestStatus.InTransit
+                or StockRequestStatus.PartiallyFulfilled))
             {
                 return ApplicationResult<InventoryTransferDto>.Failure(
                     DomainErrorCodes.InvalidStockRequestStatusTransition,
                     "Stock request is not open for dispatch.");
             }
 
-            InventoryTransfer? transfer = null;
-            if (stockRequest.LinkedInventoryTransferId is Guid linkedId)
-            {
-                transfer = await _transfers
-                    .GetByIdAsync(orgId, InventoryTransferId.From(linkedId), cancellationToken)
-                    .ConfigureAwait(false);
-            }
-
-            if (transfer is null)
-            {
-                var linked = await _transfers
+            var linkedTransfers = (await _transfers
                     .ListByStockRequestIdAsync(orgId, stockRequest.Id, cancellationToken)
-                    .ConfigureAwait(false);
-                transfer = linked
-                    .Where(t => t.Status != InventoryTransferStatus.Cancelled)
-                    .OrderByDescending(t => t.UpdatedAtUtc)
-                    .FirstOrDefault();
-            }
+                    .ConfigureAwait(false))
+                .Where(t => t.Status != InventoryTransferStatus.Cancelled)
+                .OrderByDescending(t => t.UpdatedAtUtc)
+                .ToList();
 
+            // Prefer an existing draft so prepare/dispatch stays idempotent (draft has no stock effect,
+            // so it does not reduce RemainingToDispatch — we finish this draft instead of creating another).
+            InventoryTransfer? transfer = linkedTransfers
+                .FirstOrDefault(t => t.Status == InventoryTransferStatus.Draft);
+
+            var createdNewTransfer = false;
             if (transfer is null)
             {
-                if (stockRequest.Status is not (StockRequestStatus.Approved or StockRequestStatus.Preparing))
+                var remainingLines = StockRequestDispatchCoverage
+                    .BuildRemainingDispatchLines(stockRequest, linkedTransfers);
+                if (remainingLines.Count == 0)
                 {
-                    return ApplicationResult<InventoryTransferDto>.Failure(
-                        DomainErrorCodes.InvalidStockRequestStatusTransition,
-                        "Stock request is not open for dispatch.");
-                }
+                    var openCovering = linkedTransfers.FirstOrDefault(t =>
+                        t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived);
+                    var anyReceived = linkedTransfers.SelectMany(t => t.Lines).Any(l => l.ReceivedQty > 0m);
 
-                var lines = stockRequest.Lines
-                    .Select(line => new InventoryTransferLineRequest(
-                        line.ProductId.Value,
-                        line.FulfillmentTargetQuantity))
-                    .ToList();
-                var createRequest = new CreateInventoryTransferRequest(
-                    stockRequest.RequestedSourceLocationId.Value,
-                    stockRequest.DestinationLocationId.Value,
-                    lines,
-                    stockRequest.Notes,
-                    stockRequest.Id.Value);
-                var created = await _createTransfer
-                    .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
-                    .ConfigureAwait(false);
-                if (!created.IsSuccess)
+                    // Idempotent re-dispatch before any receipt: return the existing open transfer.
+                    if (openCovering is not null
+                        && stockRequest.Status == StockRequestStatus.InTransit
+                        && !anyReceived)
+                    {
+                        transfer = openCovering;
+                    }
+                    else if (openCovering is not null)
+                    {
+                        var openQty = openCovering.Lines.Sum(l => Math.Max(0m, l.OutstandingQty));
+                        var transferLabel = openCovering.TransferNumber ?? openCovering.Id.Value.ToString("D");
+                        return ApplicationResult<InventoryTransferDto>.Failure(
+                            DomainErrorCodes.StockRequestNoRemainingToDispatch,
+                            $"No remaining stock is available to dispatch. Outstanding quantity is already covered by an open transfer ({transferLabel}; {openQty} still in transit). Receive or close that transfer before sending replacement stock.");
+                    }
+                    else
+                    {
+                        return ApplicationResult<InventoryTransferDto>.Failure(
+                            DomainErrorCodes.StockRequestNoRemainingToDispatch,
+                            "No remaining stock is available to dispatch. Outstanding quantity is already covered by an open transfer.");
+                    }
+                }
+                else
                 {
-                    return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
-                }
+                    var createRequest = new CreateInventoryTransferRequest(
+                        stockRequest.RequestedSourceLocationId.Value,
+                        stockRequest.DestinationLocationId.Value,
+                        remainingLines,
+                        stockRequest.Notes,
+                        stockRequest.Id.Value);
+                    var created = await _createTransfer
+                        .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (!created.IsSuccess)
+                    {
+                        return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
+                    }
 
-                transfer = created.Value!;
+                    transfer = created.Value!;
+                    createdNewTransfer = true;
+                    linkedTransfers.Insert(0, transfer);
+                }
             }
 
             if (transfer.Status == InventoryTransferStatus.Draft)
@@ -1188,23 +1245,25 @@ public sealed class DispatchStockRequest
             else if (transfer.Status is not (
                 InventoryTransferStatus.InTransit
                 or InventoryTransferStatus.Received
-                or InventoryTransferStatus.PartiallyReceived))
+                or InventoryTransferStatus.PartiallyReceived
+                or InventoryTransferStatus.ClosedWithDiscrepancy))
             {
                 return ApplicationResult<InventoryTransferDto>.Failure(
                     DomainErrorCodes.InvalidStockRequestStatusTransition,
                     $"Linked transfer status '{InventoryTransferStatuses.ToCode(transfer.Status)}' cannot fulfill dispatch.");
             }
 
-            var wasAlreadyLinked = stockRequest.LinkedInventoryTransferId == transfer.Id.Value
-                && stockRequest.Status == StockRequestStatus.InTransit;
+            // LinkedInventoryTransferId remains the first dispatched transfer for backward compatibility.
+            var markedDispatchedNow = false;
             if (stockRequest.Status is StockRequestStatus.Approved or StockRequestStatus.Preparing)
             {
                 stockRequest.MarkDispatched(actorId, _clock.UtcNow, transfer.Id.Value);
                 await _requests.UpdateAsync(stockRequest, cancellationToken).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                markedDispatchedNow = true;
             }
 
-            if (!wasAlreadyLinked)
+            if (createdNewTransfer || markedDispatchedNow)
             {
                 await StockRequestNotificationHelper
                     .PublishAsync(
@@ -1227,15 +1286,69 @@ public sealed class DispatchStockRequest
                     ApplicationErrorCodes.InventoryTransferNotFound,
                     "Inventory transfer was not found.")
                 : ApplicationResult<InventoryTransferDto>.Success(dto);
-        }
-        catch (DomainException ex)
+    }
+}
+
+/// <summary>
+/// Authoritative stock-request dispatch coverage.
+/// RemainingToDispatch = MAX(0, Approved − Received − OpenInTransit) where OpenInTransit is outstanding
+/// on InTransit/PartiallyReceived transfers only (not Draft, Received, ClosedWithDiscrepancy, Cancelled).
+/// </summary>
+internal static class StockRequestDispatchCoverage
+{
+    internal sealed record Snapshot(
+        IReadOnlyDictionary<Guid, decimal> ReceivedByProduct,
+        IReadOnlyDictionary<Guid, decimal> OpenInTransitByProduct,
+        IReadOnlyDictionary<Guid, decimal> RemainingToDispatchByProduct);
+
+    internal static Snapshot Compute(
+        StockRequest stockRequest,
+        IReadOnlyList<InventoryTransfer> linkedTransfers)
+    {
+        var active = linkedTransfers.Where(t => t.Status != InventoryTransferStatus.Cancelled).ToList();
+
+        var receivedByProduct = active
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
+
+        var openInTransitByProduct = active
+            .Where(t => t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived)
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => Math.Max(0m, x.OutstandingQty)));
+
+        var remainingByProduct = new Dictionary<Guid, decimal>();
+        foreach (var line in stockRequest.Lines)
         {
-            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+            var productId = line.ProductId.Value;
+            var remaining = Math.Max(
+                0m,
+                line.FulfillmentTargetQuantity
+                - receivedByProduct.GetValueOrDefault(productId)
+                - openInTransitByProduct.GetValueOrDefault(productId));
+            remainingByProduct[productId] = remaining;
         }
-        catch (PersistenceConflictException ex)
+
+        return new Snapshot(receivedByProduct, openInTransitByProduct, remainingByProduct);
+    }
+
+    internal static List<InventoryTransferLineRequest> BuildRemainingDispatchLines(
+        StockRequest stockRequest,
+        IReadOnlyList<InventoryTransfer> linkedTransfers)
+    {
+        var coverage = Compute(stockRequest, linkedTransfers);
+        var lines = new List<InventoryTransferLineRequest>();
+        foreach (var line in stockRequest.Lines)
         {
-            return ApplicationResult<InventoryTransferDto>.Failure(ex.ErrorCode, ex.Message);
+            var remaining = coverage.RemainingToDispatchByProduct.GetValueOrDefault(line.ProductId.Value);
+            if (remaining > 0m)
+            {
+                lines.Add(new InventoryTransferLineRequest(line.ProductId.Value, remaining));
+            }
         }
+
+        return lines;
     }
 }
 

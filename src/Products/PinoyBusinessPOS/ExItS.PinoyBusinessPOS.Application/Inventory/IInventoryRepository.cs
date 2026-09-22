@@ -281,6 +281,25 @@ public interface IInventoryRepository
         InventoryLotId? lotId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Checks stock movement uniqueness for a specific inventory-transfer source id
+    /// (transfer id for TransferOut; receipt id for TransferIn waves).
+    /// </summary>
+    Task<bool> HasInventoryTransferSourceMovementAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        InventoryLotId? lotId = null,
+        CancellationToken cancellationToken = default) =>
+        HasInventoryTransferMovementAsync(
+            organizationId,
+            InventoryTransferId.From(sourceId),
+            productId,
+            movementType,
+            lotId,
+            cancellationToken);
+
     Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,

@@ -271,6 +271,8 @@ public static class DomainErrorCodes
     public const string InvalidBranchId = "pos.branch.id.invalid";
     public const string InvalidInventoryTransferId = "pos.inventory.transfer.id.invalid";
     public const string InvalidInventoryTransferLineId = "pos.inventory.transfer.line.id.invalid";
+    public const string InvalidInventoryTransferReceiptId = "pos.inventory.transfer.receipt.id.invalid";
+    public const string InvalidInventoryTransferReceiptLineId = "pos.inventory.transfer.receipt_line.id.invalid";
     public const string InvalidInventoryTransferNumber = "pos.inventory.transfer.number.invalid";
     public const string InvalidInventoryTransferStatus = "pos.inventory.transfer.status.invalid";
     public const string InvalidInventoryTransferStatusTransition = "pos.inventory.transfer.status.invalid_transition";
@@ -304,6 +306,7 @@ public static class DomainErrorCodes
     public const string StockRequestDuplicateProduct = "pos.inventory.stock_request.duplicate_product";
     public const string StockRequestRouteRequired = "pos.inventory.stock_request.route.required";
     public const string StockRequestSourceMustBeWarehouse = "pos.inventory.stock_request.source.must_be_warehouse";
+    public const string StockRequestNoRemainingToDispatch = "pos.inventory.stock_request.no_remaining_to_dispatch";
 
     public const string InvalidExpenseCategoryId = "pos.expense_category.id.invalid";
     public const string InvalidExpenseCategoryName = "pos.expense_category.name.invalid";

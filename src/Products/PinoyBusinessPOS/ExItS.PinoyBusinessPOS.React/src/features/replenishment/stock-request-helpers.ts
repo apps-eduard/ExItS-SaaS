@@ -32,7 +32,6 @@ export type StockRequestTab = RetailStockRequestTab | WarehouseStockRequestTab;
 
 const COMPLETED_STATUSES = new Set([
   "Fulfilled",
-  "PartiallyFulfilled",
   "Rejected",
   "Cancelled",
 ]);
@@ -47,8 +46,45 @@ export function pickPreferredSourceId(
   return active.find((r) => r.isPreferred)?.sourceLocationId ?? active[0]?.sourceLocationId ?? null;
 }
 
-export function remainingRequestQty(requested: number, fulfilled: number, inProgress: number): number {
-  return Math.max(0, requested - fulfilled - inProgress);
+export function remainingRequestQty(approvedOrRequested: number, received: number, openInTransit: number): number {
+  return Math.max(0, approvedOrRequested - received - openInTransit);
+}
+
+/** True when source may dispatch replacement / remaining stock (not covered by open transfers). */
+export function canDispatchRemainingStockRequest(
+  status: string,
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+): boolean {
+  const normalized = normalizeStockRequestStatus(status);
+  if (
+    normalized !== "Approved" &&
+    normalized !== "Preparing" &&
+    normalized !== "InTransit" &&
+    normalized !== "PartiallyFulfilled"
+  ) {
+    return false;
+  }
+  return lines.some((l) => (l.remainingToDispatchQuantity ?? 0) > 0);
+}
+
+export function openCoveringTransferMessage(
+  linkedTransfers: ReadonlyArray<{
+    transferId: string;
+    transferNumber?: string | null;
+    status: string;
+    totalOutstandingQty?: number;
+  }>,
+): { transferLabel: string; outstandingQty: number } | null {
+  const open = linkedTransfers.find(
+    (t) =>
+      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
+      (t.totalOutstandingQty ?? 0) > 0,
+  );
+  if (!open) return null;
+  return {
+    transferLabel: open.transferNumber ?? open.transferId.slice(0, 8),
+    outstandingQty: open.totalOutstandingQty ?? 0,
+  };
 }
 
 export function hasConfiguredInternalSource(
@@ -84,7 +120,7 @@ export function warehouseTabStatuses(tab: WarehouseStockRequestTab): ReadonlySet
     case "preparing":
       return IN_PROGRESS_STATUSES;
     case "dispatched":
-      return new Set(["InTransit"]);
+      return new Set(["InTransit", "PartiallyFulfilled"]);
     case "history":
       return COMPLETED_STATUSES;
     case "all":
