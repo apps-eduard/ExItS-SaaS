@@ -53,9 +53,11 @@ internal static class PurchaseEntityMapper
             record.UpdatedAtUtc,
             lines,
             (ConnectedPoPaymentTerm)record.PaymentTerm,
+            (ConnectedPoPaymentTiming)record.PaymentTiming,
             record.SupplierBranchId,
             record.SupplierBranchNameSnapshot,
             record.IntendedReceivingBranchId,
+            record.FulfillmentMethod,
             record.CancelledAtUtc,
             record.CancelledByUserId,
             record.RemainingClosedAtUtc,
@@ -64,7 +66,15 @@ internal static class PurchaseEntityMapper
             record.FinalAcceptedValue,
             record.CancelledRemainingValue,
             record.RefundDueAmount,
-            record.AmountPaidSnapshot);
+            record.AmountPaidSnapshot,
+            (ConnectedPoFinancialSettlementStatus)record.FinancialSettlementStatus,
+            record.SellerSettlementRemarks,
+            record.FinanciallySettledAtUtc,
+            record.FinanciallySettledBy,
+            record.BuyerPrepaymentSubmittedAtUtc,
+            record.BuyerPrepaymentMethod,
+            record.BuyerPrepaymentReference,
+            record.BuyerPrepaymentDetails);
     }
 
     public static PurchaseOrderRecord ToRecord(PurchaseOrder po) =>
@@ -86,16 +96,26 @@ internal static class PurchaseEntityMapper
             CreatedAtUtc = po.CreatedAtUtc,
             UpdatedAtUtc = po.UpdatedAtUtc,
             PaymentTerm = (int)po.PaymentTerm,
+            PaymentTiming = (int)po.PaymentTiming,
             SupplierBranchId = po.SupplierBranchId,
             SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot,
             IntendedReceivingBranchId = po.IntendedReceivingBranchId,
+            FulfillmentMethod = po.FulfillmentMethod,
             RemainingClosedAtUtc = po.RemainingClosedAtUtc,
             RemainingClosedByUserId = po.RemainingClosedByUserId,
             RemainingClosedReason = po.RemainingClosedReason,
             FinalAcceptedValue = po.FinalAcceptedValue,
             CancelledRemainingValue = po.CancelledRemainingValue,
             RefundDueAmount = po.RefundDueAmount,
-            AmountPaidSnapshot = po.AmountPaidSnapshot
+            AmountPaidSnapshot = po.AmountPaidSnapshot,
+            FinancialSettlementStatus = (int)po.FinancialSettlementStatus,
+            SellerSettlementRemarks = po.SellerSettlementRemarks,
+            FinanciallySettledAtUtc = po.FinanciallySettledAtUtc,
+            FinanciallySettledBy = po.FinanciallySettledBy,
+            BuyerPrepaymentSubmittedAtUtc = po.BuyerPrepaymentSubmittedAtUtc,
+            BuyerPrepaymentMethod = po.BuyerPrepaymentMethod,
+            BuyerPrepaymentReference = po.BuyerPrepaymentReference,
+            BuyerPrepaymentDetails = po.BuyerPrepaymentDetails
         };
 
     public static void ApplyToRecord(PurchaseOrder po, PurchaseOrderRecord record)
@@ -113,9 +133,11 @@ internal static class PurchaseEntityMapper
         record.CancelledByUserId = po.CancelledByUserId;
         record.UpdatedAtUtc = po.UpdatedAtUtc;
         record.PaymentTerm = (int)po.PaymentTerm;
+        record.PaymentTiming = (int)po.PaymentTiming;
         record.SupplierBranchId = po.SupplierBranchId;
         record.SupplierBranchNameSnapshot = po.SupplierBranchNameSnapshot;
         record.IntendedReceivingBranchId = po.IntendedReceivingBranchId;
+        record.FulfillmentMethod = po.FulfillmentMethod;
         record.RemainingClosedAtUtc = po.RemainingClosedAtUtc;
         record.RemainingClosedByUserId = po.RemainingClosedByUserId;
         record.RemainingClosedReason = po.RemainingClosedReason;
@@ -123,6 +145,14 @@ internal static class PurchaseEntityMapper
         record.CancelledRemainingValue = po.CancelledRemainingValue;
         record.RefundDueAmount = po.RefundDueAmount;
         record.AmountPaidSnapshot = po.AmountPaidSnapshot;
+        record.FinancialSettlementStatus = (int)po.FinancialSettlementStatus;
+        record.SellerSettlementRemarks = po.SellerSettlementRemarks;
+        record.FinanciallySettledAtUtc = po.FinanciallySettledAtUtc;
+        record.FinanciallySettledBy = po.FinanciallySettledBy;
+        record.BuyerPrepaymentSubmittedAtUtc = po.BuyerPrepaymentSubmittedAtUtc;
+        record.BuyerPrepaymentMethod = po.BuyerPrepaymentMethod;
+        record.BuyerPrepaymentReference = po.BuyerPrepaymentReference;
+        record.BuyerPrepaymentDetails = po.BuyerPrepaymentDetails;
     }
 
     public static PurchaseOrderLineRecord ToRecord(PurchaseOrderLine line) =>
@@ -170,11 +200,14 @@ internal static class PurchaseEntityMapper
                 l.MultiplierToBaseSnapshot,
                 l.DamagedQty,
                 l.RejectedQty,
+                l.OtherQty,
                 l.ShortClosedQty,
                 Enum.TryParse<ConnectedPoReceivingDiscrepancyKind>(l.DiscrepancyKind, true, out var kind)
                     ? kind
                     : ConnectedPoReceivingDiscrepancyKind.None,
                 l.DiscrepancyNote,
+                l.OtherReasonCode,
+                l.OtherReasonNote,
                 l.ExpiryDate,
                 l.LotNumber))
             .ToList();
@@ -268,9 +301,12 @@ internal static class PurchaseEntityMapper
             ReceivedQty = line.QuantityReceived,
             DamagedQty = line.DamagedQty,
             RejectedQty = line.RejectedQty,
+            OtherQty = line.OtherQty,
             ShortClosedQty = line.ShortClosedQty,
             DiscrepancyKind = line.DiscrepancyKind.ToString(),
             DiscrepancyNote = line.DiscrepancyNote,
+            OtherReasonCode = line.OtherReasonCode,
+            OtherReasonNote = line.OtherReasonNote,
             UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
             LineTotalSnapshot = line.LineTotalSnapshot,
             InventoryMovementId = line.InventoryMovementId,

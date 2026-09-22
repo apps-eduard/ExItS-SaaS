@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, Store } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 import { canManagePurchasing } from "@/access/pos-capabilities";
 import { PosApiError } from "@/api/pos/pos-http";
+import { listConnectedPoReturnsByPurchaseOrder } from "@/api/pos/pos-connected-po-returns-client";
 import { getBuyerConnectedSupplierCommerceReadiness } from "@/api/pos/pos-connected-suppliers-client";
 import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
@@ -13,9 +14,11 @@ import {
   getPurchaseOrder,
   isPurchaseOrderReceivable,
   listGoodsReceiptsForPurchaseOrder,
+  submitBuyerPrepaymentProof,
   submitPurchaseOrder,
   voidGoodsReceipt,
   type PosGoodsReceiptDto,
+  type PosGoodsReceiptLineDto,
   type PosPurchaseOrderDto,
 } from "@/api/pos/pos-purchase-orders-client";
 import {
@@ -25,6 +28,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
@@ -44,12 +58,19 @@ import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { PoDocumentTotals } from "@/features/purchasing/PoDocumentTotals";
 import type { PoDocumentLine } from "@/features/purchasing/po-document-types";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
-import { DocumentActions } from "@/features/documents/DocumentActions";
+import {
+  exportBusinessDocumentPdf,
+  printBusinessDocument,
+} from "@/features/documents/print-business-document";
 import { PurchaseOrderBusinessDocument } from "@/features/documents/PurchasingBusinessDocuments";
 import { useBusinessDocumentIdentity } from "@/features/documents/use-business-document-identity";
 import { useOrganizationDocumentSettings } from "@/features/documents/use-organization-document-settings";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { receiptReverseErrorMessage } from "@/features/purchasing/receive-payment";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
+import * as XLSX from "xlsx";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
@@ -58,6 +79,45 @@ import { buildProposalRevisionFromBuyerPo } from "@/features/purchasing/po-propo
 import { PoProposalRevisionPanel } from "@/features/purchasing/PoProposalRevisionPanel";
 
 const RECEIPT_VOID_REASON_MAX = 512;
+
+function goodsReceiptLineDetailParts(
+  line: PosGoodsReceiptLineDto,
+  t: (key: MessageKey) => string,
+): string[] {
+  const damaged = line.damagedQty ?? 0;
+  const rejected = line.rejectedQty ?? 0;
+  const shortClosed = line.shortClosedQty ?? 0;
+  const discrepancyNote = line.discrepancyNote?.trim();
+  const parts: string[] = [];
+  if (line.expiryDate) {
+    parts.push(`${t("purchasing.expiryDate")}: ${line.expiryDate}`);
+  }
+  if (line.lotNumber?.trim()) {
+    parts.push(`${t("purchasing.lotNumber")}: ${line.lotNumber.trim()}`);
+  }
+  if (damaged > 0) {
+    parts.push(`${t("purchasing.damaged")}: ${damaged} ${line.uomSnapshot}`);
+  }
+  if (rejected > 0) {
+    parts.push(`${t("purchasing.rejected")}: ${rejected} ${line.uomSnapshot}`);
+  }
+  if (shortClosed > 0) {
+    parts.push(`${t("purchasing.cancelRemaining")}: ${shortClosed} ${line.uomSnapshot}`);
+  }
+  if (line.discrepancyKind && line.discrepancyKind !== "None") {
+    parts.push(
+      `${t("purchasing.discrepancy")}: ${
+        line.discrepancyKind === "Short"
+          ? t("purchasing.cancelRemaining")
+          : line.discrepancyKind
+      }`,
+    );
+  }
+  if (discrepancyNote) {
+    parts.push(`${t("purchasing.discrepancyNote")}: ${discrepancyNote}`);
+  }
+  return parts;
+}
 
 function buyerStatusTone(status: string, displayStatus: string): "success" | "warning" | "info" | "danger" {
   const key = displayStatus || status;
@@ -74,6 +134,7 @@ function buyerStatusTone(status: string, displayStatus: string): "success" | "wa
     case "ChangesNeedApproval":
     case "New":
     case "ReceivedWithIssues":
+    case "ReceivedAwaitingPayment":
       return "warning";
     case "Cancelled":
     case "Declined":
@@ -101,6 +162,8 @@ function buyerStatusLabel(
       return "Fully received";
     case "CompletedRemainingCancelled":
       return t("incomingOrders.statusCompletedRemainingCancelled");
+    case "ReceivedAwaitingPayment":
+      return t("incomingOrders.statusReceivedAwaitingPayment");
     case "ReceivedWithIssues":
       return t("incomingOrders.statusReceivedWithIssues");
     case "Shipped":
@@ -134,16 +197,15 @@ function resolveOrderTotal(po: PosPurchaseOrderDto): {
 
 function toBuyerDocumentLines(po: PosPurchaseOrderDto): PoDocumentLine[] {
   return po.lines.map((line) => {
-    const uom = line.uomSnapshot ?? "";
+    const uom = line.uomSnapshot?.trim() || "";
     return {
       id: line.lineId,
       productName: line.nameSnapshot ?? line.productId ?? "—",
       sku: line.skuSnapshot,
-      quantityLabel: uom ? `${line.orderedQty} ${uom}` : String(line.orderedQty),
+      quantityLabel: String(line.orderedQty),
+      unitLabel: uom || null,
       unitCost: line.unitPurchaseCost,
       lineTotal: line.lineTotal,
-      receivedLabel: uom ? `${line.receivedQty} ${uom}` : String(line.receivedQty),
-      outstandingLabel: uom ? `${line.outstandingQty} ${uom}` : String(line.outstandingQty),
     };
   });
 }
@@ -248,79 +310,94 @@ function GoodsReceiptCard({
         <span className="text-muted">{t("purchasing.receiptValue")}</span>
         <MoneyDisplay amount={receiptValue} testId={`po-receipt-value-${receipt.goodsReceiptId}`} />
       </div>
-      <ul className="m-0 flex list-none flex-col gap-3 border-t border-border pt-3 p-0">
-        {receipt.lines.map((line) => {
-          const goodQty = line.quantityReceived;
-          const damaged = line.damagedQty ?? 0;
-          const rejected = line.rejectedQty ?? 0;
-          const shortClosed = line.shortClosedQty ?? 0;
-          const discrepancyNote = line.discrepancyNote?.trim();
-          const showExpiryLot = Boolean(line.expiryDate) || Boolean(line.lotNumber);
-          return (
-            <li
-              key={line.lineId}
-              className="text-[length:var(--exits-text-sm)]"
-              data-testid={`po-receipt-line-${line.lineId}`}
-            >
-              <p className="m-0 font-medium">{line.nameSnapshot}</p>
-              <p className="mt-1 mb-0 text-muted">
-                {t("purchasing.receivedGood")}: {goodQty} {line.uomSnapshot}
-              </p>
-              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted">{t("purchasing.unitPurchaseCost")}</span>
-                <span>
+      <ExitsTableContainer
+        className="border-t border-border pt-3"
+        data-testid={`po-receipt-lines-${receipt.goodsReceiptId}`}
+      >
+        <ExitsTable data-testid={`po-receipt-lines-desktop-${receipt.goodsReceiptId}`}>
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead cellAlign="text" colSize="flex">
+                {t("purchasing.colProduct")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="numeric" colSize="numeric">
+                {t("purchasing.goodReceived")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="text" colSize="numeric">
+                {t("purchasing.unit")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="money" colSize="money">
+                {t("purchasing.unitCost")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="money" colSize="money">
+                {t("purchasing.lineTotal")}
+              </ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            {receipt.lines.map((line) => {
+              const detailParts = goodsReceiptLineDetailParts(line, t);
+              return (
+                <ExitsTableRow
+                  key={line.lineId}
+                  data-testid={`po-receipt-line-${line.lineId}`}
+                >
+                  <ExitsTableCell cellAlign="text" className="font-medium">
+                    <div>{line.nameSnapshot}</div>
+                    {detailParts.length > 0 ? (
+                      <div className="mt-1 text-[length:var(--exits-text-xs)] font-normal text-muted">
+                        {detailParts.join(" · ")}
+                      </div>
+                    ) : null}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="numeric" className="tabular-nums">
+                    {line.quantityReceived}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="text" className="text-muted">
+                    {line.uomSnapshot || "—"}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" className="tabular-nums">
+                    <MoneyDisplay amount={line.unitPurchaseCostSnapshot} />
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="money" className="tabular-nums font-medium">
+                    <MoneyDisplay amount={line.lineTotalSnapshot} />
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              );
+            })}
+          </ExitsTableBody>
+        </ExitsTable>
+
+        <ExitsTableMobile data-testid={`po-receipt-lines-mobile-${receipt.goodsReceiptId}`}>
+          {receipt.lines.map((line) => {
+            const detailParts = goodsReceiptLineDetailParts(line, t);
+            return (
+              <ExitsTableMobileRow
+                key={line.lineId}
+                data-testid={`po-receipt-line-${line.lineId}`}
+              >
+                <p className="exits-table-mobile__title m-0">{line.nameSnapshot}</p>
+                <p className="exits-table-mobile__math mt-1 mb-0">
+                  {t("purchasing.goodReceived")}: {line.quantityReceived} {line.uomSnapshot}
+                  {" · "}
+                  {t("purchasing.lineTotal")}:{" "}
+                  <MoneyDisplay amount={line.lineTotalSnapshot} />
+                </p>
+                <p className="exits-table-mobile__meta mt-1 mb-0">
+                  {t("purchasing.unitCost")}:{" "}
                   <MoneyDisplay amount={line.unitPurchaseCostSnapshot} />
                   <span className="text-muted"> / {line.uomSnapshot}</span>
-                </span>
-              </p>
-              <p className="mt-1 mb-0 flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted">{t("purchasing.lineTotal")}</span>
-                <MoneyDisplay amount={line.lineTotalSnapshot} />
-              </p>
-              {showExpiryLot ? (
-                <>
-                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.expiryDate")}</span>
-                    <span>{line.expiryDate ?? "—"}</span>
+                </p>
+                {detailParts.length > 0 ? (
+                  <p className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {detailParts.join(" · ")}
                   </p>
-                  <p className="mt-1 mb-0 flex flex-wrap justify-between gap-2">
-                    <span className="text-muted">{t("purchasing.lotNumber")}</span>
-                    <span>{line.lotNumber?.trim() || "—"}</span>
-                  </p>
-                </>
-              ) : null}
-              {damaged > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.damaged")}: {damaged} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {rejected > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.rejected")}: {rejected} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {shortClosed > 0 ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.cancelRemaining")}: {shortClosed} {line.uomSnapshot}
-                </p>
-              ) : null}
-              {line.discrepancyKind && line.discrepancyKind !== "None" ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.discrepancy")}:{" "}
-                  {line.discrepancyKind === "Short"
-                    ? t("purchasing.cancelRemaining")
-                    : line.discrepancyKind}
-                </p>
-              ) : null}
-              {discrepancyNote ? (
-                <p className="mt-1 mb-0 text-muted">
-                  {t("purchasing.discrepancyNote")}: {discrepancyNote}
-                </p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+                ) : null}
+              </ExitsTableMobileRow>
+            );
+          })}
+        </ExitsTableMobile>
+      </ExitsTableContainer>
       {notes ? (
         <p className="m-0 border-t border-border pt-2 text-[length:var(--exits-text-sm)] text-muted">
           {t("purchasing.notes")}: {notes}
@@ -428,6 +505,11 @@ export function PurchaseOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [showPayForm, setShowPayForm] = useState(false);
+  const [payMethod, setPayMethod] = useState("Cash");
+  const [payReference, setPayReference] = useState("");
+  const [payDetails, setPayDetails] = useState("");
+  const [payError, setPayError] = useState<string | null>(null);
 
   const workspace = useMemo(
     () =>
@@ -470,6 +552,19 @@ export function PurchaseOrderDetailPage() {
     return supplier.connectedRelationshipId ?? null;
   }, [po?.supplierId, suppliersQuery.data]);
 
+  const connectedReturnsQuery = useQuery({
+    queryKey: ["connected-po-returns", workspace?.organizationId, purchaseOrderId],
+    enabled:
+      Boolean(workspace) &&
+      Boolean(purchaseOrderId) &&
+      online &&
+      Boolean(connectedRelationshipId) &&
+      po?.status === "Received",
+    queryFn: ({ signal }) =>
+      listConnectedPoReturnsByPurchaseOrder(workspace!, purchaseOrderId!, signal),
+  });
+  const connectedReturns = connectedReturnsQuery.data ?? [];
+
   const commerceReadinessQuery = useQuery({
     queryKey: ["connected-suppliers", "commerce-readiness", connectedRelationshipId],
     enabled:
@@ -484,6 +579,8 @@ export function PurchaseOrderDetailPage() {
 
   const supplierCommerceReady =
     !connectedRelationshipId || commerceReadinessQuery.data?.isReady !== false;
+  const supportedPickupAvailable =
+    commerceReadinessQuery.data?.supportedFulfillmentMethods?.includes("Pickup") === true;
   const actors = useActorDirectory(workspace?.organizationId, [
     po?.orderedBy,
     po?.cancelledByUserId,
@@ -499,6 +596,7 @@ export function PurchaseOrderDetailPage() {
     po?.status === "Draft" &&
     supplierCommerceReady &&
     !commerceReadinessQuery.isFetching;
+  const canEditDraft = allowManage && online && po?.status === "Draft";
   const canCancel =
     allowManage && online && (po?.status === "Draft" || po?.canWithdrawConnected === true);
   const canReceive =
@@ -513,10 +611,67 @@ export function PurchaseOrderDetailPage() {
     (po.status === "Ordered" || po.status === "PartiallyReceived");
   const canAcceptChanges = allowManage && online && needsApproval;
   const orderTotal = po ? resolveOrderTotal(po) : null;
+  const payBeforeAmountDue =
+    po != null
+      ? (po.confirmedTotalAmount != null && po.confirmedTotalAmount > 0
+          ? po.confirmedTotalAmount
+          : (orderTotal ?? 0))
+      : 0;
+  const payBeforeDue =
+    po != null &&
+    po.paymentTiming === "PayBeforeFulfillment" &&
+    (po.connectedStatus === "Accepted" || displayStatus === "SupplierAccepted") &&
+    (po.amountPaidSnapshot ?? 0) + 0.0000001 < payBeforeAmountDue;
+  const payMethodNeedsReference =
+    payMethod === "ManualGCash" ||
+    payMethod === "GCash" ||
+    payMethod === "BankTransfer" ||
+    payMethod === "BankDeposit" ||
+    payMethod === "Check";
+  const payMethodNeedsDetails =
+    payMethod === "BankTransfer" || payMethod === "BankDeposit" || payMethod === "Check";
   const hasTimeline = useMemo(
     () => (po ? buildPurchaseOrderActivityEvents({ po, receipts }).length > 0 : false),
     [po, receipts],
   );
+
+  async function submitPayBeforeProof() {
+    if (!workspace || !purchaseOrderId || busy) {
+      return;
+    }
+    if (payMethodNeedsReference && !payReference.trim()) {
+      setPayError(t("purchasing.paymentReferenceRequired"));
+      return;
+    }
+    if (payMethodNeedsDetails && !payDetails.trim() && !payReference.trim()) {
+      setPayError(t("purchasing.paymentDetailsRequired"));
+      return;
+    }
+    setBusy(true);
+    setPayError(null);
+    setError(null);
+    try {
+      await submitBuyerPrepaymentProof(workspace, purchaseOrderId, {
+        method: payMethod,
+        reference: payReference.trim() || null,
+        details: payDetails.trim() || null,
+      });
+      setBanner(t("purchasing.prepaymentSubmitted"));
+      setShowPayForm(false);
+      await queryClient.invalidateQueries({
+        queryKey: ["purchase-order", workspace.organizationId, purchaseOrderId],
+      });
+      await query.refetch();
+    } catch (err) {
+      setPayError(
+        err instanceof PosApiError
+          ? (err.problem.detail ?? t("purchasing.actionFailed"))
+          : t("purchasing.actionFailed"),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function runAction(
     action: () => Promise<unknown>,
@@ -576,7 +731,7 @@ export function PurchaseOrderDetailPage() {
       setError(
         err instanceof PosApiError
           ? err.errorCode === "pos.connected_supplier.commerce_not_ready"
-            ? t("purchasing.supplierNotReadyBody")
+            ? t("purchasing.supplierNotReadySubmitBlocked")
             : (err.problem.detail ?? t("purchasing.actionFailed"))
           : t("purchasing.actionFailed"),
       );
@@ -600,18 +755,9 @@ export function PurchaseOrderDetailPage() {
 
   const resolvedStatusLabel = buyerStatusLabel(t, po.status, displayStatus);
   const statusTone = buyerStatusTone(po.status, displayStatus);
-  const sellerName = po.supplierBranchName
-    ? `${po.supplierName ?? t("purchasing.unknownSupplier")} — ${po.supplierBranchName}`
-    : (po.supplierName ?? t("purchasing.unknownSupplier"));
+  const sellerName = po.supplierName ?? t("purchasing.unknownSupplier");
   const documentLines = toBuyerDocumentLines(po);
   const proposalRevision = needsApproval ? buildProposalRevisionFromBuyerPo(po) : null;
-  const showReceiveProgress =
-    po.status === "Ordered" ||
-    po.status === "PartiallyReceived" ||
-    po.status === "Received" ||
-    displayStatus === "Ready" ||
-    displayStatus === "Shipped" ||
-    displayStatus === "AwaitingBuyerReceipt";
   const isShortClosed =
     Boolean(po.remainingClosedAtUtc) ||
     displayStatus === "CompletedRemainingCancelled" ||
@@ -666,28 +812,62 @@ export function PurchaseOrderDetailPage() {
         title={po.poNumber ?? t("purchasing.detailTitle")}
         {...smartBack}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusChip tone={statusTone}>{resolvedStatusLabel}</StatusChip>
-            {hasTimeline ? (
-              <Button
-                type="button"
-                intent="neutral"
-                appearance="outline"
-                onClick={() => setTimelineOpen(true)}
-                data-testid="po-timeline-open"
-              >
-                <History className="size-4 shrink-0" aria-hidden />
-                {t("purchasing.timeline")}
-              </Button>
-            ) : null}
-            <DocumentActions
-              previewLabel={t("summary.preview")}
-              printLabel={t("exitsTable.print")}
-              pdfLabel={t("exitsTable.exportPdf")}
-              onPreview={() => setDocumentPreviewOpen(true)}
-              testId="po-business-document-actions"
-            />
-          </div>
+          <PoProcessHeaderActions
+            statusLabel={resolvedStatusLabel}
+            statusTone={statusTone}
+            timelineEnabled={hasTimeline}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => printBusinessDocument()}
+            onPdf={() => exportBusinessDocumentPdf()}
+            onCsv={() => {
+              const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+              const text = buildCsvWithMetadata(
+                [
+                  ["Purchase order", po.poNumber ?? ""],
+                  ["Status", resolvedStatusLabel],
+                  ["Exported at", new Date().toISOString()],
+                ],
+                {
+                  headers: ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                  rows: po.lines.map((line) => [
+                    line.nameSnapshot ?? "",
+                    line.skuSnapshot ?? "",
+                    line.orderedQty,
+                    line.uomSnapshot ?? "",
+                    line.unitPurchaseCost,
+                    line.lineTotal,
+                  ]),
+                },
+              );
+              downloadCsvFile(`PO-${poPart}.csv`, text);
+            }}
+            onXlsx={() => {
+              const poPart = sanitizeCsvFilenamePart(po.poNumber || "purchase-order");
+              const workbook = XLSX.utils.book_new();
+              const sheet = XLSX.utils.aoa_to_sheet([
+                ["Purchase order", po.poNumber ?? ""],
+                ["Status", resolvedStatusLabel],
+                [],
+                ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+                ...po.lines.map((line) => [
+                  line.nameSnapshot ?? "",
+                  line.skuSnapshot ?? "",
+                  line.orderedQty,
+                  line.uomSnapshot ?? "",
+                  line.unitPurchaseCost,
+                  line.lineTotal,
+                ]),
+              ]);
+              XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
+              const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+              downloadBlob(
+                `PO-${poPart}.xlsx`,
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              );
+            }}
+          />
         }
       />
 
@@ -745,6 +925,196 @@ export function PurchaseOrderDetailPage() {
           {t("purchasing.connectedReceiveBlocked")}
         </Notice>
       ) : null}
+      {displayStatus === "ReceivedAwaitingPayment" ||
+      po.financialSettlementStatus === "AwaitingPayment" ? (
+        <Notice tone="warning" testId="po-awaiting-payment">
+          {t("incomingOrders.awaitingPaymentBuyerBody")}
+        </Notice>
+      ) : null}
+      {payBeforeDue ? (
+        <Card className="flex w-full min-w-0 flex-col gap-3 p-3 md:w-1/2" data-testid="po-pay-before-card">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="m-0 font-medium">{t("purchasing.payBeforeTitle")}</p>
+            <StatusChip tone="warning">
+              {po.buyerPrepaymentSubmittedAtUtc
+                ? t("purchasing.paymentSubmittedWaiting")
+                : t("purchasing.payBeforeDueChip")}
+            </StatusChip>
+          </div>
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+            {po.buyerPrepaymentSubmittedAtUtc
+              ? t("purchasing.paymentSubmittedWaitingBody")
+              : t("purchasing.payBeforeBody")}
+          </p>
+          <p className="m-0 text-[length:var(--exits-text-sm)] tabular-nums">
+            <span>{t("purchasing.orderTotal")}: </span>
+            <span className="font-semibold">
+              <MoneyDisplay amount={payBeforeAmountDue} />
+            </span>
+          </p>
+          {po.buyerPrepaymentSubmittedAtUtc ? (
+            <dl className="m-0 grid gap-1 text-[length:var(--exits-text-sm)] tabular-nums">
+              <div className="flex justify-between gap-2">
+                <dt>{t("purchasing.paymentMethod")}</dt>
+                <dd className="m-0">{po.buyerPrepaymentMethod ?? "—"}</dd>
+              </div>
+              {po.buyerPrepaymentReference ? (
+                <div className="flex justify-between gap-2">
+                  <dt>{t("purchasing.paymentReference")}</dt>
+                  <dd className="m-0">{po.buyerPrepaymentReference}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+          {allowManage && online && (!po.buyerPrepaymentSubmittedAtUtc || showPayForm) ? (
+            showPayForm ? (
+              <div className="flex flex-col gap-3" data-testid="po-pay-before-form">
+                <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                  <span>{t("purchasing.paymentMethod")}</span>
+                  <select
+                    className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                    data-testid="po-pay-before-method"
+                    value={payMethod}
+                    onChange={(e) => setPayMethod(e.target.value)}
+                  >
+                    <option value="Cash">{t("purchasing.paymentMethod.cod")}</option>
+                    <option value="ManualGCash">{t("purchasing.paymentMethod.gcash")}</option>
+                    <option value="BankTransfer">{t("purchasing.paymentMethod.bankTransfer")}</option>
+                    <option value="BankDeposit">{t("purchasing.paymentMethod.bankDeposit")}</option>
+                    <option value="Check">{t("purchasing.paymentMethod.check")}</option>
+                  </select>
+                </label>
+                {payMethodNeedsReference ? (
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <span>{t("purchasing.paymentReference")}</span>
+                    <input
+                      className="rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                      data-testid="po-pay-before-reference"
+                      value={payReference}
+                      onChange={(e) => setPayReference(e.target.value)}
+                      placeholder={t("purchasing.paymentReferenceHelp")}
+                    />
+                  </label>
+                ) : null}
+                {payMethodNeedsDetails ? (
+                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                    <span>{t("purchasing.paymentDetails")}</span>
+                    <textarea
+                      className="min-h-20 rounded border border-[color:var(--exits-border)] bg-transparent px-2 py-1.5"
+                      data-testid="po-pay-before-details"
+                      value={payDetails}
+                      onChange={(e) => setPayDetails(e.target.value)}
+                      placeholder={t("purchasing.paymentDetailsHelp")}
+                    />
+                  </label>
+                ) : null}
+                {payError ? (
+                  <Notice tone="danger" testId="po-pay-before-error">
+                    {payError}
+                  </Notice>
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-auto"
+                    disabled={busy}
+                    onClick={() => {
+                      setShowPayForm(false);
+                      setPayError(null);
+                    }}
+                  >
+                    {t("purchasing.cancel")}
+                  </Button>
+                  <Button
+                    type="button"
+                    className="w-auto"
+                    disabled={busy}
+                    data-testid="po-pay-before-submit"
+                    onClick={() => void submitPayBeforeProof()}
+                  >
+                    {t("purchasing.submitPayment")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                className="w-auto self-start"
+                data-testid="po-pay-now"
+                onClick={() => {
+                  const term = po.paymentTerm || "Cash";
+                  setPayMethod(
+                    term === "ManualGCash" || term === "GCash"
+                      ? "ManualGCash"
+                      : term === "BankTransfer"
+                        ? "BankTransfer"
+                        : term === "BankDeposit"
+                          ? "BankDeposit"
+                          : term === "Check"
+                            ? "Check"
+                            : "Cash",
+                  );
+                  setPayReference(po.buyerPrepaymentReference ?? "");
+                  setPayDetails(po.buyerPrepaymentDetails ?? "");
+                  setPayError(null);
+                  setShowPayForm(true);
+                }}
+              >
+                {t("purchasing.payNow")}
+              </Button>
+            )
+          ) : null}
+          {allowManage && online && po.buyerPrepaymentSubmittedAtUtc && !showPayForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-auto self-start"
+              data-testid="po-pay-before-update"
+              onClick={() => {
+                setPayMethod(po.buyerPrepaymentMethod || "Cash");
+                setPayReference(po.buyerPrepaymentReference ?? "");
+                setPayDetails(po.buyerPrepaymentDetails ?? "");
+                setPayError(null);
+                setShowPayForm(true);
+              }}
+            >
+              {t("purchasing.updatePaymentProof")}
+            </Button>
+          ) : null}
+        </Card>
+      ) : null}
+      {connectedRelationshipId && po.status === "Received" && po.financialSettlementStatus !== "AwaitingPayment" ? (
+        <Card className="p-3" data-testid="po-connected-returns-card">
+          <p className="m-0 font-medium">{t("returns.connectedPo.sectionTitle")}</p>
+          {connectedReturns.length > 0 ? (
+            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+              {connectedReturns.some((batch) => batch.status !== "Finalized")
+                ? t("returns.connectedPo.statusReturnsPending")
+                : t("returns.connectedPo.statusReturnsProcessed")}
+            </p>
+          ) : null}
+          <ul className="mb-0 mt-2 list-none space-y-1 p-0">
+            {connectedReturns.map((batch) => (
+              <li
+                key={batch.returnBatchId}
+                className="text-[length:var(--exits-text-sm)] text-muted"
+                data-testid={`po-connected-return-${batch.returnBatchId}`}
+              >
+                {batch.batchNumber} ·{" "}
+                {batch.status === "AwaitingSellerReceipt"
+                  ? t("returns.connectedPo.awaitingSellerReceipt")
+                  : batch.status}
+              </li>
+            ))}
+          </ul>
+          <Button asChild className="mt-3" data-testid="po-connected-return-items">
+            <Link to={`/returns/connected-po/${purchaseOrderId}`}>
+              {t("returns.connectedPo.returnItems")}
+            </Link>
+          </Button>
+        </Card>
+      ) : null}
       {banner ? (
         <Notice tone="success" testId="po-banner">
           {banner}
@@ -752,7 +1122,46 @@ export function PurchaseOrderDetailPage() {
       ) : null}
       {error ? (
         <Notice tone="danger" testId="po-detail-error">
-          {error}
+          <div className="flex flex-col gap-2">
+            <span>{error}</span>
+            {error.toLowerCase().includes("pickup") ||
+            error.toLowerCase().includes("delivery") ||
+            error.toLowerCase().includes("receiving") ? (
+              <div className="flex flex-wrap gap-2">
+                {supportedPickupAvailable ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="po-submit-choose-pickup"
+                    onClick={() => navigate(`/purchasing/${purchaseOrderId}/edit`)}
+                  >
+                    {t("purchasing.choosePickup")}
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  data-testid="po-submit-manage-receiving"
+                  onClick={() => navigate("/branches")}
+                >
+                  {t("purchasing.manageReceivingBranch")}
+                </Button>
+                {connectedRelationshipId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-testid="po-submit-view-fulfillment"
+                    onClick={() => navigate(`/suppliers/connected/${connectedRelationshipId}`)}
+                  >
+                    {t("purchasing.viewFulfillmentSetup")}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </Notice>
       ) : null}
       {canSubmit ? (
@@ -762,11 +1171,19 @@ export function PurchaseOrderDetailPage() {
       ) : null}
 
       <PoDocumentSummary
-        counterpartyLabel={t("purchasing.seller")}
-        counterpartyIcon={<Store className="size-5" strokeWidth={1.75} />}
-        counterpartyName={sellerName}
-        status={{ label: resolvedStatusLabel, tone: statusTone }}
+        className="po-document-summary--meta-cards"
+        title={t("incomingOrders.orderInfoTitle")}
         fields={[
+          {
+            key: "seller",
+            label: t("purchasing.seller"),
+            value: (
+              <span className="inline-flex min-w-0 items-center gap-2">
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">{sellerName}</span>
+              </span>
+            ),
+          },
           {
             key: "receiving",
             label: t("purchasing.receivingAt"),
@@ -777,6 +1194,39 @@ export function PurchaseOrderDetailPage() {
             label: t("purchasing.paymentTerm"),
             value: po.paymentTermLabel || po.paymentTerm || "Cash",
           },
+          {
+            key: "paymentTiming",
+            label: t("purchasing.paymentTiming"),
+            value:
+              po.paymentTimingLabel ||
+              (po.paymentTiming === "PayOnDeliveryOrReceipt"
+                ? t("connectedCommerce.timing.payOnDelivery")
+                : po.paymentTiming === "SupplierCredit"
+                  ? t("connectedCommerce.timing.supplierCredit")
+                  : po.paymentTiming === "PayBeforeFulfillment"
+                    ? t("connectedCommerce.timing.payBefore")
+                    : "—"),
+          },
+          ...(po.fulfillmentMethod === "Pickup" || po.fulfillmentMethod === "Delivery"
+            ? [
+                {
+                  key: "fulfillment",
+                  label: t("purchasing.fulfillmentMethod"),
+                  value:
+                    po.fulfillmentMethod === "Pickup"
+                      ? t("purchasing.fulfillment.pickup")
+                      : t("purchasing.fulfillment.delivery"),
+                },
+              ]
+            : po.fulfillmentMethod?.trim()
+              ? [
+                  {
+                    key: "fulfillment",
+                    label: t("purchasing.fulfillmentMethod"),
+                    value: po.fulfillmentMethod.trim(),
+                  },
+                ]
+              : []),
           {
             key: "orderDate",
             label: t("purchasing.fieldOrderDate"),
@@ -897,14 +1347,11 @@ export function PurchaseOrderDetailPage() {
             emptyTitle={t("purchasing.linesEmpty")}
             emptyDetail={t("purchasing.linesRequired")}
             lines={documentLines}
-            showReceiveProgress={showReceiveProgress}
             productColLabel={t("purchasing.colProduct")}
             skuColLabel={t("purchasing.colSku")}
             qtyColLabel={t("purchasing.ordered")}
             unitCostColLabel={t("purchasing.unitPurchaseCost")}
             lineTotalColLabel={t("purchasing.orderedValue")}
-            receivedColLabel={t("purchasing.received")}
-            outstandingColLabel={t("purchasing.outstanding")}
             testId="po-lines-table"
             lineTestIdPrefix="po-line"
           />
@@ -973,6 +1420,18 @@ export function PurchaseOrderDetailPage() {
 
       <div className="po-document-actions" data-testid="po-detail-actions">
         <div className="po-document-actions__primary">
+          <Button
+            type="button"
+            intent="primary"
+            appearance="ghost"
+            className="font-semibold"
+            onClick={smartBack.onBack}
+            aria-label={t("purchasing.backOrders")}
+            data-testid="po-detail-footer-back"
+          >
+            <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+            {t("purchasing.backOrders")}
+          </Button>
           {canAcceptChanges ? (
             <>
               <Button
@@ -1003,6 +1462,11 @@ export function PurchaseOrderDetailPage() {
                 {t("purchasing.declineChanges")}
               </Button>
             </>
+          ) : null}
+          {canEditDraft ? (
+            <Button asChild variant="outline" data-testid="po-edit-order">
+              <Link to={`/purchasing/${purchaseOrderId}/edit`}>{t("purchasing.editOrder")}</Link>
+            </Button>
           ) : null}
           {canReceive ? (
             <Button asChild data-testid="po-receive">
@@ -1046,11 +1510,11 @@ export function PurchaseOrderDetailPage() {
                         ],
                       });
                       if (!readiness.isReady) {
-                        setError(t("purchasing.supplierNotReadyBody"));
+                        setError(t("purchasing.supplierNotReadySubmitBlocked"));
                         return;
                       }
                     } catch {
-                      setError(t("purchasing.supplierNotReadyBody"));
+                      setError(t("purchasing.supplierNotReadySubmitBlocked"));
                       return;
                     }
                   }

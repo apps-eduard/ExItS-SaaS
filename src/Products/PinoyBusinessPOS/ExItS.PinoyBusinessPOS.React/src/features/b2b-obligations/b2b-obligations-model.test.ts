@@ -54,8 +54,8 @@ describe("b2b-obligations-model", () => {
 
   it("cleans ugly sale guid prefixes", () => {
     const raw =
-      "sale:44444444-4444-4444-8444-444444444444|Product sale SALE-20260917-000001";
-    expect(cleanSourceReference(raw, null)).toBe("Product sale SALE-20260917-000001");
+      "sale:44444444-4444-4444-8444-444444444444|Product sale 260917-001";
+    expect(cleanSourceReference(raw, null)).toBe("Product sale 260917-001");
   });
 
   it("maps receivable and payable without drifting filters", () => {

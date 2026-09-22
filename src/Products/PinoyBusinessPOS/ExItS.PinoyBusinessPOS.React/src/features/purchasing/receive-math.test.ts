@@ -3,6 +3,7 @@ import {
   buildReceivePlan,
   isClassificationComplete,
   receiveDiscrepancyQty,
+  resolveDiscrepancyKind,
 } from "@/features/purchasing/receive-math";
 
 const productId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -16,6 +17,7 @@ describe("receive discrepancy classification math", () => {
         goodQty: 5,
         damagedQty: 0,
         notDeliveredQty: 0,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);
@@ -26,10 +28,10 @@ describe("receive discrepancy classification math", () => {
     }
   });
 
-  it("requires damaged + not delivered to equal discrepancy", () => {
+  it("requires damaged + not delivered + other to equal discrepancy", () => {
     expect(receiveDiscrepancyQty(5, 3)).toBe(2);
-    expect(isClassificationComplete(2, 0.5, 1.5)).toBe(true);
-    expect(isClassificationComplete(2, 1, 0)).toBe(false);
+    expect(isClassificationComplete(2, 0.5, 1, 0.5)).toBe(true);
+    expect(isClassificationComplete(2, 1, 0, 0)).toBe(false);
 
     const incomplete = buildReceivePlan([
       {
@@ -38,6 +40,7 @@ describe("receive discrepancy classification math", () => {
         goodQty: 3,
         damagedQty: 1,
         notDeliveredQty: 0,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);
@@ -47,7 +50,7 @@ describe("receive discrepancy classification math", () => {
     }
   });
 
-  it("supports all damaged, all not delivered, and manual split", () => {
+  it("supports all damaged, all missing, mixed, and other", () => {
     const damaged = buildReceivePlan([
       {
         productId,
@@ -55,6 +58,7 @@ describe("receive discrepancy classification math", () => {
         goodQty: 3,
         damagedQty: 2,
         notDeliveredQty: 0,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);
@@ -62,8 +66,7 @@ describe("receive discrepancy classification math", () => {
     if (damaged.ok) {
       expect(damaged.lines[0]?.damagedQty).toBe(2);
       expect(damaged.lines[0]?.rejectedQty).toBe(0);
-      expect(damaged.lines[0]?.shortClosedQty).toBe(0);
-      expect(damaged.lines[0]?.remainingAction).toBe("deliver_later");
+      expect(damaged.lines[0]?.otherQty).toBe(0);
     }
 
     const missing = buildReceivePlan([
@@ -73,6 +76,7 @@ describe("receive discrepancy classification math", () => {
         goodQty: 3,
         damagedQty: 0,
         notDeliveredQty: 2,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);
@@ -85,15 +89,32 @@ describe("receive discrepancy classification math", () => {
         goodQty: 3,
         damagedQty: 0.5,
         notDeliveredQty: 1.5,
+        otherQty: 0,
         cancelRemaining: true,
       },
     ]);
     expect(split.ok).toBe(true);
     if (split.ok) {
-      expect(split.lines[0]?.shortClosedQty).toBe(2);
-      expect(split.lines[0]?.remainingAfter).toBe(0);
-      expect(split.lines[0]?.remainingAction).toBe("cancel_remaining");
       expect(split.lines[0]?.discrepancyKind).toBe("Other");
     }
+
+    const withOther = buildReceivePlan([
+      {
+        productId,
+        outstandingQty: 5,
+        goodQty: 3,
+        damagedQty: 1,
+        notDeliveredQty: 0,
+        otherQty: 1,
+        cancelRemaining: false,
+      },
+    ]);
+    expect(withOther.ok).toBe(true);
+    if (withOther.ok) {
+      expect(withOther.lines[0]?.otherQty).toBe(1);
+      expect(withOther.lines[0]?.discrepancyKind).toBe("Other");
+    }
+    expect(resolveDiscrepancyKind(1, 0, 1)).toBe("Other");
+    expect(resolveDiscrepancyKind(2, 0, 0)).toBe("Damaged");
   });
 });

@@ -14,12 +14,12 @@ export type PoDocumentLine = {
   id: string;
   productName: string;
   sku?: string | null;
+  /** Numeric qty only; unit renders beside in xs when `unitLabel` is set. */
   quantityLabel: string;
+  /** Optional UOM under quantity (xs muted). */
+  unitLabel?: string | null;
   unitCost: number;
   lineTotal: number;
-  /** Buyer receive progress — omitted on seller snapshot. */
-  receivedLabel?: string;
-  outstandingLabel?: string;
 };
 
 export type PoDocumentEditableLine = PoDocumentLine & {

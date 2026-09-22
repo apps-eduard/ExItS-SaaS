@@ -106,7 +106,7 @@ public sealed class MultiBranchCustomerCommerceTests
     private static CustomerOrder Submitted(Guid branchId, string branchName, decimal qty) =>
         CustomerOrder.CreateSubmitted(
             Org,
-            "SO-000100",
+            "260816-100",
             CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Paul"),
             CustomerOrderFulfillmentType.Pickup,
             branchId,

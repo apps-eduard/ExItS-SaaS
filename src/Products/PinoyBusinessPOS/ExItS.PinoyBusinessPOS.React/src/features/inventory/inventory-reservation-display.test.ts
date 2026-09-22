@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatInventoryQty,
   resolveAvailableQuantity,
+  resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 
@@ -34,8 +35,32 @@ describe("inventory-reservation-display", () => {
     expect(resolveReservedQuantity({})).toBe(0);
   });
 
+  it("defaults pending-return quantity to zero", () => {
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: 0 })).toBe(0);
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: -2 })).toBe(0);
+    expect(resolvePendingReturnQuantity({ pendingReturnQuantity: 1.25 })).toBe(1.25);
+    expect(resolvePendingReturnQuantity({})).toBe(0);
+  });
+
+  it("excludes pending return from available when API availableQuantity is absent", () => {
+    expect(
+      resolveAvailableQuantity({
+        isTracked: true,
+        onHandQuantity: 10,
+        reservedQuantity: 2,
+        pendingReturnQuantity: 3,
+      }),
+    ).toBe(5);
+  });
+
   it("formats weighted quantities with precision", () => {
     expect(formatInventoryQty(1.25)).toBe("1.25");
     expect(formatInventoryQty(2)).toBe("2");
+  });
+
+  it("adds thousand separators for inventory card quantities", () => {
+    expect(formatInventoryQty(1000)).toBe("1,000");
+    expect(formatInventoryQty(12500)).toBe("12,500");
+    expect(formatInventoryQty(1000.5)).toBe("1,000.5");
   });
 });

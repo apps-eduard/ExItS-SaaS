@@ -88,7 +88,7 @@ public sealed class PurchaseOrderSupplierBranchSnapshotTests
         var grn = GoodsReceipt.Create(
             PosOrganizationId.From(BuyerOrg),
             po.Id,
-            "GRN-20260903-000001",
+            "260903-001",
             po,
             [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 1m)],
             Guid.NewGuid(),
@@ -107,7 +107,7 @@ public sealed class PurchaseOrderSupplierBranchSnapshotTests
         var grn = GoodsReceipt.Create(
             PosOrganizationId.From(BuyerOrg),
             po.Id,
-            "GRN-20260903-000002",
+            "260903-002",
             po,
             [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 1m)],
             Guid.NewGuid(),
@@ -235,7 +235,7 @@ public sealed class PurchaseOrderSupplierBranchSnapshotTests
     private static PurchaseOrder Submit(PurchaseOrder po)
     {
         po.Submit(
-            "PO-20260903-000001",
+            "260903-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     CatalogProductId.From(ProductA),

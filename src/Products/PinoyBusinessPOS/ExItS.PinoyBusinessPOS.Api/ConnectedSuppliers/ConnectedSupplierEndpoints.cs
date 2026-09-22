@@ -3,6 +3,7 @@ using ExItS.PinoyBusinessPOS.Application.Branches;
 using ExItS.PinoyBusinessPOS.Application.Commercial;
 using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
+using ExItS.PinoyBusinessPOS.Application.Platform;
 
 namespace ExItS.PinoyBusinessPOS.Api.ConnectedSuppliers;
 
@@ -150,6 +151,37 @@ internal static class ConnectedSupplierEndpoints
             }
 
             return PosApiResults.FromResult(await use.ExecuteAsync(org, body, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapPut("/organization/fulfillment-settings/branch-defaults", async (
+            HttpRequest req,
+            UpdateOrganizationBranchFulfillmentDefaultsRequest body,
+            UpdateOrganizationBranchFulfillmentDefaults use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ManageSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(await use.ExecuteAsync(org, body, ct).ConfigureAwait(false), Results.Ok);
+        });
+        group.MapPut("/organization/branches/{branchId:guid}/fulfillment-settings", async (
+            HttpRequest req,
+            Guid branchId,
+            UpdateBranchFulfillmentSettingsRequest body,
+            UpdateBranchFulfillmentSettingsWithOrgOfferGate use,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!Authorize(req, access, UtangCapability.ViewSuppliers, out var org, out var problem))
+            {
+                return problem!;
+            }
+
+            return PosApiResults.FromResult(
+                await use.ExecuteAsync(org, branchId, body, ct).ConfigureAwait(false),
+                Results.Ok);
         });
         group.MapGet("/business-customers/{connectionId:guid}/organization-contacts", async (
             HttpRequest req,
@@ -305,6 +337,12 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/prepare",async(HttpRequest req,Guid id,StartPreparingIncomingOrder use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/confirm-settlement",async(HttpRequest req,Guid id,ConfirmIncomingOrderSettlementRequest? body,ConfirmIncomingOrderSettlement use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body??new ConfirmIncomingOrderSettlementRequest(),ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/confirm-receipt-settlement",async(HttpRequest req,Guid id,ConfirmIncomingOrderReceiptSettlementRequest? body,ConfirmIncomingOrderReceiptSettlement use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId,body??new ConfirmIncomingOrderReceiptSettlementRequest(),ct),Results.Ok);});
         group.MapPost("/incoming-orders/{id:guid}/fulfill",async(HttpRequest req,Guid id,MarkIncomingOrderFulfilled use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
@@ -321,6 +359,13 @@ internal static class ConnectedSupplierEndpoints
         {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
          PosOrganizationScope.TryGetActorId(req,out var actorId,out _);
          return PosApiResults.FromResult(await use.ExecuteAsync(org,id,actorId==Guid.Empty?null:actorId,ct),Results.Ok);});
+        group.MapGet("/incoming-orders/{id:guid}/receiving-issues",async(HttpRequest req,Guid id,ListIncomingOrderReceivingIssues use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,ct),Results.Ok);});
+        group.MapPost("/incoming-orders/{id:guid}/receiving-issues/{issueId:guid}/resolve",async(HttpRequest req,Guid id,Guid issueId,ResolveConnectedPoReceivingIssueRequest body,ResolveIncomingOrderReceivingIssue use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
+        {if(!Authorize(req,access,UtangCapability.ManagePurchasing,out var org,out var problem))return problem!;
+         if(!PosOrganizationScope.TryGetActorId(req,out var actorId,out problem))return problem!;
+         return PosApiResults.FromResult(await use.ExecuteAsync(org,id,issueId,body,actorId,ct),Results.Ok);});
         group.MapPost("/relationships/{id:guid}/revalidate-draft",async(HttpRequest req,Guid id,RevalidateConnectedPoDraftRequest body,RevalidateConnectedPoDraft use,IPosCommercialAccessAccessor access,CancellationToken ct)=>
         {if(!Authorize(req,access,UtangCapability.ViewPurchasing,out var org,out var problem))return problem!;return PosApiResults.FromResult(await use.ExecuteAsync(org,id,body,ct),Results.Ok);});
         return app;

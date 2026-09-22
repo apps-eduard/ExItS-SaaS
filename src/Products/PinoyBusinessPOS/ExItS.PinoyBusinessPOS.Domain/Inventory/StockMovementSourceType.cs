@@ -18,7 +18,8 @@ public enum StockMovementSourceType
     StockUse = 10,
     Production = 11,
     WasteLoss = 12,
-    ConnectedPurchaseOrder = 13
+    ConnectedPurchaseOrder = 13,
+    ReturnBatch = 14
 }
 
 public static class StockMovementSourceTypes
@@ -40,7 +41,8 @@ public static class StockMovementSourceTypes
         nameof(StockMovementSourceType.StockUse),
         nameof(StockMovementSourceType.Production),
         nameof(StockMovementSourceType.WasteLoss),
-        nameof(StockMovementSourceType.ConnectedPurchaseOrder)
+        nameof(StockMovementSourceType.ConnectedPurchaseOrder),
+        nameof(StockMovementSourceType.ReturnBatch)
     ];
 
     public static string ToCode(StockMovementSourceType type) => type.ToString();

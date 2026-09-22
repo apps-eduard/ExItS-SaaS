@@ -134,6 +134,8 @@ public sealed class SaleReturnStockServiceTests
                     10m,
                     20m,
                     RestockDisposition.ReturnToStock,
+                    2m,
+                    0m,
                     null,
                     Guid.NewGuid())
             ]);
@@ -245,6 +247,8 @@ public sealed class SaleReturnStockServiceTests
                 sl.UnitPrice,
                 SaleMoney.RoundMoney((quantity ?? sl.Quantity) * sl.UnitPrice),
                 disposition,
+                disposition == RestockDisposition.ReturnToStock ? quantity ?? sl.Quantity : 0m,
+                disposition == RestockDisposition.ReturnToStock ? 0m : quantity ?? sl.Quantity,
                 null,
                 null)).ToList();
         return SaleReturn.Rehydrate(
@@ -354,6 +358,13 @@ public sealed class SaleReturnStockServiceTests
             CatalogProductId productId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(_restocked.Contains((saleReturnId.Value, productId.Value)));
+
+        public Task<bool> HasSaleReturnWriteOffAsync(
+            PosOrganizationId organizationId,
+            SaleReturnId saleReturnId,
+            CatalogProductId productId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
         public Task<InventoryAccount?> GetByProductIdAsync(PosOrganizationId organizationId, CatalogProductId productId, CancellationToken cancellationToken = default) => throw new NotImplementedException();
         public Task<(IReadOnlyList<InventoryAccount> Items, int TotalCount)> ListAsync(PosOrganizationId organizationId, InventoryAccountFilter filter, int skip, int take, CancellationToken cancellationToken = default) => throw new NotImplementedException();

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Link2Off, Percent, Share2, Tag } from "lucide-react";
+import { Building2, Link2Off, Percent, Share2, Tag, X } from "lucide-react";
 import { canGovernOrganizationCatalog, canManageSuppliers } from "@/access/pos-capabilities";
 import {
   applyBuyerProductPricing,
   bulkMutateBuyerProductShares,
+  getBusinessCustomer,
   previewBuyerProductPricing,
   queryBuyerProductShares,
 } from "@/api/pos/pos-connected-suppliers-client";
@@ -15,17 +16,44 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
+import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { useToast } from "@/components/exits/ToastProvider";
 import { UnderlineTabBar } from "@/components/exits/UnderlineTabBar";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { isBranchLocalProduct } from "@/features/catalog/catalog-product-scope";
+import {
+  actionableShareProductIds,
+  isShareRowSelectable,
+  rowCanShare,
+  rowCanStopSharing,
+  shareRowHintReason,
+  shareRowNeedsPrice,
+} from "@/features/suppliers/connected-share-row-actionability";
 import { useI18n } from "@/i18n/I18nProvider";
 import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 const PAGE_SIZE = 25;
+
+function catalogModeLabel(
+  mode: string | undefined,
+  allEligible: string,
+  selectedOnly: string,
+): string {
+  return mode === "AllEligible" ? allEligible : selectedOnly;
+}
+
+function sharingTone(status: string): "success" | "warning" | "neutral" {
+  if (status === "Shared") {
+    return "success";
+  }
+  if (status === "Ineligible") {
+    return "neutral";
+  }
+  return "warning";
+}
 
 export function ConnectedSharedProductsPage() {
   const { t } = useI18n();
@@ -35,7 +63,9 @@ export function ConnectedSharedProductsPage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [shareFilter, setShareFilter] = useState<"all" | "shared" | "notShared">("all");
+  const [shareFilter, setShareFilter] = useState<"all" | "shared" | "notShared" | "ineligible">(
+    "all",
+  );
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [buyerPrice, setBuyerPrice] = useState("");
@@ -43,6 +73,7 @@ export function ConnectedSharedProductsPage() {
   const [percentMode, setPercentMode] = useState<"discount" | "increase">("discount");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [summaryDismissed, setSummaryDismissed] = useState(false);
   const buyerPriceInputRef = useRef<HTMLInputElement>(null);
   const percentInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,6 +97,12 @@ export function ConnectedSharedProductsPage() {
 
   const allowManage =
     canManageSuppliers(sessionGrant) && canGovernOrganizationCatalog(sessionGrant);
+
+  const buyerQuery = useQuery({
+    queryKey: ["connected-suppliers", "business-customer", relationshipId, workspace?.organizationId],
+    enabled: Boolean(workspace) && Boolean(relationshipId),
+    queryFn: ({ signal }) => getBusinessCustomer(workspace!, relationshipId!, signal),
+  });
 
   const query = useQuery({
     queryKey: [
@@ -92,7 +129,24 @@ export function ConnectedSharedProductsPage() {
       ),
   });
 
+  const shareItems = useMemo(
+    () =>
+      (query.data?.items ?? []).filter(
+        (item) => !isBranchLocalProduct({ scope: item.scope ?? undefined }),
+      ),
+    [query.data?.items],
+  );
+
+  const actionablePageIds = useMemo(
+    () => actionableShareProductIds(shareItems),
+    [shareItems],
+  );
+
   function toggle(productId: string) {
+    const item = shareItems.find((row) => row.supplierProductId === productId);
+    if (!item || !isShareRowSelectable(item)) {
+      return;
+    }
     setSelected((current) => {
       const next = new Set(current);
       if (next.has(productId)) {
@@ -108,16 +162,62 @@ export function ConnectedSharedProductsPage() {
     if (!workspace || !relationshipId || !allowManage || selected.size === 0 || busy) {
       return;
     }
+    const targetIds = shareItems
+      .filter((item) => selected.has(item.supplierProductId))
+      .filter((item) =>
+        operation === "Share" ? rowCanShare(item) : rowCanStopSharing(item),
+      )
+      .map((item) => item.supplierProductId);
+    if (targetIds.length === 0) {
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
       const result = await bulkMutateBuyerProductShares(workspace, relationshipId, {
         operation,
-        productIds: [...selected],
+        productIds: targetIds,
       });
-      setMessage(t("connected.bulkAffected").replace("{count}", String(result.affectedCount)));
+      if (result.needsDefaultPo && result.needsDefaultPo.length > 0 && result.affectedCount === 0) {
+        setMessage(
+          t("connected.bulkNeedsDefaultPo").replace(
+            "{count}",
+            String(result.needsDefaultPo.length),
+          ),
+        );
+      } else if (operation === "Share") {
+        const already = result.alreadySharedCount ?? 0;
+        if (result.affectedCount > 0 && already > 0) {
+          setMessage(
+            t("connected.bulkSharedPartial")
+              .replace("{count}", String(result.affectedCount))
+              .replace("{already}", String(already)),
+          );
+        } else if (result.affectedCount > 0) {
+          setMessage(t("connected.bulkShared").replace("{count}", String(result.affectedCount)));
+        } else if (already > 0) {
+          setMessage(t("connected.bulkAlreadyShared").replace("{count}", String(already)));
+        } else {
+          setMessage(null);
+        }
+      } else {
+        const already = result.alreadyNotSharedCount ?? 0;
+        if (result.affectedCount > 0 && already > 0) {
+          setMessage(
+            t("connected.bulkUnsharedPartial")
+              .replace("{count}", String(result.affectedCount))
+              .replace("{already}", String(already)),
+          );
+        } else if (result.affectedCount > 0) {
+          setMessage(t("connected.bulkUnshared").replace("{count}", String(result.affectedCount)));
+        } else if (already > 0) {
+          setMessage(t("connected.bulkAlreadyNotShared").replace("{count}", String(already)));
+        } else {
+          setMessage(null);
+        }
+      }
       setSelected(new Set());
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "shares"] });
+      await invalidateAfterShareMutation();
     } catch (err) {
       if (
         err instanceof PosApiError &&
@@ -138,6 +238,18 @@ export function ConnectedSharedProductsPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function invalidateAfterShareMutation() {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "shares"] }),
+      queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "business-customer"] }),
+      queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "catalog"] }),
+      queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] }),
+      queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] }),
+      queryClient.invalidateQueries({ queryKey: ["business-customers"] }),
+      queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] }),
+    ]);
   }
 
   async function applyFixedPrice() {
@@ -162,7 +274,7 @@ export function ConnectedSharedProductsPage() {
       setMessage(t("connected.priceApplied").replace("{count}", String(applied.affectedCount)));
       setSelected(new Set());
       setBuyerPrice("");
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "shares"] });
+      await invalidateAfterShareMutation();
     } catch (err) {
       setMessage(
         err instanceof PosApiError
@@ -201,7 +313,7 @@ export function ConnectedSharedProductsPage() {
       setMessage(t("connected.priceApplied").replace("{count}", String(applied.affectedCount)));
       setSelected(new Set());
       setPercentValue("");
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "shares"] });
+      await invalidateAfterShareMutation();
     } catch (err) {
       setMessage(
         err instanceof PosApiError
@@ -213,33 +325,21 @@ export function ConnectedSharedProductsPage() {
     }
   }
 
-  const shareItems = useMemo(
-    () =>
-      (query.data?.items ?? []).filter(
-        (item) => !isBranchLocalProduct({ scope: item.scope ?? undefined }),
-      ),
-    [query.data?.items],
-  );
-
-  const pageProductIds = useMemo(
-    () => shareItems.map((item) => item.supplierProductId),
-    [shareItems],
-  );
   const allPageSelected =
-    pageProductIds.length > 0 && pageProductIds.every((id) => selected.has(id));
-  const somePageSelected = pageProductIds.some((id) => selected.has(id));
+    actionablePageIds.length > 0 && actionablePageIds.every((id) => selected.has(id));
+  const somePageSelected = actionablePageIds.some((id) => selected.has(id));
 
   function toggleSelectAllPage() {
     setSelected((current) => {
       const next = new Set(current);
       const allSelected =
-        pageProductIds.length > 0 && pageProductIds.every((id) => current.has(id));
+        actionablePageIds.length > 0 && actionablePageIds.every((id) => current.has(id));
       if (allSelected) {
-        for (const id of pageProductIds) {
+        for (const id of actionablePageIds) {
           next.delete(id);
         }
       } else {
-        for (const id of pageProductIds) {
+        for (const id of actionablePageIds) {
           next.add(id);
         }
       }
@@ -311,11 +411,77 @@ export function ConnectedSharedProductsPage() {
         backLabel={t("connected.backToBuyer")}
         backTestId="page-header-back-suppliers"
       />
+      {buyerQuery.data ? (
+        <section
+          className="connected-share-buyer-context"
+          data-testid="connected-share-buyer-context"
+        >
+          <div className="connected-share-buyer-context__identity">
+            <h2 className="connected-share-buyer-context__name">
+              {buyerQuery.data.organizationDisplayName}
+            </h2>
+            <p className="connected-share-buyer-context__meta">
+              {t("connected.buyerContext.b2bConnected")}
+            </p>
+          </div>
+          <dl className="connected-share-buyer-context__facts">
+            <div>
+              <dt>{t("connected.buyerContext.organizationId")}</dt>
+              <dd>
+                {buyerQuery.data.organizationPublicId?.trim()
+                  || buyerQuery.data.buyerOrganizationId}
+              </dd>
+            </div>
+            <div>
+              <dt>{t("connected.buyerContext.sellingBranch")}</dt>
+              <dd>
+                {buyerQuery.data.supplierBranchName?.trim()
+                  || t("connected.buyerContext.branchUnset")}
+              </dd>
+            </div>
+            <div>
+              <dt>{t("connected.buyerContext.catalogSharing")}</dt>
+              <dd>
+                {catalogModeLabel(
+                  buyerQuery.data.catalogSharingMode,
+                  t("customers.business.modeAllEligible"),
+                  t("customers.business.modeSelectedOnly"),
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>{t("connected.buyerContext.customerPricing")}</dt>
+              <dd>
+                {buyerQuery.data.customerDiscountPercent != null
+                && buyerQuery.data.customerDiscountPercent > 0
+                  ? t("connected.customerDiscountBanner").replace(
+                      "{percent}",
+                      String(buyerQuery.data.customerDiscountPercent),
+                    )
+                  : t("customers.business.noDiscount")}
+              </dd>
+            </div>
+          </dl>
+          <Link
+            to={`/customers/business/${relationshipId}`}
+            className="connected-share-buyer-context__link"
+            data-testid="connected-share-view-customer"
+          >
+            {t("connected.buyerContext.viewCustomer")}
+          </Link>
+        </section>
+      ) : null}
       <p
         className="m-0 text-[length:var(--exits-text-sm)] text-muted"
         data-testid="connected-exposable-note"
       >
-        {t("connected.exposableNotSharedNote")}
+        {t("connected.manageSharedIntent")}
+      </p>
+      <p
+        className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+        data-testid="connected-inventory-never-shared"
+      >
+        {t("connected.inventoryNeverShared")}
       </p>
       {message ? (
         <Card data-testid="connected-share-message">
@@ -329,6 +495,7 @@ export function ConnectedSharedProductsPage() {
               ["all", "connected.filterAll"],
               ["shared", "connected.filterShared"],
               ["notShared", "connected.filterNotShared"],
+              ["ineligible", "connected.filterIneligible"],
             ] as const
           ).map(([value, key]) => ({
             key: value,
@@ -369,33 +536,50 @@ export function ConnectedSharedProductsPage() {
           detail={t("connected.noProductsForFilterHelp")}
         />
       ) : null}
-      {query.data ? (
-        <div className="flex min-w-0 flex-col gap-1" data-testid="connected-share-summary">
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {query.data.catalogSharingMode === "AllEligible"
-              ? t("connected.shareSummaryAllEligible")
-                  .replace("{shared}", String(query.data.sharedCount))
-                  .replace("{eligible}", String(query.data.eligibleCount))
-              : t("connected.shareSummary")
-                  .replace("{shared}", String(query.data.sharedCount))
-                  .replace("{eligible}", String(query.data.eligibleCount))}
-          </p>
-          {query.data.customerDiscountPercent != null
-          && query.data.customerDiscountPercent > 0 ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("connected.customerDiscountBanner").replace(
-                "{percent}",
-                String(query.data.customerDiscountPercent),
-              )}
-            </p>
-          ) : query.data.catalogSharingMode === "AllEligible" ? (
-            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-              {t("connected.sellingPriceBaselineBanner")}
-            </p>
-          ) : null}
+      {query.data && !summaryDismissed ? (
+        <div className="relative" data-testid="connected-share-summary">
+          <Notice
+            tone="info"
+            testId="connected-share-summary-notice"
+            className="pe-10"
+            title={
+              query.data.catalogSharingMode === "AllEligible"
+                ? t("connected.shareSummaryAllEligible")
+                    .replace("{shared}", String(query.data.sharedCount))
+                    .replace("{eligible}", String(query.data.eligibleCount))
+                : t("connected.shareSummary")
+                    .replace("{shared}", String(query.data.sharedCount))
+                    .replace("{eligible}", String(query.data.eligibleCount))
+            }
+          >
+            <p>{t("connected.shareSummaryBuyerVisibilityHelp")}</p>
+            {query.data.customerDiscountPercent != null
+            && query.data.customerDiscountPercent > 0 ? (
+              <p className="mt-1">
+                {t("connected.customerDiscountBanner").replace(
+                  "{percent}",
+                  String(query.data.customerDiscountPercent),
+                )}
+              </p>
+            ) : query.data.catalogSharingMode === "AllEligible" ? (
+              <p className="mt-1">{t("connected.sellingPriceBaselineBanner")}</p>
+            ) : null}
+          </Notice>
+          <Button
+            type="button"
+            intent="neutral"
+            appearance="ghost"
+            size="icon"
+            className="absolute end-1 top-1 size-8 shrink-0"
+            aria-label={t("connected.shareSummary.dismiss")}
+            data-testid="connected-share-summary-dismiss"
+            onClick={() => setSummaryDismissed(true)}
+          >
+            <X className="size-4" aria-hidden />
+          </Button>
         </div>
       ) : null}
-      {allowManage && shareItems.length > 0 ? (
+      {allowManage && actionablePageIds.length > 0 ? (
         <div className="connected-share-select-all-bar" data-testid="connected-share-select-all-bar">
           <label className="connected-share-select-all-bar__label">
             <input
@@ -413,7 +597,7 @@ export function ConnectedSharedProductsPage() {
             <span>
               {allPageSelected
                 ? t("connected.deselectAllPage")
-                : t("connected.selectAllPage").replace("{count}", String(shareItems.length))}
+                : t("connected.selectAllPage").replace("{count}", String(actionablePageIds.length))}
             </span>
           </label>
         </div>
@@ -433,6 +617,7 @@ export function ConnectedSharedProductsPage() {
                 type="checkbox"
                 className="size-5"
                 checked={allPageSelected}
+                disabled={actionablePageIds.length === 0}
                 ref={(el) => {
                   if (el) {
                     el.indeterminate = somePageSelected && !allPageSelected;
@@ -443,13 +628,17 @@ export function ConnectedSharedProductsPage() {
                 aria-label={
                   allPageSelected
                     ? t("connected.deselectAllPage")
-                    : t("connected.selectAllPage").replace("{count}", String(shareItems.length))
+                    : t("connected.selectAllPage").replace(
+                        "{count}",
+                        String(actionablePageIds.length),
+                      )
                 }
               />
             </span>
           ) : null}
           <span>{t("connected.colProduct")}</span>
-          <span>{t("connected.colStatus")}</span>
+          <span>{t("connected.colTracking")}</span>
+          <span>{t("connected.colSharing")}</span>
           <span className="connected-share-table__price-head">{t("connected.listPrice")}</span>
           <span className="connected-share-table__price-head">{t("connected.customerPrice")}</span>
         </div>
@@ -458,19 +647,49 @@ export function ConnectedSharedProductsPage() {
             const customerPrice =
               item.effectiveSupplierOrderPrice
               ?? item.buyerSpecificPoPrice
+              ?? item.resolvedPoPrice
+              ?? (item.isEffectivelyShared || item.sharingStatus === "Shared"
+                ? item.sellingPrice != null && item.sellingPrice > 0
+                  ? item.sellingPrice
+                  : item.defaultPoPrice
+                : null)
               ?? null;
             const listPrice =
               item.sellingPrice != null && item.sellingPrice > 0
                 ? item.sellingPrice
                 : item.defaultPoPrice;
-            const statusLabel = item.isShared
-              ? t("connected.shared")
-              : query.data?.catalogSharingMode === "AllEligible"
-                ? t("connected.excluded")
-                : t("connected.notShared");
+            const sharingStatus =
+              item.sharingStatus
+              || (item.isEffectivelyShared
+                ? "Shared"
+                : item.isExplicitlyExcluded
+                  ? query.data?.catalogSharingMode === "AllEligible"
+                    ? "Excluded"
+                    : "NotShared"
+                  : item.isEligible === false
+                    ? "Ineligible"
+                    : "NotShared");
+            const statusLabel =
+              sharingStatus === "Shared"
+                ? t("connected.shared")
+                : sharingStatus === "Excluded"
+                  ? t("connected.excluded")
+                  : sharingStatus === "Ineligible"
+                    ? t("connected.ineligible")
+                    : t("connected.notShared");
+            const tracked = item.isInventoryTracked === true;
+            const selectable = isShareRowSelectable(item);
+            const hintReason = shareRowHintReason(item);
+            const needsPrice = shareRowNeedsPrice(item);
+            const hintText =
+              hintReason === "needsTracking"
+                ? t("connected.enableTrackingBeforeShare")
+                : hintReason === "needsPrice"
+                  ? t("connected.setPriceBeforeShare")
+                  : undefined;
             return (
               <li key={item.supplierProductId}>
-                <label
+                <div
                   className="connected-share-table__row"
                   data-testid={`connected-share-row-${item.supplierProductId}`}
                 >
@@ -480,8 +699,11 @@ export function ConnectedSharedProductsPage() {
                         type="checkbox"
                         className="size-5"
                         checked={selected.has(item.supplierProductId)}
+                        disabled={!selectable}
+                        title={hintText}
                         onChange={() => toggle(item.supplierProductId)}
                         data-testid={`connected-share-check-${item.supplierProductId}`}
+                        aria-label={item.nameSnapshot ?? item.supplierProductId}
                       />
                     </span>
                   ) : null}
@@ -492,9 +714,35 @@ export function ConnectedSharedProductsPage() {
                     {item.skuSnapshot ? (
                       <span className="connected-share-table__sku">{item.skuSnapshot}</span>
                     ) : null}
+                    {needsPrice ? (
+                      <span
+                        className="connected-share-table__hint"
+                        data-testid={`connected-share-needs-price-${item.supplierProductId}`}
+                      >
+                        {t("connected.needsPrice")}
+                      </span>
+                    ) : null}
+                    {!selectable && hintText && !needsPrice ? (
+                      <span
+                        className="connected-share-table__hint"
+                        data-testid={`connected-share-hint-${item.supplierProductId}`}
+                      >
+                        {hintText}
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="connected-share-table__status">
-                    <StatusChip tone={item.isShared ? "success" : "warning"}>
+                  <span
+                    className="connected-share-table__tracking"
+                    data-label={t("connected.colTracking")}
+                    data-testid={`connected-share-tracking-${item.supplierProductId}`}
+                  >
+                    {tracked ? t("inventory.tracked") : t("inventory.notTracked")}
+                  </span>
+                  <span
+                    className="connected-share-table__status"
+                    data-testid={`connected-share-status-${item.supplierProductId}`}
+                  >
+                    <StatusChip tone={sharingTone(sharingStatus)}>
                       {statusLabel}
                     </StatusChip>
                   </span>
@@ -511,7 +759,7 @@ export function ConnectedSharedProductsPage() {
                   >
                     {customerPrice != null ? formatPeso(customerPrice) : "—"}
                   </span>
-                </label>
+                </div>
               </li>
             );
           })}

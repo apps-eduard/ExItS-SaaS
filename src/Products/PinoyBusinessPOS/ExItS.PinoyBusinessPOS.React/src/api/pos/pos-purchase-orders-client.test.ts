@@ -446,6 +446,7 @@ describe("partial receive math", () => {
         goodQty: 6,
         damagedQty: 0,
         notDeliveredQty: 0,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);
@@ -461,6 +462,7 @@ describe("partial receive math", () => {
         goodQty: 4,
         damagedQty: 1,
         notDeliveredQty: 5,
+        otherQty: 0,
         cancelRemaining: true,
       },
     ]);
@@ -480,6 +482,7 @@ describe("partial receive math", () => {
         goodQty: 4,
         damagedQty: 1,
         notDeliveredQty: 5,
+        otherQty: 0,
         cancelRemaining: false,
       },
     ]);

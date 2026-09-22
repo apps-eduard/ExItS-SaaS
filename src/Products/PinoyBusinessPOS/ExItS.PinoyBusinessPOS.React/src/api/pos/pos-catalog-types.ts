@@ -73,6 +73,10 @@ export type PosCatalogProductDto = {
   tracksExpiration?: boolean;
   expirationWarningDays?: number | null;
   canExposeToConnectedBuyers?: boolean;
+  defaultConnectedPoPrice?: number | null;
+  returnPolicyMode?: string | null;
+  returnPolicyReturnsAllowed?: boolean | null;
+  returnPolicyWindowDays?: number | null;
   /** Mirrors inventory IsTracked when catalog list/detail includes stock snapshot. */
   isTracked?: boolean;
   /** Branch sale-eligible quantity when branch context is stamped; otherwise org snapshot. */
@@ -183,6 +187,9 @@ export type CreatePosCatalogProductRequest = {
   scope?: CatalogProductScopeCode | string | null;
   canExposeToConnectedBuyers?: boolean | null;
   defaultConnectedPoPrice?: number | null;
+  returnPolicyMode?: string | null;
+  returnPolicyReturnsAllowed?: boolean | null;
+  returnPolicyWindowDays?: number | null;
 };
 
 export type UpdatePosCatalogProductRequest = {
@@ -205,6 +212,9 @@ export type UpdatePosCatalogProductRequest = {
   expirationWarningDays?: number | null;
   canExposeToConnectedBuyers?: boolean | null;
   defaultConnectedPoPrice?: number | null;
+  returnPolicyMode?: string | null;
+  returnPolicyReturnsAllowed?: boolean | null;
+  returnPolicyWindowDays?: number | null;
 };
 
 export type UpdatePosCatalogProductPriceItem = {

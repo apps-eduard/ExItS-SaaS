@@ -36,6 +36,17 @@ public sealed class StockMovement
     public const string PurchaseReceiptReversalReason = "Purchase receipt reversed";
     public const string DirectPurchaseReceiptReversalReason = "Direct purchase reversed";
     public const string ConnectedPurchaseFulfillmentReason = "Connected purchase fulfillment";
+    public const string ConnectedPurchaseFulfillmentReconciliationReason =
+        "Connected purchase fulfillment reconciliation";
+    public const string SaleReturnWriteOffReason = "Sale return write-off";
+    public const string ConnectedPoReturnDispatchReason = "Connected PO return dispatched to supplier";
+    public const string ConnectedPoReturnRestockReason = "Connected PO return restock";
+    public const string ConnectedPoReturnWriteOffReason = "Connected PO return write-off";
+    public const string TransferDamageHoldReasonPrefix = "Transfer damage hold";
+    public const string TransferDamageRecoveryReasonPrefix = "Transfer damage recovery";
+    public const string TransferDamageReturnOutReasonPrefix = "Transfer damage return out";
+    public const string TransferDamageReturnInReasonPrefix = "Transfer damage return in";
+    public const string TransferDamageWriteOffReasonPrefix = "Transfer damage write-off";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -1034,6 +1045,152 @@ public sealed class StockMovement
             branchId);
     }
 
+    /// <summary>
+    /// Compensating +qty seller movement for FoundAtSeller / NeverShipped receiving-issue resolutions.
+    /// <paramref name="receivingIssueLineId"/> is the idempotency SourceId; original fulfillment wave is in the reason.
+    /// </summary>
+    public static StockMovement ConnectedPurchaseFulfillmentReconciliation(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid receivingIssueLineId,
+        Guid originalFulfillmentSourceId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (receivingIssueLineId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReceivingIssueLineId,
+                "Receiving issue line id cannot be an empty GUID.");
+        }
+
+        if (originalFulfillmentSourceId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReceivingIssueFulfillmentSource,
+                "Original fulfillment source id cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reason =
+            $"{ConnectedPurchaseFulfillmentReconciliationReason} (fulfillmentSource={originalFulfillmentSourceId:D})";
+        if (reason.Length > ReasonMaxLength)
+        {
+            reason = reason[..ReasonMaxLength];
+        }
+
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.ConnectedPurchaseFulfillmentReconciliation,
+            absolute,
+            reason,
+            StockMovementSourceType.ConnectedPurchaseOrder,
+            receivingIssueLineId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
+    public static StockMovement SaleReturnWriteOff(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid saleReturnId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (saleReturnId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnId,
+                "SaleReturnId cannot be an empty GUID.");
+        }
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            StockMovementType.SaleReturnWriteOff,
+            -absolute,
+            SaleReturnWriteOffReason,
+            StockMovementSourceType.SaleReturn,
+            saleReturnId,
+            utcNow,
+            actorId);
+    }
+
+    /// <summary>
+    /// Connected-PO return movement. Dispatch decreases buyer on-hand; restock increases seller on-hand;
+    /// write-off is an audit-only decrease for the damaged portion (seller on-hand is never increased for it).
+    /// </summary>
+    public static StockMovement ConnectedPoReturn(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        StockMovementType movementType,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid returnBatchId,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        Guid? branchId = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (returnBatchId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidReturnBatchId,
+                "ReturnBatchId cannot be an empty GUID.");
+        }
+
+        var (reason, sign) = movementType switch
+        {
+            StockMovementType.ConnectedPoReturnDispatch => (ConnectedPoReturnDispatchReason, -1m),
+            StockMovementType.ConnectedPoReturnRestock => (ConnectedPoReturnRestockReason, 1m),
+            StockMovementType.ConnectedPoReturnWriteOff => (ConnectedPoReturnWriteOffReason, -1m),
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidInventoryMovementType,
+                "Movement type is not a connected purchase-order return movement.")
+        };
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            movementType,
+            sign * absolute,
+            reason,
+            StockMovementSourceType.ReturnBatch,
+            returnBatchId,
+            utcNow,
+            actorId,
+            branchId);
+    }
+
     public StockMovement WithLot(InventoryLotId lotId) =>
         new(
             Id,
@@ -1050,6 +1207,62 @@ public sealed class StockMovement
             BranchId,
             lotId,
             UnitCost);
+
+    /// <summary>
+    /// Transfer damage custody ledger movement. Quantity effect is signed for audit;
+    /// callers decide whether org <see cref="InventoryAccount"/> sellable is updated.
+    /// </summary>
+    public static StockMovement TransferDamageCustody(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        StockMovementType movementType,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid custodyOrReceiptLineId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (custodyOrReceiptLineId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
+                "Damage custody / receipt line source id must be a non-empty GUID.");
+        }
+
+        var (reasonPrefix, sign) = movementType switch
+        {
+            StockMovementType.TransferDamageHold => (TransferDamageHoldReasonPrefix, 1m),
+            StockMovementType.TransferDamageRecovery => (TransferDamageRecoveryReasonPrefix, 1m),
+            StockMovementType.TransferDamageReturnOut => (TransferDamageReturnOutReasonPrefix, -1m),
+            StockMovementType.TransferDamageReturnIn => (TransferDamageReturnInReasonPrefix, 1m),
+            StockMovementType.TransferDamageWriteOff => (TransferDamageWriteOffReasonPrefix, -1m),
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidInventoryMovementType,
+                "Movement type is not a transfer damage custody movement.")
+        };
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            movementType,
+            sign * absolute,
+            TransferReason(reasonPrefix, transferNumber),
+            StockMovementSourceType.InventoryTransfer,
+            custodyOrReceiptLineId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
 
     public StockMovement WithBranch(Guid? branchId) =>
         new(

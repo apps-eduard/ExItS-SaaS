@@ -47,12 +47,36 @@ public enum StockMovementType
     /// <summary>Compensating reversal when a direct purchase receipt is voided.</summary>
     DirectPurchaseReceiptReversal = 23,
     /// <summary>Supplier stock decrease when a connected purchase order is fulfilled/delivered.</summary>
-    ConnectedPurchaseFulfillment = 24
+    ConnectedPurchaseFulfillment = 24,
+    /// <summary>Returned quantity classified as damaged and written off from pending return bucket.</summary>
+    SaleReturnWriteOff = 25,
+    /// <summary>Buyer stock leaves on-hand when the seller confirms receipt of a connected-PO return.</summary>
+    ConnectedPoReturnDispatch = 26,
+    /// <summary>Seller stock returns to on-hand for the sellable portion of a finalized connected-PO return.</summary>
+    ConnectedPoReturnRestock = 27,
+    /// <summary>Damaged portion of a finalized connected-PO return, written off on the seller side.</summary>
+    ConnectedPoReturnWriteOff = 28,
+    /// <summary>
+    /// Compensating seller stock increase when a connected-PO receiving issue confirms goods remained
+    /// at the seller (FoundAtSeller / NeverShipped). Does not edit the original fulfillment movement.
+    /// </summary>
+    ConnectedPurchaseFulfillmentReconciliation = 29,
+    /// <summary>Damaged qty placed into branch inspection hold after transfer receive (keep or before return).</summary>
+    TransferDamageHold = 30,
+    /// <summary>Inspection recovers sellable qty from transfer damage hold into sellable on-hand.</summary>
+    TransferDamageRecovery = 31,
+    /// <summary>Destination ships damaged custody back toward source.</summary>
+    TransferDamageReturnOut = 32,
+    /// <summary>Source receives returned damaged custody into inspection hold.</summary>
+    TransferDamageReturnIn = 33,
+    /// <summary>Inspection confirms non-sellable damaged qty (hold → damaged bucket).</summary>
+    TransferDamageWriteOff = 34
 }
 
 public static class StockMovementTypes
 {
-    public const int CodeMaxLength = 32;
+    /// <summary>Fits longest code (ConnectedPurchaseFulfillmentReconciliation).</summary>
+    public const int CodeMaxLength = 48;
 
     public static IReadOnlyList<string> Codes { get; } =
     [
@@ -80,7 +104,17 @@ public static class StockMovementTypes
         nameof(StockMovementType.WasteLossVoidRestoration),
         nameof(StockMovementType.PurchaseReceiptReversal),
         nameof(StockMovementType.DirectPurchaseReceiptReversal),
-        nameof(StockMovementType.ConnectedPurchaseFulfillment)
+        nameof(StockMovementType.ConnectedPurchaseFulfillment),
+        nameof(StockMovementType.SaleReturnWriteOff),
+        nameof(StockMovementType.ConnectedPoReturnDispatch),
+        nameof(StockMovementType.ConnectedPoReturnRestock),
+        nameof(StockMovementType.ConnectedPoReturnWriteOff),
+        nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation),
+        nameof(StockMovementType.TransferDamageHold),
+        nameof(StockMovementType.TransferDamageRecovery),
+        nameof(StockMovementType.TransferDamageReturnOut),
+        nameof(StockMovementType.TransferDamageReturnIn),
+        nameof(StockMovementType.TransferDamageWriteOff)
     ];
 
     public static string ToCode(StockMovementType type) => type.ToString();

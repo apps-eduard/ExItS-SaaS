@@ -57,7 +57,7 @@ public sealed class ExpenseDomainTests
     public void Record_formats_expense_number_and_void_transitions()
     {
         var number = ExpenseNumbers.Format(ExpenseDate, 7);
-        Assert.Equal("EXP-20260730-000007", number);
+        Assert.Equal("260730-007", number);
 
         var expense = Record(expenseNumber: number, amount: 150.50m, paymentMethod: ExpensePaymentMethod.ManualGCash, gcashReference: "gc-9");
         Assert.Equal(ExpenseStatus.Recorded, expense.Status);

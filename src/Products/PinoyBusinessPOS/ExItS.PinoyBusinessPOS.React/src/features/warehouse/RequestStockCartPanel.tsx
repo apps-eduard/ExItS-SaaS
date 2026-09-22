@@ -210,6 +210,7 @@ export function RequestStockCartPanel({
                       <div className="sell-cart-line__qty">
                         <QuantityStepper
                           compact
+                          variant="auto"
                           value={qtyLabel}
                           valueTestId={`retail-warehouse-qty-${line.productId}`}
                           decreaseLabel={t("retailWarehouse.request.decrease")}

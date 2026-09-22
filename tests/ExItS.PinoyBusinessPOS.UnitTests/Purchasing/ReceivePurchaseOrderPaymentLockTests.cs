@@ -35,7 +35,7 @@ public sealed class ReceivePurchaseOrderPaymentLockTests
             intendedReceivingBranchId: Warehouse,
             paymentTerm: ConnectedPoPaymentTerm.Cash);
         po.Submit(
-            "PO-20260917-000001",
+            "260917-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     product.Id,
@@ -116,7 +116,7 @@ public sealed class ReceivePurchaseOrderPaymentLockTests
             intendedReceivingBranchId: Warehouse,
             paymentTerm: term);
         po.Submit(
-            "PO-20260917-000002",
+            "260917-002",
             [
                 new PurchaseOrderLineSnapshotInput(
                     product.Id,
@@ -266,7 +266,7 @@ public sealed class ReceivePurchaseOrderPaymentLockTests
             Func<GoodsReceipt, PurchaseOrder, CancellationToken, Task>? afterReceiptCreated = null,
             CancellationToken cancellationToken = default)
         {
-            var applied = applyReceive("GRN-20260917-000001");
+            var applied = applyReceive("260917-001");
             if (afterReceiptCreated is not null)
             {
                 await afterReceiptCreated(applied.Receipt, applied.UpdatedPo, cancellationToken).ConfigureAwait(false);

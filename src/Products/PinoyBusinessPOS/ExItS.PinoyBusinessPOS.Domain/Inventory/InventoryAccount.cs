@@ -21,7 +21,11 @@ public sealed class InventoryAccount
     public decimal? ReorderQuantity { get; private set; }
     public decimal OnHandQuantity { get; private set; }
     public decimal ReservedQuantity { get; private set; }
-    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity;
+    public decimal PendingReturnQuantity { get; private set; }
+    /// <summary>
+    /// Sellable stock. Pending returns are excluded until seller disposition finalizes sellable qty.
+    /// </summary>
+    public decimal AvailableQuantity => OnHandQuantity - ReservedQuantity - PendingReturnQuantity;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -34,6 +38,7 @@ public sealed class InventoryAccount
         decimal? reorderQuantity,
         decimal onHandQuantity,
         decimal reservedQuantity,
+        decimal pendingReturnQuantity,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc)
     {
@@ -45,6 +50,7 @@ public sealed class InventoryAccount
         ReorderQuantity = reorderQuantity;
         OnHandQuantity = onHandQuantity;
         ReservedQuantity = reservedQuantity;
+        PendingReturnQuantity = pendingReturnQuantity;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
     }
@@ -68,6 +74,7 @@ public sealed class InventoryAccount
             reorderQuantity: null,
             onHandQuantity: 0m,
             reservedQuantity: 0m,
+            pendingReturnQuantity: 0m,
             utcNow,
             utcNow);
     }
@@ -82,7 +89,8 @@ public sealed class InventoryAccount
         decimal onHandQuantity,
         DateTimeOffset createdAtUtc,
         DateTimeOffset updatedAtUtc,
-        decimal reservedQuantity = 0m) =>
+        decimal reservedQuantity = 0m,
+        decimal pendingReturnQuantity = 0m) =>
         new(
             id,
             organizationId,
@@ -92,6 +100,7 @@ public sealed class InventoryAccount
             reorderQuantity,
             onHandQuantity,
             reservedQuantity,
+            pendingReturnQuantity,
             createdAtUtc,
             updatedAtUtc);
 
@@ -316,6 +325,25 @@ public sealed class InventoryAccount
         ApplyMovementEffect(-quantity);
     }
 
+    public void IncreasePendingReturn(decimal quantity)
+    {
+        EnsurePositivePendingReturnQuantity(quantity);
+        PendingReturnQuantity += quantity;
+    }
+
+    public void DecreasePendingReturn(decimal quantity)
+    {
+        EnsurePositivePendingReturnQuantity(quantity);
+        if (PendingReturnQuantity < quantity)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
+                "Cannot decrease pending return quantity below zero.");
+        }
+
+        PendingReturnQuantity -= quantity;
+    }
+
     public void Touch(DateTimeOffset utcNow)
     {
         EnsureUtc(utcNow);
@@ -432,6 +460,16 @@ public sealed class InventoryAccount
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryReservationQuantity,
                 "Reservation quantity must be greater than zero.");
+        }
+    }
+
+    private static void EnsurePositivePendingReturnQuantity(decimal quantity)
+    {
+        if (quantity <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryPendingReturnQuantity,
+                "Pending return quantity must be greater than zero.");
         }
     }
 

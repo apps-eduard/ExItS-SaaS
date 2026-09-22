@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { SettingsSelect } from "@/components/ui/settings-select";
@@ -23,6 +24,7 @@ export function UiStandardsPreferencePreview() {
     setMotion,
   } = usePreferences();
   const [previewSearch, setPreviewSearch] = useState("");
+  const [previewQty, setPreviewQty] = useState(2);
 
   return (
     <section
@@ -104,6 +106,22 @@ export function UiStandardsPreferencePreview() {
           <StatusChip tone="success" appearance="soft" shape="auto">
             Active
           </StatusChip>
+        </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-[length:var(--exits-text-xs)] text-muted">QuantityStepper Auto</span>
+          <QuantityStepper
+            compact
+            variant="auto"
+            value={previewQty}
+            onChange={setPreviewQty}
+            min={1}
+            step={1}
+            precision={0}
+            decreaseLabel="Decrease preview quantity"
+            increaseLabel="Increase preview quantity"
+            ariaLabel="Preference preview quantity"
+            valueTestId="ui-standards-preference-qty"
+          />
         </div>
         <div className="min-w-0 flex-1 basis-[12rem]">
           <SearchField

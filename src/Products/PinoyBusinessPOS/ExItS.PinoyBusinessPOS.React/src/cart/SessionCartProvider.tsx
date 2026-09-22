@@ -12,6 +12,7 @@ import {
   activeSellUnits,
   cartLineKey,
   isByWeightSellingMode,
+  nextWeightCartQuantityKg,
   resolveSellUnitPrice,
   roundMoney,
   roundQuantity,
@@ -210,6 +211,12 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
         if (line.lineKey !== lineKey) {
           return line;
         }
+        if (isByWeightSellingMode(line.sellingMode)) {
+          return {
+            ...line,
+            quantity: nextWeightCartQuantityKg(line.quantity, 1),
+          };
+        }
         const step = isWholeQuantityRequired(line) ? 1 : 0.001;
         return { ...line, quantity: roundQuantity(line.quantity + step) };
       }),
@@ -222,6 +229,12 @@ export function SessionCartProvider({ children }: { children: ReactNode }) {
         .map((line) => {
           if (line.lineKey !== lineKey) {
             return line;
+          }
+          if (isByWeightSellingMode(line.sellingMode)) {
+            return {
+              ...line,
+              quantity: nextWeightCartQuantityKg(line.quantity, -1),
+            };
           }
           const step = isWholeQuantityRequired(line) ? 1 : 0.001;
           return { ...line, quantity: roundQuantity(line.quantity - step) };

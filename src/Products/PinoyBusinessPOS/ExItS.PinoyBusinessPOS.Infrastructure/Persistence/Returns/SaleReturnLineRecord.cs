@@ -12,6 +12,8 @@ internal sealed class SaleReturnLineRecord
     public decimal QuantityReturned { get; set; }
     public decimal UnitPriceSnapshot { get; set; }
     public decimal RefundAmount { get; set; }
+    public decimal SellableQuantity { get; set; }
+    public decimal DamagedQuantity { get; set; }
     public string RestockDisposition { get; set; } = string.Empty;
     public string? LineReason { get; set; }
     public Guid? InventoryMovementId { get; set; }

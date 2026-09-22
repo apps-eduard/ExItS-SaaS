@@ -93,7 +93,7 @@ Client: `ExItS.PinoyBusinessPOS.React`
 | SearchField | `src/components/exits/SearchField.tsx` |
 | FilterButton / FilterChips / SortButton / ListToolbar | `src/components/exits/ListToolbar.tsx` |
 | EntityCard / ResponsiveEntityList | `src/components/exits/EntityCard.tsx` |
-| MoneyDisplay / QuantityDisplay / QuantityStepper | `src/components/exits/MoneyQuantity.tsx` |
+| MoneyDisplay / QuantityDisplay / QuantityStepper | `src/components/exits/MoneyQuantity.tsx` — cart/inline use `variant="auto"` (primary capsule adopts Control Shape soft/standard/pill); non-kg cart uses `editOnClick` (middle → input); kg cart uses display like `1.5kg` + `onValueClick`; forms keep default [neutral −][qty][primary +] |
 | MoneyInput / QuantityInput | `src/components/exits/MoneyQuantityInputs.tsx` |
 | LoadingSkeleton / AccessDeniedState / ConflictState / OfflineBanner / FormSection / StickyActionBar | `src/components/exits/FoundationStates.tsx` |
 | BottomSheet / ConfirmationDialog | `src/components/exits/SheetDialog.tsx` |

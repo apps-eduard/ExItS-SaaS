@@ -92,6 +92,9 @@ public sealed record PosCatalogProductDto(
     /// <summary>OrganizationStandard or BranchLocal (MB2 product governance).</summary>
     string Scope = "OrganizationStandard",
     Guid? OriginBranchId = null,
+    string ReturnPolicyMode = "UseDefault",
+    bool? ReturnPolicyReturnsAllowed = null,
+    int? ReturnPolicyWindowDays = null,
     /// <summary>Populated when listing a commercially offered branch assortment; otherwise null.</summary>
     bool? IsOfferedAtBranch = null,
     /// <summary>Branch-effective selling price when branch context is supplied; otherwise null.</summary>
@@ -144,7 +147,10 @@ public sealed record CreatePosCatalogProductRequest(
     decimal? DefaultConnectedPoPrice = null,
     string? BusinessUsage = null,
     /// <summary>Optional create scope: OrganizationStandard | BranchLocal. Omitted → actor default.</summary>
-    string? Scope = null);
+    string? Scope = null,
+    string ReturnPolicyMode = "UseDefault",
+    bool? ReturnPolicyReturnsAllowed = null,
+    int? ReturnPolicyWindowDays = null);
 
 public sealed record UpdatePosCatalogProductRequest(
     string Name,
@@ -167,7 +173,10 @@ public sealed record UpdatePosCatalogProductRequest(
     IReadOnlyList<PosCatalogProductUnitInput>? Units = null,
     bool? CanExposeToConnectedBuyers = null,
     decimal? DefaultConnectedPoPrice = null,
-    string? BusinessUsage = null);
+    string? BusinessUsage = null,
+    string? ReturnPolicyMode = null,
+    bool? ReturnPolicyReturnsAllowed = null,
+    int? ReturnPolicyWindowDays = null);
 
 /// <summary>One row for Today's Prices bulk current-price update (price only).</summary>
 public sealed record UpdatePosCatalogProductPriceItem(

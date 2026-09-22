@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { LockKeyhole, Plus, RotateCcw, X } from "lucide-react";
 import {
   canInviteOrganizationStaff,
@@ -8,6 +8,7 @@ import {
   canUseWarehouseBranches,
 } from "@/access/pos-capabilities";
 import { createOrganizationBranch } from "@/api/platform/organization-branches-client";
+import { getOrganizationFulfillmentSettings } from "@/api/pos/pos-connected-suppliers-client";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { Notice } from "@/components/exits/Notice";
@@ -19,7 +20,9 @@ import {
 import {
   type OrganizationBranchType,
 } from "@/features/branches/branch-type";
+import { organizationOfferDeliveryQueryKey } from "@/features/branches/offer-delivery-queries";
 import { useI18n } from "@/i18n/I18nProvider";
+import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 function resolveInitialBranchType(
@@ -38,11 +41,18 @@ export function BranchCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { boundWorkspace, sessionGrant } = useWorkspace();
+  const workspace = usePosWorkspaceScope();
   const canManage = canManageBranchFulfillment(sessionGrant);
   const canCreate = canInviteOrganizationStaff(sessionGrant);
   const warehouseAllowed = canUseWarehouseBranches(sessionGrant);
   const organizationId = boundWorkspace?.organizationId ?? null;
   const typeParam = searchParams.get("type");
+
+  const defaultsQuery = useQuery({
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
+    enabled: Boolean(workspace && organizationId && canCreate),
+    queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
+  });
 
   const initialType = useMemo(
     () => resolveInitialBranchType(typeParam, warehouseAllowed),
@@ -110,9 +120,10 @@ export function BranchCreatePage() {
         postalCode: postalCode.trim() || null,
         countryCode: BRANCH_DEFAULT_COUNTRY_CODE,
         timeZoneId: BRANCH_DEFAULT_TIME_ZONE,
-        pickupEnabled: false,
+        pickupEnabled: defaultsQuery.data?.defaultPickupEnabled === true,
+        // Delivery requires map coordinates; enable later on the branch fulfillment page.
         deliveryEnabled: false,
-        customerOrderingEnabled: false,
+        customerOrderingEnabled: defaultsQuery.data?.defaultOnlineOrdersEnabled === true,
       });
       if (!result.ok) {
         const codeHint = (result.errorCode ?? "").toLowerCase();
@@ -124,6 +135,9 @@ export function BranchCreatePage() {
         }
         if (codeHint.includes("warehouse_entitlement")) {
           throw new Error(t("branches.create.warehouseEntitlement"));
+        }
+        if (codeHint.includes("delivery_location_required")) {
+          throw new Error(t("branches.create.deliveryRequiresCoordinates"));
         }
         throw new Error(result.body?.detail ?? t("branches.create.failed"));
       }
@@ -180,6 +194,12 @@ export function BranchCreatePage() {
         backLabel={t("branches.backList")}
         backTestId="page-header-back-branches"
       />
+
+      {branchType === "Retail" ? (
+        <Notice tone="info" testId="branch-create-delivery-coordinates-hint">
+          {t("branches.create.deliveryRequiresCoordinates")}
+        </Notice>
+      ) : null}
 
       <form
         className="branch-create-form flex flex-col gap-3"

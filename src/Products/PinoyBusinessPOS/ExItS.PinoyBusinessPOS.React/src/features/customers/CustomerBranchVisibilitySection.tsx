@@ -168,6 +168,7 @@ export function CustomerBranchVisibilitySection({
   const homeBranchName =
     visibilityBranches.find((b) => b.id === homeBranchId)?.name ??
     t("customers.branchAccess.homeUnknown");
+  const singleBranchOnly = eligibleIds.length <= 1;
 
   const groups = useMemo(
     () =>
@@ -198,6 +199,14 @@ export function CustomerBranchVisibilitySection({
     setExpanded(initialExpanded);
     setHydrated(true);
   }, [accessQuery.isSuccess, accessQuery.data, hydrated, eligibleIds, homeBranchId, groups]);
+
+  useEffect(() => {
+    if (!hydrated || !singleBranchOnly || mode === "this_branch") {
+      return;
+    }
+    setMode("this_branch");
+    setSelected(applyVisibilityMode("this_branch", eligibleIds, homeBranchId));
+  }, [hydrated, singleBranchOnly, mode, eligibleIds, homeBranchId]);
 
   const currentAccessIds = useMemo(
     () => [...new Set((accessQuery.data?.items ?? []).map((i) => i.branchId))],
@@ -287,44 +296,56 @@ export function CustomerBranchVisibilitySection({
             {t(helpKey)}
           </p>
         </div>
-        <MapPinned className="size-4 shrink-0 text-muted" aria-hidden />
       </div>
 
       {loading ? <LoadingState label={t("loading.label")} /> : null}
 
       {!loading ? (
         <>
-          <div data-testid={`${testId}-home`}>
-            <p className="m-0 text-[length:var(--exits-text-xs)] font-medium text-muted">
-              {t("customers.branchAccess.homeBranch")}
-            </p>
-            <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] font-semibold">
-              {homeBranchName}
-            </p>
+          <div
+            className="flex items-start gap-2"
+            data-testid={`${testId}-home`}
+          >
+            <MapPinned className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden />
+            <div className="min-w-0">
+              <p className="m-0 text-[length:var(--exits-text-xs)] font-medium text-muted">
+                {t("customers.branchAccess.homeBranch")}
+              </p>
+              <p className="m-0 mt-0.5 text-[length:var(--exits-text-sm)] font-semibold">
+                {homeBranchName}
+              </p>
+            </div>
           </div>
 
           <fieldset className="m-0 border-0 p-0">
             <legend className="mb-1.5 text-[length:var(--exits-text-sm)] font-medium">
               {t("customers.branchAccess.visibility")}
             </legend>
-            <div className="flex flex-col gap-1.5" role="radiogroup">
+            <div className="flex flex-row flex-wrap items-center gap-x-4 gap-y-1.5" role="radiogroup">
               {(
                 [
-                  ["this_branch", t("customers.branchAccess.modeThisBranch")],
-                  ["selected", t("customers.branchAccess.modeSelected")],
-                  ["all", t("customers.branchAccess.modeAll")],
+                  ["this_branch", t("customers.branchAccess.modeThisBranch"), false],
+                  ["selected", t("customers.branchAccess.modeSelected"), singleBranchOnly],
+                  ["all", t("customers.branchAccess.modeAll"), singleBranchOnly],
                 ] as const
-              ).map(([value, label]) => (
+              ).map(([value, label, optionDisabled]) => (
                 <label
                   key={value}
-                  className="inline-flex cursor-pointer items-center gap-2 text-[length:var(--exits-text-sm)]"
+                  className={cn(
+                    "inline-flex items-center gap-2 text-[length:var(--exits-text-sm)]",
+                    optionDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+                  )}
                 >
                   <input
                     type="radio"
                     name={`${testId}-visibility-mode`}
                     checked={mode === value}
+                    disabled={optionDisabled}
                     data-testid={`${testId}-mode-${value}`}
                     onChange={() => {
+                      if (optionDisabled) {
+                        return;
+                      }
                       setMode(value);
                       if (value === "selected") {
                         setSelected((prev) => withHomeBranchLocked(prev, homeBranchId));

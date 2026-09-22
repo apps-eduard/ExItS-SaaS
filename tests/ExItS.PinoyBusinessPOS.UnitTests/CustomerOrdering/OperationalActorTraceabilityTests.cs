@@ -39,7 +39,7 @@ public sealed class OperationalActorTraceabilityTests
         var order = CustomerOrder.Rehydrate(
             CustomerOrderId.New(),
             Seller,
-            "SO-000099",
+            "260816-099",
             CustomerOrderStatus.Accepted,
             CustomerOrderFulfillmentStatus.Preparing,
             CustomerOrderPaymentStatus.Unpaid,
@@ -86,7 +86,7 @@ public sealed class OperationalActorTraceabilityTests
     {
         var order = CustomerOrder.CreateSubmitted(
             Seller,
-            "SO-000050",
+            "260816-050",
             CustomerOrderParty.Personal(Guid.NewGuid(), "Ana"),
             CustomerOrderFulfillmentType.Pickup,
             BranchId,

@@ -21,6 +21,8 @@ export const stockRequestLineDtoSchema = z.object({
   approvedQuantity: z.number().nullable().optional(),
   fulfilledQuantity: z.number(),
   inProgressQuantity: z.number(),
+  remainingToDispatchQuantity: z.number().optional().default(0),
+  waivedQuantity: z.number().optional().default(0),
   nameSnapshot: z.string(),
   unitOfMeasure: z.string(),
 });
@@ -31,8 +33,32 @@ export const stockRequestLinkedTransferDtoSchema = z.object({
   status: z.string(),
   totalSentQty: z.number(),
   totalReceivedQty: z.number(),
+  totalOutstandingQty: z.number().optional().default(0),
+  totalClosedQty: z.number().optional().default(0),
+  createdAtUtc: z.string(),
+  createdBy: guidSchema,
   updatedAtUtc: z.string(),
+  dispatchedAtUtc: z.string().nullable().optional(),
+  dispatchedBy: guidSchema.nullable().optional(),
+  closedAtUtc: z.string().nullable().optional(),
+  closedBy: guidSchema.nullable().optional(),
 });
+
+export const stockRequestActivityEventDtoSchema = z.object({
+  eventId: guidSchema,
+  eventType: z.string(),
+  occurredAtUtc: z.string(),
+  actorId: guidSchema.nullable().optional(),
+  transferId: guidSchema.nullable().optional(),
+  transferNumber: z.string().nullable().optional(),
+  receiptId: guidSchema.nullable().optional(),
+  receiptSequence: z.number().nullable().optional(),
+  quantity: z.number().nullable().optional(),
+  reason: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
+});
+
+export type StockRequestActivityEventDto = z.infer<typeof stockRequestActivityEventDtoSchema>;
 
 export const stockRequestDtoSchema = z.object({
   stockRequestId: guidSchema,
@@ -292,6 +318,42 @@ export async function approveStockRequest(
     body,
   });
   return stockRequestDtoSchema.parse(data);
+}
+
+export async function getStockRequestActivity(
+  workspace: PosWorkspaceScope,
+  stockRequestId: string,
+  signal?: AbortSignal,
+): Promise<StockRequestActivityEventDto[]> {
+  const data = await posRequest<unknown>({
+    method: "GET",
+    path: `${PATH}/${stockRequestId}/activity`,
+    workspace,
+    signal,
+  });
+  return z.array(stockRequestActivityEventDtoSchema).parse(data);
+}
+
+export async function prepareStockRequestTransfer(
+  workspace: PosWorkspaceScope,
+  stockRequestId: string,
+  signal?: AbortSignal,
+) {
+  const body = {};
+  const headers = await buildPosMutationIdempotencyHeaders(
+    crypto.randomUUID(),
+    JSON.stringify(body),
+    OFFLINE_OPERATION_TYPES.StockRequestPrepareTransfer,
+  );
+  const data = await posRequest<unknown>({
+    method: "POST",
+    path: `${PATH}/${stockRequestId}/prepare-transfer`,
+    workspace,
+    signal,
+    headers,
+    body,
+  });
+  return inventoryTransferDtoSchema.parse(data);
 }
 
 export async function prepareStockRequest(

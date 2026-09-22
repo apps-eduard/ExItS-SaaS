@@ -224,6 +224,24 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasConnectedPurchaseFulfillmentReconciliationAsync(
+        PosOrganizationId organizationId,
+        Guid receivingIssueLineId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
+    /// <summary>
+    /// Most recent <see cref="StockMovementType.ConnectedPurchaseFulfillment"/> SourceId for the product
+    /// among <paramref name="candidateSourceIds"/> (wave attribution). Null when none match.
+    /// </summary>
+    Task<Guid?> FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<Guid> candidateSourceIds,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<Guid?>(null);
+
     /// <summary>
     /// Latest non-null acquisition <see cref="StockMovement.UnitCost"/> for the product
     /// (opening / purchase receipt / direct purchase / production output), newest first. Null when unknown.
@@ -248,6 +266,13 @@ public interface IInventoryRepository
         CatalogProductId productId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasSaleReturnWriteOffAsync(
+        PosOrganizationId organizationId,
+        SaleReturnId saleReturnId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(false);
+
     Task<bool> HasInventoryTransferMovementAsync(
         PosOrganizationId organizationId,
         InventoryTransferId transferId,
@@ -255,6 +280,25 @@ public interface IInventoryRepository
         StockMovementType movementType,
         InventoryLotId? lotId = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks stock movement uniqueness for a specific inventory-transfer source id
+    /// (transfer id for TransferOut; receipt id for TransferIn waves).
+    /// </summary>
+    Task<bool> HasInventoryTransferSourceMovementAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        InventoryLotId? lotId = null,
+        CancellationToken cancellationToken = default) =>
+        HasInventoryTransferMovementAsync(
+            organizationId,
+            InventoryTransferId.From(sourceId),
+            productId,
+            movementType,
+            lotId,
+            cancellationToken);
 
     Task<(DateTimeOffset? LatestAt, int Count)> GetMovementSummaryAsync(
         PosOrganizationId organizationId,

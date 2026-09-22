@@ -69,6 +69,32 @@ public sealed class PurchaseOrderReceiveDiscrepancyTests
     }
 
     [Fact]
+    public void Other_qty_must_equal_remaining_discrepancy_with_reason()
+    {
+        PurchaseOrderReceiveDiscrepancy.EnsureValid(
+            5m,
+            new PurchaseOrderReceiveLineDraft(
+                CatalogProductId.New(),
+                ReceiveQty: 3m,
+                OtherQty: 2m,
+                OtherReasonCode: ReceiveDiscrepancyOtherReason.WrongItem,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.WrongItem),
+            UnitOfMeasure.Kilogram,
+            SellingMode.ByWeight);
+
+        Assert.Throws<DomainException>(() =>
+            PurchaseOrderReceiveDiscrepancy.EnsureValid(
+                5m,
+                new PurchaseOrderReceiveLineDraft(
+                    CatalogProductId.New(),
+                    ReceiveQty: 3m,
+                    OtherQty: 2m,
+                    DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Other),
+                UnitOfMeasure.Kilogram,
+                SellingMode.ByWeight));
+    }
+
+    [Fact]
     public void Remaining_action_is_derived_from_persisted_receipt_quantities()
     {
         Assert.Equal(

@@ -1,7 +1,10 @@
-import { Building2 } from "lucide-react";
+import { ArrowLeft, Building2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
 import {
@@ -13,6 +16,7 @@ import { PosApiError } from "@/api/pos/pos-http";
 import {
   getConnectedReceivingReadiness,
   getPurchaseOrder,
+  listGoodsReceiptsForPurchaseOrder,
 } from "@/api/pos/pos-purchase-orders-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,12 +26,21 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
 import { StatusChip } from "@/components/exits/StatusChip";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { ProductBusinessUsageSelector } from "@/features/catalog/ProductBusinessUsageSelector";
 import {
   businessUsageHintKey,
   type ProductBusinessUsage,
 } from "@/features/catalog/product-business-usage";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
+import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
+import { purchaseOrderListStatusTone } from "@/features/purchasing/PurchaseOrdersListPage";
 import { useI18n } from "@/i18n/I18nProvider";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
+import { formatPeso } from "@/lib/format-money";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 export function PrepareConnectedProductsPage() {
@@ -48,6 +61,8 @@ export function PrepareConnectedProductsPage() {
   const [sellingPriceText, setSellingPriceText] = useState("");
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [pickerSearch, setPickerSearch] = useState("");
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   const workspace = useMemo(
     () =>
@@ -66,6 +81,13 @@ export function PrepareConnectedProductsPage() {
     queryFn: ({ signal }) => getPurchaseOrder(workspace!, purchaseOrderId!, signal),
   });
 
+  const receiptsQuery = useQuery({
+    queryKey: ["purchase-order-receipts", workspace?.organizationId, purchaseOrderId],
+    enabled: Boolean(workspace) && Boolean(purchaseOrderId),
+    queryFn: ({ signal }) =>
+      listGoodsReceiptsForPurchaseOrder(workspace!, purchaseOrderId!, signal),
+  });
+
   const readinessQuery = useQuery({
     queryKey: ["po-receiving-readiness", workspace?.organizationId, purchaseOrderId],
     enabled: Boolean(workspace) && Boolean(purchaseOrderId),
@@ -73,6 +95,16 @@ export function PrepareConnectedProductsPage() {
   });
 
   const relationshipId = readinessQuery.data?.relationshipId ?? null;
+  const po = poQuery.data;
+  const receipts = receiptsQuery.data ?? [];
+  const actors = useActorDirectory(workspace?.organizationId, [
+    po?.orderedBy,
+    ...receipts.flatMap((r) => [r.receivedBy, r.voidedByUserId]),
+  ]);
+  const hasTimeline = useMemo(
+    () => (po ? buildPurchaseOrderActivityEvents({ po, receipts }).length > 0 : false),
+    [po, receipts],
+  );
 
   const catalogQuery = useQuery({
     queryKey: ["connected-catalog-exposures", relationshipId, workspace?.organizationId],
@@ -117,6 +149,124 @@ export function PrepareConnectedProductsPage() {
 
   const readiness = readinessQuery.data;
   const needs = readiness.items.filter((item) => item.needsSetup);
+  const order = poQuery.data;
+  const statusLabel = order.displayStatus?.trim() || order.status;
+  const statusTone = purchaseOrderListStatusTone(order);
+
+  function runPrepareOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    const poPart = sanitizeCsvFilenamePart(order.poNumber || "purchase-order");
+    const rows = order.lines.map((line) => [
+      line.nameSnapshot ?? "",
+      line.skuSnapshot ?? "",
+      line.orderedQty,
+      line.uomSnapshot ?? "",
+      line.unitPurchaseCost,
+      line.lineTotal,
+    ]);
+
+    if (action === "csv") {
+      const text = buildCsvWithMetadata(
+        [
+          ["Purchase order", order.poNumber ?? ""],
+          ["Status", statusLabel],
+          ["Exported at", new Date().toISOString()],
+        ],
+        {
+          headers: ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+          rows,
+        },
+      );
+      downloadCsvFile(`PO-${poPart}.csv`, text);
+      return;
+    }
+
+    if (action === "xlsx") {
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet([
+        ["Purchase order", order.poNumber ?? ""],
+        ["Status", statusLabel],
+        [],
+        ["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"],
+        ...rows,
+      ]);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
+      const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+      downloadBlob(
+        `PO-${poPart}.xlsx`,
+        buffer,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      return;
+    }
+
+    if (action === "pdf") {
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      doc.setFontSize(14);
+      doc.text(order.poNumber ?? t("purchasing.prepareProductsTitle"), 40, 40);
+      doc.setFontSize(10);
+      doc.text(`${statusLabel} · ${new Date().toLocaleString()}`, 40, 58);
+      autoTable(doc, {
+        startY: 72,
+        head: [["Product", "SKU", "Ordered", "Unit", "Unit cost", "Line total"]],
+        body: rows.map((row) =>
+          row.map((cell) => (typeof cell === "number" ? String(cell) : String(cell))),
+        ),
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [55, 75, 60] },
+      });
+      downloadBlob(
+        `PO-${poPart}.pdf`,
+        new Blob([new Uint8Array(doc.output("arraybuffer") as ArrayBuffer)], {
+          type: "application/pdf",
+        }),
+        "application/pdf",
+      );
+      return;
+    }
+
+    const previous = document.body.classList.contains("exits-printing");
+    document.body.classList.add("exits-printing");
+    const cleanup = () => {
+      if (!previous) {
+        document.body.classList.remove("exits-printing");
+      }
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    window.setTimeout(cleanup, 1000);
+  }
+
+  const preparePrintDocument = (
+    <div className="incoming-order-print-root" data-testid="po-prepare-print-root">
+      <h1>{order.poNumber ?? t("purchasing.prepareProductsTitle")}</h1>
+      <p>{statusLabel}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Ordered</th>
+            <th>Unit</th>
+            <th>Unit cost</th>
+            <th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {order.lines.map((line) => (
+            <tr key={line.lineId ?? line.productId}>
+              <td>{line.nameSnapshot}</td>
+              <td>{line.skuSnapshot || "—"}</td>
+              <td>{line.orderedQty}</td>
+              <td>{line.uomSnapshot || "—"}</td>
+              <td>{formatPeso(line.unitPurchaseCost)}</td>
+              <td>{formatPeso(line.lineTotal)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   async function refresh() {
     await queryClient.invalidateQueries({
@@ -228,7 +378,25 @@ export function PrepareConnectedProductsPage() {
           String(readiness.needsSetupCount),
         )}
         backTo={`/purchasing/${purchaseOrderId}`}
+        backLabel={t("purchasing.backDetail")}
+        actions={
+          <PoProcessHeaderActions
+            statusLabel={statusLabel}
+            statusTone={statusTone}
+            timelineEnabled={hasTimeline}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => runPrepareOutput("print")}
+            onCsv={() => runPrepareOutput("csv")}
+            onXlsx={() => runPrepareOutput("xlsx")}
+            onPdf={() => runPrepareOutput("pdf")}
+          />
+        }
       />
+
+      <div className="exits-bizdoc-print-host" aria-hidden>
+        {preparePrintDocument}
+      </div>
       {error ? (
         <ErrorState title={t("error.title")} detail={error} />
       ) : null}
@@ -389,25 +557,60 @@ export function PrepareConnectedProductsPage() {
         </Card>
       ) : null}
 
-      <div className="sticky bottom-0 z-10 border-t border-border bg-background p-3">
-        {readiness.canReceive ? (
+      <div className="receive-stock-actions sticky bottom-0 z-10">
+        <div className="receive-stock-actions__primary">
           <Button
             type="button"
-            className="w-full"
-            data-testid="prepare-continue-receive"
-            onClick={() => navigate(`/purchasing/${purchaseOrderId}/receive`)}
+            intent="primary"
+            appearance="ghost"
+            className="font-semibold"
+            onClick={() => navigate(`/purchasing/${purchaseOrderId}`)}
+            aria-label={t("purchasing.backDetail")}
+            data-testid="prepare-footer-back"
           >
-            {t("purchasing.continueToReceiving")}
+            <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+            {t("purchasing.backDetail")}
           </Button>
-        ) : (
-          <p className="m-0 text-center text-[length:var(--exits-text-sm)] text-muted">
-            {t("purchasing.prepareFinishSetup")}
-          </p>
-        )}
-        <div className="mt-2 text-center">
-          <Link to={`/purchasing/${purchaseOrderId}`}>{t("purchasing.backToOrder")}</Link>
+          {readiness.canReceive ? (
+            <Button
+              type="button"
+              data-testid="prepare-continue-receive"
+              onClick={() => navigate(`/purchasing/${purchaseOrderId}/receive`)}
+            >
+              {t("purchasing.continueToReceiving")}
+            </Button>
+          ) : (
+            <p className="m-0 text-center text-[length:var(--exits-text-sm)] text-muted">
+              {t("purchasing.prepareFinishSetup")}
+            </p>
+          )}
         </div>
       </div>
+
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        po={order}
+        receipts={receipts}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+        receiptsLoading={receiptsQuery.isLoading}
+      />
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={order.poNumber ?? t("purchasing.prepareProductsTitle")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          showPdf={false}
+          testId="po-prepare-document-preview"
+        >
+          {preparePrintDocument}
+        </BusinessDocumentPreview>
+      ) : null}
     </div>
   );
 }

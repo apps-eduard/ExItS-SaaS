@@ -212,6 +212,8 @@ internal static class InventoryEndpoints
         string? stockStatus,
         string? monitoringMode,
         Guid? categoryId,
+        Guid[]? categoryIds,
+        Guid[]? brandIds,
         int? page,
         int? pageSize,
         InventoryQueryService queries,
@@ -230,6 +232,22 @@ internal static class InventoryEndpoints
             return branchResolved.Problem!;
         }
 
+        IReadOnlyList<Guid>? resolvedCategoryIds = null;
+        if (categoryIds is { Length: > 0 })
+        {
+            resolvedCategoryIds = categoryIds.Distinct().ToArray();
+        }
+        else if (categoryId is Guid single)
+        {
+            resolvedCategoryIds = new[] { single };
+        }
+
+        IReadOnlyList<Guid>? resolvedBrandIds = null;
+        if (brandIds is { Length: > 0 })
+        {
+            resolvedBrandIds = brandIds.Distinct().ToArray();
+        }
+
         var filter = new InventoryAccountFilter(
             search,
             tracked,
@@ -237,7 +255,9 @@ internal static class InventoryEndpoints
             ProductStatus: productStatus,
             StockStatus: stockStatus,
             MonitoringMode: monitoringMode,
-            CategoryId: categoryId);
+            CategoryId: categoryId,
+            CategoryIds: resolvedCategoryIds,
+            BrandIds: resolvedBrandIds);
         var result = await queries.ListAsync(branchResolved.Context!, filter, page, pageSize, ct).ConfigureAwait(false);
         return Results.Ok(result);
     }

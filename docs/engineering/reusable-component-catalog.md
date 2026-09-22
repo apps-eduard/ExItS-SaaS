@@ -74,6 +74,7 @@ Phase labels:
 | StatusBadge | MVP foundation | Semantic tones (not color-only) | Text + color | Status labels | Yes |
 | StatCard | Basic Store | KPI display | Yes | Yes | Yes |
 | MoneyDisplay | Utang MVP | PHP formatting | Yes | Culture | Yes |
+| QuantityStepper | MVP foundation | Default form group + cart capsule **auto** (adopts Control Shape soft/standard/pill) + explicit standard/soft/pill + **middle edit** (`editOnClick`) | ± labels, live qty, middle tap → input | Yes | Yes |
 | DateDisplay | MVP foundation | Culture-aware | Yes | Yes | Yes |
 | EmptyState | MVP foundation | Illustration optional | Yes | Yes | Yes |
 | LoadingState | MVP foundation | Spinner/skeleton | Busy announcement | Yes | Yes |

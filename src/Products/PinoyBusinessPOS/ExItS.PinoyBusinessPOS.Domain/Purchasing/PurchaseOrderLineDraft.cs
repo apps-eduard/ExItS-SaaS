@@ -45,8 +45,11 @@ public sealed record PurchaseOrderReceiveLineDraft(
     SellingMode SellingMode = SellingMode.PerItem,
     decimal DamagedQty = 0m,
     decimal RejectedQty = 0m,
+    decimal OtherQty = 0m,
     decimal ShortClosedQty = 0m,
     ConnectedPoReceivingDiscrepancyKind DiscrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
     string? DiscrepancyNote = null,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
     DateOnly? ExpiryDate = null,
     string? LotNumber = null);

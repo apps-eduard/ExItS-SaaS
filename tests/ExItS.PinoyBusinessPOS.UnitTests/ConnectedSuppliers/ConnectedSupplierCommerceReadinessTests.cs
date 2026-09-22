@@ -97,10 +97,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
             ConnectedSupplierCommerceReadiness.StatusNotApplicable,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
         Assert.Equal(
-            [
-                ConnectedSupplierCommerceReadiness.FulfillmentPickup,
-                ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
-            ],
+            [ConnectedSupplierCommerceReadiness.FulfillmentPickup],
             result.SupportedFulfillmentMethods);
     }
 
@@ -155,7 +152,7 @@ public sealed class ConnectedSupplierCommerceReadinessTests
     }
 
     [Fact]
-    public void Delivery_only_branch_ready_without_org_offer_completes_fulfillment_method()
+    public void Delivery_only_branch_ready_without_org_offer_does_not_list_delivery()
     {
         // Branch Delivery ON+ready; org Offer Delivery OFF; Pickup OFF.
         var result = ConnectedSupplierCommerceReadiness.Evaluate(
@@ -172,15 +169,14 @@ public sealed class ConnectedSupplierCommerceReadinessTests
                 HasSharedCatalog: true,
                 HasResponsibleContact: true));
 
-        Assert.True(result.IsReady);
+        Assert.False(result.IsReady);
+        Assert.Empty(result.SupportedFulfillmentMethods);
         Assert.Equal(
-            ConnectedSupplierCommerceReadiness.StatusComplete,
+            ConnectedSupplierCommerceReadiness.StatusMissing,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod).Status);
-        Assert.Equal([ConnectedSupplierCommerceReadiness.FulfillmentDelivery], result.SupportedFulfillmentMethods);
         Assert.Equal(
             ConnectedSupplierCommerceReadiness.StatusNotApplicable,
             result.Requirements.Single(r => r.Code == ConnectedSupplierCommerceReadiness.DeliveryConfig).Status);
-        Assert.Empty(ConnectedSupplierCommerceReadiness.MapBuyerSafeBlockerCategories(result));
     }
 
     [Fact]
@@ -442,6 +438,9 @@ public sealed class ConnectedSupplierCommerceReadinessTests
     [InlineData(CatalogSharingMode.AllEligible, 0, 0, 0, false)]
     [InlineData(CatalogSharingMode.AllEligible, 5, 0, 5, false)]
     [InlineData(CatalogSharingMode.AllEligible, 5, 0, 1, true)]
+    [InlineData(CatalogSharingMode.AllEligible, 9, 0, 0, true)]
+    [InlineData(CatalogSharingMode.AllEligible, 9, 0, 9, false)]
+    [InlineData(CatalogSharingMode.AllEligible, 1, 0, 0, true)]
     public void Shared_catalog_respects_sharing_mode(
         CatalogSharingMode mode,
         int eligible,
@@ -452,6 +451,20 @@ public sealed class ConnectedSupplierCommerceReadinessTests
         Assert.Equal(
             expected,
             ConnectedSupplierCommerceReadiness.HasSharedCatalog(mode, eligible, explicitShared, excluded));
+    }
+
+    [Fact]
+    public void Catalog_readiness_flips_false_then_true_when_eligible_exclusions_clear()
+    {
+        // Stop sharing all eligible → CatalogReady false
+        Assert.False(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 9));
+        // Re-share clears eligible exclusions (ineligible exclusion rows must not be counted)
+        Assert.True(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 0));
+        // Single valid share restores readiness
+        Assert.True(ConnectedSupplierCommerceReadiness.HasSharedCatalog(
+            CatalogSharingMode.AllEligible, 9, 0, 8));
     }
 
     [Fact]
@@ -467,5 +480,101 @@ public sealed class ConnectedSupplierCommerceReadinessTests
             null, null, null, RelationshipContactSource.OrganizationMember, Guid.NewGuid()));
         Assert.False(ConnectedSupplierCommerceReadiness.HasResponsibleContact(
             null, null, null, RelationshipContactSource.Custom, null));
+    }
+
+    [Fact]
+    public void Buyer_options_both_ready_when_org_on_branch_ready_inherit()
+    {
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: true,
+            branchPickupEnabled: true,
+            branchPickupReady: true,
+            branchDeliveryEnabled: true,
+            branchDeliveryReady: true,
+            customerOverride: CustomerDeliveryOverride.Inherit);
+
+        Assert.True(options.PickupSelectable);
+        Assert.True(options.DeliverySelectable);
+        Assert.Null(options.DeliveryUnavailableReason);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentPickup, ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
+            options.SelectableMethods);
+    }
+
+    [Fact]
+    public void Buyer_options_org_offer_off_keeps_branch_ready_with_org_off_reason()
+    {
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: false,
+            branchPickupEnabled: true,
+            branchPickupReady: true,
+            branchDeliveryEnabled: true,
+            branchDeliveryReady: true,
+            customerOverride: CustomerDeliveryOverride.Inherit);
+
+        Assert.True(options.PickupSelectable);
+        Assert.False(options.DeliverySelectable);
+        Assert.True(options.BranchDeliveryReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableOrgOfferOff,
+            options.DeliveryUnavailableReason);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentPickup],
+            options.SelectableMethods);
+    }
+
+    [Fact]
+    public void Buyer_options_relationship_block_does_not_misrepresent_supplier_capability()
+    {
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: true,
+            branchPickupEnabled: true,
+            branchPickupReady: true,
+            branchDeliveryEnabled: true,
+            branchDeliveryReady: true,
+            customerOverride: CustomerDeliveryOverride.Block);
+
+        Assert.True(options.BranchDeliveryReady);
+        Assert.True(options.RelationshipDeliveryBlocked);
+        Assert.False(options.DeliverySelectable);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableRelationshipBlocked,
+            options.DeliveryUnavailableReason);
+    }
+
+    [Fact]
+    public void Buyer_options_pickup_only_when_branch_delivery_not_ready()
+    {
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: true,
+            branchPickupEnabled: true,
+            branchPickupReady: true,
+            branchDeliveryEnabled: false,
+            branchDeliveryReady: false,
+            customerOverride: CustomerDeliveryOverride.Inherit);
+
+        Assert.True(options.PickupSelectable);
+        Assert.False(options.DeliverySelectable);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableBranchNotReady,
+            options.DeliveryUnavailableReason);
+    }
+
+    [Fact]
+    public void Buyer_options_delivery_only_when_pickup_not_ready()
+    {
+        var options = ConnectedSupplierCommerceReadiness.ResolveBuyerFulfillmentOptions(
+            orgOfferDelivery: true,
+            branchPickupEnabled: false,
+            branchPickupReady: false,
+            branchDeliveryEnabled: true,
+            branchDeliveryReady: true,
+            customerOverride: CustomerDeliveryOverride.Inherit);
+
+        Assert.False(options.PickupSelectable);
+        Assert.True(options.DeliverySelectable);
+        Assert.Equal(
+            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
+            options.SelectableMethods);
     }
 }

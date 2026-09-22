@@ -15,6 +15,7 @@ export function BottomSheet({
   testId = "bottom-sheet",
   closeLabel = "Close",
   panelClassName,
+  backdropClassName,
   /** Mobile bottom sheet; from md+ optionally center as a compact dialog. */
   presentation = "sheet",
 }: {
@@ -27,6 +28,8 @@ export function BottomSheet({
   closeLabel?: string;
   /** Extra classes for the dialog panel (e.g. desktop max-width). */
   panelClassName?: string;
+  /** Extra classes for the dimmed backdrop (e.g. nested stack z-index). */
+  backdropClassName?: string;
   presentation?: BottomSheetPresentation;
 }) {
   useBodyScrollLock(open);
@@ -55,7 +58,7 @@ export function BottomSheet({
   return createPortal(
     <>
       <div
-        className="fixed inset-0 z-[60] bg-black/40"
+        className={cn("fixed inset-0 z-[60] bg-black/40", backdropClassName)}
         role="presentation"
         onClick={onClose}
         data-testid={`${testId}-backdrop`}
@@ -70,8 +73,8 @@ export function BottomSheet({
             ? [
                 // Mobile: bottom sheet
                 "inset-x-0 bottom-0 max-h-[75dvh] rounded-t-[var(--exits-radius-lg)] shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
-                // md+: centered compact dialog
-                "md:inset-auto md:left-1/2 md:top-1/2 md:w-[min(100%-2rem,40rem)] md:max-h-[75vh] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[var(--exits-radius-lg)] md:shadow-[var(--exits-shadow-lg)]",
+                // md+: centered compact dialog — match FormDrawer md width
+                "md:inset-auto md:left-1/2 md:top-1/2 md:w-[min(100%-2rem,30rem)] md:max-h-[75vh] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-[var(--exits-radius-lg)] md:shadow-[var(--exits-shadow-lg)]",
               ]
             : "inset-x-0 bottom-0 max-h-[75dvh] rounded-t-[var(--exits-radius-lg)] shadow-[0_-8px_32px_rgba(0,0,0,0.12)]",
           panelClassName,
@@ -81,7 +84,7 @@ export function BottomSheet({
         aria-label={title}
       >
         {title ? (
-          <div className="bottom-sheet__header flex shrink-0 items-center justify-between gap-3">
+          <div className="bottom-sheet__header flex shrink-0 items-center justify-between gap-3 border-b border-border pb-3">
             <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">{title}</h2>
             <Button type="button" variant="ghost" className="shrink-0" onClick={onClose}>
               {closeLabel}
@@ -113,6 +116,7 @@ export function ConfirmationDialog({
   confirmDisabled = false,
   confirmPendingLabel,
   testId = "confirmation-dialog",
+  className,
 }: {
   open: boolean;
   title: string;
@@ -123,8 +127,8 @@ export function ConfirmationDialog({
   onCancel: () => void;
   /** Use danger for destructive confirms (void, cancel transfer, etc.). */
   confirmTone?: "default" | "danger";
-  /** Match page danger-outline actions (e.g. Cancel transfer). */
-  cancelTone?: "ghost" | "danger-outline";
+  /** Match page danger actions (ghost / outline / soft solid). */
+  cancelTone?: "ghost" | "danger-outline" | "danger-soft";
   confirmIcon?: ReactNode;
   cancelIcon?: ReactNode;
   /** When true, actions are disabled and backdrop dismiss is ignored. */
@@ -133,6 +137,8 @@ export function ConfirmationDialog({
   /** Shown on the confirm button while `busy` (falls back to confirmLabel). */
   confirmPendingLabel?: string;
   testId?: string;
+  /** Extra classes on the portal root (e.g. nested stack z-index). */
+  className?: string;
 }) {
   useBodyScrollLock(open);
 
@@ -146,7 +152,10 @@ export function ConfirmationDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center"
+      className={cn(
+        "fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-4 sm:items-center",
+        className,
+      )}
       role="presentation"
       onClick={() => {
         if (!busy) {
@@ -177,11 +186,13 @@ export function ConfirmationDialog({
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Button
             type="button"
-            variant={cancelTone === "danger-outline" ? "outline" : "ghost"}
-            className={
-              cancelTone === "danger-outline"
-                ? "border-destructive/40 text-destructive hover:border-destructive/55 hover:bg-[var(--exits-danger-soft)]"
-                : undefined
+            intent={cancelTone === "ghost" ? "neutral" : "danger"}
+            appearance={
+              cancelTone === "danger-soft"
+                ? "solid"
+                : cancelTone === "danger-outline"
+                  ? "outline"
+                  : "ghost"
             }
             disabled={busy}
             onClick={(event) => {
@@ -197,7 +208,8 @@ export function ConfirmationDialog({
           </Button>
           <Button
             type="button"
-            variant={confirmTone === "danger" ? "destructive" : "default"}
+            intent={confirmTone === "danger" ? "danger" : "primary"}
+            appearance="solid"
             disabled={confirmBlocked}
             onClick={(event) => {
               event.stopPropagation();

@@ -99,9 +99,93 @@ export const connectedBuyerProductShareSchema = z.object({
   categoryNameSnapshot: z.string().nullable().optional(),
   defaultPoPrice: z.number().nullable().optional(),
   isBlockedFromConnectedBuyers: z.boolean().optional(),
+  /** When true, product inventory tracking is enabled (required to share). */
+  isInventoryTracked: z.boolean().optional().default(false),
+  isEligible: z.boolean().optional().default(false),
+  isEffectivelyShared: z.boolean().optional().default(false),
+  isExplicitlyExcluded: z.boolean().optional().default(false),
+  sharingStatus: z.string().optional().default("NotShared"),
+  hasValidPoPrice: z.boolean().optional().default(false),
+  canShare: z.boolean().optional().default(false),
+  canStopSharing: z.boolean().optional().default(false),
+  resolvedPoPrice: z.number().nullable().optional(),
   /** When present, BranchLocal products are not exposable to connected buyers. */
   scope: z.string().nullable().optional(),
 });
+
+function asOptionalNumber(value: unknown): number | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  if (value === undefined) {
+    return undefined;
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeBuyerProductShare(raw: Record<string, unknown>) {
+  const isInventoryTracked = Boolean(
+    raw.isInventoryTracked ?? raw.IsInventoryTracked ?? false,
+  );
+  const isEligible = Boolean(raw.isEligible ?? raw.IsEligible ?? false);
+  const isEffectivelyShared = Boolean(
+    raw.isEffectivelyShared ?? raw.IsEffectivelyShared ?? raw.isShared ?? raw.IsShared ?? false,
+  );
+  const isExplicitlyExcluded = Boolean(
+    raw.isExplicitlyExcluded ?? raw.IsExplicitlyExcluded ?? false,
+  );
+  const sharingStatus = String(
+    raw.sharingStatus ?? raw.SharingStatus ?? (isEffectivelyShared ? "Shared" : "NotShared"),
+  );
+  const sellingPrice = asOptionalNumber(raw.sellingPrice ?? raw.SellingPrice) ?? null;
+  const defaultPoPrice = asOptionalNumber(raw.defaultPoPrice ?? raw.DefaultPoPrice) ?? null;
+  const resolvedFromApi = asOptionalNumber(raw.resolvedPoPrice ?? raw.ResolvedPoPrice);
+  const resolvedPoPrice =
+    resolvedFromApi != null && resolvedFromApi > 0
+      ? resolvedFromApi
+      : defaultPoPrice != null && defaultPoPrice > 0
+        ? defaultPoPrice
+        : sellingPrice != null && sellingPrice > 0
+          ? sellingPrice
+          : null;
+  const apiHasValid = raw.hasValidPoPrice ?? raw.HasValidPoPrice;
+  const hasValidPoPrice =
+    (resolvedPoPrice != null && resolvedPoPrice > 0) || apiHasValid === true;
+  const apiCanStop = raw.canStopSharing ?? raw.CanStopSharing;
+  // Shared rows must always be stoppable — never leave canStopSharing false when Shared.
+  const canStopSharing =
+    apiCanStop === true || isEffectivelyShared || sharingStatus === "Shared";
+  const apiCanShare = raw.canShare ?? raw.CanShare;
+  const canShare =
+    !canStopSharing
+    && (
+      apiCanShare === true
+      || (
+        isEligible
+        && hasValidPoPrice
+        && !isEffectivelyShared
+        && sharingStatus !== "Shared"
+        && apiCanShare !== false
+      )
+    );
+  return {
+    ...raw,
+    sellingPrice,
+    defaultPoPrice,
+    resolvedPoPrice,
+    isInventoryTracked,
+    isEligible,
+    isEffectivelyShared,
+    isExplicitlyExcluded,
+    sharingStatus,
+    hasValidPoPrice,
+    canShare,
+    canStopSharing,
+    isShared: isEffectivelyShared,
+    scope: (raw.scope ?? raw.Scope ?? null) as string | null,
+  };
+}
 
 export const buyerProductShareCategoryFacetSchema = z.object({
   categoryName: z.string().nullable().optional(),
@@ -129,6 +213,8 @@ export const missingDefaultPoProductSchema = z.object({
 export const bulkBuyerProductShareMutationResultSchema = z.object({
   affectedCount: z.number(),
   needsDefaultPo: z.array(missingDefaultPoProductSchema).nullable().optional(),
+  alreadySharedCount: z.number().optional().default(0),
+  alreadyNotSharedCount: z.number().optional().default(0),
 });
 
 export const buyerPricePreviewItemSchema = z.object({
@@ -661,7 +747,21 @@ export async function queryBuyerProductShares(
       pageSize: options.pageSize ?? 25,
     }),
   });
-  return buyerProductShareQueryResultSchema.parse(raw);
+  const payload = raw as Record<string, unknown>;
+  const itemsRaw = (payload.items ?? payload.Items ?? []) as Record<string, unknown>[];
+  return buyerProductShareQueryResultSchema.parse({
+    ...payload,
+    items: itemsRaw.map(normalizeBuyerProductShare),
+    matchingCount: payload.matchingCount ?? payload.MatchingCount,
+    eligibleCount: payload.eligibleCount ?? payload.EligibleCount,
+    sharedCount: payload.sharedCount ?? payload.SharedCount,
+    page: payload.page ?? payload.Page,
+    pageSize: payload.pageSize ?? payload.PageSize,
+    categories: payload.categories ?? payload.Categories,
+    catalogSharingMode: payload.catalogSharingMode ?? payload.CatalogSharingMode,
+    customerDiscountPercent:
+      payload.customerDiscountPercent ?? payload.CustomerDiscountPercent ?? null,
+  });
 }
 
 export async function listBuyerProductShares(
@@ -675,7 +775,8 @@ export async function listBuyerProductShares(
     signal,
     path: relPath(relationshipId, "/buyer-product-shares"),
   });
-  return z.array(connectedBuyerProductShareSchema).parse(raw);
+  const itemsRaw = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[];
+  return z.array(connectedBuyerProductShareSchema).parse(itemsRaw.map(normalizeBuyerProductShare));
 }
 
 export async function setBuyerProductShares(
@@ -691,7 +792,8 @@ export async function setBuyerProductShares(
     path: relPath(relationshipId, "/buyer-product-shares"),
     body: { products },
   });
-  return z.array(connectedBuyerProductShareSchema).parse(raw);
+  const itemsRaw = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[];
+  return z.array(connectedBuyerProductShareSchema).parse(itemsRaw.map(normalizeBuyerProductShare));
 }
 
 export async function confirmBuyerProductSharing(
@@ -737,7 +839,14 @@ export async function bulkMutateBuyerProductShares(
       establishDefaultPoPrices: input.establishDefaultPoPrices ?? null,
     },
   });
-  return bulkBuyerProductShareMutationResultSchema.parse(raw);
+  const payload = raw as Record<string, unknown>;
+  return bulkBuyerProductShareMutationResultSchema.parse({
+    ...payload,
+    affectedCount: payload.affectedCount ?? payload.AffectedCount,
+    needsDefaultPo: payload.needsDefaultPo ?? payload.NeedsDefaultPo ?? null,
+    alreadySharedCount: payload.alreadySharedCount ?? payload.AlreadySharedCount ?? 0,
+    alreadyNotSharedCount: payload.alreadyNotSharedCount ?? payload.AlreadyNotSharedCount ?? 0,
+  });
 }
 
 export async function previewBuyerProductPricing(
@@ -848,6 +957,27 @@ export const connectedSupplierCommerceReadinessSchema = z.object({
   requirements: z.array(commerceReadinessRequirementSchema).nullable().optional(),
   /** Buyer-safe categories only; empty when ready. Never internal checklist details. */
   blockerCategories: z.array(z.string()).nullable().optional().default([]),
+  allowPayBeforeFulfillment: z.boolean().optional().default(true),
+  allowPayOnDeliveryOrReceipt: z.boolean().optional().default(true),
+  allowSupplierCredit: z.boolean().optional().default(false),
+  defaultPaymentTiming: z.string().optional().default("PayBeforeFulfillment"),
+  /** Organization Offer Delivery master switch. */
+  orgOfferDelivery: z.boolean().optional().default(false),
+  /** Selected supplier branch Pickup enabled+ready. */
+  branchPickupReady: z.boolean().optional().default(false),
+  /** Selected supplier branch Delivery enabled+ready (config), independent of Offer Delivery. */
+  branchDeliveryReady: z.boolean().optional().default(false),
+  /** Relationship CustomerDeliveryOverride = Block. */
+  relationshipDeliveryBlocked: z.boolean().optional().default(false),
+  /**
+   * Buyer-safe Delivery unavailability reason when Delivery is not selectable:
+   * OrgOfferOff | BranchNotReady | RelationshipBlocked.
+   */
+  deliveryUnavailableReason: z.string().nullable().optional(),
+  /** Buyer-safe Pickup unavailability reason: BranchNotReady when not selectable. */
+  pickupUnavailableReason: z.string().nullable().optional(),
+  /** Current buyer-orderable shared catalog product count. */
+  buyerOrderableCount: z.number().optional().default(0),
 });
 
 export type ConnectedSupplierCommerceReadiness = z.infer<
@@ -869,7 +999,13 @@ export async function getBuyerConnectedSupplierCommerceReadiness(
     signal,
     path: relPath(relationshipId, "/commerce-readiness"),
   });
-  return connectedSupplierCommerceReadinessSchema.parse(raw);
+  return connectedSupplierCommerceReadinessSchema.parse({
+    ...(raw as Record<string, unknown>),
+    buyerOrderableCount:
+      (raw as Record<string, unknown>).buyerOrderableCount
+      ?? (raw as Record<string, unknown>).BuyerOrderableCount
+      ?? 0,
+  });
 }
 
 /** Supplier projection — includes detailed checklist. */
@@ -884,7 +1020,13 @@ export async function getSupplierConnectedSupplierCommerceReadiness(
     signal,
     path: `${PATH}/business-customers/${connectionId}/commerce-readiness`,
   });
-  return connectedSupplierCommerceReadinessSchema.parse(raw);
+  return connectedSupplierCommerceReadinessSchema.parse({
+    ...(raw as Record<string, unknown>),
+    buyerOrderableCount:
+      (raw as Record<string, unknown>).buyerOrderableCount
+      ?? (raw as Record<string, unknown>).BuyerOrderableCount
+      ?? 0,
+  });
 }
 
 export async function autoLinkExactMatches(
@@ -1483,6 +1625,9 @@ export async function updateBusinessCustomerDeliveryAllowance(
 export const organizationFulfillmentSettingsSchema = z.object({
   organizationId: guidSchema,
   offerDelivery: z.boolean(),
+  defaultPickupEnabled: z.boolean().optional().default(false),
+  defaultDeliveryEnabled: z.boolean().optional().default(false),
+  defaultOnlineOrdersEnabled: z.boolean().optional().default(false),
 });
 
 export type OrganizationFulfillmentSettings = z.infer<
@@ -1513,6 +1658,31 @@ export async function updateOrganizationOfferDelivery(
     signal,
     path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
     body: { offerDelivery },
+  });
+  return organizationFulfillmentSettingsSchema.parse(raw);
+}
+
+export async function updateOrganizationBranchFulfillmentDefaults(
+  workspace: PosWorkspaceScope,
+  body: {
+    offerDelivery: boolean;
+    defaultPickupEnabled: boolean;
+    defaultDeliveryEnabled: boolean;
+    defaultOnlineOrdersEnabled: boolean;
+  },
+  signal?: AbortSignal,
+): Promise<OrganizationFulfillmentSettings> {
+  const raw = await posRequest<unknown>({
+    method: "PUT",
+    workspace,
+    signal,
+    path: `${PATH}/organization/fulfillment-settings/offer-delivery`,
+    body: {
+      offerDelivery: body.offerDelivery,
+      defaultPickupEnabled: body.defaultPickupEnabled,
+      defaultDeliveryEnabled: body.defaultDeliveryEnabled,
+      defaultOnlineOrdersEnabled: body.defaultOnlineOrdersEnabled,
+    },
   });
   return organizationFulfillmentSettingsSchema.parse(raw);
 }
@@ -1594,6 +1764,52 @@ export const incomingOrderBuyerReceiptSchema = z.object({
   lines: z.array(incomingOrderBuyerReceiptLineSchema),
 });
 
+export const connectedPoReceivingIssueLineSchema = z.object({
+  receivingIssueLineId: guidSchema,
+  goodsReceiptLineId: guidSchema,
+  purchaseOrderLineId: guidSchema,
+  supplierProductId: guidSchema,
+  buyerProductId: guidSchema.nullable().optional(),
+  nameSnapshot: z.string(),
+  uomSnapshot: z.string(),
+  fulfillmentSourceId: guidSchema,
+  shippedQty: z.number(),
+  goodQty: z.number(),
+  damagedQty: z.number(),
+  missingQty: z.number(),
+  lineKind: z.string(),
+  buyerDiscrepancyKind: z.string(),
+  buyerDiscrepancyNote: z.string().nullable().optional(),
+  missingResolution: z.string().nullable().optional(),
+  damagedResolution: z.string().nullable().optional(),
+  resolutionQty: z.number(),
+  sellerNote: z.string().nullable().optional(),
+  inventoryMovementId: guidSchema.nullable().optional(),
+  returnBatchId: guidSchema.nullable().optional(),
+  resolvedAtUtc: isoDateSchema.nullable().optional(),
+  resolvedByUserId: guidSchema.nullable().optional(),
+  isResolved: z.boolean(),
+  inventoryEffectPreview: z.string(),
+});
+
+export const connectedPoReceivingIssueSchema = z.object({
+  receivingIssueId: guidSchema,
+  connectedPurchaseOrderId: guidSchema,
+  purchaseOrderId: guidSchema,
+  goodsReceiptId: guidSchema,
+  buyerOrganizationId: guidSchema,
+  sellerOrganizationId: guidSchema,
+  fulfillmentSourceId: guidSchema,
+  status: z.string(),
+  createdAtUtc: isoDateSchema,
+  createdByUserId: guidSchema,
+  resolvedAtUtc: isoDateSchema.nullable().optional(),
+  resolvedByUserId: guidSchema.nullable().optional(),
+  sellerNotes: z.string().nullable().optional(),
+  unresolvedLineCount: z.number(),
+  lines: z.array(connectedPoReceivingIssueLineSchema),
+});
+
 export const connectedPurchaseOrderSchema = z.object({
   connectedPurchaseOrderId: guidSchema,
   relationshipId: guidSchema,
@@ -1620,6 +1836,10 @@ export const connectedPurchaseOrderSchema = z.object({
   buyerReceivingStatus: z.string().nullable().optional(),
   paymentTerm: z.string().optional().default("Cash"),
   paymentTermLabel: z.string().optional().default("Cash"),
+  paymentTiming: z.string().optional().default("PayBeforeFulfillment"),
+  submittedPaymentTiming: z.string().nullable().optional(),
+  proposedPaymentTiming: z.string().nullable().optional(),
+  fulfillmentMethod: z.string().nullable().optional(),
   proposedTotalAmount: z.number().optional().default(0),
   confirmedTotalAmount: z.number().optional().default(0),
   changesProposedAtUtc: isoDateSchema.nullable().optional(),
@@ -1638,11 +1858,26 @@ export const connectedPurchaseOrderSchema = z.object({
   refundDueAmount: z.number().optional().default(0),
   amountPaid: z.number().optional().default(0),
   balanceDue: z.number().optional().default(0),
+  /** NotRequired | AwaitingPayment | Settled — commercial settlement gate on the buyer PO. */
+  financialSettlementStatus: z.string().optional().default("NotRequired"),
+  remainingDueAmount: z.number().optional().default(0),
+  sellerSettlementRemarks: z.string().nullable().optional(),
+  financiallySettledAtUtc: isoDateSchema.nullable().optional(),
+  buyerReceiptRemarks: z.string().nullable().optional(),
+  buyerPrepaymentSubmittedAtUtc: isoDateSchema.nullable().optional(),
+  buyerPrepaymentMethod: z.string().nullable().optional(),
+  buyerPrepaymentReference: z.string().nullable().optional(),
+  buyerPrepaymentDetails: z.string().nullable().optional(),
+  receivingIssues: z.array(connectedPoReceivingIssueSchema).nullable().optional(),
+  unresolvedReceivingIssueCount: z.number().optional().default(0),
+  hasPendingReceivingIssueReview: z.boolean().optional().default(false),
 });
 
 export type ConnectedPurchaseOrderLine = z.infer<typeof connectedPurchaseOrderLineSchema>;
 export type IncomingOrderBuyerReceipt = z.infer<typeof incomingOrderBuyerReceiptSchema>;
 export type IncomingOrderBuyerReceiptLine = z.infer<typeof incomingOrderBuyerReceiptLineSchema>;
+export type ConnectedPoReceivingIssue = z.infer<typeof connectedPoReceivingIssueSchema>;
+export type ConnectedPoReceivingIssueLine = z.infer<typeof connectedPoReceivingIssueLineSchema>;
 export type ConnectedPurchaseOrder = z.infer<typeof connectedPurchaseOrderSchema>;
 
 export type IncomingOrderStatusFilter =
@@ -1773,6 +2008,60 @@ export async function closeIncomingOrderRemaining(
   return connectedPurchaseOrderSchema.parse(raw);
 }
 
+export async function confirmIncomingOrderReceiptSettlement(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    settledAmount?: number | null;
+    paymentMethod?: string | null;
+    reference?: string | null;
+    sellerRemarks?: string | null;
+    checkClearingStatus?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/confirm-receipt-settlement`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      settledAmount: input.settledAmount ?? null,
+      paymentMethod: input.paymentMethod ?? null,
+      reference: input.reference ?? null,
+      sellerRemarks: input.sellerRemarks ?? null,
+      checkClearingStatus: input.checkClearingStatus ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function confirmIncomingOrderSettlement(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  input: {
+    settledAmount?: number | null;
+    checkClearingStatus?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPurchaseOrder> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/confirm-settlement`;
+  assertNotInventoryMutationUrl(path);
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      settledAmount: input.settledAmount ?? null,
+      checkClearingStatus: input.checkClearingStatus ?? null,
+    },
+  });
+  return connectedPurchaseOrderSchema.parse(raw);
+}
+
 export async function proposeIncomingOrderChanges(
   workspace: PosWorkspaceScope,
   connectedPurchaseOrderId: string,
@@ -1816,4 +2105,50 @@ export async function withdrawIncomingOrderProposal(
     path,
   });
   return connectedPurchaseOrderSchema.parse(raw);
+}
+
+export async function listIncomingOrderReceivingIssues(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  signal?: AbortSignal,
+): Promise<ConnectedPoReceivingIssue[]> {
+  const raw = await posRequest<unknown>({
+    method: "GET",
+    workspace,
+    signal,
+    path: `${PATH}/incoming-orders/${connectedPurchaseOrderId}/receiving-issues`,
+  });
+  return z.array(connectedPoReceivingIssueSchema).parse(raw);
+}
+
+export type ResolveConnectedPoReceivingIssueLineInput = {
+  receivingIssueLineId: string;
+  missingResolution?: string | null;
+  damagedResolution?: string | null;
+  resolutionQty?: number | null;
+  sellerNote?: string | null;
+};
+
+export async function resolveIncomingOrderReceivingIssue(
+  workspace: PosWorkspaceScope,
+  connectedPurchaseOrderId: string,
+  receivingIssueId: string,
+  input: {
+    lines: ResolveConnectedPoReceivingIssueLineInput[];
+    sellerNotes?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<ConnectedPoReceivingIssue> {
+  const path = `${PATH}/incoming-orders/${connectedPurchaseOrderId}/receiving-issues/${receivingIssueId}/resolve`;
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path,
+    body: {
+      lines: input.lines,
+      sellerNotes: input.sellerNotes ?? null,
+    },
+  });
+  return connectedPoReceivingIssueSchema.parse(raw);
 }

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, CalendarClock, ChevronRight, ClipboardList, Factory, Package, PackageMinus, PackagePlus, Settings2, Trash2, Warehouse } from "lucide-react";
 import { canManageCatalog, canManageInventory, canViewInventory } from "@/access/pos-capabilities";
+import { listCatalogBrands, listCatalogCategories } from "@/api/pos/pos-catalog-client";
 import { listInventory } from "@/api/pos/pos-inventory-client";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -10,12 +11,16 @@ import { ExitsChipBar, type ExitsChipItem } from "@/components/exits/ExitsChipBa
 import { BackgroundRefreshIndicator } from "@/components/exits/loading/BackgroundRefreshIndicator";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
+import { ProductBrandMultiSelect } from "@/components/exits/ProductBrandMultiSelect";
+import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   formatInventoryQty,
+  InventoryPendingReturnBadge,
   InventoryReservedBadge,
   resolveAvailableQuantity,
+  resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
@@ -82,6 +87,8 @@ export function InventoryListPage() {
   const [trackingFilter, setTrackingFilter] = useState<TrackingFilter>(
     lowStockOnly || stockStatusFilter ? "tracked" : "all",
   );
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [brandIds, setBrandIds] = useState<string[]>([]);
   const [reservationsProduct, setReservationsProduct] = useState<{
     productId: string;
     name: string;
@@ -202,6 +209,38 @@ export function InventoryListPage() {
     return items;
   }, [multiBranch, allowView, allowManage, isWarehouse, t]);
 
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog-categories", workspace?.organizationId, "inventory-filter"],
+    enabled: Boolean(workspace),
+    queryFn: ({ signal }) =>
+      listCatalogCategories(workspace!, { status: "Active", pageSize: 200 }, signal),
+  });
+
+  const categoryOptions = useMemo(
+    () =>
+      (categoriesQuery.data?.items ?? []).map((category) => ({
+        categoryId: category.categoryId,
+        name: category.name,
+      })),
+    [categoriesQuery.data?.items],
+  );
+
+  const brandsQuery = useQuery({
+    queryKey: ["catalog-brands", workspace?.organizationId, "inventory-filter"],
+    enabled: Boolean(workspace),
+    queryFn: ({ signal }) =>
+      listCatalogBrands(workspace!, { status: "Active", pageSize: 200 }, signal),
+  });
+
+  const brandOptions = useMemo(
+    () =>
+      (brandsQuery.data?.items ?? []).map((brand) => ({
+        brandId: brand.brandId,
+        name: brand.name,
+      })),
+    [brandsQuery.data?.items],
+  );
+
   const query = useQuery({
     queryKey: [
       "inventory",
@@ -211,6 +250,8 @@ export function InventoryListPage() {
       lowStockOnly,
       stockStatusFilter,
       trackingFilter,
+      categoryIds,
+      brandIds,
     ],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) =>
@@ -227,6 +268,8 @@ export function InventoryListPage() {
                 : undefined,
           lowStock: lowStockOnly ? true : undefined,
           stockStatus: stockStatusFilter,
+          categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+          brandIds: brandIds.length > 0 ? brandIds : undefined,
         },
         signal,
       ),
@@ -287,6 +330,40 @@ export function InventoryListPage() {
               testId: `inventory-filter-${filter.key}`,
               onSelect: () => setTrackingFilter(filter.value),
             }))}
+          />
+
+          <ProductCategoryMultiSelect
+            categories={categoryOptions}
+            selectedIds={categoryIds}
+            onChange={setCategoryIds}
+            placeholder={t("purchasing.categoriesPlaceholder")}
+            selectedCountLabel={(count) =>
+              t("purchasing.categoriesSelected").replace("{count}", String(count))
+            }
+            selectAllLabel={t("purchasing.selectAllCategories")}
+            clearAllLabel={t("purchasing.deselectAllCategories")}
+            searchPlaceholder={t("catalog.searchCategories")}
+            menuLabel={t("inventory.categoryFilter")}
+            aria-label={t("inventory.categoryFilter")}
+            testId="inventory-category-multiselect"
+            className="inventory-category-multiselect"
+          />
+
+          <ProductBrandMultiSelect
+            brands={brandOptions}
+            selectedIds={brandIds}
+            onChange={setBrandIds}
+            placeholder={t("purchasing.brandsPlaceholder")}
+            selectedCountLabel={(count) =>
+              t("purchasing.brandsSelected").replace("{count}", String(count))
+            }
+            selectAllLabel={t("purchasing.selectAllBrands")}
+            clearAllLabel={t("purchasing.deselectAllBrands")}
+            searchPlaceholder={t("catalog.searchBrands")}
+            menuLabel={t("inventory.brandFilter")}
+            aria-label={t("inventory.brandFilter")}
+            testId="inventory-brand-multiselect"
+            className="inventory-brand-multiselect"
           />
 
           <SearchField
@@ -355,6 +432,7 @@ export function InventoryListPage() {
                 const tracksExpiry = tracked && item.tracksExpiration === true;
                 const availableQty = resolveAvailableQuantity(item);
                 const reservedQty = resolveReservedQuantity(item);
+                const pendingReturnQty = resolvePendingReturnQuantity(item);
 
                 return (
                   <li key={item.productId}>
@@ -373,8 +451,12 @@ export function InventoryListPage() {
                         data-testid={`inventory-row-link-${item.productId}`}
                       >
                         <span className="exits-list__name block truncate font-semibold">{item.name}</span>
-                        {!tracked || tracksExpiry || showStockChip ? (
-                          <div className="inventory-row__chips mt-1 flex flex-wrap gap-1">
+                        {!tracked ||
+                        tracksExpiry ||
+                        showStockChip ||
+                        reservedQty > 0 ||
+                        pendingReturnQty > 0 ? (
+                          <div className="inventory-row__chips mt-1 flex flex-wrap items-center gap-1">
                             {!tracked ? (
                               <span className="inventory-row__badge inventory-row__badge--untracked">
                                 {t("inventory.notTracked")}
@@ -396,24 +478,6 @@ export function InventoryListPage() {
                                 {outOfStock ? stockStatus : t("inventory.lowStock")}
                               </span>
                             ) : null}
-                          </div>
-                        ) : null}
-                      </AppLinkWithReturn>
-                      <div className="inventory-row__aside flex min-w-0 shrink-0 flex-col items-end gap-1">
-                        {tracked ? (
-                          <>
-                            <span
-                              className={cn(
-                                "inventory-row__qty tabular-nums",
-                                lowStock && "inventory-row__qty--warn",
-                                outOfStock && "inventory-row__qty--danger",
-                              )}
-                              data-testid={`inventory-row-available-${item.productId}`}
-                            >
-                              {t("inventory.availableQty")
-                                .replace("{qty}", formatInventoryQty(availableQty))
-                                .replace("{uom}", item.unitOfMeasure)}
-                            </span>
                             <InventoryReservedBadge
                               reservedQuantity={reservedQty}
                               onClick={() =>
@@ -424,7 +488,26 @@ export function InventoryListPage() {
                               }
                               testId={`inventory-row-reserved-${item.productId}`}
                             />
-                          </>
+                            <InventoryPendingReturnBadge
+                              pendingReturnQuantity={pendingReturnQty}
+                              unitOfMeasure={item.unitOfMeasure}
+                              testId={`inventory-row-pending-return-${item.productId}`}
+                            />
+                          </div>
+                        ) : null}
+                      </AppLinkWithReturn>
+                      <div className="inventory-row__aside shrink-0">
+                        {tracked ? (
+                          <span
+                            className={cn(
+                              "inventory-row__qty tabular-nums",
+                              lowStock && "inventory-row__qty--warn",
+                              outOfStock && "inventory-row__qty--danger",
+                            )}
+                            data-testid={`inventory-row-available-${item.productId}`}
+                          >
+                            {formatInventoryQty(availableQty)}
+                          </span>
                         ) : (
                           <span className="inventory-row__qty inventory-row__qty--muted" aria-hidden>
                             —

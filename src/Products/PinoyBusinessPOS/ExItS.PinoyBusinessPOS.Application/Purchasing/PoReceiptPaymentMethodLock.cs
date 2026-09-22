@@ -13,8 +13,15 @@ public sealed record PoReceiptPaymentResolution(
     decimal? PaidNow,
     GoodsReceiptSettlement Settlement);
 
+/// <summary>
+/// Timing-aware receipt payment lock. Payment timing drives whether goods receipt
+/// collects settlement fields — never infer from payment method alone.
+/// </summary>
 public static class PoReceiptPaymentMethodLock
 {
+    public const string PrepaymentMissingMessage =
+        "Prepayment settlement information is missing for this order.";
+
     public static string? ToReceiptPaymentMethodCode(ConnectedPoPaymentTerm term) =>
         term switch
         {
@@ -29,24 +36,59 @@ public static class PoReceiptPaymentMethodLock
             _ => null
         };
 
+    /// <summary>
+    /// Validates receipt payment against the connected-PO payment matrix.
+    /// <paramref name="paymentTiming"/> null = legacy / non-connected receive (method-based only).
+    /// Connected receives must pass Confirmed/effective timing explicitly.
+    /// </summary>
     public static ApplicationResult<PoReceiptPaymentResolution> Validate(
         ConnectedPoPaymentTerm effectiveTerm,
         decimal receivedAmount,
-        ReceivePurchaseOrderRequest request)
+        ReceivePurchaseOrderRequest request,
+        ConnectedPoPaymentTiming? paymentTiming = null,
+        decimal? amountPaidSnapshot = null,
+        ConnectedPoFinancialSettlementStatus? financialSettlementStatus = null,
+        decimal? confirmedTotalAmount = null)
     {
         var received = SaleMoney.RoundMoney(receivedAmount);
         var expectedMethod = ToReceiptPaymentMethodCode(effectiveTerm);
 
-        if (!PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
+        // ---- Pay before fulfillment: historical/read-only; never collect receipt settlement ----
+        if (paymentTiming == ConnectedPoPaymentTiming.PayBeforeFulfillment)
         {
-            return ApplicationResult<PoReceiptPaymentResolution>.Failure(
-                ApplicationErrorCodes.PurchaseReceiptPaymentMethodMismatch,
-                "Payment method at receipt must match the purchase order payment term.");
+            if (!string.IsNullOrWhiteSpace(request.PaymentMethodAtReceipt)
+                && !PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
+            {
+                return ApplicationResult<PoReceiptPaymentResolution>.Failure(
+                    ApplicationErrorCodes.PurchaseReceiptPaymentMethodMismatch,
+                    "Payment method at receipt must match the purchase order payment term.");
+            }
+
+            if (!HasAuthoritativePrepayment(amountPaidSnapshot, financialSettlementStatus, confirmedTotalAmount))
+            {
+                return ApplicationResult<PoReceiptPaymentResolution>.Failure(
+                    ApplicationErrorCodes.PurchaseReceiptPrepaymentMissing,
+                    PrepaymentMissingMessage);
+            }
+
+            return ApplicationResult<PoReceiptPaymentResolution>.Success(
+                new PoReceiptPaymentResolution(
+                    expectedMethod,
+                    PaidNow: 0m,
+                    GoodsReceiptSettlement.Empty));
         }
 
-        decimal? resolvedPaidNow = request.PaidNow;
-        if (effectiveTerm == ConnectedPoPaymentTerm.Utang)
+        // ---- Supplier credit / Utang: no payment-at-receipt fields ----
+        if (paymentTiming == ConnectedPoPaymentTiming.SupplierCredit
+            || effectiveTerm == ConnectedPoPaymentTerm.Utang)
         {
+            if (!PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
+            {
+                return ApplicationResult<PoReceiptPaymentResolution>.Failure(
+                    ApplicationErrorCodes.PurchaseReceiptPaymentMethodMismatch,
+                    "Payment method at receipt must match the purchase order payment term.");
+            }
+
             var paid = request.PaidNow ?? 0m;
             if (paid != 0m)
             {
@@ -55,9 +97,39 @@ public static class PoReceiptPaymentMethodLock
                     "Utang purchase orders require PaidNow to be zero at receipt.");
             }
 
-            resolvedPaidNow = 0m;
+            try
+            {
+                RejectIfAnySettlementFieldPresent(request);
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<PoReceiptPaymentResolution>.Failure(ex.ErrorCode, ex.Message);
+            }
+
+            return ApplicationResult<PoReceiptPaymentResolution>.Success(
+                new PoReceiptPaymentResolution(expectedMethod, PaidNow: 0m, GoodsReceiptSettlement.Empty));
         }
-        else if (effectiveTerm == ConnectedPoPaymentTerm.Check)
+
+        // ---- Pay on delivery / receipt (or legacy null timing): method-based ----
+        if (!PaymentMethodMatches(effectiveTerm, request.PaymentMethodAtReceipt))
+        {
+            return ApplicationResult<PoReceiptPaymentResolution>.Failure(
+                ApplicationErrorCodes.PurchaseReceiptPaymentMethodMismatch,
+                "Payment method at receipt must match the purchase order payment term.");
+        }
+
+        // Already settled commercially — do not re-collect settlement fields.
+        if (financialSettlementStatus == ConnectedPoFinancialSettlementStatus.Settled)
+        {
+            return ApplicationResult<PoReceiptPaymentResolution>.Success(
+                new PoReceiptPaymentResolution(
+                    expectedMethod,
+                    PaidNow: 0m,
+                    GoodsReceiptSettlement.Empty));
+        }
+
+        decimal? resolvedPaidNow = request.PaidNow;
+        if (effectiveTerm == ConnectedPoPaymentTerm.Check)
         {
             resolvedPaidNow = 0m;
         }
@@ -89,6 +161,30 @@ public static class PoReceiptPaymentMethodLock
         {
             return ApplicationResult<PoReceiptPaymentResolution>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    public static bool HasAuthoritativePrepayment(
+        decimal? amountPaidSnapshot,
+        ConnectedPoFinancialSettlementStatus? financialSettlementStatus,
+        decimal? confirmedTotalAmount = null)
+    {
+        if (financialSettlementStatus == ConnectedPoFinancialSettlementStatus.Settled)
+        {
+            return true;
+        }
+
+        var paid = SaleMoney.RoundMoney(amountPaidSnapshot ?? 0m);
+        if (paid <= 0m)
+        {
+            return false;
+        }
+
+        if (confirmedTotalAmount is decimal required && required > 0m)
+        {
+            return paid + 0.0000001m >= SaleMoney.RoundMoney(required);
+        }
+
+        return true;
     }
 
     public static bool PaymentMethodMatches(ConnectedPoPaymentTerm term, string? submitted)

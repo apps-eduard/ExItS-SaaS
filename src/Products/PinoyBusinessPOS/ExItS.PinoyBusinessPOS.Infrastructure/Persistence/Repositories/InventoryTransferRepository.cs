@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using ExItS.PinoyBusinessPOS.Application.Common;
 using ExItS.PinoyBusinessPOS.Application.Inventory;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
+using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Inventory;
@@ -34,9 +35,13 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         }
 
         var lines = await LoadLinesAsync([record.Id], organizationId, cancellationToken).ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync([record.Id], organizationId, cancellationToken)
+            .ConfigureAwait(false);
         return InventoryTransferEntityMapper.ToDomain(
             record,
-            lines.TryGetValue(record.Id, out var found) ? found : []);
+            lines.TryGetValue(record.Id, out var found) ? found : [],
+            receipts.TryGetValue(record.Id, out var receiptRecords) ? receiptRecords : [],
+            receiptLines);
     }
 
     public async Task<(IReadOnlyList<InventoryTransfer> Items, int TotalCount)> ListAsync(
@@ -94,7 +99,8 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             {
                 query = query.Where(t =>
                     t.DestinationBranchId == incomingId
-                    && t.Status == nameof(InventoryTransferStatus.InTransit));
+                    && (t.Status == nameof(InventoryTransferStatus.InTransit)
+                        || t.Status == nameof(InventoryTransferStatus.PartiallyReceived)));
             }
         }
         else if (string.Equals(direction, "history", StringComparison.OrdinalIgnoreCase))
@@ -102,6 +108,7 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             query = query.Where(t =>
                 t.Status == nameof(InventoryTransferStatus.Received)
                 || t.Status == nameof(InventoryTransferStatus.PartiallyReceived)
+                || t.Status == nameof(InventoryTransferStatus.ClosedWithDiscrepancy)
                 || t.Status == nameof(InventoryTransferStatus.Cancelled));
             if (acting is Guid involved)
             {
@@ -123,10 +130,17 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             return ([], total);
         }
 
-        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+        var transferIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync(transferIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
         var items = records
-            .Select(r => InventoryTransferEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => InventoryTransferEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var found) ? found : [],
+                receipts.TryGetValue(r.Id, out var receiptRecords) ? receiptRecords : [],
+                receiptLines))
             .ToList();
         return (items, total);
     }
@@ -146,10 +160,49 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             return [];
         }
 
-        var lines = await LoadLinesAsync(records.Select(r => r.Id).ToList(), organizationId, cancellationToken)
+        var transferIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync(transferIds, organizationId, cancellationToken)
             .ConfigureAwait(false);
         return records
-            .Select(r => InventoryTransferEntityMapper.ToDomain(r, lines.TryGetValue(r.Id, out var found) ? found : []))
+            .Select(r => InventoryTransferEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var found) ? found : [],
+                receipts.TryGetValue(r.Id, out var receiptRecords) ? receiptRecords : [],
+                receiptLines))
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId rootTransferId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.InventoryTransfers.AsNoTracking()
+            .Where(t =>
+                t.OrganizationId == organizationId.Value
+                && (t.Id == rootTransferId.Value || t.RootTransferId == rootTransferId.Value))
+            .OrderBy(t => t.ReplacementSequence ?? 0)
+            .ThenBy(t => t.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count == 0)
+        {
+            return [];
+        }
+
+        var transferIds = records.Select(r => r.Id).ToList();
+        var lines = await LoadLinesAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        var (receipts, receiptLines) = await LoadReceiptsAsync(transferIds, organizationId, cancellationToken)
+            .ConfigureAwait(false);
+        return records
+            .Select(r => InventoryTransferEntityMapper.ToDomain(
+                r,
+                lines.TryGetValue(r.Id, out var found) ? found : [],
+                receipts.TryGetValue(r.Id, out var receiptRecords) ? receiptRecords : [],
+                receiptLines))
             .ToList();
     }
 
@@ -159,6 +212,15 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         foreach (var line in transfer.Lines)
         {
             _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+        }
+
+        foreach (var receipt in transfer.Receipts)
+        {
+            _db.InventoryTransferReceipts.Add(InventoryTransferEntityMapper.ToRecord(receipt));
+            foreach (var receiptLine in receipt.Lines)
+            {
+                _db.InventoryTransferReceiptLines.Add(InventoryTransferEntityMapper.ToRecord(receiptLine));
+            }
         }
 
         return Task.CompletedTask;
@@ -179,14 +241,48 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         }
 
         InventoryTransferEntityMapper.ApplyToRecord(transfer, record);
+
         var existingLines = await _db.InventoryTransferLines
             .Where(l => l.TransferId == transfer.Id.Value)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        _db.InventoryTransferLines.RemoveRange(existingLines);
+        var lineById = existingLines.ToDictionary(l => l.Id);
         foreach (var line in transfer.Lines)
         {
-            _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+            if (lineById.TryGetValue(line.Id.Value, out var existingLine))
+            {
+                var updated = InventoryTransferEntityMapper.ToRecord(line);
+                existingLine.SentQty = updated.SentQty;
+                existingLine.ReceivedQty = updated.ReceivedQty;
+                existingLine.ClosedQty = updated.ClosedQty;
+                existingLine.DiscrepancyReason = updated.DiscrepancyReason;
+                existingLine.DiscrepancyNote = updated.DiscrepancyNote;
+                existingLine.UnitCostSnapshot = updated.UnitCostSnapshot;
+            }
+            else
+            {
+                _db.InventoryTransferLines.Add(InventoryTransferEntityMapper.ToRecord(line));
+            }
+        }
+
+        var existingReceiptIds = await _db.InventoryTransferReceipts
+            .Where(r => r.TransferId == transfer.Id.Value)
+            .Select(r => r.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var knownReceiptIds = existingReceiptIds.ToHashSet();
+        foreach (var receipt in transfer.Receipts)
+        {
+            if (knownReceiptIds.Contains(receipt.Id.Value))
+            {
+                continue;
+            }
+
+            _db.InventoryTransferReceipts.Add(InventoryTransferEntityMapper.ToRecord(receipt));
+            foreach (var receiptLine in receipt.Lines)
+            {
+                _db.InventoryTransferReceiptLines.Add(InventoryTransferEntityMapper.ToRecord(receiptLine));
+            }
         }
     }
 
@@ -257,6 +353,35 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         return records
             .GroupBy(l => l.TransferId)
             .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private async Task<(
+        Dictionary<Guid, List<InventoryTransferReceiptRecord>> Receipts,
+        IReadOnlyList<InventoryTransferReceiptLineRecord> ReceiptLines)> LoadReceiptsAsync(
+        IReadOnlyCollection<Guid> transferIds,
+        PosOrganizationId organizationId,
+        CancellationToken cancellationToken)
+    {
+        var records = await _db.InventoryTransferReceipts.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && transferIds.Contains(r.TransferId))
+            .OrderBy(r => r.Sequence)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (records.Count == 0)
+        {
+            return ([], []);
+        }
+
+        var receiptIds = records.Select(r => r.Id).ToList();
+        var lineRecords = await _db.InventoryTransferReceiptLines.AsNoTracking()
+            .Where(l => receiptIds.Contains(l.ReceiptId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var byTransfer = records
+            .GroupBy(r => r.TransferId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        return (byTransfer, lineRecords);
     }
 }
 
@@ -341,5 +466,97 @@ internal sealed class InventoryBranchBalanceRepository : IInventoryBranchBalance
         }
 
         InventoryTransferEntityMapper.ApplyToRecord(balance, record);
+    }
+}
+
+internal sealed class InventoryTransferDamageCustodyRepository : IInventoryTransferDamageCustodyRepository
+{
+    private readonly PosDbContext _db;
+
+    public InventoryTransferDamageCustodyRepository(PosDbContext db) => _db = db;
+
+    public async Task<InventoryTransferDamageCustody?> GetByIdAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferDamageCustodyId custodyId,
+        CancellationToken cancellationToken = default)
+    {
+        var record = await _db.InventoryTransferDamageCustodies
+            .FirstOrDefaultAsync(
+                c => c.Id == custodyId.Value && c.OrganizationId == organizationId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return record is null ? null : InventoryTransferEntityMapper.ToDomain(record);
+    }
+
+    public async Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByTransferIdAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId transferId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.InventoryTransferDamageCustodies.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && c.TransferId == transferId.Value)
+            .OrderBy(c => c.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByRootTransferIdAsync(
+        PosOrganizationId organizationId,
+        InventoryTransferId rootTransferId,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _db.InventoryTransferDamageCustodies.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && c.RootTransferId == rootTransferId.Value)
+            .OrderBy(c => c.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
+    }
+
+    public async Task<IReadOnlyList<InventoryTransferDamageCustody>> ListByStockRequestIdAsync(
+        PosOrganizationId organizationId,
+        StockRequestId stockRequestId,
+        CancellationToken cancellationToken = default)
+    {
+        var transferIds = await _db.InventoryTransfers.AsNoTracking()
+            .Where(t => t.OrganizationId == organizationId.Value && t.StockRequestId == stockRequestId.Value)
+            .Select(t => t.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (transferIds.Count == 0)
+        {
+            return [];
+        }
+
+        var records = await _db.InventoryTransferDamageCustodies.AsNoTracking()
+            .Where(c => c.OrganizationId == organizationId.Value && transferIds.Contains(c.TransferId))
+            .OrderBy(c => c.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return records.Select(InventoryTransferEntityMapper.ToDomain).ToList();
+    }
+
+    public Task AddAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default)
+    {
+        _db.InventoryTransferDamageCustodies.Add(InventoryTransferEntityMapper.ToRecord(custody));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(InventoryTransferDamageCustody custody, CancellationToken cancellationToken = default)
+    {
+        var record = await _db.InventoryTransferDamageCustodies
+            .FirstOrDefaultAsync(
+                c => c.Id == custody.Id.Value && c.OrganizationId == custody.OrganizationId.Value,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (record is null)
+        {
+            throw new PersistenceConflictException(
+                DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
+                "Damage custody was not found.");
+        }
+
+        InventoryTransferEntityMapper.ApplyToRecord(custody, record);
     }
 }

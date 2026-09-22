@@ -99,11 +99,9 @@ export function SellCartPanel({
   onRemove,
   onSetQuantity,
   onEditWeight,
-  onEditCustomQuantity,
   onClear,
   showClose = false,
   onClose,
-  panelId = "cart",
   checkoutReadiness,
   canCreateSale = false,
   midSessionBlock: midSessionBlockProp,
@@ -177,7 +175,6 @@ export function SellCartPanel({
         >
           {lines.map((line) => {
             const byWeight = isByWeightSellingMode(line.sellingMode);
-            const customMeasured = line.allowsCustomQuantity && !byWeight;
             const wholeOnly = !line.allowsCustomQuantity && !byWeight;
             const sellingPrice = effectiveUnitPrice(line);
             const amount = lineAmount(line);
@@ -231,63 +228,37 @@ export function SellCartPanel({
                   </span>
 
                   {byWeight ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="sell-cart-line__edit"
-                      data-testid={`sell-cart-edit-weight-${line.lineKey}`}
-                      onClick={() => onEditWeight(line)}
-                    >
-                      {qtyLabel} {line.unitLabel}
-                    </Button>
-                  ) : customMeasured && onEditCustomQuantity ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="sell-cart-line__edit"
-                      data-testid={`sell-cart-edit-custom-${line.lineKey}`}
-                      onClick={() => onEditCustomQuantity(line)}
-                    >
-                      {qtyLabel} {line.unitLabel}
-                    </Button>
+                    <div className="sell-cart-line__qty">
+                      <QuantityStepper
+                        compact
+                        variant="auto"
+                        value={`${qtyLabel}kg`}
+                        valueTestId={`sell-cart-qty-${line.lineKey}`}
+                        decreaseLabel={t("sell.cartDecrease")}
+                        increaseLabel={t("sell.cartIncrease")}
+                        valueClickLabel={t("sell.weightEditTitle")}
+                        onDecrement={() => onDecrement(line.lineKey)}
+                        onIncrement={() => onIncrement(line.lineKey)}
+                        onValueClick={() => onEditWeight(line)}
+                      />
+                    </div>
                   ) : (
                     <div className="sell-cart-line__qty">
                       <QuantityStepper
                         compact
+                        variant="auto"
+                        editOnClick
                         value={qtyLabel}
                         valueTestId={`sell-cart-qty-${line.lineKey}`}
                         decreaseLabel={t("sell.cartDecrease")}
                         increaseLabel={t("sell.cartIncrease")}
+                        valueClickLabel={t("sell.quantityDirect")}
+                        precision={wholeOnly ? 0 : 3}
+                        min={wholeOnly ? 1 : 0.001}
                         onDecrement={() => onDecrement(line.lineKey)}
                         onIncrement={() => onIncrement(line.lineKey)}
+                        onChange={(next) => onSetQuantity(line.lineKey, next)}
                       />
-                      {!wholeOnly ? (
-                        <>
-                          <label
-                            className="sr-only"
-                            htmlFor={`${panelId}-sell-qty-input-${line.lineKey}`}
-                          >
-                            {t("sell.quantityDirect")}
-                          </label>
-                          <input
-                            id={`${panelId}-sell-qty-input-${line.lineKey}`}
-                            data-testid={`sell-cart-qty-input-${line.lineKey}`}
-                            type="number"
-                            inputMode="decimal"
-                            min={0.001}
-                            step={0.001}
-                            value={line.quantity}
-                            className="sell-cart-line__qty-input"
-                            onChange={(event) => {
-                              const next = Number(event.target.value);
-                              if (!Number.isFinite(next)) {
-                                return;
-                              }
-                              onSetQuantity(line.lineKey, next);
-                            }}
-                          />
-                        </>
-                      ) : null}
                     </div>
                   )}
                 </div>

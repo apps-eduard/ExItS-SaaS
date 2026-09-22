@@ -214,7 +214,7 @@ describe("admin-nav-config", () => {
     expect(matchAdminMobileTab("/dashboard", tabs)).toBe("review");
   });
 
-  it("only enables admin shell for manage_business experience", () => {
+  it("uses admin shell for /org management paths even outside manage_business", () => {
     expect(
       shouldUseAdminManagementShell({ experience: "manage_business", pathname: "/org" }),
     ).toBe(true);
@@ -223,6 +223,27 @@ describe("admin-nav-config", () => {
     ).toBe(true);
     expect(
       shouldUseAdminManagementShell({ experience: "operations", pathname: "/org" }),
+    ).toBe(true);
+    expect(
+      shouldUseAdminManagementShell({
+        experience: "operations",
+        pathname: "/org/branches/b1/fulfillment",
+      }),
+    ).toBe(true);
+    expect(
+      shouldUseAdminManagementShell({
+        experience: "operations",
+        pathname: "/org/payment-methods",
+      }),
+    ).toBe(true);
+    expect(
+      shouldUseAdminManagementShell({
+        experience: "operations",
+        pathname: "/org/notifications",
+      }),
+    ).toBe(false);
+    expect(
+      shouldUseAdminManagementShell({ experience: "operations", pathname: "/customers" }),
     ).toBe(false);
     expect(
       shouldUseAdminManagementShell({ experience: "manage_business", pathname: "/sell" }),

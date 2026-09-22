@@ -16,9 +16,9 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Open_creates_open_shift_with_normalized_number()
     {
-        var shift = CashierShift.Open(Org, "shift-20260731-000001", Actor, Register, 500m, Now);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 500m, Now);
         Assert.Equal(CashierShiftStatus.Open, shift.Status);
-        Assert.Equal("SHIFT-20260731-000001", shift.ShiftNumber);
+        Assert.Equal("260731-001", shift.ShiftNumber);
         Assert.Equal(500m, shift.OpeningCashAmount);
         Assert.Equal(Register, shift.RegisterId);
     }
@@ -26,7 +26,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Close_snapshots_expected_and_variance()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 100m, Now);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 100m, Now);
         shift.Close(150m, 140m, Actor, Now.AddHours(8), "Balanced");
         Assert.Equal(CashierShiftStatus.Closed, shift.Status);
         Assert.Equal(140m, shift.ExpectedCashAmountSnapshot);
@@ -36,7 +36,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Cancel_denied_when_sales_or_movements_present()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 0m, Now);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 0m, Now);
         var ex = Assert.Throws<DomainException>(() => shift.Cancel(Actor, Now, hasLinkedSales: true, hasMovements: false));
         Assert.Equal(DomainErrorCodes.CashierShiftCancelBlockedByActivity, ex.ErrorCode);
     }
@@ -88,14 +88,14 @@ public sealed class CashierShiftDomainTests
     public void Negative_opening_cash_rejected()
     {
         var ex = Assert.Throws<DomainException>(() =>
-            CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, -1m, Now));
+            CashierShift.Open(Org, "260731-001", Actor, Register, -1m, Now));
         Assert.Equal(DomainErrorCodes.InvalidCashierShiftOpeningCash, ex.ErrorCode);
     }
 
     [Fact]
     public void Off_mode_opens_and_closes_without_physical_count_and_still_snapshots_expected()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, null, Now, cashCountMode: CashCountMode.Off);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, null, Now, cashCountMode: CashCountMode.Off);
         Assert.False(shift.OpeningCashCounted);
         Assert.Equal(0m, shift.OpeningCashAmount);
         Assert.Equal(CashCountMode.Off, shift.EffectiveCashCountMode);
@@ -111,11 +111,11 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Optional_mode_allows_opening_count_or_skip()
     {
-        var counted = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 1000m, Now, cashCountMode: CashCountMode.Optional);
+        var counted = CashierShift.Open(Org, "260731-001", Actor, Register, 1000m, Now, cashCountMode: CashCountMode.Optional);
         Assert.True(counted.OpeningCashCounted);
         Assert.Equal(1000m, counted.OpeningCashAmount);
 
-        var skipped = CashierShift.Open(Org, "SHIFT-20260731-000002", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
+        var skipped = CashierShift.Open(Org, "260731-002", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
         Assert.False(skipped.OpeningCashCounted);
         Assert.Equal(0m, skipped.OpeningCashAmount);
     }
@@ -123,7 +123,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Optional_mode_skip_close_persists_null_not_zero()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
         shift.Close(null, expectedCashAmount: 300m, Actor, Now.AddHours(8));
         Assert.Null(shift.ClosingCashAmount);
         Assert.Null(shift.CashVarianceAmount);
@@ -134,7 +134,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Optional_mode_counted_close_records_variance()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
         shift.Close(90m, expectedCashAmount: 100m, Actor, Now.AddHours(8));
         Assert.Equal(90m, shift.ClosingCashAmount);
         Assert.Equal(-10m, shift.CashVarianceAmount);
@@ -145,10 +145,10 @@ public sealed class CashierShiftDomainTests
     public void Required_mode_rejects_missing_opening_and_closing_count()
     {
         var openEx = Assert.Throws<DomainException>(() =>
-            CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, null, Now, cashCountMode: CashCountMode.Required));
+            CashierShift.Open(Org, "260731-001", Actor, Register, null, Now, cashCountMode: CashCountMode.Required));
         Assert.Equal(DomainErrorCodes.CashierShiftOpeningCashCountRequired, openEx.ErrorCode);
 
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 0m, Now, cashCountMode: CashCountMode.Required);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 0m, Now, cashCountMode: CashCountMode.Required);
         var closeEx = Assert.Throws<DomainException>(() => shift.Close(null, 0m, Actor, Now.AddHours(8)));
         Assert.Equal(DomainErrorCodes.CashierShiftClosingCashCountRequired, closeEx.ErrorCode);
         Assert.Equal(CashierShiftStatus.Open, shift.Status);
@@ -157,7 +157,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Required_mode_accepts_valid_counted_cash()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 50m, Now, cashCountMode: CashCountMode.Required);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 50m, Now, cashCountMode: CashCountMode.Required);
         shift.Close(50m, 50m, Actor, Now.AddHours(8));
         Assert.Equal(CashierShiftStatus.Closed, shift.Status);
         Assert.Equal(50m, shift.ClosingCashAmount);
@@ -171,7 +171,7 @@ public sealed class CashierShiftDomainTests
     [InlineData(130, 140, "Short")]
     public void Variance_classifies_balanced_over_and_short(decimal counted, decimal expected, string kind)
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, 100m, Now, cashCountMode: CashCountMode.Optional);
         shift.Close(counted, expected, Actor, Now.AddHours(8));
         Assert.Equal(counted - expected, shift.CashVarianceAmount);
         Assert.Equal(kind, CashVarianceKinds.Classify(shift.CashVarianceAmount!.Value));
@@ -180,7 +180,7 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Snapshotted_optional_mode_still_allows_skip_after_org_would_have_changed()
     {
-        var shift = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
+        var shift = CashierShift.Open(Org, "260731-001", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
         Assert.Equal(CashCountMode.Optional, shift.EffectiveCashCountMode);
         shift.Close(null, expectedCashAmount: 80m, Actor, Now.AddHours(8));
         Assert.Null(shift.ClosingCashAmount);
@@ -190,13 +190,13 @@ public sealed class CashierShiftDomainTests
     [Fact]
     public void Counted_zero_is_distinct_from_skipped_null()
     {
-        var countedZero = CashierShift.Open(Org, "SHIFT-20260731-000001", Actor, Register, 0m, Now, cashCountMode: CashCountMode.Optional);
+        var countedZero = CashierShift.Open(Org, "260731-001", Actor, Register, 0m, Now, cashCountMode: CashCountMode.Optional);
         countedZero.Close(0m, expectedCashAmount: 10m, Actor, Now.AddHours(8));
         Assert.True(countedZero.OpeningCashCounted);
         Assert.Equal(0m, countedZero.ClosingCashAmount);
         Assert.Equal(-10m, countedZero.CashVarianceAmount);
 
-        var skipped = CashierShift.Open(Org, "SHIFT-20260731-000002", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
+        var skipped = CashierShift.Open(Org, "260731-002", Actor, Register, null, Now, cashCountMode: CashCountMode.Optional);
         skipped.Close(null, expectedCashAmount: 10m, Actor, Now.AddHours(8));
         Assert.False(skipped.OpeningCashCounted);
         Assert.Null(skipped.ClosingCashAmount);

@@ -8,8 +8,6 @@ export type PurchaseOrderReceiveExportRow = {
   product: string;
   uom: string;
   ordered: number;
-  received: number;
-  outstanding: number;
   goodReceived: string;
   damaged: string;
   expiry: string;
@@ -25,27 +23,15 @@ export type PurchaseOrderReceiveExportModel = {
 };
 
 function headers(): string[] {
-  return [
-    "Product",
-    "Unit",
-    "Ordered",
-    "Received before",
-    "Outstanding",
-    "Receive now",
-    "Damaged",
-    "Expiry",
-    "Lot",
-  ];
+  return ["Product", "Ordered", "Receive now", "Unit", "Damaged", "Expiry", "Lot"];
 }
 
 function bodyRows(rows: PurchaseOrderReceiveExportRow[]): Array<Array<string | number>> {
   return rows.map((row) => [
     row.product,
-    row.uom,
     row.ordered,
-    row.received,
-    row.outstanding,
     row.goodReceived,
+    row.uom,
     row.damaged,
     row.expiry,
     row.lot,

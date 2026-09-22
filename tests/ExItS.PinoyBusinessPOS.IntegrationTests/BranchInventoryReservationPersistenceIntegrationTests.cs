@@ -349,7 +349,7 @@ public sealed class BranchInventoryReservationPersistenceIntegrationTests(PosPos
         await SetOrgReservedAsync(org, productId.Value, 23m);
         await SeedReservedSaleAsync(options, org, productId.Value, Main, 10m, saleNumber: "H2-A");
         await SeedReservedSaleAsync(options, org, productId.Value, Main, 5m, saleNumber: "H2-B");
-        await SeedReservedOrderAsync(options, org, productId.Value, Main, 8m, orderNumber: "SO-000023");
+        await SeedReservedOrderAsync(options, org, productId.Value, Main, 8m, orderNumber: "260816-023");
 
         await using (var db = new PosDbContext(options))
         {

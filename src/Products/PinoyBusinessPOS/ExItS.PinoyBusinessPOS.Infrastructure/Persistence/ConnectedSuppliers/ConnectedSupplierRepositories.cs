@@ -11,15 +11,18 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.ConnectedSuppliers;
 
 internal sealed class ConnectedSupplierRelationshipRepository(PosDbContext db) : IConnectedSupplierRelationshipRepository
 {
+    private IQueryable<ConnectedSupplierRelationshipRecord> QueryRelationships() =>
+        db.ConnectedSupplierRelationships.Include(x => x.CategoryDiscountOverrides);
+
     public async Task<ConnectedSupplierRelationship?> GetAsync(ConnectedSupplierRelationshipId id,CancellationToken ct=default)
-    {var r=await db.ConnectedSupplierRelationships.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
+    {var r=await QueryRelationships().AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id.Value,ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<ConnectedSupplierRelationship?> FindOpenAsync(PosOrganizationId buyer,PosOrganizationId supplier,CancellationToken ct=default)
-    {var r=await db.ConnectedSupplierRelationships.AsNoTracking().SingleOrDefaultAsync(x=>x.BuyerOrganizationId==buyer.Value&&x.SupplierOrganizationId==supplier.Value&&(x.Status==0||x.Status==1),ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
+    {var r=await QueryRelationships().AsNoTracking().SingleOrDefaultAsync(x=>x.BuyerOrganizationId==buyer.Value&&x.SupplierOrganizationId==supplier.Value&&(x.Status==0||x.Status==1),ct);return r is null?null:ConnectedSupplierEntityMapper.ToDomain(r);}
     public async Task<IReadOnlyList<ConnectedSupplierRelationship>> ListAsync(PosOrganizationId org,bool supplierView,CancellationToken ct=default)=>
-        (await db.ConnectedSupplierRelationships.AsNoTracking().Where(x=>supplierView?x.SupplierOrganizationId==org.Value:x.BuyerOrganizationId==org.Value)
+        (await QueryRelationships().AsNoTracking().Where(x=>supplierView?x.SupplierOrganizationId==org.Value:x.BuyerOrganizationId==org.Value)
         .OrderByDescending(x=>x.UpdatedAtUtc).ToListAsync(ct)).Select(ConnectedSupplierEntityMapper.ToDomain).ToList();
     public Task AddAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){db.ConnectedSupplierRelationships.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
-    public async Task UpdateAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){var r=await db.ConnectedSupplierRelationships.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
+    public async Task UpdateAsync(ConnectedSupplierRelationship x,CancellationToken ct=default){var r=await QueryRelationships().SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,r);}
 }
 
 internal sealed class SupplierProductExposureRepository(PosDbContext db) : ISupplierProductExposureRepository
@@ -202,6 +205,9 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             .Where(x => x.SupplierOrganizationId == supplier.Value);
         var categories = db.ProductCategories.AsNoTracking();
 
+        // Canonical tracked predicate — same org+product keys as EligibleCount / buyer catalog.
+        // Inline against DbSet (not a closed-over IQueryable) so EF translates EXISTS reliably
+        // in both WHERE and SELECT projections.
         var joined =
             from product in products
             join categoryRow in categories on product.CategoryId equals categoryRow.Id into categoryGroup
@@ -210,7 +216,17 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             from share in shareGroup.DefaultIfEmpty()
             join exposure in exposures on product.Id equals exposure.ProductId into exposureGroup
             from exposure in exposureGroup.DefaultIfEmpty()
-            select new { product, categoryRow, share, exposure };
+            select new
+            {
+                product,
+                categoryRow,
+                share,
+                exposure,
+                IsInventoryTracked = db.InventoryAccounts.Any(a =>
+                    a.OrganizationId == supplier.Value
+                    && a.ProductId == product.Id
+                    && a.IsTracked)
+            };
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -236,19 +252,25 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         var filter = NormalizeShareFilter(shareFilter);
         if (catalogSharingMode == CatalogSharingMode.AllEligible)
         {
-            // Shared by default; exclusions are sparse IsShared=false rows.
+            // Shared = buyer-visible (eligible + not excluded). Not shared = explicit exclusion only.
+            // Ineligible = sellable/blocked rows that fail eligibility (e.g. untracked).
             joined = filter switch
             {
                 "shared" => joined.Where(x =>
                     !x.product.IsBlockedFromConnectedBuyers
                     && x.product.CanBeSold
+                    && x.IsInventoryTracked
                     && (x.share == null || x.share.IsShared)),
-                "notshared" => joined.Where(x =>
-                    x.share != null && !x.share.IsShared),
+                "notshared" => joined.Where(x => x.share != null && !x.share.IsShared),
+                "ineligible" => joined.Where(x =>
+                    x.product.IsBlockedFromConnectedBuyers
+                    || !x.product.CanBeSold
+                    || !x.IsInventoryTracked),
                 "customprice" => joined.Where(x =>
                     x.share != null
                     && x.share.IsShared
-                    && x.share.BuyerSpecificPoPrice != null),
+                    && x.share.BuyerSpecificPoPrice != null
+                    && x.IsInventoryTracked),
                 "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
                 _ => joined.Where(x => x.product.CanBeSold || x.product.IsBlockedFromConnectedBuyers)
             };
@@ -257,8 +279,22 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         {
             joined = filter switch
             {
-                "shared" => joined.Where(x => x.share != null && x.share.IsShared && x.product.CanBeSold),
-                "notshared" => joined.Where(x => x.share == null || !x.share.IsShared),
+                "shared" => joined.Where(x =>
+                    x.share != null
+                    && x.share.IsShared
+                    && x.product.CanBeSold
+                    && !x.product.IsBlockedFromConnectedBuyers
+                    && x.IsInventoryTracked),
+                "notshared" => joined.Where(x =>
+                    x.share == null
+                    || !x.share.IsShared
+                    || !x.IsInventoryTracked
+                    || x.product.IsBlockedFromConnectedBuyers
+                    || !x.product.CanBeSold),
+                "ineligible" => joined.Where(x =>
+                    x.product.IsBlockedFromConnectedBuyers
+                    || !x.product.CanBeSold
+                    || !x.IsInventoryTracked),
                 "customprice" => joined.Where(x =>
                     x.share != null && x.share.IsShared && x.share.BuyerSpecificPoPrice != null),
                 "blocked" => joined.Where(x => x.product.IsBlockedFromConnectedBuyers),
@@ -277,11 +313,29 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
                 select product.Id)
             .CountAsync(ct)
             .ConfigureAwait(false);
-        var excludedCount = await shares.CountAsync(x => !x.IsShared, ct).ConfigureAwait(false);
+        var excludedCount = await (
+                from product in products
+                join account in db.InventoryAccounts.AsNoTracking()
+                    on new { Org = product.OrganizationId, Pid = product.Id }
+                    equals new { Org = account.OrganizationId, Pid = account.ProductId }
+                join share in shares on product.Id equals share.SupplierProductId
+                where !product.IsBlockedFromConnectedBuyers
+                      && product.CanBeSold
+                      && account.IsTracked
+                      && !share.IsShared
+                select product.Id)
+            .CountAsync(ct)
+            .ConfigureAwait(false);
         var explicitSharedCount = await (
             from product in products
+            join account in db.InventoryAccounts.AsNoTracking()
+                on new { Org = product.OrganizationId, Pid = product.Id }
+                equals new { Org = account.OrganizationId, Pid = account.ProductId }
             join share in shares on product.Id equals share.SupplierProductId
             where share.IsShared
+                  && !product.IsBlockedFromConnectedBuyers
+                  && product.CanBeSold
+                  && account.IsTracked
             select product.Id).CountAsync(ct).ConfigureAwait(false);
         var sharedCount = catalogSharingMode == CatalogSharingMode.AllEligible
             ? Math.Max(0, eligibleCount - excludedCount)
@@ -311,19 +365,85 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
             return new BuyerProductShareSearchPage([], ids, matchingCount, eligibleCount, sharedCount, facets);
         }
 
-        var pageRows = await joined
+        // Project scalars + keys only — selecting full entities alongside EXISTS often drops the bool
+        // when EF materializes the anonymous type (eligible count stays correct; row Tracking becomes false).
+        var pageKeys = await joined
             .OrderBy(x => x.product.Name).ThenBy(x => x.product.Id)
             .Skip(skip).Take(take)
+            .Select(x => new
+            {
+                ProductId = x.product.Id,
+                CategoryName = x.categoryRow == null || string.IsNullOrWhiteSpace(x.categoryRow.Name)
+                    ? null
+                    : x.categoryRow.Name,
+                ShareId = x.share != null ? (Guid?)x.share.Id : null,
+                ExposureId = x.exposure != null ? (Guid?)x.exposure.Id : null,
+                IsInventoryTracked = x.IsInventoryTracked
+            })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
-        var rows = pageRows.Select(x => new BuyerProductShareManagementRow(
-            CatalogEntityMapper.ToDomain(x.product),
-            x.exposure is null ? null : ConnectedSupplierEntityMapper.ToDomain(x.exposure),
-            x.share is null ? null : ConnectedSupplierEntityMapper.ToDomain(x.share),
-            x.categoryRow is null || string.IsNullOrWhiteSpace(x.categoryRow.Name)
-                ? null
-                : x.categoryRow.Name)).ToList();
+        var pageProductIds = pageKeys.Select(x => x.ProductId).ToList();
+        // Authoritative tracked set for the page — identical keys to EligibleCount (org + product + IsTracked).
+        var trackedIds = pageProductIds.Count == 0
+            ? new HashSet<Guid>()
+            : (await db.InventoryAccounts.AsNoTracking()
+                    .Where(a =>
+                        a.OrganizationId == supplier.Value
+                        && a.IsTracked
+                        && pageProductIds.Contains(a.ProductId))
+                    .Select(a => a.ProductId)
+                    .ToListAsync(ct)
+                    .ConfigureAwait(false))
+                .ToHashSet();
+
+        var productRows = pageProductIds.Count == 0
+            ? []
+            : await db.CatalogProducts.AsNoTracking()
+                .Where(p => pageProductIds.Contains(p.Id))
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        var productsById = productRows.ToDictionary(p => p.Id);
+
+        var shareIds = pageKeys.Where(x => x.ShareId is not null).Select(x => x.ShareId!.Value).Distinct().ToList();
+        var shareRows = shareIds.Count == 0
+            ? []
+            : await db.ConnectedBuyerProductShares.AsNoTracking()
+                .Where(s => shareIds.Contains(s.Id))
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        var sharesById = shareRows.ToDictionary(s => s.Id);
+
+        var exposureIds = pageKeys.Where(x => x.ExposureId is not null).Select(x => x.ExposureId!.Value).Distinct().ToList();
+        var exposureRows = exposureIds.Count == 0
+            ? []
+            : await db.SupplierProductExposures.AsNoTracking()
+                .Where(e => exposureIds.Contains(e.Id))
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        var exposuresById = exposureRows.ToDictionary(e => e.Id);
+
+        var rows = new List<BuyerProductShareManagementRow>(pageKeys.Count);
+        foreach (var key in pageKeys)
+        {
+            if (!productsById.TryGetValue(key.ProductId, out var productRecord))
+            {
+                continue;
+            }
+
+            var isTracked = trackedIds.Contains(key.ProductId);
+            // Invariant: EligibleCount uses the same tracked set — never emit Eligible without Tracked.
+            rows.Add(new BuyerProductShareManagementRow(
+                CatalogEntityMapper.ToDomain(productRecord),
+                key.ExposureId is Guid eid && exposuresById.TryGetValue(eid, out var exposureRecord)
+                    ? ConnectedSupplierEntityMapper.ToDomain(exposureRecord)
+                    : null,
+                key.ShareId is Guid sid && sharesById.TryGetValue(sid, out var shareRecord)
+                    ? ConnectedSupplierEntityMapper.ToDomain(shareRecord)
+                    : null,
+                key.CategoryName,
+                isTracked));
+        }
 
         return new BuyerProductShareSearchPage(
             rows,
@@ -343,6 +463,7 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         {
             "shared" => "shared",
             "notshared" => "notshared",
+            "ineligible" => "ineligible",
             "customprice" => "customprice",
             "blocked" => "blocked",
             _ => "all"
@@ -353,6 +474,16 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
     {db.ConnectedBuyerProductShares.Add(ConnectedSupplierEntityMapper.ToRecord(x));return Task.CompletedTask;}
     public async Task UpdateAsync(ConnectedBuyerProductShare x,CancellationToken ct=default)
     {var row=await db.ConnectedBuyerProductShares.SingleAsync(y=>y.Id==x.Id.Value,ct);ConnectedSupplierEntityMapper.Apply(x,row);}
+    public async Task RemoveAsync(ConnectedBuyerProductShare x, CancellationToken ct = default)
+    {
+        var row = await db.ConnectedBuyerProductShares
+            .SingleOrDefaultAsync(y => y.Id == x.Id.Value, ct)
+            .ConfigureAwait(false);
+        if (row is not null)
+        {
+            db.ConnectedBuyerProductShares.Remove(row);
+        }
+    }
 
     public async Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
         IReadOnlyList<Guid> relationshipIds,
@@ -364,16 +495,32 @@ internal sealed class ConnectedBuyerProductShareRepository(PosDbContext db) : IC
         }
 
         var idSet = relationshipIds.Distinct().ToList();
-        var rows = await db.ConnectedBuyerProductShares.AsNoTracking()
-            .Where(x => idSet.Contains(x.RelationshipId))
-            .GroupBy(x => x.RelationshipId)
-            .Select(g => new
-            {
-                RelationshipId = g.Key,
-                ExplicitSharedCount = g.Count(x => x.IsShared),
-                ExcludedCount = g.Count(x => !x.IsShared),
-                OverrideCount = g.Count(x => x.IsShared && x.BuyerSpecificPoPrice != null),
-            })
+        var activeStatus = nameof(CatalogProductStatus.Active);
+
+        // Eligible-only aggregates — exclusions on untracked/ineligible products must not
+        // inflate ExcludedCount and falsely keep HasSharedCatalog / commerce readiness false
+        // after eligible products are re-shared (buyer catalog already shows them).
+        var rows = await (
+                from share in db.ConnectedBuyerProductShares.AsNoTracking()
+                join product in db.CatalogProducts.AsNoTracking()
+                    on new { Org = share.SupplierOrganizationId, Pid = share.SupplierProductId }
+                    equals new { Org = product.OrganizationId, Pid = product.Id }
+                join account in db.InventoryAccounts.AsNoTracking()
+                    on new { Org = product.OrganizationId, Pid = product.Id }
+                    equals new { Org = account.OrganizationId, Pid = account.ProductId }
+                where idSet.Contains(share.RelationshipId)
+                      && product.Status == activeStatus
+                      && !product.IsBlockedFromConnectedBuyers
+                      && product.CanBeSold
+                      && account.IsTracked
+                group share by share.RelationshipId into g
+                select new
+                {
+                    RelationshipId = g.Key,
+                    ExplicitSharedCount = g.Count(x => x.IsShared),
+                    ExcludedCount = g.Count(x => !x.IsShared),
+                    OverrideCount = g.Count(x => x.IsShared && x.BuyerSpecificPoPrice != null),
+                })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
@@ -546,5 +693,61 @@ internal sealed class ConnectedPoInventoryReservationRepository(PosDbContext db)
         }
 
         ConnectedSupplierEntityMapper.Apply(reservation, row);
+    }
+}
+
+internal sealed class ConnectedPoReceivingIssueRepository(PosDbContext db) : IConnectedPoReceivingIssueRepository
+{
+    public async Task<ConnectedPoReceivingIssue?> GetAsync(
+        ConnectedPoReceivingIssueId id,
+        CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id.Value, ct)
+            .ConfigureAwait(false);
+        return row is null ? null : ConnectedPoReceivingIssueEntityMapper.ToDomain(row);
+    }
+
+    public async Task<ConnectedPoReceivingIssue?> GetByGoodsReceiptAsync(
+        GoodsReceiptId goodsReceiptId,
+        CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.GoodsReceiptId == goodsReceiptId.Value, ct)
+            .ConfigureAwait(false);
+        return row is null ? null : ConnectedPoReceivingIssueEntityMapper.ToDomain(row);
+    }
+
+    public async Task<IReadOnlyList<ConnectedPoReceivingIssue>> ListByConnectedOrderAsync(
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CancellationToken ct = default)
+    {
+        var rows = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .AsNoTracking()
+            .Where(x => x.ConnectedPurchaseOrderId == connectedPurchaseOrderId.Value)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+        return rows.Select(ConnectedPoReceivingIssueEntityMapper.ToDomain).ToList();
+    }
+
+    public Task AddAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default)
+    {
+        db.ConnectedPoReceivingIssues.Add(ConnectedPoReceivingIssueEntityMapper.ToRecord(issue));
+        return Task.CompletedTask;
+    }
+
+    public async Task UpdateAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default)
+    {
+        var row = await db.ConnectedPoReceivingIssues
+            .Include(x => x.Lines)
+            .SingleAsync(x => x.Id == issue.Id.Value, ct)
+            .ConfigureAwait(false);
+        ConnectedPoReceivingIssueEntityMapper.Apply(issue, row);
     }
 }

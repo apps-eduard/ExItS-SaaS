@@ -18,6 +18,8 @@ export type BranchPoFulfillmentReadinessPanelProps = {
   branchId: string;
   readiness: BranchFulfillmentReadinessDto;
   t: (key: MessageKey) => string;
+  /** Organization Offer Delivery — when false, configured Delivery is not buyer-effective. */
+  orgOfferDelivery?: boolean;
   /** Supplier summary flags — null means unknown / treat as needs attention. */
   catalogOk?: boolean | null;
   paymentsOk?: boolean | null;
@@ -48,17 +50,31 @@ function ChannelStatusChip({
   const channelLabel = t(
     method.channel === "pickup" ? "branches.channel.pickup" : "branches.channel.delivery",
   );
+  const statusLabel = method.effectiveDisabledGlobally
+    ? t("branches.poFulfillment.deliveryConfiguredReady")
+    : channelStatusLabel(method, t);
   return (
-    <StatusChip
-      tone={channelTone(method)}
-      shape="soft"
-      appearance="outline"
-      className={cn(!method.enabled && "opacity-80")}
-      data-testid={`branch-po-fulfillment-method-${method.channel}`}
-      data-enabled={method.enabled ? "true" : "false"}
-    >
-      {channelLabel} · {channelStatusLabel(method, t)} · {method.complete}/{method.total}
-    </StatusChip>
+    <div className="flex flex-col gap-1">
+      <StatusChip
+        tone={method.effectiveDisabledGlobally ? "warning" : channelTone(method)}
+        shape="soft"
+        appearance="outline"
+        className={cn(!method.enabled && "opacity-80")}
+        data-testid={`branch-po-fulfillment-method-${method.channel}`}
+        data-enabled={method.enabled ? "true" : "false"}
+        data-effective-disabled={method.effectiveDisabledGlobally ? "true" : "false"}
+      >
+        {channelLabel} · {statusLabel} · {method.complete}/{method.total}
+      </StatusChip>
+      {method.effectiveDisabledGlobally ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-xs)] text-muted"
+          data-testid="branch-po-fulfillment-delivery-effective-off"
+        >
+          {t("branches.poFulfillment.deliveryEffectivePaused")}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -103,11 +119,12 @@ export function BranchPoFulfillmentReadinessPanel({
   branchId,
   readiness,
   t,
+  orgOfferDelivery,
   catalogOk = null,
   paymentsOk = null,
   contactOk = null,
 }: BranchPoFulfillmentReadinessPanelProps) {
-  const view = buildPoFulfillmentReadinessView(readiness);
+  const view = buildPoFulfillmentReadinessView(readiness, { orgOfferDelivery });
   const summary = buildSupplierReadinessSummary({
     branchId,
     fulfillmentReady: view.ready,

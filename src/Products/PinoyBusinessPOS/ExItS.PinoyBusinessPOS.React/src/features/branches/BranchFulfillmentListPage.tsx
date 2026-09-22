@@ -2,29 +2,37 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Store } from "lucide-react";
-import { canManageBranchFulfillment, canManageSuppliers } from "@/access/pos-capabilities";
+import { canManageBranchFulfillment } from "@/access/pos-capabilities";
 import {
   listOrganizationBranchesForFulfillment,
-  updateBranchFulfillmentSettings,
+  normalizeFulfillmentReadiness,
   type OrganizationBranchDto,
   type UpdateBranchFulfillmentSettingsRequest,
 } from "@/api/platform/branch-fulfillment-client";
-import {
-  getOrganizationFulfillmentSettings,
-  updateOrganizationOfferDelivery,
-} from "@/api/pos/pos-connected-suppliers-client";
+import { updateBranchFulfillmentSettingsViaPos } from "@/api/pos/pos-connected-commerce-client";
+import { getOrganizationFulfillmentSettings } from "@/api/pos/pos-connected-suppliers-client";
+import { PosApiError } from "@/api/pos/pos-http";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { Notice } from "@/components/exits/Notice";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { StatusChip } from "@/components/exits/StatusChip";
-import { Card } from "@/components/ui/card";
+import {
+  BranchDeliveryOrgOfferGuardDialog,
+  isOrganizationDeliveryNotOfferedError,
+} from "@/features/branches/BranchDeliveryOrgOfferGuardDialog";
 import { BranchFulfillmentSwitch } from "@/features/branches/BranchFulfillmentSwitch";
 import { BranchSetupTabLinks } from "@/features/branches/BranchSetupTabLinks";
 import { branchFulfillmentEditPath } from "@/features/branches/branch-setup-tabs";
 import { resolveFulfillmentToggle } from "@/features/branches/fulfillment-toggle";
+import {
+  invalidateOrganizationOfferDeliveryQueries,
+  OFFER_DELIVERY_SETTINGS_PATH,
+  organizationOfferDeliveryQueryKey,
+} from "@/features/branches/offer-delivery-queries";
 import { useI18n } from "@/i18n/I18nProvider";
 import { pageBackNav } from "@/navigation/page-back-nav";
 import { usePosWorkspaceScope } from "@/workspace/use-pos-workspace-scope";
@@ -42,11 +50,10 @@ export function BranchFulfillmentListPage() {
   const { boundWorkspace, sessionGrant } = useWorkspace();
   const workspace = usePosWorkspaceScope();
   const canManage = canManageBranchFulfillment(sessionGrant);
-  const canOfferDelivery = canManageSuppliers(sessionGrant) || canManage;
   const organizationId = boundWorkspace?.organizationId;
   const [optimistic, setOptimistic] = useState<OptimisticPatch | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
-  const [orgOfferPending, setOrgOfferPending] = useState(false);
+  const [orgDeliveryGuardOpen, setOrgDeliveryGuardOpen] = useState(false);
 
   const branchesQuery = useQuery({
     queryKey: ["branch-fulfillment-list", organizationId],
@@ -55,34 +62,9 @@ export function BranchFulfillmentListPage() {
   });
 
   const orgFulfillmentQuery = useQuery({
-    queryKey: ["organization-fulfillment-settings", organizationId],
-    enabled: Boolean(workspace && canOfferDelivery),
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
+    enabled: Boolean(workspace && organizationId && canManage),
     queryFn: ({ signal }) => getOrganizationFulfillmentSettings(workspace!, signal),
-  });
-
-  const offerDeliveryMutation = useMutation({
-    mutationFn: async (next: boolean) => {
-      setOrgOfferPending(true);
-      try {
-        return await updateOrganizationOfferDelivery(workspace!, next);
-      } finally {
-        setOrgOfferPending(false);
-      }
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["organization-fulfillment-settings", organizationId],
-      });
-      await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
-    },
-    onError: (err) => {
-      setToggleError(
-        err instanceof Error ? err.message : t("branches.offerDeliveryFailed"),
-      );
-    },
   });
 
   const toggleMutation = useMutation({
@@ -98,11 +80,12 @@ export function BranchFulfillmentListPage() {
       });
       setToggleError(null);
       try {
-        return await updateBranchFulfillmentSettings(
-          organizationId!,
+        const raw = await updateBranchFulfillmentSettingsViaPos(
+          workspace!,
           input.branchId,
           input.request,
         );
+        return normalizeFulfillmentReadiness(raw);
       } catch (err) {
         setOptimistic(null);
         throw err;
@@ -110,17 +93,20 @@ export function BranchFulfillmentListPage() {
     },
     onSuccess: async () => {
       setOptimistic(null);
+      await invalidateOrganizationOfferDeliveryQueries(queryClient, organizationId);
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
       });
-      await queryClient.invalidateQueries({ queryKey: ["shell", "needs-attention"] });
-      await queryClient.invalidateQueries({ queryKey: ["business-customers", "commerce-readiness"] });
-      await queryClient.invalidateQueries({ queryKey: ["connected-suppliers", "commerce-readiness"] });
     },
     onError: (err) => {
       setOptimistic(null);
+      if (isOrganizationDeliveryNotOfferedError(err)) {
+        setOrgDeliveryGuardOpen(true);
+        setToggleError(null);
+        return;
+      }
       setToggleError(
-        err instanceof PlatformApiError
+        err instanceof PosApiError || err instanceof PlatformApiError
           ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
           : t("branches.fulfillmentFailed"),
       );
@@ -187,6 +173,8 @@ export function BranchFulfillmentListPage() {
     );
   }
 
+  const offerDelivery = orgFulfillmentQuery.data?.offerDelivery === true;
+
   return (
     <div
       className="branch-fulfillment-page exits-page flex min-w-0 flex-col gap-3"
@@ -204,35 +192,25 @@ export function BranchFulfillmentListPage() {
         <Notice tone="danger" testId="branch-list-toggle-error">{toggleError}</Notice>
       ) : null}
 
-      {canOfferDelivery ? (
-        <Card
-          className="flex flex-col gap-2 p-3"
-          data-testid="org-offer-delivery-card"
-        >
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("branches.offerDeliveryTitle")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-            {t("branches.offerDeliveryLede")}
+      <div
+        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
+        data-testid="branch-fulfillment-org-status"
+        data-offer-delivery={offerDelivery ? "on" : "off"}
+      >
+        <div className="min-w-0">
+          <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+            {t("branches.offerDelivery")}
           </p>
-          <BranchFulfillmentSwitch
-            checked={orgFulfillmentQuery.data?.offerDelivery === true}
-            disabled={!workspace || orgFulfillmentQuery.isLoading}
-            pending={orgOfferPending || offerDeliveryMutation.isPending}
-            label={t("branches.offerDelivery")}
-            hint={
-              orgFulfillmentQuery.data?.offerDelivery
-                ? t("branches.offerDeliveryOnHint")
-                : t("branches.offerDeliveryOffHint")
-            }
-            testId="org-offer-delivery-switch"
-            onCheckedChange={(next) => {
-              setToggleError(null);
-              offerDeliveryMutation.mutate(next);
-            }}
-          />
-        </Card>
-      ) : null}
+          <p className="mb-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
+            {offerDelivery
+              ? t("branches.offerDeliveryOnDetail")
+              : t("branches.offerDeliveryOffDetail")}
+          </p>
+        </div>
+        <Button asChild variant="outline" data-testid="branch-fulfillment-manage-org">
+          <Link to={OFFER_DELIVERY_SETTINGS_PATH}>{t("branches.manageFulfillment")}</Link>
+        </Button>
+      </div>
 
       {branches.length === 0 ? (
         <EmptyState
@@ -258,6 +236,7 @@ export function BranchFulfillmentListPage() {
               ready: branch.deliveryReady,
               canUseDelivery: branch.canUseDelivery,
               pending,
+              orgOfferDelivery: offerDelivery,
             });
 
             return (
@@ -321,9 +300,19 @@ export function BranchFulfillmentListPage() {
                       disabled={delivery.disabled}
                       pending={pending}
                       label={t("branches.channel.delivery")}
-                      hint={delivery.hintKey ? t(delivery.hintKey) : null}
+                      hint={
+                        delivery.hintKey
+                          ? t(delivery.hintKey)
+                          : branch.deliveryEnabled && !offerDelivery
+                            ? t("branches.status.onGloballyPaused")
+                            : null
+                      }
                       testId={`delivery-switch-${branch.id}`}
                       onCheckedChange={(next) => {
+                        if (next && delivery.blockReason === "orgOffer") {
+                          setOrgDeliveryGuardOpen(true);
+                          return;
+                        }
                         if (next && delivery.enableBlocked) {
                           return;
                         }
@@ -341,6 +330,12 @@ export function BranchFulfillmentListPage() {
           })}
         </ul>
       )}
+
+      <BranchDeliveryOrgOfferGuardDialog
+        open={orgDeliveryGuardOpen}
+        onCancel={() => setOrgDeliveryGuardOpen(false)}
+        t={t}
+      />
     </div>
   );
 }

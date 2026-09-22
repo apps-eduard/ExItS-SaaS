@@ -147,6 +147,8 @@ public sealed class SaleReturnQueryService
                     l.QuantityReturned,
                     l.UnitPriceSnapshot,
                     l.RefundAmount,
+                    l.SellableQuantity,
+                    l.DamagedQuantity,
                     RestockDispositions.ToCode(l.RestockDisposition),
                     l.LineReason,
                     l.InventoryMovementId))

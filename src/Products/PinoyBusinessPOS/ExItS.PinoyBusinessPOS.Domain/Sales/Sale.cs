@@ -87,6 +87,7 @@ public sealed class Sale
     /// Optional manually typed GCash reference. Never verified against any gateway or GCash API.
     /// </summary>
     public string? GCashReference { get; private set; }
+    public CheckSettlementStatus? CheckSettlementStatus { get; private set; }
 
     /// <summary>
     /// Optional seller-owned customer association (ledger / local profile). Required for Product-Based Utang.
@@ -175,6 +176,7 @@ public sealed class Sale
         decimal? amountTendered,
         decimal? changeAmount,
         string? gcashReference,
+        CheckSettlementStatus? checkSettlementStatus,
         POSCustomerId? customerId,
         SaleBuyerParty buyerParty,
         CreditEntryId? linkedCreditEntryId,
@@ -212,6 +214,7 @@ public sealed class Sale
         AmountTendered = amountTendered;
         ChangeAmount = changeAmount;
         GCashReference = gcashReference;
+        CheckSettlementStatus = checkSettlementStatus;
         CustomerId = customerId;
         BuyerParty = buyerParty;
         LinkedCreditEntryId = linkedCreditEntryId;
@@ -402,6 +405,7 @@ public sealed class Sale
             tendered,
             change,
             reference,
+            paymentMethod == SalePaymentMethod.Check ? Domain.Sales.CheckSettlementStatus.Pending : null,
             customerId,
             resolvedBuyer,
             linkedCreditEntryId,
@@ -508,6 +512,7 @@ public sealed class Sale
             amountTendered,
             changeAmount,
             gcashReference: null,
+            checkSettlementStatus: paymentMethod == SalePaymentMethod.Check ? Domain.Sales.CheckSettlementStatus.Pending : null,
             customerId,
             resolvedBuyer,
             linkedCreditEntryId,
@@ -711,6 +716,20 @@ public sealed class Sale
         UpdatedAtUtc = utcNow;
     }
 
+    public void SetCheckSettlementStatus(CheckSettlementStatus status, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        if (PaymentMethod != SalePaymentMethod.Check)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidCheckSettlementStatus,
+                "Check settlement status can only be set on check sales.");
+        }
+
+        CheckSettlementStatus = status;
+        UpdatedAtUtc = utcNow;
+    }
+
     public static Sale Rehydrate(
         SaleId id,
         PosOrganizationId organizationId,
@@ -746,7 +765,8 @@ public sealed class Sale
         decimal? totalCostSnapshot = null,
         BusinessCreditEntryId? linkedBusinessCreditEntryId = null,
         SaleSellerDocumentIdentity? sellerDocumentIdentity = null,
-        Guid? sourceQuotationId = null) =>
+        Guid? sourceQuotationId = null,
+        CheckSettlementStatus? checkSettlementStatus = null) =>
         new(
             id,
             organizationId,
@@ -766,6 +786,7 @@ public sealed class Sale
             amountTendered,
             changeAmount,
             gcashReference,
+            checkSettlementStatus,
             customerId,
             buyerParty ?? SaleBuyerParty.FromLegacyCustomer(customerId),
             linkedCreditEntryId,

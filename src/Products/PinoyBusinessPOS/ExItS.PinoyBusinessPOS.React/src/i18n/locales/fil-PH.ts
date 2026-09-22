@@ -286,7 +286,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.regionPlaceholder": "Pumili ng rehiyon",
 
-  "branches.deliveryAreas.regionSearchPlaceholder": "Maghanap ng rehiyonâ€¦",
+  "branches.deliveryAreas.regionSearchPlaceholder": "Maghanap ng rehiyonÃ¢â‚¬Â¦",
 
   "branches.deliveryAreas.regionSelected": "Napiling rehiyon",
 
@@ -294,7 +294,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.noRegionMatch": "Walang tumutugmang rehiyon",
 
-  "branches.deliveryAreas.regionsLoading": "Nilo-load ang mga rehiyonâ€¦",
+  "branches.deliveryAreas.regionsLoading": "Nilo-load ang mga rehiyonÃ¢â‚¬Â¦",
 
   "branches.deliveryAreas.regionsFailed": "Hindi ma-load ang mga rehiyon.",
 
@@ -306,7 +306,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.deliveryAreas.cityPlaceholder": "Pumili ng lungsod o munisipyo",
 
-  "branches.deliveryAreas.citiesLoading": "Nilo-load ang mga lungsodâ€¦",
+  "branches.deliveryAreas.citiesLoading": "Nilo-load ang mga lungsodÃ¢â‚¬Â¦",
 
   "branches.deliveryAreas.citiesFailed": "Hindi ma-load ang mga lungsod.",
 
@@ -420,7 +420,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.hoursSameAllDaysTitle": "Same hours for every day",
 
   "branches.hoursSameAllDaysLede":
-    "Set opens and closes once, then apply to all days â€” or mark every day open 24 hours.",
+    "Set opens and closes once, then apply to all days Ã¢â‚¬â€ or mark every day open 24 hours.",
 
   "branches.hoursApplyAll": "Apply to all days",
 
@@ -480,8 +480,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.offerDeliveryTitle": "Organization Delivery",
   "branches.offerDeliveryLede": "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
   "branches.offerDelivery": "Offer Delivery",
-  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
-  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryOnHint": "Allow connected business customers to choose Delivery from delivery-ready branches.",
+  "branches.offerDeliveryOffHint": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
   "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
 
   "branches.loadError": "Hindi ma-load ang mga branch.",
@@ -597,6 +597,8 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "branches.poFulfillment.helper.delivery":
     "Enable if this branch will deliver connected purchase orders.",
+  "branches.poFulfillment.helper.deliveryOrgOfferOff":
+    "This branch Delivery switch is ON (setup kept). Buyers still will not see Delivery until you turn Offer Delivery on under Branches.",
 
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
 
@@ -617,6 +619,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.poFulfillment.methodReady": "Ready",
 
   "branches.poFulfillment.methodSetup": "Setup required",
+  "branches.poFulfillment.deliveryConfiguredReady": "Configured: Ready",
+  "branches.poFulfillment.deliveryEffectiveDisabledGlobally":
+    "Effective: Disabled globally (Offer Delivery is off)",
 
   "branches.poFulfillment.configure": "Configure fulfillment",
 
@@ -1475,7 +1480,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "checkout.creditPolicy.loadError": "Hindi ma-load ang credit policy. Subukan ulit.",
 
-  "checkout.creditPolicy.loading": "Nilo-load ang credit policyÃ¢â‚¬Â¦",
+  "checkout.creditPolicy.loading": "Nilo-load ang credit policyÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦",
 
   "checkout.creditPolicy.notApproved":
     "Naka-block ang Utang hanggang Approved ang credit policy ng customer na ito.",
@@ -1503,8 +1508,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.customerIdleEmpty": "Maghanap sa pangalan o numero para sa walk-in, o i-scan ang ExItS ID.",
 
   "checkout.utangCustomerIdleEmpty":
-    "No checkout customers yet. People and businesses share this directory Ã¢â‚¬â€ Utang requires an Approved person with available credit.",
-  "checkout.directoryCredit.approvedAvailable": "Approved Ã¢â‚¬Â¢ Available {amount}",
+    "No checkout customers yet. People and businesses share this directory ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Utang requires an Approved person with available credit.",
+  "checkout.directoryCredit.approvedAvailable": "Approved ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Available {amount}",
   "checkout.directoryCredit.pending": "Pending approval",
   "checkout.directoryCredit.notConfigured": "Credit not enabled",
   "checkout.directoryCredit.disabled": "Paused",
@@ -1518,7 +1523,7 @@ export const filPH: Record<keyof typeof en, string> = {
     "Business relationship is not active. Utang cannot be used.",
   "checkout.utangSelect.connectionPending": "Credit is unavailable while this relationship is pending. The customer must accept the connection before Utang can be used.",
   "checkout.utangPendingUnavailableHint": "Unavailable",
-  "checkout.paymentUtangUnavailable": "Utang â€” unavailable",
+  "checkout.paymentUtangUnavailable": "Utang Ã¢â‚¬â€ unavailable",
   "checkout.utangPendingRelationshipHelper": "Utang becomes available after the customer accepts the relationship and credit requirements are met.",
   "checkout.directoryCredit.colCustomer": "Customer",
   "checkout.directoryCredit.colExItsId": "ExItS ID#",
@@ -1536,7 +1541,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "checkout.directoryCredit.status.PendingApproval": "Pending approval",
   "checkout.directoryCredit.status.NotConfigured": "Credit not enabled",
   "checkout.directoryCredit.status.Disabled": "Paused",
-  "checkout.directoryCredit.availableEmDash": "Ã¢â‚¬â€",
+  "checkout.directoryCredit.availableEmDash": "ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â",
 
 
   "checkout.customerIdleEmptyBusinesses":
@@ -1777,6 +1782,22 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.customerPrice": "Customer price",
 
   "connected.excluded": "Excluded",
+  "connected.manageSharedIntent":
+    "Choose which eligible seller products this customer can order. All eligible products are shared by default unless explicitly excluded.",
+  "connected.inventoryNeverShared": "Inventory quantities are never shared.",
+  "connected.ineligible": "Ineligible",
+  "connected.needsPrice": "Needs price",
+  "connected.enableTrackingBeforeShare": "Enable inventory tracking before sharing this product.",
+  "connected.setPriceBeforeShare": "Set a selling or Default PO price before sharing.",
+  "connected.buyerContext.b2bConnected": "B2B · Connected",
+  "connected.buyerContext.organizationId": "Organization ID",
+  "connected.buyerContext.sellingBranch": "Selling branch",
+  "connected.buyerContext.catalogSharing": "Catalog sharing",
+  "connected.buyerContext.customerPricing": "Customer pricing",
+  "connected.buyerContext.branchUnset": "Not set",
+  "connected.buyerContext.viewCustomer": "View business customer",
+  "connected.filterIneligible": "Ineligible",
+  "connected.colSharing": "Sharing",
 
   "connected.filterExcluded": "Excluded",
 
@@ -1833,11 +1854,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.buyerPrice": "Presyo para sa buyer",
   "connected.buyerPriceSellingRef": "Selling {price}",
   "connected.discountPercent": "Discount %",
-  "connected.discountPercentHelp": "Same % off each selected productÃ¢â‚¬â„¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
+  "connected.discountPercentHelp": "Same % off each selected productÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s Default PO (B2B discount). Fixed buyer price is only available for one product.",
   "connected.applyDiscountPercent": "Apply discount",
   "connected.discountPercentInvalid": "Enter a discount between 0 and 100.",
   "connected.increasePercent": "Increase %",
-  "connected.increasePercentHelp": "Same % up each selected productÃ¢â‚¬â„¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
+  "connected.increasePercentHelp": "Same % up each selected productÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s Default PO (B2B markup). Fixed buyer price is only available for one product.",
   "connected.applyIncreasePercent": "Apply increase",
   "connected.increasePercentInvalid": "Enter an increase between 0 and 1000.",
   "connected.percentModeLabel": "Percent change type",
@@ -2098,9 +2119,13 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "connected.shareSummaryAllEligible": "{shared} available of {eligible} eligible (all eligible shared by default)",
 
+  "connected.shareSummaryBuyerVisibilityHelp":
+    "Only inventory-tracked eligible products are visible to the buyer. A Shared status alone does not mean the buyer can see it.",
+  "connected.shareSummary.dismiss": "Dismiss share summary",
+
   "connected.customerDiscountBanner": "Customer pricing: {percent}% off selling price",
 
-  "connected.sellingPriceBaselineBanner": "Customer price uses each product selling price (no extra discount).",
+  "connected.sellingPriceBaselineBanner": "Customer price uses each product's selling price (no extra discount).",
 
   "connected.listPrice": "Selling price",
 
@@ -2108,6 +2133,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.colProduct": "Product",
   "connected.colSku": "SKU",
   "connected.colStatus": "Status",
+  "connected.colTracking": "Pagsubaybay",
+  "connected.trackProduct": "I-track",
+  "connected.untrackProduct": "I-untrack",
+  "connected.trackProductFailed": "Hindi ma-enable ang inventory tracking.",
+  "connected.untrackProductFailed": "Hindi ma-disable ang inventory tracking.",
 
   "connected.shared": "Naka-share",
 
@@ -2427,7 +2457,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.creditsTitle": "Mga utang charge",
   "customers.branchAccess.title": "Manage branch access",
   "customers.branchAccess.help":
-    "Customer stays organization-owned. Areas only help select branches Ã¢â‚¬â€ access is saved as an explicit branch list.",
+    "Customer stays organization-owned. Areas only help select branches ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â access is saved as an explicit branch list.",
   "customers.branchAccess.homeBranch": "Home branch",
   "customers.branchAccess.homeUnknown": "Not set",
   "customers.branchAccess.homeBadge": "Home",
@@ -2439,7 +2469,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.branchAccess.unassigned": "Unassigned branches",
   "customers.branchAccess.branches": "Branches",
   "customers.branchAccess.save": "Save branch access",
-  "customers.branchAccess.saving": "SavingÃ¢â‚¬Â¦",
+  "customers.branchAccess.saving": "SavingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦",
   "customers.branchAccess.saveError": "Could not save branch access.",
   "customers.branchAccess.loadError": "Could not load branches.",
   "customers.branchAccess.offline": "Branch access can be managed when you are online.",
@@ -2499,7 +2529,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.orgConnectAsCustomer": "Add as business customer",
 
   "customers.orgNeedsBuyerConnection":
-    "Kailangan ng Active supplier connection para sa Direct B2B checkout. Sabihin sa organization na ito na mag-connect sa iyo sa Suppliers, tapos tanggapin ang request. Pagkatapos, lalabas sila sa Customers Ã¢â€ â€™ Businesses at sa Sell checkout.",
+    "Kailangan ng Active supplier connection para sa Direct B2B checkout. Sabihin sa organization na ito na mag-connect sa iyo sa Suppliers, tapos tanggapin ang request. Pagkatapos, lalabas sila sa Customers ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Businesses at sa Sell checkout.",
 
   "customers.orgNeedsConnectionAction": "Paano mag-connect",
   "customers.orgOpenExistingConnection": "Open existing connection",
@@ -2599,8 +2629,43 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
   "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
   "customers.business.deliveryAllowanceOrgOff":
-    "Delivery is not currently offered by your organization.",
+    "Effective: Disabled globally. Offer Delivery is off for your organization.",
+  "customers.business.deliveryAllowanceOrgOffHelp":
+    "Branch Delivery setup can stay configured. Buyers will not be offered Delivery until you turn Offer Delivery on.",
+  "customers.business.deliveryAllowanceOpenOfferDelivery": "Open Offer Delivery settings",
   "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
+  "customers.business.connectedCommerce.paymentTimingTitle": "Payment timing",
+  "customers.business.connectedCommerce.paymentTimingHelp":
+    "Use organization defaults, or restrict timings for this customer. Customers cannot enable a timing disabled globally.",
+  "customers.business.connectedCommerce.openOrgSettings": "Org Connected Commerce",
+  "customers.business.connectedCommerce.useOrgDefaults": "Use organization payment timing defaults",
+  "customers.business.connectedCommerce.useOrgDefaultsOn":
+    "This customer inherits organization allowed timings and default.",
+  "customers.business.connectedCommerce.useOrgDefaultsOff":
+    "This customer may further restrict allowed timings and choose a customer default.",
+  "customers.business.connectedCommerce.overrideNoAlert":
+    "Customer overrides are intentional and do not create Needs Attention alerts.",
+  "customers.business.connectedCommerce.timingDisabledGlobally": "Disabled by organization settings.",
+  "customers.business.connectedCommerce.effective": "Effective",
+  "customers.business.connectedCommerce.notEffective": "Off",
+  "customers.business.connectedCommerce.effectiveDefault": "Effective default: {timing}",
+  "customers.business.connectedCommerce.pricingTitle": "B2B pricing overrides",
+  "customers.business.connectedCommerce.pricingHelp":
+    "Nullable fields inherit organization pricing. Precedence: customer category → customer default → org category → org default → base price. No stacking.",
+  "customers.business.connectedCommerce.orgDefaultDiscount": "Organization default discount: {n}%",
+  "customers.business.connectedCommerce.customerDefaultDiscount": "Customer default discount (%)",
+  "customers.business.connectedCommerce.inheritPlaceholder": "Inherit organization default",
+  "customers.business.connectedCommerce.categoryOverrides": "Category discount overrides",
+  "customers.business.connectedCommerce.noCategoryOverrides": "No customer category overrides.",
+  "customers.business.connectedCommerce.addCategory": "Category",
+  "customers.business.connectedCommerce.selectCategory": "Select category…",
+  "customers.business.connectedCommerce.addRule": "Add rule",
+  "customers.business.connectedCommerce.saved": "Customer Connected Commerce settings saved.",
+  "customers.business.connectedCommerce.saveFailed": "Could not save customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.loadFailed": "Could not load customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.invalidDiscount": "Discount must be between 0 and 100.",
+  "connectedCommerce.addCategoryRule": "Add category rule",
+  "connectedCommerce.selectCategory": "Select category…",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
@@ -2751,7 +2816,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.storeDetails.readOnlyIdentity": "Identity managed by customer.",
   "customers.storeDetails.cancel": "Cancel",
   "customers.storeDetails.save": "Save changes",
-  "customers.storeDetails.saving": "Savingâ€¦",
+  "customers.storeDetails.saving": "SavingÃ¢â‚¬Â¦",
   "customers.storeDetails.saved": "Customer details saved.",
   "customers.storeDetails.saveFailed": "Could not save customer details.",
   "customers.storeDetails.nameRequired": "Preferred name is required.",
@@ -2788,18 +2853,18 @@ export const filPH: Record<keyof typeof en, string> = {
     "Connection is still pending. Use a custom contact until the buyer accepts.",
   "customers.business.relationshipContact.organizationContact": "Contact at {name}",
   "customers.business.relationshipContact.directoryHelp": "Lists owner and staff from {name} - not your own organization.",
-  "customers.business.relationshipContact.searchContacts": "Search staffâ€¦",
-  "customers.business.relationshipContact.loadingContacts": "Loading contactsâ€¦",
+  "customers.business.relationshipContact.searchContacts": "Search staffÃ¢â‚¬Â¦",
+  "customers.business.relationshipContact.loadingContacts": "Loading contactsÃ¢â‚¬Â¦",
   "customers.business.relationshipContact.noContacts": "No matching people at {name}.",
   "customers.business.relationshipContact.noContactsAvailable": "{name} has no owner or staff to choose yet. Invite staff on their side, or use a custom contact.",
   "customers.business.relationshipContact.contactsLoadFailed": "Could not load organization contacts.",
   "customers.business.relationshipContact.retry": "Retry",
-  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffâ€¦",
+  "customers.business.relationshipContact.selectStaffPlaceholder": "Select owner or staffÃ¢â‚¬Â¦",
   "customers.business.relationshipContact.changeContact": "Change contact",
   "customers.business.relationshipContact.ownerBadge": "Owner",
   "customers.business.relationshipContact.useCustomContact": "+ Use custom contact",
   "customers.business.relationshipContact.organizationManagedReadonly":
-    "Organization-managed contact information Â· Read-only",
+    "Organization-managed contact information Ã‚Â· Read-only",
   "customers.business.relationshipContact.contactUnavailable": "Contact no longer available",
   "customers.business.relationshipContact.chooseAnother": "Choose another contact",
   "customers.business.relationshipContact.directoryCount": "{count} people at {name}",
@@ -2815,7 +2880,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.business.relationshipContact.internalNotes": "Internal notes",
   "customers.business.relationshipContact.cancel": "Cancel",
   "customers.business.relationshipContact.save": "Save changes",
-  "customers.business.relationshipContact.saving": "Savingâ€¦",
+  "customers.business.relationshipContact.saving": "SavingÃ¢â‚¬Â¦",
   "customers.business.relationshipContact.saved": "Relationship contact saved.",
   "customers.business.relationshipContact.saveFailed": "Could not save relationship contact.",
 
@@ -2966,7 +3031,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.receivables.outstanding": "Outstanding",
   "customers.receivables.amountApplied": "Inilapat",
   "customers.receivables.remaining": "Natitira",
-  "customers.receivables.loading": "Naglo-load ng receivablesâ€¦",
+  "customers.receivables.loading": "Naglo-load ng receivablesÃ¢â‚¬Â¦",
   "customers.receivables.loadFailed": "Hindi ma-load ang receivables.",
   "customers.receivables.empty": "Walang bukas na receivable",
   "customers.receivables.emptyDetail": "Bayad na ang lahat ng credit line para sa business customer na ito.",
@@ -3458,7 +3523,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonIconOnlyLede": "Square and round icon controls with aria-label. Shape matrix for visual approval.",
   "uiStandards.buttonMotionTitle": "Button motion",
   "uiStandards.buttonMotionLede": "Subtle press, elevated lift, and contextual icon motion. Prefer feeling the interaction over noticing the animation. Reduced-motion friendly.",
-  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX Ã¢â‚¬â€ Cancel / dismiss. CornerUpLeft Ã¢â‚¬â€ Cancel and return / abandon edit. X Ã¢â‚¬â€ Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft Ã¢â‚¬â€ Back/navigation.",
+  "uiStandards.cancelIconPilotNote": "Locked Cancel icons: CircleX ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Cancel / dismiss. CornerUpLeft ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Cancel and return / abandon edit. X ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Close-only (also shown as minimal Cancel candidate for comparison). ArrowLeft ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Back/navigation.",
   "uiStandards.collapseAll": "Collapse all",
   "uiStandards.expandAll": "Expand all",
   "uiStandards.resetLayout": "Reset layout",
@@ -3466,7 +3531,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.buttonTreatmentsTitle": "Button treatments",
   "uiStandards.buttonTreatmentsLede": "Flat, elevated, and same-family gradient on PRIMARY (and DANGER STRONG separately). Gradient is not for every intent.",
   "uiStandards.buttonCheatTitle": "Cursor shorthand",
-  "uiStandards.buttonPilotBadge": "BUTTON STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.buttonPilotBadge": "BUTTON STANDARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVED / LOCKED",
   "uiStandards.buttonPilotLede": "Approved semantic intents. Reuses the shared ExItS Button component and design tokens. See Docs/UI/exits-button-standard.md.",
   "uiStandards.buttonPilotTitle": "Button samples",
   "uiStandards.description": "Visual reference for shared Pinoy Business POS interface patterns and Cursor shorthand.",
@@ -3479,8 +3544,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.tabModuleSubnav": "Module Subnav",
   "uiStandards.tabActionChips": "Action Chips",
   "uiStandards.tabCards": "Cards",
-  "uiStandards.tabsPilotBadge": "TABS STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
-  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-tabs-standard.md.",
+  "uiStandards.tabsPilotBadge": "TABS STANDARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVED / LOCKED",
+  "uiStandards.tabsPilotLede": "Canonical ExItS Tabs (ExitsTabs). Seven variants, CountBadge counts, keyboard/ARIA, theme and density from Preferences. APPROVED / LOCKED ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Docs/UI/exits-tabs-standard.md.",
   "uiStandards.tabsVariantsTitle": "Tab variants",
   "uiStandards.tabsCountsTitle": "Tabs with counts",
   "uiStandards.tabsIconsTitle": "Icons",
@@ -3491,8 +3556,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.tabsRealWorldTitle": "Real-world examples",
   "uiStandards.tabsCheatTitle": "Cursor shorthand",
   "uiStandards.tabsCheatLede": "Locked vocabulary for Cursor tasks. APPROVED / LOCKED.",
-  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV Ã¢â‚¬â€ PILOT / CANDIDATE",
-  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module Ã¢â‚¬â€ not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-module-subnav-standard.md.",
+  "uiStandards.moduleSubnavPilotBadge": "MODULE SUBNAV ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PILOT / CANDIDATE",
+  "uiStandards.moduleSubnavPilotLede": "Canonical ExItS Module Subnav (route destinations inside one module ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â not Tabs). Variants, icons, counts, Pill Bar treatments. Theme and density from Preferences. PILOT / CANDIDATE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Docs/UI/exits-module-subnav-standard.md.",
   "uiStandards.moduleSubnavComparisonTitle": "Variant comparison",
   "uiStandards.moduleSubnavIconsTitle": "Icons",
   "uiStandards.moduleSubnavCountsTitle": "Counts",
@@ -3500,14 +3565,14 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.moduleSubnavRealWorldTitle": "Real-world examples",
   "uiStandards.moduleSubnavCheatTitle": "Cursor shorthand",
   "uiStandards.moduleSubnavCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.actionChipsPilotBadge": "ACTION CHIP Ã¢â‚¬â€ PILOT / CANDIDATE",
-  "uiStandards.actionChipsPilotLede": "Canonical ExItS Action Chip pilot (ExitsChipBar variant=actions baseline + ActionChipBar gallery). Quick actions and navigation shortcuts Ã¢â‚¬â€ not Tabs, Filters, Module Subnav, or Buttons. Theme and density from Preferences. PILOT / CANDIDATE Ã¢â‚¬â€ Docs/UI/exits-action-chip-standard.md.",
+  "uiStandards.actionChipsPilotBadge": "ACTION CHIP ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â PILOT / CANDIDATE",
+  "uiStandards.actionChipsPilotLede": "Canonical ExItS Action Chip pilot (ExitsChipBar variant=actions baseline + ActionChipBar gallery). Quick actions and navigation shortcuts ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â not Tabs, Filters, Module Subnav, or Buttons. Theme and density from Preferences. PILOT / CANDIDATE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Docs/UI/exits-action-chip-standard.md.",
   "uiStandards.actionChipsOverviewTitle": "Semantic overview",
-  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button Ã¢â‚¬â€ same-looking labels, different jobs.",
+  "uiStandards.actionChipsOverviewLede": "Action vs navigation action vs filter vs button ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â same-looking labels, different jobs.",
   "uiStandards.actionChipsVariantsTitle": "Visual variants",
   "uiStandards.actionChipsVariantsLede": "Soft, outline, ghost, primary treatments, elevated, and special-use gradient. Same label for comparison.",
   "uiStandards.actionChipsShapesTitle": "Shapes",
-  "uiStandards.actionChipsShapesLede": "Pill, soft, and square Ã¢â‚¬â€ reuse locked Chip shape language with action touch targets.",
+  "uiStandards.actionChipsShapesLede": "Pill, soft, and square ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â reuse locked Chip shape language with action touch targets.",
   "uiStandards.actionChipsContentTitle": "Content & states",
   "uiStandards.actionChipsContentLede": "Text, icons, counts, primary emphasis, disabled, and loading.",
   "uiStandards.actionChipsGroupsTitle": "Action Chip groups",
@@ -3516,8 +3581,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.actionChipsRealWorldLede": "Static Inventory, Purchasing, Stock Count, Returns, and Staff shortcuts for visual comparison. No APIs.",
   "uiStandards.actionChipsCheatTitle": "Cursor shorthand",
   "uiStandards.actionChipsCheatLede": "Pilot vocabulary for Cursor tasks. PILOT / CANDIDATE.",
-  "uiStandards.cardsPilotBadge": "CARD STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
-  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable at status accents, motion. Theme at density mula sa Preferences. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
+  "uiStandards.cardsPilotBadge": "CARD STANDARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVED / LOCKED",
+  "uiStandards.cardsPilotLede": "Canonical ExItS Card foundation. Treatments, KPI/entity/product patterns, selectable at status accents, motion. Theme at density mula sa Preferences. APPROVED / LOCKED ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Docs/UI/exits-card-standard.md.",
   "uiStandards.cardsTreatmentsTitle": "Card treatments",
   "uiStandards.cardsBasicTitle": "Basic / content cards",
   "uiStandards.cardsKpiTitle": "KPI / Stat",
@@ -3532,8 +3597,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.cardsFeaturedEffectsTitle": "Featured card effects",
   "uiStandards.cardsRealWorldTitle": "Real-world examples",
   "uiStandards.cardsCheatTitle": "Cursor shorthand",
-  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED Ã¢â‚¬â€ Docs/UI/exits-card-standard.md.",
-  "uiStandards.chipPilotBadge": "CHIP STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.cardsCheatLede": "Locked vocabulary para sa Cursor tasks. APPROVED / LOCKED ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Docs/UI/exits-card-standard.md.",
+  "uiStandards.chipPilotBadge": "CHIP STANDARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVED / LOCKED",
   "uiStandards.chipPilotLede": "Approved ExItS chip language. Soft semantic surfaces, density from Preferences, primary via --exits-primary. See Docs/UI/exits-chip-standard.md.",
   "uiStandards.chipStatusTitle": "Status chips",
   "uiStandards.chipShapesTitle": "Chip shapes",
@@ -3562,7 +3627,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "uiStandards.simpleModuleSubnavNote": "Related route/page navigation.",
   "uiStandards.simpleFiltersNote": "Changes the current dataset/view; does not navigate to another page.",
   "uiStandards.tableCheatLede": "Use these terms in Cursor tasks. Explicit ON/OFF overrides FULL TABLE defaults. ACTIONS and INLINE EDIT are optional.",
-  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD Ã¢â‚¬â€ APPROVED / LOCKED",
+  "uiStandards.tablesExtensionPilotBadge": "TABLE STANDARD ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â APPROVED / LOCKED",
   "uiStandards.tablesAlignmentTitle": "Table alignment",
   "uiStandards.tablesActionsTitle": "Table actions",
   "uiStandards.tablesInlineRowEditTitle": "Inline row edit",
@@ -3580,7 +3645,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "exitsTable.filterNoSku": "No SKU",
   "exitsTable.next": "Next",
   "exitsTable.previous": "Previous",
-  "exitsTable.range": "{from}Ã¢â‚¬â€œ{to} of {total}",
+  "exitsTable.range": "{from}ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“{to} of {total}",
   "exitsTable.rowsPerPage": "Rows per page",
   "exitsTable.searchProducts": "Search products",
   "exitsTable.selectAll": "Select all visible rows",
@@ -3698,7 +3763,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.expiryCountNear": "Near expiry lots: {count}",
 
-  "inventory.expiryCounts": "Expired lots: {expired} Ã‚Â· Near expiry lots: {near}",
+  "inventory.expiryCounts": "Expired lots: {expired} Ãƒâ€šÃ‚Â· Near expiry lots: {near}",
 
   "inventory.expiryWindow": "Window",
 
@@ -3800,6 +3865,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.availableQty": "{qty} {uom} available",
 
   "inventory.reservedBadge": "{qty} reserved",
+  "inventory.returnsPendingBadge": "{qty} returns pending",
+  "inventory.availableLabel": "available",
 
   "inventory.viewReservations": "View reservations",
 
@@ -3807,7 +3874,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.reservationsClose": "Close",
 
-  "inventory.reservationsLoading": "Loading reservations…",
+  "inventory.reservationsLoading": "Loading reservationsâ€¦",
 
   "inventory.reservationsEmpty": "No active reservations",
 
@@ -3951,7 +4018,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.expirationTrackingOff": "Expiration tracking OFF",
 
-  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Ã‚Â· {days}-day warning",
+  "inventory.expirationTrackingOnWithWarning": "Expiration tracking ON Ãƒâ€šÃ‚Â· {days}-day warning",
 
   "inventory.expirationTrackingEnabled": "Na-enable ang expiration tracking.",
 
@@ -4425,6 +4492,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
     "Receiving this transfer is final. Verify the quantities before confirming.",
 
+  "transfer.receiveWaveConfirmDetail":
+    "Kumpirmahin ang receive-now na dami para sa resibong ito. Maaari mong tanggapin ang natitira mamaya o isara ang natitira na may dahilan.",
+
   "transfer.resetCreate": "Reset",
 
   "transfer.summaryTitle": "Transfer summary",
@@ -4512,10 +4582,48 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.invalidReceivedQuantity": "Received quantity must be between zero and the sent quantity.",
 
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
+  "transfer.receiveExceedsOutstanding":
+    "Ang receive now ay hindi maaaring lumampas sa outstanding na dami ({outstanding}).",
+  "transfer.invalidReceiveNowQuantity":
+    "Ang receive now ay dapat nasa pagitan ng zero at outstanding na dami.",
+  "transfer.receiveRequiresPositiveQty":
+    "Maglagay ng receive-now na dami na mas mataas sa zero sa kahit isang linya.",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
-
+  "transfer.needsClassification": "Needs reason",
+  "transfer.classifyDiscrepancyTitle": "Classify discrepancy",
+  "transfer.classifyDiscrepancyHint": "Received {received} of {sent}. Choose why the remainder was not accepted.",
+  "transfer.classifyDiscrepancySplitHint":
+    "Split the shortfall between damaged and missing / not delivered. Add remarks for this receipt.",
+  "transfer.classifyDiscrepancyConfirm": "Save classification",
+  "transfer.classifyBeforeReview": "Classify all receipt discrepancies before reviewing.",
+  "transfer.discrepancyClassificationRequired": "Classify damaged and missing quantities for each short line.",
+  "transfer.discrepancyNoteRequired": "Remarks are required when good received is below outstanding.",
+  "transfer.goodReceivedNow": "Good received now",
+  "transfer.damaged": "Damaged",
+  "transfer.notDelivered": "Not delivered",
+  "transfer.allDamaged": "All damaged",
+  "transfer.allNotDelivered": "All not delivered",
+  "transfer.allOther": "Other",
+  "transfer.remarks": "Remarks",
+  "transfer.expectedLater": "Expected later",
+  "transfer.closeMissing": "Close missing",
+  "transfer.reviewBeforeConfirm": "Review before confirm",
+  "transfer.backToEditReceive": "Back to edit",
+  "transfer.remainingDecisionTitle": "Missing quantity decision",
+  "transfer.remainingDecisionSummary": "{products} products · {units} units need a decision",
+  "transfer.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "transfer.remainingDecisionRequired": "Choose expected later or close missing for all missing quantities.",
+  "transfer.remainingDecisionCol": "Decision",
+  "transfer.remainingCol": "Missing qty",
+  "transfer.remainingIssueCol": "Issue",
+  "transfer.remainingApplyToAll": "Apply to all",
+  "transfer.receiveNow": "Receive now",
+  "transfer.editReceiveQty": "Edit receive quantity",
+  "transfer.saveReceiveQty": "Save receive quantity",
+  "transfer.resetReceiveQty": "Reset receive quantity",
   "transfer.items": "Items",
+  "transfer.units": "Units",
 
   "transfer.lede": "Ilipat ang stock sa pagitan ng mga branch sa inyong organisasyon.",
 
@@ -4570,6 +4678,23 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.receivedSuccess": "Transfer received. Inventory was added to {destination}.",
 
   "transfer.receiveFinalHint": "Receiving this transfer is final. Verify the quantities before confirming.",
+  "transfer.receiveWaveHint":
+    "Ilagay kung magkano ang tinatanggap sa resibong ito. Maaaring tanggapin mamaya ang outstanding o isara ito na may discrepancy reason.",
+  "transfer.receiveWaveSuccess": "Naitala ang resibo. Suriin ang na-update na dami sa transfer.",
+  "transfer.receiveRemainingTitle": "Tanggapin ang natitira",
+  "transfer.receiveRemaining": "Tanggapin ang natitira",
+  "transfer.previouslyReceived": "Naunang natanggap",
+  "transfer.outstanding": "Outstanding",
+  "transfer.closedShort": "Isasarang kulang",
+  "transfer.closeRemainder": "Isara ang natitira",
+  "transfer.closeRemainderTitle": "Isara ang natitirang dami?",
+  "transfer.closeRemainderBody":
+    "Itala kung bakit hindi na matatanggap ang outstanding na dami. Isasara ang transfer na may discrepancy.",
+  "transfer.closeRemainderConfirm": "Isara ang natitira",
+  "transfer.closingRemainder": "Isinasara…",
+  "transfer.closeRemainderSuccess":
+    "Isinara ang transfer na may discrepancy. Naitala ang outstanding na dami.",
+  "transfer.closeRemainderFailedTitle": "Hindi maisara ang natitirang dami",
 
   "transfer.receiveTitle": "Receive transfer",
 
@@ -4612,6 +4737,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Bahagyang natanggap",
 
   "transfer.status.received": "Received",
+  "transfer.status.closedWithDiscrepancy": "Isinara na may discrepancy",
+  "transfer.byPartiallyReceived": "Bahagyang natanggap ni",
+  "transfer.byClosedWithDiscrepancy": "Isinara ni",
 
   "transfer.title": "Mga Inventory Transfer",
 
@@ -4621,6 +4749,27 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "transfer.available": "Available: {qty} {uom}",
   "transfer.colAvailable": "Available at source",
+  "transfer.colNumber": "Transfer #",
+  "transfer.colRoute": "Route",
+  "transfer.colUpdated": "Updated",
+  "transfer.timelineTitle": "Transfer timeline",
+  "transfer.activity.empty": "No timeline events yet.",
+  "transfer.activity.created": "Transfer created",
+  "transfer.activity.createdDetail": "A draft branch transfer was created.",
+  "transfer.activity.dispatched": "Dispatched",
+  "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
+  "transfer.activity.received": "Received",
+  "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.receipt": "Naitala ang resibo",
+  "transfer.activity.receiptDetail": "Naitala ng destination branch ang resibo #{sequence}.",
+  "transfer.activity.receiptGood": "Good {qty}",
+  "transfer.activity.receiptDamaged": "Damaged {qty}",
+  "transfer.activity.receiptMissing": "Missing {qty}",
+  "transfer.activity.closedRemainder": "Isinara ang natitira",
+  "transfer.activity.closedRemainderDetail":
+    "Isinara ang outstanding na dami na may discrepancy reason.",
+  "transfer.activity.cancelled": "Cancelled",
+  "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
   "transfer.outOfStock": "Out of stock",
 
@@ -5205,7 +5354,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "incomingOrders.detailLede": "Suriin ang order snapshot mula sa buyer. Ang pagtanggap ay hindi nagbabago ng inventory.",
   "incomingOrders.shortageWarning": "Requested quantity exceeds available stock.",
-  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} — confirm {confirm} or propose changes.",
+  "incomingOrders.shortageExample": "Requested {requested} / Available stock {atp} â€” confirm {confirm} or propose changes.",
   "incomingOrders.acceptBlockedShortage": "Exact accept is blocked while any line exceeds available stock. Propose changes instead.",
   "incomingOrders.proposeChanges": "Propose changes",
   "incomingOrders.proposeNoMaterialChanges": "Adjust at least one confirmed quantity before proposing changes.",
@@ -5267,7 +5416,25 @@ export const filPH: Record<keyof typeof en, string> = {
   "incomingOrders.remainingCancelledValue": "Natitirang qty/halaga na kakanselahin",
   "incomingOrders.paymentReceived": "Natanggap na bayad",
   "incomingOrders.refundDue": "Refund due",
-  "incomingOrders.statusCompletedRemainingCancelled": "Tapos · Kinansela ang natitirang dami",
+  "incomingOrders.statusCompletedRemainingCancelled": "Tapos Â· Kinansela ang natitirang dami",
+  "incomingOrders.statusReceivedAwaitingPayment": "Natanggap · Hinihintay ang bayad",
+  "incomingOrders.awaitingPaymentTitle": "Hinihintay ang bayad",
+  "incomingOrders.awaitingPaymentSellerBody":
+    "Kinumpirma na ng buyer ang pagtanggap. Kumpirmahin ang bayad na nakolekta para matapos ang order.",
+  "incomingOrders.awaitingPaymentBuyerBody":
+    "Natanggap na ang mga item. Kailangan pang kumpirmahin ng supplier ang bayad bago matapos ang order.",
+  "incomingOrders.remainingDue": "Natitirang babayaran",
+  "incomingOrders.confirmPayment": "Kumpirmahin ang bayad",
+  "incomingOrders.confirmPaymentTitle": "Kumpirmahin ang natanggap na bayad",
+  "incomingOrders.confirmPaymentBody":
+    "Itala ang aktwal na nakolektang halaga. Kung bahagya lang, mananatiling hinihintay ang bayad.",
+  "incomingOrders.settlementAmount": "Halagang natanggap",
+  "incomingOrders.settlementMethod": "Paraan ng bayad",
+  "incomingOrders.settlementReference": "Reference",
+  "incomingOrders.settlementCheckCleared": "Cleared na ang tseke",
+  "incomingOrders.sellerRemarks": "Paalala ng supplier",
+  "incomingOrders.buyerReceiptRemarks": "Paalala ng buyer sa pagtanggap",
+  "incomingOrders.settlementConfirmed": "Kumpirmado ang bayad",
   "incomingOrders.shortClosed": "Short closed",
   "incomingOrders.finalAcceptedValue": "Pinal na tinanggap na halaga",
   "incomingOrders.balanceDue": "Balance due",
@@ -5297,6 +5464,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "incomingOrders.notFound": "Hindi nahanap ang incoming order.",
 
   "incomingOrders.orderDate": "Petsa ng order",
+  "incomingOrders.orderInfoTitle": "Impormasyon ng order",
   "incomingOrders.orderTotal": "Order total",
 
   "incomingOrders.review": "Suriin ang order",
@@ -5304,6 +5472,15 @@ export const filPH: Record<keyof typeof en, string> = {
   "incomingOrders.search": "Maghanap ayon sa buyer o PO number",
 
   "incomingOrders.startPreparing": "Simulang ihanda",
+
+  "incomingOrders.payBeforeConfirmTitle": "Confirm buyer payment",
+  "incomingOrders.payBeforeConfirmBody":
+    "Confirm you received the buyer's payment before starting fulfillment.",
+  "incomingOrders.confirmPayBeforePayment": "Confirm payment received",
+  "incomingOrders.buyerPaymentSubmitted": "Buyer submitted payment",
+  "incomingOrders.waitingForBuyerPayment": "Waiting for buyer payment",
+  "incomingOrders.waitingForBuyerPaymentHelp":
+    "Ask the buyer to open this purchase order and submit payment proof.",
 
   "incomingOrders.statusAccepted": "Tinanggap",
 
@@ -5346,6 +5523,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.tracked": "Tracked",
 
   "inventory.trackingFilter": "Tracking status",
+  "inventory.categoryFilter": "Categories",
+  "inventory.brandFilter": "Mga brand",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
   "inventory.missingExpirationShort": "Missing expiry",
@@ -5569,9 +5748,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.poReceipt": "PO receipt",
 
-  "inventory.movementType.manualIncrease": "Stock adjustment Ã¢â‚¬â€ dagdag",
+  "inventory.movementType.manualIncrease": "Stock adjustment ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dagdag",
 
-  "inventory.movementType.manualDecrease": "Stock adjustment Ã¢â‚¬â€ bawas",
+  "inventory.movementType.manualDecrease": "Stock adjustment ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bawas",
 
   "inventory.movementType.sale": "Sale",
 
@@ -5585,9 +5764,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementType.transferCancel": "Transfer cancel restore",
 
-  "inventory.movementType.stockCountIncrease": "Stock count Ã¢â‚¬â€ dagdag",
+  "inventory.movementType.stockCountIncrease": "Stock count ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dagdag",
 
-  "inventory.movementType.stockCountDecrease": "Stock count Ã¢â‚¬â€ bawas",
+  "inventory.movementType.stockCountDecrease": "Stock count ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bawas",
 
   "inventory.movementType.stockUse": "Stock use",
 
@@ -6764,7 +6943,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.reviewLimitsTitle": "Capacity changes",
 
-  "orgSubscription.reviewLimitRow": "{label}: {current} â†’ {target}",
+  "orgSubscription.reviewLimitRow": "{label}: {current} Ã¢â€ â€™ {target}",
 
   "orgSubscription.continueToPayment": "Continue to simulated payment",
 
@@ -6786,7 +6965,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "orgSubscription.simulateFailure": "Simulate failed payment",
 
-  "orgSubscription.submitting": "Workingâ€¦",
+  "orgSubscription.submitting": "WorkingÃ¢â‚¬Â¦",
 
   "orgSubscription.upgradeSuccess": "Plan upgraded successfully.",
 
@@ -6818,7 +6997,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgProfile.incompleteBody":
     "A phone number and full address help receipts, documents, and supplier connections.",
   "orgProfile.incompleteAction": "Complete profile",
-  "orgProfile.addressCountryOnly": "Country only ({country}) â€” add street and city.",
+  "orgProfile.addressCountryOnly": "Country only ({country}) Ã¢â‚¬â€ add street and city.",
   "orgProfile.section.basics": "Basics",
   "orgProfile.section.contact": "Contact",
   "orgProfile.section.address": "Address",
@@ -6895,10 +7074,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "staffBusinessProfile.jobTitle": "Position / Job title",
   "staffBusinessProfile.departmentPlaceholder": "Select or add department",
   "staffBusinessProfile.jobTitlePlaceholder": "Select or add position",
-  "staffBusinessProfile.catalogSearch": "Searchâ€¦",
+  "staffBusinessProfile.catalogSearch": "SearchÃ¢â‚¬Â¦",
   "staffBusinessProfile.catalogEmpty": "No matches",
-  "staffBusinessProfile.createDepartment": "Add â€œ{value}â€",
-  "staffBusinessProfile.createJobTitle": "Add â€œ{value}â€",
+  "staffBusinessProfile.createDepartment": "Add Ã¢â‚¬Å“{value}Ã¢â‚¬Â",
+  "staffBusinessProfile.createJobTitle": "Add Ã¢â‚¬Å“{value}Ã¢â‚¬Â",
   "staffBusinessProfile.unsavedTitle": "Discard unsaved changes?",
   "staffBusinessProfile.unsavedDetail": "You have unsaved changes. Close anyway?",
   "staffBusinessProfile.unsavedConfirm": "Discard",
@@ -6926,6 +7105,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "admin.nav.devices": "Devices",
 
   "admin.nav.cashHandling": "Cash Handling",
+  "admin.nav.connectedCommerce": "Connected Commerce",
 
   "admin.nav.businessQr": "Business QR",
 
@@ -6956,7 +7136,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgSubscription.deniedDetail":
     "Ang organization Owner lang ang makakakita ng subscription at billing details.",
 
-  "orgSubscription.loading": "Ikinakarga ang subscription moâ€¦",
+  "orgSubscription.loading": "Ikinakarga ang subscription moÃ¢â‚¬Â¦",
 
   "orgSubscription.loadError": "Hindi makarga ang subscription mo",
 
@@ -7024,11 +7204,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "orgSubscription.planDowngrade": "Mas mababang plan",
 
   "orgSubscription.planLimits":
-    "Branches {branches} Â· Staff {staff} Â· Devices {devices} Â· Areas {areas}",
+    "Branches {branches} Ã‚Â· Staff {staff} Ã‚Â· Devices {devices} Ã‚Â· Areas {areas}",
 
   "orgSubscription.compare": "Tingnan ang epekto",
 
-  "orgSubscription.comparing": "Tinitingnan ang epektoâ€¦",
+  "orgSubscription.comparing": "Tinitingnan ang epektoÃ¢â‚¬Â¦",
 
   "orgSubscription.previewError": "Hindi matingnan ang epekto ng plan na ito ngayon.",
 
@@ -7588,10 +7768,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.explore.billingEveryYear": "every year",
   "personal.explore.billingPopular": "Popular",
   "personal.explore.billingBestValue": "Best value",
-  "personal.explore.billingBestValueSave": "Best value Ã¢â‚¬â€ Save {percent}%",
+  "personal.explore.billingBestValueSave": "Best value ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Save {percent}%",
   "personal.explore.billingSavePercent": "Save {percent}%",
   "personal.explore.cycleSavings": "Save {percent}%",
-  "personal.explore.cycleSavingsDetail": "Save {amount} Ã‚Â· {percent}%",
+  "personal.explore.cycleSavingsDetail": "Save {amount} Ãƒâ€šÃ‚Â· {percent}%",
   "personal.explore.equivalentMonthly": "{amount}/month equivalent",
   "personal.startBusiness.baseAmount": "Base",
   "personal.startBusiness.discount": "Discount ({percent}%)",
@@ -7602,7 +7782,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "personal.explore.annualSavings": "Save {percent}% vs monthly",
 
-  "personal.explore.capacityLine": "{branches} branch Ã‚Â· {staff} staff Ã‚Â· {devices} POS",
+  "personal.explore.capacityLine": "{branches} branch Ãƒâ€šÃ‚Â· {staff} staff Ãƒâ€šÃ‚Â· {devices} POS",
   "personal.explore.viewAllFeatures": "View all features",
   "personal.explore.simulatedPaymentsNotice":
     "Payments are currently simulated. No real charge will be made.",
@@ -7669,6 +7849,74 @@ export const filPH: Record<keyof typeof en, string> = {
   "personal.explore.payments.onlineBanking": "Online Banking",
   "personal.explore.payments.comingSoon": "Coming soon",
   "admin.nav.paymentMethods": "Payment methods",
+  "connectedCommerce.title": "Connected Commerce",
+  "connectedCommerce.lede":
+    "Organization defaults for B2B fulfillment, payments, pricing, and orders. Branch and customer details stay in their canonical pages.",
+  "connectedCommerce.tabsLabel": "Connected Commerce sections",
+  "connectedCommerce.tab.overview": "Overview",
+  "connectedCommerce.tab.fulfillment": "Fulfillment",
+  "connectedCommerce.tab.payments": "Payments",
+  "connectedCommerce.tab.catalog": "Catalog & Pricing",
+  "connectedCommerce.tab.orders": "Orders",
+  "connectedCommerce.tab.documents": "Documents & Compliance",
+  "connectedCommerce.orgRequired": "Organization required",
+  "connectedCommerce.orgRequiredDetail": "Bind an organization workspace to manage Connected Commerce settings.",
+  "connectedCommerce.summary.fulfillment": "Fulfillment",
+  "connectedCommerce.summary.payments": "Payments",
+  "connectedCommerce.summary.catalog": "Catalog / Pricing",
+  "connectedCommerce.summary.customers": "Connected customers",
+  "connectedCommerce.summary.onlinePayments": "Platform online payments",
+  "connectedCommerce.summary.documents": "Documents / BIR",
+  "connectedCommerce.optionalReady": "Default {n}% (optional)",
+  "connectedCommerce.offerDeliveryOn": "Offer Delivery ON",
+  "connectedCommerce.offerDeliveryOff": "Offer Delivery OFF",
+  "connectedCommerce.linkBranches": "Review branch fulfillment setup",
+  "connectedCommerce.linkPaymentMethods": "Review accepted payment methods",
+  "connectedCommerce.branchReadinessHelp":
+    "Pickup and Delivery readiness remain on each branch fulfillment page. Use Manage fulfillment to open Branches.",
+  "connectedCommerce.platformUnknown": "Unknown",
+  "connectedCommerce.incompleteTitle": "Actionable items",
+  "connectedCommerce.informational": "informational",
+  "connectedCommerce.open": "Open",
+  "connectedCommerce.offerDelivery": "Offer Delivery",
+  "connectedCommerce.offerDeliveryHelp":
+    "When OFF, Delivery is N/A globally and buyers cannot select Delivery. Branch delivery config is preserved.",
+  "connectedCommerce.customerDeliveryNote":
+    "Individual connected customers may be restricted from Delivery on their Business Customer page.",
+  "connectedCommerce.branchReadiness": "Branch readiness",
+  "connectedCommerce.noBranches": "No branches available.",
+  "connectedCommerce.pickup": "Pickup",
+  "connectedCommerce.delivery": "Delivery",
+  "connectedCommerce.manageFulfillment": "Manage fulfillment",
+  "connectedCommerce.paymentTiming": "Payment timing",
+  "connectedCommerce.paymentTimingHelp":
+    "Choose which timings connected purchase orders may use. Default must be one of the enabled timings.",
+  "connectedCommerce.timing.payBefore": "Pay in advance",
+  "connectedCommerce.timing.payOnDelivery": "Pay on delivery",
+  "connectedCommerce.timing.supplierCredit": "Supplier Utang",
+  "connectedCommerce.defaultTiming": "Default timing",
+  "connectedCommerce.acceptedMethods": "Accepted payment methods",
+  "connectedCommerce.managePaymentMethods": "Manage payment methods",
+  "connectedCommerce.onlinePayments": "Online supplier payments",
+  "connectedCommerce.onlinePaymentsReadonly": "Managed by ExItS Platform Admin. Organizations cannot override this gate.",
+  "connectedCommerce.catalogHelp":
+    "These prices are used as defaults for connected business customers. Customer-specific pricing can override these rules.",
+  "connectedCommerce.defaultDiscount": "Default B2B discount (%)",
+  "connectedCommerce.categoryRules": "Category pricing",
+  "connectedCommerce.categoryRulesCount": "{n} categories with overrides",
+  "connectedCommerce.noCategoryRules": "No category rules yet. Add rules after selecting seller categories.",
+  "connectedCommerce.removeRule": "Remove",
+  "connectedCommerce.proposalHoldHours": "Proposal stock reservation duration (hours)",
+  "connectedCommerce.ordersRules":
+    "Reservations reduce Available stock, not On hand. Proposals expire and release stock. Confirmed reservations remain until fulfilled or cancelled.",
+  "connectedCommerce.birStatus": "BIR / official documents",
+  "connectedCommerce.birReadonly": "Platform-controlled. Organization cannot self-approve.",
+  "connectedCommerce.documentPrefs": "Document & printing preferences",
+  "connectedCommerce.documentPrefsDevice": "Current print preferences are device-local (This device), not organization-wide.",
+  "connectedCommerce.openDocuments": "Open Documents & Printing",
+  "connectedCommerce.save": "Save",
+  "connectedCommerce.saved": "Connected Commerce settings saved.",
+  "connectedCommerce.saveFailed": "Could not save Connected Commerce settings.",
   "paymentMethods.title": "Payment methods",
   "paymentMethods.lede": "Choose how your stores accept payment. Online providers stay Coming soon until integrated.",
   "paymentMethods.builtIn": "Built-in",
@@ -7693,7 +7941,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "paymentMethods.selectedBranches": "Selected branches",
   "paymentMethods.noBranches": "No active branches to select yet.",
   "paymentMethods.orgRequired": "Open Payment methods from Manage Business for an organization.",
-  "paymentMethods.loading": "Loading payment methodsÃ¢â‚¬Â¦",
+  "paymentMethods.loading": "Loading payment methodsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦",
   "paymentMethods.errorTitle": "Could not load payment methods",
   "paymentMethods.saved": "Payment method saved",
 
@@ -7793,7 +8041,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.payingAmount": "Amount due: {amount}",
   "subscriptionCheckout.payNow": "Pay now (simulated)",
   "subscriptionCheckout.confirmSimulatedPay": "Confirm simulated payment",
-  "subscriptionCheckout.processing": "ProcessingÃ¢â‚¬Â¦",
+  "subscriptionCheckout.processing": "ProcessingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦",
   "subscriptionCheckout.processFailed": "Payment could not be processed.",
   "subscriptionCheckout.invalidChannel": "Choose GCash, Maya, or Card.",
   "subscriptionCheckout.ewalletHint": "Simulate a {channel} wallet authorization. No real wallet is contacted.",
@@ -7808,12 +8056,12 @@ export const filPH: Record<keyof typeof en, string> = {
   "subscriptionCheckout.card.requiredFields": "Enter card name, number, expiry, and CVV.",
   "subscriptionCheckout.card.invalidNumber": "Enter a test card number.",
   "subscriptionCheckout.card.testScenarios": "Test card autofill",
-  "subscriptionCheckout.card.scenarioSuccess": "4242Ã¢â‚¬Â¦ success",
-  "subscriptionCheckout.card.scenarioDecline": "4000Ã¢â‚¬Â¦0002 fail",
-  "subscriptionCheckout.card.scenarioProcessing": "4000Ã¢â‚¬Â¦9995 processing",
-  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 Ã¢â€ â€™ Paid",
-  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 Ã¢â€ â€™ Failed",
-  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 Ã¢â€ â€™ Processing",
+  "subscriptionCheckout.card.scenarioSuccess": "4242ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ success",
+  "subscriptionCheckout.card.scenarioDecline": "4000ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦0002 fail",
+  "subscriptionCheckout.card.scenarioProcessing": "4000ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦9995 processing",
+  "subscriptionCheckout.card.ruleSuccess": "4242 4242 4242 4242 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Paid",
+  "subscriptionCheckout.card.ruleDecline": "4000 0000 0000 0002 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Failed",
+  "subscriptionCheckout.card.ruleProcessing": "4000 0000 0000 9995 ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Processing",
   "subscriptionCheckout.resultTitle": "Payment result",
   "subscriptionCheckout.receiptTitle": "Receipt",
   "subscriptionCheckout.paymentDetailsTitle": "Payment details",
@@ -9388,8 +9636,11 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.colUnit": "Unit",
   "purchasing.colPrice": "Price",
   "purchasing.colStock": "Stock",
+  "purchasing.colAvailable": "Available",
   "purchasing.colQty": "Qty",
   "purchasing.colAction": "Action",
+  "purchasing.colDelete": "Delete",
+  "purchasing.colEdit": "Edit",
 
   "purchasing.supplierOutOfStock": "Out of stock",
 
@@ -9474,6 +9725,9 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.createOrder": "Gawin ang purchase order",
 
   "purchasing.createTitle": "New purchase order",
+  "purchasing.editTitle": "I-edit ang purchase order",
+  "purchasing.editOrder": "I-edit ang order",
+  "purchasing.saveOrder": "I-save ang order",
 
   "purchasing.damaged": "Sira",
 
@@ -9562,19 +9816,39 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.editReceiveNow": "I-edit ang receive quantity",
 
-  "purchasing.deliverLater": "Ihatid / palitan mamaya",
+  "purchasing.deliverLater": "Palitan mamaya",
+
+  "purchasing.replaceLater": "Palitan mamaya",
 
   "purchasing.cancelRemaining": "Kanselahin ang natitira",
 
   "purchasing.remainingQuestion": "Ano ang gagawin sa natitirang {qty}?",
 
   "purchasing.remainingDecisionTitle": "Natitirang dami",
+  "purchasing.remainingDecisionSummary": "{products} produkto · {units} units ang kailangan ng desisyon",
+  "purchasing.remainingDecisionSummaryOne": "1 produkto · {units} units ang kailangan ng desisyon",
+  "purchasing.remainingApplyToAll": "Ilapat sa lahat",
+  "purchasing.remainingDecisionRequired": "Piliin kung ano ang dapat gawin sa lahat ng natitirang dami.",
+  "purchasing.remainingDecisionCol": "Desisyon",
+  "purchasing.remainingIssueCol": "Isyu",
+  "purchasing.remainingCol": "Natitira",
   "purchasing.discrepancyClassifyTitle": "Uriin ang discrepancy",
   "purchasing.discrepancyClassifyHint": "Uriin ang natitirang dami.",
   "purchasing.notAcceptedQty": "Hindi tinanggap ang {qty}",
   "purchasing.allDamaged": "Lahat damaged",
   "purchasing.allNotDelivered": "Lahat hindi na-deliver",
   "purchasing.notDelivered": "Hindi na-deliver",
+  "purchasing.allOther": "Iba pa",
+  "purchasing.classifyAs": "Uriin bilang",
+  "purchasing.otherDiscrepancy": "Iba pa",
+  "purchasing.otherReason": "Dahilan",
+  "purchasing.otherReasonDescription": "Maikling paglalarawan",
+  "purchasing.otherReasonWrongItem": "Maling item",
+  "purchasing.otherReasonWrongVariant": "Maling variant",
+  "purchasing.otherReasonExpired": "Expired",
+  "purchasing.otherReasonPackagingIssue": "Problema sa packaging",
+  "purchasing.otherReasonQualityIssue": "Problema sa kalidad",
+  "purchasing.otherReasonOther": "Iba pa (ilarawan)",
   "purchasing.remainingToClassify": "Natitira pang uriin: {qty}",
   "purchasing.discrepancyNoteRequired": "Magdagdag ng note para sa bawat discrepancy bago magpatuloy.",
   "purchasing.discrepancyClassificationRequired": "Uriin muna ang damaged at hindi na-deliver bago magpatuloy.",
@@ -9613,6 +9887,9 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.completed": "Ganap na natanggap",
   "purchasing.activity.remainingClosed": "Kinansela ang natitirang dami",
+  "purchasing.activity.awaitingPayment": "Hinihintay ang bayad",
+  "purchasing.activity.paymentConfirmed": "Kumpirmado ang bayad",
+  "purchasing.activity.noPaymentDue": "Walang babayaran",
 
   "purchasing.activity.empty": "Wala pang aktibidad.",
 
@@ -9697,6 +9974,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.receiptTotal": "Total",
   "purchasing.addNewProduct": "Add new product",
   "purchasing.qtyShort": "Qty",
+  "purchasing.editQty": "Edit quantity for {name}",
+  "purchasing.doneEditingQty": "Done editing quantity",
   "purchasing.costShort": "Cost",
   "purchasing.sellingPriceShort": "Selling price",
   "purchasing.costZeroMarginWarning": "Purchase cost equals the current selling price (zero margin).",
@@ -9748,6 +10027,27 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethodIntendedHelp":
     "Choose the intended payment method for this order. This does not mean payment has been received.",
+  "purchasing.paymentTiming": "Payment timing",
+  "purchasing.paymentTimingHelp": "Choose when payment is due for this connected purchase order.",
+  "purchasing.paymentTimingRequired": "Select a payment timing.",
+
+  "purchasing.payBeforeTitle": "Pay before fulfillment",
+  "purchasing.payBeforeBody":
+    "The supplier accepted this order. Pay now, then submit your payment proof so they can start preparing.",
+  "purchasing.payBeforeDueChip": "Payment due",
+  "purchasing.payNow": "Pay now",
+  "purchasing.submitPayment": "Submit payment",
+  "purchasing.updatePaymentProof": "Update payment proof",
+  "purchasing.prepaymentSubmitted": "Payment submitted",
+  "purchasing.paymentSubmittedWaiting": "Waiting for seller",
+  "purchasing.paymentSubmittedWaitingBody":
+    "Your payment proof was submitted. The supplier must confirm before fulfillment can start.",
+  "purchasing.paymentReference": "Payment reference",
+  "purchasing.paymentReferenceHelp": "GCash reference or transaction ID",
+  "purchasing.paymentReferenceRequired": "Enter the payment reference.",
+  "purchasing.paymentDetails": "Payment details",
+  "purchasing.paymentDetailsHelp": "Bank account, check number, or other details the supplier can verify",
+  "purchasing.paymentDetailsRequired": "Enter bank or check details.",
 
   "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
 
@@ -9761,14 +10061,45 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethod.utang": "Utang / Credit",
 
-  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
-
-  "purchasing.paymentHelp.bankTransfer":
-    "Payment can be completed after the supplier confirms the order.",
-
-  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
-
+  "purchasing.paymentHelp.cod.payBefore":
+    "Payment will be collected before fulfillment starts.",
+  "purchasing.paymentHelp.cod.payOnDelivery":
+    "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.cod.supplierCredit":
+    "Cash remains the intended settlement method when payment is due under supplier credit.",
+  "purchasing.paymentHelp.bankDeposit.payBefore":
+    "Payment will be recorded as a bank deposit before fulfillment.",
+  "purchasing.paymentHelp.bankDeposit.payOnDelivery":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.bankDeposit.supplierCredit":
+    "Payment will be recorded as a bank deposit when due under supplier credit.",
+  "purchasing.paymentHelp.check.payBefore":
+    "A check received before fulfillment stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.payOnDelivery":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.supplierCredit":
+    "A check under supplier credit stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer.payBefore":
+    "Payment can be completed before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.bankTransfer.payOnDelivery":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.bankTransfer.supplierCredit":
+    "Payment can be completed when due under supplier credit after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payBefore":
+    "Payment can be recorded before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payOnDelivery":
+    "Payment can be recorded when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash.supplierCredit":
+    "Payment can be recorded when due under supplier credit after the supplier confirms the order.",
   "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.bankDeposit":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.check":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash": "Payment can be recorded when goods are delivered or received.",
 
   "purchasing.utang.unavailable": "unavailable",
 
@@ -9790,8 +10121,10 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.utang.remainingAfterPo": "Remaining after PO",
   "purchasing.supplierNotReadyTitle": "Supplier not ready for purchase orders",
   "purchasing.supplierNotReadyBody":
-    "This supplier is not currently ready to accept purchase orders from your organization. Please contact your supplier.",
-    "purchasing.supplierNotReady.dismiss": "Dismiss",
+    "You can save a draft now. Submit will stay blocked until the supplier finishes setup.",
+  "purchasing.supplierNotReadySubmitBlocked":
+    "Submit is blocked until the supplier finishes setup for purchase orders.",
+  "purchasing.supplierNotReady.dismiss": "Dismiss",
 
   "purchasing.supplierNotReady.issuePrefix": "Issue:",
 
@@ -9821,28 +10154,37 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.supplierNotReady.phrase.credit": "credit",
 
-  "purchasing.supplierNotReady.reason.fulfillment": "Purchase orders are currently unavailable because this supplier has not completed its fulfillment setup. Please contact the supplier and ask them to review their purchase-order fulfillment settings.",
+  "purchasing.supplierNotReady.reason.fulfillment": "You can save a draft now. Submit will stay blocked until this supplier completes its fulfillment setup.",
 
-  "purchasing.supplierNotReady.reason.noUsableMethod": "This supplier currently has no Pickup or Delivery method available for purchase orders. Please contact the supplier.",
+  "purchasing.supplierNotReady.reason.noUsableMethod": "You can save a draft now. Submit will stay blocked until this supplier enables Pickup or Delivery for purchase orders.",
 
-  "purchasing.supplierNotReady.reason.payment": "This supplier has not configured an accepted payment method for purchase orders.",
+  "purchasing.supplierNotReady.reason.payment": "You can save a draft now. Submit will stay blocked until this supplier configures an accepted payment method.",
 
-  "purchasing.supplierNotReady.reason.catalog": "This supplier currently has no products available for purchase ordering.",
+  "purchasing.supplierNotReady.reason.catalog": "You can save a draft now. Submit will stay blocked until this supplier has products available for purchase ordering.",
 
-  "purchasing.supplierNotReady.reason.contact": "The supplier must complete its business contact setup before accepting purchase orders.",
+  "purchasing.supplierNotReady.reason.contact": "You can save a draft now. Submit will stay blocked until the supplier completes its business contact setup.",
 
-  "purchasing.supplierNotReady.reason.credit": "Credit purchasing is currently unavailable for this business relationship.",
+  "purchasing.supplierNotReady.reason.credit": "You can save a draft now. Credit purchasing remains unavailable for this business relationship until the supplier finishes credit setup.",
 
-  "purchasing.supplierNotReady.reason.multiple": "Purchase orders are currently unavailable due to {reasons} setup. Please contact your supplier.",
+  "purchasing.supplierNotReady.reason.multiple": "You can save a draft now. Submit will stay blocked due to {reasons} setup - contact your supplier.",
 
 "purchasing.readyForPurchaseOrders": "Ready for purchase orders",
   "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillmentMethodHelp":
+    "Choose how this connected purchase order should be fulfilled.",
+  "purchasing.fulfillmentMethodRequired": "Select Pickup or Delivery before saving this purchase order.",
   "purchasing.fulfillment.pickup": "Pickup",
   "purchasing.fulfillment.delivery": "Delivery",
-  "purchasing.fulfillment.deliveryUnavailableOrgOff": "Delivery is not offered by this supplier.",
+  "purchasing.fulfillment.deliveryUnavailableOrgOff": "Delivery is currently disabled by this supplier.",
   "purchasing.fulfillment.deliveryUnavailableBranch": "Delivery is not ready on the selected fulfillment branch.",
-  "purchasing.fulfillment.deliveryUnavailableCustomer": "Delivery is not allowed for this connection.",
-  "purchasing.fulfillment.singleMethodHelp": "This supplier supports {method} only.",
+  "purchasing.fulfillment.deliveryUnavailableCustomer": "Delivery is not available for this business relationship.",
+  "purchasing.fulfillment.deliverySetupRequired":
+    "Delivery is available, but your receiving address/setup must be completed.",
+  "purchasing.fulfillment.deliverySetupRequiredDetail":
+    "Complete the receiving address for {branch}.",
+  "purchasing.fulfillment.completeReceivingSetup": "Complete receiving setup",
+  "purchasing.fulfillment.deliverySetupBadge": "Setup required",
+  "purchasing.fulfillment.singleMethodHelp": "This supplier currently supports {method} only.",
   "purchasing.saveDraftAnyway": "Save draft",
 
   "purchasing.declineChanges": "Decline changes",
@@ -9953,13 +10295,20 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.supplierProducts": "Supplier product",
   "purchasing.supplierPrice": "Supplier price",
   "purchasing.productAdded": "Naidagdag",
+  "purchasing.linkedListMode": "Listahan ng produkto",
+  "purchasing.filterNotAdded": "Hindi pa naidagdag ({n})",
+  "purchasing.filterAdded": "Naidagdag ({n})",
   "purchasing.categories": "Mga kategorya",
   "purchasing.category": "Kategorya",
   "purchasing.categoriesPlaceholder": "Pumili ng kategorya",
   "purchasing.categoriesSelected": "{count} selected",
-  "purchasing.categoriesTriggerCount": "Categories Â· {count}",
+  "purchasing.categoriesTriggerCount": "Categories Ã‚Â· {count}",
   "purchasing.selectAllCategories": "Piliin lahat",
   "purchasing.deselectAllCategories": "Alisin ang lahat",
+  "purchasing.brandsPlaceholder": "Pumili ng brand",
+  "purchasing.brandsSelected": "{count} napili",
+  "purchasing.selectAllBrands": "Piliin lahat",
+  "purchasing.deselectAllBrands": "Alisin ang lahat",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -10028,6 +10377,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "purchasing.reviewDirect": "I-review ang receipt",
 
   "purchasing.reviewReceipt": "I-review ang receipt",
+  "purchasing.receiptSummaryTitle": "Buod ng receipt",
 
   "purchasing.saveFailed": "Hindi magawa ang purchase order.",
 
@@ -10075,7 +10425,25 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.totalCost": "Kabuuang halaga",
 
-  "purchasing.paymentAtReceipt": "Bayad sa resibo",
+    "purchasing.payment": "Payment",
+  "purchasing.prepayment": "Prepayment",
+  "purchasing.amountPaid": "Amount paid",
+  "purchasing.confirmedBy": "Confirmed by",
+  "purchasing.confirmedAt": "Confirmed at",
+  "purchasing.settlementNotes": "Settlement notes",
+  "purchasing.prepaidSettlementMissing": "Prepayment settlement data is missing for this pay-in-advance order. Contact the supplier or support before receiving — do not re-enter payment details.",
+  "purchasing.supplierCreditReceiveHint": "Accepted goods value will be posted to the approved supplier credit account.",
+  "purchasing.thisReceipt": "This receipt",
+  "purchasing.previouslyReceivedValue": "Previously received",
+  "purchasing.remainingValue": "Remaining",
+  "purchasing.awaitingGoodsReceipt": "Awaiting goods receipt",
+  "purchasing.paymentSettled": "Paid / Settled",
+  "purchasing.readyForReceipt": "Ready for receipt",
+  "purchasing.receivingStatus": "Receiving",
+  "purchasing.fulfillmentStatus": "Fulfillment",
+  "purchasing.transferReference": "Bank reference",
+  "purchasing.checkReference": "Check number",
+"purchasing.paymentAtReceipt": "Bayad sa resibo",
 
   "purchasing.paymentStatus": "Katayuan ng bayad",
 
@@ -10831,6 +11199,32 @@ export const filPH: Record<keyof typeof en, string> = {
   "returns.back": "Bumalik sa returns",
 
   "returns.backToEdit": "Bumalik sa edit",
+  "returns.returnsPending": "Returns pending",
+  "returns.returnsProcessed": "Returns processed",
+  "returns.statusCompletedReturnsPending": "Completed · Returns pending",
+  "returns.statusCompletedReturnsProcessed": "Completed · Returns processed",
+  "returns.returnedItems": "Returned items",
+  "returns.pendingInspection": "Pending inspection",
+  "returns.classified": "Classified",
+  "returns.process": "Process",
+  "returns.returnInspection": "Return inspection",
+  "returns.returnedQuantity": "Returned quantity",
+  "returns.sellableAgain": "Sellable again",
+  "returns.damagedWriteOff": "Damaged / write-off",
+  "returns.totalClassified": "Total classified must match returned quantity.",
+  "returns.classifiedProgress": "Na-classify {classified} / {returned}",
+  "returns.saveClassification": "Save classification",
+  "returns.reviewReturn": "Review return",
+  "returns.finalizeReturns": "Finalize returns",
+  "returns.inventoryImpact": "Inventory impact",
+  "returns.financialImpact": "Financial impact",
+  "returns.originalSaleTotal": "Original sale total",
+  "returns.amountPreviouslyPaid": "Amount previously paid",
+  "returns.remainingAmountDue": "Remaining amount due",
+  "returns.refundRemaining": "Refund remaining",
+  "returns.recordRefund": "Record refund",
+  "returns.refundReference": "Refund reference",
+  "returns.refundDue": "Refund due",
 
   "returns.cannotReturn": "Hindi ma-return ang transaction na ito.",
 
@@ -11222,7 +11616,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "sell.lede": "Maghanap o pumili ng produkto para magsimula ng sale.",
 
-  "sell.linePreview": "{qty} {unit} Ãƒâ€” {price} = {amount}",
+  "sell.linePreview": "{qty} {unit} ÃƒÆ’Ã¢â‚¬â€ {price} = {amount}",
 
   "sell.midSession.deviceLost": "Hindi na aprubado ang device mo para magbenta.",
 
@@ -12570,6 +12964,8 @@ export const filPH: Record<keyof typeof en, string> = {
   "branches.create.creating": "Gumagawa?",
 
   "branches.create.failed": "Hindi magawa ang branch.",
+  "branches.create.deliveryRequiresCoordinates":
+    "I-enable ang delivery pagkatapos magtakda ng wastong branch coordinates.",
 
   "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
 
@@ -12978,6 +13374,23 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.approved": "Naaprubahan",
   "stockRequest.approvedQty": "Naaprubahang dami",
   "stockRequest.fulfilled": "Natupad",
+  "stockRequest.received": "Natanggap",
+  "stockRequest.stillInTransit": "Nasa transit pa",
+  "stockRequest.remainingToDispatch": "Natitira para i-dispatch",
+  "stockRequest.unit": "Yunit",
+  "stockRequest.openTransferBlocksDispatch":
+    "{qty} units ang outstanding pa sa Transfer {transfer}. Tanggapin o isara muna ang transfer bago magpadala ng kapalit.",
+  "stockRequest.waitingForDestination":
+    "Naghihintay sa destination branch. {qty} units ang nasa transit pa sa Transfer {transfer}.",
+  "stockRequest.viewOpenTransfer": "Tingnan ang transfer",
+  "stockRequest.reviewPrepareTransfer": "Suriin at ihanda ang transfer",
+  "stockRequest.continueTransferPreparation": "Ipagpatuloy ang paghahanda ng transfer",
+  "stockRequest.fulfillRemaining": "Tuparin ang natitirang {qty}",
+  "stockRequest.readyToReceive": "Handa nang tumanggap",
+  "stockRequest.linkedTransfer.sent": "Ipinadala",
+  "stockRequest.linkedTransfer.received": "Natanggap",
+  "stockRequest.linkedTransfer.closed": "Isinara",
+  "stockRequest.linkedTransfer.outstanding": "Outstanding",
   "stockRequest.inProgress": "Kasalukuyan",
   "stockRequest.fulfillQty": "Dami na itutupad",
   "stockRequest.linkedTransfers": "Naka-link na transfer",
@@ -13020,6 +13433,17 @@ export const filPH: Record<keyof typeof en, string> = {
   "stockRequest.activity.dispatched": "Naipadala",
   "stockRequest.activity.rejected": "Tinanggihan",
   "stockRequest.activity.cancelled": "Kinansela",
+  "stockRequest.activity.empty": "Wala pang aktibidad.",
+  "stockRequest.activity.loadError": "Hindi ma-load ang aktibidad.",
+  "stockRequest.activity.transferPrepared": "Inihanda ang transfer",
+  "stockRequest.activity.transferDispatched": "Naipadala ang transfer",
+  "stockRequest.activity.transferReceipt": "Receipt ng transfer",
+  "stockRequest.activity.transferReceiptDetail": "Receipt wave {sequence}",
+  "stockRequest.activity.transferCompleted": "Natapos ang transfer",
+  "stockRequest.activity.transferRemainderClosed": "Isinara ang natitirang transfer",
+  "stockRequest.activity.transferCancelled": "Kinansela ang transfer",
+  "stockRequest.activity.requestFulfilled": "Natupad ang request",
+  "stockRequest.activity.transferRefDetail": "Transfer {transfer}",
   "stockRequest.actionError": "Hindi ma-update ang stock request na ito.",
   "stockRequest.status.pending": "Nakabinbin",
   "stockRequest.status.approved": "Naaprubahan",
@@ -13177,7 +13601,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "nav.backToWarehouseHome": "Back to Warehouse home",
 
   "catalog.cancel": "Kanselahin",
-  "catalog.category.creating": "GumagawaÃ¢â‚¬Â¦",
+  "catalog.category.creating": "GumagawaÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦",
   "catalog.category.deactivateConfirm": "I-deactivate ang kategoryang ito? Mananatili ito sa historical products pero hindi maaaring i-assign sa bagong products.",
   "catalog.categoryCreateFailed": "Hindi magawa ang kategorya.",
   "catalog.categoryDeactivateFailed": "Hindi ma-deactivate ang kategorya.",
@@ -13192,7 +13616,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "production.recipes.estimatedUnitCostLabel": "Cost / {uom}",
   "production.recipes.laborOverheadNotIncluded": "Labor and overhead are not included.",
   "production.recipes.lowMarginWarning": "Low estimated gross margin.",
-  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Ã‚Â· Selling price: {price} Ã‚Â· Estimated loss: {loss} / {uom}",
+  "production.recipes.sellingBelowCostDetail": "Cost: {cost} Ãƒâ€šÃ‚Â· Selling price: {price} Ãƒâ€šÃ‚Â· Estimated loss: {loss} / {uom}",
   "production.recipes.sellingBelowCostWarning": "Selling below estimated material cost.",
   "production.recipes.suggestedPriceBasedOnMaterial": "Material-cost based suggestion",
   "production.recipes.suggestedPriceUnavailable": "Suggested price unavailable",
@@ -13221,7 +13645,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "customers.orgReviewIncomingRequest": "Review request",
   "customers.orgOpenPendingConnection": "Open pending connection",
   "customers.business.waitingForAccept": "Waiting for {name} to accept.",
-  "customers.business.actionRequired": "Action required Ã¢â‚¬â€ {name} wants to connect.",
+  "customers.business.actionRequired": "Action required ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {name} wants to connect.",
   "customers.business.reviewRequest": "Review request",
   "customers.badge.pending": "Pending",
   "customers.badge.active": "Active",
@@ -13248,4 +13672,52 @@ export const filPH: Record<keyof typeof en, string> = {
   "connected.incomingKindBuyerRequest": "Buyer request",
   "connected.incomingKindSupplierInvite": "Supplier invitation",
   "connected.reviewAndAccept": "Review & accept",
+  "returns.connectedPo.sectionTitle": "Mga return sa supplier",
+  "returns.connectedPo.returnItems": "Ibalik ang mga item sa supplier",
+  "returns.connectedPo.requestTitle": "Ibalik sa supplier",
+  "returns.connectedPo.requestLede": "Piliin ang mga natanggap na item na ibabalik mo.",
+  "returns.connectedPo.returnableQty": "Maaaring ibalik",
+  "returns.connectedPo.receivedQty": "Natanggap",
+  "returns.connectedPo.alreadyReturned": "Naibalik na",
+  "returns.connectedPo.noReturnableLines": "Walang natanggap na item na maaaring ibalik.",
+  "returns.connectedPo.blocked": "Hindi pa maaaring ibalik ang purchase order na ito.",
+  "returns.connectedPo.submitRequest": "Ipadala ang return request",
+  "returns.connectedPo.requestSent": "Naipadala na sa supplier ang return request.",
+  "returns.connectedPo.sellerInboxTitle": "Mga papasok na return ng buyer",
+  "returns.connectedPo.sellerInboxEmpty": "Walang naghihintay na return ng buyer.",
+  "returns.connectedPo.process": "Iproseso",
+  "returns.connectedPo.markReceived": "Kumpirmahin ang pagtanggap ng goods",
+  "returns.connectedPo.awaitingSellerReceipt": "Hinihintay tanggapin ng supplier",
+  "returns.connectedPo.statusReturnsPending": "May nakabinbing return",
+  "returns.connectedPo.statusReturnsProcessed": "Naprosesong return",
+  "returns.connectedPo.summaryTitle": "Buod ng return",
+  "returns.connectedPo.poNumber": "PO number",
+  "returns.connectedPo.returnValue": "Halaga ng return",
+  "returns.connectedPo.refundDue": "Refund na babayaran",
+  "returns.connectedPo.recordRefund": "Itala ang refund",
+  "returns.connectedPo.inspect": "Inspeksyunin",
+  "returns.connectedPo.colProduct": "Produkto",
+  "returns.connectedPo.colInspection": "Inspeksyon",
+  "returns.connectedPo.colActions": "Mga aksyon",
+  "returns.connectedPo.reviewAndFinalize": "Suriin at tapusin",
+  "returns.connectedPo.loadError": "Hindi ma-load ang supplier return.",
+  "returns.connectedPo.processTitle": "Iproseso ang return ng buyer",
+  "returns.connectedPo.refundAmountInvalid": "Maglagay ng refund na mas malaki sa zero.",
+  "branches.connectedOrderDeliveryTitle": "Connected order delivery",
+  "branches.offerDeliveryStatusOn": "ON",
+  "branches.offerDeliveryStatusOff": "OFF",
+  "branches.offerDeliveryOnDetail": "Buyers may use Delivery from eligible delivery-ready branches.",
+  "branches.offerDeliveryOffDetail": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
+  "branches.offerDeliveryTurnOn": "Turn on Offer Delivery",
+  "branches.offerDeliveryOpenConnectedCommerce": "Open Connected Commerce settings",
+  "branches.mgmt.pickupOff": "Pickup Off",
+  "branches.mgmt.pickupReady": "Pickup Ready",
+  "branches.mgmt.pickupSetup": "Pickup Setup",
+  "branches.mgmt.deliveryOff": "Delivery Off",
+  "branches.mgmt.deliveryReady": "Delivery Ready",
+  "branches.mgmt.deliverySetup": "Delivery Setup",
+  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready · Globally paused",
+  "branches.poFulfillment.deliveryEffectivePaused": "Effective: Paused globally",
+  "branches.poFulfillment.offerDeliveryPausedHelp": "Offer Delivery is off for the organization. Your branch configuration is preserved.",
+  "customers.business.deliveryAllowanceBlockedTitle": "Not allowed for this customer"
 };

@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Sales;
@@ -7,6 +8,7 @@ namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 /// <summary>
 /// Intra-organization branch-to-branch inventory transfer. Draft has no stock effect.
 /// Dispatch freezes sent quantities and leaves destination sellable stock unchanged until receive.
+/// Receive supports multiple waves; remaining outstanding may be closed with discrepancy.
 /// </summary>
 public sealed class InventoryTransfer
 {
@@ -14,6 +16,7 @@ public sealed class InventoryTransfer
     public const int MaxLineCount = 200;
 
     private readonly List<InventoryTransferLine> _lines;
+    private readonly List<InventoryTransferReceipt> _receipts;
 
     public InventoryTransferId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -23,6 +26,12 @@ public sealed class InventoryTransfer
     public PosBranchId DestinationBranchId { get; }
     public InventoryTransferStatus Status { get; private set; }
     public string? Notes { get; private set; }
+    /// <summary>Null for the original transfer; children point at the family root.</summary>
+    public InventoryTransferId? RootTransferId { get; private set; }
+    /// <summary>1-based replacement index for children; null on the root.</summary>
+    public int? ReplacementSequence { get; private set; }
+    public string? ReplacementReason { get; private set; }
+    public InventoryTransferDamageHandlingPolicy DamageHandlingPolicy { get; private set; }
     public Guid CreatedBy { get; }
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -32,12 +41,23 @@ public sealed class InventoryTransfer
     public Guid? ReceivedBy { get; private set; }
     public DateTimeOffset? CancelledAtUtc { get; private set; }
     public Guid? CancelledBy { get; private set; }
+    public DateTimeOffset? ClosedAtUtc { get; private set; }
+    public Guid? ClosedBy { get; private set; }
+
+    public bool IsReplacementChild => RootTransferId is not null;
+    public InventoryTransferId FamilyRootId => RootTransferId ?? Id;
 
     public IReadOnlyList<InventoryTransferLine> Lines => _lines;
+
+    public IReadOnlyList<InventoryTransferReceipt> Receipts => _receipts;
 
     public decimal TotalSentQty => _lines.Sum(l => l.SentQty);
 
     public decimal TotalReceivedQty => _lines.Sum(l => l.ReceivedQty);
+
+    public decimal TotalClosedQty => _lines.Sum(l => l.ClosedQty);
+
+    public decimal TotalOutstandingQty => _lines.Sum(l => l.OutstandingQty);
 
     public decimal TotalDifferenceQty => TotalSentQty - TotalReceivedQty;
 
@@ -59,8 +79,37 @@ public sealed class InventoryTransfer
         Guid? receivedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
-        List<InventoryTransferLine> lines)
+        DateTimeOffset? closedAtUtc,
+        Guid? closedBy,
+        List<InventoryTransferLine> lines,
+        List<InventoryTransferReceipt>? receipts = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide)
     {
+        if (rootTransferId is not null && replacementSequence is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement children require a replacement sequence.");
+        }
+
+        if (rootTransferId is null && replacementSequence is not null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Root transfers cannot have a replacement sequence.");
+        }
+
+        if (replacementSequence is < 1)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReplacementSequence,
+                "Replacement sequence must be at least 1.");
+        }
+
         Id = id;
         OrganizationId = organizationId;
         StockRequestId = stockRequestId;
@@ -69,6 +118,10 @@ public sealed class InventoryTransfer
         DestinationBranchId = destinationBranchId;
         Status = status;
         Notes = notes;
+        RootTransferId = rootTransferId;
+        ReplacementSequence = replacementSequence;
+        ReplacementReason = NormalizeReplacementReason(replacementReason);
+        DamageHandlingPolicy = damageHandlingPolicy;
         CreatedBy = createdBy;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
@@ -78,7 +131,10 @@ public sealed class InventoryTransfer
         ReceivedBy = receivedBy;
         CancelledAtUtc = cancelledAtUtc;
         CancelledBy = cancelledBy;
+        ClosedAtUtc = closedAtUtc;
+        ClosedBy = closedBy;
         _lines = lines;
+        _receipts = receipts ?? [];
     }
 
     public static InventoryTransfer CreateDraft(
@@ -90,7 +146,12 @@ public sealed class InventoryTransfer
         DateTimeOffset utcNow,
         string? notes = null,
         InventoryTransferId? id = null,
-        StockRequestId? stockRequestId = null)
+        StockRequestId? stockRequestId = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(createdBy);
@@ -116,13 +177,27 @@ public sealed class InventoryTransfer
             receivedBy: null,
             cancelledAtUtc: null,
             cancelledBy: null,
-            BuildDraftLines(transferId, organizationId, lines));
+            closedAtUtc: null,
+            closedBy: null,
+            BuildDraftLines(transferId, organizationId, lines),
+            rootTransferId: rootTransferId,
+            replacementSequence: replacementSequence,
+            replacementReason: replacementReason,
+            damageHandlingPolicy: damageHandlingPolicy);
     }
 
     public InventoryTransfer WithStockRequest(StockRequestId stockRequestId)
     {
         StockRequestId = stockRequestId;
         return this;
+    }
+
+    public void SetDamageHandlingPolicy(InventoryTransferDamageHandlingPolicy policy, DateTimeOffset utcNow)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        EnsureDraft();
+        DamageHandlingPolicy = policy;
+        UpdatedAtUtc = utcNow;
     }
 
     public void UpdateDraft(
@@ -165,20 +240,24 @@ public sealed class InventoryTransfer
         }
     }
 
-    public void Receive(
+    /// <summary>
+    /// Applies a receive wave for lines with quantity greater than zero.
+    /// Returns the receipt so Application can persist it and use receipt.Id as TransferIn SourceId.
+    /// </summary>
+    public InventoryTransferReceipt Receive(
         IReadOnlyList<InventoryTransferReceiveLineDraft> receiveLines,
         Guid actorId,
         DateTimeOffset utcNow)
     {
         SaleMoney.EnsureUtc(utcNow);
         EnsureActor(actorId);
-        if (Status != InventoryTransferStatus.InTransit)
+        if (Status is not (InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived))
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferStatusTransition,
-                Status is InventoryTransferStatus.Received or InventoryTransferStatus.PartiallyReceived
-                    ? "This transfer has already been received."
-                    : "Only in-transit transfers can be received.");
+                Status is InventoryTransferStatus.Received or InventoryTransferStatus.ClosedWithDiscrepancy
+                    ? "This transfer has already been completed."
+                    : "Only in-transit or partially received transfers can be received.");
         }
 
         if (receiveLines is null || receiveLines.Count == 0)
@@ -193,28 +272,16 @@ public sealed class InventoryTransfer
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
         var seen = new HashSet<Guid>();
+        var applied = new List<InventoryTransferReceiptLineDraft>();
+
         foreach (var receive in receiveLines)
         {
-            InventoryTransferLine line;
-            if (receive.LineId is not null)
+            if (receive.GoodQty + receive.DamagedQty + receive.MissingQty + receive.OtherQty <= 0m)
             {
-                if (!lineById.TryGetValue(receive.LineId.Value, out line!))
-                {
-                    throw new DomainException(
-                        DomainErrorCodes.InvalidInventoryTransferLine,
-                        "Receive line is not on this transfer.");
-                }
+                continue;
             }
-            else if (lineByProduct.TryGetValue(receive.ProductId.Value, out var matches) && matches.Count == 1)
-            {
-                line = matches[0];
-            }
-            else
-            {
-                throw new DomainException(
-                    DomainErrorCodes.InvalidInventoryTransferLine,
-                    "Receive line product is not on this transfer.");
-            }
+
+            var line = ResolveLine(receive.LineId, receive.ProductId, lineById, lineByProduct);
 
             if (!seen.Add(line.Id.Value))
             {
@@ -223,24 +290,165 @@ public sealed class InventoryTransfer
                     "Receive lines cannot repeat the same transfer line.");
             }
 
-            line.ApplyReceipt(receive);
+            var (goodDelta, damagedWave, missingWave, otherWave, _, waivedDelta) = line.ApplyReceiptClassification(receive);
+            applied.Add(new InventoryTransferReceiptLineDraft(
+                line.Id,
+                line.ProductId,
+                goodDelta,
+                damagedWave,
+                missingWave,
+                otherWave,
+                receive.OtherReasonCode,
+                receive.OtherReasonNote,
+                receive.MissingDisposition,
+                receive.DamagedFollowUp,
+                receive.OtherFollowUp,
+                waivedDelta,
+                receive.DiscrepancyNote));
         }
 
-        foreach (var line in _lines)
+        if (applied.Count == 0)
         {
-            if (!seen.Contains(line.Id.Value))
+            throw new DomainException(
+                DomainErrorCodes.InventoryTransferReceiveRequiresLines,
+                "At least one receive line with quantity greater than zero is required.");
+        }
+
+        var receipt = InventoryTransferReceipt.Create(
+            OrganizationId,
+            Id,
+            sequence: _receipts.Count + 1,
+            utcNow,
+            actorId,
+            applied);
+        _receipts.Add(receipt);
+
+        if (TotalOutstandingQty == 0m)
+        {
+            if (TotalClosedQty > 0m)
+            {
+                Status = InventoryTransferStatus.ClosedWithDiscrepancy;
+                ClosedAtUtc ??= utcNow;
+                ClosedBy ??= actorId;
+            }
+            else
+            {
+                Status = InventoryTransferStatus.Received;
+            }
+        }
+        else if (TotalReceivedQty > 0m || TotalClosedQty > 0m)
+        {
+            Status = InventoryTransferStatus.PartiallyReceived;
+        }
+        else
+        {
+            Status = InventoryTransferStatus.InTransit;
+        }
+
+        if (ReceivedAtUtc is null)
+        {
+            ReceivedAtUtc = utcNow;
+            ReceivedBy = actorId;
+        }
+
+        UpdatedAtUtc = utcNow;
+        return receipt;
+    }
+
+    /// <summary>
+    /// Closes all remaining outstanding quantity with discrepancy reasons.
+    /// Only allowed while partially received. Provide per-line closures and/or a transfer-level reason.
+    /// </summary>
+    public void CloseRemainder(
+        Guid actorId,
+        DateTimeOffset utcNow,
+        IReadOnlyList<InventoryTransferCloseRemainderLineDraft>? closeLines = null,
+        InventoryTransferDiscrepancyReason? transferLevelReason = null,
+        string? transferLevelNote = null)
+    {
+        SaleMoney.EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (Status != InventoryTransferStatus.PartiallyReceived)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferStatusTransition,
+                "Only partially received transfers can close remaining quantity with discrepancy.");
+        }
+
+        var outstanding = _lines.Where(l => l.OutstandingQty > 0m).ToList();
+        if (outstanding.Count == 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferStatusTransition,
+                "There is no outstanding quantity to close.");
+        }
+
+        var lineById = _lines.ToDictionary(l => l.Id.Value);
+        var lineByProduct = _lines
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var closureByLineId = new Dictionary<Guid, InventoryTransferCloseRemainderLineDraft>();
+
+        foreach (var close in closeLines ?? Array.Empty<InventoryTransferCloseRemainderLineDraft>())
+        {
+            InventoryTransferLine line;
+            if (close.LineId is not null)
+            {
+                if (!lineById.TryGetValue(close.LineId.Value, out line!))
+                {
+                    throw new DomainException(
+                        DomainErrorCodes.InvalidInventoryTransferLine,
+                        "Close line is not on this transfer.");
+                }
+            }
+            else if (close.ProductId is not null
+                     && lineByProduct.TryGetValue(close.ProductId.Value, out var matches)
+                     && matches.Count == 1)
+            {
+                line = matches[0];
+            }
+            else
             {
                 throw new DomainException(
-                    DomainErrorCodes.InventoryTransferReceiveRequiresLines,
-                    "Every transfer line must be included in the receive.");
+                    DomainErrorCodes.InvalidInventoryTransferLine,
+                    "Close line must specify a transfer line id or unique product.");
+            }
+
+            if (!closureByLineId.TryAdd(line.Id.Value, close))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InventoryTransferDuplicateProduct,
+                    "Close lines cannot repeat the same transfer line.");
             }
         }
 
-        Status = _lines.All(l => l.DifferenceQty == 0m)
-            ? InventoryTransferStatus.Received
-            : InventoryTransferStatus.PartiallyReceived;
-        ReceivedAtUtc = utcNow;
-        ReceivedBy = actorId;
+        foreach (var line in outstanding)
+        {
+            InventoryTransferDiscrepancyReason reason;
+            string? note;
+            if (closureByLineId.TryGetValue(line.Id.Value, out var closure))
+            {
+                reason = closure.DiscrepancyReason;
+                note = closure.DiscrepancyNote;
+            }
+            else if (transferLevelReason is not null)
+            {
+                reason = transferLevelReason.Value;
+                note = transferLevelNote;
+            }
+            else
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidInventoryTransferDiscrepancyReason,
+                    "Discrepancy reason is required for each outstanding line when closing remainder.");
+            }
+
+            line.CloseRemainder(reason, note);
+        }
+
+        Status = InventoryTransferStatus.ClosedWithDiscrepancy;
+        ClosedAtUtc = utcNow;
+        ClosedBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 
@@ -255,6 +463,17 @@ public sealed class InventoryTransfer
             CancelledBy = actorId;
             UpdatedAtUtc = utcNow;
             return;
+        }
+
+        if (Status is InventoryTransferStatus.PartiallyReceived
+            or InventoryTransferStatus.Received
+            or InventoryTransferStatus.ClosedWithDiscrepancy
+            || TotalReceivedQty > 0m
+            || _receipts.Count > 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferStatusTransition,
+                "Only draft or in-transit transfers that have not been received can be cancelled.");
         }
 
         if (Status != InventoryTransferStatus.InTransit)
@@ -288,7 +507,15 @@ public sealed class InventoryTransfer
         Guid? receivedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
-        IReadOnlyList<InventoryTransferLine> lines) =>
+        DateTimeOffset? closedAtUtc,
+        Guid? closedBy,
+        IReadOnlyList<InventoryTransferLine> lines,
+        IReadOnlyList<InventoryTransferReceipt>? receipts = null,
+        InventoryTransferId? rootTransferId = null,
+        int? replacementSequence = null,
+        string? replacementReason = null,
+        InventoryTransferDamageHandlingPolicy damageHandlingPolicy =
+            InventoryTransferDamageHandlingPolicy.ReceiverMayDecide) =>
         new(
             id,
             organizationId,
@@ -307,7 +534,42 @@ public sealed class InventoryTransfer
             receivedBy,
             cancelledAtUtc,
             cancelledBy,
-            lines.ToList());
+            closedAtUtc,
+            closedBy,
+            lines.ToList(),
+            receipts?.OrderBy(r => r.Sequence).ToList(),
+            rootTransferId,
+            replacementSequence,
+            replacementReason,
+            damageHandlingPolicy);
+
+    private static InventoryTransferLine ResolveLine(
+        InventoryTransferLineId? lineId,
+        CatalogProductId productId,
+        Dictionary<Guid, InventoryTransferLine> lineById,
+        Dictionary<Guid, List<InventoryTransferLine>> lineByProduct)
+    {
+        if (lineId is not null)
+        {
+            if (!lineById.TryGetValue(lineId.Value, out var byId))
+            {
+                throw new DomainException(
+                    DomainErrorCodes.InvalidInventoryTransferLine,
+                    "Receive line is not on this transfer.");
+            }
+
+            return byId;
+        }
+
+        if (lineByProduct.TryGetValue(productId.Value, out var matches) && matches.Count == 1)
+        {
+            return matches[0];
+        }
+
+        throw new DomainException(
+            DomainErrorCodes.InvalidInventoryTransferLine,
+            "Receive line product is not on this transfer.");
+    }
 
     private void EnsureDraft()
     {
@@ -393,6 +655,24 @@ public sealed class InventoryTransfer
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferNotes,
                 $"Notes must be at most {NotesMaxLength} characters.");
+        }
+
+        return trimmed;
+    }
+
+    private static string? NormalizeReplacementReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return null;
+        }
+
+        var trimmed = reason.Trim();
+        if (trimmed.Length > NotesMaxLength)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferNotes,
+                $"Replacement reason must be at most {NotesMaxLength} characters.");
         }
 
         return trimmed;

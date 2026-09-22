@@ -79,10 +79,10 @@ public sealed class AdvancedInventoryDomainTests
             "Weekly count",
             Actor,
             Branch);
-        draft.Start("CNT-20260731-000001", new Dictionary<Guid, decimal> { [Product.Value] = 7m }, Actor, Utc.AddMinutes(1));
+        draft.Start("260731-001", new Dictionary<Guid, decimal> { [Product.Value] = 7m }, Actor, Utc.AddMinutes(1));
 
         Assert.Equal(StockCountStatus.InProgress, draft.Status);
-        Assert.Equal("CNT-20260731-000001", draft.CountNumber);
+        Assert.Equal("260731-001", draft.CountNumber);
         Assert.Equal(7m, draft.Lines[0].SystemOnHandSnapshot);
         Assert.Equal("Weekly count", draft.Title);
     }
@@ -97,7 +97,7 @@ public sealed class AdvancedInventoryDomainTests
             "Monthly count",
             Actor,
             Branch);
-        draft.Start("CNT-20260731-000002", new Dictionary<Guid, decimal> { [Product.Value] = 4m }, Actor, Utc.AddMinutes(1));
+        draft.Start("260731-002", new Dictionary<Guid, decimal> { [Product.Value] = 4m }, Actor, Utc.AddMinutes(1));
 
         var ex = Assert.Throws<DomainException>(() => draft.MarkCompleted(Actor, Utc.AddMinutes(2)));
         Assert.Equal(DomainErrorCodes.StockCountCountedQuantityRequired, ex.ErrorCode);
@@ -122,6 +122,6 @@ public sealed class AdvancedInventoryDomainTests
     [Fact]
     public void StockCountNumbers_format_matches_pattern()
     {
-        Assert.Equal("CNT-20260731-01", StockCountNumbers.Format(new DateOnly(2026, 7, 31), 1));
+        Assert.Equal("260731-001", StockCountNumbers.Format(new DateOnly(2026, 7, 31), 1));
     }
 }

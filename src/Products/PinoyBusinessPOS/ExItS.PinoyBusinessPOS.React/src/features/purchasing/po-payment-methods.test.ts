@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolvePoUtangEligibility } from "@/features/purchasing/po-payment-methods";
+import {
+  resolveConnectedPoPaymentHelpKey,
+  resolvePoUtangEligibility,
+} from "@/features/purchasing/po-payment-methods";
 
 describe("resolvePoUtangEligibility", () => {
   it("allows Utang when connected, approved, and within available credit", () => {
@@ -36,5 +39,25 @@ describe("resolvePoUtangEligibility", () => {
         canManagePurchasing: true,
       }),
     ).toEqual({ eligible: false, reasonKey: "purchasing.utang.insufficientCredit" });
+  });
+});
+
+describe("resolveConnectedPoPaymentHelpKey", () => {
+  it("varies Check help by payment timing", () => {
+    expect(resolveConnectedPoPaymentHelpKey("Check", "PayBeforeFulfillment")).toBe(
+      "purchasing.paymentHelp.check.payBefore",
+    );
+    expect(resolveConnectedPoPaymentHelpKey("Check", "PayOnDeliveryOrReceipt")).toBe(
+      "purchasing.paymentHelp.check.payOnDelivery",
+    );
+    expect(resolveConnectedPoPaymentHelpKey("Check", "SupplierCredit")).toBe(
+      "purchasing.paymentHelp.check.supplierCredit",
+    );
+  });
+
+  it("keeps Utang help timing-independent", () => {
+    expect(resolveConnectedPoPaymentHelpKey("Utang", "PayBeforeFulfillment")).toBe(
+      "purchasing.paymentHelp.utang",
+    );
   });
 });

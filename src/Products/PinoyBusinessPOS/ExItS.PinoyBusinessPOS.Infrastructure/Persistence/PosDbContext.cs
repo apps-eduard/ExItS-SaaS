@@ -96,6 +96,11 @@ public sealed class PosDbContext : DbContext
     internal DbSet<SaleReturnRecord> SaleReturns => Set<SaleReturnRecord>();
     internal DbSet<SaleReturnLineRecord> SaleReturnLines => Set<SaleReturnLineRecord>();
     internal DbSet<SaleReturnNumberSequenceRecord> SaleReturnNumberSequences => Set<SaleReturnNumberSequenceRecord>();
+    internal DbSet<ReturnBatchRecord> ReturnBatches => Set<ReturnBatchRecord>();
+    internal DbSet<ReturnBatchLineRecord> ReturnBatchLines => Set<ReturnBatchLineRecord>();
+    internal DbSet<ReturnBatchNumberSequenceRecord> ReturnBatchNumberSequences => Set<ReturnBatchNumberSequenceRecord>();
+    internal DbSet<ReturnBatchRefundRecord> ReturnBatchRefunds => Set<ReturnBatchRefundRecord>();
+    internal DbSet<ReturnBatchAuditEventRecord> ReturnBatchAuditEvents => Set<ReturnBatchAuditEventRecord>();
     internal DbSet<InventoryAccountRecord> InventoryAccounts => Set<InventoryAccountRecord>();
     internal DbSet<StockMovementRecord> StockMovements => Set<StockMovementRecord>();
     internal DbSet<InventoryReorderChangeRecord> InventoryReorderChanges => Set<InventoryReorderChangeRecord>();
@@ -108,7 +113,10 @@ public sealed class PosDbContext : DbContext
     internal DbSet<StockRequestNumberSequenceRecord> StockRequestNumberSequences => Set<StockRequestNumberSequenceRecord>();
     internal DbSet<InventoryTransferRecord> InventoryTransfers => Set<InventoryTransferRecord>();
     internal DbSet<InventoryTransferLineRecord> InventoryTransferLines => Set<InventoryTransferLineRecord>();
+    internal DbSet<InventoryTransferReceiptRecord> InventoryTransferReceipts => Set<InventoryTransferReceiptRecord>();
+    internal DbSet<InventoryTransferReceiptLineRecord> InventoryTransferReceiptLines => Set<InventoryTransferReceiptLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
+    internal DbSet<InventoryTransferDamageCustodyRecord> InventoryTransferDamageCustodies => Set<InventoryTransferDamageCustodyRecord>();
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
     internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
@@ -138,12 +146,26 @@ public sealed class PosDbContext : DbContext
     internal DbSet<ConnectedSupplierRelationshipRecord> ConnectedSupplierRelationships => Set<ConnectedSupplierRelationshipRecord>();
     internal DbSet<OrganizationFulfillmentSettingsRecord> OrganizationFulfillmentSettings =>
         Set<OrganizationFulfillmentSettingsRecord>();
+    internal DbSet<OrganizationConnectedCommerceSettingsRecord> OrganizationConnectedCommerceSettings =>
+        Set<OrganizationConnectedCommerceSettingsRecord>();
+    internal DbSet<OrganizationConnectedCommerceCategoryRuleRecord> OrganizationConnectedCommerceCategoryRules =>
+        Set<OrganizationConnectedCommerceCategoryRuleRecord>();
+    internal DbSet<OrganizationConnectedCommerceCategoryReturnRuleRecord> OrganizationConnectedCommerceCategoryReturnRules =>
+        Set<OrganizationConnectedCommerceCategoryReturnRuleRecord>();
+    internal DbSet<ConnectedPoReturnEligibilityBucketRecord> ConnectedPoReturnEligibilityBuckets =>
+        Set<ConnectedPoReturnEligibilityBucketRecord>();
+    internal DbSet<ConnectedPoReturnAllocationRecord> ConnectedPoReturnAllocations =>
+        Set<ConnectedPoReturnAllocationRecord>();
+    internal DbSet<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord> ConnectedSupplierRelationshipCategoryDiscountOverrides =>
+        Set<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord>();
     internal DbSet<SupplierProductExposureRecord> SupplierProductExposures => Set<SupplierProductExposureRecord>();
     internal DbSet<ConnectedBuyerProductShareRecord> ConnectedBuyerProductShares => Set<ConnectedBuyerProductShareRecord>();
     internal DbSet<BuyerSupplierProductLinkRecord> BuyerSupplierProductLinks => Set<BuyerSupplierProductLinkRecord>();
     internal DbSet<ConnectedPurchaseOrderRecord> ConnectedPurchaseOrders => Set<ConnectedPurchaseOrderRecord>();
     internal DbSet<ConnectedPurchaseOrderLineRecord> ConnectedPurchaseOrderLines => Set<ConnectedPurchaseOrderLineRecord>();
     internal DbSet<ConnectedPoInventoryReservationRecord> ConnectedPoInventoryReservations => Set<ConnectedPoInventoryReservationRecord>();
+    internal DbSet<ConnectedPoReceivingIssueRecord> ConnectedPoReceivingIssues => Set<ConnectedPoReceivingIssueRecord>();
+    internal DbSet<ConnectedPoReceivingIssueLineRecord> ConnectedPoReceivingIssueLines => Set<ConnectedPoReceivingIssueLineRecord>();
     internal DbSet<PurchaseOrderRecord> PurchaseOrders => Set<PurchaseOrderRecord>();
     internal DbSet<PurchaseOrderLineRecord> PurchaseOrderLines => Set<PurchaseOrderLineRecord>();
     internal DbSet<PurchaseOrderNumberSequenceRecord> PurchaseOrderNumberSequences => Set<PurchaseOrderNumberSequenceRecord>();
@@ -1198,6 +1220,14 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.DefaultConnectedPoPrice)
                 .HasColumnName("default_connected_po_price")
                 .HasPrecision(18, 2);
+            entity.Property(e => e.ReturnPolicyMode)
+                .HasColumnName("return_policy_mode")
+                .HasDefaultValue((short)0)
+                .IsRequired();
+            entity.Property(e => e.ReturnPolicyReturnsAllowed)
+                .HasColumnName("return_policy_returns_allowed");
+            entity.Property(e => e.ReturnPolicyWindowDays)
+                .HasColumnName("return_policy_window_days");
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(32).IsRequired();
             entity.Property(e => e.PlatformGlobalProductId).HasColumnName("platform_global_product_id");
             entity.Property(e => e.PlatformTemplateId).HasColumnName("platform_template_id");
@@ -1611,6 +1641,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_sales_cost_status",
                     "cost_status IS NULL OR cost_status IN ('Complete', 'Partial', 'Unavailable')");
+                tb.HasCheckConstraint(
+                    "ck_sales_check_settlement_status",
+                    "(payment_method = 'Check' AND check_settlement_status IN ('Pending', 'Cleared', 'Bounced')) OR (payment_method <> 'Check' AND check_settlement_status IS NULL)");
             });
 
             entity.HasKey(e => e.Id);
@@ -1649,6 +1682,9 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.GcashReference)
                 .HasColumnName("gcash_reference")
                 .HasMaxLength(Sale.GCashReferenceMaxLength);
+            entity.Property(e => e.CheckSettlementStatus)
+                .HasColumnName("check_settlement_status")
+                .HasMaxLength(32);
             entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.BuyerPartyKind)
                 .HasColumnName("buyer_party_kind")
@@ -2259,9 +2295,10 @@ public sealed class PosDbContext : DbContext
                     "last_value > 0");
             });
 
-            entity.HasKey(e => e.OrganizationId)
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
                 .HasName("pk_customer_order_number_sequences");
             entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
@@ -2274,7 +2311,7 @@ public sealed class PosDbContext : DbContext
                     $"status IN ('{nameof(SaleReturnStatus.Completed)}')");
                 tb.HasCheckConstraint(
                     "ck_sale_returns_refund_method",
-                    $"refund_method IN ('{nameof(SalePaymentMethod.Cash)}', '{nameof(SalePaymentMethod.ManualGCash)}', '{nameof(SalePaymentMethod.Utang)}')");
+                    $"refund_method IN ({string.Join(", ", SalePaymentMethods.Codes.Select(c => $"'{c}'"))})");
                 tb.HasCheckConstraint(
                     "ck_sale_returns_total_refund_positive",
                     "total_refund_amount > 0");
@@ -2356,6 +2393,12 @@ public sealed class PosDbContext : DbContext
                     "ck_sale_return_lines_refund_positive",
                     "refund_amount > 0");
                 tb.HasCheckConstraint(
+                    "ck_sale_return_lines_split_quantities_non_negative",
+                    "sellable_quantity >= 0 AND damaged_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_sale_return_lines_split_quantities_match",
+                    "sellable_quantity + damaged_quantity = quantity_returned");
+                tb.HasCheckConstraint(
                     "ck_sale_return_lines_restock_disposition",
                     $"restock_disposition IN ('{nameof(RestockDisposition.ReturnToStock)}', '{nameof(RestockDisposition.DoNotRestock)}')");
                 tb.HasCheckConstraint(
@@ -2374,6 +2417,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.QuantityReturned).HasColumnName("quantity_returned").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.RefundAmount).HasColumnName("refund_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.SellableQuantity).HasColumnName("sellable_quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.DamagedQuantity).HasColumnName("damaged_quantity").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.RestockDisposition).HasColumnName("restock_disposition").HasMaxLength(RestockDispositions.CodeMaxLength).IsRequired();
             entity.Property(e => e.LineReason).HasColumnName("line_reason").HasMaxLength(SaleReturnLine.LineReasonMaxLength);
             entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
@@ -2420,6 +2465,262 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
         });
 
+        modelBuilder.Entity<ReturnBatchRecord>(entity =>
+        {
+            entity.ToTable("return_batches", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_return_batches_status",
+                    $"status IN ({string.Join(", ", ReturnBatchStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_refund_status",
+                    $"refund_status IN ({string.Join(", ", ReturnBatchRefundStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_accepted_value_positive",
+                    "accepted_return_value > 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_refund_due_non_negative",
+                    "refund_due_amount >= 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_refunded_non_negative",
+                    "refunded_amount >= 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_source_type",
+                    $"source_type IN ({string.Join(", ", ReturnBatchSourceTypes.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_return_batches_source_identity",
+                    "(source_type = 'Sale' AND sale_id IS NOT NULL AND purchase_order_id IS NULL)"
+                    + " OR (source_type = 'ConnectedPurchaseOrder' AND sale_id IS NULL AND purchase_order_id IS NOT NULL"
+                    + " AND buyer_organization_id IS NOT NULL AND seller_organization_id IS NOT NULL)");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SourceType)
+                .HasColumnName("source_type")
+                .HasMaxLength(ReturnBatchSourceTypes.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.SaleId).HasColumnName("sale_id");
+            entity.Property(e => e.BranchId).HasColumnName("branch_id");
+            entity.Property(e => e.ConnectedPurchaseOrderId).HasColumnName("connected_purchase_order_id");
+            entity.Property(e => e.PurchaseOrderId).HasColumnName("purchase_order_id");
+            entity.Property(e => e.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(e => e.SellerOrganizationId).HasColumnName("seller_organization_id");
+            entity.Property(e => e.BuyerBranchId).HasColumnName("buyer_branch_id");
+            entity.Property(e => e.SellerBranchId).HasColumnName("seller_branch_id");
+            entity.Property(e => e.PaymentTiming).HasColumnName("payment_timing").HasMaxLength(32);
+            entity.Property(e => e.PoNumberSnapshot)
+                .HasColumnName("po_number_snapshot")
+                .HasMaxLength(ReturnBatch.PoNumberSnapshotMaxLength);
+            entity.Property(e => e.SellerReceivedAtUtc).HasColumnName("seller_received_at_utc");
+            entity.Property(e => e.SellerReceivedBy).HasColumnName("seller_received_by");
+            entity.Property(e => e.BatchNumber)
+                .HasColumnName("batch_number")
+                .HasMaxLength(ReturnBatchNumbers.MaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(ReturnBatchStatuses.CodeMaxLength).IsRequired();
+            entity.Property(e => e.RefundStatus).HasColumnName("refund_status").HasMaxLength(ReturnBatchRefundStatuses.CodeMaxLength).IsRequired();
+            entity.Property(e => e.AcceptedReturnValue).HasColumnName("accepted_return_value").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.RefundDueAmount).HasColumnName("refund_due_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.RefundedAmount).HasColumnName("refunded_amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.SaleReturnId).HasColumnName("sale_return_id");
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(ReturnBatch.ReasonMaxLength).IsRequired();
+            entity.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(ReturnBatch.NotesMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.FinalizedAtUtc).HasColumnName("finalized_at_utc");
+            entity.Property(e => e.FinalizedBy).HasColumnName("finalized_by");
+            entity.Property(e => e.Xmin)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.BatchNumber })
+                .IsUnique()
+                .HasDatabaseName("ux_return_batches_org_batch_number");
+            entity.HasIndex(e => new { e.OrganizationId, e.SaleId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batches_org_sale_created");
+            entity.HasIndex(e => new { e.PurchaseOrderId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batches_purchase_order_created");
+            entity.HasIndex(e => new { e.ConnectedPurchaseOrderId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batches_connected_po_created");
+            entity.HasIndex(e => new { e.BuyerOrganizationId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batches_buyer_org_created");
+
+            entity.HasOne<SaleRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_return_batches_sales");
+
+            entity.HasOne<PurchaseOrderRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_return_batches_purchase_orders");
+
+            entity.HasOne<SaleReturnRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleReturnId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("fk_return_batches_sale_returns");
+        });
+
+        modelBuilder.Entity<ReturnBatchLineRecord>(entity =>
+        {
+            entity.ToTable("return_batch_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_accepted_positive",
+                    "accepted_quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_refund_positive",
+                    "refund_amount_snapshot > 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_split_non_negative",
+                    "(sellable_quantity IS NULL OR sellable_quantity >= 0) AND (damaged_quantity IS NULL OR damaged_quantity >= 0)");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_split_sum",
+                    "(sellable_quantity IS NULL AND damaged_quantity IS NULL) OR sellable_quantity + damaged_quantity = accepted_quantity");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_uom",
+                    $"uom_snapshot IN ({string.Join(", ", UnitOfMeasures.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_lines_source_identity",
+                    "(sale_line_id IS NOT NULL AND purchase_order_line_id IS NULL)"
+                    + " OR (sale_line_id IS NULL AND purchase_order_line_id IS NOT NULL)");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReturnBatchId).HasColumnName("return_batch_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.SaleLineId).HasColumnName("sale_line_id");
+            entity.Property(e => e.PurchaseOrderLineId).HasColumnName("purchase_order_line_id");
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.SupplierProductId).HasColumnName("supplier_product_id");
+            entity.Property(e => e.ProductNameSnapshot)
+                .HasColumnName("product_name_snapshot")
+                .HasMaxLength(ReturnBatchLine.NameSnapshotMaxLength)
+                .IsRequired();
+            entity.Property(e => e.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(UnitOfMeasures.CodeMaxLength).IsRequired();
+            entity.Property(e => e.UnitPriceSnapshot).HasColumnName("unit_price_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.AcceptedQuantity).HasColumnName("accepted_quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.RefundAmountSnapshot).HasColumnName("refund_amount_snapshot").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.SellableQuantity).HasColumnName("sellable_quantity").HasPrecision(18, 3);
+            entity.Property(e => e.DamagedQuantity).HasColumnName("damaged_quantity").HasPrecision(18, 3);
+            entity.Property(e => e.InspectionNote).HasColumnName("inspection_note").HasMaxLength(ReturnBatch.InspectionNoteMaxLength);
+            entity.Property(e => e.ClassifiedAtUtc).HasColumnName("classified_at_utc");
+            entity.Property(e => e.ClassifiedBy).HasColumnName("classified_by");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ReturnBatchId })
+                .HasDatabaseName("ix_return_batch_lines_org_batch");
+
+            entity.HasOne<ReturnBatchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReturnBatchId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_return_batch_lines_batches");
+
+            entity.HasOne<SaleLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.SaleLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_return_batch_lines_sale_lines");
+
+            entity.HasOne<PurchaseOrderLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.PurchaseOrderLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_return_batch_lines_purchase_order_lines");
+        });
+
+        modelBuilder.Entity<ReturnBatchNumberSequenceRecord>(entity =>
+        {
+            entity.ToTable("return_batch_number_sequences", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_return_batch_number_sequences_last_value_positive",
+                    "last_value > 0");
+            });
+
+            entity.HasKey(e => new { e.OrganizationId, e.BusinessDate })
+                .HasName("pk_return_batch_number_sequences");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id");
+            entity.Property(e => e.BusinessDate).HasColumnName("business_date").HasColumnType("date");
+            entity.Property(e => e.LastValue).HasColumnName("last_value").IsRequired();
+        });
+
+        modelBuilder.Entity<ReturnBatchRefundRecord>(entity =>
+        {
+            entity.ToTable("return_batch_refunds", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_return_batch_refunds_amount_positive",
+                    "amount > 0");
+                tb.HasCheckConstraint(
+                    "ck_return_batch_refunds_method",
+                    $"method IN ({string.Join(", ", SalePaymentMethods.Codes.Where(c => c != nameof(SalePaymentMethod.Utang)).Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReturnBatchId).HasColumnName("return_batch_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Method).HasColumnName("method").HasMaxLength(SalePaymentMethods.CodeMaxLength).IsRequired();
+            entity.Property(e => e.Reference).HasColumnName("reference").HasMaxLength(ReturnBatchRefund.ReferenceMaxLength);
+            entity.Property(e => e.Note).HasColumnName("note").HasMaxLength(ReturnBatchRefund.NoteMaxLength);
+            entity.Property(e => e.ClientRefundId).HasColumnName("client_refund_id").HasMaxLength(ReturnBatchRefund.ClientRefundIdMaxLength);
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ReturnBatchId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batch_refunds_org_batch_created");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReturnBatchId, e.ClientRefundId })
+                .IsUnique()
+                .HasDatabaseName("ux_return_batch_refunds_org_batch_client")
+                .HasFilter("client_refund_id IS NOT NULL");
+
+            entity.HasOne<ReturnBatchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReturnBatchId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_return_batch_refunds_batches");
+        });
+
+        modelBuilder.Entity<ReturnBatchAuditEventRecord>(entity =>
+        {
+            entity.ToTable("return_batch_audit_events", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_return_batch_audit_events_event_type",
+                    $"event_type IN ({string.Join(", ", ReturnBatchAuditEventTypes.Codes.Select(c => $"'{c}'"))})");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReturnBatchId).HasColumnName("return_batch_id").IsRequired();
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.EventType).HasColumnName("event_type").HasMaxLength(64).IsRequired();
+            entity.Property(e => e.PayloadJson).HasColumnName("payload_json").HasMaxLength(ReturnBatchAuditEvent.PayloadMaxLength).IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+
+            entity.HasIndex(e => new { e.OrganizationId, e.ReturnBatchId, e.CreatedAtUtc })
+                .HasDatabaseName("ix_return_batch_audit_events_org_batch_created");
+
+            entity.HasOne<ReturnBatchRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReturnBatchId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_return_batch_audit_events_batches");
+        });
+
         modelBuilder.Entity<InventoryAccountRecord>(entity =>
         {
             entity.ToTable("inventory_accounts", tb =>
@@ -2433,6 +2734,9 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_inventory_accounts_reserved_not_over_on_hand",
                     "reserved_quantity <= on_hand_quantity");
+                tb.HasCheckConstraint(
+                    "ck_inventory_accounts_pending_return_non_negative",
+                    "pending_return_quantity >= 0");
                 tb.HasCheckConstraint(
                     "ck_inventory_accounts_reorder_level_non_negative",
                     "reorder_level IS NULL OR reorder_level >= 0");
@@ -2455,6 +2759,11 @@ public sealed class PosDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.ReservedQuantity)
                 .HasColumnName("reserved_quantity")
+                .HasPrecision(18, 3)
+                .HasDefaultValue(0m)
+                .IsRequired();
+            entity.Property(e => e.PendingReturnQuantity)
+                .HasColumnName("pending_return_quantity")
                 .HasPrecision(18, 3)
                 .HasDefaultValue(0m)
                 .IsRequired();
@@ -3020,6 +3329,12 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint(
                     "ck_inventory_transfers_distinct_branches",
                     "source_branch_id <> destination_branch_id");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_damage_handling_policy",
+                    $"damage_handling_policy IN ({string.Join(", ", InventoryTransferDamageHandlingPolicies.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfers_replacement_shape",
+                    "(root_transfer_id IS NULL AND replacement_sequence IS NULL) OR (root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL AND replacement_sequence >= 1)");
             });
 
             entity.HasKey(e => e.Id);
@@ -3047,6 +3362,19 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReceivedBy).HasColumnName("received_by");
             entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
             entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.ClosedAtUtc).HasColumnName("closed_at_utc");
+            entity.Property(e => e.ClosedBy).HasColumnName("closed_by");
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id");
+            entity.Property(e => e.ReplacementSequence).HasColumnName("replacement_sequence");
+            entity.Property(e => e.ReplacementReason)
+                .HasColumnName("replacement_reason")
+                .HasMaxLength(InventoryTransfer.NotesMaxLength);
+            entity.Property(e => e.DamageHandlingPolicy)
+                .HasColumnName("damage_handling_policy")
+                .HasMaxLength(InventoryTransferDamageHandlingPolicies.CodeMaxLength)
+                .IsRequired()
+                .HasDefaultValue(InventoryTransferDamageHandlingPolicies.ToCode(
+                    InventoryTransferDamageHandlingPolicy.ReceiverMayDecide));
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -3065,12 +3393,23 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_inventory_transfers_org_status");
             entity.HasIndex(e => new { e.OrganizationId, e.StockRequestId })
                 .HasDatabaseName("ix_inventory_transfers_org_stock_request");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_inventory_transfers_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId, e.ReplacementSequence })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfers_org_root_replacement_sequence")
+                .HasFilter("root_transfer_id IS NOT NULL AND replacement_sequence IS NOT NULL");
 
             entity.HasOne<StockRequestRecord>()
                 .WithMany()
                 .HasForeignKey(e => e.StockRequestId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("fk_inventory_transfers_stock_requests");
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.RootTransferId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfers_root_transfer");
         });
 
         modelBuilder.Entity<InventoryTransferLineRecord>(entity =>
@@ -3082,7 +3421,7 @@ public sealed class PosDbContext : DbContext
                     "sent_qty > 0");
                 tb.HasCheckConstraint(
                     "ck_inventory_transfer_lines_received_range",
-                    "received_qty >= 0 AND received_qty <= sent_qty");
+                    "received_qty >= 0 AND closed_qty >= 0 AND received_qty + closed_qty <= sent_qty");
             });
 
             entity.HasKey(e => e.Id);
@@ -3101,6 +3440,12 @@ public sealed class PosDbContext : DbContext
                 .IsRequired();
             entity.Property(e => e.SentQty).HasColumnName("sent_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ClosedQty).HasColumnName("closed_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.WaivedQty)
+                .HasColumnName("waived_qty")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.DiscrepancyReason)
                 .HasColumnName("discrepancy_reason")
                 .HasMaxLength(InventoryTransferDiscrepancyReasons.CodeMaxLength);
@@ -3138,6 +3483,110 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_transfer_lines_products");
+        });
+
+        modelBuilder.Entity<InventoryTransferReceiptRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_receipts", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_receipts_sequence_positive",
+                    "sequence >= 1");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.Sequence).HasColumnName("sequence").IsRequired();
+            entity.Property(e => e.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(e => e.ReceivedBy).HasColumnName("received_by").IsRequired();
+
+            entity.HasIndex(e => new { e.TransferId, e.Sequence })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfer_receipts_transfer_sequence");
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_inventory_transfer_receipts_org_transfer");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_inventory_transfer_receipts_transfers");
+        });
+
+        modelBuilder.Entity<InventoryTransferReceiptLineRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_receipt_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_inventory_transfer_receipt_lines_qty_positive",
+                    "quantity_received >= 0 AND quantity_damaged >= 0 AND quantity_missing >= 0 AND quantity_other >= 0 AND (quantity_received + quantity_damaged + quantity_missing + quantity_other) > 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ReceiptId).HasColumnName("receipt_id").IsRequired();
+            entity.Property(e => e.TransferLineId).HasColumnName("transfer_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.QuantityReceived)
+                .HasColumnName("quantity_received")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.QuantityDamaged)
+                .HasColumnName("quantity_damaged")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.QuantityMissing)
+                .HasColumnName("quantity_missing")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.QuantityOther)
+                .HasColumnName("quantity_other")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.OtherReasonCode)
+                .HasColumnName("other_reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength);
+            entity.Property(e => e.OtherReasonNote)
+                .HasColumnName("other_reason_note")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.NoteMaxLength);
+            entity.Property(e => e.MissingDisposition)
+                .HasColumnName("missing_disposition")
+                .HasMaxLength(InventoryTransferMissingDispositions.CodeMaxLength);
+            entity.Property(e => e.DamagedFollowUp)
+                .HasColumnName("damaged_follow_up")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength);
+            entity.Property(e => e.OtherFollowUp)
+                .HasColumnName("other_follow_up")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength);
+            entity.Property(e => e.QuantityWaived)
+                .HasColumnName("quantity_waived")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.Note)
+                .HasColumnName("note")
+                .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
+
+            entity.HasIndex(e => new { e.ReceiptId, e.TransferLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_inventory_transfer_receipt_lines_receipt_line");
+
+            entity.HasOne<InventoryTransferReceiptRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_inventory_transfer_receipt_lines_receipts");
+
+            entity.HasOne<InventoryTransferLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_inventory_transfer_receipt_lines_transfer_lines");
         });
 
         modelBuilder.Entity<InventoryTransferNumberSequenceRecord>(entity =>
@@ -3928,8 +4377,17 @@ public sealed class PosDbContext : DbContext
                     "ck_inventory_branch_balances_reserved_non_negative",
                     "reserved_quantity >= 0");
                 tb.HasCheckConstraint(
-                    "ck_inventory_branch_balances_reserved_not_over_on_hand",
-                    "reserved_quantity <= on_hand_quantity");
+                    "ck_inventory_branch_balances_pending_return_non_negative",
+                    "pending_return_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_inspection_hold_non_negative",
+                    "inspection_hold_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_damaged_non_negative",
+                    "damaged_quantity >= 0");
+                tb.HasCheckConstraint(
+                    "ck_inventory_branch_balances_buckets_not_over_on_hand",
+                    "reserved_quantity + pending_return_quantity + inspection_hold_quantity + damaged_quantity <= on_hand_quantity");
             });
 
             entity.HasKey(e => new { e.OrganizationId, e.BranchId, e.ProductId })
@@ -3945,6 +4403,20 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("reserved_quantity")
                 .HasPrecision(18, 3)
                 .IsRequired();
+            entity.Property(e => e.PendingReturnQuantity)
+                .HasColumnName("pending_return_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.InspectionHoldQuantity)
+                .HasColumnName("inspection_hold_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.DamagedQuantity)
+                .HasColumnName("damaged_quantity")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
 
             entity.HasOne<CatalogProductRecord>()
@@ -3952,6 +4424,90 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_inventory_branch_balances_products");
+        });
+
+        modelBuilder.Entity<InventoryTransferDamageCustodyRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_damage_custodies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_itdc_quantity_positive",
+                    "quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_itdc_decision",
+                    $"decision IN ({string.Join(", ", InventoryTransferDamagedCustodyDecisions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_follow_up",
+                    $"follow_up_intent IN ({string.Join(", ", InventoryTransferDiscrepancyFollowUps.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_status",
+                    $"status IN ({string.Join(", ", InventoryTransferDamageCustodyStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itdc_inspection_split",
+                    "recovered_sellable_qty >= 0 AND confirmed_damaged_qty >= 0 AND waived_qty >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id").IsRequired();
+            entity.Property(e => e.ReceiptLineId).HasColumnName("receipt_line_id").IsRequired();
+            entity.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.Decision)
+                .HasColumnName("decision")
+                .HasMaxLength(InventoryTransferDamagedCustodyDecisions.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.FollowUpIntent)
+                .HasColumnName("follow_up_intent")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(InventoryTransferDamageCustodyStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.HeldBranchId).HasColumnName("held_branch_id").IsRequired();
+            entity.Property(e => e.RecoveredSellableQty)
+                .HasColumnName("recovered_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ConfirmedDamagedQty)
+                .HasColumnName("confirmed_damaged_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.WaivedQty)
+                .HasColumnName("waived_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ReturnDispatchedAtUtc).HasColumnName("return_dispatched_at_utc");
+            entity.Property(e => e.ReturnDispatchedBy).HasColumnName("return_dispatched_by");
+            entity.Property(e => e.ReturnReceivedAtUtc).HasColumnName("return_received_at_utc");
+            entity.Property(e => e.ReturnReceivedBy).HasColumnName("return_received_by");
+            entity.Property(e => e.InspectedAtUtc).HasColumnName("inspected_at_utc");
+            entity.Property(e => e.InspectedBy).HasColumnName("inspected_by");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_itdc_org_transfer");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_itdc_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceiptLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_itdc_org_receipt_line");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_itdc_transfer");
+            entity.HasOne<InventoryTransferReceiptLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_itdc_receipt_line");
         });
 
         modelBuilder.Entity<InventoryBranchReorderSettingRecord>(entity =>
@@ -4464,12 +5020,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(e => e.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.PaymentTiming).HasColumnName("payment_timing").IsRequired().HasDefaultValue(0);
             entity.Property(e => e.SupplierBranchId).HasColumnName("supplier_branch_id");
             entity.Property(e => e.SupplierBranchNameSnapshot)
                 .HasColumnName("supplier_branch_name_snapshot")
                 .HasMaxLength(128);
             entity.Property(e => e.IntendedReceivingBranchId)
                 .HasColumnName("intended_receiving_branch_id");
+            entity.Property(e => e.FulfillmentMethod)
+                .HasColumnName("fulfillment_method")
+                .HasMaxLength(32);
             entity.Property(e => e.RemainingClosedAtUtc).HasColumnName("remaining_closed_at_utc");
             entity.Property(e => e.RemainingClosedByUserId).HasColumnName("remaining_closed_by_user_id");
             entity.Property(e => e.RemainingClosedReason)
@@ -4489,6 +5049,28 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.AmountPaidSnapshot)
                 .HasColumnName("amount_paid_snapshot")
                 .HasPrecision(18, 2);
+            entity.Property(e => e.FinancialSettlementStatus)
+                .HasColumnName("financial_settlement_status")
+                .IsRequired()
+                .HasDefaultValue(0);
+            entity.Property(e => e.SellerSettlementRemarks)
+                .HasColumnName("seller_settlement_remarks")
+                .HasMaxLength(PurchaseOrder.SellerSettlementRemarksMaxLength);
+            entity.Property(e => e.FinanciallySettledAtUtc)
+                .HasColumnName("financially_settled_at_utc");
+            entity.Property(e => e.FinanciallySettledBy)
+                .HasColumnName("financially_settled_by");
+            entity.Property(e => e.BuyerPrepaymentSubmittedAtUtc)
+                .HasColumnName("buyer_prepayment_submitted_at_utc");
+            entity.Property(e => e.BuyerPrepaymentMethod)
+                .HasColumnName("buyer_prepayment_method")
+                .HasMaxLength(40);
+            entity.Property(e => e.BuyerPrepaymentReference)
+                .HasColumnName("buyer_prepayment_reference")
+                .HasMaxLength(120);
+            entity.Property(e => e.BuyerPrepaymentDetails)
+                .HasColumnName("buyer_prepayment_details")
+                .HasMaxLength(500);
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")
@@ -4810,10 +5392,11 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_nonnegative", "received_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_damaged_qty_nonnegative", "damaged_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_rejected_qty_nonnegative", "rejected_qty >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_other_qty_nonnegative", "other_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_short_closed_qty_nonnegative", "short_closed_qty >= 0");
                 tb.HasCheckConstraint(
                     "ck_goods_receipt_lines_activity_positive",
-                    "(received_qty + damaged_qty + rejected_qty + short_closed_qty) > 0");
+                    "(received_qty + damaged_qty + rejected_qty + other_qty + short_closed_qty) > 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_unit_cost_non_negative", "unit_purchase_cost_snapshot >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_line_total_non_negative", "line_total_snapshot >= 0");
             });
@@ -4830,9 +5413,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.DamagedQty).HasColumnName("damaged_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.RejectedQty).HasColumnName("rejected_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
+            entity.Property(e => e.OtherQty).HasColumnName("other_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.ShortClosedQty).HasColumnName("short_closed_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.DiscrepancyKind).HasColumnName("discrepancy_kind").HasMaxLength(32).IsRequired().HasDefaultValue("None");
             entity.Property(e => e.DiscrepancyNote).HasColumnName("discrepancy_note").HasMaxLength(280);
+            entity.Property(e => e.OtherReasonCode)
+                .HasColumnName("other_reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength);
+            entity.Property(e => e.OtherReasonNote)
+                .HasColumnName("other_reason_note")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.NoteMaxLength);
             entity.Property(e => e.UnitPurchaseCostSnapshot).HasColumnName("unit_purchase_cost_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");
@@ -5390,6 +5980,11 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.SupplierPublicOrganizationIdSnapshot).HasColumnName("supplier_public_organization_id_snapshot").HasMaxLength(32);
             entity.Property(x=>x.CatalogSharingMode).HasColumnName("catalog_sharing_mode").HasDefaultValue(0);
             entity.Property(x=>x.CustomerDiscountPercent).HasColumnName("customer_discount_percent").HasPrecision(5, 2);
+            entity.Property(x=>x.UseOrganizationPaymentTimingDefaults).HasColumnName("use_org_payment_timing_defaults").HasDefaultValue(true);
+            entity.Property(x=>x.AllowPayBeforeFulfillment).HasColumnName("allow_pay_before_fulfillment").HasDefaultValue(true);
+            entity.Property(x=>x.AllowPayOnDeliveryOrReceipt).HasColumnName("allow_pay_on_delivery_or_receipt").HasDefaultValue(true);
+            entity.Property(x=>x.AllowSupplierCredit).HasColumnName("allow_supplier_credit").HasDefaultValue(false);
+            entity.Property(x=>x.CustomerDefaultPaymentTiming).HasColumnName("customer_default_payment_timing").HasDefaultValue((int)ConnectedPoPaymentTiming.PayBeforeFulfillment);
             entity.Property(x=>x.SupplierBranchId).HasColumnName("supplier_branch_id");
             entity.Property(x=>x.SupplierBranchNameSnapshot).HasColumnName("supplier_branch_name_snapshot").HasMaxLength(128);
             entity.Property(x=>x.SharedSupplierBranchIds)
@@ -5414,6 +6009,18 @@ public sealed class PosDbContext : DbContext
             entity.HasIndex(x=>x.SupplierOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_supplier");
             entity.HasIndex(x=>x.BuyerOrganizationId).HasDatabaseName("ix_connected_supplier_relationships_buyer");
             entity.HasIndex(x=>new{x.SupplierOrganizationId,x.SupplierBranchId}).HasDatabaseName("ix_connected_supplier_relationships_supplier_branch");
+            entity.HasMany(x => x.CategoryDiscountOverrides)
+                .WithOne()
+                .HasForeignKey(x => x.RelationshipId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord>(entity =>
+        {
+            entity.ToTable("connected_supplier_relationship_category_discount_overrides");
+            entity.HasKey(x => new { x.RelationshipId, x.CategoryId });
+            entity.Property(x => x.RelationshipId).HasColumnName("relationship_id");
+            entity.Property(x => x.CategoryId).HasColumnName("category_id");
+            entity.Property(x => x.DiscountPercent).HasColumnName("discount_percent").HasPrecision(5, 2);
         });
         modelBuilder.Entity<OrganizationFulfillmentSettingsRecord>(entity =>
         {
@@ -5422,11 +6029,112 @@ public sealed class PosDbContext : DbContext
             entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.OrganizationId).HasColumnName("organization_id");
             entity.Property(x => x.OfferDelivery).HasColumnName("offer_delivery");
+            entity.Property(x => x.DefaultPickupEnabled).HasColumnName("default_pickup_enabled");
+            entity.Property(x => x.DefaultDeliveryEnabled).HasColumnName("default_delivery_enabled");
+            entity.Property(x => x.DefaultOnlineOrdersEnabled).HasColumnName("default_online_orders_enabled");
             entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.HasIndex(x => x.OrganizationId)
                 .IsUnique()
                 .HasDatabaseName("ux_organization_fulfillment_settings_org");
+        });
+        modelBuilder.Entity<OrganizationConnectedCommerceSettingsRecord>(entity =>
+        {
+            entity.ToTable("organization_connected_commerce_settings");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.OrganizationId).HasColumnName("organization_id");
+            entity.Property(x => x.AllowPayBeforeFulfillment).HasColumnName("allow_pay_before_fulfillment").HasDefaultValue(true);
+            entity.Property(x => x.AllowPayOnDeliveryOrReceipt).HasColumnName("allow_pay_on_delivery_or_receipt").HasDefaultValue(true);
+            entity.Property(x => x.AllowSupplierCredit).HasColumnName("allow_supplier_credit").HasDefaultValue(false);
+            entity.Property(x => x.DefaultPaymentTiming).HasColumnName("default_payment_timing").HasDefaultValue((int)ConnectedPoPaymentTiming.PayBeforeFulfillment);
+            entity.Property(x => x.DefaultB2bDiscountPercent).HasColumnName("default_b2b_discount_percent").HasPrecision(5, 2).HasDefaultValue(0m);
+            entity.Property(x => x.ProposalReservationHoldHours).HasColumnName("proposal_reservation_hold_hours").HasDefaultValue(24);
+            entity.Property(x => x.ReturnsAllowed).HasColumnName("returns_allowed").HasDefaultValue(true);
+            entity.Property(x => x.ReturnWindowDays).HasColumnName("return_window_days");
+            entity.Property(x => x.ReceivingIssueWindowDays).HasColumnName("receiving_issue_window_days").HasDefaultValue(2);
+            entity.Property(x => x.RequireReturnApproval).HasColumnName("require_return_approval").HasDefaultValue(true);
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.HasIndex(x => x.OrganizationId)
+                .IsUnique()
+                .HasDatabaseName("ux_org_connected_commerce_settings_org");
+            entity.HasMany(x => x.CategoryRules)
+                .WithOne()
+                .HasForeignKey(x => x.OrganizationConnectedCommerceSettingsId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(x => x.CategoryReturnRules)
+                .WithOne()
+                .HasForeignKey(x => x.OrganizationConnectedCommerceSettingsId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<OrganizationConnectedCommerceCategoryRuleRecord>(entity =>
+        {
+            entity.ToTable("organization_connected_commerce_category_discount_rules");
+            entity.HasKey(x => new { x.OrganizationConnectedCommerceSettingsId, x.CategoryId });
+            entity.Property(x => x.OrganizationConnectedCommerceSettingsId).HasColumnName("organization_connected_commerce_settings_id");
+            entity.Property(x => x.CategoryId).HasColumnName("category_id");
+            entity.Property(x => x.DiscountPercent).HasColumnName("discount_percent").HasPrecision(5, 2);
+            entity.HasIndex(x => x.CategoryId).HasDatabaseName("ix_org_connected_commerce_category_rules_category");
+        });
+        modelBuilder.Entity<OrganizationConnectedCommerceCategoryReturnRuleRecord>(entity =>
+        {
+            entity.ToTable("organization_connected_commerce_category_return_rules");
+            entity.HasKey(x => new { x.OrganizationConnectedCommerceSettingsId, x.CategoryId });
+            entity.Property(x => x.OrganizationConnectedCommerceSettingsId)
+                .HasColumnName("organization_connected_commerce_settings_id");
+            entity.Property(x => x.CategoryId).HasColumnName("category_id");
+            entity.Property(x => x.Mode).HasColumnName("mode").HasDefaultValue((short)0);
+            entity.Property(x => x.ReturnsAllowed).HasColumnName("returns_allowed");
+            entity.Property(x => x.ReturnWindowDays).HasColumnName("return_window_days");
+            entity.HasIndex(x => x.CategoryId)
+                .HasDatabaseName("ix_org_connected_commerce_category_return_rules_category");
+        });
+        modelBuilder.Entity<ConnectedPoReturnEligibilityBucketRecord>(entity =>
+        {
+            entity.ToTable("connected_po_return_eligibility_buckets");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.BuyerOrganizationId).HasColumnName("buyer_organization_id");
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id");
+            entity.Property(x => x.PurchaseOrderId).HasColumnName("purchase_order_id");
+            entity.Property(x => x.PurchaseOrderLineId).HasColumnName("purchase_order_line_id");
+            entity.Property(x => x.GoodsReceiptId).HasColumnName("goods_receipt_id");
+            entity.Property(x => x.GoodsReceiptLineId).HasColumnName("goods_receipt_line_id");
+            entity.Property(x => x.BuyerProductId).HasColumnName("buyer_product_id");
+            entity.Property(x => x.SupplierProductId).HasColumnName("supplier_product_id");
+            entity.Property(x => x.QuantityReceived).HasColumnName("quantity_received").HasPrecision(18, 3);
+            entity.Property(x => x.QuantityAllocated).HasColumnName("quantity_allocated").HasPrecision(18, 3);
+            entity.Property(x => x.ReceivedAtUtc).HasColumnName("received_at_utc");
+            entity.Property(x => x.PolicyReturnsAllowed).HasColumnName("policy_returns_allowed");
+            entity.Property(x => x.PolicyReturnWindowDays).HasColumnName("policy_return_window_days");
+            entity.Property(x => x.PolicyReceivingIssueWindowDays).HasColumnName("policy_receiving_issue_window_days");
+            entity.Property(x => x.PolicyRequireReturnApproval).HasColumnName("policy_require_return_approval");
+            entity.Property(x => x.PolicySource).HasColumnName("policy_source");
+            entity.Property(x => x.ReturnExpiresAtUtc).HasColumnName("return_expires_at_utc");
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(x => x.GoodsReceiptLineId)
+                .IsUnique()
+                .HasDatabaseName("ux_connected_po_return_eligibility_buckets_gr_line");
+            entity.HasIndex(x => new { x.BuyerOrganizationId, x.PurchaseOrderId })
+                .HasDatabaseName("ix_connected_po_return_eligibility_buckets_buyer_po");
+            entity.HasIndex(x => new { x.BuyerOrganizationId, x.PurchaseOrderLineId, x.ReceivedAtUtc })
+                .HasDatabaseName("ix_connected_po_return_eligibility_buckets_po_line");
+        });
+        modelBuilder.Entity<ConnectedPoReturnAllocationRecord>(entity =>
+        {
+            entity.ToTable("connected_po_return_allocations");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ReturnBatchLineId).HasColumnName("return_batch_line_id");
+            entity.Property(x => x.EligibilityBucketId).HasColumnName("eligibility_bucket_id");
+            entity.Property(x => x.Quantity).HasColumnName("quantity").HasPrecision(18, 3);
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(x => new { x.ReturnBatchLineId, x.EligibilityBucketId })
+                .IsUnique()
+                .HasDatabaseName("ux_connected_po_return_allocations_line_bucket");
+            entity.HasIndex(x => x.EligibilityBucketId)
+                .HasDatabaseName("ix_connected_po_return_allocations_bucket");
         });
         modelBuilder.Entity<SupplierProductExposureRecord>(entity =>
         {
@@ -5485,6 +6193,7 @@ public sealed class PosDbContext : DbContext
             {
                 tb.HasCheckConstraint("ck_connected_purchase_orders_status", "status BETWEEN 0 AND 6");
                 tb.HasCheckConstraint("ck_connected_purchase_orders_payment_term", "payment_term BETWEEN 0 AND 5");
+                tb.HasCheckConstraint("ck_connected_purchase_orders_payment_timing", "payment_timing BETWEEN 0 AND 2");
             });
             entity.HasKey(x=>x.Id);entity.Property(x=>x.Id).HasColumnName("id");entity.Property(x=>x.RelationshipId).HasColumnName("relationship_id");
             entity.Property(x=>x.BuyerOrganizationId).HasColumnName("buyer_organization_id");entity.Property(x=>x.SupplierOrganizationId).HasColumnName("supplier_organization_id");
@@ -5498,8 +6207,13 @@ public sealed class PosDbContext : DbContext
             entity.Property(x=>x.DeclineReason).HasColumnName("decline_reason");
             entity.Property(x=>x.DeclineNote).HasColumnName("decline_note").HasMaxLength(280);
             entity.Property(x=>x.PaymentTerm).HasColumnName("payment_term").IsRequired().HasDefaultValue(0);
+            entity.Property(x=>x.PaymentTiming).HasColumnName("payment_timing").IsRequired().HasDefaultValue(0);
+            entity.Property(x=>x.FulfillmentMethod).HasColumnName("fulfillment_method").HasMaxLength(32);
+            entity.Property(x=>x.ConfirmedFulfillmentMethod).HasColumnName("confirmed_fulfillment_method").HasMaxLength(32);
             entity.Property(x=>x.ProposedPaymentTerm).HasColumnName("proposed_payment_term");
+            entity.Property(x=>x.ProposedPaymentTiming).HasColumnName("proposed_payment_timing");
             entity.Property(x=>x.ConfirmedPaymentTerm).HasColumnName("confirmed_payment_term");
+            entity.Property(x=>x.ConfirmedPaymentTiming).HasColumnName("confirmed_payment_timing");
             entity.Property(x=>x.CreditPostedAmount).HasColumnName("credit_posted_amount").HasPrecision(18, 2).HasDefaultValue(0m);
             entity.Property(x=>x.ChangesProposedAtUtc).HasColumnName("changes_proposed_at_utc");
             entity.Property(x=>x.ChangesProposedByUserId).HasColumnName("changes_proposed_by_user_id");
@@ -5566,6 +6280,114 @@ public sealed class PosDbContext : DbContext
                 .HasDatabaseName("ix_connected_po_inv_res_order_status");
             entity.HasIndex(x => new { x.OrganizationId, x.BranchId, x.ProductId, x.Status })
                 .HasDatabaseName("ix_connected_po_inv_res_branch_product_status");
+        });
+        modelBuilder.Entity<ConnectedPoReceivingIssueRecord>(entity =>
+        {
+            entity.ToTable("connected_po_receiving_issues", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_status",
+                    $"status IN ({string.Join(", ", ConnectedPoReceivingIssueStatuses.Codes.Select(c => $"'{c}'"))})");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ConnectedPurchaseOrderId).HasColumnName("connected_purchase_order_id").IsRequired();
+            entity.Property(x => x.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
+            entity.Property(x => x.GoodsReceiptId).HasColumnName("goods_receipt_id").IsRequired();
+            entity.Property(x => x.BuyerOrganizationId).HasColumnName("buyer_organization_id").IsRequired();
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(x => x.FulfillmentSourceId).HasColumnName("fulfillment_source_id").IsRequired();
+            entity.Property(x => x.Status)
+                .HasColumnName("status")
+                .HasMaxLength(ConnectedPoReceivingIssueStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+            entity.Property(x => x.CreatedByUserId).HasColumnName("created_by_user_id").IsRequired();
+            entity.Property(x => x.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(x => x.ResolvedByUserId).HasColumnName("resolved_by_user_id");
+            entity.Property(x => x.SellerNotes)
+                .HasColumnName("seller_notes")
+                .HasMaxLength(ConnectedPoReceivingIssue.SellerNotesMaxLength);
+            entity.Property<uint>("xmin")
+                .HasColumnName("xmin")
+                .IsRowVersion();
+            entity.HasIndex(x => x.GoodsReceiptId)
+                .IsUnique()
+                .HasDatabaseName("ux_cpo_receiving_issues_goods_receipt");
+            entity.HasIndex(x => new { x.ConnectedPurchaseOrderId, x.Status })
+                .HasDatabaseName("ix_cpo_receiving_issues_order_status");
+            entity.HasIndex(x => new { x.SellerOrganizationId, x.Status, x.CreatedAtUtc })
+                .HasDatabaseName("ix_cpo_receiving_issues_seller_status");
+            entity.HasMany(x => x.Lines)
+                .WithOne()
+                .HasForeignKey(x => x.ReceivingIssueId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ConnectedPoReceivingIssueLineRecord>(entity =>
+        {
+            entity.ToTable("connected_po_receiving_issue_lines", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_line_kind",
+                    $"line_kind IN ({string.Join(", ", ConnectedPoReceivingIssueLineKinds.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_missing_resolution",
+                    $"missing_resolution IS NULL OR missing_resolution IN ({string.Join(", ", ConnectedPoMissingResolutions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_damaged_resolution",
+                    $"damaged_resolution IS NULL OR damaged_resolution IN ({string.Join(", ", ConnectedPoDamagedResolutions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_cpo_receiving_issue_resolution_qty",
+                    "resolution_qty >= 0");
+            });
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
+            entity.Property(x => x.ReceivingIssueId).HasColumnName("receiving_issue_id").IsRequired();
+            entity.Property(x => x.SellerOrganizationId).HasColumnName("seller_organization_id").IsRequired();
+            entity.Property(x => x.GoodsReceiptLineId).HasColumnName("goods_receipt_line_id").IsRequired();
+            entity.Property(x => x.PurchaseOrderLineId).HasColumnName("purchase_order_line_id").IsRequired();
+            entity.Property(x => x.SupplierProductId).HasColumnName("supplier_product_id").IsRequired();
+            entity.Property(x => x.BuyerProductId).HasColumnName("buyer_product_id");
+            entity.Property(x => x.NameSnapshot)
+                .HasColumnName("name_snapshot")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.NameMaxLength)
+                .IsRequired();
+            entity.Property(x => x.UomSnapshot).HasColumnName("uom_snapshot").HasMaxLength(32).IsRequired();
+            entity.Property(x => x.FulfillmentSourceId).HasColumnName("fulfillment_source_id").IsRequired();
+            entity.Property(x => x.ShippedQty).HasColumnName("shipped_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.GoodQty).HasColumnName("good_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.DamagedQty).HasColumnName("damaged_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.MissingQty).HasColumnName("missing_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.LineKind)
+                .HasColumnName("line_kind")
+                .HasMaxLength(ConnectedPoReceivingIssueLineKinds.CodeMaxLength)
+                .IsRequired();
+            entity.Property(x => x.BuyerDiscrepancyKind)
+                .HasColumnName("buyer_discrepancy_kind")
+                .HasMaxLength(32)
+                .IsRequired();
+            entity.Property(x => x.BuyerDiscrepancyNote)
+                .HasColumnName("buyer_discrepancy_note")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.DiscrepancyNoteMaxLength);
+            entity.Property(x => x.MissingResolution)
+                .HasColumnName("missing_resolution")
+                .HasMaxLength(ConnectedPoMissingResolutions.CodeMaxLength);
+            entity.Property(x => x.DamagedResolution)
+                .HasColumnName("damaged_resolution")
+                .HasMaxLength(ConnectedPoDamagedResolutions.CodeMaxLength);
+            entity.Property(x => x.ResolutionQty).HasColumnName("resolution_qty").HasPrecision(18, 3).IsRequired();
+            entity.Property(x => x.SellerNote)
+                .HasColumnName("seller_note")
+                .HasMaxLength(ConnectedPoReceivingIssueLine.NoteMaxLength);
+            entity.Property(x => x.InventoryMovementId).HasColumnName("inventory_movement_id");
+            entity.Property(x => x.ReturnBatchId).HasColumnName("return_batch_id");
+            entity.Property(x => x.ResolvedAtUtc).HasColumnName("resolved_at_utc");
+            entity.Property(x => x.ResolvedByUserId).HasColumnName("resolved_by_user_id");
+            entity.HasIndex(x => new { x.ReceivingIssueId, x.GoodsReceiptLineId, x.LineKind })
+                .IsUnique()
+                .HasDatabaseName("ux_cpo_receiving_issue_lines_grn_kind");
+            entity.HasIndex(x => new { x.SellerOrganizationId, x.ResolvedAtUtc })
+                .HasDatabaseName("ix_cpo_receiving_issue_lines_seller_resolved");
         });
     }
 }

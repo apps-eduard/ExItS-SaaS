@@ -9,10 +9,26 @@ export type IncomingOrdersUiFilter =
   | "completed"
   | "declined";
 
-/** Canonical supplier completion: buyer outstanding is zero. */
-export function isIncomingOrderCompleted(
-  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status">,
+/**
+ * Goods received, but pay-on-delivery/receipt settlement is still outstanding.
+ * Never counts as commercial completion.
+ */
+export function isIncomingOrderAwaitingPayment(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus"> &
+    Partial<Pick<ConnectedPurchaseOrder, "financialSettlementStatus">>,
 ): boolean {
+  const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
+  return key === "ReceivedAwaitingPayment" || order.financialSettlementStatus === "AwaitingPayment";
+}
+
+/** Canonical supplier completion: buyer outstanding is zero and settlement is not pending. */
+export function isIncomingOrderCompleted(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status"> &
+    Partial<Pick<ConnectedPurchaseOrder, "financialSettlementStatus">>,
+): boolean {
+  if (isIncomingOrderAwaitingPayment(order)) {
+    return false;
+  }
   const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
   return (
     key === "Completed" ||
@@ -23,6 +39,14 @@ export function isIncomingOrderCompleted(
   );
 }
 
+/** Buyer confirmed receipt — complete or awaiting payment. Used for list grouping. */
+export function isIncomingOrderReceiptClosed(
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status"> &
+    Partial<Pick<ConnectedPurchaseOrder, "financialSettlementStatus">>,
+): boolean {
+  return isIncomingOrderCompleted(order) || isIncomingOrderAwaitingPayment(order);
+}
+
 export function isIncomingOrderPartiallyReceived(
   order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus">,
 ): boolean {
@@ -31,9 +55,10 @@ export function isIncomingOrderPartiallyReceived(
 }
 
 export function isIncomingOrderAwaitingBuyerReceipt(
-  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status">,
+  order: Pick<ConnectedPurchaseOrder, "displayStatus" | "buyerReceivingStatus" | "status"> &
+    Partial<Pick<ConnectedPurchaseOrder, "financialSettlementStatus">>,
 ): boolean {
-  if (isIncomingOrderCompleted(order) || isIncomingOrderPartiallyReceived(order)) {
+  if (isIncomingOrderReceiptClosed(order) || isIncomingOrderPartiallyReceived(order)) {
     return false;
   }
   const key = (order.displayStatus || order.buyerReceivingStatus || "").trim();
@@ -83,7 +108,7 @@ export function countIncomingOrdersByUiFilter(
     declined: 0,
   };
   for (const order of orders) {
-    if (isIncomingOrderCompleted(order)) {
+    if (isIncomingOrderReceiptClosed(order)) {
       counts.completed += 1;
       continue;
     }
@@ -118,14 +143,14 @@ export function filterIncomingOrdersByUiStatus(
     return [...orders];
   }
   if (filter === "completed") {
-    return orders.filter((order) => isIncomingOrderCompleted(order));
+    return orders.filter((order) => isIncomingOrderReceiptClosed(order));
   }
   const apiStatus = uiFilterToApiStatus(filter);
   if (!apiStatus) {
     return [...orders];
   }
   return orders.filter(
-    (order) => order.status === apiStatus && !isIncomingOrderCompleted(order),
+    (order) => order.status === apiStatus && !isIncomingOrderReceiptClosed(order),
   );
 }
 
@@ -134,6 +159,9 @@ export function incomingOrderStatusTone(
   displayStatus?: string,
 ): "success" | "warning" | "info" | "danger" {
   const key = (displayStatus || status || "").trim();
+  if (key === "ReceivedAwaitingPayment") {
+    return "warning";
+  }
   if (
     key === "Completed" ||
     key === "CompletedRemainingCancelled" ||

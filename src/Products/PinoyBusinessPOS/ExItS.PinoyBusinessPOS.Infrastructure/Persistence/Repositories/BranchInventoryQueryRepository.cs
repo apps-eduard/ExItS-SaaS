@@ -93,7 +93,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.CategoryName,
                 row.MonitoringMode,
                 row.BranchReserved,
-                row.BranchAvailable);
+                row.BranchAvailable,
+                row.BranchPendingReturn);
         }).ToList();
 
         return (items, total);
@@ -157,9 +158,20 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 || (p.Barcode != null && p.Barcode.Contains(term)));
         }
 
-        if (filter.CategoryId is Guid categoryId)
+        if (filter.CategoryIds is { Count: > 0 } categoryIds)
+        {
+            var idSet = categoryIds.Distinct().ToList();
+            products = products.Where(p => p.CategoryId != null && idSet.Contains(p.CategoryId.Value));
+        }
+        else if (filter.CategoryId is Guid categoryId)
         {
             products = products.Where(p => p.CategoryId == categoryId);
+        }
+
+        if (filter.BrandIds is { Count: > 0 } brandIds)
+        {
+            var brandIdSet = brandIds.Distinct().ToList();
+            products = products.Where(p => p.BrandId != null && brandIdSet.Contains(p.BrandId.Value));
         }
 
         var explicitBalances = _db.InventoryBranchBalances.AsNoTracking()
@@ -195,6 +207,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 ? explicitBal.OnHandQuantity
                 : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
             let branchReservedRaw = explicitBal != null ? explicitBal.ReservedQuantity : 0m
+            let branchPendingReturn = explicitBal != null ? explicitBal.PendingReturnQuantity : 0m
             let expiredStillActive = _db.ConnectedPoInventoryReservations
                 .Where(r =>
                     r.OrganizationId == orgId
@@ -241,6 +254,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 BranchOnHand = branchOnHand,
                 BranchReserved = branchReserved,
                 BranchAvailable = branchAvailable,
+                BranchPendingReturn = branchPendingReturn,
                 OrgOnHand = orgOnHand,
                 ReorderLevel = reorderLevel,
                 ReorderQuantity = reorderQuantity,
@@ -382,6 +396,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         public decimal BranchOnHand { get; set; }
         public decimal BranchReserved { get; set; }
         public decimal BranchAvailable { get; set; }
+        public decimal BranchPendingReturn { get; set; }
         public decimal OrgOnHand { get; set; }
         public decimal? ReorderLevel { get; set; }
         public decimal? ReorderQuantity { get; set; }
@@ -471,7 +486,12 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 || (p.Barcode != null && p.Barcode.Contains(term)));
         }
 
-        if (filter.CategoryId is Guid categoryId)
+        if (filter.CategoryIds is { Count: > 0 } categoryIds)
+        {
+            var idSet = categoryIds.Distinct().ToList();
+            products = products.Where(p => p.CategoryId != null && idSet.Contains(p.CategoryId.Value));
+        }
+        else if (filter.CategoryId is Guid categoryId)
         {
             products = products.Where(p => p.CategoryId == categoryId);
         }

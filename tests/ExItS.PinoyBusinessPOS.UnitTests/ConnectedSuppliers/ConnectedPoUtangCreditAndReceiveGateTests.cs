@@ -119,7 +119,7 @@ public sealed class ConnectedPoUtangCreditAndReceiveGateTests
             [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), 10m, 50m)],
             Now);
         po.Submit(
-            "PO-20260916-000001",
+            "260916-001",
             [new PurchaseOrderLineSnapshotInput(
                 CatalogProductId.From(ProductA),
                 "Coke",

@@ -41,6 +41,7 @@ internal static class BusinessCreditEntryEntityMapper
 
     public static void ApplyToRecord(BusinessCreditEntry entry, BusinessCreditEntryRecord record)
     {
+        record.Amount = entry.Amount;
         record.Status = entry.Status.ToString();
         record.ReversedAtUtc = entry.ReversedAtUtc;
         record.ReversalReason = entry.ReversalReason;

@@ -24,7 +24,7 @@ public sealed class SupplierPayable
     public SupplierId SupplierId { get; }
     public SupplierPayableSourceType SourceType { get; }
     public Guid SourceId { get; }
-    public decimal OriginalAmount { get; }
+    public decimal OriginalAmount { get; private set; }
     /// <summary>Immutable snapshot of amount settled at receipt post (not a payment row).</summary>
     public decimal PaidAtReceiptAmount { get; }
     /// <summary>Aggregate settled = PaidAtReceiptAmount + sum of posted payments.</summary>
@@ -288,6 +288,34 @@ public sealed class SupplierPayable
         VoidedBy = voidedBy;
         VoidReason = normalizedReason;
         UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>
+    /// Reduces unpaid outstanding for a connected-PO return without rewriting payment history.
+    /// Only the unpaid balance can be reduced; paid amounts are preserved for refund calculus.
+    /// </summary>
+    public decimal ReduceOutstandingForReturn(decimal reductionAmount, DateTimeOffset utcNow)
+    {
+        SupplierPayableMoney.EnsureUtc(utcNow);
+        if (Status == SupplierPayableStatus.Voided)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSupplierPayableStatusTransition,
+                "Cannot reduce a voided payable.");
+        }
+
+        var requested = SupplierPayableMoney.RoundMoney(Math.Max(0m, reductionAmount));
+        if (requested <= 0m || Balance <= 0m)
+        {
+            return 0m;
+        }
+
+        var apply = requested > Balance ? Balance : requested;
+        OriginalAmount = SupplierPayableMoney.RoundMoney(OriginalAmount - apply);
+        Balance = SupplierPayableMoney.RoundMoney(OriginalAmount - PaidAmount);
+        Status = ResolveStatus(PaidAmount, Balance);
+        UpdatedAtUtc = utcNow;
+        return apply;
     }
 
     public static string NormalizeVoidReason(string reason)

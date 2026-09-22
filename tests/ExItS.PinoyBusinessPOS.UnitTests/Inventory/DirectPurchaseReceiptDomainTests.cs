@@ -20,8 +20,8 @@ public sealed class DirectPurchaseReceiptDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Equal("DPR-20260817-000001", DirectPurchaseReceiptNumbers.Format(date, 1));
-        Assert.Equal("DPR-20260817-000001", DirectPurchaseReceiptNumbers.Normalize(" dpr-20260817-000001 "));
+        Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Format(date, 1));
+        Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Normalize(" 260817-001 "));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     {
         var receipt = DirectPurchaseReceipt.Create(
             Org,
-            "DPR-20260817-000001",
+            "260817-001",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [Line(ProductA, "Coke", 2m, 12.5m)],
             Actor,
@@ -49,7 +49,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     {
         var withSource = DirectPurchaseReceipt.Create(
             Org,
-            "DPR-20260817-000002",
+            "260817-002",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [Line(ProductA, "Coke", 1m, 10m)],
             Actor,
@@ -61,7 +61,7 @@ public sealed class DirectPurchaseReceiptDomainTests
 
         var noSource = DirectPurchaseReceipt.Create(
             Org,
-            "DPR-20260817-000003",
+            "260817-003",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [Line(ProductA, "Coke", 1m, 10m)],
             Actor,
@@ -76,7 +76,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     {
         var receipt = DirectPurchaseReceipt.Create(
             Org,
-            "DPR-20260817-000004",
+            "260817-004",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [
                 Line(ProductA, "Coke", 2m, 10m),
@@ -91,7 +91,7 @@ public sealed class DirectPurchaseReceiptDomainTests
         var empty = Assert.Throws<DomainException>(() =>
             DirectPurchaseReceipt.Create(
                 Org,
-                "DPR-20260817-000005",
+                "260817-005",
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [],
                 Actor,
@@ -102,7 +102,7 @@ public sealed class DirectPurchaseReceiptDomainTests
         var zeroQty = Assert.Throws<DomainException>(() =>
             DirectPurchaseReceipt.Create(
                 Org,
-                "DPR-20260817-000006",
+                "260817-006",
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [Line(ProductA, "Coke", 0m, 10m)],
                 Actor,
@@ -113,7 +113,7 @@ public sealed class DirectPurchaseReceiptDomainTests
         var zeroCost = Assert.Throws<DomainException>(() =>
             DirectPurchaseReceipt.Create(
                 Org,
-                "DPR-20260817-000007",
+                "260817-007",
                 DateOnly.FromDateTime(Now.UtcDateTime),
                 [Line(ProductA, "Coke", 1m, 0m)],
                 Actor,
@@ -147,7 +147,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     {
         var receipt = DirectPurchaseReceipt.Create(
             Org,
-            "DPR-20260817-000008",
+            "260817-008",
             DateOnly.FromDateTime(Now.UtcDateTime),
             [new DirectPurchaseReceiptLineDraft(ProductA, "Canned Corned Beef", "CCB-1", UnitOfMeasure.Piece, 12m, 32.5m)],
             Actor,

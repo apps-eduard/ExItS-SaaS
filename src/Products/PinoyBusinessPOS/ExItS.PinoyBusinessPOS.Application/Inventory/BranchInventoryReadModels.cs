@@ -30,7 +30,11 @@ public sealed record BranchInventoryListFilter(
     string? StockStatus = null,
     /// <summary>All | BranchDefault | Custom | NotMonitored</summary>
     string? MonitoringMode = null,
-    Guid? CategoryId = null);
+    Guid? CategoryId = null,
+    /// <summary>When set (non-empty), filters to products in any of these categories. Takes precedence over <see cref="CategoryId"/>.</summary>
+    IReadOnlyList<Guid>? CategoryIds = null,
+    /// <summary>When set (non-empty), filters to products in any of these brands.</summary>
+    IReadOnlyList<Guid>? BrandIds = null);
 
 /// <summary>Stock filter for replenishment catalog: <c>all</c>, <c>low</c>, or <c>out</c>.</summary>
 public static class ReplenishmentStockFilters
@@ -62,7 +66,8 @@ public sealed record ReplenishmentCatalogFilter(
     Guid SupplyWarehouseBranchId,
     string? Search = null,
     string StockFilter = ReplenishmentStockFilters.All,
-    Guid? CategoryId = null);
+    Guid? CategoryId = null,
+    IReadOnlyList<Guid>? CategoryIds = null);
 
 public sealed record ReplenishmentCatalogRow(
     Guid ProductId,
@@ -107,4 +112,5 @@ public sealed record BranchInventoryListRow(
     string? CategoryName = null,
     string MonitoringMode = "BranchDefault",
     decimal BranchReserved = 0m,
-    decimal BranchAvailable = 0m);
+    decimal BranchAvailable = 0m,
+    decimal BranchPendingReturn = 0m);

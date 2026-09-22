@@ -435,7 +435,11 @@ public sealed class GetBusinessCustomer
         var readyBranch = false;
         if (_commerceReadiness is not null)
         {
-            var evaluated = await _commerceReadiness.EvaluateAsync(r, ct).ConfigureAwait(false);
+            // Read-only: never bootstrap/save AllEligible exposures here. Detail + commerce-readiness
+            // refresh in parallel after share/unshare; mutating Evaluate would 500 on SaveChanges races.
+            var evaluated = await _commerceReadiness
+                .EvaluateAsync(r, ct, ensureAllEligibleExposures: false)
+                .ConfigureAwait(false);
             readyBranch = evaluated.SupportedFulfillmentMethods.Contains(
                 ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
                 StringComparer.OrdinalIgnoreCase);

@@ -36,6 +36,9 @@ internal sealed class CatalogProductRecord
     public bool CanExposeToConnectedBuyers { get; set; } = true;
     public bool IsBlockedFromConnectedBuyers { get; set; }
     public decimal? DefaultConnectedPoPrice { get; set; }
+    public short ReturnPolicyMode { get; set; }
+    public bool? ReturnPolicyReturnsAllowed { get; set; }
+    public int? ReturnPolicyWindowDays { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

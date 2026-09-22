@@ -11,7 +11,7 @@ describe("formatLinkedCustomerActivity", () => {
         activityId: "a",
         occurredAtUtc: "2026-08-24T02:00:00Z",
         type: "UtangCharge",
-        referenceNumber: "SO-000123",
+        referenceNumber: "260816-123",
         chargeAmount: 800,
         paymentAmount: null,
         adjustmentAmount: null,
@@ -20,7 +20,7 @@ describe("formatLinkedCustomerActivity", () => {
         hasDetails: true,
         sourceSaleId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
       }),
-    ).toBe("Online purchase · Order SO-000123 · +800.00");
+    ).toBe("Online purchase · Order 260816-123 · +800.00");
   });
 
   it("formats charge and payment titles", () => {

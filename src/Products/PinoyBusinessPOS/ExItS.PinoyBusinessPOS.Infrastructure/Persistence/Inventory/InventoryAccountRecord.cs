@@ -10,6 +10,7 @@ internal sealed class InventoryAccountRecord
     public decimal? ReorderQuantity { get; set; }
     public decimal OnHandQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
+    public decimal PendingReturnQuantity { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public uint Xmin { get; set; }

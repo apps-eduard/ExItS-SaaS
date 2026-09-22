@@ -28,9 +28,12 @@ public sealed class GoodsReceiptLine
     public decimal QuantityReceived { get; }
     public decimal DamagedQty { get; }
     public decimal RejectedQty { get; }
+    public decimal OtherQty { get; }
     public decimal ShortClosedQty { get; }
     public ConnectedPoReceivingDiscrepancyKind DiscrepancyKind { get; }
     public string? DiscrepancyNote { get; }
+    public string? OtherReasonCode { get; }
+    public string? OtherReasonNote { get; }
     public decimal UnitPurchaseCostSnapshot { get; }
     public decimal LineTotalSnapshot { get; }
     public decimal MultiplierToBaseSnapshot { get; }
@@ -61,9 +64,12 @@ public sealed class GoodsReceiptLine
         decimal quantityReceived,
         decimal damagedQty,
         decimal rejectedQty,
+        decimal otherQty,
         decimal shortClosedQty,
         ConnectedPoReceivingDiscrepancyKind discrepancyKind,
         string? discrepancyNote,
+        string? otherReasonCode,
+        string? otherReasonNote,
         decimal unitPurchaseCostSnapshot,
         decimal lineTotalSnapshot,
         decimal multiplierToBaseSnapshot,
@@ -82,9 +88,12 @@ public sealed class GoodsReceiptLine
         QuantityReceived = quantityReceived;
         DamagedQty = damagedQty;
         RejectedQty = rejectedQty;
+        OtherQty = otherQty;
         ShortClosedQty = shortClosedQty;
         DiscrepancyKind = discrepancyKind;
         DiscrepancyNote = discrepancyNote;
+        OtherReasonCode = otherReasonCode;
+        OtherReasonNote = otherReasonNote;
         UnitPurchaseCostSnapshot = unitPurchaseCostSnapshot;
         LineTotalSnapshot = lineTotalSnapshot;
         MultiplierToBaseSnapshot = multiplierToBaseSnapshot;
@@ -117,11 +126,16 @@ public sealed class GoodsReceiptLine
         var rejected = receive.RejectedQty <= 0m
             ? 0m
             : PurchaseOrderLine.NormalizeQuantity(receive.RejectedQty, poLine.UomSnapshot.Value, receive.SellingMode);
+        var other = receive.OtherQty <= 0m
+            ? 0m
+            : PurchaseOrderLine.NormalizeQuantity(receive.OtherQty, poLine.UomSnapshot.Value, receive.SellingMode);
         var shortClosed = receive.ShortClosedQty <= 0m
             ? 0m
             : PurchaseOrderLine.NormalizeQuantity(receive.ShortClosedQty, poLine.UomSnapshot.Value, receive.SellingMode);
 
-        if (good + damaged + rejected + shortClosed <= 0m)
+        ReceiveDiscrepancyOtherReason.EnsureValid(receive.OtherReasonCode, receive.OtherReasonNote, other);
+
+        if (good + damaged + rejected + other + shortClosed <= 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidPurchaseReceiveQuantity,
@@ -144,9 +158,14 @@ public sealed class GoodsReceiptLine
             good,
             damaged,
             rejected,
+            other,
             shortClosed,
             receive.DiscrepancyKind,
             NormalizeNote(receive.DiscrepancyNote),
+            ReceiveDiscrepancyOtherReason.TryParse(receive.OtherReasonCode, out var otherCode)
+                ? otherCode
+                : null,
+            ReceiveDiscrepancyOtherReason.NormalizeNote(receive.OtherReasonNote),
             cost,
             SaleMoney.RoundMoney(cost * good),
             multiplier,
@@ -190,9 +209,12 @@ public sealed class GoodsReceiptLine
         decimal multiplierToBaseSnapshot = 1m,
         decimal damagedQty = 0m,
         decimal rejectedQty = 0m,
+        decimal otherQty = 0m,
         decimal shortClosedQty = 0m,
         ConnectedPoReceivingDiscrepancyKind discrepancyKind = ConnectedPoReceivingDiscrepancyKind.None,
         string? discrepancyNote = null,
+        string? otherReasonCode = null,
+        string? otherReasonNote = null,
         DateOnly? expiryDate = null,
         string? lotNumber = null) =>
         new(
@@ -207,9 +229,12 @@ public sealed class GoodsReceiptLine
             quantityReceived,
             damagedQty,
             rejectedQty,
+            otherQty,
             shortClosedQty,
             discrepancyKind,
             discrepancyNote,
+            otherReasonCode,
+            otherReasonNote,
             unitPurchaseCostSnapshot,
             lineTotalSnapshot,
             multiplierToBaseSnapshot,

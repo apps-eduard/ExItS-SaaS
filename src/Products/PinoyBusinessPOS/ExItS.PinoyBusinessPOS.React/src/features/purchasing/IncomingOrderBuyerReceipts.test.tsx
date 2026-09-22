@@ -38,7 +38,6 @@ function renderReceipts(receipts: IncomingOrderBuyerReceipt[]) {
         receipts={receipts}
         buyerName="Paul Store"
         buyerLabel="Buyer"
-        remainingOutstanding={3}
         connectedPurchaseOrderId={cpoId}
         latestTitle="Latest goods receipt"
         historyTitle="Receipt history"
@@ -46,7 +45,6 @@ function renderReceipts(receipts: IncomingOrderBuyerReceipt[]) {
         goodLabel="Good received"
         damagedLabel="Damaged"
         missingLabel="Missing / not delivered"
-        outstandingLabel="Outstanding"
         deliveryRefLabel="Delivery reference"
         notesLabel="Notes"
         loadMoreLabel="Load more"
@@ -70,8 +68,10 @@ describe("IncomingOrderBuyerReceipts", () => {
     ]);
 
     expect(screen.getByTestId("incoming-order-latest-receipt")).toBeInTheDocument();
+    expect(screen.getByTestId("incoming-order-latest-receipt-meta")).toBeInTheDocument();
     expect(screen.getByText(/GRN-001/)).toBeInTheDocument();
     expect(screen.getByText("Paul Store")).toBeInTheDocument();
+    expect(screen.getByText("DRV-9")).toBeInTheDocument();
     expect(screen.getByText("Handle with care")).toBeInTheDocument();
     expect(screen.queryByTestId("incoming-order-receipt-history")).not.toBeInTheDocument();
 

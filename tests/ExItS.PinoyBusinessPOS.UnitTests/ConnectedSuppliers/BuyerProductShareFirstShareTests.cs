@@ -143,7 +143,8 @@ public sealed class BuyerProductShareFirstShareTests
             0,
             []));
 
-        var query = new QueryBuyerProductShares(harness.Relationships, harness.Shares, harness.Access);
+        var query = new QueryBuyerProductShares(
+            harness.Relationships, harness.Shares, harness.Access, harness.Inventory);
         var result = await query.ExecuteAsync(
             Supplier.Value, harness.Relationship.Id.Value, null, null, null, 1, 25, CancellationToken.None);
 
@@ -157,14 +158,37 @@ public sealed class BuyerProductShareFirstShareTests
     }
 
     [Fact]
-    public async Task Bulk_share_returns_NeedsDefaultPo_without_mutating()
+    public async Task Bulk_share_stages_DefaultPo_from_selling_price_when_missing()
     {
         var harness = CreateHarness();
         var product = CatalogProduct.Create(Supplier, "NeedsPrice", UnitOfMeasure.Piece, 20m, Now);
         harness.Products.Seed(product);
 
         var bulk = new BulkMutateBuyerProductShares(
-            harness.Relationships, harness.Shares, harness.Products, harness.SetShares, harness.Access);
+            harness.Relationships, harness.Shares, harness.Products, harness.Inventory, harness.SetShares, harness.Access);
+        var result = await bulk.ExecuteAsync(
+            Supplier.Value,
+            harness.Relationship.Id.Value,
+            new BulkBuyerProductShareMutationRequest("Share", ProductIds: [product.Id.Value]),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(1, result.Value!.AffectedCount);
+        Assert.Null(result.Value.NeedsDefaultPo);
+        Assert.Single(harness.Shares.Items);
+        Assert.Equal(20m, harness.Products.Items.Single().DefaultConnectedPoPrice);
+    }
+
+    [Fact]
+    public async Task Bulk_share_returns_NeedsDefaultPo_when_no_selling_price()
+    {
+        var harness = CreateHarness();
+        // SellingPrice 0 → cannot auto-stage Default PO.
+        var product = CatalogProduct.Create(Supplier, "ZeroPrice", UnitOfMeasure.Piece, 0m, Now);
+        harness.Products.Seed(product);
+
+        var bulk = new BulkMutateBuyerProductShares(
+            harness.Relationships, harness.Shares, harness.Products, harness.Inventory, harness.SetShares, harness.Access);
         var result = await bulk.ExecuteAsync(
             Supplier.Value,
             harness.Relationship.Id.Value,
@@ -175,7 +199,6 @@ public sealed class BuyerProductShareFirstShareTests
         Assert.Equal(0, result.Value!.AffectedCount);
         var missing = Assert.Single(result.Value.NeedsDefaultPo!);
         Assert.Equal(product.Id.Value, missing.ProductId);
-        Assert.Equal(20m, missing.SellingPrice);
         Assert.Empty(harness.Shares.Items);
     }
 
@@ -262,7 +285,7 @@ public sealed class BuyerProductShareFirstShareTests
         var inventory = new AlwaysTrackedInventoryStub();
         var setShares = new SetBuyerProductShares(
             relationships, exposures, shares, products, inventory, uow, access, clock);
-        return new Harness(relationship, relationships, exposures, shares, products, uow, access, setShares);
+        return new Harness(relationship, relationships, exposures, shares, products, uow, access, inventory, setShares);
     }
 
     /// <summary>Share tests assume inventory-tracked products (new sharing rule).</summary>
@@ -287,6 +310,7 @@ public sealed class BuyerProductShareFirstShareTests
         InMemoryProducts Products,
         FakeUow Uow,
         FakeAccess Access,
+        IInventoryRepository Inventory,
         SetBuyerProductShares SetShares);
 
     private sealed class FakeAccess : IPosCommercialAccessAccessor
@@ -386,6 +410,11 @@ public sealed class BuyerProductShareFirstShareTests
             return Task.CompletedTask;
         }
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
+        public Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)
+        {
+            Items.RemoveAll(x => x.Id == share.Id);
+            return Task.CompletedTask;
+        }
 
         public Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
             IReadOnlyList<Guid> relationshipIds,

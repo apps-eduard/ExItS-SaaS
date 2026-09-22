@@ -6,14 +6,17 @@ import type {
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PurchaseOrderActivityTimeline } from "@/features/purchasing/PurchaseOrderActivityTimeline";
+import type { PurchaseOrderActivityEvent } from "@/features/purchasing/purchase-order-activity";
 import type { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { useI18n } from "@/i18n/I18nProvider";
 
 export type PurchaseOrderTimelineDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  po: PosPurchaseOrderDto;
-  receipts: readonly PosGoodsReceiptDto[];
+  titleHint?: string | null;
+  po?: PosPurchaseOrderDto;
+  receipts?: readonly PosGoodsReceiptDto[];
+  events?: readonly PurchaseOrderActivityEvent[];
   resolveActor: ReturnType<typeof useActorDirectory>["resolve"];
   isResolving: boolean;
   receiptsLoading?: boolean;
@@ -27,25 +30,29 @@ export type PurchaseOrderTimelineDrawerProps = {
 export function PurchaseOrderTimelineDrawer({
   open,
   onOpenChange,
+  titleHint,
   po,
-  receipts,
+  receipts = [],
+  events,
   resolveActor,
   isResolving,
   receiptsLoading = false,
   renderReceiptDetail,
 }: PurchaseOrderTimelineDrawerProps) {
   const { t } = useI18n();
+  const description =
+    titleHint?.trim() || po?.poNumber?.trim() || undefined;
 
   return (
     <SideDrawer
       open={open}
       onClose={() => onOpenChange(false)}
       title={t("purchasing.timelineTitle")}
-      description={po.poNumber?.trim() || undefined}
+      description={description}
       testId="po-timeline-drawer"
       closeLabel={t("purchasing.timelineClose")}
       closeTestId="po-timeline-drawer-close"
-      panelClassName="exits-form-drawer__panel exits-form-drawer__panel--md"
+      panelClassName="exits-form-drawer__panel exits-form-drawer__panel--lg"
     >
       <div className="exits-form-drawer" data-testid="po-timeline-drawer-content">
         <div className="exits-form-drawer__body">
@@ -54,6 +61,7 @@ export function PurchaseOrderTimelineDrawer({
             <PurchaseOrderActivityTimeline
               po={po}
               receipts={receipts}
+              events={events}
               resolveActor={resolveActor}
               isResolving={isResolving}
               renderReceiptDetail={renderReceiptDetail}

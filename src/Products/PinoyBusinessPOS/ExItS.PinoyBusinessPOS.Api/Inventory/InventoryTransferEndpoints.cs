@@ -16,8 +16,14 @@ internal static class InventoryTransferEndpoints
         group.MapPost("/transfers", CreateTransfer);
         group.MapGet("/transfers/{transferId:guid}", GetTransfer);
         group.MapPost("/transfers/{transferId:guid}/dispatch", DispatchTransfer);
+        // Receive-now: body line quantities apply to this wave only (not cumulative totals).
         group.MapPost("/transfers/{transferId:guid}/receive", ReceiveTransfer);
+        group.MapPost("/transfers/{transferId:guid}/close-remainder", CloseRemainderTransfer);
         group.MapPost("/transfers/{transferId:guid}/cancel", CancelTransfer);
+        group.MapPost("/transfers/{transferId:guid}/damage-handling-policy", SetDamageHandlingPolicy);
+        group.MapPost("/transfers/damage-custodies/{custodyId:guid}/dispatch-return", DispatchDamageReturn);
+        group.MapPost("/transfers/damage-custodies/{custodyId:guid}/receive-return", ReceiveDamageReturn);
+        group.MapPost("/transfers/damage-custodies/{custodyId:guid}/inspect", InspectDamageCustody);
     }
 
     private static async Task<IResult> ListTransfers(
@@ -168,6 +174,39 @@ internal static class InventoryTransferEndpoints
             .ConfigureAwait(false);
     }
 
+    private static async Task<IResult> CloseRemainderTransfer(
+        HttpRequest request,
+        Guid transferId,
+        CloseRemainderInventoryTransferRequest body,
+        CloseRemainderInventoryTransfer useCase,
+        InventoryTransferQueryService queries,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferCloseRemainder,
+                idempotency,
+                ct2 => ToDtoAsync(
+                    useCase.ExecuteAsync(organizationId, transferId, body, actorId, branchId, ct2),
+                    organizationId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
     private static async Task<IResult> CancelTransfer(
         HttpRequest request,
         Guid transferId,
@@ -194,6 +233,121 @@ internal static class InventoryTransferEndpoints
                     organizationId,
                     queries,
                     ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> SetDamageHandlingPolicy(
+        HttpRequest request,
+        Guid transferId,
+        SetInventoryTransferDamageHandlingPolicyRequest body,
+        SetInventoryTransferDamageHandlingPolicy useCase,
+        InventoryTransferQueryService queries,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferDispatch,
+                idempotency,
+                ct2 => ToDtoAsync(
+                    useCase.ExecuteAsync(organizationId, transferId, body.DamageHandlingPolicy, actorId, branchId, ct2),
+                    organizationId,
+                    queries,
+                    ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> DispatchDamageReturn(
+        HttpRequest request,
+        Guid custodyId,
+        DispatchInventoryTransferDamageReturn useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferReceive,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> ReceiveDamageReturn(
+        HttpRequest request,
+        Guid custodyId,
+        ReceiveInventoryTransferDamageReturn useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferReceive,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, actorId, branchId, ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> InspectDamageCustody(
+        HttpRequest request,
+        Guid custodyId,
+        InspectInventoryTransferDamageCustodyRequest body,
+        InspectInventoryTransferDamageCustody useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferReceive,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, custodyId, body, actorId, branchId, ct2),
                 dto => dto,
                 Results.Ok,
                 ct)

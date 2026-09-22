@@ -85,6 +85,7 @@ import { AccessibilityPreferences } from "@/features/preferences/AccessibilityPr
 import { UiStandardsPage } from "@/features/ui-standards/UiStandardsPage";
 import { CashHandlingSettingsPage } from "@/features/settings/CashHandlingSettingsPage";
 import { PaymentMethodsSettingsPage } from "@/features/settings/PaymentMethodsSettingsPage";
+import { ConnectedCommerceSettingsPage } from "@/features/connected-commerce/ConnectedCommerceSettingsPage";
 import { BranchCreatePage } from "@/features/branches/BranchCreatePage";
 import { BranchFulfillmentEditPage } from "@/features/branches/BranchFulfillmentEditPage";
 import { BranchGuidedSetupPage } from "@/features/branches/BranchGuidedSetupPage";
@@ -165,6 +166,8 @@ import { DeviceRegisterPage } from "@/features/devices/DeviceRegisterPage";
 import { OrgPosDevicesPage } from "@/features/devices/OrgPosDevicesPage";
 import { CheckoutCashPage } from "@/features/checkout/CheckoutCashPage";
 import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPage";
+import { ConnectedPoReturnProcessPage } from "@/features/returns/ConnectedPoReturnProcessPage";
+import { ConnectedPoReturnRequestPage } from "@/features/returns/ConnectedPoReturnRequestPage";
 import { ProcessReturnPage } from "@/features/returns/ProcessReturnPage";
 import { ReturnDetailPage } from "@/features/returns/ReturnDetailPage";
 import { ReturnsHubPage } from "@/features/returns/ReturnsHubPage";
@@ -664,6 +667,7 @@ export const appRoutes = [
               { path: "devices", element: <OrgPosDevicesPage /> },
               { path: "cash-handling", element: <CashHandlingSettingsPage /> },
               { path: "payment-methods", element: <PaymentMethodsSettingsPage /> },
+              { path: "connected-commerce", element: <ConnectedCommerceSettingsPage /> },
               {
                 path: "branches",
                 element: (
@@ -1167,6 +1171,14 @@ export const appRoutes = [
                 ),
               },
               {
+                path: ":purchaseOrderId/edit",
+                element: (
+                  <RequireManagePurchasing>
+                    <PurchaseOrderCreatePage />
+                  </RequireManagePurchasing>
+                ),
+              },
+              {
                 path: ":purchaseOrderId",
                 element: (
                   <RequireViewPurchasing>
@@ -1210,6 +1222,22 @@ export const appRoutes = [
                 element: (
                   <RequireProcessReturn>
                     <ProcessReturnPage />
+                  </RequireProcessReturn>
+                ),
+              },
+              {
+                path: "connected-po/:purchaseOrderId",
+                element: (
+                  <RequireProcessReturn>
+                    <ConnectedPoReturnRequestPage />
+                  </RequireProcessReturn>
+                ),
+              },
+              {
+                path: "supplier/:returnBatchId",
+                element: (
+                  <RequireProcessReturn>
+                    <ConnectedPoReturnProcessPage />
                   </RequireProcessReturn>
                 ),
               },

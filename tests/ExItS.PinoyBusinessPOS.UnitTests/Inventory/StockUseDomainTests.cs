@@ -16,8 +16,8 @@ public sealed class StockUseDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 29);
-        Assert.Equal("SU-20260829-000001", StockUseNumbers.Format(date, 1));
-        Assert.Equal("SU-20260829-000001", StockUseNumbers.Normalize(" su-20260829-000001 "));
+        Assert.Equal("260829-001", StockUseNumbers.Format(date, 1));
+        Assert.Equal("260829-001", StockUseNumbers.Normalize(" 260829-001 "));
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public sealed class StockUseDomainTests
     {
         var stockUse = StockUse.Create(
             Org,
-            "SU-20260829-000001",
+            "260829-001",
             StockUseReason.InternalOperations,
             [Draft(ProductA, "Coke", 2m)],
             Actor,
@@ -51,13 +51,13 @@ public sealed class StockUseDomainTests
     public void Create_rejects_empty_lines_and_invalid_qty()
     {
         var empty = Assert.Throws<DomainException>(() =>
-            StockUse.Create(Org, "SU-20260829-000002", StockUseReason.StaffUse, [], Actor, Now));
+            StockUse.Create(Org, "260829-002", StockUseReason.StaffUse, [], Actor, Now));
         Assert.Equal(DomainErrorCodes.StockUseRequiresLines, empty.ErrorCode);
 
         var zero = Assert.Throws<DomainException>(() =>
             StockUse.Create(
                 Org,
-                "SU-20260829-000003",
+                "260829-003",
                 StockUseReason.Other,
                 [Draft(ProductA, "Coke", 0m)],
                 Actor,

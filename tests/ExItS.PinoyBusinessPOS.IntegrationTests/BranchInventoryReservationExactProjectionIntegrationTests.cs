@@ -557,7 +557,7 @@ public sealed class BranchInventoryReservationExactProjectionIntegrationTests(Po
         {
             Id = orderId,
             SellerOrganizationId = org,
-            OrderNumber = "SO-000100",
+            OrderNumber = "260816-100",
             Status = "Accepted",
             FulfillmentStatus = "Pending",
             PaymentStatus = "Unpaid",
@@ -842,7 +842,7 @@ public sealed class ExactProjectBranchInventoryReservationsMigrationTests : IAsy
         {
             Id = orderId,
             SellerOrganizationId = org,
-            OrderNumber = "SO-000200",
+            OrderNumber = "260816-200",
             Status = "Accepted",
             FulfillmentStatus = "Pending",
             PaymentStatus = "Unpaid",

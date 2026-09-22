@@ -80,7 +80,7 @@ public sealed class ConnectedPoUtangObligationProjectionTests
         var receiptId = Guid.Parse("33333333-3333-4333-8333-333333333333");
         var remark = ConnectedPoUtangObligationProjection.BuildDirectPurchaseRemark(
             receiptId,
-            "DPR-20260916-000001");
+            "260916-001");
 
         Assert.True(
             ConnectedPoUtangObligationProjection.TryParseDirectPurchaseReceiptId(
@@ -88,7 +88,7 @@ public sealed class ConnectedPoUtangObligationProjectionTests
                 out var parsed));
         Assert.Equal(receiptId, parsed);
         Assert.Equal(
-            "Direct purchase DPR-20260916-000001",
+            "Direct purchase 260916-001",
             ConnectedPoUtangObligationProjection.TryFormatSourceLabelFromRemark(remark));
         Assert.False(
             ConnectedPoUtangObligationProjection.TryParseDirectPurchaseReceiptId(
@@ -100,7 +100,7 @@ public sealed class ConnectedPoUtangObligationProjectionTests
     public void TryResolveSource_strips_sale_guid_prefix_for_clean_label()
     {
         var saleId = Guid.Parse("44444444-4444-4444-8444-444444444444");
-        var remark = ConnectedPoUtangObligationProjection.BuildSaleRemark(saleId, "SALE-20260917-000001");
+        var remark = ConnectedPoUtangObligationProjection.BuildSaleRemark(saleId, "260917-001");
 
         Assert.True(
             ConnectedPoUtangObligationProjection.TryResolveSource(
@@ -113,6 +113,6 @@ public sealed class ConnectedPoUtangObligationProjectionTests
         Assert.Equal(saleId, sourceId);
         Assert.DoesNotContain("sale:", label ?? "", StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(saleId.ToString("D"), label ?? "", StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("SALE-20260917-000001", label ?? "", StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("260917-001", label ?? "", StringComparison.OrdinalIgnoreCase);
     }
 }

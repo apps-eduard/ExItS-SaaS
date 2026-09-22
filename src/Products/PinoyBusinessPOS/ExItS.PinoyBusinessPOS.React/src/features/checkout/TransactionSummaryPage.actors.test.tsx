@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as salesClient from "@/api/pos/pos-sales-client";
+import * as returnBatchesClient from "@/api/pos/pos-return-batches-client";
 import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPage";
 
 vi.mock("@/api/pos/pos-sales-client", async (importOriginal) => {
@@ -11,6 +12,14 @@ vi.mock("@/api/pos/pos-sales-client", async (importOriginal) => {
     ...actual,
     getSale: vi.fn(),
     voidSale: vi.fn(),
+  };
+});
+
+vi.mock("@/api/pos/pos-return-batches-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof returnBatchesClient>();
+  return {
+    ...actual,
+    listReturnBatches: vi.fn(),
   };
 });
 
@@ -102,6 +111,8 @@ describe("TransactionSummaryPage actor attribution", () => {
   beforeEach(() => {
     vi.mocked(salesClient.getSale).mockReset();
     vi.mocked(salesClient.getSale).mockResolvedValue(voidedSale() as never);
+    vi.mocked(returnBatchesClient.listReturnBatches).mockReset();
+    vi.mocked(returnBatchesClient.listReturnBatches).mockResolvedValue([]);
   });
 
   it("shows Sold by and Voided by as separate attributions", async () => {

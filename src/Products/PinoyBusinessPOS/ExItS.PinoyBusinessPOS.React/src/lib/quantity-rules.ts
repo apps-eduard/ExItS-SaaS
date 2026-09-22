@@ -203,8 +203,12 @@ export function stepQuantity(input: {
   if (!Number.isFinite(next)) {
     return input.value;
   }
-  if (next < input.min || next <= 0) {
-    return input.min > 0 ? input.min : minPositiveQuantity(precision);
+  if (next < input.min) {
+    return input.min;
+  }
+  // Explicit min 0 is allowed (return classification / write-off). Otherwise never emit 0.
+  if (next <= 0) {
+    return input.min <= 0 ? 0 : minPositiveQuantity(precision);
   }
   if (input.max != null && next > input.max) {
     return input.max;

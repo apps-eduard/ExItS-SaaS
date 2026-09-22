@@ -525,10 +525,11 @@ public sealed class DeliveryDistanceExceptionQuotePlaceTests
 
         public Task<CustomerOrder> PlaceAsync(
             PosOrganizationId sellerOrganizationId,
+            DateOnly businessDateUtc,
             Func<string, CustomerOrder> createOrder,
             Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult(createOrder("SO-000001"));
+            Task.FromResult(createOrder("260816-001"));
 
         public Task UpdateAsync(CustomerOrder order, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

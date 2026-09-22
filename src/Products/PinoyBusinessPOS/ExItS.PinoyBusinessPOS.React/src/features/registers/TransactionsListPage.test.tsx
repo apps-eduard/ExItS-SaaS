@@ -13,7 +13,7 @@ const state = vi.hoisted(() => ({
     {
       saleId: "sale-1",
       organizationId: "org-1",
-      saleNumber: "SALE-20260908-000004",
+      saleNumber: "260908-004",
       status: "Completed",
       paymentMethod: "Cash",
       subtotal: 702,
@@ -141,7 +141,7 @@ describe("TransactionsListPage", () => {
       "/sell/sales/sale-1/summary",
     );
     expect(screen.getByTestId("transaction-table-row-sale-1")).toBeInTheDocument();
-    expect(screen.getByTestId("transaction-row-sale-1")).toHaveTextContent("SALE-20260908-000004");
+    expect(screen.getByTestId("transaction-row-sale-1")).toHaveTextContent("260908-004");
     expect(screen.getAllByText("Mica Uy").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Completed").length).toBeGreaterThan(0);
 

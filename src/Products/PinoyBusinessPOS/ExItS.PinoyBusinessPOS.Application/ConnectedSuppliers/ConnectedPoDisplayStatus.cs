@@ -24,6 +24,11 @@ public static class ConnectedPoDisplayStatus
     public const string Completed = "Completed";
     /// <summary>User-facing short-close completion (remaining quantity cancelled).</summary>
     public const string CompletedRemainingCancelled = "CompletedRemainingCancelled";
+    /// <summary>
+    /// Goods received but pay-on-delivery/receipt settlement is still outstanding.
+    /// Never presented as commercially completed.
+    /// </summary>
+    public const string ReceivedAwaitingPayment = "ReceivedAwaitingPayment";
     public const string AwaitingBuyerReceipt = "AwaitingBuyerReceipt";
     public const string Withdrawn = "Withdrawn";
     public const string Cancelled = "Cancelled";
@@ -74,6 +79,11 @@ public static class ConnectedPoDisplayStatus
 
         if (po.Status == PurchaseOrderStatus.Received)
         {
+            if (IsAwaitingPayment(po))
+            {
+                return ReceivedAwaitingPayment;
+            }
+
             if (po.RemainingClosedAtUtc is not null)
             {
                 return CompletedRemainingCancelled;
@@ -120,6 +130,12 @@ public static class ConnectedPoDisplayStatus
 
             if (buyerPo.Status == PurchaseOrderStatus.Received)
             {
+                // Unpaid pay-on-delivery/receipt orders are not commercially completed.
+                if (IsAwaitingPayment(buyerPo))
+                {
+                    return ReceivedAwaitingPayment;
+                }
+
                 // Completion is buyer-outstanding-driven, not seller Ready/Ship.
                 if (buyerPo.RemainingClosedAtUtc is not null)
                 {
@@ -146,6 +162,11 @@ public static class ConnectedPoDisplayStatus
             _ => connected.Status.ToString()
         };
     }
+
+    /// <summary>Goods received while commercial settlement is still outstanding.</summary>
+    public static bool IsAwaitingPayment(PurchaseOrder po) =>
+        po.Status == PurchaseOrderStatus.Received
+        && po.FinancialSettlementStatus == ConnectedPoFinancialSettlementStatus.AwaitingPayment;
 
     public static bool IsValidConnectedStatusTransition(
         ConnectedPurchaseOrderStatus from,
@@ -191,6 +212,10 @@ public static class ConnectedPurchaseOrderNotificationTypes
     public const string ChangesAccepted = "ConnectedPurchaseOrderChangesAccepted";
     public const string ChangesRejected = "ConnectedPurchaseOrderChangesRejected";
     public const string RemainingClosed = "ConnectedPurchaseOrderRemainingClosed";
+    /// <summary>Buyer confirmed receipt; pay-on-delivery/receipt settlement is now due.</summary>
+    public const string AwaitingPayment = "ConnectedPurchaseOrderAwaitingPayment";
+    public const string PaymentRecorded = "ConnectedPurchaseOrderPaymentRecorded";
+    public const string SettlementConfirmed = "ConnectedPurchaseOrderSettlementConfirmed";
 
     public static bool IsKnown(string? relatedType) =>
         string.Equals(relatedType, Submitted, StringComparison.Ordinal)
@@ -205,7 +230,10 @@ public static class ConnectedPurchaseOrderNotificationTypes
         || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal)
-        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal);
+        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal)
+        || string.Equals(relatedType, AwaitingPayment, StringComparison.Ordinal)
+        || string.Equals(relatedType, PaymentRecorded, StringComparison.Ordinal)
+        || string.Equals(relatedType, SettlementConfirmed, StringComparison.Ordinal);
 
     public static bool IsBuyerFacing(string? relatedType) =>
         string.Equals(relatedType, Accepted, StringComparison.Ordinal)
@@ -213,7 +241,9 @@ public static class ConnectedPurchaseOrderNotificationTypes
         || string.Equals(relatedType, Preparing, StringComparison.Ordinal)
         || string.Equals(relatedType, Fulfilled, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesProposed, StringComparison.Ordinal)
-        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal);
+        || string.Equals(relatedType, RemainingClosed, StringComparison.Ordinal)
+        || string.Equals(relatedType, PaymentRecorded, StringComparison.Ordinal)
+        || string.Equals(relatedType, SettlementConfirmed, StringComparison.Ordinal);
 
     public static bool IsSupplierFacing(string? relatedType) =>
         string.Equals(relatedType, Submitted, StringComparison.Ordinal)
@@ -222,5 +252,6 @@ public static class ConnectedPurchaseOrderNotificationTypes
         || string.Equals(relatedType, PartiallyReceived, StringComparison.Ordinal)
         || string.Equals(relatedType, ReceivingIssue, StringComparison.Ordinal)
         || string.Equals(relatedType, ChangesAccepted, StringComparison.Ordinal)
-        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal);
+        || string.Equals(relatedType, ChangesRejected, StringComparison.Ordinal)
+        || string.Equals(relatedType, AwaitingPayment, StringComparison.Ordinal);
 }

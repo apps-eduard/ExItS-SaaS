@@ -34,9 +34,11 @@ internal sealed class PurchaseOrderRecord
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
     public int PaymentTerm { get; set; }
+    public int PaymentTiming { get; set; }
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
     public Guid? IntendedReceivingBranchId { get; set; }
+    public string? FulfillmentMethod { get; set; }
     public DateTimeOffset? RemainingClosedAtUtc { get; set; }
     public Guid? RemainingClosedByUserId { get; set; }
     public string? RemainingClosedReason { get; set; }
@@ -44,6 +46,14 @@ internal sealed class PurchaseOrderRecord
     public decimal? CancelledRemainingValue { get; set; }
     public decimal RefundDueAmount { get; set; }
     public decimal? AmountPaidSnapshot { get; set; }
+    public int FinancialSettlementStatus { get; set; }
+    public string? SellerSettlementRemarks { get; set; }
+    public DateTimeOffset? FinanciallySettledAtUtc { get; set; }
+    public Guid? FinanciallySettledBy { get; set; }
+    public DateTimeOffset? BuyerPrepaymentSubmittedAtUtc { get; set; }
+    public string? BuyerPrepaymentMethod { get; set; }
+    public string? BuyerPrepaymentReference { get; set; }
+    public string? BuyerPrepaymentDetails { get; set; }
     public uint Xmin { get; set; }
 }
 
@@ -109,9 +119,12 @@ internal sealed class GoodsReceiptLineRecord
     public decimal ReceivedQty { get; set; }
     public decimal DamagedQty { get; set; }
     public decimal RejectedQty { get; set; }
+    public decimal OtherQty { get; set; }
     public decimal ShortClosedQty { get; set; }
     public string DiscrepancyKind { get; set; } = "None";
     public string? DiscrepancyNote { get; set; }
+    public string? OtherReasonCode { get; set; }
+    public string? OtherReasonNote { get; set; }
     public decimal UnitPurchaseCostSnapshot { get; set; }
     public decimal LineTotalSnapshot { get; set; }
     public Guid? InventoryMovementId { get; set; }

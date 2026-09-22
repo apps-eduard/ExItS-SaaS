@@ -19,6 +19,12 @@ internal sealed class InventoryTransferRecord
     public Guid? ReceivedBy { get; set; }
     public DateTimeOffset? CancelledAtUtc { get; set; }
     public Guid? CancelledBy { get; set; }
+    public DateTimeOffset? ClosedAtUtc { get; set; }
+    public Guid? ClosedBy { get; set; }
+    public Guid? RootTransferId { get; set; }
+    public int? ReplacementSequence { get; set; }
+    public string? ReplacementReason { get; set; }
+    public string DamageHandlingPolicy { get; set; } = "ReceiverMayDecide";
     public uint Xmin { get; set; }
 }
 
@@ -94,6 +100,8 @@ internal sealed class InventoryTransferLineRecord
     public string UnitOfMeasure { get; set; } = string.Empty;
     public decimal SentQty { get; set; }
     public decimal ReceivedQty { get; set; }
+    public decimal ClosedQty { get; set; }
+    public decimal WaivedQty { get; set; }
     public string? DiscrepancyReason { get; set; }
     public string? DiscrepancyNote { get; set; }
     public Guid? SourceLotId { get; set; }
@@ -109,6 +117,35 @@ internal sealed class InventoryTransferNumberSequenceRecord
     public long LastValue { get; set; }
 }
 
+internal sealed class InventoryTransferReceiptRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid TransferId { get; set; }
+    public int Sequence { get; set; }
+    public DateTimeOffset ReceivedAtUtc { get; set; }
+    public Guid ReceivedBy { get; set; }
+}
+
+internal sealed class InventoryTransferReceiptLineRecord
+{
+    public Guid Id { get; set; }
+    public Guid ReceiptId { get; set; }
+    public Guid TransferLineId { get; set; }
+    public Guid ProductId { get; set; }
+    public decimal QuantityReceived { get; set; }
+    public decimal QuantityDamaged { get; set; }
+    public decimal QuantityMissing { get; set; }
+    public decimal QuantityOther { get; set; }
+    public string? OtherReasonCode { get; set; }
+    public string? OtherReasonNote { get; set; }
+    public string? MissingDisposition { get; set; }
+    public string? DamagedFollowUp { get; set; }
+    public string? OtherFollowUp { get; set; }
+    public decimal QuantityWaived { get; set; }
+    public string? Note { get; set; }
+}
+
 internal sealed class InventoryBranchBalanceRecord
 {
     public Guid OrganizationId { get; set; }
@@ -116,7 +153,37 @@ internal sealed class InventoryBranchBalanceRecord
     public Guid ProductId { get; set; }
     public decimal OnHandQuantity { get; set; }
     public decimal ReservedQuantity { get; set; }
+    public decimal PendingReturnQuantity { get; set; }
+    public decimal InspectionHoldQuantity { get; set; }
+    public decimal DamagedQuantity { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
+}
+
+internal sealed class InventoryTransferDamageCustodyRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid TransferId { get; set; }
+    public Guid RootTransferId { get; set; }
+    public Guid ReceiptLineId { get; set; }
+    public Guid ProductId { get; set; }
+    public decimal Quantity { get; set; }
+    public string Decision { get; set; } = string.Empty;
+    public string FollowUpIntent { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public Guid HeldBranchId { get; set; }
+    public decimal RecoveredSellableQty { get; set; }
+    public decimal ConfirmedDamagedQty { get; set; }
+    public decimal WaivedQty { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public Guid CreatedBy { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? ReturnDispatchedAtUtc { get; set; }
+    public Guid? ReturnDispatchedBy { get; set; }
+    public DateTimeOffset? ReturnReceivedAtUtc { get; set; }
+    public Guid? ReturnReceivedBy { get; set; }
+    public DateTimeOffset? InspectedAtUtc { get; set; }
+    public Guid? InspectedBy { get; set; }
 }
 
 internal sealed class InventoryBranchReorderSettingRecord

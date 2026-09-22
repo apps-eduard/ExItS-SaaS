@@ -131,7 +131,7 @@ public sealed class ExpenseScopeAuthorityTests
 
         var orgExpense = Expense.Record(
             PosOrganizationId.From(OrgId),
-            "EXP-20260905-000001",
+            "260905-001",
             ExpenseCategoryId.New(),
             ExpensePaymentMethod.Cash,
             10m,
@@ -143,7 +143,7 @@ public sealed class ExpenseScopeAuthorityTests
 
         var branchExpense = Expense.Record(
             PosOrganizationId.From(OrgId),
-            "EXP-20260905-000002",
+            "260905-002",
             ExpenseCategoryId.New(),
             ExpensePaymentMethod.Cash,
             20m,

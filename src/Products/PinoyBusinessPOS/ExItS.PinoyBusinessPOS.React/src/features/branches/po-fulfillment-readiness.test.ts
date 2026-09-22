@@ -145,6 +145,25 @@ describe("buildPoFulfillmentReadinessView", () => {
     expect(view.ready).toBe(false);
     expect(view.noMethodEnabled).toBe(true);
   });
+
+  it("marks Delivery effective-disabled when branch ready but Offer Delivery is off", () => {
+    const view = buildPoFulfillmentReadinessView(
+      {
+        ...base,
+        branchDetailsComplete: true,
+        pickupEnabled: true,
+        pickupReady: true,
+        pickupSectionsComplete: 2,
+        deliveryEnabled: true,
+        deliveryReady: true,
+        deliverySectionsComplete: 5,
+      },
+      { orgOfferDelivery: false },
+    );
+    expect(view.ready).toBe(true);
+    const delivery = view.methods.find((m) => m.channel === "delivery");
+    expect(delivery?.effectiveDisabledGlobally).toBe(true);
+  });
 });
 
 describe("buildSupplierReadinessSummary", () => {
