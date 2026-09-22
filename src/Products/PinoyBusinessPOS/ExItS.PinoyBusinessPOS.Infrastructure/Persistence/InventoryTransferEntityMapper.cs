@@ -93,7 +93,16 @@ internal static class InventoryTransferEntityMapper
             InventoryTransferReceiptId.From(record.ReceiptId),
             InventoryTransferLineId.From(record.TransferLineId),
             CatalogProductId.From(record.ProductId),
-            record.QuantityReceived);
+            record.QuantityReceived,
+            record.QuantityDamaged,
+            record.QuantityMissing,
+            record.QuantityOther,
+            record.OtherReasonCode,
+            record.OtherReasonNote,
+            string.IsNullOrWhiteSpace(record.MissingDisposition)
+                ? null
+                : InventoryTransferMissingDispositions.Parse(record.MissingDisposition),
+            record.Note);
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
@@ -177,7 +186,16 @@ internal static class InventoryTransferEntityMapper
             ReceiptId = line.ReceiptId.Value,
             TransferLineId = line.TransferLineId.Value,
             ProductId = line.ProductId.Value,
-            QuantityReceived = line.QuantityReceived
+            QuantityReceived = line.QuantityReceived,
+            QuantityDamaged = line.QuantityDamaged,
+            QuantityMissing = line.QuantityMissing,
+            QuantityOther = line.QuantityOther,
+            OtherReasonCode = line.OtherReasonCode,
+            OtherReasonNote = line.OtherReasonNote,
+            MissingDisposition = line.MissingDisposition is null
+                ? null
+                : InventoryTransferMissingDispositions.ToCode(line.MissingDisposition.Value),
+            Note = line.Note
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>

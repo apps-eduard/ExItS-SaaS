@@ -41,12 +41,30 @@ describe("buildTransferActivityEvents", () => {
           sequence: 1,
           receivedAtUtc: "2026-03-03T10:00:00Z",
           receivedBy: "33333333-3333-3333-3333-333333333333",
-          lines: [],
+          lines: [
+            {
+              receiptLineId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+              lineId: "12121212-1212-1212-1212-121212121212",
+              productId: "13131313-1313-1313-1313-131313131313",
+              quantityReceived: 8,
+              quantityDamaged: 1,
+              quantityMissing: 2,
+              missingDisposition: "ExpectedLater",
+              note: "Damaged in transit",
+            },
+          ],
         },
       ],
     });
 
     expect(events.map((e) => e.kind)).toEqual(["created", "receipt"]);
+    const receipt = events.find((e) => e.kind === "receipt");
+    expect(receipt?.receiptLines?.[0]).toMatchObject({
+      quantityReceived: 8,
+      quantityDamaged: 1,
+      quantityMissing: 2,
+      missingDisposition: "ExpectedLater",
+    });
   });
 
   it("uses closedAtUtc and closedBy for closed remainder without legacy fallbacks", () => {

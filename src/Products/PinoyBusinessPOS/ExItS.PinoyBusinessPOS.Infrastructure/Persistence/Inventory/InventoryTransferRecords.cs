@@ -129,6 +129,13 @@ internal sealed class InventoryTransferReceiptLineRecord
     public Guid TransferLineId { get; set; }
     public Guid ProductId { get; set; }
     public decimal QuantityReceived { get; set; }
+    public decimal QuantityDamaged { get; set; }
+    public decimal QuantityMissing { get; set; }
+    public decimal QuantityOther { get; set; }
+    public string? OtherReasonCode { get; set; }
+    public string? OtherReasonNote { get; set; }
+    public string? MissingDisposition { get; set; }
+    public string? Note { get; set; }
 }
 
 internal sealed class InventoryBranchBalanceRecord

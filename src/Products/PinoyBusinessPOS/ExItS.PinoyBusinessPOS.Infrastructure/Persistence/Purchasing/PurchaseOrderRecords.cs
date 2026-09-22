@@ -119,9 +119,12 @@ internal sealed class GoodsReceiptLineRecord
     public decimal ReceivedQty { get; set; }
     public decimal DamagedQty { get; set; }
     public decimal RejectedQty { get; set; }
+    public decimal OtherQty { get; set; }
     public decimal ShortClosedQty { get; set; }
     public string DiscrepancyKind { get; set; } = "None";
     public string? DiscrepancyNote { get; set; }
+    public string? OtherReasonCode { get; set; }
+    public string? OtherReasonNote { get; set; }
     public decimal UnitPurchaseCostSnapshot { get; set; }
     public decimal LineTotalSnapshot { get; set; }
     public Guid? InventoryMovementId { get; set; }

@@ -349,24 +349,49 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.queryByTestId("transfer-cancel")).not.toBeInTheDocument();
   });
 
-  it("receive defaults outstanding qty and submits receive-now payload", async () => {
+  async function classifyTransferLine(
+    user: ReturnType<typeof userEvent.setup>,
+    goodQty: string,
+    note: string,
+    options?: { damaged?: string; missing?: string },
+  ) {
+    await user.click(screen.getByTestId(`transfer-receive-edit-menu-${lineId}`));
+    const qty = await screen.findByTestId(`transfer-receive-qty-${lineId}`);
+    await user.clear(qty);
+    await user.type(qty, goodQty);
+    await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
+    await waitFor(() => {
+      expect(screen.getByTestId("receive-discrepancy-dialog")).toBeInTheDocument();
+    });
+    if (options?.damaged != null || options?.missing != null) {
+      if (options.damaged != null) {
+        const damaged = screen.getByTestId(`receive-discrepancy-damaged-${cokeId}`);
+        await user.clear(damaged);
+        await user.type(damaged, options.damaged);
+      }
+      if (options.missing != null) {
+        const missing = screen.getByTestId(`receive-discrepancy-not-delivered-${cokeId}`);
+        await user.clear(missing);
+        await user.type(missing, options.missing);
+      }
+    } else {
+      await user.click(screen.getByTestId(`receive-discrepancy-all-not-delivered-${cokeId}`));
+    }
+    await user.type(screen.getByTestId(`receive-discrepancy-remarks-${cokeId}`), note);
+    await user.click(screen.getByTestId("receive-discrepancy-confirm"));
+    await waitFor(() => {
+      expect(screen.queryByTestId("receive-discrepancy-dialog")).not.toBeInTheDocument();
+    });
+  }
+
+  it("receive defaults outstanding qty and submits full-good payload", async () => {
     workspaceMock.boundWorkspace.branchId = branchBId;
     workspaceMock.boundWorkspace.branchName = "Branch B";
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
     const receiveSpy = vi.spyOn(transferClient, "receiveInventoryTransfer").mockResolvedValue({
       ...inTransitTransfer(),
-      status: "PartiallyReceived",
-      totalReceivedQty: 22,
-      totalDifferenceQty: 2,
-      lines: [
-        {
-          ...inTransitTransfer().lines[0]!,
-          receivedQty: 22,
-          differenceQty: 2,
-          lineStatus: "Short",
-          discrepancyReason: "ShortShipment",
-        },
-      ],
+      status: "Received",
+      totalReceivedQty: 24,
     } as never);
     const user = userEvent.setup();
     render(
@@ -381,22 +406,66 @@ describe("Inventory Transfer React flow", () => {
     await user.click(await screen.findByTestId("transfer-receive"));
     expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
     expect(screen.getByTestId(`transfer-receive-row-${lineId}`)).toHaveTextContent("24");
-    await user.click(screen.getByTestId(`transfer-receive-edit-menu-${lineId}`));
-    const qty = await screen.findByTestId(`transfer-receive-qty-${lineId}`);
-    expect(qty).toHaveValue("24");
-    await user.clear(qty);
-    await user.type(qty, "22");
-    await user.click(screen.getByTestId(`transfer-receive-edit-save-${lineId}`));
-    expect(screen.getByTestId("transfer-receive-submit")).toBeEnabled();
-    await user.click(screen.getByTestId("transfer-receive-submit"));
-    await user.click(await screen.findByTestId("transfer-receive-confirm-confirm"));
+    await user.click(screen.getByTestId("transfer-receive-review"));
+    await waitFor(() =>
+      expect(screen.getByTestId("transfer-receive-review-summary")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByTestId("transfer-receive-confirm"));
     await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
     expect(receiveSpy.mock.calls[0]?.[2]).toEqual({
       lines: [
         expect.objectContaining({
           lineId,
           productId: cokeId,
-          receivedQty: 22,
+          goodQty: 24,
+          receivedQty: 24,
+        }),
+      ],
+    });
+  });
+
+  it("classifies discrepancy, decides missing disposition, and submits mixed payload", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(inTransitTransfer() as never);
+    const receiveSpy = vi.spyOn(transferClient, "receiveInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "PartiallyReceived",
+      totalReceivedQty: 20,
+    } as never);
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    await user.click(await screen.findByTestId("transfer-receive"));
+    await classifyTransferLine(user, "20", "Mixed receipt", { damaged: "1", missing: "3" });
+    await user.click(screen.getByTestId("transfer-receive-review"));
+    await waitFor(() =>
+      expect(screen.getByTestId("transfer-receive-remaining-decisions")).toBeInTheDocument(),
+    );
+    await user.click(
+      screen.getByTestId(
+        `transfer-receive-remaining-decisions-choice-${cokeId}-option-replace_later`,
+      ),
+    );
+    await user.click(screen.getByTestId("transfer-receive-confirm"));
+    await waitFor(() => expect(receiveSpy).toHaveBeenCalled());
+    expect(receiveSpy.mock.calls[0]?.[2]).toEqual({
+      lines: [
+        expect.objectContaining({
+          lineId,
+          productId: cokeId,
+          goodQty: 20,
+          damagedQty: 1,
+          missingQty: 3,
+          missingDisposition: "ExpectedLater",
+          discrepancyNote: "Mixed receipt",
         }),
       ],
     });
@@ -425,7 +494,7 @@ describe("Inventory Transfer React flow", () => {
     expect(await screen.findByTestId(`transfer-receive-qty-error-${lineId}`)).toHaveTextContent(
       "Receive now cannot exceed outstanding quantity (24)",
     );
-    expect(screen.getByTestId("transfer-receive-submit")).toBeDisabled();
+    expect(screen.getByTestId("transfer-receive-review")).toBeDisabled();
   });
 
   it("partially received destination can receive remaining and close remainder", async () => {

@@ -216,11 +216,11 @@ public sealed class InventoryTransfer
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
         var seen = new HashSet<Guid>();
-        var applied = new List<(InventoryTransferLineId TransferLineId, CatalogProductId ProductId, decimal QuantityReceived)>();
+        var applied = new List<InventoryTransferReceiptLineDraft>();
 
         foreach (var receive in receiveLines)
         {
-            if (receive.ReceivedQty <= 0m)
+            if (receive.GoodQty + receive.DamagedQty + receive.MissingQty + receive.OtherQty <= 0m)
             {
                 continue;
             }
@@ -234,8 +234,18 @@ public sealed class InventoryTransfer
                     "Receive lines cannot repeat the same transfer line.");
             }
 
-            var qty = line.ApplyReceiptDelta(receive);
-            applied.Add((line.Id, line.ProductId, qty));
+            var (goodDelta, damagedWave, missingWave, otherWave, _) = line.ApplyReceiptClassification(receive);
+            applied.Add(new InventoryTransferReceiptLineDraft(
+                line.Id,
+                line.ProductId,
+                goodDelta,
+                damagedWave,
+                missingWave,
+                otherWave,
+                receive.OtherReasonCode,
+                receive.OtherReasonNote,
+                receive.MissingDisposition,
+                receive.DiscrepancyNote));
         }
 
         if (applied.Count == 0)
@@ -256,9 +266,18 @@ public sealed class InventoryTransfer
 
         if (TotalOutstandingQty == 0m)
         {
-            Status = InventoryTransferStatus.Received;
+            if (TotalClosedQty > 0m)
+            {
+                Status = InventoryTransferStatus.ClosedWithDiscrepancy;
+                ClosedAtUtc ??= utcNow;
+                ClosedBy ??= actorId;
+            }
+            else
+            {
+                Status = InventoryTransferStatus.Received;
+            }
         }
-        else if (TotalReceivedQty > 0m)
+        else if (TotalReceivedQty > 0m || TotalClosedQty > 0m)
         {
             Status = InventoryTransferStatus.PartiallyReceived;
         }

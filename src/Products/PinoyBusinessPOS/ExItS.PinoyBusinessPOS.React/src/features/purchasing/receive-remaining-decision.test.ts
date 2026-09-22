@@ -46,19 +46,25 @@ describe("receive-remaining-decision", () => {
     expect(rows[0]?.remark).toBe("short");
   });
 
-  it("formats combined issue labels", () => {
+  it("formats combined issue labels including other", () => {
     expect(
       formatRemainingIssueLabel(
         {
-          outstandingQty: 2,
+          outstandingQty: 4,
           goodText: "0",
           damagedText: "1",
-          notDeliveredText: "1",
+          notDeliveredText: "2",
+          otherText: "1",
+          otherReasonCode: "WrongItem",
           uom: "Piece",
         },
-        labels,
+        {
+          ...labels,
+          otherReasons: { WrongItem: "Wrong item" },
+          otherFallback: "Other",
+        },
       ),
-    ).toBe("Damaged · Not delivered");
+    ).toBe("Damaged · Not delivered · Wrong item");
   });
 
   it("counts unresolved and remaining units", () => {

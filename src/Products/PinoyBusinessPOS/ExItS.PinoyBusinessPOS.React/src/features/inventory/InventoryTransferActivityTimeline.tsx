@@ -90,10 +90,44 @@ export function InventoryTransferActivityTimeline({
           id: event.id,
           atUtc: event.atUtc,
           title: t(TITLE_KEY[event.kind]),
-          description:
-            event.kind === "receipt" && event.receiptSequence != null
-              ? t(DETAIL_KEY[event.kind]).replace("{sequence}", String(event.receiptSequence))
-              : t(DETAIL_KEY[event.kind]),
+          description: (() => {
+            if (event.kind === "receipt" && event.receiptSequence != null) {
+              const base = t(DETAIL_KEY[event.kind]).replace(
+                "{sequence}",
+                String(event.receiptSequence),
+              );
+              const lines = event.receiptLines ?? [];
+              if (lines.length === 0) {
+                return base;
+              }
+              const totals = lines.reduce(
+                (acc, line) => ({
+                  good: acc.good + line.quantityReceived,
+                  damaged: acc.damaged + (line.quantityDamaged ?? 0),
+                  missing: acc.missing + (line.quantityMissing ?? 0),
+                }),
+                { good: 0, damaged: 0, missing: 0 },
+              );
+              const parts: string[] = [];
+              if (totals.good > 0) {
+                parts.push(
+                  t("transfer.activity.receiptGood").replace("{qty}", String(totals.good)),
+                );
+              }
+              if (totals.damaged > 0) {
+                parts.push(
+                  t("transfer.activity.receiptDamaged").replace("{qty}", String(totals.damaged)),
+                );
+              }
+              if (totals.missing > 0) {
+                parts.push(
+                  t("transfer.activity.receiptMissing").replace("{qty}", String(totals.missing)),
+                );
+              }
+              return parts.length > 0 ? `${base} · ${parts.join(" · ")}` : base;
+            }
+            return t(DETAIL_KEY[event.kind]);
+          })(),
           tone: transferTone(event.kind),
           icon: transferIcon(event.kind),
           actorName,

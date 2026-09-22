@@ -150,9 +150,12 @@ export const posGoodsReceiptLineDtoSchema = z.object({
   inventoryMovementId: guidSchema.nullable().optional(),
   damagedQty: z.number().optional(),
   rejectedQty: z.number().optional(),
+  otherQty: z.number().optional(),
   shortClosedQty: z.number().optional(),
   discrepancyKind: z.string().optional(),
   discrepancyNote: z.string().nullable().optional(),
+  otherReasonCode: z.string().nullable().optional(),
+  otherReasonNote: z.string().nullable().optional(),
   receivedQty: z.number().optional(),
   expiryDate: z.string().nullable().optional(),
   lotNumber: z.string().nullable().optional(),
@@ -231,9 +234,12 @@ export type ReceivePurchaseOrderLineRequest = {
   receiveQty: number;
   damagedQty?: number;
   rejectedQty?: number;
+  otherQty?: number;
   shortClosedQty?: number;
   discrepancyKind?: string | null;
   discrepancyNote?: string | null;
+  otherReasonCode?: string | null;
+  otherReasonNote?: string | null;
   expiryDate?: string | null;
   lotNumber?: string | null;
 };
@@ -355,6 +361,9 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
       if (line.rejectedQty !== undefined) {
         entry.rejectedQty = line.rejectedQty;
       }
+      if (line.otherQty !== undefined) {
+        entry.otherQty = line.otherQty;
+      }
       if (line.shortClosedQty !== undefined) {
         entry.shortClosedQty = line.shortClosedQty;
       }
@@ -364,6 +373,14 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
       const note = trimOrUndef(line.discrepancyNote);
       if (note) {
         entry.discrepancyNote = note;
+      }
+      const otherCode = trimOrUndef(line.otherReasonCode);
+      if (otherCode) {
+        entry.otherReasonCode = otherCode;
+      }
+      const otherNote = trimOrUndef(line.otherReasonNote);
+      if (otherNote) {
+        entry.otherReasonNote = otherNote;
       }
       const expiry = trimOrUndef(line.expiryDate);
       if (expiry) {

@@ -3,6 +3,7 @@ using System;
 using ExItS.PinoyBusinessPOS.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(PosDbContext))]
-    partial class PosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922051811_AddInventoryTransferReceiptLineClassification")]
+    partial class AddInventoryTransferReceiptLineClassification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4894,16 +4897,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("note");
 
-                    b.Property<string>("OtherReasonCode")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("other_reason_code");
-
-                    b.Property<string>("OtherReasonNote")
-                        .HasMaxLength(280)
-                        .HasColumnType("character varying(280)")
-                        .HasColumnName("other_reason_note");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
@@ -4921,13 +4914,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(18,3)")
                         .HasDefaultValue(0m)
                         .HasColumnName("quantity_missing");
-
-                    b.Property<decimal>("QuantityOther")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("quantity_other");
 
                     b.Property<decimal>("QuantityReceived")
                         .HasPrecision(18, 3)
@@ -4952,7 +4938,7 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("inventory_transfer_receipt_lines", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_inventory_transfer_receipt_lines_qty_positive", "quantity_received >= 0 AND quantity_damaged >= 0 AND quantity_missing >= 0 AND quantity_other >= 0 AND (quantity_received + quantity_damaged + quantity_missing + quantity_other) > 0");
+                            t.HasCheckConstraint("ck_inventory_transfer_receipt_lines_qty_positive", "quantity_received >= 0 AND quantity_damaged >= 0 AND quantity_missing >= 0 AND (quantity_received + quantity_damaged + quantity_missing) > 0");
                         });
                 });
 
@@ -7738,23 +7724,6 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
 
-                    b.Property<decimal>("OtherQty")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)")
-                        .HasDefaultValue(0m)
-                        .HasColumnName("other_qty");
-
-                    b.Property<string>("OtherReasonCode")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("other_reason_code");
-
-                    b.Property<string>("OtherReasonNote")
-                        .HasMaxLength(280)
-                        .HasColumnType("character varying(280)")
-                        .HasColumnName("other_reason_note");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid")
                         .HasColumnName("product_id");
@@ -7817,13 +7786,11 @@ namespace ExItS.PinoyBusinessPOS.Infrastructure.Persistence.Migrations
 
                     b.ToTable("goods_receipt_lines", "pos", t =>
                         {
-                            t.HasCheckConstraint("ck_goods_receipt_lines_activity_positive", "(received_qty + damaged_qty + rejected_qty + other_qty + short_closed_qty) > 0");
+                            t.HasCheckConstraint("ck_goods_receipt_lines_activity_positive", "(received_qty + damaged_qty + rejected_qty + short_closed_qty) > 0");
 
                             t.HasCheckConstraint("ck_goods_receipt_lines_damaged_qty_nonnegative", "damaged_qty >= 0");
 
                             t.HasCheckConstraint("ck_goods_receipt_lines_line_total_non_negative", "line_total_snapshot >= 0");
-
-                            t.HasCheckConstraint("ck_goods_receipt_lines_other_qty_nonnegative", "other_qty >= 0");
 
                             t.HasCheckConstraint("ck_goods_receipt_lines_received_qty_nonnegative", "received_qty >= 0");
 

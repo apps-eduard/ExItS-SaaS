@@ -3,6 +3,32 @@ import type {
   InventoryTransferLineDto,
 } from "@/api/pos/pos-inventory-transfer-client";
 import type { ReceivedQuantityParse } from "@/features/inventory/inventory-transfer-labels";
+import { parseNonNegativeQty } from "@/features/purchasing/receive-math";
+import {
+  buildRemainingDecisionRows,
+  type RemainingDecisionAction,
+  type RemainingDecisionRow,
+} from "@/features/purchasing/receive-remaining-decision";
+
+export type TransferReceiveLineEdit = {
+  lineId: string;
+  productId: string;
+  name: string;
+  sku: string;
+  uom: string;
+  sentQty: number;
+  receivedQty: number;
+  outstandingQty: number;
+  goodText: string;
+  damagedText: string;
+  notDeliveredText: string;
+  otherText: string;
+  otherReasonCode: string;
+  otherReasonText: string;
+  otherExpanded?: boolean;
+  remarksText: string;
+  remainingAction: RemainingDecisionAction | null;
+};
 
 export function lineClosedQty(line: InventoryTransferLineDto): number {
   return line.closedQty ?? 0;
@@ -87,4 +113,57 @@ export function defaultReceiveNowByLine(transfer: InventoryTransferDto): Record<
     next[line.lineId] = outstanding > 0 ? String(outstanding) : "0";
   }
   return next;
+}
+
+export function buildTransferReceiveLineEdits(transfer: InventoryTransferDto): TransferReceiveLineEdit[] {
+  return transfer.lines.map((line) => {
+    const outstanding = lineOutstandingQty(line);
+    return {
+      lineId: line.lineId,
+      productId: line.productId,
+      name: line.productName,
+      sku: line.sku?.trim() ?? "",
+      uom: line.unitOfMeasure,
+      sentQty: line.sentQty,
+      receivedQty: line.receivedQty,
+      outstandingQty: outstanding,
+      goodText: outstanding > 0 ? String(outstanding) : "0",
+      damagedText: "0",
+      notDeliveredText: "0",
+      otherText: "0",
+      otherReasonCode: "",
+      otherReasonText: "",
+      remarksText: "",
+      remainingAction: null,
+    };
+  });
+}
+
+/** Remaining decisions match PO: any shortfall (outstanding − good) needs replace later / cancel. */
+export function buildTransferRemainingDecisionRows(
+  lines: readonly TransferReceiveLineEdit[],
+  labels: {
+    damaged: string;
+    notDelivered: string;
+    otherReasons?: Record<string, string>;
+    otherFallback?: string;
+  },
+): RemainingDecisionRow[] {
+  return buildRemainingDecisionRows(
+    lines.map((line) => ({
+      productId: line.productId,
+      name: line.name,
+      sku: line.sku,
+      uom: line.uom,
+      outstandingQty: line.outstandingQty,
+      goodText: line.goodText,
+      damagedText: line.damagedText,
+      notDeliveredText: line.notDeliveredText,
+      otherText: line.otherText,
+      otherReasonCode: line.otherReasonCode,
+      remarksText: line.remarksText,
+      remainingAction: line.remainingAction,
+    })),
+    labels,
+  );
 }

@@ -3486,7 +3486,7 @@ public sealed class PosDbContext : DbContext
             {
                 tb.HasCheckConstraint(
                     "ck_inventory_transfer_receipt_lines_qty_positive",
-                    "quantity_received > 0");
+                    "quantity_received >= 0 AND quantity_damaged >= 0 AND quantity_missing >= 0 AND quantity_other >= 0 AND (quantity_received + quantity_damaged + quantity_missing + quantity_other) > 0");
             });
 
             entity.HasKey(e => e.Id);
@@ -3498,6 +3498,33 @@ public sealed class PosDbContext : DbContext
                 .HasColumnName("quantity_received")
                 .HasPrecision(18, 3)
                 .IsRequired();
+            entity.Property(e => e.QuantityDamaged)
+                .HasColumnName("quantity_damaged")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.QuantityMissing)
+                .HasColumnName("quantity_missing")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.QuantityOther)
+                .HasColumnName("quantity_other")
+                .HasPrecision(18, 3)
+                .IsRequired()
+                .HasDefaultValue(0m);
+            entity.Property(e => e.OtherReasonCode)
+                .HasColumnName("other_reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength);
+            entity.Property(e => e.OtherReasonNote)
+                .HasColumnName("other_reason_note")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.NoteMaxLength);
+            entity.Property(e => e.MissingDisposition)
+                .HasColumnName("missing_disposition")
+                .HasMaxLength(InventoryTransferMissingDispositions.CodeMaxLength);
+            entity.Property(e => e.Note)
+                .HasColumnName("note")
+                .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
 
             entity.HasIndex(e => new { e.ReceiptId, e.TransferLineId })
                 .IsUnique()
@@ -5219,10 +5246,11 @@ public sealed class PosDbContext : DbContext
                 tb.HasCheckConstraint("ck_goods_receipt_lines_received_qty_nonnegative", "received_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_damaged_qty_nonnegative", "damaged_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_rejected_qty_nonnegative", "rejected_qty >= 0");
+                tb.HasCheckConstraint("ck_goods_receipt_lines_other_qty_nonnegative", "other_qty >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_short_closed_qty_nonnegative", "short_closed_qty >= 0");
                 tb.HasCheckConstraint(
                     "ck_goods_receipt_lines_activity_positive",
-                    "(received_qty + damaged_qty + rejected_qty + short_closed_qty) > 0");
+                    "(received_qty + damaged_qty + rejected_qty + other_qty + short_closed_qty) > 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_unit_cost_non_negative", "unit_purchase_cost_snapshot >= 0");
                 tb.HasCheckConstraint("ck_goods_receipt_lines_line_total_non_negative", "line_total_snapshot >= 0");
             });
@@ -5239,9 +5267,16 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReceivedQty).HasColumnName("received_qty").HasPrecision(18, 3).IsRequired();
             entity.Property(e => e.DamagedQty).HasColumnName("damaged_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.RejectedQty).HasColumnName("rejected_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
+            entity.Property(e => e.OtherQty).HasColumnName("other_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.ShortClosedQty).HasColumnName("short_closed_qty").HasPrecision(18, 3).IsRequired().HasDefaultValue(0m);
             entity.Property(e => e.DiscrepancyKind).HasColumnName("discrepancy_kind").HasMaxLength(32).IsRequired().HasDefaultValue("None");
             entity.Property(e => e.DiscrepancyNote).HasColumnName("discrepancy_note").HasMaxLength(280);
+            entity.Property(e => e.OtherReasonCode)
+                .HasColumnName("other_reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength);
+            entity.Property(e => e.OtherReasonNote)
+                .HasColumnName("other_reason_note")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.NoteMaxLength);
             entity.Property(e => e.UnitPurchaseCostSnapshot).HasColumnName("unit_purchase_cost_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.LineTotalSnapshot).HasColumnName("line_total_snapshot").HasPrecision(18, 2).IsRequired();
             entity.Property(e => e.InventoryMovementId).HasColumnName("inventory_movement_id");

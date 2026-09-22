@@ -17,10 +17,17 @@ public sealed record CreateInventoryTransferRequest(
 
 public sealed record InventoryTransferReceiveLineRequest(
     Guid ProductId,
-    decimal ReceivedQty,
+    decimal ReceivedQty = 0,
     string? DiscrepancyReason = null,
     string? DiscrepancyNote = null,
-    Guid? LineId = null);
+    Guid? LineId = null,
+    decimal GoodQty = 0,
+    decimal DamagedQty = 0,
+    decimal MissingQty = 0,
+    decimal OtherQty = 0,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
+    string? MissingDisposition = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -40,7 +47,14 @@ public sealed record InventoryTransferReceiptLineDto(
     Guid ReceiptLineId,
     Guid LineId,
     Guid ProductId,
-    decimal QuantityReceived);
+    decimal QuantityReceived,
+    decimal QuantityDamaged = 0,
+    decimal QuantityMissing = 0,
+    decimal QuantityOther = 0,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
+    string? MissingDisposition = null,
+    string? Note = null);
 
 public sealed record InventoryTransferReceiptDto(
     Guid ReceiptId,

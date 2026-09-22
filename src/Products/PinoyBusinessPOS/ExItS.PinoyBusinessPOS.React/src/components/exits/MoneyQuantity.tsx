@@ -126,8 +126,8 @@ export const QUANTITY_STEPPER_INPUT_MIN_CH = 12;
 export const QUANTITY_STEPPER_INPUT_MAX_CH = 20;
 export const QUANTITY_STEPPER_INPUT_COMPACT_MIN_CH = 12;
 export const QUANTITY_STEPPER_INPUT_COMPACT_MAX_CH = 20;
-export const QUANTITY_STEPPER_INPUT_PILL_MIN_CH = 1.5;
-export const QUANTITY_STEPPER_INPUT_PILL_MAX_CH = 7;
+export const QUANTITY_STEPPER_INPUT_PILL_MIN_CH = 7;
+export const QUANTITY_STEPPER_INPUT_PILL_MAX_CH = 12;
 const QUANTITY_STEPPER_INPUT_PAD_CH = 0.5;
 
 /** Width in `ch` from current text, clamped so layout stays compact and mobile-safe. */

@@ -18,16 +18,25 @@ public sealed record InventoryTransferLineDraft(
     decimal? UnitCostSnapshot = null);
 
 /// <summary>
-/// One receive-wave line. <see cref="ReceivedQty"/> is the quantity received in this wave (ReceiveNowQty),
-/// not the cumulative total on the transfer line.
+/// One receive-wave line. <see cref="GoodQty"/> is sellable quantity for this wave only (not cumulative).
 /// </summary>
 public sealed record InventoryTransferReceiveLineDraft(
     CatalogProductId ProductId,
-    decimal ReceivedQty,
+    decimal GoodQty,
     InventoryTransferDiscrepancyReason? DiscrepancyReason = null,
     string? DiscrepancyNote = null,
     SellingMode SellingMode = SellingMode.PerItem,
-    InventoryTransferLineId? LineId = null);
+    InventoryTransferLineId? LineId = null,
+    decimal DamagedQty = 0m,
+    decimal MissingQty = 0m,
+    decimal OtherQty = 0m,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
+    InventoryTransferMissingDisposition? MissingDisposition = null)
+{
+    /// <summary>Backward-compatible alias for <see cref="GoodQty"/>.</summary>
+    public decimal ReceivedQty => GoodQty;
+}
 
 /// <summary>Per-line close of remaining outstanding quantity after one or more receive waves.</summary>
 public sealed record InventoryTransferCloseRemainderLineDraft(
@@ -178,25 +187,97 @@ public sealed class InventoryTransferLine
         UnitCostSnapshot = NormalizeOptionalUnitCost(unitCostSnapshot);
 
     /// <summary>
-    /// Accumulates a receive-wave quantity. Discrepancy reason is not required here;
-    /// use <see cref="CloseRemainder"/> to close remaining outstanding with a reason.
+    /// Classifies outstanding quantity for one receive wave. Returns good, damaged-closed, and missing-closed deltas.
     /// </summary>
-    internal decimal ApplyReceiptDelta(InventoryTransferReceiveLineDraft receive)
+    internal (decimal GoodDelta, decimal DamagedWave, decimal MissingWave, decimal OtherWave, decimal MissingClosed) ApplyReceiptClassification(
+        InventoryTransferReceiveLineDraft receive)
     {
-        var qty = receive.ReceivedQty == 0m
-            ? 0m
-            : SaleLine.NormalizeQuantity(receive.ReceivedQty, UnitOfMeasure, receive.SellingMode);
+        var outstandingBefore = OutstandingQty;
+        var good = NormalizeWaveQty(receive.GoodQty, receive.SellingMode);
+        var damaged = NormalizeWaveQty(receive.DamagedQty, receive.SellingMode);
+        var missing = NormalizeWaveQty(receive.MissingQty, receive.SellingMode);
+        var other = NormalizeWaveQty(receive.OtherQty, receive.SellingMode);
+        var waveTotal = good + damaged + missing + other;
 
-        if (qty <= 0m || qty > OutstandingQty)
+        if (waveTotal <= 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferReceiveQty,
-                "Receive quantity must be greater than zero and not exceed outstanding quantity.");
+                "At least one of good, damaged, missing, or other quantity must be greater than zero.");
         }
 
-        ReceivedQty += qty;
-        return qty;
+        if (good < 0m || damaged < 0m || missing < 0m || other < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReceiveQty,
+                "Receive quantities cannot be negative.");
+        }
+
+        ReceiveDiscrepancyOtherReason.EnsureValid(receive.OtherReasonCode, receive.OtherReasonNote, other);
+
+        if (waveTotal > outstandingBefore || good > outstandingBefore)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReceiveQty,
+                "Receive quantities cannot exceed outstanding quantity.");
+        }
+
+        if (missing > 0m && receive.MissingDisposition is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferMissingDisposition,
+                "Missing disposition is required when missing quantity is greater than zero.");
+        }
+
+        var difference = outstandingBefore - good;
+        if (damaged + missing + other > difference)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReceiveClassification,
+                "Damaged, missing, and other quantities cannot exceed the shortfall against outstanding quantity.");
+        }
+
+        if ((damaged > 0m || missing > 0m || other > 0m) && damaged + missing + other != difference)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReceiveClassification,
+                "When classifying a shortfall, damaged plus missing plus other must equal the discrepancy quantity.");
+        }
+
+        var missingClosed = receive.MissingDisposition == InventoryTransferMissingDisposition.CloseMissing
+            ? missing
+            : 0m;
+
+        ReceivedQty += good;
+        var closedDelta = damaged + other + missingClosed;
+        if (closedDelta > 0m)
+        {
+            ClosedQty += closedDelta;
+            if (damaged > 0m)
+            {
+                DiscrepancyReason = InventoryTransferDiscrepancyReason.Damaged;
+            }
+            else if (missingClosed > 0m)
+            {
+                DiscrepancyReason = InventoryTransferDiscrepancyReason.ShortShipment;
+            }
+            else if (other > 0m)
+            {
+                DiscrepancyReason = ReceiveDiscrepancyOtherReason.ResolveTransferReason(receive.OtherReasonCode);
+            }
+
+            var note = NormalizeNote(receive.DiscrepancyNote);
+            if (note is not null)
+            {
+                DiscrepancyNote = note;
+            }
+        }
+
+        return (good, damaged, missing, other, missingClosed);
     }
+
+    private decimal NormalizeWaveQty(decimal qty, SellingMode sellingMode) =>
+        qty == 0m ? 0m : SaleLine.NormalizeQuantity(qty, UnitOfMeasure, sellingMode);
 
     /// <summary>Closes all remaining outstanding quantity as discrepancy.</summary>
     internal void CloseRemainder(InventoryTransferDiscrepancyReason reason, string? note)

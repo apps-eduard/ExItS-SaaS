@@ -57,11 +57,19 @@ The destination branch receives in **waves**. Each API call sends **receive-now*
 Per line at receive time:
 
 - `SentQty` (immutable)
-- `ReceivedQty` (cumulative across receipts)
+- `ReceivedQty` (cumulative good/sellable qty across receipts)
+- `ClosedQty` (cumulative damaged + missing closed on receive or via close remainder)
 - `OutstandingQty` = sent − received − closed
-- Request line `ReceivedQty` = quantity for **this receipt only** (must be &gt; 0 and ≤ outstanding)
+- Each receive wave classifies **this wave only** against current outstanding:
+  - `GoodQty` / `ReceivedQty` (synonym) → increases `ReceivedQty`; only good qty posts destination `TransferIn`
+  - `DamagedQty` → increases `ClosedQty` immediately (not sellable, not fulfilled)
+  - `MissingQty` + `ExpectedLater` → stays open in transit
+  - `MissingQty` + `CloseMissing` → increases `ClosedQty`
+  - When damaged or missing is used, `GoodQty + DamagedQty + MissingQty` must equal outstanding for that line in that wave
 
-While status is `InTransit` or `PartiallyReceived`, destination may submit additional receipts until outstanding is zero (→ `Received`) or call **Close remainder** (→ `ClosedWithDiscrepancy`).
+When outstanding reaches zero: all good → `Received`; any closed qty → `ClosedWithDiscrepancy` (sets `ClosedAtUtc` / `ClosedBy` when closed via receive).
+
+While status is `InTransit` or `PartiallyReceived`, destination may submit additional receipts until outstanding is zero or call **Close remainder** (→ `ClosedWithDiscrepancy` for any still-open qty).
 
 Close remainder (`POST .../{id}/close-remainder`):
 

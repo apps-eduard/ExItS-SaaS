@@ -200,11 +200,14 @@ internal static class PurchaseEntityMapper
                 l.MultiplierToBaseSnapshot,
                 l.DamagedQty,
                 l.RejectedQty,
+                l.OtherQty,
                 l.ShortClosedQty,
                 Enum.TryParse<ConnectedPoReceivingDiscrepancyKind>(l.DiscrepancyKind, true, out var kind)
                     ? kind
                     : ConnectedPoReceivingDiscrepancyKind.None,
                 l.DiscrepancyNote,
+                l.OtherReasonCode,
+                l.OtherReasonNote,
                 l.ExpiryDate,
                 l.LotNumber))
             .ToList();
@@ -298,9 +301,12 @@ internal static class PurchaseEntityMapper
             ReceivedQty = line.QuantityReceived,
             DamagedQty = line.DamagedQty,
             RejectedQty = line.RejectedQty,
+            OtherQty = line.OtherQty,
             ShortClosedQty = line.ShortClosedQty,
             DiscrepancyKind = line.DiscrepancyKind.ToString(),
             DiscrepancyNote = line.DiscrepancyNote,
+            OtherReasonCode = line.OtherReasonCode,
+            OtherReasonNote = line.OtherReasonNote,
             UnitPurchaseCostSnapshot = line.UnitPurchaseCostSnapshot,
             LineTotalSnapshot = line.LineTotalSnapshot,
             InventoryMovementId = line.InventoryMovementId,

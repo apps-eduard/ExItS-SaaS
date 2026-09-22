@@ -57,11 +57,22 @@ export const inventoryTransferLineDtoSchema = z.object({
   sku: z.string().nullable().optional(),
 });
 
+export const INVENTORY_TRANSFER_MISSING_DISPOSITIONS = ["ExpectedLater", "CloseMissing"] as const;
+export type InventoryTransferMissingDispositionCode =
+  (typeof INVENTORY_TRANSFER_MISSING_DISPOSITIONS)[number];
+
 export const inventoryTransferReceiptLineDtoSchema = z.object({
   receiptLineId: guidSchema,
   lineId: guidSchema,
   productId: guidSchema,
   quantityReceived: z.number(),
+  quantityDamaged: z.number().optional(),
+  quantityMissing: z.number().optional(),
+  quantityOther: z.number().optional(),
+  otherReasonCode: z.string().nullable().optional(),
+  otherReasonNote: z.string().nullable().optional(),
+  missingDisposition: z.string().nullable().optional(),
+  note: z.string().nullable().optional(),
 });
 
 export const inventoryTransferReceiptDtoSchema = z.object({
@@ -156,7 +167,15 @@ export type CreateInventoryTransferRequest = {
 
 export type InventoryTransferReceiveLineRequest = {
   productId: string;
-  receivedQty: number;
+  /** Good qty received this wave (alias: receivedQty). */
+  goodQty?: number;
+  receivedQty?: number;
+  damagedQty?: number;
+  missingQty?: number;
+  otherQty?: number;
+  otherReasonCode?: string | null;
+  otherReasonNote?: string | null;
+  missingDisposition?: InventoryTransferMissingDispositionCode | string | null;
   discrepancyReason?: string | null;
   discrepancyNote?: string | null;
   lineId?: string | null;
@@ -315,12 +334,35 @@ export async function receiveInventoryTransfer(
 ): Promise<InventoryTransferDto> {
   const payload = {
     lines: body.lines.map((line) => {
+      const goodQty = line.goodQty ?? line.receivedQty ?? 0;
       const entry: Record<string, unknown> = {
         productId: line.productId,
-        receivedQty: line.receivedQty,
+        goodQty,
+        receivedQty: goodQty,
       };
       if (line.lineId) {
         entry.lineId = line.lineId;
+      }
+      if (line.damagedQty != null && line.damagedQty > 0) {
+        entry.damagedQty = line.damagedQty;
+      }
+      if (line.missingQty != null && line.missingQty > 0) {
+        entry.missingQty = line.missingQty;
+      }
+      if (line.otherQty != null && line.otherQty > 0) {
+        entry.otherQty = line.otherQty;
+      }
+      const otherCode = trimOrUndef(line.otherReasonCode ?? undefined);
+      if (otherCode) {
+        entry.otherReasonCode = otherCode;
+      }
+      const otherNote = trimOrUndef(line.otherReasonNote ?? undefined);
+      if (otherNote) {
+        entry.otherReasonNote = otherNote;
+      }
+      const disposition = trimOrUndef(line.missingDisposition ?? undefined);
+      if (disposition) {
+        entry.missingDisposition = disposition;
       }
       const reason = trimOrUndef(line.discrepancyReason);
       if (reason) {

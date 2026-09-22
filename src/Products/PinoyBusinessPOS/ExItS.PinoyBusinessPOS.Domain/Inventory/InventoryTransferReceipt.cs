@@ -45,7 +45,7 @@ public sealed class InventoryTransferReceipt
         int sequence,
         DateTimeOffset receivedAtUtc,
         Guid receivedBy,
-        IReadOnlyList<(InventoryTransferLineId TransferLineId, CatalogProductId ProductId, decimal QuantityReceived)> lines,
+        IReadOnlyList<InventoryTransferReceiptLineDraft> lines,
         InventoryTransferReceiptId? id = null)
     {
         if (sequence < 1)
@@ -70,7 +70,14 @@ public sealed class InventoryTransferReceipt
                 receiptId,
                 line.TransferLineId,
                 line.ProductId,
-                line.QuantityReceived));
+                line.QuantityReceived,
+                line.QuantityDamaged,
+                line.QuantityMissing,
+                line.QuantityOther,
+                line.OtherReasonCode,
+                line.OtherReasonNote,
+                line.MissingDisposition,
+                line.Note));
         }
 
         return new InventoryTransferReceipt(
@@ -101,26 +108,60 @@ public sealed class InventoryTransferReceipt
             lines.ToList());
 }
 
+internal sealed record InventoryTransferReceiptLineDraft(
+    InventoryTransferLineId TransferLineId,
+    CatalogProductId ProductId,
+    decimal QuantityReceived,
+    decimal QuantityDamaged = 0m,
+    decimal QuantityMissing = 0m,
+    decimal QuantityOther = 0m,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
+    InventoryTransferMissingDisposition? MissingDisposition = null,
+    string? Note = null);
+
 public sealed class InventoryTransferReceiptLine
 {
     public InventoryTransferReceiptLineId Id { get; }
     public InventoryTransferReceiptId ReceiptId { get; }
     public InventoryTransferLineId TransferLineId { get; }
     public CatalogProductId ProductId { get; }
+    /// <summary>Good (sellable) quantity received in this wave.</summary>
     public decimal QuantityReceived { get; }
+    public decimal QuantityDamaged { get; }
+    public decimal QuantityMissing { get; }
+    public decimal QuantityOther { get; }
+    public string? OtherReasonCode { get; }
+    public string? OtherReasonNote { get; }
+    public InventoryTransferMissingDisposition? MissingDisposition { get; }
+    public string? Note { get; }
 
     private InventoryTransferReceiptLine(
         InventoryTransferReceiptLineId id,
         InventoryTransferReceiptId receiptId,
         InventoryTransferLineId transferLineId,
         CatalogProductId productId,
-        decimal quantityReceived)
+        decimal quantityReceived,
+        decimal quantityDamaged,
+        decimal quantityMissing,
+        decimal quantityOther,
+        string? otherReasonCode,
+        string? otherReasonNote,
+        InventoryTransferMissingDisposition? missingDisposition,
+        string? note)
     {
         Id = id;
         ReceiptId = receiptId;
         TransferLineId = transferLineId;
         ProductId = productId;
         QuantityReceived = quantityReceived;
+        QuantityDamaged = quantityDamaged;
+        QuantityMissing = quantityMissing;
+        QuantityOther = quantityOther;
+        OtherReasonCode = otherReasonCode;
+        OtherReasonNote = otherReasonNote;
+        MissingDisposition = missingDisposition;
+        Note = note;
     }
 
     internal static InventoryTransferReceiptLine Create(
@@ -128,13 +169,39 @@ public sealed class InventoryTransferReceiptLine
         InventoryTransferLineId transferLineId,
         CatalogProductId productId,
         decimal quantityReceived,
+        decimal quantityDamaged = 0m,
+        decimal quantityMissing = 0m,
+        decimal quantityOther = 0m,
+        string? otherReasonCode = null,
+        string? otherReasonNote = null,
+        InventoryTransferMissingDisposition? missingDisposition = null,
+        string? note = null,
         InventoryTransferReceiptLineId? id = null)
     {
-        if (quantityReceived <= 0m)
+        if (quantityReceived < 0m || quantityDamaged < 0m || quantityMissing < 0m || quantityOther < 0m)
         {
             throw new DomainException(
                 DomainErrorCodes.InvalidInventoryTransferReceiveQty,
-                "Receipt line quantity must be greater than zero.");
+                "Receipt line quantities cannot be negative.");
+        }
+
+        if (quantityReceived + quantityDamaged + quantityMissing + quantityOther <= 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferReceiveQty,
+                "Receipt line must record at least one of good, damaged, missing, or other quantity.");
+        }
+
+        ExItS.PinoyBusinessPOS.Domain.Purchasing.ReceiveDiscrepancyOtherReason.EnsureValid(
+            otherReasonCode,
+            otherReasonNote,
+            quantityOther);
+
+        if (quantityMissing > 0m && missingDisposition is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferMissingDisposition,
+                "Missing disposition is required when missing quantity is greater than zero.");
         }
 
         return new InventoryTransferReceiptLine(
@@ -142,7 +209,14 @@ public sealed class InventoryTransferReceiptLine
             receiptId,
             transferLineId,
             productId,
-            quantityReceived);
+            quantityReceived,
+            quantityDamaged,
+            quantityMissing,
+            quantityOther,
+            otherReasonCode,
+            ExItS.PinoyBusinessPOS.Domain.Purchasing.ReceiveDiscrepancyOtherReason.NormalizeNote(otherReasonNote),
+            missingDisposition,
+            note);
     }
 
     public static InventoryTransferReceiptLine Rehydrate(
@@ -150,6 +224,25 @@ public sealed class InventoryTransferReceiptLine
         InventoryTransferReceiptId receiptId,
         InventoryTransferLineId transferLineId,
         CatalogProductId productId,
-        decimal quantityReceived) =>
-        new(id, receiptId, transferLineId, productId, quantityReceived);
+        decimal quantityReceived,
+        decimal quantityDamaged = 0m,
+        decimal quantityMissing = 0m,
+        decimal quantityOther = 0m,
+        string? otherReasonCode = null,
+        string? otherReasonNote = null,
+        InventoryTransferMissingDisposition? missingDisposition = null,
+        string? note = null) =>
+        new(
+            id,
+            receiptId,
+            transferLineId,
+            productId,
+            quantityReceived,
+            quantityDamaged,
+            quantityMissing,
+            quantityOther,
+            otherReasonCode,
+            otherReasonNote,
+            missingDisposition,
+            note);
 }

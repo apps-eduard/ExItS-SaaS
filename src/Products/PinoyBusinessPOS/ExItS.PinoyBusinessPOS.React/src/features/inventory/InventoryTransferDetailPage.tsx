@@ -20,6 +20,7 @@ import {
   getInventoryTransfer,
   receiveInventoryTransfer,
   type InventoryTransferDto,
+  type ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -58,11 +59,8 @@ import {
 import {
   canDestinationCloseRemainder,
   canDestinationReceiveTransfer,
-  defaultReceiveNowByLine,
-  isReceiveSubmissionReady,
   isTransferTerminalStatus,
   lineOutstandingQty,
-  parseReceiveNowQuantity,
 } from "@/features/inventory/inventory-transfer-receive-helpers";
 import { TransferCloseRemainderDialog } from "@/features/inventory/TransferCloseRemainderDialog";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
@@ -72,7 +70,7 @@ import { downloadBlob } from "@/lib/download-blob";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
 type Mode = "detail" | "receive";
-type ConfirmKind = "dispatch" | "cancel" | "receive" | null;
+type ConfirmKind = "dispatch" | "cancel" | null;
 type CloseRemainderOpen = boolean;
 type LocalError = { title: string; detail: string };
 
@@ -132,7 +130,6 @@ export function InventoryTransferDetailPage() {
   const busyRef = useRef(false);
   const [mode, setMode] = useState<Mode>("detail");
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-  const [receivedByLine, setReceivedByLine] = useState<Record<string, string>>({});
   const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
@@ -180,7 +177,6 @@ export function InventoryTransferDetailPage() {
     if (!transfer || !canDestinationReceiveTransfer(transfer)) {
       return;
     }
-    setReceivedByLine(defaultReceiveNowByLine(transfer));
     setMode("detail");
   }, [transfer?.transferId, transfer?.status, transfer?.updatedAtUtc, transfer?.totalReceivedQty]);
 
@@ -270,54 +266,8 @@ export function InventoryTransferDetailPage() {
     setCloseRemainderOpen(false);
   }
 
-  async function onReceive() {
+  async function onReceive(body: ReceiveInventoryTransferRequest) {
     if (!workspace || !transfer || busyRef.current) {
-      return;
-    }
-    const lines: Array<{
-      productId: string;
-      receivedQty: number;
-      lineId: string;
-      discrepancyReason?: string | null;
-      discrepancyNote?: string | null;
-    }> = [];
-    for (const line of transfer.lines) {
-      const outstanding = lineOutstandingQty(line);
-      const parsed = parseReceiveNowQuantity(receivedByLine[line.lineId] ?? "", outstanding);
-      if (parsed === "empty" || parsed === "invalid") {
-        setLocalError({
-          title: t("transfer.receiveFailedTitle"),
-          detail: t("transfer.invalidReceiveNowQuantity"),
-        });
-        setConfirmKind(null);
-        return;
-      }
-      if (parsed === "exceeds") {
-        setLocalError({
-          title: t("transfer.receiveFailedTitle"),
-          detail: t("transfer.receiveExceedsOutstanding").replace(
-            "{outstanding}",
-            formatTransferQty(outstanding),
-          ),
-        });
-        setConfirmKind(null);
-        return;
-      }
-      if (parsed === 0) {
-        continue;
-      }
-      lines.push({
-        productId: line.productId,
-        receivedQty: parsed,
-        lineId: line.lineId,
-      });
-    }
-    if (lines.length === 0) {
-      setLocalError({
-        title: t("transfer.receiveFailedTitle"),
-        detail: t("transfer.receiveRequiresPositiveQty"),
-      });
-      setConfirmKind(null);
       return;
     }
 
@@ -325,7 +275,7 @@ export function InventoryTransferDetailPage() {
     setBusy(true);
     setLocalError(null);
     try {
-      const updated = await receiveInventoryTransfer(workspace, transfer.transferId, { lines });
+      const updated = await receiveInventoryTransfer(workspace, transfer.transferId, body);
       queryClient.setQueryData(
         ["inventory-transfer", workspace.organizationId, transferId],
         updated,
@@ -351,7 +301,6 @@ export function InventoryTransferDetailPage() {
     } finally {
       busyRef.current = false;
       setBusy(false);
-      setConfirmKind(null);
     }
   }
 
@@ -389,8 +338,6 @@ export function InventoryTransferDetailPage() {
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
   const canReceive = canMutate && isDestination && canDestinationReceiveTransfer(transfer);
   const canCloseRemainder = canMutate && isDestination && canDestinationCloseRemainder(transfer);
-  const receiveFormReady = isReceiveSubmissionReady(transfer.lines, receivedByLine);
-  const canSubmitReceive = canReceive && receiveFormReady;
   const receiveButtonLabel =
     isPartiallyReceived ? t("transfer.receiveRemaining") : t("transfer.receive");
 
@@ -583,26 +530,6 @@ export function InventoryTransferDetailPage() {
         }}
         onConfirm={() => void onCancel()}
       />
-    ) : confirmKind === "receive" ? (
-      <ConfirmationDialog
-        open
-        title={t("transfer.receiveConfirmTitle")}
-        detail={t("transfer.receiveWaveConfirmDetail")}
-        confirmLabel={t("transfer.receive")}
-        confirmPendingLabel={t("transfer.receiving")}
-        confirmIcon={<PackageCheck className="size-4 shrink-0" aria-hidden />}
-        cancelLabel={t("transfer.dialogCancel")}
-        cancelIcon={dialogCancelIcon}
-        cancelTone="danger-outline"
-        busy={busy}
-        testId="transfer-receive-confirm"
-        onCancel={() => {
-          if (!busy) {
-            setConfirmKind(null);
-          }
-        }}
-        onConfirm={() => void onReceive()}
-      />
     ) : null;
 
   if (mode === "receive" && canReceive) {
@@ -613,17 +540,13 @@ export function InventoryTransferDetailPage() {
         destName={destName}
         statusLabel={statusLabel}
         statusIcon={inventoryTransferStatusIcon(transfer.status)}
-        receivedByLine={receivedByLine}
-        setReceivedByLine={setReceivedByLine}
-        canSubmitReceive={canSubmitReceive}
         busy={busy}
         online={online}
         localErrorAlert={localErrorAlert}
-        confirmDialog={confirmDialog}
         onBack={() => setMode("detail")}
-        onSubmit={() => {
+        onSubmitReceive={(body) => {
           setLocalError(null);
-          setConfirmKind("receive");
+          void onReceive(body);
         }}
       />
     );
@@ -898,7 +821,6 @@ export function InventoryTransferDetailPage() {
                 disabled={!canMutate}
                 onClick={() => {
                   setLocalError(null);
-                  setReceivedByLine(defaultReceiveNowByLine(transfer));
                   setMode("receive");
                 }}
                 data-testid="transfer-receive"

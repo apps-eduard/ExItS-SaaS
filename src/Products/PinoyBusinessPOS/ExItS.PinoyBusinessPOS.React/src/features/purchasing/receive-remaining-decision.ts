@@ -13,6 +13,8 @@ export type RemainingDecisionLineInput = {
   goodText: string;
   damagedText: string;
   notDeliveredText: string;
+  otherText?: string;
+  otherReasonCode?: string;
   remarksText: string;
   remainingAction: RemainingDecisionAction | null;
 };
@@ -26,6 +28,13 @@ export type RemainingDecisionRow = {
   issueLabel: string;
   remark: string | null;
   remainingAction: RemainingDecisionAction | null;
+};
+
+export type RemainingIssueLabels = {
+  damaged: string;
+  notDelivered: string;
+  otherReasons?: Record<string, string>;
+  otherFallback?: string;
 };
 
 export function lineRemainingQty(line: {
@@ -45,18 +54,27 @@ export function formatRemainingIssueLabel(
     goodText: string;
     damagedText: string;
     notDeliveredText: string;
+    otherText?: string;
+    otherReasonCode?: string;
     uom: string;
   },
-  labels: { damaged: string; notDelivered: string },
+  labels: RemainingIssueLabels,
 ): string {
   const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
   const notDelivered = parseNonNegativeQty(line.notDeliveredText) ?? 0;
+  const other = parseNonNegativeQty(line.otherText ?? "0") ?? 0;
   const parts: string[] = [];
   if (damaged > 1e-9) {
     parts.push(labels.damaged);
   }
   if (notDelivered > 1e-9) {
     parts.push(labels.notDelivered);
+  }
+  if (other > 1e-9) {
+    const code = line.otherReasonCode?.trim() ?? "";
+    parts.push(
+      (code && labels.otherReasons?.[code]) || labels.otherFallback || "Other",
+    );
   }
   if (parts.length === 0) {
     return labels.notDelivered;
@@ -66,7 +84,7 @@ export function formatRemainingIssueLabel(
 
 export function buildRemainingDecisionRows(
   lines: readonly RemainingDecisionLineInput[],
-  labels: { damaged: string; notDelivered: string },
+  labels: RemainingIssueLabels,
 ): RemainingDecisionRow[] {
   return lines
     .map((line) => {

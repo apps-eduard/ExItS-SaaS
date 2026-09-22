@@ -1,4 +1,12 @@
-import type { InventoryTransferDto } from "@/api/pos/pos-inventory-transfer-client";
+import type {
+  InventoryTransferDto,
+  InventoryTransferReceiptLineDto,
+} from "@/api/pos/pos-inventory-transfer-client";
+
+export type TransferReceiptActivityLine = Pick<
+  InventoryTransferReceiptLineDto,
+  "quantityReceived" | "quantityDamaged" | "quantityMissing" | "missingDisposition" | "note"
+>;
 
 export type TransferActivityKind =
   | "created"
@@ -14,6 +22,7 @@ export type TransferActivityEvent = {
   atUtc: string;
   actorId?: string | null;
   receiptSequence?: number;
+  receiptLines?: TransferReceiptActivityLine[];
 };
 
 /** Chronological transfer lifecycle from authoritative DTO timestamps and receipt history. */
@@ -41,12 +50,20 @@ export function buildTransferActivityEvents(
   const receipts = transfer.receipts ?? [];
   if (receipts.length > 0) {
     for (const receipt of receipts) {
+      const receiptLines = receipt.lines.map((line) => ({
+        quantityReceived: line.quantityReceived,
+        quantityDamaged: line.quantityDamaged ?? 0,
+        quantityMissing: line.quantityMissing ?? 0,
+        missingDisposition: line.missingDisposition ?? null,
+        note: line.note ?? null,
+      }));
       events.push({
         id: `${transfer.transferId}-receipt-${receipt.receiptId}`,
         kind: "receipt",
         atUtc: receipt.receivedAtUtc,
         actorId: receipt.receivedBy,
         receiptSequence: receipt.sequence,
+        receiptLines,
       });
     }
   } else if (transfer.receivedAtUtc) {

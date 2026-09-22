@@ -15487,8 +15487,12 @@ a.dashboard-metric-card:focus-visible {
 .quantity-stepper--cart {
   --quantity-stepper-height: 2rem;
   --quantity-stepper-btn-size: 1.75rem;
-  --quantity-stepper-input-min-ch: 1.5ch;
-  --quantity-stepper-input-max-ch: 5ch;
+  --quantity-stepper-input-min-ch: 7ch;
+  --quantity-stepper-input-max-ch: 12ch;
+  /* Keep − qty + visible in narrow grids (do not shrink below usable capsule). */
+  min-width: calc(
+    (var(--quantity-stepper-btn-size) * 2) + 7ch + 0.75rem
+  );
 }
 
 .quantity-stepper--cart .quantity-stepper__group {
@@ -15500,6 +15504,8 @@ a.dashboard-metric-card:focus-visible {
     0 1px 2px color-mix(in srgb, #000 12%, transparent),
     0 2px 8px color-mix(in srgb, var(--exits-primary) 32%, transparent);
   overflow: hidden;
+  min-width: inherit;
+  flex-shrink: 0;
 }
 
 .quantity-stepper--standard .quantity-stepper__group {
@@ -15533,6 +15539,9 @@ a.dashboard-metric-card:focus-visible {
   color: var(--exits-primary-foreground);
   font-size: 1.05rem;
   font-weight: 700;
+  flex: 0 0 var(--quantity-stepper-btn-size);
+  width: var(--quantity-stepper-btn-size);
+  min-width: var(--quantity-stepper-btn-size);
 }
 
 .quantity-stepper--cart .quantity-stepper__btn--minus:hover:not(:disabled),
@@ -15558,6 +15567,14 @@ a.dashboard-metric-card:focus-visible {
   font-weight: 700;
   min-width: var(--quantity-stepper-input-min-ch);
   max-width: var(--quantity-stepper-input-max-ch);
+}
+
+/* Compact form defaults use 12ch; cart/auto capsule must keep narrow ch or + clips. */
+.quantity-stepper--cart.quantity-stepper--compact .quantity-stepper__input,
+.quantity-stepper--cart.quantity-stepper--compact .quantity-stepper__value,
+.quantity-stepper--cart .quantity-stepper__input--compact {
+  --quantity-stepper-input-min-ch: 7ch;
+  --quantity-stepper-input-max-ch: 12ch;
 }
 
 .quantity-stepper--cart.quantity-stepper--invalid .quantity-stepper__group {

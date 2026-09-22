@@ -120,9 +120,12 @@ public sealed record PosGoodsReceiptLineDto(
     Guid? InventoryMovementId,
     decimal DamagedQty = 0m,
     decimal RejectedQty = 0m,
+    decimal OtherQty = 0m,
     decimal ShortClosedQty = 0m,
     string DiscrepancyKind = "None",
     string? DiscrepancyNote = null,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
     DateOnly? ExpiryDate = null,
     string? LotNumber = null,
     bool InventoryTrackingEnabled = false,
@@ -192,9 +195,12 @@ public sealed record ReceivePurchaseOrderLineRequest(
     decimal ReceiveQty,
     decimal DamagedQty = 0m,
     decimal RejectedQty = 0m,
+    decimal OtherQty = 0m,
     decimal ShortClosedQty = 0m,
     string? DiscrepancyKind = null,
     string? DiscrepancyNote = null,
+    string? OtherReasonCode = null,
+    string? OtherReasonNote = null,
     DateOnly? ExpiryDate = null,
     string? LotNumber = null);
 
@@ -406,9 +412,12 @@ public static class PurchaseMapper
                     l.InventoryMovementId,
                     l.DamagedQty,
                     l.RejectedQty,
+                    l.OtherQty,
                     l.ShortClosedQty,
                     l.DiscrepancyKind.ToString(),
                     l.DiscrepancyNote,
+                    l.OtherReasonCode,
+                    l.OtherReasonNote,
                     l.ExpiryDate,
                     l.LotNumber,
                     stock?.TrackingWasEnabled ?? false,
@@ -2576,9 +2585,13 @@ public sealed class ReceivePurchaseOrder
                     {
                         kind = parsed;
                     }
-                    else if (l.DamagedQty > 0m || l.RejectedQty > 0m)
+                    else if (l.DamagedQty > 0m || l.RejectedQty > 0m || l.OtherQty > 0m)
                     {
-                        kind = PurchaseOrderReceiveDiscrepancy.ResolveKind(l.DamagedQty, l.RejectedQty);
+                        kind = PurchaseOrderReceiveDiscrepancy.ResolveKind(
+                            l.DamagedQty,
+                            l.RejectedQty,
+                            l.OtherQty,
+                            l.OtherReasonCode);
                     }
 
                     if (product.TracksExpiration && l.ReceiveQty > 0m && l.ExpiryDate is null)
@@ -2594,9 +2607,12 @@ public sealed class ReceivePurchaseOrder
                         product.SellingMode,
                         l.DamagedQty,
                         l.RejectedQty,
+                        l.OtherQty,
                         l.ShortClosedQty,
                         kind,
                         l.DiscrepancyNote,
+                        l.OtherReasonCode,
+                        l.OtherReasonNote,
                         l.ExpiryDate,
                         l.LotNumber);
                 })

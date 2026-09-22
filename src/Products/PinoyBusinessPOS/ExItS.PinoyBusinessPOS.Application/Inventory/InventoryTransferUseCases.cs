@@ -117,7 +117,16 @@ public sealed class InventoryTransferQueryService
                     rl.Id.Value,
                     rl.TransferLineId.Value,
                     rl.ProductId.Value,
-                    rl.QuantityReceived)).ToList())).ToList(),
+                    rl.QuantityReceived,
+                    rl.QuantityDamaged,
+                    rl.QuantityMissing,
+                    rl.QuantityOther,
+                    rl.OtherReasonCode,
+                    rl.OtherReasonNote,
+                    rl.MissingDisposition is null
+                        ? null
+                        : InventoryTransferMissingDispositions.ToCode(rl.MissingDisposition.Value),
+                    rl.Note)).ToList())).ToList(),
             transfer.Lines.Select(l => new InventoryTransferLineDto(
                 l.Id.Value,
                 l.ProductId.Value,
@@ -710,12 +719,32 @@ public sealed class ReceiveInventoryTransfer
                 reason = parsed;
             }
 
+            var goodQty = line.GoodQty > 0m ? line.GoodQty : line.ReceivedQty;
+            InventoryTransferMissingDisposition? missingDisposition = null;
+            if (!string.IsNullOrWhiteSpace(line.MissingDisposition))
+            {
+                if (!InventoryTransferMissingDispositions.TryParse(line.MissingDisposition, out var parsedMissing))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferMissingDisposition,
+                        "Missing disposition is not recognized.");
+                }
+
+                missingDisposition = parsedMissing;
+            }
+
             receiveDrafts.Add(new InventoryTransferReceiveLineDraft(
                 CatalogProductId.From(line.ProductId),
-                line.ReceivedQty,
+                goodQty,
                 reason,
                 line.DiscrepancyNote,
-                LineId: line.LineId is null ? null : InventoryTransferLineId.From(line.LineId.Value)));
+                LineId: line.LineId is null ? null : InventoryTransferLineId.From(line.LineId.Value),
+                DamagedQty: line.DamagedQty,
+                MissingQty: line.MissingQty,
+                OtherQty: line.OtherQty,
+                OtherReasonCode: line.OtherReasonCode,
+                OtherReasonNote: line.OtherReasonNote,
+                MissingDisposition: missingDisposition));
         }
 
         var productIds = transfer.Lines.Select(l => l.ProductId).ToList();

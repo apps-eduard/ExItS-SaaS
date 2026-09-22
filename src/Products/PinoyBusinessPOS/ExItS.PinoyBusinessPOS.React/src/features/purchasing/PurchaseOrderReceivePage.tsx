@@ -80,9 +80,14 @@ import {
 } from "@/features/purchasing/purchase-order-receive-output";
 import {
   buildReceivePlan,
+  isClassificationComplete,
   parseNonNegativeQty,
   receiveDiscrepancyQty,
 } from "@/features/purchasing/receive-math";
+import {
+  buildReceiveOtherReasonOptions,
+  buildReceiveOtherReasonSummaryLabels,
+} from "@/features/purchasing/receive-other-reason-options";
 import {
   formatReceiveDiscrepancySummary,
   isReceiveDiscrepancyClassified,
@@ -202,6 +207,10 @@ type LineEdit = {
   goodText: string;
   damagedText: string;
   notDeliveredText: string;
+  otherText: string;
+  otherReasonCode: string;
+  otherReasonText: string;
+  otherExpanded?: boolean;
   remarksText: string;
   /** null = unresolved; replace_later keeps outstanding; cancel_remaining → shortClosedQty. */
   remainingAction: RemainingDecisionAction | null;
@@ -288,6 +297,9 @@ export function PurchaseOrderReceivePage() {
           goodText: line.outstandingQty > 0 ? String(line.outstandingQty) : "",
           damagedText: "0",
           notDeliveredText: "0",
+          otherText: "0",
+          otherReasonCode: "",
+          otherReasonText: "",
           remarksText: "",
           remainingAction: null,
           expiryDate: "",
@@ -323,6 +335,17 @@ export function PurchaseOrderReceivePage() {
   const statusTone = po
     ? receiveStatusTone(po.status, po.displayStatus || po.status)
     : "info";
+
+  const otherReasonOptions = useMemo(() => buildReceiveOtherReasonOptions(t), [t]);
+  const discrepancySummaryLabels = useMemo(
+    () => ({
+      damaged: t("purchasing.damaged"),
+      notDelivered: t("purchasing.notDelivered"),
+      otherReasons: buildReceiveOtherReasonSummaryLabels(t),
+      otherFallback: t("purchasing.otherDiscrepancy"),
+    }),
+    [t],
+  );
 
   function runReceiveOutput(action: "csv" | "xlsx" | "pdf" | "print") {
     const model = buildExportModel();
@@ -503,6 +526,10 @@ export function PurchaseOrderReceivePage() {
         goodQty: good,
         damagedText: line.damagedText,
         notDeliveredText: line.notDeliveredText,
+        otherText: line.otherText,
+        otherReasonCode: line.otherReasonCode,
+        otherReasonText: line.otherReasonText,
+        otherExpanded: line.otherExpanded,
         remarksText: line.remarksText,
       }));
   }, [lines, discrepancyTargetProductId]);
@@ -730,6 +757,10 @@ export function PurchaseOrderReceivePage() {
       updateLine(current.productId, {
         damagedText: "0",
         notDeliveredText: "0",
+        otherText: "0",
+        otherReasonCode: "",
+        otherReasonText: "",
+        otherExpanded: false,
         remarksText: "",
         remainingAction: null,
       });
@@ -823,9 +854,18 @@ export function PurchaseOrderReceivePage() {
       const good = parseNonNegativeQty(line.goodText);
       const damaged = parseNonNegativeQty(line.damagedText);
       const notDelivered = parseNonNegativeQty(line.notDeliveredText);
-      return { line, good, damaged, notDelivered };
+      const other = parseNonNegativeQty(line.otherText);
+      return { line, good, damaged, notDelivered, other };
     });
-    if (parsed.some((p) => p.good === null || p.damaged === null || p.notDelivered === null)) {
+    if (
+      parsed.some(
+        (p) =>
+          p.good === null ||
+          p.damaged === null ||
+          p.notDelivered === null ||
+          p.other === null,
+      )
+    ) {
       setError(t("purchasing.invalidReceiveQty"));
       return null;
     }
@@ -842,12 +882,17 @@ export function PurchaseOrderReceivePage() {
         ({ line, good }) => receiveDiscrepancyQty(line.outstandingQty, good ?? 0) > 1e-9,
       );
       if (needsClassification) {
-        const incomplete = parsed.some(({ line, good, damaged, notDelivered }) => {
+        const incomplete = parsed.some(({ line, good, damaged, notDelivered, other }) => {
           const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good ?? 0);
           if (discrepancy <= 1e-9) {
             return false;
           }
-          return Math.abs((damaged ?? 0) + (notDelivered ?? 0) - discrepancy) > 1e-9;
+          return !isClassificationComplete(
+            discrepancy,
+            damaged ?? 0,
+            notDelivered ?? 0,
+            other ?? 0,
+          );
         });
         if (incomplete) {
           setError(t("purchasing.discrepancyClassificationRequired"));
@@ -868,12 +913,13 @@ export function PurchaseOrderReceivePage() {
     }
 
     const result = buildReceivePlan(
-      parsed.map(({ line, good, damaged, notDelivered }) => ({
+      parsed.map(({ line, good, damaged, notDelivered, other }) => ({
         productId: line.productId,
         outstandingQty: line.outstandingQty,
         goodQty: good!,
         damagedQty: damaged!,
         notDeliveredQty: notDelivered!,
+        otherQty: other!,
         cancelRemaining: line.remainingAction === "cancel_remaining",
       })),
     );
@@ -1042,9 +1088,16 @@ export function PurchaseOrderReceivePage() {
             receiveQty: line.receiveQty,
             damagedQty: line.damagedQty,
             rejectedQty: line.rejectedQty,
+            otherQty: line.otherQty,
             shortClosedQty: line.shortClosedQty,
             discrepancyKind: line.discrepancyKind,
             discrepancyNote: line.discrepancyKind && note ? note : null,
+            otherReasonCode:
+              line.otherQty > 1e-9 ? edit?.otherReasonCode.trim() || null : null,
+            otherReasonNote:
+              line.otherQty > 1e-9 && edit?.otherReasonCode.trim() === "Other"
+                ? edit.otherReasonText.trim() || null
+                : null,
             expiryDate:
               edit?.tracksExpiration && goodQty > 0 && edit.expiryDate.trim()
                 ? edit.expiryDate.trim()
@@ -1559,10 +1612,10 @@ export function PurchaseOrderReceivePage() {
                         (mobileEditingProductId !== null && mobileEditingProductId !== line.productId);
                       const editReceiveNow = editing && editingFields.has("receiveNow");
                       const needsClassification = unclassifiedProductIds.has(line.productId);
-                      const discrepancySummary = formatReceiveDiscrepancySummary(line, {
-                        damaged: t("purchasing.damaged"),
-                        notDelivered: t("purchasing.notDelivered"),
-                      });
+                      const discrepancySummary = formatReceiveDiscrepancySummary(
+                        line,
+                        discrepancySummaryLabels,
+                      );
                       const rowErrorMessages = editing
                         ? receiveEditErrorMessages(editErrors)
                         : [];
@@ -1655,6 +1708,10 @@ export function PurchaseOrderReceivePage() {
                                       // Reset classification when good qty changes.
                                       damagedText: "0",
                                       notDeliveredText: "0",
+                                      otherText: "0",
+                                      otherReasonCode: "",
+                                      otherReasonText: "",
+                                      otherExpanded: false,
                                       remarksText: "",
                                     });
                                     setEditErrors((prev) => ({
@@ -1843,10 +1900,10 @@ export function PurchaseOrderReceivePage() {
                         </div>
                         {(() => {
                           const needsClassification = unclassifiedProductIds.has(line.productId);
-                          const discrepancySummary = formatReceiveDiscrepancySummary(line, {
-                            damaged: t("purchasing.damaged"),
-                            notDelivered: t("purchasing.notDelivered"),
-                          });
+                          const discrepancySummary = formatReceiveDiscrepancySummary(
+                            line,
+                            discrepancySummaryLabels,
+                          );
                           if (!lineHasReceiveDiscrepancy(line) || mobileEditing) {
                             return null;
                           }
@@ -1885,6 +1942,10 @@ export function PurchaseOrderReceivePage() {
                                     goodText: e.target.value,
                                     damagedText: "0",
                                     notDeliveredText: "0",
+                                    otherText: "0",
+                                    otherReasonCode: "",
+                                    otherReasonText: "",
+                                    otherExpanded: false,
                                     remarksText: "",
                                   })
                                 }
@@ -2055,10 +2116,10 @@ export function PurchaseOrderReceivePage() {
                       const damaged = parseNonNegativeQty(line.damagedText) ?? 0;
                       const notDelivered = parseNonNegativeQty(line.notDeliveredText) ?? 0;
                       const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
-                      const discrepancySummary = formatReceiveDiscrepancySummary(line, {
-                        damaged: t("purchasing.damaged"),
-                        notDelivered: t("purchasing.notDelivered"),
-                      });
+                      const discrepancySummary = formatReceiveDiscrepancySummary(
+                        line,
+                        discrepancySummaryLabels,
+                      );
                       return (
                         <ExitsTableRow
                           key={line.productId}
@@ -2139,10 +2200,10 @@ export function PurchaseOrderReceivePage() {
                   {(lines ?? []).map((line) => {
                     const good = parseNonNegativeQty(line.goodText) ?? 0;
                     const discrepancy = receiveDiscrepancyQty(line.outstandingQty, good);
-                    const discrepancySummary = formatReceiveDiscrepancySummary(line, {
-                      damaged: t("purchasing.damaged"),
-                      notDelivered: t("purchasing.notDelivered"),
-                    });
+                    const discrepancySummary = formatReceiveDiscrepancySummary(
+                      line,
+                      discrepancySummaryLabels,
+                    );
                     return (
                       <ExitsTableMobileRow
                         key={line.productId}
@@ -2418,6 +2479,10 @@ export function PurchaseOrderReceivePage() {
           const next: Partial<LineEdit> = {};
           if (patch.damagedText !== undefined) next.damagedText = patch.damagedText;
           if (patch.notDeliveredText !== undefined) next.notDeliveredText = patch.notDeliveredText;
+          if (patch.otherText !== undefined) next.otherText = patch.otherText;
+          if (patch.otherReasonCode !== undefined) next.otherReasonCode = patch.otherReasonCode;
+          if (patch.otherReasonText !== undefined) next.otherReasonText = patch.otherReasonText;
+          if (patch.otherExpanded !== undefined) next.otherExpanded = patch.otherExpanded;
           if (patch.remarksText !== undefined) next.remarksText = patch.remarksText;
           updateLine(productId, next);
         }}
@@ -2425,13 +2490,21 @@ export function PurchaseOrderReceivePage() {
         onConfirm={onDiscrepancyConfirmed}
         title={t("purchasing.discrepancyClassifyTitle")}
         classifyHint={t("purchasing.discrepancyClassifyHint")}
-        allDamagedLabel={t("purchasing.allDamaged")}
-        allNotDeliveredLabel={t("purchasing.allNotDelivered")}
+        classifyAsLabel={t("purchasing.classifyAs")}
+        allDamagedLabel={t("purchasing.damaged")}
+        allNotDeliveredLabel={t("purchasing.notDelivered")}
+        allOtherLabel={t("purchasing.allOther")}
         damagedLabel={t("purchasing.damaged")}
         notDeliveredLabel={t("purchasing.notDelivered")}
+        otherLabel={t("purchasing.otherDiscrepancy")}
+        otherReasonLabel={t("purchasing.otherReason")}
+        otherReasons={otherReasonOptions}
+        otherDescriptionLabel={t("purchasing.otherReasonDescription")}
         remarksLabel={t("purchasing.discrepancyNote")}
         remarksRequiredLabel={t("checkout.fieldRequired")}
         remainingToClassifyLabel={t("purchasing.remainingToClassify")}
+        decreaseQtyLabel={t("purchasing.decreaseQty")}
+        increaseQtyLabel={t("purchasing.increaseQty")}
         cancelLabel={t("purchasing.cancel")}
         confirmLabel={t("purchasing.saveClassification")}
         notAcceptedTemplate={t("purchasing.notAcceptedQty")}
