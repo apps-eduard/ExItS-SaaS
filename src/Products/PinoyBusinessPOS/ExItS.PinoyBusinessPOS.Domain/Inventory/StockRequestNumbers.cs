@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 /// <summary>
-/// Organization-scoped stock request number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date.
+/// Organization-scoped stock request number: <c>SR-YYMMDD-NNN</c>.
+/// Allocated server-side on request submit.
 /// </summary>
 public static class StockRequestNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.StockRequest;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? stockRequestNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(stockRequestNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(stockRequestNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

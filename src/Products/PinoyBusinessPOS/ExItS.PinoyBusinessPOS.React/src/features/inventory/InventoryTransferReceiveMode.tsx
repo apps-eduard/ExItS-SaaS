@@ -574,7 +574,7 @@ export function InventoryTransferReceiveMode({
       {localErrorAlert}
 
       {!reviewing ? (
-        <ExitsTableContainer data-testid="transfer-receive-table">
+        <ExitsTableContainer className="transfer-receive-table" data-testid="transfer-receive-table">
           <ExitsTable data-testid="transfer-receive-desktop">
             <ExitsTableHeader>
               <ExitsTableRow>
@@ -824,7 +824,10 @@ export function InventoryTransferReceiveMode({
           <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">
             {t("transfer.reviewBeforeConfirm")}
           </h2>
-          <ExitsTableContainer data-testid="transfer-receive-review-lines-table">
+          <ExitsTableContainer
+            className="transfer-receive-table transfer-receive-table--review"
+            data-testid="transfer-receive-review-lines-table"
+          >
             <ExitsTable>
               <ExitsTableHeader>
                 <ExitsTableRow>
@@ -834,7 +837,9 @@ export function InventoryTransferReceiveMode({
                   <ExitsTableHead cellAlign="center" colSize="numeric">
                     {t("transfer.goodReceivedNow")}
                   </ExitsTableHead>
-                  <ExitsTableHead cellAlign="text">{t("purchasing.colUnit")}</ExitsTableHead>
+                  <ExitsTableHead cellAlign="text" colSize="numeric">
+                    {t("purchasing.colUnit")}
+                  </ExitsTableHead>
                 </ExitsTableRow>
               </ExitsTableHeader>
               <ExitsTableBody>

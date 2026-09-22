@@ -26,7 +26,7 @@ public sealed class CustomerOrderDomainTests
         Assert.Equal(CustomerOrderStatus.Submitted, order.Status);
         Assert.Equal(CustomerPartyType.Personal, order.CustomerParty.PartyType);
         Assert.Equal(PlatformUser, order.CustomerParty.PlatformUserId);
-        Assert.Equal("260816-001", order.OrderNumber);
+        Assert.Equal("ORD-260816-001", order.OrderNumber);
         Assert.Equal(50m, order.MerchandiseSubtotal);
         Assert.Equal(0m, order.DeliveryFee);
         Assert.Equal(50m, order.Total);
@@ -42,7 +42,7 @@ public sealed class CustomerOrderDomainTests
         var snapshot = FreeDeliverySnapshot();
         var order = CustomerOrder.CreateSubmitted(
             Seller,
-            "260816-002",
+            "ORD-260816-002",
             party,
             CustomerOrderFulfillmentType.Delivery,
             BranchId,
@@ -221,7 +221,7 @@ public sealed class CustomerOrderDomainTests
         var pickupWithDelivery = Assert.Throws<DomainException>(() =>
             CustomerOrder.CreateSubmitted(
                 Seller,
-                "260816-010",
+                "ORD-260816-010",
                 party,
                 CustomerOrderFulfillmentType.Pickup,
                 BranchId,
@@ -235,7 +235,7 @@ public sealed class CustomerOrderDomainTests
         var deliveryWithoutSnapshot = Assert.Throws<DomainException>(() =>
             CustomerOrder.CreateSubmitted(
                 Seller,
-                "260816-011",
+                "ORD-260816-011",
                 party,
                 CustomerOrderFulfillmentType.Delivery,
                 BranchId,
@@ -249,7 +249,7 @@ public sealed class CustomerOrderDomainTests
         var discountTooLarge = Assert.Throws<DomainException>(() =>
             CustomerOrder.CreateSubmitted(
                 Seller,
-                "260816-012",
+                "ORD-260816-012",
                 party,
                 CustomerOrderFulfillmentType.Pickup,
                 BranchId,
@@ -264,7 +264,7 @@ public sealed class CustomerOrderDomainTests
     public void Order_numbers_format_daily_sequence()
     {
         var day = new DateOnly(2026, 8, 16);
-        Assert.Equal("260816-001", CustomerOrderNumbers.Format(day, 1));
+        Assert.Equal("ORD-260816-001", CustomerOrderNumbers.Format(day, 1));
         Assert.Equal("260816-042", CustomerOrderNumbers.Normalize(" 260816-042 "));
     }
 
@@ -296,7 +296,7 @@ public sealed class CustomerOrderDomainTests
     {
         var order = CustomerOrder.CreateSubmitted(
             Seller,
-            "260816-020",
+            "ORD-260816-020",
             CustomerOrderParty.Personal(PlatformUser, "Ana Reyes"),
             CustomerOrderFulfillmentType.Pickup,
             BranchId,
@@ -313,7 +313,7 @@ public sealed class CustomerOrderDomainTests
     private static CustomerOrder CreatePickup(CustomerOrderParty party) =>
         CustomerOrder.CreateSubmitted(
             Seller,
-            "260816-001",
+            "ORD-260816-001",
             party,
             CustomerOrderFulfillmentType.Pickup,
             BranchId,
@@ -325,7 +325,7 @@ public sealed class CustomerOrderDomainTests
     private static CustomerOrder CreateDelivery(decimal fee) =>
         CustomerOrder.CreateSubmitted(
             Seller,
-            "260816-003",
+            "ORD-260816-003",
             CustomerOrderParty.Organization(BuyerOrg, "ORG000123", "Corner Store"),
             CustomerOrderFulfillmentType.Delivery,
             BranchId,

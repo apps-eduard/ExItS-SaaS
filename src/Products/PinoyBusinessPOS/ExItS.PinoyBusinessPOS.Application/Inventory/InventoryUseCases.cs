@@ -19,6 +19,8 @@ public sealed class InventoryQueryService
     private readonly IBranchInventoryQueryRepository _branchInventory;
     private readonly BranchInventoryReadService _branchReads;
     private readonly BranchInventoryContextResolver _branchContext;
+    private readonly IInventoryTransferRepository _transfers;
+    private readonly IOrganizationBranchDirectory? _branches;
     private readonly IClock _clock;
 
     public InventoryQueryService(
@@ -28,7 +30,9 @@ public sealed class InventoryQueryService
         IBranchInventoryQueryRepository branchInventory,
         BranchInventoryReadService branchReads,
         BranchInventoryContextResolver branchContext,
-        IClock clock)
+        IInventoryTransferRepository transfers,
+        IClock clock,
+        IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
         _products = products;
@@ -36,7 +40,9 @@ public sealed class InventoryQueryService
         _branchInventory = branchInventory;
         _branchReads = branchReads;
         _branchContext = branchContext;
+        _transfers = transfers;
         _clock = clock;
+        _branches = branches;
     }
 
     public async Task<PosInventoryAccountDto?> GetByProductIdAsync(
@@ -114,7 +120,7 @@ public sealed class InventoryQueryService
             return null;
         }
 
-        return Map(
+        var mapped = Map(
             product,
             shell,
             summary.LatestAt,
@@ -124,6 +130,14 @@ public sealed class InventoryQueryService
             near,
             hasOpeningStock,
             branchRead);
+        return await EnrichWithTransferCommitmentsAsync(
+                organizationId,
+                context.BranchId,
+                [mapped],
+                cancellationToken)
+            .ConfigureAwait(false) is [var single]
+            ? single
+            : mapped;
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListAsync(
@@ -149,7 +163,12 @@ public sealed class InventoryQueryService
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
 
-        var dtos = rows.Select(MapFromBranchRow).ToList();
+        var dtos = await EnrichWithTransferCommitmentsAsync(
+                context.OrganizationId,
+                context.BranchId,
+                rows.Select(MapFromBranchRow).ToList(),
+                cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<PosInventoryAccountDto>(dtos, total, Math.Max(page ?? 1, 1), take);
     }
 
@@ -171,7 +190,12 @@ public sealed class InventoryQueryService
             .ConfigureAwait(false);
 
         return new PagedResult<PosInventoryAccountDto>(
-            rows.Select(MapFromBranchRow).ToList(),
+            await EnrichWithTransferCommitmentsAsync(
+                    context.OrganizationId,
+                    context.BranchId,
+                    rows.Select(MapFromBranchRow).ToList(),
+                    cancellationToken)
+                .ConfigureAwait(false),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -195,7 +219,12 @@ public sealed class InventoryQueryService
             .ConfigureAwait(false);
 
         return new PagedResult<PosInventoryAccountDto>(
-            rows.Select(MapFromBranchRow).ToList(),
+            await EnrichWithTransferCommitmentsAsync(
+                    context.OrganizationId,
+                    context.BranchId,
+                    rows.Select(MapFromBranchRow).ToList(),
+                    cancellationToken)
+                .ConfigureAwait(false),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -318,6 +347,84 @@ public sealed class InventoryQueryService
         }
 
         return lotById.TryGetValue(lotId.Value, out var lot) ? lot : null;
+    }
+
+    private async Task<IReadOnlyList<PosInventoryAccountDto>> EnrichWithTransferCommitmentsAsync(
+        Guid organizationId,
+        Guid branchId,
+        IReadOnlyList<PosInventoryAccountDto> accounts,
+        CancellationToken cancellationToken)
+    {
+        if (accounts.Count == 0)
+        {
+            return accounts;
+        }
+
+        var productIds = accounts.Select(a => CatalogProductId.From(a.ProductId)).ToList();
+        var commitments = await _transfers
+            .ListOpenCommitmentsForBranchAsync(
+                PosOrganizationId.From(organizationId),
+                PosBranchId.From(branchId),
+                productIds,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (commitments.Count == 0)
+        {
+            return accounts;
+        }
+
+        var peerIds = commitments.Select(c => c.PeerBranchId).Distinct().ToList();
+        IReadOnlyDictionary<Guid, string> peerNames = new Dictionary<Guid, string>();
+        if (_branches is not null && peerIds.Count > 0)
+        {
+            peerNames = await _branches
+                .GetNamesAsync(organizationId, peerIds, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var byProduct = commitments.GroupBy(c => c.ProductId).ToDictionary(g => g.Key, g => g.ToList());
+        return accounts.Select(account =>
+        {
+            if (!byProduct.TryGetValue(account.ProductId, out var rows))
+            {
+                return account;
+            }
+
+            var outbound = rows.Where(r => r.Direction == "Outbound").ToList();
+            var inbound = rows.Where(r => r.Direction == "Inbound").ToList();
+            var outboundQty = outbound.Sum(r => r.OutstandingQuantity);
+            var inboundQty = inbound.Sum(r => r.OutstandingQuantity);
+            string? outboundBranch = ResolveSinglePeerName(outbound, peerNames);
+            string? inboundBranch = ResolveSinglePeerName(inbound, peerNames);
+
+            return account with
+            {
+                InTransitOutboundQuantity = outboundQty,
+                InTransitOutboundBranchName = outboundBranch,
+                InTransitInboundQuantity = inboundQty,
+                InTransitInboundBranchName = inboundBranch,
+            };
+        }).ToList();
+    }
+
+    private static string? ResolveSinglePeerName(
+        IReadOnlyList<InventoryTransferOpenCommitment> rows,
+        IReadOnlyDictionary<Guid, string> peerNames)
+    {
+        if (rows.Count == 0)
+        {
+            return null;
+        }
+
+        var distinctPeers = rows.Select(r => r.PeerBranchId).Distinct().ToList();
+        if (distinctPeers.Count != 1)
+        {
+            return null;
+        }
+
+        return peerNames.TryGetValue(distinctPeers[0], out var name) && !string.IsNullOrWhiteSpace(name)
+            ? name
+            : null;
     }
 
     private static PosInventoryAccountDto MapFromBranchRow(BranchInventoryListRow row)

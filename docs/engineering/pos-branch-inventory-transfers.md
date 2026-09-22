@@ -44,7 +44,7 @@ Rules: same organization, source ≠ destination, quantity > 0, product belongs 
 
 On dispatch:
 
-- Transfer number `TR-YYYYMMDD-NNNNNN` is allocated under an advisory lock inside a serializable transaction.
+- Transfer number `TR-YYMMDD-NNN` (see [pos-transaction-reference-numbering.md](./pos-transaction-reference-numbering.md)) is allocated under an advisory lock inside a serializable transaction. Replacement children use `{root}-Rn` (e.g. `TR-260922-001-R1`); `RootTransferId` is authoritative for family membership.
 - Sent quantities freeze.
 - Source `InventoryBranchBalance` is seeded if missing as `orgOnHand − other branch balances`.
 - Org `InventoryAccount` decreases so in-transit stock cannot be sold.

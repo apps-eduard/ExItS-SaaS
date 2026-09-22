@@ -2535,8 +2535,50 @@ html {
   text-align: start;
 }
 
+.receive-remaining-table__head {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+  overflow-wrap: anywhere;
+}
+
+.receive-remaining-table__grid {
+  table-layout: auto;
+}
+
 .receive-remaining-table__row--unresolved {
   background: color-mix(in srgb, var(--exits-warning) 8%, transparent);
+}
+
+/* Transfer receive / review: long qty headers must not collide under fixed numeric widths. */
+.transfer-receive-table .exits-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: auto;
+}
+
+.transfer-receive-table .exits-table__head {
+  height: auto;
+  min-height: var(--exits-table-header-height);
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.transfer-receive-table .exits-table__col--numeric {
+  width: auto;
+  min-width: 5.75rem;
+  max-width: none;
+}
+
+.transfer-receive-table--review .exits-table {
+  min-width: 0;
+}
+
+.transfer-receive-table--review .exits-table__col--numeric {
+  min-width: 6.5rem;
 }
 
 @media (max-width: 47.99rem) {

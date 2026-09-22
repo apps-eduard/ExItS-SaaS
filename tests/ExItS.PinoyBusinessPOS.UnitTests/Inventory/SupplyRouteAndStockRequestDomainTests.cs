@@ -48,7 +48,7 @@ public sealed class SupplyRouteAndStockRequestDomainTests
     [Fact]
     public void Stock_request_number_formats()
     {
-        Assert.Equal("260905-001", StockRequestNumbers.Format(new DateOnly(2026, 9, 5), 1));
+        Assert.Equal("SR-260905-001", StockRequestNumbers.Format(new DateOnly(2026, 9, 5), 1));
         Assert.Equal("260905-001", StockRequestNumbers.Normalize(" 260905-001 "));
     }
 
@@ -62,11 +62,11 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             [new StockRequestLineDraft(Rice, 10m, "Rice 5kg", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "260905-001");
+            "SR-260905-001");
         Assert.Equal(StockRequestStatus.Pending, request.Status);
         Assert.Equal(10m, request.Lines[0].RequestedQuantity);
         Assert.Null(request.Lines[0].ApprovedQuantity);
-        Assert.Equal("260905-001", request.RequestNumber);
+        Assert.Equal("SR-260905-001", request.RequestNumber);
     }
 
     [Fact]
@@ -162,5 +162,5 @@ public sealed class SupplyRouteAndStockRequestDomainTests
             [new StockRequestLineDraft(Rice, 10m, "Rice 5kg", UnitOfMeasure.Piece)],
             Actor,
             Utc,
-            "260905-002");
+            "SR-260905-002");
 }

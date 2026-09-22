@@ -458,7 +458,7 @@ describe("Inventory Transfer React flow", () => {
           productId: cokeId,
           goodQty: 20,
           damagedQty: 1,
-          damagedFollowUp: "AcceptShortage",
+          damagedFollowUp: "RequestReplacement",
           damagedCustodyDecision: "KeepAtDestination",
           missingQty: 3,
           missingDisposition: "ExpectedLater",

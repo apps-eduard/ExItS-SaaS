@@ -50,8 +50,8 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
         Assert.Equal(org, sale.OrganizationId);
         Assert.Equal(PosSaleOptions.CompletedStatus, sale.Status);
         Assert.Equal(Actor, sale.RecordedBy);
-        Assert.StartsWith("SALE-", sale.SaleNumber, StringComparison.Ordinal);
-        Assert.EndsWith("-000001", sale.SaleNumber, StringComparison.Ordinal);
+        Assert.StartsWith("SAL-", sale.SaleNumber, StringComparison.Ordinal);
+        Assert.EndsWith("-001", sale.SaleNumber, StringComparison.Ordinal);
 
         // 62.00 x 1.5 = 93.00 and 8.50 x 3 = 25.50.
         Assert.Equal(118.50m, sale.Subtotal);
@@ -76,7 +76,7 @@ public sealed class PosSaleApiTests(PosPostgreSqlFixture fixture)
                 [new CheckoutSaleLineRequest(coffee.ProductId, 1m)],
                 PosSaleOptions.CashPaymentMethod,
                 10m));
-        Assert.EndsWith("-000002", second.SaleNumber, StringComparison.Ordinal);
+        Assert.EndsWith("-002", second.SaleNumber, StringComparison.Ordinal);
 
         using var read = Scoped(HttpMethod.Get, $"{Sales}/{sale.SaleId:D}", org);
         using var readResponse = await client.SendAsync(read);

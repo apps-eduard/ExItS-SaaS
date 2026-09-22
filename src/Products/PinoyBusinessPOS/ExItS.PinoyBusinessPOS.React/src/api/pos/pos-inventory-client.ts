@@ -38,6 +38,10 @@ export type PosInventoryAccountDto = {
   reservedQuantity?: number;
   availableQuantity?: number;
   pendingReturnQuantity?: number;
+  inTransitOutboundQuantity?: number;
+  inTransitOutboundBranchName?: string | null;
+  inTransitInboundQuantity?: number;
+  inTransitInboundBranchName?: string | null;
 };
 
 export type PosInventoryReservationItemDto = {
@@ -54,6 +58,7 @@ export type PosInventoryReservationItemDto = {
   branchId: string;
   branchName?: string | null;
   createdAtUtc: string;
+  inventoryTransferId?: string | null;
 };
 
 export type PosInventoryReservationsDto = {

@@ -6,7 +6,7 @@ Durable **Stock Use** inventory document for intentional business consumption wi
 
 | Field | Value |
 |--------|--------|
-| STOCK_USE_DOMAIN_MODEL | `StockUse` + `StockUseLine` (Posted/Voided); number `SU-YYYYMMDD-NNNNNN` |
+| STOCK_USE_DOMAIN_MODEL | `StockUse` + `StockUseLine` (Posted/Voided); number `SU-YYMMDD-NNN` (see [pos-transaction-reference-numbering.md](../../engineering/pos-transaction-reference-numbering.md)) |
 | STOCK_USE_PRODUCT_ELIGIBILITY | Active + inventory-tracked; any ProductBusinessUsage (UX defaults InternalUse) |
 | STOCK_USE_REASON_MODEL | `InternalOperations` / `StaffUse` / `SampleOrTesting` / `Other` |
 | STOCK_USE_INVENTORY_PATH | `ApplyMovementEffect` + `StockMovement.StockUse` (−qty); FEFO via `ConsumeFefoAsync` when expiration tracked |

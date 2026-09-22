@@ -1,3 +1,4 @@
+using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -27,6 +28,16 @@ public interface IInventoryTransferRepository
         InventoryTransferId rootTransferId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Open (InTransit / PartiallyReceived) transfer line outstanding for a branch,
+    /// optionally limited to product ids. Used for inventory reserved/in-transit badges.
+    /// </summary>
+    Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId>? productIds = null,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
 
     Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default);
@@ -36,6 +47,17 @@ public interface IInventoryTransferRepository
         DateOnly businessDateUtc,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>Open transfer commitment for inventory badge / reservation drawer.</summary>
+public sealed record InventoryTransferOpenCommitment(
+    Guid TransferId,
+    string? TransferNumber,
+    Guid ProductId,
+    decimal OutstandingQuantity,
+    /// <summary><c>Outbound</c> when acting branch is source; <c>Inbound</c> when destination.</summary>
+    string Direction,
+    Guid PeerBranchId,
+    DateTimeOffset CreatedAtUtc);
 
 public interface IInventoryBranchBalanceRepository
 {

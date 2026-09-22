@@ -1,4 +1,4 @@
-import { Lock, RotateCcw } from "lucide-react";
+import { ArrowLeftRight, Lock, RotateCcw } from "lucide-react";
 import { formatQuantityDisplay } from "@/cart/sell-cart-helpers";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -53,6 +53,24 @@ export function resolvePendingReturnQuantity(item: {
   return 0;
 }
 
+export function resolveInTransitOutboundQuantity(item: {
+  inTransitOutboundQuantity?: number | null;
+}): number {
+  if (item.inTransitOutboundQuantity != null && Number.isFinite(item.inTransitOutboundQuantity)) {
+    return Math.max(0, item.inTransitOutboundQuantity);
+  }
+  return 0;
+}
+
+export function resolveInTransitInboundQuantity(item: {
+  inTransitInboundQuantity?: number | null;
+}): number {
+  if (item.inTransitInboundQuantity != null && Number.isFinite(item.inTransitInboundQuantity)) {
+    return Math.max(0, item.inTransitInboundQuantity);
+  }
+  return 0;
+}
+
 export function InventoryReservedBadge({
   reservedQuantity,
   unitOfMeasure,
@@ -96,6 +114,82 @@ export function InventoryReservedBadge({
     >
       <Lock className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
       <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </button>
+  );
+}
+
+/** In-transit transfer commitment badge: icon + qty + peer branch name (like PO reserved). */
+export function InventoryInTransitBadge({
+  quantity,
+  branchName,
+  direction,
+  unitOfMeasure,
+  onClick,
+  testId,
+  className,
+}: {
+  quantity: number;
+  branchName?: string | null;
+  direction: "outbound" | "inbound";
+  unitOfMeasure?: string;
+  onClick?: () => void;
+  testId?: string;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  if (!(quantity > 0)) return null;
+
+  const qtyPart = `${formatInventoryQty(quantity)}${unitOfMeasure?.trim() ? ` ${unitOfMeasure.trim()}` : ""}`;
+  const branchPart = branchName?.trim() || t("inventory.inTransitBranchFallback");
+  const label =
+    direction === "outbound"
+      ? t("inventory.inTransitOutboundBadge")
+          .replace("{qty}", qtyPart)
+          .replace("{branch}", branchPart)
+      : t("inventory.inTransitInboundBadge")
+          .replace("{qty}", qtyPart)
+          .replace("{branch}", branchPart);
+
+  const content = (
+    <>
+      <ArrowLeftRight className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
+      <span className="min-w-0 truncate tabular-nums">{label}</span>
+    </>
+  );
+
+  const sharedClass = cn(
+    "inventory-in-transit-badge inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-left text-[length:var(--exits-text-xs)] font-medium",
+    "border-[color-mix(in_srgb,var(--exits-primary)_30%,var(--exits-border))] bg-[var(--exits-primary-soft)] text-[var(--exits-primary)]",
+    className,
+  );
+
+  if (!onClick) {
+    return (
+      <span className={sharedClass} data-testid={testId ?? "inventory-in-transit-badge"} aria-label={label}>
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        sharedClass,
+        "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "hover:bg-[color-mix(in_srgb,var(--exits-primary)_14%,var(--exits-primary-soft))]",
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+      data-testid={testId ?? "inventory-in-transit-badge"}
+      aria-label={label}
+    >
+      {content}
     </button>
   );
 }

@@ -16,7 +16,7 @@ public sealed class WasteLossDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 29);
-        Assert.Equal("260829-001", WasteLossNumbers.Format(date, 1));
+        Assert.Equal("WL-260829-001", WasteLossNumbers.Format(date, 1));
         Assert.Equal("260829-001", WasteLossNumbers.Normalize(" 260829-001 "));
     }
 

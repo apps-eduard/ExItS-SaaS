@@ -3,19 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Expenses;
 
 /// <summary>
-/// Organization-scoped expense number: <c>YYMMDD-NNN</c> (shared POS document format).
-/// Allocated server-side per organization and business date; clients never propose an expense number.
+/// Organization-scoped expense number: <c>EXP-YYMMDD-NNN</c>.
+/// Allocated server-side on expense post.
 /// </summary>
 public static class ExpenseNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.Expense;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? expenseNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(expenseNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(expenseNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 

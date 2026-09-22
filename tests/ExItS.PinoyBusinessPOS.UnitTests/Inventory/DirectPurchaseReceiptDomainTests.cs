@@ -20,7 +20,7 @@ public sealed class DirectPurchaseReceiptDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 17);
-        Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Format(date, 1));
+        Assert.Equal("DP-260817-001", DirectPurchaseReceiptNumbers.Format(date, 1));
         Assert.Equal("260817-001", DirectPurchaseReceiptNumbers.Normalize(" 260817-001 "));
     }
 

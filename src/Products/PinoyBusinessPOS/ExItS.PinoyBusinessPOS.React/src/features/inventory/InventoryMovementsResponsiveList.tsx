@@ -5,6 +5,11 @@ import {
   inventoryMovementTypeLabelKey,
   resolveMovementStockValue,
 } from "@/features/purchasing/purchase-cost-display";
+import {
+  extractTransferReferenceNumber,
+  inventoryTransferDetailPath,
+} from "@/features/inventory/inventory-movement-transfer-ref";
+import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Card } from "@/components/ui/card";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -22,11 +27,63 @@ function formatQtyEffect(quantityEffect: number, unitOfMeasure: string): string 
   return `${sign}${quantityEffect} ${unitOfMeasure}`;
 }
 
+function MovementTypeCell({
+  movement,
+  onOpenReservations,
+}: {
+  movement: PosStockMovementDto;
+  onOpenReservations?: () => void;
+}) {
+  const { t } = useI18n();
+  const typeLabel = t(inventoryMovementTypeLabelKey(movement.movementType));
+  const transferNumber = extractTransferReferenceNumber(movement);
+  const transferId = movement.sourceId?.trim() || null;
+  const canOpenDrawer = Boolean(transferNumber && onOpenReservations);
+  const transferPath =
+    transferNumber && transferId ? inventoryTransferDetailPath(transferId) : null;
+
+  return (
+    <span
+      className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5"
+      data-testid={`inventory-movement-type-${movement.movementId}`}
+    >
+      <span className="text-muted">{typeLabel}</span>
+      {transferNumber && canOpenDrawer ? (
+        <button
+          type="button"
+          className="min-w-0 truncate font-semibold text-primary underline-offset-2 hover:underline"
+          onClick={onOpenReservations}
+          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
+        >
+          {transferNumber}
+        </button>
+      ) : transferNumber && transferPath ? (
+        <AppLinkWithReturn
+          to={transferPath}
+          className="min-w-0 truncate font-semibold text-primary no-underline hover:underline"
+          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
+        >
+          {transferNumber}
+        </AppLinkWithReturn>
+      ) : transferNumber ? (
+        <span
+          className="min-w-0 truncate font-semibold"
+          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
+        >
+          {transferNumber}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export type InventoryMovementsResponsiveListProps = {
   movements: PosStockMovementDto[];
   unitOfMeasure: string;
   resolveActor: (actorId: string) => OrganizationActorDisplayName | null | undefined;
   actorsLoading: boolean;
+  /** Opens the product reservations drawer (same as reserved / in-transit badges). */
+  onOpenReservations?: () => void;
 };
 
 /**
@@ -37,6 +94,7 @@ export function InventoryMovementsResponsiveList({
   unitOfMeasure,
   resolveActor,
   actorsLoading,
+  onOpenReservations,
 }: InventoryMovementsResponsiveListProps) {
   const { t } = useI18n();
 
@@ -58,8 +116,11 @@ export function InventoryMovementsResponsiveList({
                 <p className="m-0 font-semibold">
                   {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
                 </p>
-                <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                  {t(inventoryMovementTypeLabelKey(movement.movementType))}
+                <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)]">
+                  <MovementTypeCell
+                    movement={movement}
+                    onOpenReservations={onOpenReservations}
+                  />
                 </p>
                 {movement.unitCost != null ? (
                   <dl
@@ -160,7 +221,10 @@ export function InventoryMovementsResponsiveList({
                     {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
                   </td>
                   <td className="px-3 py-2.5">
-                    {t(inventoryMovementTypeLabelKey(movement.movementType))}
+                    <MovementTypeCell
+                      movement={movement}
+                      onOpenReservations={onOpenReservations}
+                    />
                   </td>
                   <td
                     className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums"

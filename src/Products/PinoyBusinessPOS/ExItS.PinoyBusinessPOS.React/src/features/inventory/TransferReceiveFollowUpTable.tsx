@@ -75,24 +75,24 @@ export function TransferReceiveFollowUpTable({
         </p>
       </div>
 
-      <div className="receive-remaining-table__desktop overflow-hidden rounded-md border border-border">
-        <table className="w-full border-collapse text-start text-[length:var(--exits-text-sm)]">
+      <div className="receive-remaining-table__desktop overflow-x-auto rounded-md border border-border">
+        <table className="receive-remaining-table__grid w-full min-w-[40rem] border-collapse text-start text-[length:var(--exits-text-sm)]">
           <thead>
             <tr className="border-b border-border bg-muted/30">
-              <th scope="col" className="px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {productColLabel}
               </th>
-              <th scope="col" className="px-3 py-2 text-start font-medium whitespace-nowrap">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {qtyColLabel}
               </th>
-              <th scope="col" className="receive-remaining-table__issue-col px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__issue-col receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {issueColLabel}
               </th>
-              <th scope="col" className="px-3 py-2 text-start font-medium">
+              <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                 {decisionColLabel}
               </th>
               {showCustodyCol ? (
-                <th scope="col" className="px-3 py-2 text-start font-medium">
+                <th scope="col" className="receive-remaining-table__head px-3 py-2 text-start font-medium">
                   {custodyDecisionColLabel}
                 </th>
               ) : null}
@@ -109,10 +109,9 @@ export function TransferReceiveFollowUpTable({
                   : []),
                 { value: "accept_shortage" as const, label: acceptShortageLabel },
               ];
+              // Damaged / other: always Request replacement or Accept shortage (branch transfers included).
               const damagedOtherOptions = [
-                ...(linkedStockRequest
-                  ? [{ value: "request_replacement" as const, label: requestReplacementLabel }]
-                  : []),
+                { value: "request_replacement" as const, label: requestReplacementLabel },
                 { value: "accept_shortage" as const, label: acceptShortageLabel },
               ];
               const options = row.issueKind === "missing" ? missingOptions : damagedOtherOptions;

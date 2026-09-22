@@ -37,6 +37,12 @@ function reservationTypeLabel(
   if (item.reservationType === "ConfirmedOrder") {
     return t("inventory.reservationTypeConfirmed");
   }
+  if (item.reservationType === "TransferOutbound") {
+    return t("inventory.reservationTypeTransferOutbound");
+  }
+  if (item.reservationType === "TransferInbound") {
+    return t("inventory.reservationTypeTransferInbound");
+  }
   return item.reservationType;
 }
 
@@ -50,10 +56,16 @@ function reservationStatusLabel(
   if (item.status === "Confirmed") {
     return t("inventory.reservationStatusConfirmed");
   }
+  if (item.status === "InTransit") {
+    return t("inventory.reservationStatusInTransit");
+  }
   return item.status;
 }
 
 function reservationDeepLink(item: PosInventoryReservationItemDto): string | null {
+  if (item.sourceType === "InventoryTransfer" && item.inventoryTransferId) {
+    return `/inventory/transfers/${item.inventoryTransferId}`;
+  }
   if (item.sourceType === "ConnectedPurchaseOrder" && item.connectedPurchaseOrderId) {
     return `/purchasing/incoming-orders/${item.connectedPurchaseOrderId}`;
   }
@@ -125,7 +137,9 @@ function ReservationRow({
           className="mt-1 inline-flex w-fit text-[length:var(--exits-text-sm)] font-semibold text-primary no-underline hover:underline"
           data-testid={`inventory-reservation-view-${item.reservationId}`}
         >
-          {t("inventory.viewPurchaseOrder")}
+          {item.sourceType === "InventoryTransfer"
+            ? t("inventory.viewTransfer")
+            : t("inventory.viewPurchaseOrder")}
         </AppLinkWithReturn>
       ) : null}
     </li>

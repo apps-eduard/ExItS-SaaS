@@ -86,7 +86,7 @@ public sealed class StockCountUxContractTests
             StockCountId.New(),
             Org,
             Branch,
-            "260801-001",
+            "SC-260801-001",
             StockCountStatus.Completed,
             new DateOnly(2026, 8, 1),
             title: null,
@@ -102,17 +102,17 @@ public sealed class StockCountUxContractTests
             updatedAtUtc: Utc.AddMinutes(20),
             lines: []);
         Assert.Equal(StockCount.HistoricalTitle, count.Title);
-        Assert.Equal("260801-001", count.CountNumber);
+        Assert.Equal("SC-260801-001", count.CountNumber);
     }
 
     [Fact]
     public void StockCountNumbers_format_uses_three_digit_sequence_and_expands_naturally()
     {
         var day = new DateOnly(2026, 8, 14);
-        Assert.Equal("260814-001", StockCountNumbers.Format(day, 1));
-        Assert.Equal("260814-002", StockCountNumbers.Format(day, 2));
-        Assert.Equal("260814-100", StockCountNumbers.Format(day, 100));
-        Assert.Equal("260815-001", StockCountNumbers.Format(new DateOnly(2026, 8, 15), 1));
+        Assert.Equal("SC-260814-001", StockCountNumbers.Format(day, 1));
+        Assert.Equal("SC-260814-002", StockCountNumbers.Format(day, 2));
+        Assert.Equal("SC-260814-100", StockCountNumbers.Format(day, 100));
+        Assert.Equal("SC-260815-001", StockCountNumbers.Format(new DateOnly(2026, 8, 15), 1));
     }
 
     [Fact]

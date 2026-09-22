@@ -476,11 +476,19 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+        
+        public Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            IReadOnlyCollection<CatalogProductId>? productIds = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferOpenCommitment>>([]);
+
         public Task<string> AllocateNextNumberAsync(
             PosOrganizationId organizationId,
             DateOnly businessDateUtc,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult("IT-20260906-000001");
+            Task.FromResult(InventoryTransferNumbers.Format(businessDateUtc, 1));
     }
 
     private sealed class FakeInventory : CostResolverInventoryStub;

@@ -47,8 +47,11 @@ import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
 import {
   formatInventoryQty,
+  InventoryInTransitBadge,
   InventoryReservedBadge,
   resolveAvailableQuantity,
+  resolveInTransitInboundQuantity,
+  resolveInTransitOutboundQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
@@ -702,6 +705,22 @@ export function InventoryDetailPage() {
                   reservedQuantity={resolveReservedQuantity(account)}
                   onClick={() => setReservationsOpen(true)}
                   testId="inventory-detail-reserved-badge"
+                />
+                <InventoryInTransitBadge
+                  quantity={resolveInTransitOutboundQuantity(account)}
+                  branchName={account.inTransitOutboundBranchName}
+                  direction="outbound"
+                  unitOfMeasure={account.unitOfMeasure}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-in-transit-out-badge"
+                />
+                <InventoryInTransitBadge
+                  quantity={resolveInTransitInboundQuantity(account)}
+                  branchName={account.inTransitInboundBranchName}
+                  direction="inbound"
+                  unitOfMeasure={account.unitOfMeasure}
+                  onClick={() => setReservationsOpen(true)}
+                  testId="inventory-detail-in-transit-in-badge"
                 />
                 <ChevronDown
                   aria-hidden
@@ -1480,6 +1499,7 @@ export function InventoryDetailPage() {
           unitOfMeasure={account.unitOfMeasure}
           resolveActor={(actorId) => actors.resolve(actorId)}
           actorsLoading={actors.isResolving}
+          onOpenReservations={() => setReservationsOpen(true)}
         />
       </div>
 

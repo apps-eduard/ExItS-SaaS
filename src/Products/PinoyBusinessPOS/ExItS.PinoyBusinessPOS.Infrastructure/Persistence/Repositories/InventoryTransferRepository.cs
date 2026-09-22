@@ -206,6 +206,59 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+        PosOrganizationId organizationId,
+        PosBranchId branchId,
+        IReadOnlyCollection<CatalogProductId>? productIds = null,
+        CancellationToken cancellationToken = default)
+    {
+        var openStatuses = new[]
+        {
+            InventoryTransferStatuses.ToCode(InventoryTransferStatus.InTransit),
+            InventoryTransferStatuses.ToCode(InventoryTransferStatus.PartiallyReceived),
+        };
+
+        var productFilter = productIds is { Count: > 0 }
+            ? productIds.Select(p => p.Value).ToHashSet()
+            : null;
+
+        var query =
+            from transfer in _db.InventoryTransfers.AsNoTracking()
+            join line in _db.InventoryTransferLines.AsNoTracking() on transfer.Id equals line.TransferId
+            where transfer.OrganizationId == organizationId.Value
+                && openStatuses.Contains(transfer.Status)
+                && (transfer.SourceBranchId == branchId.Value || transfer.DestinationBranchId == branchId.Value)
+            select new { transfer, line };
+
+        if (productFilter is not null)
+        {
+            query = query.Where(x => productFilter.Contains(x.line.ProductId));
+        }
+
+        var rows = await query.ToListAsync(cancellationToken).ConfigureAwait(false);
+        var result = new List<InventoryTransferOpenCommitment>(rows.Count);
+        foreach (var row in rows)
+        {
+            var outstanding = row.line.SentQty - row.line.ReceivedQty - row.line.ClosedQty;
+            if (outstanding <= 0m)
+            {
+                continue;
+            }
+
+            var outbound = row.transfer.SourceBranchId == branchId.Value;
+            result.Add(new InventoryTransferOpenCommitment(
+                row.transfer.Id,
+                row.transfer.TransferNumber,
+                row.line.ProductId,
+                outstanding,
+                outbound ? "Outbound" : "Inbound",
+                outbound ? row.transfer.DestinationBranchId : row.transfer.SourceBranchId,
+                row.transfer.CreatedAtUtc));
+        }
+
+        return result;
+    }
+
     public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default)
     {
         _db.InventoryTransfers.Add(InventoryTransferEntityMapper.ToRecord(transfer));

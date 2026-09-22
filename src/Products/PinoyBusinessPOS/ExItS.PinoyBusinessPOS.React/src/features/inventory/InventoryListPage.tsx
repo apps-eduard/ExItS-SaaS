@@ -17,9 +17,12 @@ import { SearchField } from "@/components/exits/SearchField";
 import { isWarehouseBranch } from "@/features/branches/branch-type";
 import {
   formatInventoryQty,
+  InventoryInTransitBadge,
   InventoryPendingReturnBadge,
   InventoryReservedBadge,
   resolveAvailableQuantity,
+  resolveInTransitInboundQuantity,
+  resolveInTransitOutboundQuantity,
   resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
@@ -433,6 +436,8 @@ export function InventoryListPage() {
                 const availableQty = resolveAvailableQuantity(item);
                 const reservedQty = resolveReservedQuantity(item);
                 const pendingReturnQty = resolvePendingReturnQuantity(item);
+                const inTransitOutQty = resolveInTransitOutboundQuantity(item);
+                const inTransitInQty = resolveInTransitInboundQuantity(item);
 
                 return (
                   <li key={item.productId}>
@@ -455,7 +460,9 @@ export function InventoryListPage() {
                         tracksExpiry ||
                         showStockChip ||
                         reservedQty > 0 ||
-                        pendingReturnQty > 0 ? (
+                        pendingReturnQty > 0 ||
+                        inTransitOutQty > 0 ||
+                        inTransitInQty > 0 ? (
                           <div className="inventory-row__chips mt-1 flex flex-wrap items-center gap-1">
                             {!tracked ? (
                               <span className="inventory-row__badge inventory-row__badge--untracked">
@@ -487,6 +494,32 @@ export function InventoryListPage() {
                                 })
                               }
                               testId={`inventory-row-reserved-${item.productId}`}
+                            />
+                            <InventoryInTransitBadge
+                              quantity={inTransitOutQty}
+                              branchName={item.inTransitOutboundBranchName}
+                              direction="outbound"
+                              unitOfMeasure={item.unitOfMeasure}
+                              onClick={() =>
+                                setReservationsProduct({
+                                  productId: item.productId,
+                                  name: item.name,
+                                })
+                              }
+                              testId={`inventory-row-in-transit-out-${item.productId}`}
+                            />
+                            <InventoryInTransitBadge
+                              quantity={inTransitInQty}
+                              branchName={item.inTransitInboundBranchName}
+                              direction="inbound"
+                              unitOfMeasure={item.unitOfMeasure}
+                              onClick={() =>
+                                setReservationsProduct({
+                                  productId: item.productId,
+                                  name: item.name,
+                                })
+                              }
+                              testId={`inventory-row-in-transit-in-${item.productId}`}
                             />
                             <InventoryPendingReturnBadge
                               pendingReturnQuantity={pendingReturnQty}

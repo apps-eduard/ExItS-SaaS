@@ -71,7 +71,13 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
 
         var grnId = Guid.NewGuid();
         var partialBody = new ReceivePurchaseOrderRequest(
-            [new ReceivePurchaseOrderLineRequest(product.ProductId, 4m)],
+            [
+                new ReceivePurchaseOrderLineRequest(
+                    product.ProductId,
+                    ReceiveQty: 4m,
+                    RejectedQty: 6m,
+                    DiscrepancyKind: "Short")
+            ],
             grnId,
             PaymentMethodAtReceipt: "Cash");
         using var partial = Scoped(HttpMethod.Post, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}/receive", org);
@@ -91,7 +97,9 @@ public sealed class PosPurchaseOrderApiTests(PosPostgreSqlFixture fixture)
 
         using var over = Scoped(HttpMethod.Post, $"{PurchaseOrders}/{draft.PurchaseOrderId:D}/receive", org);
         over.Content = JsonContent.Create(
-            new ReceivePurchaseOrderRequest([new ReceivePurchaseOrderLineRequest(product.ProductId, 7m)]),
+            new ReceivePurchaseOrderRequest(
+                [new ReceivePurchaseOrderLineRequest(product.ProductId, 7m)],
+                PaymentMethodAtReceipt: "Cash"),
             options: JsonOptions);
         using var overResponse = await client.SendAsync(over);
         Assert.Equal(HttpStatusCode.BadRequest, overResponse.StatusCode);

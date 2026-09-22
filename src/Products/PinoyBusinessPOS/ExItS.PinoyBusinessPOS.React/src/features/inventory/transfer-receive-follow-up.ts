@@ -123,10 +123,11 @@ export function defaultTransferFollowUps(linkedStockRequest: boolean): {
   damagedFollowUp: TransferDamagedOtherFollowUp;
   otherFollowUp: TransferDamagedOtherFollowUp;
 } {
-  const replacement = linkedStockRequest ? "request_replacement" : "accept_shortage";
   return {
+    // Missing can wait for the original shipment; replacement only makes sense when linked.
     missingFollowUp: linkedStockRequest ? "request_replacement" : "wait_original",
-    damagedFollowUp: replacement,
-    otherFollowUp: replacement,
+    // Damaged / other: Request replacement or Accept shortage (always available).
+    damagedFollowUp: "request_replacement",
+    otherFollowUp: "request_replacement",
   };
 }

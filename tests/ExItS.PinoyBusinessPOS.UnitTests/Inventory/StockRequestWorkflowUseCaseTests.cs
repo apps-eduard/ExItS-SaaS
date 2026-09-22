@@ -589,6 +589,14 @@ public sealed class StockRequestWorkflowUseCaseTests
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+        
+        public Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
+            PosOrganizationId organizationId,
+            PosBranchId branchId,
+            IReadOnlyCollection<CatalogProductId>? productIds = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransferOpenCommitment>>([]);
+
         public Task<string> AllocateNextNumberAsync(
             PosOrganizationId organizationId,
             DateOnly businessDateUtc,

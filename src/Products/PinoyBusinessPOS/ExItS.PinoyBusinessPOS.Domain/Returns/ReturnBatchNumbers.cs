@@ -3,18 +3,20 @@ using ExItS.PinoyBusinessPOS.Domain.Common;
 namespace ExItS.PinoyBusinessPOS.Domain.Returns;
 
 /// <summary>
-/// Organization-scoped return batch number: <c>YYMMDD-NNN</c> (shared POS document format).
+/// Organization-scoped return batch number: <c>RB-YYMMDD-NNN</c>.
+/// Allocated server-side on batch create/finalize.
 /// </summary>
 public static class ReturnBatchNumbers
 {
+    public const string Prefix = PosDocumentPrefixes.ReturnBatch;
     public const int MaxLength = PosDocumentNumbers.MaxLength;
     public const long MaxSequence = PosDocumentNumbers.MaxSequence;
 
     public static string Format(DateOnly businessDate, long sequence) =>
-        Map(() => PosDocumentNumbers.Format(businessDate, sequence));
+        Map(() => PosDocumentNumbers.Format(Prefix, businessDate, sequence));
 
     public static string Normalize(string? batchNumber) =>
-        Map(() => PosDocumentNumbers.NormalizeRoot(batchNumber));
+        Map(() => PosDocumentNumbers.NormalizeRoot(batchNumber, Prefix));
 
     public static DateOnly BusinessDateOf(DateTimeOffset utcNow) => PosDocumentNumbers.BusinessDateOf(utcNow);
 
