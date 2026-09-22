@@ -84,7 +84,7 @@ export function OperationsSidebar() {
           isActive && "admin-sidebar__link--active",
         )}
       >
-        <Icon className="admin-sidebar__icon size-5 shrink-0" aria-hidden />
+        <Icon className="admin-sidebar__icon size-4 shrink-0" aria-hidden />
         <span className="admin-sidebar__label min-w-0 flex-1 truncate">{label}</span>
         {badgeDisplay != null ? (
           <NavActivityCountBadge

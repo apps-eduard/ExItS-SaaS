@@ -480,8 +480,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.offerDeliveryTitle": "Organization Delivery",
   "branches.offerDeliveryLede": "Offer Delivery to buyers organization-wide. Branch delivery setup is preserved when this is off.",
   "branches.offerDelivery": "Offer Delivery",
-  "branches.offerDeliveryOnHint": "Delivery configuration is required. Incomplete setup appears in Supplier Readiness.",
-  "branches.offerDeliveryOffHint": "Delivery is unavailable to buyers. Existing branch delivery configuration is kept.",
+  "branches.offerDeliveryOnHint": "Allow connected business customers to choose Delivery from delivery-ready branches.",
+  "branches.offerDeliveryOffHint": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
   "branches.offerDeliveryFailed": "Could not update Offer Delivery.",
 
   "branches.loadError": "Dili ma-load ang mga branch.",
@@ -597,6 +597,8 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "branches.poFulfillment.helper.delivery":
     "Enable if this branch will deliver connected purchase orders.",
+  "branches.poFulfillment.helper.deliveryOrgOfferOff":
+    "This branch Delivery switch is ON (setup kept). Buyers still will not see Delivery until you turn Offer Delivery on under Branches.",
 
   "branches.poFulfillment.checklist.enableMethod": "Enable at least one fulfillment method",
 
@@ -1777,6 +1779,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.customerPrice": "Customer price",
 
   "connected.excluded": "Excluded",
+  "connected.manageSharedIntent":
+    "Choose which eligible seller products this customer can order. All eligible products are shared by default unless explicitly excluded.",
+  "connected.inventoryNeverShared": "Inventory quantities are never shared.",
+  "connected.ineligible": "Ineligible",
+  "connected.needsPrice": "Needs price",
+  "connected.enableTrackingBeforeShare": "Enable inventory tracking before sharing this product.",
+  "connected.setPriceBeforeShare": "Set a selling or Default PO price before sharing.",
+  "connected.buyerContext.b2bConnected": "B2B · Connected",
+  "connected.buyerContext.organizationId": "Organization ID",
+  "connected.buyerContext.sellingBranch": "Selling branch",
+  "connected.buyerContext.catalogSharing": "Catalog sharing",
+  "connected.buyerContext.customerPricing": "Customer pricing",
+  "connected.buyerContext.branchUnset": "Not set",
+  "connected.buyerContext.viewCustomer": "View business customer",
+  "connected.filterIneligible": "Ineligible",
+  "connected.colSharing": "Sharing",
 
   "connected.filterExcluded": "Excluded",
 
@@ -2098,9 +2116,13 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "connected.shareSummaryAllEligible": "{shared} available of {eligible} eligible (all eligible shared by default)",
 
+  "connected.shareSummaryBuyerVisibilityHelp":
+    "Only inventory-tracked eligible products are visible to the buyer. A Shared status alone does not mean the buyer can see it.",
+  "connected.shareSummary.dismiss": "Dismiss share summary",
+
   "connected.customerDiscountBanner": "Customer pricing: {percent}% off selling price",
 
-  "connected.sellingPriceBaselineBanner": "Customer price uses each product selling price (no extra discount).",
+  "connected.sellingPriceBaselineBanner": "Customer price uses each product's selling price (no extra discount).",
 
   "connected.listPrice": "Selling price",
 
@@ -2108,6 +2130,11 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.colProduct": "Product",
   "connected.colSku": "SKU",
   "connected.colStatus": "Status",
+  "connected.colTracking": "Pagsubaybay",
+  "connected.trackProduct": "I-track",
+  "connected.untrackProduct": "I-untrack",
+  "connected.trackProductFailed": "Dili ma-enable ang inventory tracking.",
+  "connected.untrackProductFailed": "Dili ma-disable ang inventory tracking.",
 
   "connected.shared": "Shared",
 
@@ -2646,8 +2673,43 @@ export const cebPH: Record<keyof typeof en, string> = {
   "customers.business.deliveryAllowanceInherited": "Allowed by organization default",
   "customers.business.deliveryAllowanceBlocked": "Delivery is disabled for this customer.",
   "customers.business.deliveryAllowanceOrgOff":
-    "Delivery is not currently offered by your organization.",
+    "Effective: Disabled globally. Offer Delivery is off for your organization.",
+  "customers.business.deliveryAllowanceOrgOffHelp":
+    "Branch Delivery setup can stay configured. Buyers will not be offered Delivery until you turn Offer Delivery on.",
+  "customers.business.deliveryAllowanceOpenOfferDelivery": "Open Offer Delivery settings",
   "customers.business.deliveryAllowanceFailed": "Could not update delivery allowance.",
+  "customers.business.connectedCommerce.paymentTimingTitle": "Payment timing",
+  "customers.business.connectedCommerce.paymentTimingHelp":
+    "Use organization defaults, or restrict timings for this customer. Customers cannot enable a timing disabled globally.",
+  "customers.business.connectedCommerce.openOrgSettings": "Org Connected Commerce",
+  "customers.business.connectedCommerce.useOrgDefaults": "Use organization payment timing defaults",
+  "customers.business.connectedCommerce.useOrgDefaultsOn":
+    "This customer inherits organization allowed timings and default.",
+  "customers.business.connectedCommerce.useOrgDefaultsOff":
+    "This customer may further restrict allowed timings and choose a customer default.",
+  "customers.business.connectedCommerce.overrideNoAlert":
+    "Customer overrides are intentional and do not create Needs Attention alerts.",
+  "customers.business.connectedCommerce.timingDisabledGlobally": "Disabled by organization settings.",
+  "customers.business.connectedCommerce.effective": "Effective",
+  "customers.business.connectedCommerce.notEffective": "Off",
+  "customers.business.connectedCommerce.effectiveDefault": "Effective default: {timing}",
+  "customers.business.connectedCommerce.pricingTitle": "B2B pricing overrides",
+  "customers.business.connectedCommerce.pricingHelp":
+    "Nullable fields inherit organization pricing. Precedence: customer category → customer default → org category → org default → base price. No stacking.",
+  "customers.business.connectedCommerce.orgDefaultDiscount": "Organization default discount: {n}%",
+  "customers.business.connectedCommerce.customerDefaultDiscount": "Customer default discount (%)",
+  "customers.business.connectedCommerce.inheritPlaceholder": "Inherit organization default",
+  "customers.business.connectedCommerce.categoryOverrides": "Category discount overrides",
+  "customers.business.connectedCommerce.noCategoryOverrides": "No customer category overrides.",
+  "customers.business.connectedCommerce.addCategory": "Category",
+  "customers.business.connectedCommerce.selectCategory": "Select category…",
+  "customers.business.connectedCommerce.addRule": "Add rule",
+  "customers.business.connectedCommerce.saved": "Customer Connected Commerce settings saved.",
+  "customers.business.connectedCommerce.saveFailed": "Could not save customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.loadFailed": "Could not load customer Connected Commerce settings.",
+  "customers.business.connectedCommerce.invalidDiscount": "Discount must be between 0 and 100.",
+  "connectedCommerce.addCategoryRule": "Add category rule",
+  "connectedCommerce.selectCategory": "Select category…",
   "customers.business.creditPolicy.notApprovedHint": "Utang is not approved for this business.",
   "customers.business.creditPolicy.pendingHint": "Utang is not yet allowed. Credit terms are pending approval.",
   "customers.business.creditPolicy.disabledHint": "New Utang is paused. Existing balances can still be paid.",
@@ -3847,6 +3909,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.availableQty": "{qty} {uom} available",
 
   "inventory.reservedBadge": "{qty} reserved",
+  "inventory.returnsPendingBadge": "{qty} returns pending",
+  "inventory.availableLabel": "available",
 
   "inventory.viewReservations": "Tan-awa ang reservations",
 
@@ -4472,6 +4536,9 @@ export const cebPH: Record<keyof typeof en, string> = {
 
     "Receiving this transfer is final. Verify the quantities before confirming.",
 
+  "transfer.receiveWaveConfirmDetail":
+    "Confirm the receive-now quantities for this receipt. You can receive the rest later or close remaining with a reason.",
+
   "transfer.resetCreate": "Reset",
 
   "transfer.summaryTitle": "Transfer summary",
@@ -4559,10 +4626,47 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.invalidReceivedQuantity": "Received quantity must be between zero and the sent quantity.",
 
   "transfer.receivedExceedsSent": "Received quantity cannot exceed sent quantity ({sent}).",
+  "transfer.receiveExceedsOutstanding":
+    "Receive now cannot exceed outstanding quantity ({outstanding}).",
+  "transfer.invalidReceiveNowQuantity":
+    "Receive now must be between zero and the outstanding quantity.",
+  "transfer.receiveRequiresPositiveQty": "Enter a receive-now quantity greater than zero on at least one line.",
 
   "transfer.discrepancyReasonRequired": "Select a discrepancy reason when received quantity is less than sent.",
-
+  "transfer.needsClassification": "Needs reason",
+  "transfer.classifyDiscrepancyTitle": "Classify discrepancy",
+  "transfer.classifyDiscrepancyHint": "Received {received} of {sent}. Choose why the remainder was not accepted.",
+  "transfer.classifyDiscrepancySplitHint":
+    "Split the shortfall between damaged and missing / not delivered. Add remarks for this receipt.",
+  "transfer.classifyDiscrepancyConfirm": "Save classification",
+  "transfer.classifyBeforeReview": "Classify all receipt discrepancies before reviewing.",
+  "transfer.discrepancyClassificationRequired": "Classify damaged and missing quantities for each short line.",
+  "transfer.discrepancyNoteRequired": "Remarks are required when good received is below outstanding.",
+  "transfer.goodReceivedNow": "Good received now",
+  "transfer.damaged": "Damaged",
+  "transfer.notDelivered": "Not delivered",
+  "transfer.allDamaged": "All damaged",
+  "transfer.allNotDelivered": "All not delivered",
+  "transfer.allOther": "Other",
+  "transfer.remarks": "Remarks",
+  "transfer.expectedLater": "Expected later",
+  "transfer.closeMissing": "Close missing",
+  "transfer.reviewBeforeConfirm": "Review before confirm",
+  "transfer.backToEditReceive": "Back to edit",
+  "transfer.remainingDecisionTitle": "Missing quantity decision",
+  "transfer.remainingDecisionSummary": "{products} products · {units} units need a decision",
+  "transfer.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "transfer.remainingDecisionRequired": "Choose expected later or close missing for all missing quantities.",
+  "transfer.remainingDecisionCol": "Decision",
+  "transfer.remainingCol": "Missing qty",
+  "transfer.remainingIssueCol": "Issue",
+  "transfer.remainingApplyToAll": "Apply to all",
+  "transfer.receiveNow": "Receive now",
+  "transfer.editReceiveQty": "Edit receive quantity",
+  "transfer.saveReceiveQty": "Save receive quantity",
+  "transfer.resetReceiveQty": "Reset receive quantity",
   "transfer.items": "Items",
+  "transfer.units": "Units",
 
   "transfer.lede": "Ibalhin ang stock tali sa mga branch sa inyong organisasyon.",
 
@@ -4617,6 +4721,22 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.receivedSuccess": "Transfer received. Inventory was added to {destination}.",
 
   "transfer.receiveFinalHint": "Receiving this transfer is final. Verify the quantities before confirming.",
+  "transfer.receiveWaveHint":
+    "Enter how much you are receiving in this receipt. Outstanding quantities can be received later or closed with a discrepancy reason.",
+  "transfer.receiveWaveSuccess": "Receipt recorded. Review updated quantities on the transfer.",
+  "transfer.receiveRemainingTitle": "Receive remaining",
+  "transfer.receiveRemaining": "Receive remaining",
+  "transfer.previouslyReceived": "Previously received",
+  "transfer.outstanding": "Outstanding",
+  "transfer.closedShort": "Closing short",
+  "transfer.closeRemainder": "Close remaining",
+  "transfer.closeRemainderTitle": "Close remaining quantity?",
+  "transfer.closeRemainderBody":
+    "Record why the outstanding quantity will not be received. This closes the transfer with a discrepancy.",
+  "transfer.closeRemainderConfirm": "Close remaining",
+  "transfer.closingRemainder": "Closing…",
+  "transfer.closeRemainderSuccess": "Transfer closed with discrepancy. Outstanding quantity was recorded.",
+  "transfer.closeRemainderFailedTitle": "Cannot close remaining quantity",
 
   "transfer.receiveTitle": "Receive transfer",
 
@@ -4659,6 +4779,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "transfer.status.partiallyReceived": "Partially received",
 
   "transfer.status.received": "Received",
+  "transfer.status.closedWithDiscrepancy": "Closed with discrepancy",
+  "transfer.byPartiallyReceived": "Partially received by",
+  "transfer.byClosedWithDiscrepancy": "Closed by",
 
   "transfer.title": "Mga Inventory Transfer",
 
@@ -4668,6 +4791,27 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "transfer.available": "Available: {qty} {uom}",
   "transfer.colAvailable": "Available at source",
+  "transfer.colNumber": "Transfer #",
+  "transfer.colRoute": "Route",
+  "transfer.colUpdated": "Updated",
+  "transfer.timelineTitle": "Transfer timeline",
+  "transfer.activity.empty": "No timeline events yet.",
+  "transfer.activity.created": "Transfer created",
+  "transfer.activity.createdDetail": "A draft branch transfer was created.",
+  "transfer.activity.dispatched": "Dispatched",
+  "transfer.activity.dispatchedDetail": "Stock left the source branch and is in transit.",
+  "transfer.activity.received": "Received",
+  "transfer.activity.receivedDetail": "Destination branch confirmed receipt of the transfer.",
+  "transfer.activity.receipt": "Receipt recorded",
+  "transfer.activity.receiptDetail": "Destination branch recorded receipt #{sequence}.",
+  "transfer.activity.receiptGood": "Good {qty}",
+  "transfer.activity.receiptDamaged": "Damaged {qty}",
+  "transfer.activity.receiptMissing": "Missing {qty}",
+  "transfer.activity.closedRemainder": "Remaining closed",
+  "transfer.activity.closedRemainderDetail":
+    "Outstanding quantity was closed with a discrepancy reason.",
+  "transfer.activity.cancelled": "Cancelled",
+  "transfer.activity.cancelledDetail": "This transfer was cancelled.",
 
   "transfer.outOfStock": "Out of stock",
 
@@ -5344,6 +5488,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.notFound": "Wala makita ang incoming order.",
 
   "incomingOrders.orderDate": "Petsa sa order",
+  "incomingOrders.orderInfoTitle": "Impormasyon sa order",
   "incomingOrders.orderTotal": "Order total",
 
   "incomingOrders.review": "Susiha ang order",
@@ -5351,6 +5496,15 @@ export const cebPH: Record<keyof typeof en, string> = {
   "incomingOrders.search": "Pangita pinaagi sa buyer o PO number",
 
   "incomingOrders.startPreparing": "Sugdi ang pag-andam",
+
+  "incomingOrders.payBeforeConfirmTitle": "Confirm buyer payment",
+  "incomingOrders.payBeforeConfirmBody":
+    "Confirm you received the buyer's payment before starting fulfillment.",
+  "incomingOrders.confirmPayBeforePayment": "Confirm payment received",
+  "incomingOrders.buyerPaymentSubmitted": "Buyer submitted payment",
+  "incomingOrders.waitingForBuyerPayment": "Waiting for buyer payment",
+  "incomingOrders.waitingForBuyerPaymentHelp":
+    "Ask the buyer to open this purchase order and submit payment proof.",
 
   "incomingOrders.statusAccepted": "Gidawat",
 
@@ -5393,6 +5547,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.tracked": "Gi-track",
 
   "inventory.trackingFilter": "Tracking status",
+  "inventory.categoryFilter": "Categories",
+  "inventory.brandFilter": "Brands",
 
   "inventory.tracksExpirationShort": "Tracks expiry",
   "inventory.missingExpirationShort": "Missing expiry",
@@ -6975,6 +7131,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "admin.nav.devices": "Devices",
 
   "admin.nav.cashHandling": "Cash Handling",
+  "admin.nav.connectedCommerce": "Connected Commerce",
 
   "admin.nav.businessQr": "Business QR",
 
@@ -7718,6 +7875,74 @@ export const cebPH: Record<keyof typeof en, string> = {
   "personal.explore.payments.onlineBanking": "Online Banking",
   "personal.explore.payments.comingSoon": "Coming soon",
   "admin.nav.paymentMethods": "Payment methods",
+  "connectedCommerce.title": "Connected Commerce",
+  "connectedCommerce.lede":
+    "Organization defaults for B2B fulfillment, payments, pricing, and orders. Branch and customer details stay in their canonical pages.",
+  "connectedCommerce.tabsLabel": "Connected Commerce sections",
+  "connectedCommerce.tab.overview": "Overview",
+  "connectedCommerce.tab.fulfillment": "Fulfillment",
+  "connectedCommerce.tab.payments": "Payments",
+  "connectedCommerce.tab.catalog": "Catalog & Pricing",
+  "connectedCommerce.tab.orders": "Orders",
+  "connectedCommerce.tab.documents": "Documents & Compliance",
+  "connectedCommerce.orgRequired": "Organization required",
+  "connectedCommerce.orgRequiredDetail": "Bind an organization workspace to manage Connected Commerce settings.",
+  "connectedCommerce.summary.fulfillment": "Fulfillment",
+  "connectedCommerce.summary.payments": "Payments",
+  "connectedCommerce.summary.catalog": "Catalog / Pricing",
+  "connectedCommerce.summary.customers": "Connected customers",
+  "connectedCommerce.summary.onlinePayments": "Platform online payments",
+  "connectedCommerce.summary.documents": "Documents / BIR",
+  "connectedCommerce.optionalReady": "Default {n}% (optional)",
+  "connectedCommerce.offerDeliveryOn": "Offer Delivery ON",
+  "connectedCommerce.offerDeliveryOff": "Offer Delivery OFF",
+  "connectedCommerce.linkBranches": "Review branch fulfillment setup",
+  "connectedCommerce.linkPaymentMethods": "Review accepted payment methods",
+  "connectedCommerce.branchReadinessHelp":
+    "Pickup and Delivery readiness remain on each branch fulfillment page. Use Manage fulfillment to open Branches.",
+  "connectedCommerce.platformUnknown": "Unknown",
+  "connectedCommerce.incompleteTitle": "Actionable items",
+  "connectedCommerce.informational": "informational",
+  "connectedCommerce.open": "Open",
+  "connectedCommerce.offerDelivery": "Offer Delivery",
+  "connectedCommerce.offerDeliveryHelp":
+    "When OFF, Delivery is N/A globally and buyers cannot select Delivery. Branch delivery config is preserved.",
+  "connectedCommerce.customerDeliveryNote":
+    "Individual connected customers may be restricted from Delivery on their Business Customer page.",
+  "connectedCommerce.branchReadiness": "Branch readiness",
+  "connectedCommerce.noBranches": "No branches available.",
+  "connectedCommerce.pickup": "Pickup",
+  "connectedCommerce.delivery": "Delivery",
+  "connectedCommerce.manageFulfillment": "Manage fulfillment",
+  "connectedCommerce.paymentTiming": "Payment timing",
+  "connectedCommerce.paymentTimingHelp":
+    "Choose which timings connected purchase orders may use. Default must be one of the enabled timings.",
+  "connectedCommerce.timing.payBefore": "Pay in advance",
+  "connectedCommerce.timing.payOnDelivery": "Pay on delivery",
+  "connectedCommerce.timing.supplierCredit": "Supplier Utang",
+  "connectedCommerce.defaultTiming": "Default timing",
+  "connectedCommerce.acceptedMethods": "Accepted payment methods",
+  "connectedCommerce.managePaymentMethods": "Manage payment methods",
+  "connectedCommerce.onlinePayments": "Online supplier payments",
+  "connectedCommerce.onlinePaymentsReadonly": "Managed by ExItS Platform Admin. Organizations cannot override this gate.",
+  "connectedCommerce.catalogHelp":
+    "These prices are used as defaults for connected business customers. Customer-specific pricing can override these rules.",
+  "connectedCommerce.defaultDiscount": "Default B2B discount (%)",
+  "connectedCommerce.categoryRules": "Category pricing",
+  "connectedCommerce.categoryRulesCount": "{n} categories with overrides",
+  "connectedCommerce.noCategoryRules": "No category rules yet. Add rules after selecting seller categories.",
+  "connectedCommerce.removeRule": "Remove",
+  "connectedCommerce.proposalHoldHours": "Proposal stock reservation duration (hours)",
+  "connectedCommerce.ordersRules":
+    "Reservations reduce Available stock, not On hand. Proposals expire and release stock. Confirmed reservations remain until fulfilled or cancelled.",
+  "connectedCommerce.birStatus": "BIR / official documents",
+  "connectedCommerce.birReadonly": "Platform-controlled. Organization cannot self-approve.",
+  "connectedCommerce.documentPrefs": "Document & printing preferences",
+  "connectedCommerce.documentPrefsDevice": "Current print preferences are device-local (This device), not organization-wide.",
+  "connectedCommerce.openDocuments": "Open Documents & Printing",
+  "connectedCommerce.save": "Save",
+  "connectedCommerce.saved": "Connected Commerce settings saved.",
+  "connectedCommerce.saveFailed": "Could not save Connected Commerce settings.",
   "paymentMethods.title": "Payment methods",
   "paymentMethods.lede": "Choose how your stores accept payment. Online providers stay Coming soon until integrated.",
   "paymentMethods.builtIn": "Built-in",
@@ -9523,6 +9748,9 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.createOrder": "Create purchase order",
 
   "purchasing.createTitle": "New purchase order",
+  "purchasing.editTitle": "Edit purchase order",
+  "purchasing.editOrder": "Edit order",
+  "purchasing.saveOrder": "Save order",
 
   "purchasing.damaged": "Damaged",
 
@@ -9611,18 +9839,28 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.editReceiveNow": "Edit receive quantity",
 
-  "purchasing.deliverLater": "Deliver / replace later",
+  "purchasing.deliverLater": "Replace later",
+
+  "purchasing.replaceLater": "Replace later",
 
   "purchasing.cancelRemaining": "Cancel remaining",
 
   "purchasing.remainingQuestion": "What should happen to the remaining {qty}?",
 
   "purchasing.remainingDecisionTitle": "Remaining quantity",
+  "purchasing.remainingDecisionSummary": "{products} products · {units} units need a decision",
+  "purchasing.remainingDecisionSummaryOne": "1 product · {units} units need a decision",
+  "purchasing.remainingApplyToAll": "Apply to all",
+  "purchasing.remainingDecisionRequired": "Choose what should happen to all remaining quantities.",
+  "purchasing.remainingDecisionCol": "Decision",
+  "purchasing.remainingIssueCol": "Issue",
+  "purchasing.remainingCol": "Remaining",
   "purchasing.discrepancyClassifyTitle": "Classify discrepancy",
   "purchasing.discrepancyClassifyHint": "Classify the remaining quantity.",
   "purchasing.notAcceptedQty": "{qty} was not accepted",
   "purchasing.allDamaged": "All damaged",
   "purchasing.allNotDelivered": "All not delivered",
+  "purchasing.allOther": "Other",
   "purchasing.notDelivered": "Not delivered",
   "purchasing.remainingToClassify": "Remaining to classify: {qty}",
   "purchasing.discrepancyNoteRequired": "Add a note for each discrepancy before continuing.",
@@ -9662,6 +9900,9 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.activity.completed": "Fully received",
   "purchasing.activity.remainingClosed": "Remaining quantity cancelled",
+  "purchasing.activity.awaitingPayment": "Awaiting payment",
+  "purchasing.activity.paymentConfirmed": "Payment confirmed",
+  "purchasing.activity.noPaymentDue": "No payment due",
 
   "purchasing.activity.empty": "No activity yet.",
 
@@ -9789,6 +10030,27 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethodIntendedHelp":
     "Choose the intended payment method for this order. This does not mean payment has been received.",
+  "purchasing.paymentTiming": "Payment timing",
+  "purchasing.paymentTimingHelp": "Choose when payment is due for this connected purchase order.",
+  "purchasing.paymentTimingRequired": "Select a payment timing.",
+
+  "purchasing.payBeforeTitle": "Pay before fulfillment",
+  "purchasing.payBeforeBody":
+    "The supplier accepted this order. Pay now, then submit your payment proof so they can start preparing.",
+  "purchasing.payBeforeDueChip": "Payment due",
+  "purchasing.payNow": "Pay now",
+  "purchasing.submitPayment": "Submit payment",
+  "purchasing.updatePaymentProof": "Update payment proof",
+  "purchasing.prepaymentSubmitted": "Payment submitted",
+  "purchasing.paymentSubmittedWaiting": "Waiting for seller",
+  "purchasing.paymentSubmittedWaitingBody":
+    "Your payment proof was submitted. The supplier must confirm before fulfillment can start.",
+  "purchasing.paymentReference": "Payment reference",
+  "purchasing.paymentReferenceHelp": "GCash reference or transaction ID",
+  "purchasing.paymentReferenceRequired": "Enter the payment reference.",
+  "purchasing.paymentDetails": "Payment details",
+  "purchasing.paymentDetailsHelp": "Bank account, check number, or other details the supplier can verify",
+  "purchasing.paymentDetailsRequired": "Enter bank or check details.",
 
   "purchasing.poPaymentMethodRequired": "Select a payment method before creating the order.",
 
@@ -9802,14 +10064,45 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.paymentMethod.utang": "Utang / Credit",
 
-  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered.",
-
-  "purchasing.paymentHelp.bankTransfer":
-    "Payment can be completed after the supplier confirms the order.",
-
-  "purchasing.paymentHelp.gcash": "Payment can be recorded after the supplier confirms the order.",
-
+  "purchasing.paymentHelp.cod.payBefore":
+    "Payment will be collected before fulfillment starts.",
+  "purchasing.paymentHelp.cod.payOnDelivery":
+    "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.cod.supplierCredit":
+    "Cash remains the intended settlement method when payment is due under supplier credit.",
+  "purchasing.paymentHelp.bankDeposit.payBefore":
+    "Payment will be recorded as a bank deposit before fulfillment.",
+  "purchasing.paymentHelp.bankDeposit.payOnDelivery":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.bankDeposit.supplierCredit":
+    "Payment will be recorded as a bank deposit when due under supplier credit.",
+  "purchasing.paymentHelp.check.payBefore":
+    "A check received before fulfillment stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.payOnDelivery":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.check.supplierCredit":
+    "A check under supplier credit stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer.payBefore":
+    "Payment can be completed before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.bankTransfer.payOnDelivery":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.bankTransfer.supplierCredit":
+    "Payment can be completed when due under supplier credit after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payBefore":
+    "Payment can be recorded before fulfillment after the supplier confirms the order.",
+  "purchasing.paymentHelp.gcash.payOnDelivery":
+    "Payment can be recorded when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash.supplierCredit":
+    "Payment can be recorded when due under supplier credit after the supplier confirms the order.",
   "purchasing.paymentHelp.utang": "This purchase will use your approved credit terms.",
+  "purchasing.paymentHelp.cod": "Payment will be collected when the order is delivered or received.",
+  "purchasing.paymentHelp.bankDeposit":
+    "Payment will be recorded as a bank deposit when goods are received.",
+  "purchasing.paymentHelp.check":
+    "A check received at delivery stays pending clearing until it clears.",
+  "purchasing.paymentHelp.bankTransfer":
+    "Payment can be completed when goods are delivered or received.",
+  "purchasing.paymentHelp.gcash": "Payment can be recorded when goods are delivered or received.",
 
   "purchasing.utang.unavailable": "unavailable",
 
@@ -9945,6 +10238,10 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.categoriesTriggerCount": "Categories Â· {count}",
   "purchasing.selectAllCategories": "Pilia tanan",
   "purchasing.deselectAllCategories": "Tangtangon tanan",
+  "purchasing.brandsPlaceholder": "Select brands",
+  "purchasing.brandsSelected": "{count} selected",
+  "purchasing.selectAllBrands": "Select all",
+  "purchasing.deselectAllBrands": "Tangtangon tanan",
   "purchasing.clearCategories": "Clear categories",
   "purchasing.removeCategory": "Remove {name}",
   "purchasing.noMatchingProducts": "No matching products",
@@ -10012,6 +10309,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "purchasing.reviewDirect": "Review receipt",
 
   "purchasing.reviewReceipt": "Review receipt",
+  "purchasing.receiptSummaryTitle": "Receipt summary",
 
   "purchasing.saveFailed": "Could not create the purchase order.",
 
@@ -10059,7 +10357,25 @@ export const cebPH: Record<keyof typeof en, string> = {
 
   "purchasing.totalCost": "Total cost",
 
-  "purchasing.paymentAtReceipt": "Bayad sa resibo",
+    "purchasing.payment": "Payment",
+  "purchasing.prepayment": "Prepayment",
+  "purchasing.amountPaid": "Amount paid",
+  "purchasing.confirmedBy": "Confirmed by",
+  "purchasing.confirmedAt": "Confirmed at",
+  "purchasing.settlementNotes": "Settlement notes",
+  "purchasing.prepaidSettlementMissing": "Prepayment settlement data is missing for this pay-in-advance order. Contact the supplier or support before receiving — do not re-enter payment details.",
+  "purchasing.supplierCreditReceiveHint": "Accepted goods value will be posted to the approved supplier credit account.",
+  "purchasing.thisReceipt": "This receipt",
+  "purchasing.previouslyReceivedValue": "Previously received",
+  "purchasing.remainingValue": "Remaining",
+  "purchasing.awaitingGoodsReceipt": "Awaiting goods receipt",
+  "purchasing.paymentSettled": "Paid / Settled",
+  "purchasing.readyForReceipt": "Ready for receipt",
+  "purchasing.receivingStatus": "Receiving",
+  "purchasing.fulfillmentStatus": "Fulfillment",
+  "purchasing.transferReference": "Bank reference",
+  "purchasing.checkReference": "Check number",
+"purchasing.paymentAtReceipt": "Bayad sa resibo",
 
   "purchasing.paymentStatus": "Kahimtang sa bayad",
 
@@ -10815,6 +11131,32 @@ export const cebPH: Record<keyof typeof en, string> = {
   "returns.back": "Balik sa returns",
 
   "returns.backToEdit": "Balik sa pag-edit",
+  "returns.returnsPending": "Returns pending",
+  "returns.returnsProcessed": "Returns processed",
+  "returns.statusCompletedReturnsPending": "Completed · Returns pending",
+  "returns.statusCompletedReturnsProcessed": "Completed · Returns processed",
+  "returns.returnedItems": "Returned items",
+  "returns.pendingInspection": "Pending inspection",
+  "returns.classified": "Classified",
+  "returns.process": "Process",
+  "returns.returnInspection": "Return inspection",
+  "returns.returnedQuantity": "Returned quantity",
+  "returns.sellableAgain": "Sellable again",
+  "returns.damagedWriteOff": "Damaged / write-off",
+  "returns.totalClassified": "Total classified must match returned quantity.",
+  "returns.classifiedProgress": "Classified {classified} / {returned}",
+  "returns.saveClassification": "Save classification",
+  "returns.reviewReturn": "Review return",
+  "returns.finalizeReturns": "Finalize returns",
+  "returns.inventoryImpact": "Inventory impact",
+  "returns.financialImpact": "Financial impact",
+  "returns.originalSaleTotal": "Original sale total",
+  "returns.amountPreviouslyPaid": "Amount previously paid",
+  "returns.remainingAmountDue": "Remaining amount due",
+  "returns.refundRemaining": "Refund remaining",
+  "returns.recordRefund": "Record refund",
+  "returns.refundReference": "Refund reference",
+  "returns.refundDue": "Refund due",
 
   "returns.cannotReturn": "Dili ma-return kini nga transaction.",
 
@@ -12553,6 +12895,8 @@ export const cebPH: Record<keyof typeof en, string> = {
   "branches.create.creating": "Creating???",
 
   "branches.create.failed": "Could not create branch.",
+  "branches.create.deliveryRequiresCoordinates":
+    "Enable delivery only after setting valid branch coordinates.",
 
   "branches.create.lede": "Create a retail branch or warehouse. Warehouse selling is disabled.",
 
@@ -12961,6 +13305,23 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.approved": "Gi-aprubahan",
   "stockRequest.approvedQty": "Gi-aprubahan nga kantidad",
   "stockRequest.fulfilled": "Natuman",
+  "stockRequest.received": "Nadawat",
+  "stockRequest.stillInTransit": "Naay transit pa",
+  "stockRequest.remainingToDispatch": "Nahibilin nga i-dispatch",
+  "stockRequest.unit": "Unit",
+  "stockRequest.openTransferBlocksDispatch":
+    "{qty} units outstanding pa sa Transfer {transfer}. Dawata o isira una ang transfer sa dili pa magpadala og kapuli.",
+  "stockRequest.waitingForDestination":
+    "Naghuwat sa destination branch. {qty} units naay transit pa sa Transfer {transfer}.",
+  "stockRequest.viewOpenTransfer": "Tan-awa ang transfer",
+  "stockRequest.reviewPrepareTransfer": "Susiha ug andam ang transfer",
+  "stockRequest.continueTransferPreparation": "Padayon sa pag-andam sa transfer",
+  "stockRequest.fulfillRemaining": "Tumanon ang nahibilin nga {qty}",
+  "stockRequest.readyToReceive": "Andam na modawat",
+  "stockRequest.linkedTransfer.sent": "Gipadala",
+  "stockRequest.linkedTransfer.received": "Nadawat",
+  "stockRequest.linkedTransfer.closed": "Gisira",
+  "stockRequest.linkedTransfer.outstanding": "Outstanding",
   "stockRequest.inProgress": "Nagpadayon",
   "stockRequest.fulfillQty": "Kantidad nga tumanon",
   "stockRequest.linkedTransfers": "Naka-link nga transfer",
@@ -13003,6 +13364,17 @@ export const cebPH: Record<keyof typeof en, string> = {
   "stockRequest.activity.dispatched": "Napadala",
   "stockRequest.activity.rejected": "Gibalibaran",
   "stockRequest.activity.cancelled": "Gikansela",
+  "stockRequest.activity.empty": "Wala pay aktibidad.",
+  "stockRequest.activity.loadError": "Dili ma-load ang aktibidad.",
+  "stockRequest.activity.transferPrepared": "Giandam ang transfer",
+  "stockRequest.activity.transferDispatched": "Gipadala ang transfer",
+  "stockRequest.activity.transferReceipt": "Receipt sa transfer",
+  "stockRequest.activity.transferReceiptDetail": "Receipt wave {sequence}",
+  "stockRequest.activity.transferCompleted": "Natapos ang transfer",
+  "stockRequest.activity.transferRemainderClosed": "Gisira ang nahibilin sa transfer",
+  "stockRequest.activity.transferCancelled": "Gikansela ang transfer",
+  "stockRequest.activity.requestFulfilled": "Natuman ang request",
+  "stockRequest.activity.transferRefDetail": "Transfer {transfer}",
   "stockRequest.actionError": "Dili ma-update kining stock request.",
   "stockRequest.status.pending": "Naghuwat",
   "stockRequest.status.approved": "Gi-aprubahan",
@@ -13231,4 +13603,76 @@ export const cebPH: Record<keyof typeof en, string> = {
   "connected.incomingKindBuyerRequest": "Buyer request",
   "connected.incomingKindSupplierInvite": "Supplier invitation",
   "connected.reviewAndAccept": "Review & accept",
+  "returns.connectedPo.sectionTitle": "Supplier returns",
+  "returns.connectedPo.returnItems": "Return items to supplier",
+  "returns.connectedPo.requestTitle": "Return to supplier",
+  "returns.connectedPo.requestLede": "Select the received items you are sending back.",
+  "returns.connectedPo.returnableQty": "Available to return",
+  "returns.connectedPo.receivedQty": "Received",
+  "returns.connectedPo.alreadyReturned": "Already returned",
+  "returns.connectedPo.noReturnableLines": "No received items are available to return.",
+  "returns.connectedPo.blocked": "This purchase order cannot be returned yet.",
+  "returns.connectedPo.submitRequest": "Send return request",
+  "returns.connectedPo.requestSent": "Return request sent to the supplier.",
+  "returns.connectedPo.sellerInboxTitle": "Incoming buyer returns",
+  "returns.connectedPo.sellerInboxEmpty": "No buyer returns are waiting.",
+  "returns.connectedPo.process": "Process",
+  "returns.connectedPo.markReceived": "Confirm goods received",
+  "returns.connectedPo.awaitingSellerReceipt": "Awaiting supplier receipt",
+  "returns.connectedPo.statusReturnsPending": "Returns pending",
+  "returns.connectedPo.statusReturnsProcessed": "Returns processed",
+  "returns.connectedPo.summaryTitle": "Return summary",
+  "returns.connectedPo.poNumber": "PO number",
+  "returns.connectedPo.returnValue": "Return value",
+  "returns.connectedPo.refundDue": "Refund due",
+  "returns.connectedPo.recordRefund": "Record refund",
+  "returns.connectedPo.inspect": "Inspect",
+  "returns.connectedPo.colProduct": "Product",
+  "returns.connectedPo.colInspection": "Inspection",
+  "returns.connectedPo.colActions": "Actions",
+  "returns.connectedPo.reviewAndFinalize": "Review and finalize",
+  "returns.connectedPo.loadError": "Could not load the supplier return.",
+  "returns.connectedPo.processTitle": "Process buyer return",
+  "returns.connectedPo.refundAmountInvalid": "Enter a refund amount greater than zero.",
+
+  "purchasing.fulfillmentMethod": "Fulfillment",
+  "purchasing.fulfillmentMethodHelp":
+    "Choose how this connected purchase order should be fulfilled.",
+  "purchasing.fulfillmentMethodRequired": "Select Pickup or Delivery before saving this purchase order.",
+  "purchasing.fulfillment.pickup": "Pickup",
+  "purchasing.fulfillment.delivery": "Delivery",
+  "purchasing.fulfillment.deliveryUnavailableOrgOff":
+    "Delivery is currently disabled by this supplier.",
+  "purchasing.fulfillment.deliveryUnavailableBranch":
+    "Delivery is not ready on the selected fulfillment branch.",
+  "purchasing.fulfillment.deliveryUnavailableCustomer":
+    "Delivery is not available for this business relationship.",
+  "purchasing.fulfillment.deliverySetupRequired":
+    "Delivery is available, but your receiving address/setup must be completed.",
+  "purchasing.fulfillment.deliverySetupRequiredDetail":
+    "Complete the receiving address for {branch}.",
+  "purchasing.fulfillment.completeReceivingSetup": "Complete receiving setup",
+  "purchasing.fulfillment.deliverySetupBadge": "Setup required",
+  "purchasing.fulfillment.singleMethodHelp":
+    "This supplier currently supports {method} only.",
+  "branches.poFulfillment.deliveryConfiguredReady": "Configured: Ready",
+  "branches.poFulfillment.deliveryEffectiveDisabledGlobally":
+    "Effective: Disabled globally (Offer Delivery is off)",
+  "branches.connectedOrderDeliveryTitle": "Connected order delivery",
+  "branches.offerDeliveryStatusOn": "ON",
+  "branches.offerDeliveryStatusOff": "OFF",
+  "branches.offerDeliveryOnDetail": "Buyers may use Delivery from eligible delivery-ready branches.",
+  "branches.offerDeliveryOffDetail": "Delivery is paused for connected buyers. Branch delivery setup is preserved.",
+  "branches.offerDeliveryTurnOn": "Turn on Offer Delivery",
+  "branches.offerDeliveryOpenConnectedCommerce": "Open Connected Commerce settings",
+  "branches.mgmt.pickupOff": "Pickup Off",
+  "branches.mgmt.pickupReady": "Pickup Ready",
+  "branches.mgmt.pickupSetup": "Pickup Setup",
+  "branches.mgmt.deliveryOff": "Delivery Off",
+  "branches.mgmt.deliveryReady": "Delivery Ready",
+  "branches.mgmt.deliverySetup": "Delivery Setup",
+  "branches.mgmt.deliveryReadyGloballyPaused": "Delivery Ready · Globally paused",
+  "branches.poFulfillment.deliveryEffectivePaused": "Effective: Paused globally",
+  "branches.poFulfillment.offerDeliveryPausedHelp": "Offer Delivery is off for the organization. Your branch configuration is preserved.",
+  "customers.business.deliveryAllowanceBlockedTitle": "Not allowed for this customer"
 };

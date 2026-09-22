@@ -6,9 +6,10 @@ import { canManageInventory } from "@/access/pos-capabilities";
 import {
   approveStockRequest,
   cancelStockRequest,
-  dispatchStockRequest,
   getStockRequest,
+  getStockRequestActivity,
   prepareStockRequest,
+  prepareStockRequestTransfer,
   rejectStockRequest,
 } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
@@ -19,11 +20,17 @@ import { PageHeader } from "@/components/exits/PageHeader";
 import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
-import { formatTransferTimestamp } from "@/features/inventory/inventory-transfer-labels";
+import { inventoryTransferStatusLabelKey } from "@/features/inventory/inventory-transfer-labels";
+import { StockRequestActivityTimeline } from "@/features/replenishment/StockRequestActivityTimeline";
 import {
   canCancelStockRequestAsDestination,
+  canPrepareTransfer,
+  findLinkedDraftTransfer,
+  findOpenCoveringTransfer,
+  prepareTransferPrimaryLabelKey,
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
+  totalRemainingToDispatch,
 } from "@/features/replenishment/stock-request-helpers";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -59,6 +66,12 @@ export function StockRequestDetailPage() {
     queryFn: ({ signal }) => getStockRequest(workspace!, stockRequestId, signal),
   });
 
+  const activityQuery = useQuery({
+    queryKey: ["stock-request-activity", stockRequestId, workspace?.organizationId],
+    enabled: Boolean(workspace && stockRequestId),
+    queryFn: ({ signal }) => getStockRequestActivity(workspace!, stockRequestId, signal),
+  });
+
   const dto = query.data;
   const isSource = dto?.requestedSourceLocationId === workspace?.branchId;
   const isDestination = dto?.destinationLocationId === workspace?.branchId;
@@ -76,6 +89,14 @@ export function StockRequestDetailPage() {
     });
   }, [dto]);
 
+  const activityActorIds = useMemo(
+    () =>
+      (activityQuery.data ?? [])
+        .map((event) => event.actorId)
+        .filter((id): id is string => Boolean(id)),
+    [activityQuery.data],
+  );
+
   const actors = useActorDirectory(workspace?.organizationId, [
     dto?.requestedBy,
     dto?.approvedBy,
@@ -83,11 +104,15 @@ export function StockRequestDetailPage() {
     dto?.dispatchedBy,
     dto?.rejectedBy,
     dto?.cancelledBy,
+    ...activityActorIds,
   ]);
 
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["stock-request", stockRequestId] });
+    await queryClient.invalidateQueries({ queryKey: ["stock-request-activity", stockRequestId] });
     await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
+    await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
+    await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
   };
 
   const buildLineApprovals = () => {
@@ -125,11 +150,11 @@ export function StockRequestDetailPage() {
     onError: () => setActionError(t("stockRequest.actionError")),
   });
 
-  const dispatchMutation = useMutation({
+  const prepareTransferMutation = useMutation({
     mutationFn: async () => {
       if (!workspace || !dto) throw new Error("missing");
       setActionError(null);
-      return dispatchStockRequest(workspace, dto.stockRequestId);
+      return prepareStockRequestTransfer(workspace, dto.stockRequestId);
     },
     onSuccess: async (transfer) => {
       await invalidate();
@@ -184,15 +209,36 @@ export function StockRequestDetailPage() {
     allowManage &&
     isSource &&
     (dto.status === "Approved" || dto.status === "Preparing" || dto.status === "InProgress");
+  const openCover = findOpenCoveringTransfer(dto.linkedTransfers);
+  const linkedDraftId = findLinkedDraftTransfer(dto.linkedTransfers);
+  const canPrepareTransferAction =
+    allowManage &&
+    isSource &&
+    canPrepareTransfer(dto.status, dto.lines);
+  const remainingDispatchQty = totalRemainingToDispatch(dto.lines);
+  const prepareTransferLabelKey = prepareTransferPrimaryLabelKey(
+    dto.status,
+    Boolean(linkedDraftId),
+  );
+  const prepareTransferButtonLabel =
+    prepareTransferLabelKey === "stockRequest.fulfillRemaining"
+      ? t("stockRequest.fulfillRemaining").replace("{qty}", String(remainingDispatchQty))
+      : t(prepareTransferLabelKey as MessageKey);
   const canReceive =
-    allowManage && isDestination && dto.status === "InTransit" && Boolean(linkedTransferId);
+    allowManage &&
+    isDestination &&
+    (dto.status === "InTransit" || dto.status === "PartiallyFulfilled") &&
+    Boolean(
+      dto.linkedTransfers.find(
+        (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
+      )?.transferId ?? linkedTransferId,
+    );
+  const receiveTransferId =
+    dto.linkedTransfers.find(
+      (tr) => tr.status === "InTransit" || tr.status === "PartiallyReceived",
+    )?.transferId ?? linkedTransferId;
   const canCancel =
     allowManage && isDestination && canCancelStockRequestAsDestination(dto.status);
-
-  const actorLabel = (id: string | null | undefined) => {
-    if (!id) return null;
-    return actors.resolve(id)?.displayName ?? id.slice(0, 8);
-  };
 
   return (
     <div className="exits-page flex flex-col gap-3" data-testid="stock-request-detail">
@@ -213,23 +259,47 @@ export function StockRequestDetailPage() {
 
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {dto.lines.map((line) => (
-          <li key={line.lineId} className="rounded-[var(--exits-radius-md)] border border-border p-3">
+          <li
+            key={line.lineId}
+            className="rounded-[var(--exits-radius-md)] border border-border p-3"
+            data-testid={`stock-request-line-${line.productId}`}
+          >
             <div className="font-medium">{line.nameSnapshot}</div>
-            <div className="mt-1 text-[length:var(--exits-text-sm)] text-muted">
-              {t("stockRequest.requested")}: {line.requestedQuantity}
-              {" · "}
-              {t("stockRequest.approved")}: {line.approvedQuantity ?? "—"}
-              {" · "}
-              {t("stockRequest.fulfilled")}: {line.fulfilledQuantity}
-              {line.inProgressQuantity > 0 ? (
-                <>
-                  {" · "}
-                  {t("stockRequest.inProgress")}: {line.inProgressQuantity}
-                </>
-              ) : null}
-              {" · "}
-              {line.unitOfMeasure}
-            </div>
+            <dl className="mt-2 m-0 grid grid-cols-2 gap-x-3 gap-y-1 text-[length:var(--exits-text-sm)] text-muted sm:grid-cols-3">
+              <div>
+                <dt className="inline">{t("stockRequest.requested")}: </dt>
+                <dd className="inline m-0">{line.requestedQuantity}</dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.approved")}: </dt>
+                <dd className="inline m-0">{line.approvedQuantity ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.received")}: </dt>
+                <dd className="inline m-0" data-testid={`stock-request-received-${line.productId}`}>
+                  {line.fulfilledQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.stillInTransit")}: </dt>
+                <dd className="inline m-0" data-testid={`stock-request-in-transit-${line.productId}`}>
+                  {line.inProgressQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.remainingToDispatch")}: </dt>
+                <dd
+                  className="inline m-0"
+                  data-testid={`stock-request-remaining-dispatch-${line.productId}`}
+                >
+                  {line.remainingToDispatchQuantity}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">{t("stockRequest.unit")}: </dt>
+                <dd className="inline m-0">{line.unitOfMeasure}</dd>
+              </div>
+            </dl>
             {pendingAtSource ? (
               <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)]">
                 <span>{t("stockRequest.approvedQty")}</span>
@@ -248,44 +318,36 @@ export function StockRequestDetailPage() {
         ))}
       </ul>
 
+      {openCover ? (
+        <div
+          className="m-0 flex flex-col gap-2 rounded-[var(--exits-radius-md)] border border-border bg-muted/40 p-3 text-[length:var(--exits-text-sm)]"
+          data-testid="stock-request-open-transfer-guard"
+          role="status"
+        >
+          <p className="m-0">
+            {t("stockRequest.waitingForDestination")
+              .replace("{qty}", String(openCover.outstandingQty))
+              .replace("{transfer}", openCover.transferLabel)}
+          </p>
+          <Link className="underline w-fit" to={`/inventory/transfers/${openCover.transferId}`}>
+            {t("stockRequest.viewOpenTransfer")}
+          </Link>
+        </div>
+      ) : null}
+
       <section className="rounded-[var(--exits-radius-md)] border border-border p-3" data-testid="stock-request-activity">
         <h2 className="exits-type-label m-0 mb-2">{t("stockRequest.activity")}</h2>
-        <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[length:var(--exits-text-sm)] text-muted">
-          <li>
-            {t("stockRequest.activity.requested")}: {formatTransferTimestamp(dto.createdAtUtc)}
-            {actorLabel(dto.requestedBy) ? ` · ${actorLabel(dto.requestedBy)}` : ""}
-          </li>
-          {dto.approvedAtUtc ? (
-            <li>
-              {t("stockRequest.activity.approved")}: {formatTransferTimestamp(dto.approvedAtUtc)}
-              {actorLabel(dto.approvedBy) ? ` · ${actorLabel(dto.approvedBy)}` : ""}
-            </li>
-          ) : null}
-          {dto.preparingStartedAtUtc ? (
-            <li>
-              {t("stockRequest.activity.preparing")}:{" "}
-              {formatTransferTimestamp(dto.preparingStartedAtUtc)}
-              {actorLabel(dto.preparingStartedBy) ? ` · ${actorLabel(dto.preparingStartedBy)}` : ""}
-            </li>
-          ) : null}
-          {dto.dispatchedAtUtc ? (
-            <li>
-              {t("stockRequest.activity.dispatched")}: {formatTransferTimestamp(dto.dispatchedAtUtc)}
-              {actorLabel(dto.dispatchedBy) ? ` · ${actorLabel(dto.dispatchedBy)}` : ""}
-            </li>
-          ) : null}
-          {dto.rejectedAtUtc ? (
-            <li>
-              {t("stockRequest.activity.rejected")}: {formatTransferTimestamp(dto.rejectedAtUtc)}
-              {dto.rejectionReason ? ` · ${dto.rejectionReason}` : ""}
-            </li>
-          ) : null}
-          {dto.cancelledAtUtc ? (
-            <li>
-              {t("stockRequest.activity.cancelled")}: {formatTransferTimestamp(dto.cancelledAtUtc)}
-            </li>
-          ) : null}
-        </ul>
+        {activityQuery.isLoading ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("stockRequest.loading")}</p>
+        ) : activityQuery.isError ? (
+          <p className="m-0 text-[length:var(--exits-text-sm)] text-danger">{t("stockRequest.activity.loadError")}</p>
+        ) : (
+          <StockRequestActivityTimeline
+            events={activityQuery.data ?? []}
+            resolveActor={actors.resolve}
+            isResolving={actors.isResolving}
+          />
+        )}
       </section>
 
       {dto.linkedTransfers.length > 0 || linkedTransferId ? (
@@ -293,10 +355,28 @@ export function StockRequestDetailPage() {
           <h2 className="exits-type-label">{t("stockRequest.linkedTransfers")}</h2>
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {dto.linkedTransfers.map((tr) => (
-              <li key={tr.transferId}>
-                <Link className="underline" to={`/inventory/transfers/${tr.transferId}`}>
-                  {tr.transferNumber ?? tr.transferId.slice(0, 8)} · {tr.status}
+              <li
+                key={tr.transferId}
+                className="text-[length:var(--exits-text-sm)]"
+                data-testid={`stock-request-linked-transfer-${tr.transferId}`}
+              >
+                <Link className="underline font-medium" to={`/inventory/transfers/${tr.transferId}`}>
+                  {tr.transferNumber ?? tr.transferId.slice(0, 8)}
                 </Link>
+                {" · "}
+                <StatusChip tone="neutral" shape="pill">
+                  {t(inventoryTransferStatusLabelKey(tr.status) as MessageKey)}
+                </StatusChip>
+                <span className="text-muted">
+                  {" · "}
+                  {t("stockRequest.linkedTransfer.sent")}: {tr.totalSentQty}
+                  {" · "}
+                  {t("stockRequest.linkedTransfer.received")}: {tr.totalReceivedQty}
+                  {" · "}
+                  {t("stockRequest.linkedTransfer.closed")}: {tr.totalClosedQty ?? 0}
+                  {" · "}
+                  {t("stockRequest.linkedTransfer.outstanding")}: {tr.totalOutstandingQty ?? 0}
+                </span>
               </li>
             ))}
             {linkedTransferId &&
@@ -352,33 +432,35 @@ export function StockRequestDetailPage() {
         </div>
       ) : null}
 
-      {preparingAtSource ? (
-        <div className="flex flex-wrap gap-2" data-testid="stock-request-dispatch-actions">
-          {dto.status === "Approved" ? (
+      {preparingAtSource || canPrepareTransferAction ? (
+        <div className="flex flex-wrap gap-2" data-testid="stock-request-prepare-transfer-actions">
+          {preparingAtSource && dto.status === "Approved" ? (
             <Button
               type="button"
               variant="secondary"
               onClick={() => prepareMutation.mutate()}
-              disabled={prepareMutation.isPending || dispatchMutation.isPending}
+              disabled={prepareMutation.isPending || prepareTransferMutation.isPending}
               data-testid="stock-request-start-preparing"
             >
               {t("stockRequest.startPreparing")}
             </Button>
           ) : null}
-          <Button
-            type="button"
-            onClick={() => dispatchMutation.mutate()}
-            disabled={dispatchMutation.isPending || prepareMutation.isPending}
-            data-testid="stock-request-dispatch"
-          >
-            {t("stockRequest.dispatchStock")}
-          </Button>
+          {canPrepareTransferAction ? (
+            <Button
+              type="button"
+              onClick={() => prepareTransferMutation.mutate()}
+              disabled={prepareTransferMutation.isPending || prepareMutation.isPending}
+              data-testid="stock-request-prepare-transfer"
+            >
+              {prepareTransferButtonLabel}
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
-      {canReceive ? (
+      {canReceive && receiveTransferId ? (
         <Button asChild data-testid="stock-request-receive">
-          <Link to={`/inventory/transfers/${linkedTransferId}`}>{t("stockRequest.receiveLinked")}</Link>
+          <Link to={`/inventory/transfers/${receiveTransferId}`}>{t("stockRequest.readyToReceive")}</Link>
         </Button>
       ) : null}
 

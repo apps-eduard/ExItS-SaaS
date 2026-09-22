@@ -155,7 +155,7 @@ describe("WasteLossCreatePage expired stock quick flow", () => {
     });
     vi.spyOn(wasteLossClient, "createWasteLoss").mockResolvedValue({
       wasteLossId,
-      wasteLossNumber: "WL-20260830-0001",
+      wasteLossNumber: "260830-001",
       reason: "Expired",
       status: "Posted",
     } as never);
@@ -304,7 +304,7 @@ describe("WasteLossCreatePage expired stock quick flow", () => {
     resolveCreate({
       wasteLossId,
       organizationId: orgId,
-      wasteLossNumber: "WL-20260830-0001",
+      wasteLossNumber: "260830-001",
       occurredAtUtc: "2026-08-30T00:00:00Z",
       reason: "Expired",
       status: "Posted",

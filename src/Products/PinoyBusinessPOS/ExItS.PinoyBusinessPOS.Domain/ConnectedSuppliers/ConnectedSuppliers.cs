@@ -47,7 +47,10 @@ public enum ConnectedCustomerPriceSource
     SellingPrice = 0,
     CustomerDiscount = 1,
     ProductOverride = 2,
-    DefaultPoPrice = 3
+    DefaultPoPrice = 3,
+    OrganizationDefault = 4,
+    OrganizationCategory = 5,
+    CustomerCategory = 6
 }
 public enum ConnectedPurchaseOrderStatus
 {
@@ -157,6 +160,12 @@ public static class ConnectedSupplierDomainErrorCodes
     public const string InvalidTransition = "ConnectedSupplier_InvalidTransition";
     public const string InvalidOffer = "ConnectedSupplier_InvalidOffer";
     public const string InvalidOrder = "ConnectedSupplier_InvalidOrder";
+    public const string InvalidPaymentTiming = "ConnectedSupplier_InvalidPaymentTiming";
+    public const string InvalidDiscountPercent = "ConnectedSupplier_InvalidDiscountPercent";
+    public const string InvalidProposalHoldHours = "ConnectedSupplier_InvalidProposalHoldHours";
+    public const string DuplicateCategoryDiscountRule = "ConnectedSupplier_DuplicateCategoryDiscountRule";
+    public const string PaymentRequiredBeforeFulfillment = "ConnectedSupplier_PaymentRequiredBeforeFulfillment";
+    public const string FulfillmentNotReady = "ConnectedSupplier_FulfillmentNotReady";
 }
 
 public sealed class ConnectedSupplierRelationship
@@ -184,6 +193,13 @@ public sealed class ConnectedSupplierRelationship
     public CatalogSharingMode CatalogSharingMode { get; private set; }
     /// <summary>Optional buyer-level discount percent applied to selling/default PO baseline (0–100).</summary>
     public decimal? CustomerDiscountPercent { get; private set; }
+    public bool UseOrganizationPaymentTimingDefaults { get; private set; } = true;
+    public bool AllowPayBeforeFulfillment { get; private set; } = true;
+    public bool AllowPayOnDeliveryOrReceipt { get; private set; } = true;
+    public bool AllowSupplierCredit { get; private set; }
+    public ConnectedPoPaymentTiming CustomerDefaultPaymentTiming { get; private set; } =
+        ConnectedPoPaymentTiming.PayBeforeFulfillment;
+    public IReadOnlyList<ConnectedCustomerCategoryDiscountOverride> CustomerCategoryDiscountOverrides { get; private set; } = [];
     /// <summary>
     /// Operational supplier source branch (Platform branch id). Organization remains the relationship anchor.
     /// This is the home branch for Business Customer visibility (CreateAtBranch equivalent).
@@ -268,7 +284,13 @@ public sealed class ConnectedSupplierRelationship
         string? deliveryInstructions = null,
         string? billingContactNotes = null,
         string? internalNotes = null,
-        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit)
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit,
+        bool useOrganizationPaymentTimingDefaults = true,
+        bool allowPayBeforeFulfillment = true,
+        bool allowPayOnDeliveryOrReceipt = true,
+        bool allowSupplierCredit = false,
+        ConnectedPoPaymentTiming customerDefaultPaymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
+        IReadOnlyList<ConnectedCustomerCategoryDiscountOverride>? customerCategoryDiscountOverrides = null)
     {
         Id = id; BuyerOrganizationId = buyerOrganizationId; SupplierOrganizationId = supplierOrganizationId;
         Status = status; InitiatedByParty = initiatedByParty;
@@ -290,7 +312,14 @@ public sealed class ConnectedSupplierRelationship
         CustomerDeliveryOverride = customerDeliveryOverride;
         BillingContactNotes = CleanSnapshot(billingContactNotes, 1000);
         InternalNotes = CleanSnapshot(internalNotes, 2000);
+        UseOrganizationPaymentTimingDefaults = useOrganizationPaymentTimingDefaults;
+        AllowPayBeforeFulfillment = allowPayBeforeFulfillment;
+        AllowPayOnDeliveryOrReceipt = allowPayOnDeliveryOrReceipt;
+        AllowSupplierCredit = allowSupplierCredit;
+        CustomerDefaultPaymentTiming = customerDefaultPaymentTiming;
+        CustomerCategoryDiscountOverrides = NormalizeCategoryDiscountOverrides(customerCategoryDiscountOverrides);
         CreatedAtUtc = createdAtUtc; UpdatedAtUtc = updatedAtUtc;
+        ValidatePaymentTimingConfiguration();
     }
 
     /// <summary>Buyer-initiated request (classic Suppliers → Connect).</summary>
@@ -459,6 +488,54 @@ public sealed class ConnectedSupplierRelationship
         UpdatedAtUtc = utcNow;
     }
 
+    public void ConfigurePaymentTimingOverrides(
+        bool useOrganizationDefaults,
+        bool allowPayBeforeFulfillment,
+        bool allowPayOnDeliveryOrReceipt,
+        bool allowSupplierCredit,
+        ConnectedPoPaymentTiming customerDefaultPaymentTiming,
+        OrganizationConnectedCommerceSettings organizationSettings,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        UseOrganizationPaymentTimingDefaults = useOrganizationDefaults;
+        if (UseOrganizationPaymentTimingDefaults)
+        {
+            // Inherit: do not copy org values into override columns. Effective policy is resolved live.
+            UpdatedAtUtc = utcNow;
+            return;
+        }
+
+        AllowPayBeforeFulfillment = allowPayBeforeFulfillment;
+        AllowPayOnDeliveryOrReceipt = allowPayOnDeliveryOrReceipt;
+        AllowSupplierCredit = allowSupplierCredit;
+        CustomerDefaultPaymentTiming = customerDefaultPaymentTiming;
+        ValidatePaymentTimingSubsetOfOrganization(organizationSettings);
+        ValidatePaymentTimingConfiguration();
+        UpdatedAtUtc = utcNow;
+    }
+
+    public void ConfigureCustomerPricing(
+        decimal? customerDiscountPercent,
+        IReadOnlyList<ConnectedCustomerCategoryDiscountOverride> categoryOverrides,
+        DateTimeOffset utcNow)
+    {
+        EnsureUtc(utcNow);
+        if (Status is not (ConnectedSupplierRelationshipStatus.Pending or ConnectedSupplierRelationshipStatus.Active))
+        {
+            InvalidTransition();
+        }
+
+        CustomerDiscountPercent = NormalizeDiscount(customerDiscountPercent);
+        CustomerCategoryDiscountOverrides = NormalizeCategoryDiscountOverrides(categoryOverrides);
+        UpdatedAtUtc = utcNow;
+    }
+
     /// <summary>
     /// Seller-owned relationship contact fields only. Does not change Status, org ids,
     /// identity snapshots, catalog settings, or branch sharing.
@@ -581,7 +658,13 @@ public sealed class ConnectedSupplierRelationship
         string? deliveryInstructions = null,
         string? billingContactNotes = null,
         string? internalNotes = null,
-        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit) =>
+        CustomerDeliveryOverride customerDeliveryOverride = CustomerDeliveryOverride.Inherit,
+        bool useOrganizationPaymentTimingDefaults = true,
+        bool allowPayBeforeFulfillment = true,
+        bool allowPayOnDeliveryOrReceipt = true,
+        bool allowSupplierCredit = false,
+        ConnectedPoPaymentTiming customerDefaultPaymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
+        IReadOnlyList<ConnectedCustomerCategoryDiscountOverride>? customerCategoryDiscountOverrides = null) =>
         new(id, buyer, supplier, status, requestedAtUtc, requestedBy, respondedAtUtc, respondedBy, disconnectedAtUtc,
             createdAtUtc, updatedAtUtc, buyerDisplayNameSnapshot, buyerPublicOrganizationIdSnapshot,
             supplierDisplayNameSnapshot, supplierPublicOrganizationIdSnapshot,
@@ -589,7 +672,9 @@ public sealed class ConnectedSupplierRelationship
             initiatedByParty, sharedSupplierBranchIds,
             contactSource, organizationMemberId,
             contactPersonName, contactDepartment, contactRole, contactPhone, contactEmail, preferredContactMethod,
-            deliveryInstructions, billingContactNotes, internalNotes, customerDeliveryOverride);
+            deliveryInstructions, billingContactNotes, internalNotes, customerDeliveryOverride,
+            useOrganizationPaymentTimingDefaults, allowPayBeforeFulfillment, allowPayOnDeliveryOrReceipt,
+            allowSupplierCredit, customerDefaultPaymentTiming, customerCategoryDiscountOverrides);
 
     private static Guid? NormalizeBranchId(Guid? branchId) =>
         branchId is null || branchId == Guid.Empty ? null : branchId;
@@ -639,6 +724,101 @@ public sealed class ConnectedSupplierRelationship
 
         return value == 0m ? null : value;
     }
+
+    private static decimal NormalizeDiscount(decimal percent)
+    {
+        var value = decimal.Round(percent, 2, MidpointRounding.AwayFromZero);
+        if (value < 0m || value > 100m)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidDiscountPercent,
+                "Discount percent must be between 0 and 100.");
+        }
+
+        return value;
+    }
+
+    private static IReadOnlyList<ConnectedCustomerCategoryDiscountOverride> NormalizeCategoryDiscountOverrides(
+        IReadOnlyList<ConnectedCustomerCategoryDiscountOverride>? categoryOverrides)
+    {
+        if (categoryOverrides is null || categoryOverrides.Count == 0)
+        {
+            return [];
+        }
+
+        var byCategory = new Dictionary<Guid, ConnectedCustomerCategoryDiscountOverride>();
+        foreach (var item in categoryOverrides)
+        {
+            if (item.CategoryId == Guid.Empty)
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.InvalidOffer,
+                    "Customer category override requires a category id.");
+            }
+
+            var normalized = new ConnectedCustomerCategoryDiscountOverride(
+                item.CategoryId,
+                NormalizeDiscount(item.DiscountPercent));
+            if (!byCategory.TryAdd(item.CategoryId, normalized))
+            {
+                throw new DomainException(
+                    ConnectedSupplierDomainErrorCodes.DuplicateCategoryDiscountRule,
+                    "Customer category override must be unique per category.");
+            }
+        }
+
+        return byCategory.Values.OrderBy(x => x.CategoryId).ToArray();
+    }
+
+    private void ValidatePaymentTimingConfiguration()
+    {
+        if (!AllowPayBeforeFulfillment && !AllowPayOnDeliveryOrReceipt && !AllowSupplierCredit)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "At least one payment timing must be allowed.");
+        }
+
+        if (!IsCustomerTimingAllowed(CustomerDefaultPaymentTiming))
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Customer default payment timing must be allowed.");
+        }
+    }
+
+    private void ValidatePaymentTimingSubsetOfOrganization(OrganizationConnectedCommerceSettings organizationSettings)
+    {
+        if (AllowPayBeforeFulfillment && !organizationSettings.AllowPayBeforeFulfillment)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Customer timing PayBeforeFulfillment is not allowed by organization settings.");
+        }
+
+        if (AllowPayOnDeliveryOrReceipt && !organizationSettings.AllowPayOnDeliveryOrReceipt)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Customer timing PayOnDeliveryOrReceipt is not allowed by organization settings.");
+        }
+
+        if (AllowSupplierCredit && !organizationSettings.AllowSupplierCredit)
+        {
+            throw new DomainException(
+                ConnectedSupplierDomainErrorCodes.InvalidPaymentTiming,
+                "Customer timing SupplierCredit is not allowed by organization settings.");
+        }
+    }
+
+    public bool IsCustomerTimingAllowed(ConnectedPoPaymentTiming timing) =>
+        timing switch
+        {
+            ConnectedPoPaymentTiming.PayBeforeFulfillment => AllowPayBeforeFulfillment,
+            ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt => AllowPayOnDeliveryOrReceipt,
+            ConnectedPoPaymentTiming.SupplierCredit => AllowSupplierCredit,
+            _ => false
+        };
 
     private static void InvalidTransition() => throw new DomainException(ConnectedSupplierDomainErrorCodes.InvalidTransition, "Connected supplier relationship transition is not allowed.");
     internal static void EnsureUtc(DateTimeOffset value)
@@ -824,8 +1004,8 @@ public static class ConnectedPoPricing
 
     /// <summary>
     /// Effective buyer purchase price for the exposure's orderable unit.
-    /// Precedence: product override → customer discount on baseline → baseline.
-    /// Baseline prefers SellingPrice when &gt; 0, else exposure SupplierOrderPrice (Default PO).
+    /// Precedence: product override → customer default discount → baseline.
+    /// Legacy call sites can still pass sellingPrice and a customer discount.
     /// </summary>
     public static bool TryResolveEffectivePrice(
         SupplierProductExposure exposure,
@@ -836,39 +1016,120 @@ public static class ConnectedPoPricing
         out decimal price,
         out ConnectedCustomerPriceSource source)
     {
-        price = 0m;
-        source = ConnectedCustomerPriceSource.DefaultPoPrice;
-        if (!exposure.IsExposed || !exposure.IsOrderable || !IsProductShared(mode, share))
+        if (sellingPrice is > 0m && (customerDiscountPercent is null || customerDiscountPercent <= 0m))
         {
-            return false;
-        }
+            if (!exposure.IsExposed || !exposure.IsOrderable || !IsProductShared(mode, share))
+            {
+                price = 0m;
+                source = ConnectedCustomerPriceSource.DefaultPoPrice;
+                return false;
+            }
 
-        if (share?.BuyerSpecificPoPrice is decimal overridePrice)
-        {
-            price = RoundMoney(overridePrice);
-            source = ConnectedCustomerPriceSource.ProductOverride;
+            if (share?.BuyerSpecificPoPrice is decimal overridePrice)
+            {
+                price = RoundMoney(overridePrice);
+                source = ConnectedCustomerPriceSource.ProductOverride;
+                return true;
+            }
+
+            price = RoundMoney(sellingPrice.Value);
+            source = ConnectedCustomerPriceSource.SellingPrice;
             return true;
         }
 
-        var baseline = sellingPrice is > 0m ? sellingPrice.Value : exposure.SupplierOrderPrice;
-        var baselineSource = sellingPrice is > 0m
-            ? ConnectedCustomerPriceSource.SellingPrice
-            : ConnectedCustomerPriceSource.DefaultPoPrice;
+        var policy = new ConnectedB2bPricingPolicy(
+            OrganizationDefaultDiscountPercent: 0m,
+            OrganizationCategoryDiscountPercent: null,
+            CustomerDefaultDiscountPercent: customerDiscountPercent,
+            CustomerCategoryDiscountPercent: null);
+        return ConnectedB2bPricingResolver.TryResolve(exposure, share, mode, policy, out price, out source);
+    }
 
-        if (customerDiscountPercent is decimal discount && discount > 0m)
-        {
-            price = RoundMoney(baseline * (1m - (discount / 100m)));
-            source = ConnectedCustomerPriceSource.CustomerDiscount;
-            return true;
-        }
-
-        price = RoundMoney(baseline);
-        source = baselineSource;
-        return true;
+    public static bool TryResolveEffectivePrice(
+        SupplierProductExposure exposure,
+        ConnectedBuyerProductShare? share,
+        CatalogSharingMode mode,
+        OrganizationConnectedCommerceSettings organizationSettings,
+        ConnectedSupplierRelationship relationship,
+        Guid? supplierCategoryId,
+        out decimal price,
+        out ConnectedCustomerPriceSource source)
+    {
+        var customerCategoryDiscount = relationship.CustomerCategoryDiscountOverrides
+            .FirstOrDefault(x => x.CategoryId == supplierCategoryId)?.DiscountPercent;
+        var customerDefaultDiscount = relationship.CustomerDiscountPercent ?? organizationSettings.DefaultB2bDiscountPercent;
+        var organizationCategoryDiscount = organizationSettings.FindCategoryDiscountPercent(supplierCategoryId);
+        var policy = new ConnectedB2bPricingPolicy(
+            organizationSettings.DefaultB2bDiscountPercent,
+            organizationCategoryDiscount,
+            customerDefaultDiscount,
+            customerCategoryDiscount);
+        return ConnectedB2bPricingResolver.TryResolve(exposure, share, mode, policy, out price, out source);
     }
 
     public static decimal RoundMoney(decimal value) =>
         decimal.Round(value, 2, MidpointRounding.AwayFromZero);
+}
+
+public sealed record ConnectedPoPaymentTimingPolicy(
+    bool AllowPayBeforeFulfillment,
+    bool AllowPayOnDeliveryOrReceipt,
+    bool AllowSupplierCredit,
+    ConnectedPoPaymentTiming DefaultPaymentTiming)
+{
+    public bool IsAllowed(ConnectedPoPaymentTiming timing) =>
+        timing switch
+        {
+            ConnectedPoPaymentTiming.PayBeforeFulfillment => AllowPayBeforeFulfillment,
+            ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt => AllowPayOnDeliveryOrReceipt,
+            ConnectedPoPaymentTiming.SupplierCredit => AllowSupplierCredit,
+            _ => false
+        };
+}
+
+public static class ConnectedPoPaymentTimingResolver
+{
+    public static ConnectedPoPaymentTimingPolicy Resolve(
+        OrganizationConnectedCommerceSettings organization,
+        ConnectedSupplierRelationship relationship)
+    {
+        var allowBefore = organization.AllowPayBeforeFulfillment;
+        var allowOnDelivery = organization.AllowPayOnDeliveryOrReceipt;
+        var allowCredit = organization.AllowSupplierCredit;
+        if (!relationship.UseOrganizationPaymentTimingDefaults)
+        {
+            allowBefore &= relationship.AllowPayBeforeFulfillment;
+            allowOnDelivery &= relationship.AllowPayOnDeliveryOrReceipt;
+            allowCredit &= relationship.AllowSupplierCredit;
+        }
+
+        var defaultTiming = relationship.UseOrganizationPaymentTimingDefaults
+            ? organization.DefaultPaymentTiming
+            : relationship.CustomerDefaultPaymentTiming;
+        if (!IsAllowed(defaultTiming, allowBefore, allowOnDelivery, allowCredit))
+        {
+            defaultTiming = allowBefore
+                ? ConnectedPoPaymentTiming.PayBeforeFulfillment
+                : allowOnDelivery
+                    ? ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt
+                    : ConnectedPoPaymentTiming.SupplierCredit;
+        }
+
+        return new ConnectedPoPaymentTimingPolicy(allowBefore, allowOnDelivery, allowCredit, defaultTiming);
+    }
+
+    private static bool IsAllowed(
+        ConnectedPoPaymentTiming timing,
+        bool allowBefore,
+        bool allowOnDelivery,
+        bool allowCredit) =>
+        timing switch
+        {
+            ConnectedPoPaymentTiming.PayBeforeFulfillment => allowBefore,
+            ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt => allowOnDelivery,
+            ConnectedPoPaymentTiming.SupplierCredit => allowCredit,
+            _ => false
+        };
 }
 
 public sealed class BuyerSupplierProductLink
@@ -1158,13 +1419,23 @@ public static class ConnectedPoPaymentTerms
     public static string ToUiLabel(ConnectedPoPaymentTerm term) =>
         term switch
         {
-            ConnectedPoPaymentTerm.Cash => "COD / Pay on delivery",
+            // Method label only — never imply PaymentTiming (PayBefore vs PayOnDelivery).
+            ConnectedPoPaymentTerm.Cash => "Cash",
             ConnectedPoPaymentTerm.ManualGCash => "GCash / Manual e-wallet",
             ConnectedPoPaymentTerm.BankTransfer => "Bank transfer",
             ConnectedPoPaymentTerm.BankDeposit => "Bank deposit",
             ConnectedPoPaymentTerm.Check => "Check",
             ConnectedPoPaymentTerm.Utang => "Utang / Credit",
             _ => term.ToString(),
+        };
+
+    public static string ToUiLabel(ConnectedPoPaymentTiming timing) =>
+        timing switch
+        {
+            ConnectedPoPaymentTiming.PayBeforeFulfillment => "Pay before fulfillment",
+            ConnectedPoPaymentTiming.PayOnDeliveryOrReceipt => "Pay on delivery / receipt",
+            ConnectedPoPaymentTiming.SupplierCredit => "Supplier credit (Utang)",
+            _ => timing.ToString(),
         };
 }
 
@@ -1335,16 +1606,31 @@ public sealed class ConnectedPurchaseOrder
     public decimal TotalAmount { get; }
     /// <summary>Original buyer-submitted payment term. Never overwritten by proposals.</summary>
     public ConnectedPoPaymentTerm PaymentTerm { get; }
+    public ConnectedPoPaymentTiming PaymentTiming { get; }
+    /// <summary>Buyer-selected fulfillment channel at submit (Pickup / Delivery).</summary>
+    public string? FulfillmentMethod { get; private set; }
     /// <summary>Supplier-proposed payment term while awaiting buyer review (null = unchanged).</summary>
     public ConnectedPoPaymentTerm? ProposedPaymentTerm { get; private set; }
+    public ConnectedPoPaymentTiming? ProposedPaymentTiming { get; private set; }
     /// <summary>Agreed payment term after accept (null until accepted).</summary>
     public ConnectedPoPaymentTerm? ConfirmedPaymentTerm { get; private set; }
+    public ConnectedPoPaymentTiming? ConfirmedPaymentTiming { get; private set; }
+    /// <summary>Locked fulfillment method after supplier confirmation (null until accepted).</summary>
+    public string? ConfirmedFulfillmentMethod { get; private set; }
     public ConnectedPoPaymentTerm EffectivePaymentTerm =>
         ConfirmedPaymentTerm
         ?? ProposedPaymentTerm
         ?? PaymentTerm;
+    public ConnectedPoPaymentTiming EffectivePaymentTiming =>
+        ConfirmedPaymentTiming
+        ?? ProposedPaymentTiming
+        ?? PaymentTiming;
+    public string? EffectiveFulfillmentMethod =>
+        ConfirmedFulfillmentMethod
+        ?? FulfillmentMethod;
     public bool HasProposedPaymentChange =>
-        ProposedPaymentTerm is ConnectedPoPaymentTerm proposed && proposed != PaymentTerm;
+        (ProposedPaymentTerm is ConnectedPoPaymentTerm proposed && proposed != PaymentTerm)
+        || (ProposedPaymentTiming is ConnectedPoPaymentTiming proposedTiming && proposedTiming != PaymentTiming);
     public bool HasProposedMaterialChanges => HasProposedLineChanges || HasProposedPaymentChange;
     public DateTimeOffset CreatedAtUtc { get; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -1394,16 +1680,21 @@ public sealed class ConnectedPurchaseOrder
         string? declineNote,
         List<ConnectedPurchaseOrderLine> lines,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
         DateTimeOffset? changesProposedAtUtc = null,
         Guid? changesProposedByUserId = null,
         DateTimeOffset? buyerRespondedAtUtc = null,
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
+        ConnectedPoPaymentTiming? proposedPaymentTiming = null,
         ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        ConnectedPoPaymentTiming? confirmedPaymentTiming = null,
         decimal creditPostedAmount = 0m,
         ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
         DateTimeOffset? inventoryReservationExpiresAtUtc = null,
-        int inventoryReservationRevision = 0)
+        int inventoryReservationRevision = 0,
+        string? fulfillmentMethod = null,
+        string? confirmedFulfillmentMethod = null)
     {
         Id = id;
         RelationshipId = relationshipId;
@@ -1416,8 +1707,13 @@ public sealed class ConnectedPurchaseOrder
         Status = status;
         TotalAmount = total;
         PaymentTerm = paymentTerm;
+        PaymentTiming = paymentTiming;
+        FulfillmentMethod = NormalizeConnectedFulfillmentMethod(fulfillmentMethod);
         ProposedPaymentTerm = proposedPaymentTerm;
+        ProposedPaymentTiming = proposedPaymentTiming;
         ConfirmedPaymentTerm = confirmedPaymentTerm;
+        ConfirmedPaymentTiming = confirmedPaymentTiming;
+        ConfirmedFulfillmentMethod = NormalizeConnectedFulfillmentMethod(confirmedFulfillmentMethod);
         CreatedAtUtc = created;
         UpdatedAtUtc = updated;
         AcceptedAtUtc = accepted;
@@ -1447,7 +1743,9 @@ public sealed class ConnectedPurchaseOrder
         IReadOnlyList<ConnectedPurchaseOrderLine> lines,
         DateTimeOffset utcNow,
         ConnectedPurchaseOrderId? id = null,
-        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash)
+        ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
+        string? fulfillmentMethod = null)
     {
         if (relationship.Status != ConnectedSupplierRelationshipStatus.Active || lines.Count == 0)
         {
@@ -1478,7 +1776,9 @@ public sealed class ConnectedPurchaseOrder
             null,
             null,
             lines.ToList(),
-            paymentTerm);
+            paymentTerm,
+            paymentTiming,
+            fulfillmentMethod: fulfillmentMethod);
     }
 
     public void Accept(DateTimeOffset utcNow)
@@ -1489,7 +1789,10 @@ public sealed class ConnectedPurchaseOrder
         Status = ConnectedPurchaseOrderStatus.Accepted;
         AcceptedAtUtc = utcNow;
         ProposedPaymentTerm = null;
+        ProposedPaymentTiming = null;
         ConfirmedPaymentTerm = PaymentTerm;
+        ConfirmedPaymentTiming = PaymentTiming;
+        ConfirmedFulfillmentMethod = FulfillmentMethod;
         UpdatedAtUtc = utcNow;
     }
 
@@ -1497,7 +1800,8 @@ public sealed class ConnectedPurchaseOrder
         IReadOnlyList<ConnectedPoLineProposal> proposals,
         DateTimeOffset utcNow,
         Guid? actorId = null,
-        ConnectedPoPaymentTerm? proposedPaymentTerm = null)
+        ConnectedPoPaymentTerm? proposedPaymentTerm = null,
+        ConnectedPoPaymentTiming? proposedPaymentTiming = null)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
         EnsureNew();
@@ -1538,8 +1842,13 @@ public sealed class ConnectedPurchaseOrder
         {
             nextProposedPayment = payment;
         }
+        ConnectedPoPaymentTiming? nextProposedPaymentTiming = null;
+        if (proposedPaymentTiming is ConnectedPoPaymentTiming timing && timing != PaymentTiming)
+        {
+            nextProposedPaymentTiming = timing;
+        }
 
-        if (!updated.Any(x => x.HasSupplierChange) && nextProposedPayment is null)
+        if (!updated.Any(x => x.HasSupplierChange) && nextProposedPayment is null && nextProposedPaymentTiming is null)
         {
             throw new DomainException(
                 ConnectedSupplierDomainErrorCodes.InvalidOrder,
@@ -1557,7 +1866,9 @@ public sealed class ConnectedPurchaseOrder
 
         ReplaceLines(updated);
         ProposedPaymentTerm = nextProposedPayment;
+        ProposedPaymentTiming = nextProposedPaymentTiming;
         ConfirmedPaymentTerm = null;
+        ConfirmedPaymentTiming = null;
         Status = ConnectedPurchaseOrderStatus.ChangesProposed;
         ChangesProposedAtUtc = utcNow;
         ChangesProposedByUserId = actorId;
@@ -1645,7 +1956,10 @@ public sealed class ConnectedPurchaseOrder
 
         ReplaceLines(confirmed);
         ConfirmedPaymentTerm = ProposedPaymentTerm ?? PaymentTerm;
+        ConfirmedPaymentTiming = ProposedPaymentTiming ?? PaymentTiming;
+        ConfirmedFulfillmentMethod = FulfillmentMethod;
         ProposedPaymentTerm = null;
+        ProposedPaymentTiming = null;
         Status = ConnectedPurchaseOrderStatus.Accepted;
         AcceptedAtUtc = utcNow;
         BuyerRespondedAtUtc = utcNow;
@@ -1669,7 +1983,9 @@ public sealed class ConnectedPurchaseOrder
 
         ReplaceLines(_lines.Select(x => x.ClearProposal()).ToList());
         ProposedPaymentTerm = null;
+        ProposedPaymentTiming = null;
         ConfirmedPaymentTerm = null;
+        ConfirmedPaymentTiming = null;
         Status = ConnectedPurchaseOrderStatus.New;
         ChangesProposedAtUtc = null;
         ChangesProposedByUserId = null;
@@ -1694,7 +2010,9 @@ public sealed class ConnectedPurchaseOrder
 
         ReplaceLines(_lines.Select(x => x.ClearProposal()).ToList());
         ProposedPaymentTerm = null;
+        ProposedPaymentTiming = null;
         ConfirmedPaymentTerm = null;
+        ConfirmedPaymentTiming = null;
         Status = ConnectedPurchaseOrderStatus.New;
         ChangesProposedAtUtc = null;
         ChangesProposedByUserId = null;
@@ -1777,7 +2095,7 @@ public sealed class ConnectedPurchaseOrder
     public void PostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
-        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        if (!ConnectedPoUtangCredit.UsesUtang(this))
         {
             return;
         }
@@ -1812,7 +2130,7 @@ public sealed class ConnectedPurchaseOrder
     public void UnpostUtangCreditFromReceipt(decimal receivedAmount, DateTimeOffset utcNow)
     {
         ConnectedSupplierRelationship.EnsureUtc(utcNow);
-        if (!ConnectedPoUtangCredit.UsesUtang(EffectivePaymentTerm))
+        if (!ConnectedPoUtangCredit.UsesUtang(this))
         {
             return;
         }
@@ -1909,16 +2227,21 @@ public sealed class ConnectedPurchaseOrder
         ConnectedPoDeclineReason? declineReason = null,
         string? declineNote = null,
         ConnectedPoPaymentTerm paymentTerm = ConnectedPoPaymentTerm.Cash,
+        ConnectedPoPaymentTiming paymentTiming = ConnectedPoPaymentTiming.PayBeforeFulfillment,
         DateTimeOffset? changesProposedAtUtc = null,
         Guid? changesProposedByUserId = null,
         DateTimeOffset? buyerRespondedAtUtc = null,
         Guid? buyerRespondedByUserId = null,
         ConnectedPoPaymentTerm? proposedPaymentTerm = null,
+        ConnectedPoPaymentTiming? proposedPaymentTiming = null,
         ConnectedPoPaymentTerm? confirmedPaymentTerm = null,
+        ConnectedPoPaymentTiming? confirmedPaymentTiming = null,
         decimal creditPostedAmount = 0m,
         ConnectedPoInventoryReservationState inventoryReservationState = ConnectedPoInventoryReservationState.None,
         DateTimeOffset? inventoryReservationExpiresAtUtc = null,
-        int inventoryReservationRevision = 0) =>
+        int inventoryReservationRevision = 0,
+        string? fulfillmentMethod = null,
+        string? confirmedFulfillmentMethod = null) =>
         new(
             id,
             relationshipId,
@@ -1941,14 +2264,42 @@ public sealed class ConnectedPurchaseOrder
             declineNote,
             lines.ToList(),
             paymentTerm,
+            paymentTiming,
             changesProposedAtUtc,
             changesProposedByUserId,
             buyerRespondedAtUtc,
             buyerRespondedByUserId,
             proposedPaymentTerm,
+            proposedPaymentTiming,
             confirmedPaymentTerm,
+            confirmedPaymentTiming,
             creditPostedAmount,
             inventoryReservationState,
             inventoryReservationExpiresAtUtc,
-            inventoryReservationRevision);
+            inventoryReservationRevision,
+            fulfillmentMethod,
+            confirmedFulfillmentMethod);
+
+    private static string? NormalizeConnectedFulfillmentMethod(string? method)
+    {
+        if (string.IsNullOrWhiteSpace(method))
+        {
+            return null;
+        }
+
+        var trimmed = method.Trim();
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentPickup, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentPickup;
+        }
+
+        if (trimmed.Equals(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, StringComparison.OrdinalIgnoreCase))
+        {
+            return ConnectedSupplierCommerceReadiness.FulfillmentDelivery;
+        }
+
+        throw new DomainException(
+            ConnectedSupplierDomainErrorCodes.InvalidOrder,
+            "Fulfillment method must be Pickup or Delivery.");
+    }
 }

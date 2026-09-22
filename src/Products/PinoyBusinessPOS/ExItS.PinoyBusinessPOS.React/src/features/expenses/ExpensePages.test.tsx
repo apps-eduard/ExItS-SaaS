@@ -70,7 +70,7 @@ function recordedExpense(overrides: Partial<expenseClient.PosExpenseDto> = {}): 
   return {
     expenseId,
     organizationId: orgId,
-    expenseNumber: "EXP-20260829-0001",
+    expenseNumber: "260829-001",
     categoryId,
     categoryName: "Rent",
     status: "Recorded",
@@ -296,7 +296,7 @@ describe("Expense React CRUD", () => {
     expect(screen.getByTestId("expense-summary-by-category")).toHaveTextContent("71.4%");
     expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("Cash");
     expect(screen.getByTestId("expense-summary-by-payment")).toHaveTextContent("71.4%");
-    expect(screen.getByTestId(`expense-row-${expenseId}`)).toHaveTextContent("EXP-20260829-0001");
+    expect(screen.getByTestId(`expense-row-${expenseId}`)).toHaveTextContent("260829-001");
     expect(screen.queryByTestId("expense-org-scope-banner")).not.toBeInTheDocument();
   });
 
@@ -462,7 +462,7 @@ describe("Expense React CRUD", () => {
       );
     });
     expect(await screen.findByTestId("expense-record-success")).toBeInTheDocument();
-    expect(screen.getByTestId("expense-recorded-number")).toHaveTextContent("EXP-20260829-0001");
+    expect(screen.getByTestId("expense-recorded-number")).toHaveTextContent("260829-001");
   });
 
   it("records ManualGCash with optional blank reference", async () => {

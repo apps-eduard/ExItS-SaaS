@@ -47,7 +47,7 @@ public sealed class ConnectedSupplierInventoryInvariantTests
         var order = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
             relationship,
             PurchaseOrderId.New(),
-            "PO-20260814-000001",
+            "260814-001",
             DateOnly.FromDateTime(Now.UtcDateTime),
             "Desk delivery",
             [line],
@@ -62,7 +62,7 @@ public sealed class ConnectedSupplierInventoryInvariantTests
         var declined = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
             relationship,
             PurchaseOrderId.New(),
-            "PO-20260814-000002",
+            "260814-002",
             DateOnly.FromDateTime(Now.UtcDateTime),
             null,
             [line],

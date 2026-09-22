@@ -14,13 +14,14 @@ public static class ConnectedPoUtangObligationProjection
     public const string SaleRemarkPrefix = "sale:";
 
     /// <summary>
-    /// For Utang POs, omitted PaidNow means 0 (credit), never default to full receipt total.
+    /// For Utang / SupplierCredit POs, omitted PaidNow means 0 (credit), never default to full receipt total.
     /// Cash / other terms keep ADR-023 payable default (null → fully paid at receipt).
     /// </summary>
     public static decimal? ResolvePaidAtReceipt(
         ConnectedPoPaymentTerm paymentTerm,
         decimal receivedAmount,
-        decimal? requestedPaidNow)
+        decimal? requestedPaidNow,
+        ConnectedPoPaymentTiming? paymentTiming = null)
     {
         var received = SaleMoney.RoundMoney(receivedAmount);
         if (received <= 0m)
@@ -28,7 +29,9 @@ public static class ConnectedPoUtangObligationProjection
             return 0m;
         }
 
-        if (!ConnectedPoUtangCredit.UsesUtang(paymentTerm))
+        var usesCredit = ConnectedPoUtangCredit.UsesUtang(paymentTerm)
+            || paymentTiming == ConnectedPoPaymentTiming.SupplierCredit;
+        if (!usesCredit)
         {
             return requestedPaidNow;
         }

@@ -3,12 +3,9 @@ namespace ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 /// <summary>
 /// Pure evaluation of whether a connected supplier is ready to accept buyer POs.
 /// Fulfillment mirrors seller Branch PO readiness: an effective branch method is
-/// enabled+ready. PO fulfillment is satisfied when at least one branch channel
-/// (Pickup or Delivery) is usable — incomplete sibling channels do not block.
-/// Organization Offer Delivery only controls the DeliveryConfig checklist row;
-/// it does not gate FulfillmentMethod or listing Delivery when the branch channel
-/// is already enabled+ready. DeliveryEnabled here means organization Offer Delivery
-/// (not per-customer override).
+/// enabled+ready. Delivery also requires organization Offer Delivery ON.
+/// PO fulfillment is satisfied when at least one usable channel (Pickup or Delivery)
+/// is ready — incomplete sibling channels do not block.
 /// </summary>
 public static class ConnectedSupplierCommerceReadiness
 {
@@ -35,6 +32,15 @@ public static class ConnectedSupplierCommerceReadiness
     public const string BuyerBlockerCatalog = "Catalog";
     public const string BuyerBlockerContact = "Contact";
     public const string BuyerBlockerCredit = "Credit";
+
+    /// <summary>Buyer Delivery unavailable because organization Offer Delivery is OFF.</summary>
+    public const string DeliveryUnavailableOrgOfferOff = "OrgOfferOff";
+    /// <summary>Buyer Delivery unavailable because branch Delivery is not enabled+ready.</summary>
+    public const string DeliveryUnavailableBranchNotReady = "BranchNotReady";
+    /// <summary>Buyer Delivery unavailable because this relationship Blocks Delivery.</summary>
+    public const string DeliveryUnavailableRelationshipBlocked = "RelationshipBlocked";
+    /// <summary>Buyer Pickup unavailable because branch Pickup is not enabled+ready.</summary>
+    public const string PickupUnavailableBranchNotReady = "BranchNotReady";
 
     private static readonly string[] BuyerBlockerOrder =
     [
@@ -75,11 +81,102 @@ public static class ConnectedSupplierCommerceReadiness
         IReadOnlyList<string> SupportedFulfillmentMethods,
         IReadOnlyList<Requirement> Requirements);
 
+    /// <summary>
+    /// Canonical buyer-facing fulfillment options + unavailability reasons.
+    /// Selectable methods match EffectiveDeliveryAllowance / submit gates (supplier-side).
+    /// Buyer destination completeness is a separate UI concern and must not erase supplier capability.
+    /// </summary>
+    public sealed record BuyerFulfillmentOptions(
+        bool OrgOfferDelivery,
+        bool BranchPickupReady,
+        bool BranchDeliveryReady,
+        bool RelationshipDeliveryBlocked,
+        bool PickupSelectable,
+        bool DeliverySelectable,
+        string? PickupUnavailableReason,
+        string? DeliveryUnavailableReason,
+        IReadOnlyList<string> SelectableMethods);
+
+    /// <summary>
+    /// Resolves effective Pickup/Delivery selectability and precise unavailability reasons.
+    /// </summary>
+    public static BuyerFulfillmentOptions ResolveBuyerFulfillmentOptions(
+        bool orgOfferDelivery,
+        bool branchPickupEnabled,
+        bool branchPickupReady,
+        bool branchDeliveryEnabled,
+        bool branchDeliveryReady,
+        CustomerDeliveryOverride customerOverride)
+    {
+        var pickupReady = branchPickupEnabled && branchPickupReady;
+        var branchDeliveryConfigured = branchDeliveryEnabled && branchDeliveryReady;
+        var relationshipBlocked = customerOverride == CustomerDeliveryOverride.Block;
+
+        var deliverySelectable = EffectiveDeliveryAllowance.IsAllowed(
+            orgOfferDelivery,
+            branchDeliveryConfigured,
+            customerOverride);
+
+        string? deliveryUnavailableReason = null;
+        if (!deliverySelectable)
+        {
+            if (relationshipBlocked && orgOfferDelivery && branchDeliveryConfigured)
+            {
+                deliveryUnavailableReason = DeliveryUnavailableRelationshipBlocked;
+            }
+            else if (!orgOfferDelivery && branchDeliveryConfigured)
+            {
+                // Branch is delivery-capable; org master switch hides it from buyers.
+                deliveryUnavailableReason = DeliveryUnavailableOrgOfferOff;
+            }
+            else if (!branchDeliveryConfigured)
+            {
+                deliveryUnavailableReason = DeliveryUnavailableBranchNotReady;
+            }
+            else if (!orgOfferDelivery)
+            {
+                deliveryUnavailableReason = DeliveryUnavailableOrgOfferOff;
+            }
+            else
+            {
+                deliveryUnavailableReason = DeliveryUnavailableBranchNotReady;
+            }
+        }
+
+        string? pickupUnavailableReason = pickupReady
+            ? null
+            : PickupUnavailableBranchNotReady;
+
+        var methods = new List<string>(2);
+        if (pickupReady)
+        {
+            methods.Add(FulfillmentPickup);
+        }
+
+        if (deliverySelectable)
+        {
+            methods.Add(FulfillmentDelivery);
+        }
+
+        return new BuyerFulfillmentOptions(
+            OrgOfferDelivery: orgOfferDelivery,
+            BranchPickupReady: pickupReady,
+            BranchDeliveryReady: branchDeliveryConfigured,
+            RelationshipDeliveryBlocked: relationshipBlocked,
+            PickupSelectable: pickupReady,
+            DeliverySelectable: deliverySelectable,
+            PickupUnavailableReason: pickupUnavailableReason,
+            DeliveryUnavailableReason: deliveryUnavailableReason,
+            SelectableMethods: methods);
+    }
+
     public static Result Evaluate(Input input)
     {
         // Branch channels (same as seller Branch PO panel): enabled + ready.
+        // Delivery also requires organization Offer Delivery (canonical EffectiveDelivery).
         var pickupUsable = input.PickupEnabled && input.PickupConfigured;
         var branchDeliveryUsable = input.DeliveryConfigured;
+        var deliveryUsable = input.DeliveryEnabled && branchDeliveryUsable;
 
         var methods = new List<string>(2);
         if (pickupUsable)
@@ -87,13 +184,13 @@ public static class ConnectedSupplierCommerceReadiness
             methods.Add(FulfillmentPickup);
         }
 
-        if (branchDeliveryUsable)
+        if (deliveryUsable)
         {
             methods.Add(FulfillmentDelivery);
         }
 
-        // At least one branch channel — Pickup-only or Delivery-only both satisfy.
-        var hasBranchFulfillmentMethod = pickupUsable || branchDeliveryUsable;
+        // At least one usable channel — Pickup-only or Delivery-only both satisfy.
+        var hasBranchFulfillmentMethod = pickupUsable || deliveryUsable;
 
         var requirements = new List<Requirement>
         {
@@ -110,7 +207,7 @@ public static class ConnectedSupplierCommerceReadiness
             Conditional(
                 DeliveryConfig,
                 applicable: input.DeliveryEnabled,
-                complete: branchDeliveryUsable,
+                complete: deliveryUsable,
                 title: "Delivery configuration",
                 detail: "Finish delivery setup for a delivery-capable selling branch."),
             Conditional(

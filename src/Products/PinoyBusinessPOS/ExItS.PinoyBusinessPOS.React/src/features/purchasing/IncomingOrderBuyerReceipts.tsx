@@ -15,7 +15,6 @@ export type IncomingOrderBuyerReceiptsProps = {
   receipts: readonly IncomingOrderBuyerReceipt[];
   buyerName: string;
   buyerLabel: string;
-  remainingOutstanding: number;
   connectedPurchaseOrderId: string;
   latestTitle: string;
   historyTitle: string;
@@ -23,7 +22,6 @@ export type IncomingOrderBuyerReceiptsProps = {
   goodLabel: string;
   damagedLabel: string;
   missingLabel: string;
-  outstandingLabel: string;
   deliveryRefLabel: string;
   notesLabel: string;
   loadMoreLabel: string;
@@ -52,7 +50,6 @@ export function IncomingOrderBuyerReceipts({
   receipts,
   buyerName,
   buyerLabel,
-  remainingOutstanding,
   connectedPurchaseOrderId,
   latestTitle,
   historyTitle,
@@ -60,7 +57,6 @@ export function IncomingOrderBuyerReceipts({
   goodLabel,
   damagedLabel,
   missingLabel,
-  outstandingLabel,
   deliveryRefLabel,
   notesLabel,
   loadMoreLabel,
@@ -102,10 +98,12 @@ export function IncomingOrderBuyerReceipts({
   return (
     <div className="flex flex-col gap-3" data-testid="incoming-order-buyer-receipts">
       {latest ? (
-        <Card className="flex flex-col gap-3 p-4" data-testid="incoming-order-latest-receipt">
+        <Card className="incoming-order-latest-receipt flex flex-col gap-3 p-4 px-5" data-testid="incoming-order-latest-receipt">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 className="m-0 text-[length:var(--exits-text-md)] font-medium">{latestTitle}</h2>
+              <h2 className="incoming-order-latest-receipt__title m-0 text-[length:var(--exits-text-md)] font-semibold text-[var(--exits-primary)]">
+                {latestTitle}
+              </h2>
               <p className="m-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
                 {latest.grnNumber} · {formatReceiptWhen(latest.receivedAtUtc)}
               </p>
@@ -115,41 +113,48 @@ export function IncomingOrderBuyerReceipts({
             </StatusChip>
           </div>
 
-          <dl className="m-0 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <div>
-              <dt className="text-[length:var(--exits-text-sm)] text-muted">{buyerLabel}</dt>
-              <dd className="m-0 font-medium">{buyerName}</dd>
-            </div>
-            <div>
-              <dt className="text-[length:var(--exits-text-sm)] text-muted">{goodLabel}</dt>
-              <dd className="m-0 tabular-nums">{formatStockQtyLabel(latest.goodQtyTotal)}</dd>
-            </div>
-            <div>
-              <dt className="text-[length:var(--exits-text-sm)] text-muted">{damagedLabel}</dt>
-              <dd className="m-0 tabular-nums">{formatStockQtyLabel(latest.damagedQtyTotal)}</dd>
-            </div>
-            {latest.missingQtyTotal > 0 ? (
-              <div>
-                <dt className="text-[length:var(--exits-text-sm)] text-muted">{missingLabel}</dt>
-                <dd className="m-0 tabular-nums">{formatStockQtyLabel(latest.missingQtyTotal)}</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt className="text-[length:var(--exits-text-sm)] text-muted">{outstandingLabel}</dt>
-              <dd className="m-0 tabular-nums font-semibold">
-                {formatStockQtyLabel(remainingOutstanding)}
+          <dl
+            className="incoming-order-latest-receipt__meta m-0"
+            data-testid="incoming-order-latest-receipt-meta"
+          >
+            <div className="incoming-order-latest-receipt__field incoming-order-latest-receipt__field--buyer min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{buyerLabel}</dt>
+              <dd className="m-0 truncate font-semibold" title={buyerName}>
+                {buyerName}
               </dd>
             </div>
-            {latest.deliveryReference?.trim() ? (
-              <div>
-                <dt className="text-[length:var(--exits-text-sm)] text-muted">{deliveryRefLabel}</dt>
-                <dd className="m-0">{latest.deliveryReference.trim()}</dd>
+            <div className="incoming-order-latest-receipt__field min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{deliveryRefLabel}</dt>
+              <dd className="m-0 truncate font-semibold" title={latest.deliveryReference?.trim() || undefined}>
+                {latest.deliveryReference?.trim() || "—"}
+              </dd>
+            </div>
+            <div className="incoming-order-latest-receipt__field min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{goodLabel}</dt>
+              <dd className="m-0 tabular-nums font-semibold">
+                {formatStockQtyLabel(latest.goodQtyTotal)}
+              </dd>
+            </div>
+            <div className="incoming-order-latest-receipt__field min-w-0">
+              <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{damagedLabel}</dt>
+              <dd className="m-0 tabular-nums font-semibold">
+                {formatStockQtyLabel(latest.damagedQtyTotal)}
+              </dd>
+            </div>
+            {latest.missingQtyTotal > 0 ? (
+              <div className="incoming-order-latest-receipt__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{missingLabel}</dt>
+                <dd className="m-0 tabular-nums font-semibold">
+                  {formatStockQtyLabel(latest.missingQtyTotal)}
+                </dd>
               </div>
             ) : null}
             {latest.notes?.trim() ? (
-              <div className="sm:col-span-2">
-                <dt className="text-[length:var(--exits-text-sm)] text-muted">{notesLabel}</dt>
-                <dd className="m-0">{latest.notes.trim()}</dd>
+              <div className="incoming-order-latest-receipt__field min-w-0">
+                <dt className="m-0 text-[length:var(--exits-text-xs)] text-muted">{notesLabel}</dt>
+                <dd className="m-0 truncate font-medium" title={latest.notes.trim()}>
+                  {latest.notes.trim()}
+                </dd>
               </div>
             ) : null}
           </dl>

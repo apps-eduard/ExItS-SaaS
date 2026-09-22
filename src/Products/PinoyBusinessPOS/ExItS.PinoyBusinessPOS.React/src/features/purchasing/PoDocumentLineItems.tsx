@@ -11,15 +11,11 @@ export type PoDocumentLineItemsProps = {
   emptyTitle: string;
   emptyDetail?: string;
   lines: PoDocumentLine[];
-  /** When true, show buyer receive progress columns. */
-  showReceiveProgress?: boolean;
   productColLabel: string;
   skuColLabel: string;
   qtyColLabel: string;
   unitCostColLabel: string;
   lineTotalColLabel: string;
-  receivedColLabel?: string;
-  outstandingColLabel?: string;
   /** Optional trailing slot in the section header (e.g. none). */
   headerEnd?: ReactNode;
   className?: string;
@@ -37,14 +33,11 @@ export function PoDocumentLineItems({
   emptyTitle,
   emptyDetail,
   lines,
-  showReceiveProgress = false,
   productColLabel,
   skuColLabel,
   qtyColLabel,
   unitCostColLabel,
   lineTotalColLabel,
-  receivedColLabel,
-  outstandingColLabel,
   headerEnd,
   className,
   testId = "po-document-lines",
@@ -84,7 +77,7 @@ export function PoDocumentLineItems({
                 <tr>
                   <th scope="col">{productColLabel}</th>
                   <th scope="col">{skuColLabel}</th>
-                  <th scope="col" className="po-document-lines__num">
+                  <th scope="col" className="po-document-lines__num po-document-lines__num--start">
                     {qtyColLabel}
                   </th>
                   <th scope="col" className="po-document-lines__num">
@@ -93,16 +86,6 @@ export function PoDocumentLineItems({
                   <th scope="col" className="po-document-lines__num">
                     {lineTotalColLabel}
                   </th>
-                  {showReceiveProgress ? (
-                    <>
-                      <th scope="col" className="po-document-lines__num">
-                        {receivedColLabel}
-                      </th>
-                      <th scope="col" className="po-document-lines__num">
-                        {outstandingColLabel}
-                      </th>
-                    </>
-                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -110,7 +93,16 @@ export function PoDocumentLineItems({
                   <tr key={line.id} data-testid={`${lineTestIdPrefix}-${line.id}`}>
                     <td className="po-document-lines__product font-medium">{line.productName}</td>
                     <td className="text-muted">{line.sku?.trim() || "—"}</td>
-                    <td className="po-document-lines__num tabular-nums">{line.quantityLabel}</td>
+                    <td className="po-document-lines__num po-document-lines__num--start">
+                      <span className="inline-flex items-baseline justify-start gap-1 leading-tight">
+                        <span className="tabular-nums">{line.quantityLabel}</span>
+                        {line.unitLabel?.trim() ? (
+                          <span className="text-[length:var(--exits-text-xs)] text-muted">
+                            {line.unitLabel.trim()}
+                          </span>
+                        ) : null}
+                      </span>
+                    </td>
                     <td className="po-document-lines__num tabular-nums">
                       <MoneyDisplay amount={line.unitCost} />
                     </td>
@@ -120,16 +112,6 @@ export function PoDocumentLineItems({
                         testId={`${lineTestIdPrefix}-total-${line.id}`}
                       />
                     </td>
-                    {showReceiveProgress ? (
-                      <>
-                        <td className="po-document-lines__num tabular-nums">
-                          {line.receivedLabel ?? "—"}
-                        </td>
-                        <td className="po-document-lines__num tabular-nums">
-                          {line.outstandingLabel ?? "—"}
-                        </td>
-                      </>
-                    ) : null}
                   </tr>
                 ))}
               </tbody>
@@ -156,15 +138,12 @@ export function PoDocumentLineItems({
                   <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{line.sku.trim()}</p>
                 ) : null}
                 <p className="m-0 text-[length:var(--exits-text-sm)] text-muted tabular-nums">
-                  {line.quantityLabel} × <MoneyDisplay amount={line.unitCost} />
+                  {line.quantityLabel}
+                  {line.unitLabel?.trim() ? (
+                    <span className="ml-1 text-[length:var(--exits-text-xs)]">{line.unitLabel.trim()}</span>
+                  ) : null}{" "}
+                  × <MoneyDisplay amount={line.unitCost} />
                 </p>
-                {showReceiveProgress ? (
-                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {receivedColLabel}: {line.receivedLabel ?? "—"}
-                    {" · "}
-                    {outstandingColLabel}: {line.outstandingLabel ?? "—"}
-                  </p>
-                ) : null}
               </li>
             ))}
           </ul>

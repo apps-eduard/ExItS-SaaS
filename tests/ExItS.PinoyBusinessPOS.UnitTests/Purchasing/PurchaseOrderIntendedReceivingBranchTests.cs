@@ -166,7 +166,7 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
             Now,
             intendedReceivingBranchId: intendedBranch);
         po.Submit(
-            intendedBranch is null ? "PO-20260907-000002" : "PO-20260907-000001",
+            intendedBranch is null ? "260907-002" : "260907-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     product.Id,
@@ -394,7 +394,7 @@ public sealed class PurchaseOrderIntendedReceivingBranchTests
             Func<GoodsReceipt, PurchaseOrder, CancellationToken, Task>? afterReceiptCreated = null,
             CancellationToken cancellationToken = default)
         {
-            var applied = applyReceive("GRN-20260907-000001");
+            var applied = applyReceive("260907-001");
             if (afterReceiptCreated is not null)
             {
                 await afterReceiptCreated(applied.Receipt, applied.UpdatedPo, cancellationToken).ConfigureAwait(false);

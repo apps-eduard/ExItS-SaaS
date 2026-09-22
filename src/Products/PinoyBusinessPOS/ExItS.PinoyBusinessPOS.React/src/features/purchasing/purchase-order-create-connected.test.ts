@@ -347,13 +347,22 @@ describe("purchase-order-create-connected", () => {
       packageLabel: "Kg",
     };
     expect(resolveSupplierAvailability(limited)).toEqual({ kind: "available", quantity: 5 });
-    expect(formatSupplierAvailabilityLabel(limited, t)).toBe("Available now: 5 Kg");
+    expect(formatSupplierAvailabilityLabel(limited, t)).toBe("5");
     expect(requestedExceedsSupplierAvailability(limited, 3)).toBe(false);
     expect(requestedExceedsSupplierAvailability(limited, 5)).toBe(false);
     expect(requestedExceedsSupplierAvailability(limited, 8)).toBe(true);
     lines = applyConnectedQuantityDelta([], limited, 1);
     lines = applyConnectedQuantityDelta(lines, limited, 7);
     expect(lines[0]?.orderedQty).toBe(8);
+
+    const thousands = {
+      ...base,
+      stockTracked: true,
+      availableBaseQuantity: 12500,
+      unitOfMeasure: "Piece",
+      packageLabel: "Piece",
+    };
+    expect(formatSupplierAvailabilityLabel(thousands, t)).toBe("12,500");
 
     const cases = {
       ...base,
@@ -364,7 +373,7 @@ describe("purchase-order-create-connected", () => {
       packageLabel: "Pack",
     };
     expect(availablePurchaseQty(cases)).toBe(2);
-    expect(formatSupplierAvailabilityLabel(cases, t)).toBe("Available now: 2 Pack");
+    expect(formatSupplierAvailabilityLabel(cases, t)).toBe("2");
     lines = applyConnectedQuantityDelta([], cases, 1);
     lines = applyConnectedQuantityDelta(lines, cases, 5);
     expect(lines[0]?.orderedQty).toBe(6);
@@ -423,6 +432,6 @@ describe("purchase-order-create-connected", () => {
 
   it("formats unit labels for display", () => {
     expect(formatUnitOfMeasureLabel("Kilogram")).toBe("Kg");
-    expect(formatUnitPriceLabel(12, "Piece")).toContain("/ pc");
+    expect(formatUnitPriceLabel(12, "Piece")).toMatch(/₱\s*12/);
   });
 });

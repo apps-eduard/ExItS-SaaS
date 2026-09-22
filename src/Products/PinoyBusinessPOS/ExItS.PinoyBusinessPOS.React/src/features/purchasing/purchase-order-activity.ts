@@ -25,6 +25,9 @@ export type PurchaseOrderActivityKind =
   | "receipt"
   | "receipt_reversed"
   | "remaining_closed"
+  | "awaiting_payment"
+  | "payment_confirmed"
+  | "no_payment_due"
   | "completed";
 
 export type PurchaseOrderActivityReceiptLine = {
@@ -55,6 +58,8 @@ export type PurchaseOrderActivityEvent = {
     proposedTotal: number | null;
     reservationExpiresAtUtc: string | null;
   };
+  /** Optional seller settlement remarks (payment confirmed). */
+  note?: string | null;
 };
 
 function compareUtc(a: string, b: string): number {
@@ -256,6 +261,32 @@ export function buildPurchaseOrderActivityEvents(input: {
     }
   }
 
+  const lastPostedReceiptAt = [...postedReceipts]
+    .filter((r) => (r.status ?? "Posted") === "Posted")
+    .sort((a, b) => compareUtc(a.receivedAtUtc, b.receivedAtUtc))
+    .at(-1)?.receivedAtUtc;
+
+  // Settlement gate for pay-on-delivery/receipt: goods received but payment still outstanding.
+  const settlement = po.financialSettlementStatus ?? "NotRequired";
+  if (po.status === "Received" && settlement !== "NotRequired") {
+    const awaitingAt = lastPostedReceiptAt?.trim() || po.remainingClosedAtUtc?.trim();
+    if (awaitingAt) {
+      events.push({
+        id: `awaiting-payment:${po.purchaseOrderId}`,
+        kind: "awaiting_payment",
+        atUtc: awaitingAt,
+      });
+    }
+    if (settlement === "Settled" && po.financiallySettledAtUtc?.trim()) {
+      events.push({
+        id: `settled:${po.purchaseOrderId}`,
+        kind: (po.amountPaidSnapshot ?? 0) > 0 ? "payment_confirmed" : "no_payment_due",
+        atUtc: po.financiallySettledAtUtc,
+        note: po.sellerSettlementRemarks?.trim() || null,
+      });
+    }
+  }
+
   // Completion: only when PO is fully received; timestamp = last posted (non-void) receipt.
   if (po.remainingClosedAtUtc?.trim()) {
     events.push({
@@ -264,7 +295,7 @@ export function buildPurchaseOrderActivityEvents(input: {
       atUtc: po.remainingClosedAtUtc,
       actorId: po.remainingClosedByUserId ?? null,
     });
-  } else if (po.status === "Received") {
+  } else if (po.status === "Received" && settlement !== "AwaitingPayment") {
     const lastPosted = [...postedReceipts]
       .filter((r) => (r.status ?? "Posted") === "Posted")
       .sort((a, b) => compareUtc(a.receivedAtUtc, b.receivedAtUtc))
@@ -322,9 +353,138 @@ export function buildPurchaseOrderActivityEvents(input: {
       receipt: 3,
       receipt_reversed: 4,
       remaining_closed: 5,
-      completed: 5,
+      awaiting_payment: 5,
+      payment_confirmed: 6,
+      no_payment_due: 6,
+      completed: 7,
     };
     return order[a.kind] - order[b.kind];
+  });
+}
+
+/**
+ * Seller-side activity from a connected purchase order (+ embedded buyer receipts).
+ */
+export function buildConnectedPurchaseOrderActivityEvents(
+  order: {
+    connectedPurchaseOrderId?: string;
+    createdAtUtc?: string | null;
+    acceptedAtUtc?: string | null;
+    declinedAtUtc?: string | null;
+    preparingAtUtc?: string | null;
+    fulfilledAtUtc?: string | null;
+    withdrawnAtUtc?: string | null;
+    changesProposedAtUtc?: string | null;
+    remainingClosedAtUtc?: string | null;
+    financiallySettledAtUtc?: string | null;
+    sellerSettlementRemarks?: string | null;
+    financialSettlementStatus?: string | null;
+    buyerReceipts?: ReadonlyArray<{
+      goodsReceiptId: string;
+      grnNumber?: string | null;
+      status?: string | null;
+      receivedAtUtc?: string | null;
+    }> | null;
+  },
+): PurchaseOrderActivityEvent[] {
+  const id = order.connectedPurchaseOrderId ?? "connected-po";
+  const events: PurchaseOrderActivityEvent[] = [];
+
+  if (order.createdAtUtc?.trim()) {
+    events.push({
+      id: `created:${id}`,
+      kind: "created",
+      atUtc: order.createdAtUtc,
+    });
+    events.push({
+      id: `submitted:${id}`,
+      kind: "submitted",
+      atUtc: order.createdAtUtc,
+    });
+  }
+  if (order.acceptedAtUtc?.trim()) {
+    events.push({
+      id: `accepted:${id}`,
+      kind: "supplier_accepted",
+      atUtc: order.acceptedAtUtc,
+    });
+  }
+  if (order.declinedAtUtc?.trim()) {
+    events.push({
+      id: `declined:${id}`,
+      kind: "supplier_declined",
+      atUtc: order.declinedAtUtc,
+    });
+  }
+  if (order.preparingAtUtc?.trim()) {
+    events.push({
+      id: `preparing:${id}`,
+      kind: "supplier_preparing",
+      atUtc: order.preparingAtUtc,
+    });
+  }
+  if (order.fulfilledAtUtc?.trim()) {
+    events.push({
+      id: `fulfilled:${id}`,
+      kind: "supplier_ready",
+      atUtc: order.fulfilledAtUtc,
+    });
+  }
+  if (order.changesProposedAtUtc?.trim()) {
+    events.push({
+      id: `changes:${id}`,
+      kind: "changes_proposed",
+      atUtc: order.changesProposedAtUtc,
+    });
+  }
+  if (order.withdrawnAtUtc?.trim()) {
+    events.push({
+      id: `withdrawn:${id}`,
+      kind: "withdrawn",
+      atUtc: order.withdrawnAtUtc,
+    });
+  }
+  if (order.remainingClosedAtUtc?.trim()) {
+    events.push({
+      id: `remaining-closed:${id}`,
+      kind: "remaining_closed",
+      atUtc: order.remainingClosedAtUtc,
+    });
+  }
+  for (const receipt of order.buyerReceipts ?? []) {
+    if (receipt.receivedAtUtc?.trim()) {
+      events.push({
+        id: `receipt:${receipt.goodsReceiptId}`,
+        kind: "receipt",
+        atUtc: receipt.receivedAtUtc,
+        grnNumber: receipt.grnNumber ?? undefined,
+        receiptId: receipt.goodsReceiptId,
+        receiptStatus: receipt.status ?? undefined,
+      });
+    }
+  }
+  if (order.financialSettlementStatus === "AwaitingPayment" && order.fulfilledAtUtc?.trim()) {
+    events.push({
+      id: `awaiting-payment:${id}`,
+      kind: "awaiting_payment",
+      atUtc: order.fulfilledAtUtc,
+    });
+  }
+  if (order.financiallySettledAtUtc?.trim()) {
+    events.push({
+      id: `payment:${id}`,
+      kind: "payment_confirmed",
+      atUtc: order.financiallySettledAtUtc,
+      note: order.sellerSettlementRemarks ?? null,
+    });
+  }
+
+  return events.sort((a, b) => {
+    const byTime = compareUtc(a.atUtc, b.atUtc);
+    if (byTime !== 0) {
+      return byTime;
+    }
+    return a.id.localeCompare(b.id);
   });
 }
 

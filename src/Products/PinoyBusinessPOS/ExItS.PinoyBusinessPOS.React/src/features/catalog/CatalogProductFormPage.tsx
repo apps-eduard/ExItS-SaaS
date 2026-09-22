@@ -377,6 +377,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
 
   /** Default share-when-tracked policy; always false while untracked. */
   const [canExposeToConnectedBuyers, setCanExposeToConnectedBuyers] = useState(mode === "create");
+  const [returnPolicyMode, setReturnPolicyMode] = useState("UseDefault");
+  const [returnPolicyWindowDays, setReturnPolicyWindowDays] = useState<number | null>(null);
 
   const [addOpeningStock, setAddOpeningStock] = useState(false);
 
@@ -543,6 +545,8 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
     setTrackStockQuantity(product.isTracked !== false);
 
     setCanExposeToConnectedBuyers(product.canExposeToConnectedBuyers === true);
+    setReturnPolicyMode(product.returnPolicyMode ?? "UseDefault");
+    setReturnPolicyWindowDays(product.returnPolicyWindowDays ?? null);
 
     setExpirationWarningDays(String(product.expirationWarningDays ?? 7));
 
@@ -807,6 +811,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
           tracksExpiration: trackStockQuantity && tracksExpiration,
           expirationWarningDays: resolvedWarningDays,
           scope: resolvedScope,
+          returnPolicyMode,
+          returnPolicyReturnsAllowed: returnPolicyMode === "Custom" ? true : null,
+          returnPolicyWindowDays: returnPolicyMode === "Custom" ? returnPolicyWindowDays : null,
         };
 
         const product = await createCatalogProduct(workspace, body);
@@ -866,6 +873,9 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
         tracksExpiration: existing?.tracksExpiration === true,
         expirationWarningDays: existing?.expirationWarningDays ?? null,
         canExposeToConnectedBuyers: trackStockQuantity ? canExposeToConnectedBuyers : false,
+        returnPolicyMode,
+        returnPolicyReturnsAllowed: returnPolicyMode === "Custom" ? true : null,
+        returnPolicyWindowDays: returnPolicyMode === "Custom" ? returnPolicyWindowDays : null,
       });
 
       if (capabilities.canBeUsedAsIngredient && product.isTracked !== true) {
@@ -1660,6 +1670,45 @@ export function CatalogProductFormPage({ mode }: { mode: "create" | "edit" }) {
               {trackStockQuantity
                 ? t("catalog.connectedShare.trackedHelp")
                 : t("catalog.connectedShare.cantShareMessage")}
+            </p>
+          </div>
+        </section>
+
+        <section className="catalog-form-section exits-animate-panel" data-testid="catalog-return-policy-section">
+          <h2 className="catalog-form-section__title">Return policy</h2>
+          <div className="catalog-form-section__grid">
+            <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+              Mode
+              <select
+                className="rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
+                value={returnPolicyMode}
+                disabled={readOnly}
+                data-testid="catalog-return-policy-mode"
+                onChange={(e) => setReturnPolicyMode(e.target.value)}
+              >
+                <option value="UseDefault">Use default policy</option>
+                <option value="Custom">Custom policy</option>
+                <option value="NonReturnable">Non-returnable</option>
+              </select>
+            </label>
+            {returnPolicyMode === "Custom" ? (
+              <Input
+                label="Return window (days)"
+                type="number"
+                min={0}
+                step={1}
+                placeholder="Unlimited"
+                value={returnPolicyWindowDays ?? ""}
+                disabled={readOnly}
+                data-testid="catalog-return-policy-window-days"
+                onChange={(e) =>
+                  setReturnPolicyWindowDays(e.target.value === "" ? null : Number(e.target.value))
+                }
+              />
+            ) : null}
+            <p className="catalog-form-field--full m-0 text-[length:var(--exits-text-sm)] text-muted">
+              Hierarchy: organization default → category override → product override. Non-returnable
+              blocks voluntary returns only; delivery issues remain separate.
             </p>
           </div>
         </section>

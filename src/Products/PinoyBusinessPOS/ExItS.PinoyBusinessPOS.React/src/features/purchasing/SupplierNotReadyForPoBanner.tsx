@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/I18nProvider";
 
 /**
  * Buyer-facing only — blocker categories, never supplier internal missing-setup details.
- * Dismiss hides the banner for this mount only; Create PO stays blocked while not ready.
+ * Dismiss hides the banner for this mount only; draft create stays allowed while Submit is gated server-side.
  */
 export function SupplierNotReadyForPoBanner({
   testId = "po-supplier-not-ready-banner",

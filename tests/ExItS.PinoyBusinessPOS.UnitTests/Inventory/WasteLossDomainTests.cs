@@ -16,8 +16,8 @@ public sealed class WasteLossDomainTests
     public void Numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 8, 29);
-        Assert.Equal("WL-20260829-000001", WasteLossNumbers.Format(date, 1));
-        Assert.Equal("WL-20260829-000001", WasteLossNumbers.Normalize(" wl-20260829-000001 "));
+        Assert.Equal("260829-001", WasteLossNumbers.Format(date, 1));
+        Assert.Equal("260829-001", WasteLossNumbers.Normalize(" 260829-001 "));
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public sealed class WasteLossDomainTests
     {
         var wasteLoss = WasteLoss.Create(
             Org,
-            "WL-20260829-000001",
+            "260829-001",
             WasteLossReason.Damaged,
             [Draft(ProductA, "Coke", 2m, unitCost: 5m)],
             Actor,
@@ -52,7 +52,7 @@ public sealed class WasteLossDomainTests
         var ex = Assert.Throws<DomainException>(() =>
             WasteLoss.Create(
                 Org,
-                "WL-20260829-000002",
+                "260829-002",
                 WasteLossReason.Other,
                 [Draft(ProductA, "Coke", 1m)],
                 Actor,
@@ -65,7 +65,7 @@ public sealed class WasteLossDomainTests
     {
         var partial = WasteLoss.Create(
             Org,
-            "WL-20260829-000003",
+            "260829-003",
             WasteLossReason.Spoiled,
             [
                 Draft(ProductA, "Coke", 1m, unitCost: 5m),
@@ -77,7 +77,7 @@ public sealed class WasteLossDomainTests
 
         var unavailable = WasteLoss.Create(
             Org,
-            "WL-20260829-000004",
+            "260829-004",
             WasteLossReason.Expired,
             [Draft(ProductA, "Coke", 1m)],
             Actor,
@@ -90,13 +90,13 @@ public sealed class WasteLossDomainTests
     public void Create_rejects_empty_lines_and_invalid_qty()
     {
         var empty = Assert.Throws<DomainException>(() =>
-            WasteLoss.Create(Org, "WL-20260829-000005", WasteLossReason.Broken, [], Actor, Now));
+            WasteLoss.Create(Org, "260829-005", WasteLossReason.Broken, [], Actor, Now));
         Assert.Equal(DomainErrorCodes.WasteLossRequiresLines, empty.ErrorCode);
 
         var zero = Assert.Throws<DomainException>(() =>
             WasteLoss.Create(
                 Org,
-                "WL-20260829-000006",
+                "260829-006",
                 WasteLossReason.Spillage,
                 [Draft(ProductA, "Coke", 0m)],
                 Actor,

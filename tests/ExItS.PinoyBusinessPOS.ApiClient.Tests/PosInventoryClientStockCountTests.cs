@@ -12,7 +12,7 @@ public sealed class PosInventoryClientStockCountTests
         {
           "stockCountId": "11111111-1111-1111-1111-111111111111",
           "organizationId": "22222222-2222-2222-2222-222222222222",
-          "countNumber": "CNT-20260814-01",
+          "countNumber": "260814-001",
           "title": "Weekly count",
           "status": "Draft",
           "countDate": "2026-08-14",
@@ -67,7 +67,7 @@ public sealed class PosInventoryClientStockCountTests
         Assert.Contains("\"notes\":\"Counted after Friday closing.\"", body, StringComparison.Ordinal);
         Assert.Equal("Weekly count", result.Data!.Title);
         Assert.Equal("Counted after Friday closing.", result.Data.Notes);
-        Assert.Equal("CNT-20260814-01", result.Data.CountNumber);
+        Assert.Equal("260814-001", result.Data.CountNumber);
         Assert.Equal(TimeSpan.Zero, result.Data.CreatedAtUtc.Offset);
     }
 

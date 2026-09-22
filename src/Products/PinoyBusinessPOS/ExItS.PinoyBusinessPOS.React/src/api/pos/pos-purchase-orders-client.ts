@@ -41,6 +41,7 @@ export const posPurchaseOrderLineDtoSchema = z.object({
   supplierProductId: guidSchema.nullable().optional(),
   skuSnapshot: z.string().nullable().optional(),
   needsProductSetup: z.boolean().optional().default(false),
+  purchaseUnitId: guidSchema.nullable().optional(),
 });
 
 export const connectedPurchaseOrderLineDtoSchema = z
@@ -103,6 +104,9 @@ export const posPurchaseOrderDtoSchema = z.object({
   canReceiveConnected: z.boolean().optional(),
   paymentTerm: z.string().optional(),
   paymentTermLabel: z.string().optional(),
+  paymentTiming: z.string().optional(),
+  paymentTimingLabel: z.string().optional(),
+  fulfillmentMethod: z.string().nullable().optional(),
   proposedTotalAmount: z.number().nullable().optional(),
   confirmedTotalAmount: z.number().nullable().optional(),
   connectedLines: z.array(connectedPurchaseOrderLineDtoSchema).nullable().optional(),
@@ -121,6 +125,16 @@ export const posPurchaseOrderDtoSchema = z.object({
   cancelledRemainingValue: z.number().nullable().optional(),
   refundDueAmount: z.number().optional().default(0),
   amountPaidSnapshot: z.number().nullable().optional(),
+  /** NotRequired | AwaitingPayment | Settled — commercial settlement gate, independent of status. */
+  financialSettlementStatus: z.string().optional().default("NotRequired"),
+  remainingDueAmount: z.number().optional().default(0),
+  sellerSettlementRemarks: z.string().nullable().optional(),
+  financiallySettledAtUtc: z.string().nullable().optional(),
+  financiallySettledBy: guidSchema.nullable().optional(),
+  buyerPrepaymentSubmittedAtUtc: z.string().nullable().optional(),
+  buyerPrepaymentMethod: z.string().nullable().optional(),
+  buyerPrepaymentReference: z.string().nullable().optional(),
+  buyerPrepaymentDetails: z.string().nullable().optional(),
 });
 
 export const posGoodsReceiptLineDtoSchema = z.object({
@@ -136,9 +150,12 @@ export const posGoodsReceiptLineDtoSchema = z.object({
   inventoryMovementId: guidSchema.nullable().optional(),
   damagedQty: z.number().optional(),
   rejectedQty: z.number().optional(),
+  otherQty: z.number().optional(),
   shortClosedQty: z.number().optional(),
   discrepancyKind: z.string().optional(),
   discrepancyNote: z.string().nullable().optional(),
+  otherReasonCode: z.string().nullable().optional(),
+  otherReasonNote: z.string().nullable().optional(),
   receivedQty: z.number().optional(),
   expiryDate: z.string().nullable().optional(),
   lotNumber: z.string().nullable().optional(),
@@ -204,6 +221,8 @@ export type CreatePurchaseOrderRequest = {
   intendedReceivingBranchId?: string | null;
   /** Connected PO fulfillment method (Pickup|Delivery). Server-enforced. */
   fulfillmentMethod?: string | null;
+  /** Connected PO payment timing. Server-validated against effective relationship policy. */
+  paymentTiming?: string | null;
 };
 
 export type UpdatePurchaseOrderRequest = CreatePurchaseOrderRequest & {
@@ -215,9 +234,12 @@ export type ReceivePurchaseOrderLineRequest = {
   receiveQty: number;
   damagedQty?: number;
   rejectedQty?: number;
+  otherQty?: number;
   shortClosedQty?: number;
   discrepancyKind?: string | null;
   discrepancyNote?: string | null;
+  otherReasonCode?: string | null;
+  otherReasonNote?: string | null;
   expiryDate?: string | null;
   lotNumber?: string | null;
 };
@@ -320,6 +342,9 @@ function serializeCreateBody(body: CreatePurchaseOrderRequest): Record<string, u
   if (body.fulfillmentMethod) {
     payload.fulfillmentMethod = body.fulfillmentMethod;
   }
+  if (body.paymentTiming) {
+    payload.paymentTiming = body.paymentTiming;
+  }
   return payload;
 }
 
@@ -336,6 +361,9 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
       if (line.rejectedQty !== undefined) {
         entry.rejectedQty = line.rejectedQty;
       }
+      if (line.otherQty !== undefined) {
+        entry.otherQty = line.otherQty;
+      }
       if (line.shortClosedQty !== undefined) {
         entry.shortClosedQty = line.shortClosedQty;
       }
@@ -345,6 +373,14 @@ function serializeReceiveBody(body: ReceivePurchaseOrderRequest): Record<string,
       const note = trimOrUndef(line.discrepancyNote);
       if (note) {
         entry.discrepancyNote = note;
+      }
+      const otherCode = trimOrUndef(line.otherReasonCode);
+      if (otherCode) {
+        entry.otherReasonCode = otherCode;
+      }
+      const otherNote = trimOrUndef(line.otherReasonNote);
+      if (otherNote) {
+        entry.otherReasonNote = otherNote;
       }
       const expiry = trimOrUndef(line.expiryDate);
       if (expiry) {
@@ -605,6 +641,30 @@ export async function cancelPurchaseOrder(
     workspace,
     signal,
     path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/cancel`,
+  });
+  return posPurchaseOrderDtoSchema.parse(raw);
+}
+
+export async function submitBuyerPrepaymentProof(
+  workspace: PosWorkspaceScope,
+  purchaseOrderId: string,
+  input: {
+    method: string;
+    reference?: string | null;
+    details?: string | null;
+  },
+  signal?: AbortSignal,
+): Promise<PosPurchaseOrderDto> {
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PURCHASE_ORDERS_PATH}/${purchaseOrderId}/submit-prepayment`,
+    body: {
+      method: input.method,
+      reference: input.reference ?? null,
+      details: input.details ?? null,
+    },
   });
   return posPurchaseOrderDtoSchema.parse(raw);
 }

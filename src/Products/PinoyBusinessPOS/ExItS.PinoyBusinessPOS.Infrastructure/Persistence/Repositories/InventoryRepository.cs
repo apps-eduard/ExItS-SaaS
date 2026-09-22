@@ -714,6 +714,51 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillment),
             cancellationToken);
 
+    public Task<bool> HasConnectedPurchaseFulfillmentReconciliationAsync(
+        PosOrganizationId organizationId,
+        Guid receivingIssueLineId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == receivingIssueLineId
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.ConnectedPurchaseOrder)
+                && m.MovementType == nameof(StockMovementType.ConnectedPurchaseFulfillmentReconciliation),
+            cancellationToken);
+
+    public async Task<Guid?> FindLatestConnectedPurchaseFulfillmentSourceIdAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        IReadOnlyCollection<Guid> candidateSourceIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (candidateSourceIds is null || candidateSourceIds.Count == 0)
+        {
+            return null;
+        }
+
+        var candidates = candidateSourceIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var fulfill = nameof(StockMovementType.ConnectedPurchaseFulfillment);
+        var connectedPo = nameof(StockMovementSourceType.ConnectedPurchaseOrder);
+        return await _db.StockMovements.AsNoTracking()
+            .Where(m => m.OrganizationId == organizationId.Value
+                && m.ProductId == productId.Value
+                && m.SourceId != null
+                && candidates.Contains(m.SourceId.Value)
+                && m.SourceType == connectedPo
+                && m.MovementType == fulfill)
+            .OrderByDescending(m => m.RecordedAtUtc)
+            .Select(m => m.SourceId)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     public async Task<decimal?> GetLatestAcquisitionUnitCostAsync(
         PosOrganizationId organizationId,
         CatalogProductId productId,
@@ -788,9 +833,37 @@ internal sealed class InventoryRepository : IInventoryRepository
                 && m.MovementType == nameof(StockMovementType.SaleReturnRestock),
             cancellationToken);
 
+    public Task<bool> HasSaleReturnWriteOffAsync(
+        PosOrganizationId organizationId,
+        SaleReturnId saleReturnId,
+        CatalogProductId productId,
+        CancellationToken cancellationToken = default) =>
+        _db.StockMovements.AsNoTracking().AnyAsync(
+            m => m.OrganizationId == organizationId.Value
+                && m.SourceId == saleReturnId.Value
+                && m.ProductId == productId.Value
+                && m.SourceType == nameof(StockMovementSourceType.SaleReturn)
+                && m.MovementType == nameof(StockMovementType.SaleReturnWriteOff),
+            cancellationToken);
+
     public Task<bool> HasInventoryTransferMovementAsync(
         PosOrganizationId organizationId,
         InventoryTransferId transferId,
+        CatalogProductId productId,
+        StockMovementType movementType,
+        InventoryLotId? lotId = null,
+        CancellationToken cancellationToken = default) =>
+        HasInventoryTransferSourceMovementAsync(
+            organizationId,
+            transferId.Value,
+            productId,
+            movementType,
+            lotId,
+            cancellationToken);
+
+    public Task<bool> HasInventoryTransferSourceMovementAsync(
+        PosOrganizationId organizationId,
+        Guid sourceId,
         CatalogProductId productId,
         StockMovementType movementType,
         InventoryLotId? lotId = null,
@@ -802,7 +875,7 @@ internal sealed class InventoryRepository : IInventoryRepository
             m => m.OrganizationId == organizationId.Value
                 && m.ProductId == productId.Value
                 && m.SourceType == nameof(StockMovementSourceType.InventoryTransfer)
-                && m.SourceId == transferId.Value
+                && m.SourceId == sourceId
                 && m.MovementType == type
                 && m.InventoryLotId == lot,
             cancellationToken);

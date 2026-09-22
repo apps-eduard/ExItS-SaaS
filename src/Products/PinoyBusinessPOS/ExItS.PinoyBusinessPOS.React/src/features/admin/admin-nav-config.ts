@@ -12,6 +12,7 @@ import {
   Map,
   MapPinned,
   MonitorSmartphone,
+  Network,
   PackageCheck,
   PieChart,
   QrCode,
@@ -62,6 +63,7 @@ export type AdminNavItemId =
   | "dashboard"
   | "reports"
   | "configureFulfillment"
+  | "connectedCommerce"
   | "ownership"
   | "preferences";
 
@@ -249,6 +251,14 @@ export function buildAdminNavGroups(
         icon: CreditCard,
         testId: "admin-nav-payment-methods",
         matchPrefixes: ["/org/payment-methods"],
+      },
+      {
+        id: "connectedCommerce",
+        to: "/org/connected-commerce",
+        labelKey: "admin.nav.connectedCommerce",
+        icon: Network,
+        testId: "admin-nav-connected-commerce",
+        matchPrefixes: ["/org/connected-commerce"],
       },
       {
         id: "businessQr",
@@ -494,6 +504,7 @@ export function matchAdminMobileTab(
   if (
     path.startsWith("/org/cash-handling") ||
     path.startsWith("/org/payment-methods") ||
+    path.startsWith("/org/connected-commerce") ||
     path.startsWith("/org/business-qr") ||
     path.startsWith("/org/ownership-transfer") ||
     path.startsWith("/settings/preferences")
@@ -514,9 +525,6 @@ export function shouldUseAdminManagementShell(input: {
   experience: string | null | undefined;
   pathname: string;
 }): boolean {
-  if (input.experience !== "manage_business") {
-    return false;
-  }
   const path = input.pathname.split("?")[0] ?? input.pathname;
   if (path.startsWith("/sell")) return false;
   if (path.startsWith("/personal")) return false;
@@ -524,5 +532,17 @@ export function shouldUseAdminManagementShell(input: {
   if (path.startsWith("/workspace")) return false;
   if (path.startsWith("/warehouse")) return false;
   if (path.startsWith("/role/")) return false;
+  // Org management IA always uses Admin shell — including Operations deep-links
+  // (Supplier Readiness → fulfillment / payment methods / branches). Keep ops
+  // chrome only for org notifications.
+  if (path === "/org/notifications" || path.startsWith("/org/notifications/")) {
+    return false;
+  }
+  if (path === "/org" || path.startsWith("/org/")) {
+    return true;
+  }
+  if (input.experience !== "manage_business") {
+    return false;
+  }
   return true;
 }

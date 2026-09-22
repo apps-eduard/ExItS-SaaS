@@ -28,6 +28,8 @@ internal static class SaleReturnEntityMapper
                 l.UnitPriceSnapshot,
                 l.RefundAmount,
                 RestockDispositions.Parse(l.RestockDisposition),
+                l.SellableQuantity,
+                l.DamagedQuantity,
                 l.LineReason,
                 l.InventoryMovementId))
             .ToList();
@@ -86,6 +88,8 @@ internal static class SaleReturnEntityMapper
             QuantityReturned = line.QuantityReturned,
             UnitPriceSnapshot = line.UnitPriceSnapshot,
             RefundAmount = line.RefundAmount,
+            SellableQuantity = line.SellableQuantity,
+            DamagedQuantity = line.DamagedQuantity,
             RestockDisposition = RestockDispositions.ToCode(line.RestockDisposition),
             LineReason = line.LineReason,
             InventoryMovementId = line.InventoryMovementId

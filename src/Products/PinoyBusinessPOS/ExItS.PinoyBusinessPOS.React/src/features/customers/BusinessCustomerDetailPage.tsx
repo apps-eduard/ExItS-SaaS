@@ -28,6 +28,7 @@ import { StatusChip } from "@/components/exits/StatusChip";
 import { useToast } from "@/components/exits/ToastProvider";
 import { formatRelativeOrDate } from "@/features/devices/device-presentation";
 import { BusinessCreditPolicySection } from "@/features/customers/BusinessCreditPolicySection";
+import { BusinessCustomerConnectedCommerceSection } from "@/features/customers/BusinessCustomerConnectedCommerceSection";
 import { BusinessCustomerReceivablesSection } from "@/features/customers/BusinessCustomerReceivablesSection";
 import { BusinessRelationshipContactEditDrawer } from "@/features/customers/BusinessRelationshipContactEditDrawer";
 import { CustomerBranchVisibilitySection } from "@/features/customers/CustomerBranchVisibilitySection";
@@ -361,7 +362,13 @@ export function BusinessCustomerDetailPage() {
         {...smartBack}
       />
 
-      <Card className="customer-ownership-section p-4" data-testid="business-org-information">
+      <div
+        className={`grid grid-cols-1 gap-3 lg:items-start ${
+          isConnected || isPending ? "lg:grid-cols-2" : ""
+        }`}
+        data-testid="business-customer-top-cards"
+      >
+      <Card className="customer-ownership-section min-w-0 p-4" data-testid="business-org-information">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="customer-ownership-section__title">
             {t("customers.business.orgInformation.title")}
@@ -382,16 +389,15 @@ export function BusinessCustomerDetailPage() {
           <StatusChip tone={relationshipStatusTone(relationship)}>
             {t(relationshipStatusLabelKey(relationship))}
           </StatusChip>
+          {since ? (
+            <span
+              className="text-[length:var(--exits-text-sm)] text-muted"
+              data-testid="business-customer-connected-since"
+            >
+              {t("customers.business.connectedSince").replace("{when}", since)}
+            </span>
+          ) : null}
         </div>
-
-        {since ? (
-          <p
-            className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted"
-            data-testid="business-customer-connected-since"
-          >
-            {t("customers.business.connectedSince").replace("{when}", since)}
-          </p>
-        ) : null}
 
         {relationship === "Declined" ? (
           <p className="m-0 mt-2 text-[length:var(--exits-text-sm)] text-muted">
@@ -459,9 +465,10 @@ export function BusinessCustomerDetailPage() {
       </Card>
 
       {(isConnected || isPending) ? (
+        <div className="flex min-w-0 flex-col gap-3" data-testid="business-customer-contact-delivery">
         <Card
           id={BUSINESS_RELATIONSHIP_CONTACT_ANCHOR}
-          className="customer-ownership-section p-4"
+          className="customer-ownership-section min-w-0 p-4"
           data-testid="business-relationship-contact"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -569,37 +576,57 @@ export function BusinessCustomerDetailPage() {
             </div>
           )}
         </Card>
-      ) : null}
 
-      {isConnected ? (
-        <Card className="flex flex-col gap-2 p-3" data-testid="business-customer-delivery-allowance">
-          <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
-            {t("customers.business.deliveryAllowanceTitle")}
-          </h2>
-          {!customer.orgOfferDelivery ? (
-            <p
-              className="m-0 text-[length:var(--exits-text-sm)] text-muted"
-              data-testid="business-delivery-org-off"
-            >
-              {t("customers.business.deliveryAllowanceOrgOff")}
-            </p>
-          ) : (
-            <BranchFulfillmentSwitch
-              checked={customer.customerDeliveryOverride !== "block"}
-              disabled={!allowManage || deliveryAllowanceMutation.isPending}
-              pending={deliveryAllowanceMutation.isPending}
-              label={t("customers.business.deliveryAllowance")}
-              hint={
-                customer.customerDeliveryOverride === "block"
-                  ? t("customers.business.deliveryAllowanceBlocked")
-                  : t("customers.business.deliveryAllowanceInherited")
-              }
-              testId="business-allow-delivery-switch"
-              onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
-            />
-          )}
-        </Card>
+        {isConnected ? (
+          <Card className="flex min-w-0 flex-col gap-2 p-3" data-testid="business-customer-delivery-allowance">
+            <h2 className="m-0 text-[length:var(--exits-text-md)] font-semibold">
+              {t("customers.business.deliveryAllowanceTitle")}
+            </h2>
+            {!customer.orgOfferDelivery ? (
+              <div className="flex flex-col gap-2" data-testid="business-delivery-org-off">
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.business.deliveryAllowanceOrgOff")}
+                </p>
+                <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                  {t("customers.business.deliveryAllowanceOrgOffHelp")}
+                </p>
+                <Button type="button" variant="outline" asChild data-testid="business-delivery-open-offer">
+                  <Link to="/org/connected-commerce?tab=fulfillment">
+                    {t("customers.business.deliveryAllowanceOpenFulfillment")}
+                  </Link>
+                </Button>
+              </div>
+            ) : customer.customerDeliveryOverride === "block" ? (
+              <div className="flex flex-col gap-2" data-testid="business-delivery-blocked">
+                <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                  {t("customers.business.deliveryAllowanceBlockedTitle")}
+                </p>
+                <BranchFulfillmentSwitch
+                  checked={false}
+                  disabled={!allowManage || deliveryAllowanceMutation.isPending}
+                  pending={deliveryAllowanceMutation.isPending}
+                  label={t("customers.business.deliveryAllowance")}
+                  hint={t("customers.business.deliveryAllowanceBlocked")}
+                  testId="business-allow-delivery-switch"
+                  onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
+                />
+              </div>
+            ) : (
+              <BranchFulfillmentSwitch
+                checked={customer.customerDeliveryOverride !== "block"}
+                disabled={!allowManage || deliveryAllowanceMutation.isPending}
+                pending={deliveryAllowanceMutation.isPending}
+                label={t("customers.business.deliveryAllowance")}
+                hint={t("customers.business.deliveryAllowanceInherited")}
+                testId="business-allow-delivery-switch"
+                onCheckedChange={(next) => deliveryAllowanceMutation.mutate(next)}
+              />
+            )}
+          </Card>
+        ) : null}
+        </div>
       ) : null}
+      </div>
 
       {isPending ? (
         <Card
@@ -657,6 +684,9 @@ export function BusinessCustomerDetailPage() {
 
       {isConnected && commerceReadinessQuery.data && !commerceReadinessQuery.data.isReady ? (
         <Card
+          treatment="accent"
+          accentTone="danger"
+          accentPosition="tint"
           className="flex flex-col gap-3 p-3"
           data-testid="business-customer-commerce-readiness"
         >
@@ -667,7 +697,8 @@ export function BusinessCustomerDetailPage() {
               </h2>
               <div className="mt-2">
                 <StatusChip
-                  tone={commerceReadinessQuery.data.isReady ? "success" : "warning"}
+                  tone="danger"
+                  appearance="outline"
                   data-testid="business-customer-commerce-readiness-status"
                 >
                   {commerceReadinessQuery.data.isReady
@@ -748,6 +779,7 @@ export function BusinessCustomerDetailPage() {
               </li>
             ) : (
               filteredReadinessItems.map((item) => {
+                const needsSetup = item.status === "Missing";
                 const href = resolveSupplierCommerceReadinessPath(
                   item.code,
                   {
@@ -755,50 +787,58 @@ export function BusinessCustomerDetailPage() {
                     openContactEditor:
                       item.code === "ResponsibleContact" &&
                       allowManage &&
-                      item.status === "Missing",
+                      needsSetup,
                   },
                   item.actionPath,
                 );
                 return (
                   <li key={item.code} className="m-0 p-0">
-                    <Link
-                      to={href}
-                      className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-inherit no-underline transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      data-testid={`commerce-readiness-${item.code}`}
-                      data-status={item.status}
-                      aria-label={t("customers.business.commerceReadinessOpenItem").replace(
-                        "{title}",
-                        item.title,
-                      )}
+                    <Card
+                      treatment={needsSetup ? "accent" : "bordered"}
+                      accentTone={needsSetup ? "danger" : "neutral"}
+                      accentPosition="tint"
+                      className="overflow-hidden p-0"
+                      data-testid={`commerce-readiness-card-${item.code}`}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
-                            {item.title}
-                          </span>
-                          <StatusChip
-                            tone={
-                              item.status === "Complete"
-                                ? "success"
-                                : item.status === "Missing"
-                                  ? "warning"
-                                  : "neutral"
-                            }
-                          >
-                            {t(commerceReadinessStatusLabelKey(item.status))}
-                          </StatusChip>
+                      <Link
+                        to={href}
+                        className="flex items-center gap-3 px-3 py-2 text-inherit no-underline transition-colors hover:bg-[color-mix(in_srgb,var(--exits-foreground)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        data-testid={`commerce-readiness-${item.code}`}
+                        data-status={item.status}
+                        aria-label={t("customers.business.commerceReadinessOpenItem").replace(
+                          "{title}",
+                          item.title,
+                        )}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[length:var(--exits-text-sm)] font-medium text-foreground">
+                              {item.title}
+                            </span>
+                            <StatusChip
+                              tone={
+                                item.status === "Complete"
+                                  ? "success"
+                                  : needsSetup
+                                    ? "danger"
+                                    : "neutral"
+                              }
+                            >
+                              {t(commerceReadinessStatusLabelKey(item.status))}
+                            </StatusChip>
+                          </div>
+                          {item.detail ? (
+                            <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
+                              {item.detail}
+                            </p>
+                          ) : null}
                         </div>
-                        {item.detail ? (
-                          <p className="mb-0 mt-1 text-[length:var(--exits-text-sm)] text-muted">
-                            {item.detail}
-                          </p>
-                        ) : null}
-                      </div>
-                      <ChevronRight
-                        className="size-4 shrink-0 text-muted"
-                        aria-hidden
-                      />
-                    </Link>
+                        <ChevronRight
+                          className="size-4 shrink-0 text-muted"
+                          aria-hidden
+                        />
+                      </Link>
+                    </Card>
                   </li>
                 );
               })
@@ -872,6 +912,15 @@ export function BusinessCustomerDetailPage() {
             </Card>
           ) : null}
         </div>
+      ) : null}
+
+      {workspace && connectionId && isConnected ? (
+        <BusinessCustomerConnectedCommerceSection
+          workspace={workspace}
+          connectionId={connectionId}
+          online={online}
+          canManage={allowManage}
+        />
       ) : null}
 
       {workspace && connectionId && (isConnected || isPending) ? (

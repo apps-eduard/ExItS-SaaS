@@ -37,7 +37,9 @@ public sealed record MissingDefaultPoProductDto(
 
 public sealed record BulkBuyerProductShareMutationResultDto(
     int AffectedCount,
-    IReadOnlyList<MissingDefaultPoProductDto>? NeedsDefaultPo = null);
+    IReadOnlyList<MissingDefaultPoProductDto>? NeedsDefaultPo = null,
+    int AlreadySharedCount = 0,
+    int AlreadyNotSharedCount = 0);
 
 public sealed record BulkBuyerPricingRequest(
     string Mode,
@@ -69,27 +71,27 @@ public sealed class QueryBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly IPosCommercialAccessAccessor _access;
+    private readonly Inventory.IInventoryRepository _inventory;
     private readonly ICatalogProductRepository? _products;
     private readonly ISupplierProductExposureRepository? _exposures;
     private readonly IPosUnitOfWork? _uow;
-    private readonly Inventory.IInventoryRepository? _inventory;
 
     public QueryBuyerProductShares(
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
         IPosCommercialAccessAccessor access,
+        Inventory.IInventoryRepository inventory,
         ICatalogProductRepository? products = null,
         ISupplierProductExposureRepository? exposures = null,
-        IPosUnitOfWork? uow = null,
-        Inventory.IInventoryRepository? inventory = null)
+        IPosUnitOfWork? uow = null)
     {
         _relationships = relationships;
         _shares = shares;
         _access = access;
+        _inventory = inventory;
         _products = products;
         _exposures = exposures;
         _uow = uow;
-        _inventory = inventory;
     }
 
     public async Task<ApplicationResult<BuyerProductShareQueryResultDto>> ExecuteAsync(
@@ -152,7 +154,12 @@ public sealed class QueryBuyerProductShares
         foreach (var row in result.Rows)
         {
             items.Add(ConnectedSupplierMapper.MapForManagement(
-                relationship, row.Product, row.Share, row.Exposure, row.CategoryName));
+                relationship,
+                row.Product,
+                row.Share,
+                row.Exposure,
+                row.CategoryName,
+                isInventoryTracked: row.IsInventoryTracked));
         }
 
         return ApplicationResult<BuyerProductShareQueryResultDto>.Success(new(
@@ -175,6 +182,7 @@ public sealed class BulkMutateBuyerProductShares
     private readonly IConnectedSupplierRelationshipRepository _relationships;
     private readonly IConnectedBuyerProductShareRepository _shares;
     private readonly ICatalogProductRepository _products;
+    private readonly Inventory.IInventoryRepository _inventory;
     private readonly SetBuyerProductShares _setShares;
     private readonly IPosCommercialAccessAccessor _access;
 
@@ -182,12 +190,14 @@ public sealed class BulkMutateBuyerProductShares
         IConnectedSupplierRelationshipRepository relationships,
         IConnectedBuyerProductShareRepository shares,
         ICatalogProductRepository products,
+        Inventory.IInventoryRepository inventory,
         SetBuyerProductShares setShares,
         IPosCommercialAccessAccessor access)
     {
         _relationships = relationships;
         _shares = shares;
         _products = products;
+        _inventory = inventory;
         _setShares = setShares;
         _access = access;
     }
@@ -231,12 +241,16 @@ public sealed class BulkMutateBuyerProductShares
         var relationship = await _relationships.GetAsync(ConnectedSupplierRelationshipId.From(relationshipId), ct)
             .ConfigureAwait(false);
         var supplier = PosOrganizationId.From(orgId);
+        var mode = relationship!.CatalogSharingMode;
         var items = new List<SetBuyerProductShareItem>();
         var needsDefaultPo = new List<MissingDefaultPoProductDto>();
+        var alreadyShared = 0;
+        var alreadyNotShared = 0;
 
         foreach (var productId in productIds)
         {
-            var product = await _products.GetByIdAsync(supplier, CatalogProductId.From(productId), ct)
+            var catalogId = CatalogProductId.From(productId);
+            var product = await _products.GetByIdAsync(supplier, catalogId, ct)
                 .ConfigureAwait(false);
             if (product is null
                 || product.OrganizationId != supplier
@@ -251,10 +265,36 @@ public sealed class BulkMutateBuyerProductShares
                 continue;
             }
 
-            var existing = await _shares.FindAsync(relationship!.Id, CatalogProductId.From(productId), ct)
+            var tracked = await ConnectedBuyerSharingRules
+                .IsTrackedAsync(_inventory, supplier, catalogId, ct)
                 .ConfigureAwait(false);
+            var existing = await _shares.FindAsync(relationship.Id, catalogId, ct)
+                .ConfigureAwait(false);
+
+            // Do not create exclusions / share mutations for technically ineligible rows.
+            if (!ConnectedBuyerCatalogProjection.IsEligible(product, tracked))
+            {
+                continue;
+            }
+
             if (share)
             {
+                // AllEligible: absence of exclusion = already shared — no mutation needed.
+                if (mode == CatalogSharingMode.AllEligible
+                    && (existing is null || existing.IsShared))
+                {
+                    alreadyShared++;
+                    continue;
+                }
+
+                // SelectedOnly: already explicitly shared.
+                if (mode == CatalogSharingMode.SelectedOnly
+                    && existing is { IsShared: true })
+                {
+                    alreadyShared++;
+                    continue;
+                }
+
                 decimal? establish = null;
                 if (product.DefaultConnectedPoPrice is null)
                 {
@@ -262,6 +302,12 @@ public sealed class BulkMutateBuyerProductShares
                         && request.EstablishDefaultPoPrices.TryGetValue(productId, out var price))
                     {
                         establish = price;
+                    }
+                    else if (product.SellingPrice is > 0m)
+                    {
+                        // Stage Default PO from selling price so Share selected can clear
+                        // exclusions without a separate "needs Default PO" dead-end (Updated 0).
+                        establish = product.SellingPrice;
                     }
                     else
                     {
@@ -274,19 +320,36 @@ public sealed class BulkMutateBuyerProductShares
             }
             else
             {
+                // Unshare: AllEligible already-excluded rows need no write.
+                if (mode == CatalogSharingMode.AllEligible
+                    && existing is { IsShared: false })
+                {
+                    alreadyNotShared++;
+                    continue;
+                }
+
+                // SelectedOnly: already not shared (no row or IsShared=false).
+                if (mode == CatalogSharingMode.SelectedOnly
+                    && (existing is null || !existing.IsShared))
+                {
+                    alreadyNotShared++;
+                    continue;
+                }
+
                 items.Add(new(productId, false, null));
             }
         }
 
-        if (share && needsDefaultPo.Count > 0)
+        if (share && needsDefaultPo.Count > 0 && items.Count == 0)
         {
             return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(
-                new(0, needsDefaultPo));
+                new(0, needsDefaultPo, alreadyShared, alreadyNotShared));
         }
 
         if (items.Count == 0)
         {
-            return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(new(0));
+            return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(
+                new(0, null, alreadyShared, alreadyNotShared));
         }
 
         var result = await _setShares.ExecuteAsync(orgId, relationshipId, items, ct).ConfigureAwait(false);
@@ -296,7 +359,8 @@ public sealed class BulkMutateBuyerProductShares
                 result.ErrorCode!, result.ErrorMessage!);
         }
 
-        return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(new(result.Value!.Count));
+        return ApplicationResult<BulkBuyerProductShareMutationResultDto>.Success(
+            new(result.Value!.Count, null, alreadyShared, alreadyNotShared));
     }
 
     private async Task<ApplicationResult<IReadOnlyList<Guid>>> ResolveTargetProductIdsAsync(

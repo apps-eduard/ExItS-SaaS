@@ -51,7 +51,7 @@ public sealed class CustomerOrderStockServiceTests
 
         var order = CustomerOrder.CreateSubmitted(
             org,
-            "SO-000001",
+            "260816-001",
             CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
             CustomerOrderFulfillmentType.Pickup,
             Guid.Parse("55555555-5555-5555-5555-555555555555"),
@@ -87,7 +87,7 @@ public sealed class CustomerOrderStockServiceTests
 
         var order = CustomerOrder.CreateSubmitted(
             org,
-            "SO-000002",
+            "260816-002",
             CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
             CustomerOrderFulfillmentType.Pickup,
             Guid.Parse("55555555-5555-5555-5555-555555555555"),
@@ -144,7 +144,7 @@ public sealed class CustomerOrderStockServiceTests
         var product = CatalogProduct.Create(org, "Bread", UnitOfMeasure.Piece, 25m, now, id: productId);
         var order = CustomerOrder.CreateSubmitted(
             org,
-            "SO-000003",
+            "260816-003",
             CustomerOrderParty.Personal(Guid.Parse("44444444-4444-4444-4444-444444444444"), "Pat"),
             CustomerOrderFulfillmentType.Pickup,
             Guid.Parse("55555555-5555-5555-5555-555555555555"),

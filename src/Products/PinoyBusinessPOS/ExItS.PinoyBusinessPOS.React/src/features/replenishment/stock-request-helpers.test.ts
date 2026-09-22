@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   canCancelStockRequestAsDestination,
+  canDispatchRemainingStockRequest,
+  canFulfillRemaining,
+  canPrepareTransfer,
   filterStockRequestsByTab,
+  findOpenCoveringTransfer,
   hasConfiguredInternalSource,
+  openCoveringTransferMessage,
   pickPreferredSourceId,
+  prepareTransferPrimaryLabelKey,
   remainingRequestQty,
   stockRequestMatchesTab,
   stockRequestStatusLabelKey,
   stockRequestStatusTone,
+  totalRemainingToDispatch,
 } from "@/features/replenishment/stock-request-helpers";
 
 describe("stock-request-helpers", () => {
@@ -26,10 +33,76 @@ describe("stock-request-helpers", () => {
     );
   });
 
-  it("computes remaining qty from fulfilled and in-progress", () => {
+  it("computes remaining to dispatch as approved − received − open in transit − waived", () => {
+    expect(remainingRequestQty(100, 70, 30)).toBe(0);
+    expect(remainingRequestQty(100, 70, 0)).toBe(30);
+    expect(remainingRequestQty(100, 70, 0, 30)).toBe(0);
     expect(remainingRequestQty(10, 0, 6)).toBe(4);
     expect(remainingRequestQty(10, 6, 0)).toBe(4);
     expect(remainingRequestQty(10, 10, 0)).toBe(0);
+  });
+
+  it("allows prepare when remaining is positive even with open in-transit cover", () => {
+    const lines = [{ remainingToDispatchQuantity: 30 }];
+    expect(canPrepareTransfer("PartiallyFulfilled", lines, false)).toBe(true);
+    expect(canPrepareTransfer("PartiallyFulfilled", lines, true)).toBe(true);
+    expect(canPrepareTransfer("PartiallyFulfilled", [{ remainingToDispatchQuantity: 0 }], true)).toBe(
+      false,
+    );
+    expect(canFulfillRemaining("PartiallyFulfilled", lines, false)).toBe(true);
+    expect(canFulfillRemaining("Approved", lines, false)).toBe(false);
+    expect(
+      canDispatchRemainingStockRequest("PartiallyFulfilled", [{ remainingToDispatchQuantity: 0 }]),
+    ).toBe(false);
+    expect(canDispatchRemainingStockRequest("Fulfilled", [{ remainingToDispatchQuantity: 10 }])).toBe(
+      false,
+    );
+  });
+
+  it("sums remaining to dispatch and picks prepare button labels", () => {
+    expect(
+      totalRemainingToDispatch([
+        { remainingToDispatchQuantity: 10 },
+        { remainingToDispatchQuantity: 5 },
+      ]),
+    ).toBe(15);
+    expect(prepareTransferPrimaryLabelKey("Approved", false)).toBe("stockRequest.reviewPrepareTransfer");
+    expect(prepareTransferPrimaryLabelKey("PartiallyFulfilled", false)).toBe(
+      "stockRequest.fulfillRemaining",
+    );
+    expect(prepareTransferPrimaryLabelKey("PartiallyFulfilled", true)).toBe(
+      "stockRequest.continueTransferPreparation",
+    );
+  });
+
+  it("findOpenCoveringTransfer exposes transfer id for view link", () => {
+    expect(
+      findOpenCoveringTransfer([
+        {
+          transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          transferNumber: "TR-1",
+          status: "InTransit",
+          totalOutstandingQty: 12,
+        },
+      ]),
+    ).toEqual({
+      transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      transferLabel: "TR-1",
+      outstandingQty: 12,
+    });
+  });
+
+  it("surfaces open covering transfer for replacement guard copy", () => {
+    expect(
+      openCoveringTransferMessage([
+        {
+          transferId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          transferNumber: "260922-001",
+          status: "PartiallyReceived",
+          totalOutstandingQty: 30,
+        },
+      ]),
+    ).toEqual({ transferLabel: "260922-001", outstandingQty: 30 });
   });
 
   it("detects no configured internal source", () => {
@@ -54,6 +127,8 @@ describe("stock-request-helpers", () => {
     expect(stockRequestMatchesTab("Pending", "incoming", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("Approved", "preparing", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("InTransit", "dispatched", "warehouse")).toBe(true);
+    expect(stockRequestMatchesTab("PartiallyFulfilled", "dispatched", "warehouse")).toBe(true);
+    expect(stockRequestMatchesTab("PartiallyFulfilled", "history", "warehouse")).toBe(false);
     expect(stockRequestMatchesTab("Cancelled", "history", "warehouse")).toBe(true);
     expect(stockRequestMatchesTab("Pending", "history", "warehouse")).toBe(false);
   });

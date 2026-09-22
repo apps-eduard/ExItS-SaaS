@@ -18,6 +18,7 @@ export type PoDocumentExportActionsProps = {
 /**
  * Compact document utilities: Print + Export ▾ (PDF / Excel / CSV).
  * Prefer PageHeader actions slot over a large toolbar above line items.
+ * Neutral outline — shared across buyer/seller PO process screens.
  */
 export function PoDocumentExportActions({
   printLabel,
@@ -37,7 +38,8 @@ export function PoDocumentExportActions({
     <div className="po-document-export flex flex-wrap items-center gap-2" data-testid="po-document-export">
       <Button
         type="button"
-        variant="outline"
+        intent="neutral"
+        appearance="outline"
         shape="soft"
         disabled={disabled}
         data-testid="po-document-print"
@@ -57,7 +59,8 @@ export function PoDocumentExportActions({
         trigger={(triggerProps) => (
           <Button
             type="button"
-            variant="outline"
+            intent="neutral"
+            appearance="outline"
             shape="soft"
             id={triggerProps.id}
             disabled={disabled}

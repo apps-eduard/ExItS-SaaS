@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { formatPeso } from "@/lib/format-money";
 import { cn } from "@/lib/cn";
 import {
@@ -12,6 +12,10 @@ import {
   stepQuantity,
   stripQuantityGrouping,
 } from "@/lib/quantity-rules";
+import {
+  nextWeightLineQuantityKg,
+  usesAdaptiveWeightSteps,
+} from "@/cart/sell-cart-helpers";
 
 export function MoneyDisplay({
   amount,
@@ -86,6 +90,25 @@ export type QuantityStepperProps = {
   valueTestId?: string;
   className?: string;
   compact?: boolean;
+  /**
+   * Visual variant:
+   * - **default** — form field group [ neutral − ][ qty ][ primary + ]
+   * - **standard / soft / pill** — cart primary capsule with explicit radius
+   * - **auto** — cart primary capsule; radius follows Preferences → Control Shape
+   *   (`data-control-shape` → `--exits-control-radius`)
+   */
+  variant?: "default" | "standard" | "soft" | "pill" | "auto";
+  /**
+   * When set in display-only mode, the center quantity becomes a button
+   * (e.g. open weight entry from sell cart).
+   */
+  onValueClick?: () => void;
+  valueClickLabel?: string;
+  /**
+   * With `onChange`: center starts as a tap target; first tap reveals the numeric input.
+   * ± still prefer `onIncrement` / `onDecrement` when provided (sell cart).
+   */
+  editOnClick?: boolean;
   incrementDisabled?: boolean;
   decrementDisabled?: boolean;
 };
@@ -103,13 +126,22 @@ export const QUANTITY_STEPPER_INPUT_MIN_CH = 12;
 export const QUANTITY_STEPPER_INPUT_MAX_CH = 20;
 export const QUANTITY_STEPPER_INPUT_COMPACT_MIN_CH = 12;
 export const QUANTITY_STEPPER_INPUT_COMPACT_MAX_CH = 20;
+export const QUANTITY_STEPPER_INPUT_PILL_MIN_CH = 7;
+export const QUANTITY_STEPPER_INPUT_PILL_MAX_CH = 12;
 const QUANTITY_STEPPER_INPUT_PAD_CH = 0.5;
 
 /** Width in `ch` from current text, clamped so layout stays compact and mobile-safe. */
 export function quantityStepperInputWidthCh(
   text: string,
-  options?: { compact?: boolean },
+  options?: { compact?: boolean; cart?: boolean; /** @deprecated use cart */ pill?: boolean },
 ): number {
+  if (options?.cart === true || options?.pill === true) {
+    const len = Math.max(1, text.length);
+    return Math.min(
+      QUANTITY_STEPPER_INPUT_PILL_MAX_CH,
+      Math.max(QUANTITY_STEPPER_INPUT_PILL_MIN_CH, len + 0.25),
+    );
+  }
   const compact = options?.compact === true;
   const minCh = compact ? QUANTITY_STEPPER_INPUT_COMPACT_MIN_CH : QUANTITY_STEPPER_INPUT_MIN_CH;
   const maxCh = compact ? QUANTITY_STEPPER_INPUT_COMPACT_MAX_CH : QUANTITY_STEPPER_INPUT_MAX_CH;
@@ -118,7 +150,12 @@ export function quantityStepperInputWidthCh(
 }
 
 /**
- * Canonical ExItS quantity control: [ neutral − ][ editable qty ][ primary + ]
+ * Canonical ExItS quantity control.
+ * - **default** — form field group: [ neutral − ][ editable qty ][ primary + ]
+ * - **standard / soft / pill** — cart primary capsule with explicit Control Shape radius
+ * - **auto** — cart primary capsule; adopts global Control Shape via `--exits-control-radius`
+ * - **editOnClick** — center tap reveals numeric input (sell cart non-kg)
+ * - **onValueClick** — center tap opens parent dialog (sell cart kg / `1.5kg`)
  * Editable when `onChange` is set; display-only when using increment/decrement callbacks.
  * Interaction (typing, ±1 with remainder, measured 2dp trailing zeros, thousands) lives here + quantity-rules.
  */
@@ -142,11 +179,26 @@ export function QuantityStepper({
   valueTestId,
   className,
   compact = false,
+  variant = "default",
+  onValueClick,
+  valueClickLabel,
+  editOnClick = false,
   incrementDisabled = false,
   decrementDisabled = false,
 }: QuantityStepperProps) {
   const inputId = useId();
-  const editable = typeof onChange === "function";
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [clickEditing, setClickEditing] = useState(false);
+  const hasParentSteps =
+    typeof onIncrement === "function" || typeof onDecrement === "function";
+  const canEditValue = typeof onChange === "function";
+  const showInput = canEditValue && (!editOnClick || clickEditing);
+  const editable = showInput;
+  const cartCapsule =
+    variant === "pill" ||
+    variant === "soft" ||
+    variant === "standard" ||
+    variant === "auto";
   const hasCatalogProfile = unitOfMeasure != null && sellingMode != null;
   const precision =
     precisionProp ??
@@ -160,9 +212,8 @@ export function QuantityStepper({
         : 1);
   const step = stepProp ?? quantityStepperWholeStep();
   const numeric = numericValue(value);
-  const displayValue = editable
-    ? formatQuantityValue(numeric, precision)
-    : String(value);
+  const formattedValue = formatQuantityValue(numeric, precision);
+  const displayValue = canEditValue ? formattedValue : String(value);
 
   const [draft, setDraft] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -173,8 +224,22 @@ export function QuantityStepper({
     }
   }, [value, focused]);
 
-  // Effective minimum: explicit/domain min. Whole → typically 1; measured → typically 0.01 (not forced to 1).
-  const floor = min > 0 ? min : precision > 0 ? minPositiveQuantity(precision) : 1;
+  useEffect(() => {
+    if (!editOnClick || !clickEditing) {
+      return;
+    }
+    const node = inputRef.current;
+    if (!node) {
+      return;
+    }
+    node.focus();
+    node.select();
+  }, [editOnClick, clickEditing]);
+
+  // Effective minimum: respect explicit `min` (including 0 for classification / write-off).
+  // When omitted, `min` already defaults to 1 (whole) or measured min-positive.
+  const floor = min;
+  const adaptiveWeightSteps = usesAdaptiveWeightSteps({ unitOfMeasure, sellingMode });
   const atMin = numeric <= floor + 1e-12;
   const atMax = max != null && numeric >= max - 1e-12;
   // Allow minus while draft is empty/0 so empty → floor, even if committed value is already at min.
@@ -198,15 +263,24 @@ export function QuantityStepper({
       }
       return false;
     })();
+  // Parent-owned ± (sell cart): never lock minus/plus from local floor — parent may remove at ≤0.
+  // Controlled onChange (PO items, etc.): lock at floor/max whether idle or click-editing.
   const minusDisabled =
     disabled ||
     decrementDisabled ||
-    (editable ? atMin && !draftRequestsFloor : false);
+    (canEditValue && !hasParentSteps
+      ? editable
+        ? atMin && !draftRequestsFloor
+        : atMin
+      : false);
   const plusDisabled =
-    disabled || incrementDisabled || (editable ? atMax : false);
+    disabled ||
+    incrementDisabled ||
+    (canEditValue && !hasParentSteps ? atMax : false);
 
-  const visibleText = editable ? (draft ?? displayValue) : String(value);
-  const inputWidthCh = quantityStepperInputWidthCh(visibleText, { compact });
+  const buttonLabel = canEditValue ? formattedValue : String(value);
+  const visibleText = editable ? (draft ?? displayValue) : buttonLabel;
+  const inputWidthCh = quantityStepperInputWidthCh(visibleText, { compact, cart: cartCapsule });
   const inputWidthStyle = {
     ["--quantity-stepper-input-width" as string]: `${inputWidthCh}ch`,
     width: `${inputWidthCh}ch`,
@@ -221,6 +295,18 @@ export function QuantityStepper({
       return;
     }
     let resolved = clamped;
+    if (hasParentSteps) {
+      // Sell cart: 0 (or less) lets the parent remove the line.
+      if (resolved < 0) {
+        resolved = 0;
+      }
+      if (max != null && resolved > max) {
+        resolved = max;
+      }
+      onChange(resolved);
+      setDraft(null);
+      return;
+    }
     if (resolved <= 0 || resolved < floor) {
       resolved = floor;
     }
@@ -255,26 +341,43 @@ export function QuantityStepper({
     setDraft(null);
   }
 
+  function endClickEdit() {
+    commitFromDraft();
+    setFocused(false);
+    setClickEditing(false);
+  }
+
+  function stepControlledValue(base: number, direction: 1 | -1): void {
+    if (adaptiveWeightSteps) {
+      commit(nextWeightLineQuantityKg(base, direction, floor));
+      return;
+    }
+    if (direction < 0 && base <= floor + 1e-12) {
+      commit(floor);
+      return;
+    }
+    commit(
+      stepQuantity({
+        value: base,
+        direction,
+        step,
+        precision,
+        min: floor,
+        max,
+      }),
+    );
+  }
+
   function handleMinus() {
     if (minusDisabled) {
       return;
     }
-    if (editable && onChange) {
-      const base = resolveDraftNumber();
-      if (base <= floor + 1e-12) {
-        commit(floor);
-        return;
-      }
-      commit(
-        stepQuantity({
-          value: base,
-          direction: -1,
-          step,
-          precision,
-          min: floor,
-          max,
-        }),
-      );
+    if (hasParentSteps) {
+      onDecrement?.();
+      return;
+    }
+    if (onChange) {
+      stepControlledValue(editable ? resolveDraftNumber() : numeric, -1);
       return;
     }
     onDecrement?.();
@@ -284,17 +387,12 @@ export function QuantityStepper({
     if (plusDisabled) {
       return;
     }
-    if (editable && onChange) {
-      commit(
-        stepQuantity({
-          value: resolveDraftNumber(),
-          direction: 1,
-          step,
-          precision,
-          min: floor,
-          max,
-        }),
-      );
+    if (hasParentSteps) {
+      onIncrement?.();
+      return;
+    }
+    if (onChange) {
+      stepControlledValue(editable ? resolveDraftNumber() : numeric, 1);
       return;
     }
     onIncrement?.();
@@ -328,41 +426,35 @@ export function QuantityStepper({
   function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") {
       event.preventDefault();
+      if (editOnClick) {
+        endClickEdit();
+        event.currentTarget.blur();
+        return;
+      }
       commitFromDraft();
       event.currentTarget.blur();
       return;
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      commit(
-        stepQuantity({
-          value: resolveDraftNumber(),
-          direction: 1,
-          step,
-          precision,
-          min: floor,
-          max,
-        }),
-      );
+      if (hasParentSteps) {
+        onIncrement?.();
+        return;
+      }
+      if (onChange) {
+        stepControlledValue(resolveDraftNumber(), 1);
+      }
       return;
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      const base = resolveDraftNumber();
-      if (base <= floor + 1e-12) {
-        commit(floor);
+      if (hasParentSteps) {
+        onDecrement?.();
         return;
       }
-      commit(
-        stepQuantity({
-          value: base,
-          direction: -1,
-          step,
-          precision,
-          min: floor,
-          max,
-        }),
-      );
+      if (onChange) {
+        stepControlledValue(resolveDraftNumber(), -1);
+      }
     }
   }
 
@@ -371,11 +463,14 @@ export function QuantityStepper({
       className={cn(
         "quantity-stepper flex min-w-0 items-center gap-1.5",
         compact && "quantity-stepper--compact",
+        cartCapsule && "quantity-stepper--cart",
+        variant !== "default" && `quantity-stepper--${variant}`,
         invalid && "quantity-stepper--invalid",
         disabled && "quantity-stepper--disabled",
         className,
       )}
       data-testid="quantity-stepper"
+      data-variant={variant}
     >
       <div className="quantity-stepper__group">
         <button
@@ -390,6 +485,7 @@ export function QuantityStepper({
         </button>
         {editable ? (
           <input
+            ref={inputRef}
             id={inputId}
             className={cn(
               "quantity-stepper__input tabular-nums",
@@ -420,11 +516,48 @@ export function QuantityStepper({
               setDraft(nextText);
             }}
             onBlur={() => {
+              if (editOnClick) {
+                endClickEdit();
+                return;
+              }
               commitFromDraft();
               setFocused(false);
             }}
             onKeyDown={handleInputKeyDown}
           />
+        ) : canEditValue && editOnClick ? (
+          <button
+            type="button"
+            className={cn(
+              "quantity-stepper__value quantity-stepper__value--button tabular-nums",
+              compact && "quantity-stepper__input--compact",
+            )}
+            style={inputWidthStyle}
+            data-testid={valueTestId}
+            aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
+            disabled={disabled}
+            onClick={() => {
+              setClickEditing(true);
+              setDraft(formattedValue);
+            }}
+          >
+            {buttonLabel}
+          </button>
+        ) : onValueClick ? (
+          <button
+            type="button"
+            className={cn(
+              "quantity-stepper__value quantity-stepper__value--button tabular-nums",
+              compact && "quantity-stepper__input--compact",
+            )}
+            style={inputWidthStyle}
+            data-testid={valueTestId}
+            aria-label={valueClickLabel ?? ariaLabel ?? "Edit quantity"}
+            disabled={disabled}
+            onClick={onValueClick}
+          >
+            {buttonLabel}
+          </button>
         ) : (
           <span
             className={cn(
@@ -434,7 +567,7 @@ export function QuantityStepper({
             style={inputWidthStyle}
             data-testid={valueTestId}
           >
-            {value}
+            {buttonLabel}
           </span>
         )}
         <button

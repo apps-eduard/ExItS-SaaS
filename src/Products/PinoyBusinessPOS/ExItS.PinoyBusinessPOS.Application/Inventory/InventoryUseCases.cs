@@ -1,5 +1,6 @@
 using ExItS.PinoyBusinessPOS.Application.Catalog;
 using ExItS.PinoyBusinessPOS.Application.Common;
+using ExItS.PinoyBusinessPOS.Application.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Application.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Abstractions;
 using ExItS.PinoyBusinessPOS.Domain.Catalog;
@@ -141,7 +142,9 @@ public sealed class InventoryQueryService
             filter.ProductStatus,
             filter.StockStatus,
             filter.MonitoringMode,
-            filter.CategoryId);
+            filter.CategoryId,
+            filter.CategoryIds,
+            filter.BrandIds);
         var (rows, total) = await _branchInventory
             .ListAsync(context, branchFilter, skip, take, cancellationToken)
             .ConfigureAwait(false);
@@ -361,7 +364,8 @@ public sealed class InventoryQueryService
             row.CategoryName,
             row.MonitoringMode,
             row.BranchReserved,
-            available);
+            available,
+            row.BranchPendingReturn);
     }
 
     public static PosInventoryAccountDto Map(
@@ -424,7 +428,8 @@ public sealed class InventoryQueryService
             null,
             "BranchDefault",
             reserved,
-            available);
+            available,
+            0m);
     }
 
     public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)
@@ -462,6 +467,7 @@ public sealed class EnableInventoryTracking
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly ISupplierProductExposureRepository _exposures;
 
     public EnableInventoryTracking(
         IInventoryRepository inventory,
@@ -471,6 +477,7 @@ public sealed class EnableInventoryTracking
         BranchInventoryMutationService branchMutations,
         IPosUnitOfWork unitOfWork,
         IClock clock,
+        ISupplierProductExposureRepository exposures,
         IOrganizationBranchDirectory? branches = null)
     {
         _inventory = inventory;
@@ -480,6 +487,7 @@ public sealed class EnableInventoryTracking
         _branchMutations = branchMutations;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _exposures = exposures;
         _branches = branches;
     }
 
@@ -623,6 +631,14 @@ public sealed class EnableInventoryTracking
 
                 await _inventory.AddMovementAsync(opening, cancellationToken).ConfigureAwait(false);
             }
+
+            await ConnectedBuyerTrackingExposureSync.AfterTrackingEnabledAsync(
+                    product,
+                    _products,
+                    _exposures,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryAccount>.Success(account);
@@ -847,17 +863,20 @@ public sealed class DisableInventoryTracking
     private readonly ICatalogProductRepository _products;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
+    private readonly ISupplierProductExposureRepository _exposures;
 
     public DisableInventoryTracking(
         IInventoryRepository inventory,
         ICatalogProductRepository products,
         IPosUnitOfWork unitOfWork,
-        IClock clock)
+        IClock clock,
+        ISupplierProductExposureRepository exposures)
     {
         _inventory = inventory;
         _products = products;
         _unitOfWork = unitOfWork;
         _clock = clock;
+        _exposures = exposures;
     }
 
     public async Task<ApplicationResult<InventoryAccount>> ExecuteAsync(
@@ -892,19 +911,19 @@ public sealed class DisableInventoryTracking
                 IngredientInventoryTracking.RequiresTrackedMessage);
         }
 
-        var shareGate = ConnectedBuyerSharingRules.ValidateCanDisableTracking(
-            product.CanExposeToConnectedBuyers);
-        if (!shareGate.IsSuccess)
-        {
-            return ApplicationResult<InventoryAccount>.Failure(
-                shareGate.ErrorCode!,
-                shareGate.ErrorMessage!);
-        }
-
+        // Tracking OFF immediately drops B2B eligibility. Exposures deactivate via sync;
+        // explicit share/exclusion rows and historical PO lines are retained.
         try
         {
-            account.Disable(_clock.UtcNow);
+            var utcNow = _clock.UtcNow;
+            account.Disable(utcNow);
             await _inventory.UpdateAccountAsync(account, cancellationToken).ConfigureAwait(false);
+            await ConnectedBuyerTrackingExposureSync.AfterTrackingDisabledAsync(
+                    product,
+                    _exposures,
+                    utcNow,
+                    cancellationToken)
+                .ConfigureAwait(false);
             await _unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             return ApplicationResult<InventoryAccount>.Success(account);
         }

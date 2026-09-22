@@ -12,6 +12,8 @@ export function inventoryTransferStatusLabelKey(status: string): MessageKey {
       return "transfer.status.partiallyReceived";
     case "Received":
       return "transfer.status.received";
+    case "ClosedWithDiscrepancy":
+      return "transfer.status.closedWithDiscrepancy";
     case "Cancelled":
       return "transfer.status.cancelled";
     default:
@@ -25,6 +27,8 @@ export function inventoryTransferStatusTone(
   switch (status) {
     case "Received":
       return "success";
+    case "ClosedWithDiscrepancy":
+      return "warning";
     case "InTransit":
     case "PartiallyReceived":
       return "warning";
@@ -150,10 +154,19 @@ export function inventoryTransferExecutor(item: {
         labelKey: "transfer.byCancelled",
       };
     case "Received":
-    case "PartiallyReceived":
       return {
         actorId: item.receivedBy || item.dispatchedBy || item.createdBy,
         labelKey: "transfer.byReceived",
+      };
+    case "PartiallyReceived":
+      return {
+        actorId: item.receivedBy || item.dispatchedBy || item.createdBy,
+        labelKey: "transfer.byPartiallyReceived",
+      };
+    case "ClosedWithDiscrepancy":
+      return {
+        actorId: item.receivedBy || item.dispatchedBy || item.createdBy,
+        labelKey: "transfer.byClosedWithDiscrepancy",
       };
     case "InTransit":
       return {

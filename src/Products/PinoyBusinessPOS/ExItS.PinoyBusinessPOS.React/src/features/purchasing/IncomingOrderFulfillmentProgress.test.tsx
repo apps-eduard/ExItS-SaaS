@@ -28,7 +28,7 @@ function line(overrides: Partial<ConnectedPurchaseOrderLine> & Pick<ConnectedPur
 }
 
 describe("IncomingOrderFulfillmentProgress", () => {
-  it("renders cumulative fulfillment columns and highlights outstanding", () => {
+  it("renders cumulative good/damaged/outstanding/remaining value for prepare remaining", () => {
     render(
       <IncomingOrderFulfillmentProgress
         lines={[
@@ -43,6 +43,7 @@ describe("IncomingOrderFulfillmentProgress", () => {
           line({
             productId: bananaId,
             nameSnapshot: "Banana",
+            unitOfMeasureCode: "Kilogram",
             unitPriceSnapshot: 8,
             lineTotal: 32,
             goodReceivedQty: 2,
@@ -66,16 +67,64 @@ describe("IncomingOrderFulfillmentProgress", () => {
     expect(screen.getByTestId("incoming-order-fulfillment-progress")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Good received" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Damaged" })).toBeInTheDocument();
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${appleId}`)).toHaveTextContent(
-      "1",
+    expect(screen.getByRole("columnheader", { name: "Outstanding" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Remaining value" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Unit" })).not.toBeInTheDocument();
+
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-good-${appleId}`)).toHaveTextContent("3");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-damaged-${appleId}`)).toHaveTextContent("1");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${appleId}`)).toHaveTextContent("1");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-remaining-value-${appleId}`)).toHaveTextContent(
+      "₱10.00",
     );
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${bananaId}`)).toHaveTextContent(
-      "2",
+
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-good-${bananaId}`)).toHaveTextContent("2");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-damaged-${bananaId}`)).toHaveTextContent("0");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${bananaId}`)).toHaveTextContent("2");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-remaining-value-${bananaId}`)).toHaveTextContent(
+      "₱16.00",
     );
-    expect(screen.getByTestId(`incoming-order-fulfillment-progress-row-${appleId}`).className).toMatch(
-      /outstanding/,
+
+    const appleRow = screen.getByTestId(`incoming-order-fulfillment-progress-row-${appleId}`);
+    expect(appleRow).toHaveTextContent("pc");
+    expect(appleRow).toHaveAttribute("data-outstanding", "true");
+  });
+
+  it("derives outstanding and remaining value when API fields are missing", () => {
+    render(
+      <IncomingOrderFulfillmentProgress
+        lines={[
+          line({
+            productId: appleId,
+            nameSnapshot: "Apple",
+            orderedQty: 5,
+            goodReceivedQty: 2,
+            damagedQty: 1,
+            cancelledRemainingQty: 0,
+            outstandingQty: null,
+            remainingValue: null,
+            unitPriceSnapshot: 12,
+          }),
+        ]}
+        title="Fulfillment progress"
+        productLabel="Product"
+        orderedLabel="Ordered"
+        goodLabel="Good received"
+        damagedLabel="Damaged"
+        missingLabel="Missing / not delivered"
+        outstandingLabel="Outstanding"
+        unitCostLabel="Unit cost"
+        remainingValueLabel="Remaining value"
+      />,
     );
-    expect(screen.queryByRole("columnheader", { name: "Missing / not delivered" })).not.toBeInTheDocument();
+
+    // 5 − 2 − 0 = 3 outstanding; remaining value 3 × 12 = 36
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-outstanding-${appleId}`)).toHaveTextContent("3");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-remaining-value-${appleId}`)).toHaveTextContent(
+      "₱36.00",
+    );
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-good-${appleId}`)).toHaveTextContent("2");
+    expect(screen.getByTestId(`incoming-order-fulfillment-progress-damaged-${appleId}`)).toHaveTextContent("1");
   });
 
   it("shows missing column when any line has missing qty", () => {

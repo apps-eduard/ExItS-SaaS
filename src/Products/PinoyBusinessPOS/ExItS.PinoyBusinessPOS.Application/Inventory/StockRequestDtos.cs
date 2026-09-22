@@ -54,6 +54,8 @@ public sealed record StockRequestLineDto(
     decimal? ApprovedQuantity,
     decimal FulfilledQuantity,
     decimal InProgressQuantity,
+    decimal RemainingToDispatchQuantity,
+    decimal WaivedQuantity,
     string NameSnapshot,
     string UnitOfMeasure);
 
@@ -63,7 +65,28 @@ public sealed record StockRequestLinkedTransferDto(
     string Status,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
-    DateTimeOffset UpdatedAtUtc);
+    decimal TotalOutstandingQty,
+    decimal TotalClosedQty,
+    DateTimeOffset CreatedAtUtc,
+    Guid CreatedBy,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? DispatchedAtUtc,
+    Guid? DispatchedBy,
+    DateTimeOffset? ClosedAtUtc,
+    Guid? ClosedBy);
+
+public sealed record StockRequestActivityEventDto(
+    Guid EventId,
+    string EventType,
+    DateTimeOffset OccurredAtUtc,
+    Guid? ActorId,
+    Guid? TransferId,
+    string? TransferNumber,
+    Guid? ReceiptId,
+    int? ReceiptSequence,
+    decimal? Quantity,
+    string? Reason,
+    string? Note);
 
 public sealed record StockRequestDto(
     Guid StockRequestId,

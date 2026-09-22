@@ -166,6 +166,27 @@ describe("BranchCreatePage", () => {
     expect(screen.getByTestId("branch-create-type-retail")).toBeInTheDocument();
   });
 
+  it("shows delivery coordinates hint for retail and never enables delivery on create", () => {
+    canUseWarehouseBranches.mockReturnValue(false);
+    renderPage();
+
+    expect(screen.getByTestId("branch-create-delivery-coordinates-hint")).toHaveTextContent(
+      "branches.create.deliveryRequiresCoordinates",
+    );
+    expect(pageSource).toMatch(/deliveryEnabled:\s*false/);
+    expect(pageSource).not.toMatch(
+      /deliveryEnabled:\s*defaultsQuery\.data\?\.defaultDeliveryEnabled/,
+    );
+  });
+
+  it("hides delivery coordinates hint for warehouse create", () => {
+    canUseWarehouseBranches.mockReturnValue(true);
+    renderPage("/org/branches/new?type=warehouse");
+    expect(
+      screen.queryByTestId("branch-create-delivery-coordinates-hint"),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps branch create form width constraint in globals", () => {
     expect(globalsCss).toContain(".branch-create-form");
     expect(globalsCss).toMatch(/\.branch-create-form[\s\S]*?max-width:\s*64rem/);

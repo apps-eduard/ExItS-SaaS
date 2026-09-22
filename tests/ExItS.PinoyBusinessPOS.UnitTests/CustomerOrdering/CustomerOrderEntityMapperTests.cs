@@ -63,7 +63,7 @@ public sealed class CustomerOrderEntityMapperTests
         {
             Id = Guid.Parse("11111111-1111-4111-8111-111111111111"),
             SellerOrganizationId = Guid.Parse("22222222-2222-4222-8222-222222222222"),
-            OrderNumber = "SO-000001",
+            OrderNumber = "260816-001",
             Status = nameof(CustomerOrderStatus.Submitted),
             FulfillmentStatus = nameof(CustomerOrderFulfillmentStatus.Pending),
             PaymentStatus = nameof(CustomerOrderPaymentStatus.Unpaid),

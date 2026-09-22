@@ -74,7 +74,7 @@ public sealed class ReceiveStockInventorySemanticsTests
             Now);
 
         po.Submit(
-            "PO-20260815-000001",
+            "260815-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     Product,

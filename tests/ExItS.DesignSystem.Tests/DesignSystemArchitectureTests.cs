@@ -193,6 +193,7 @@ public sealed class DesignSystemArchitectureTests
         }
 
         Assert.Contains(".exds-qty-stepper", css, StringComparison.Ordinal);
+        Assert.Contains(".exds-qty-stepper--pill", css, StringComparison.Ordinal);
         Assert.Contains(".exds-money--display", css, StringComparison.Ordinal);
     }
 

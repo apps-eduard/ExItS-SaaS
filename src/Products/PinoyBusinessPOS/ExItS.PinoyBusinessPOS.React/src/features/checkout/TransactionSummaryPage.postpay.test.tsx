@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AppProviders } from "@/app/providers";
 import * as salesClient from "@/api/pos/pos-sales-client";
+import * as returnBatchesClient from "@/api/pos/pos-return-batches-client";
 import { TransactionSummaryPage } from "@/features/checkout/TransactionSummaryPage";
 
 vi.mock("@/api/pos/pos-sales-client", async (importOriginal) => {
@@ -12,6 +13,14 @@ vi.mock("@/api/pos/pos-sales-client", async (importOriginal) => {
     ...actual,
     getSale: vi.fn(),
     voidSale: vi.fn(),
+  };
+});
+
+vi.mock("@/api/pos/pos-return-batches-client", async (importOriginal) => {
+  const actual = await importOriginal<typeof returnBatchesClient>();
+  return {
+    ...actual,
+    listReturnBatches: vi.fn(),
   };
 });
 
@@ -62,7 +71,7 @@ function completedSale(overrides: Record<string, unknown> = {}) {
   return {
     saleId,
     organizationId: "11111111-1111-1111-1111-111111111111",
-    saleNumber: "SALE-20260906-000001",
+    saleNumber: "260906-001",
     status: "Completed",
     paymentMethod: "Cash",
     subtotal: 103.5,
@@ -75,7 +84,7 @@ function completedSale(overrides: Record<string, unknown> = {}) {
     voidedAtUtc: null,
     voidedBy: null,
     voidReason: null,
-    shiftNumber: "SHIFT-20260906-000002",
+    shiftNumber: "260906-002",
     costStatus: "Complete",
     totalCostSnapshot: 40,
     grossProfit: 63.5,
@@ -116,6 +125,8 @@ describe("TransactionSummaryPage post-pay cleanup", () => {
     sessionGrant = managerGrant;
     vi.mocked(salesClient.getSale).mockReset();
     vi.mocked(salesClient.getSale).mockResolvedValue(completedSale() as never);
+    vi.mocked(returnBatchesClient.listReturnBatches).mockReset();
+    vi.mocked(returnBatchesClient.listReturnBatches).mockResolvedValue([]);
     vi.spyOn(window, "print").mockImplementation(() => undefined);
   });
 
@@ -156,8 +167,8 @@ describe("TransactionSummaryPage post-pay cleanup", () => {
     expect(within(header).getByTestId("summary-return-items")).toBeInTheDocument();
     expect(within(header).getByTestId("summary-void-trigger")).toBeInTheDocument();
 
-    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("SALE-20260906-000001");
-    expect(screen.getByTestId("summary-shift")).toHaveTextContent("SHIFT-20260906-000002");
+    expect(screen.getByTestId("summary-sale-number")).toHaveTextContent("260906-001");
+    expect(screen.getByTestId("summary-shift")).toHaveTextContent("260906-002");
     expect(screen.getByTestId("summary-sold-by")).toHaveTextContent("Mica Uy");
     expect(screen.getByTestId("summary-status")).toHaveTextContent("Completed");
     expect(screen.getByTestId("summary-total")).toHaveTextContent("103.50");

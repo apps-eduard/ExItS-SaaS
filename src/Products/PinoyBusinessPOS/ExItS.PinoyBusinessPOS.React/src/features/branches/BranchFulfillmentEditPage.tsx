@@ -16,8 +16,8 @@ import {
   getBranchOperatingHours,
   listBranchDeliveryServiceAreas,
   listOrganizationBranchesForFulfillment,
+  normalizeFulfillmentReadiness,
   setBranchOnlineOrdersPaused,
-  updateBranchFulfillmentSettings,
   updateOrganizationBranch,
   upsertBranchDeliveryPolicy,
   upsertBranchOperatingHours,
@@ -25,12 +25,15 @@ import {
   type BranchFulfillmentReadinessDto,
   type OrganizationBranchDto,
 } from "@/api/platform/branch-fulfillment-client";
+import { updateBranchFulfillmentSettingsViaPos } from "@/api/pos/pos-connected-commerce-client";
 import {
   getSupplierConnectedSupplierCommerceReadiness,
+  getOrganizationFulfillmentSettings,
   listBusinessCustomers,
 } from "@/api/pos/pos-connected-suppliers-client";
 import { listPaymentMethods } from "@/api/pos/pos-payment-methods-client";
 import { PlatformApiError } from "@/api/platform/platform-http";
+import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -58,6 +61,7 @@ import { BranchDetailsForm } from "@/features/branches/BranchDetailsForm";
 import { BranchHoursForm } from "@/features/branches/BranchHoursForm";
 import { BranchOverviewPanel } from "@/features/branches/BranchOverviewPanel";
 import { BranchPoFulfillmentReadinessPanel } from "@/features/branches/BranchPoFulfillmentReadinessPanel";
+import { organizationOfferDeliveryQueryKey } from "@/features/branches/offer-delivery-queries";
 import { hasEnabledPoPaymentMethod, requirementIsMissing } from "@/features/shell/needs-attention";
 import { useI18n } from "@/i18n/I18nProvider";
 import type { MessageKey } from "@/i18n/messages";
@@ -174,6 +178,17 @@ export function BranchFulfillmentEditPage() {
         contactOk: !requirementIsMissing(readiness.requirements, "ResponsibleContact"),
       };
     },
+  });
+
+  const orgFulfillmentQuery = useQuery({
+    queryKey: organizationOfferDeliveryQueryKey(organizationId),
+    enabled: Boolean(organizationId && canAccess && boundWorkspace?.branchId),
+    staleTime: 60_000,
+    queryFn: ({ signal }) =>
+      getOrganizationFulfillmentSettings(
+        { organizationId: organizationId!, branchId: boundWorkspace!.branchId },
+        signal,
+      ),
   });
 
   const [name, setName] = useState("");
@@ -517,14 +532,19 @@ export function BranchFulfillmentEditPage() {
     pickupEnabled?: boolean;
     deliveryEnabled?: boolean;
   }) {
-    if (!organizationId || busy) {
+    if (!organizationId || busy || !boundWorkspace?.branchId) {
       return;
     }
     setBusy(true);
     setError(null);
     setOkMessage(null);
     try {
-      const next = await updateBranchFulfillmentSettings(organizationId, branchId, partial);
+      const raw = await updateBranchFulfillmentSettingsViaPos(
+        { organizationId, branchId: boundWorkspace.branchId },
+        branchId,
+        partial,
+      );
+      const next = normalizeFulfillmentReadiness(raw);
       setReadiness(next);
       await queryClient.invalidateQueries({
         queryKey: ["branch-fulfillment-list", organizationId],
@@ -533,9 +553,11 @@ export function BranchFulfillmentEditPage() {
       setOkMessage(t("branches.saved"));
     } catch (err) {
       setError(
-        err instanceof PlatformApiError
+        err instanceof PosApiError
           ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
-          : t("branches.fulfillmentFailed"),
+          : err instanceof PlatformApiError
+            ? (err.problem.detail ?? t("branches.fulfillmentFailed"))
+            : t("branches.fulfillmentFailed"),
       );
     } finally {
       setBusy(false);
@@ -651,6 +673,7 @@ export function BranchFulfillmentEditPage() {
             branchId={branchId}
             readiness={currentReadiness}
             t={t}
+            orgOfferDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
             catalogOk={supplierSummaryQuery.data?.catalogOk ?? null}
             paymentsOk={supplierSummaryQuery.data?.paymentsOk ?? null}
             contactOk={supplierSummaryQuery.data?.contactOk ?? null}
@@ -659,6 +682,7 @@ export function BranchFulfillmentEditPage() {
             readiness={currentReadiness}
             busy={busy || !canManage}
             t={t}
+            orgOfferDelivery={orgFulfillmentQuery.data?.offerDelivery === true}
             onTogglePickup={(enabled) => {
               if (!canManage) return;
               void toggleFulfillment({ pickupEnabled: enabled });
@@ -869,7 +893,7 @@ export function BranchFulfillmentEditPage() {
           </div>
           <div className="catalog-form-actions__secondary">
             <Button asChild variant="outline" className="w-full sm:w-auto">
-              <Link to={branchBackPath}>{t("branches.cancel")}</Link>
+              <Link to={branchFallbackPath}>{t("branches.cancel")}</Link>
             </Button>
           </div>
         </div>

@@ -849,6 +849,12 @@ public sealed class CreateBuyerProductAndLinkTests
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) =>
             Task.CompletedTask;
 
+        public Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default)
+        {
+            _items.RemoveAll(x => x.Id == share.Id);
+            return Task.CompletedTask;
+        }
+
         public Task<IReadOnlyDictionary<Guid, BuyerRelationshipShareStats>> ListShareStatsByRelationshipsAsync(
             IReadOnlyList<Guid> relationshipIds,
             CancellationToken ct = default) =>

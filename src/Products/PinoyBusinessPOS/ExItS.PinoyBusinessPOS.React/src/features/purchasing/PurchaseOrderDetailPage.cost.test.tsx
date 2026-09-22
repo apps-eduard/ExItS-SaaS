@@ -185,14 +185,14 @@ describe("PurchaseOrderDetailPage cost and receipt history", () => {
       formatPeso(240),
     );
     expect(screen.getByText("DR-9912")).toBeInTheDocument();
-    expect(screen.getByText("LOT-A123")).toBeInTheDocument();
+    expect(screen.getAllByText(/LOT-A123/).length).toBeGreaterThan(0);
 
     await user.click(
       screen.getByTestId("po-activity-expand-14141414-1414-4141-8141-141414141414"),
     );
     expect(screen.getByTestId("po-receipt-GRN-000052")).toBeInTheDocument();
-    expect(screen.getByText(/Cancel remaining:/)).toBeInTheDocument();
-    expect(screen.getByText(/Supplier will replace next delivery/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Cancel remaining:/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Supplier will replace next delivery/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Damaged: 0/)).not.toBeInTheDocument();
     expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
     expect(screen.getAllByText("Maria Santos").length).toBeGreaterThanOrEqual(1);

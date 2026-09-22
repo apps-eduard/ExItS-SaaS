@@ -95,6 +95,7 @@ internal static class SupplierPayableEntityMapper
 
     public static void ApplyToRecord(SupplierPayable payable, SupplierPayableRecord record)
     {
+        record.OriginalAmount = payable.OriginalAmount;
         record.PaidAmount = payable.PaidAmount;
         record.Balance = payable.Balance;
         record.Status = payable.Status.ToString();

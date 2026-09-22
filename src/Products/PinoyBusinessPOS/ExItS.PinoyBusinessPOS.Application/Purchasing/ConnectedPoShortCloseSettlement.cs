@@ -48,13 +48,15 @@ public static class ConnectedPoShortCloseSettlement
         finalAccepted = SaleMoney.RoundMoney(finalAccepted);
         cancelledValue = SaleMoney.RoundMoney(cancelledValue);
 
-        var amountPaid = 0m;
+        var fromPayables = 0m;
         foreach (var payable in payablesForReceipts.Where(p => p.Status != SupplierPayableStatus.Voided))
         {
-            amountPaid += payable.PaidAmount;
+            fromPayables += payable.PaidAmount;
         }
 
-        amountPaid = SaleMoney.RoundMoney(amountPaid);
+        fromPayables = SaleMoney.RoundMoney(fromPayables);
+        // PayBefore may settle onto AmountPaidSnapshot before any goods receipt payable exists.
+        var amountPaid = SaleMoney.RoundMoney(Math.Max(buyerPo.AmountPaidSnapshot ?? 0m, fromPayables));
         var refundDue = amountPaid > finalAccepted
             ? SaleMoney.RoundMoney(amountPaid - finalAccepted)
             : 0m;

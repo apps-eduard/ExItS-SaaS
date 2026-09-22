@@ -31,7 +31,8 @@ public sealed record PosInventoryAccountDto(
     string? CategoryName = null,
     string MonitoringMode = "BranchDefault",
     decimal ReservedQuantity = 0m,
-    decimal AvailableQuantity = 0m);
+    decimal AvailableQuantity = 0m,
+    decimal PendingReturnQuantity = 0m);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,
@@ -259,6 +260,8 @@ public sealed record InventoryAccountFilter(
     string? ProductStatus = null,
     string? StockStatus = null,
     string? MonitoringMode = null,
-    Guid? CategoryId = null);
+    Guid? CategoryId = null,
+    IReadOnlyList<Guid>? CategoryIds = null,
+    IReadOnlyList<Guid>? BrandIds = null);
 
 public sealed record StockCountFilter(string? Status = null, string? CountNumber = null);

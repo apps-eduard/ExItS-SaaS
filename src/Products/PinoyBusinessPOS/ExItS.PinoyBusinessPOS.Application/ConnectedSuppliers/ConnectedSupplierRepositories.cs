@@ -66,6 +66,7 @@ public interface IConnectedBuyerProductShareRepository
 
     Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
     Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
+    Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default);
 
     /// <summary>
     /// Batch share-row aggregates for many relationships (avoids N+1 on Business Customer list).
@@ -89,7 +90,8 @@ public sealed record BuyerProductShareManagementRow(
     CatalogProduct Product,
     SupplierProductExposure? Exposure,
     ConnectedBuyerProductShare? Share,
-    string? CategoryName);
+    string? CategoryName,
+    bool IsInventoryTracked = false);
 
 public sealed record BuyerProductShareSearchPage(
     IReadOnlyList<BuyerProductShareManagementRow> Rows,
@@ -156,4 +158,20 @@ public interface IConnectedPoInventoryReservationRepository
 
     Task AddAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
     Task UpdateAsync(ConnectedPoInventoryReservation reservation, CancellationToken ct = default);
+}
+
+public interface IConnectedPoReceivingIssueRepository
+{
+    Task<ConnectedPoReceivingIssue?> GetAsync(ConnectedPoReceivingIssueId id, CancellationToken ct = default);
+
+    Task<ConnectedPoReceivingIssue?> GetByGoodsReceiptAsync(
+        GoodsReceiptId goodsReceiptId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<ConnectedPoReceivingIssue>> ListByConnectedOrderAsync(
+        ConnectedPurchaseOrderId connectedPurchaseOrderId,
+        CancellationToken ct = default);
+
+    Task AddAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default);
+    Task UpdateAsync(ConnectedPoReceivingIssue issue, CancellationToken ct = default);
 }

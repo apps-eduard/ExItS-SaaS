@@ -124,7 +124,8 @@ internal static class PersistenceExceptionMapper
             return true;
         }
 
-        if (constraint.Contains("ux_stock_movements_inventory_transfer_source", StringComparison.OrdinalIgnoreCase))
+        if (constraint.Contains("ux_stock_movements_inventory_transfer_source", StringComparison.OrdinalIgnoreCase)
+            || constraint.Contains("ux_stock_movements_inventory_transfer_lot", StringComparison.OrdinalIgnoreCase))
         {
             errorCode = ApplicationErrorCodes.InventoryTransferAlreadyReceived;
             message = "This transfer stock movement has already been applied.";

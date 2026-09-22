@@ -90,27 +90,32 @@ public sealed class ConnectedBuyerSharingRequiresTrackedTests
     }
 
     [Fact]
-    public async Task Disable_tracking_blocks_while_product_is_shared()
+    public async Task Disable_tracking_allowed_while_product_was_exposable_and_deactivates_eligibility()
     {
         var product = CatalogProduct.Create(Org, "Coffee", UnitOfMeasure.Piece, 20m, Now);
         product.EnableConnectedBuyerAvailability(Now);
+        product.SetDefaultConnectedPoPrice(18m, Now);
         var account = InventoryAccount.CreateUntracked(Org, product.Id, Now);
         account.Enable(0m, UnitOfMeasure.Piece, Guid.Empty, Now, hasOpeningStockAlready: false);
         var inventory = new TrackedInventoryStub();
         inventory.Accounts.Add(account);
         var products = new MemoryProducts([product]);
+        var exposures = new CapturingExposures();
+        var exposed = SupplierProductExposure.Expose(
+            Org, product.Id, product.Name, "Piece", 18m, Now, product.Sku);
+        exposures.Items.Add(exposed);
         var useCase = new DisableInventoryTracking(
             inventory,
             products,
             new FakeUow(),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            exposures);
 
         var result = await useCase.ExecuteAsync(OrgGuid, product.Id.Value);
 
-        Assert.False(result.IsSuccess);
-        Assert.Equal(DomainErrorCodes.ConnectedShareBlocksDisableTracking, result.ErrorCode);
-        Assert.True(account.IsTracked);
-        Assert.True(product.CanExposeToConnectedBuyers);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(account.IsTracked);
+        Assert.False(exposed.IsExposed);
     }
 
     [Fact]
@@ -127,7 +132,8 @@ public sealed class ConnectedBuyerSharingRequiresTrackedTests
             inventory,
             products,
             new FakeUow(),
-            new FixedClock(Now));
+            new FixedClock(Now),
+            new NoOpExposures());
 
         var result = await useCase.ExecuteAsync(OrgGuid, product.Id.Value);
 
@@ -542,6 +548,45 @@ public sealed class ConnectedBuyerSharingRequiresTrackedTests
 
         public Task UpdateAsync(ProductBrand brand, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+    }
+
+    private sealed class CapturingExposures : ISupplierProductExposureRepository
+    {
+        public List<SupplierProductExposure> Items { get; } = [];
+
+        public Task AddAsync(SupplierProductExposure exposure, CancellationToken ct = default)
+        {
+            Items.Add(exposure);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(SupplierProductExposure exposure, CancellationToken ct = default) =>
+            Task.CompletedTask;
+
+        public Task<SupplierProductExposure?> GetAsync(SupplierProductExposureId id, CancellationToken ct = default) =>
+            Task.FromResult(Items.FirstOrDefault(x => x.Id == id));
+
+        public Task<SupplierProductExposure?> GetByProductAsync(
+            PosOrganizationId supplier,
+            CatalogProductId productId,
+            CancellationToken ct = default) =>
+            Task.FromResult(Items.FirstOrDefault(x =>
+                x.SupplierOrganizationId == supplier && x.ProductId == productId));
+
+        public Task<IReadOnlyList<SupplierProductExposure>> ListAsync(
+            PosOrganizationId supplier,
+            CancellationToken ct = default) =>
+            Task.FromResult<IReadOnlyList<SupplierProductExposure>>(
+                Items.Where(x => x.SupplierOrganizationId == supplier).ToList());
+
+        public Task<(IReadOnlyList<SupplierProductExposure> Items, int Total)> SearchAsync(
+            PosOrganizationId supplier,
+            string? query,
+            string? category,
+            int skip,
+            int take,
+            CancellationToken ct = default) =>
+            Task.FromResult<(IReadOnlyList<SupplierProductExposure>, int)>(([], 0));
     }
 
     private sealed class NoOpExposures : ISupplierProductExposureRepository

@@ -1,5 +1,6 @@
 using System.Text;
 using ExItS.PinoyBusinessPOS.Domain.Common;
+using ExItS.PinoyBusinessPOS.Domain.ConnectedSuppliers;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
@@ -77,6 +78,15 @@ public sealed class CatalogProduct
     public bool CanExposeToConnectedBuyers { get; private set; }
     public decimal? DefaultConnectedPoPrice { get; private set; }
 
+    /// <summary>Product-level voluntary connected-PO return override (seller catalog).</summary>
+    public ConnectedPoReturnPolicyMode ReturnPolicyMode { get; private set; }
+
+    /// <summary>Used when <see cref="ReturnPolicyMode"/> is <see cref="ConnectedPoReturnPolicyMode.Custom"/>.</summary>
+    public bool? ReturnPolicyReturnsAllowed { get; private set; }
+
+    /// <summary>Used when <see cref="ReturnPolicyMode"/> is <see cref="ConnectedPoReturnPolicyMode.Custom"/>; null = unlimited.</summary>
+    public int? ReturnPolicyWindowDays { get; private set; }
+
     /// <summary>Usage flags are authoritative; defaults match BuyAndSell.</summary>
     public bool CanBePurchased { get; private set; }
     public bool CanBeSold { get; private set; }
@@ -125,7 +135,10 @@ public sealed class CatalogProduct
         string? platformBarcode = null,
         int? platformImageVersion = null,
         CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
-        PosBranchId? originBranchId = null)
+        PosBranchId? originBranchId = null,
+        ConnectedPoReturnPolicyMode returnPolicyMode = ConnectedPoReturnPolicyMode.UseDefault,
+        bool? returnPolicyReturnsAllowed = null,
+        int? returnPolicyWindowDays = null)
     {
         CatalogProductScopes.EnsureOriginValid(scope, originBranchId);
         Id = id;
@@ -170,6 +183,7 @@ public sealed class CatalogProduct
         DefaultConnectedPoPrice = defaultConnectedPoPrice is null
             ? null
             : NormalizeConnectedPoPrice(defaultConnectedPoPrice.Value);
+        ApplyReturnPolicyFields(returnPolicyMode, returnPolicyReturnsAllowed, returnPolicyWindowDays);
     }
 
     public static CatalogProduct Create(
@@ -348,7 +362,10 @@ public sealed class CatalogProduct
         ProductBrandId? brandId = null,
         CatalogProductScope scope = CatalogProductScope.OrganizationStandard,
         PosBranchId? originBranchId = null,
-        string? normalizedName = null) =>
+        string? normalizedName = null,
+        ConnectedPoReturnPolicyMode returnPolicyMode = ConnectedPoReturnPolicyMode.UseDefault,
+        bool? returnPolicyReturnsAllowed = null,
+        int? returnPolicyWindowDays = null) =>
         new(
             id,
             organizationId,
@@ -387,7 +404,10 @@ public sealed class CatalogProduct
             platformBarcode,
             platformImageVersion,
             scope,
-            originBranchId);
+            originBranchId,
+            returnPolicyMode,
+            returnPolicyReturnsAllowed,
+            returnPolicyWindowDays);
 
     /// <summary>Updates how the product participates in buy / sell / ingredient / production flows.</summary>
     public void UpdateUsage(ProductUsageCapabilities usage, DateTimeOffset utcNow)
@@ -542,6 +562,18 @@ public sealed class CatalogProduct
         CatalogGuards.EnsureUtc(utcNow);
         // Default PO may be staged while blocked or allowed; block/allow leave the price intact.
         DefaultConnectedPoPrice = NormalizeConnectedPoPrice(price);
+        UpdatedAtUtc = utcNow;
+    }
+
+    /// <summary>Configures product-level voluntary connected-PO return override.</summary>
+    public void ConfigureReturnPolicy(
+        ConnectedPoReturnPolicyMode mode,
+        bool? returnsAllowed,
+        int? returnWindowDays,
+        DateTimeOffset utcNow)
+    {
+        CatalogGuards.EnsureUtc(utcNow);
+        ApplyReturnPolicyFields(mode, returnsAllowed, returnWindowDays);
         UpdatedAtUtc = utcNow;
     }
 
@@ -761,5 +793,37 @@ public sealed class CatalogProduct
                 "Connected PO price must be non-negative and within the supported money range.");
         }
         return rounded;
+    }
+
+    private void ApplyReturnPolicyFields(
+        ConnectedPoReturnPolicyMode mode,
+        bool? returnsAllowed,
+        int? returnWindowDays)
+    {
+        if (!Enum.IsDefined(mode))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReturnPolicyMode,
+                "Invalid product return policy mode.");
+        }
+
+        if (returnWindowDays is < 0)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidConnectedPoReturnWindowDays,
+                "Product return window days cannot be negative.");
+        }
+
+        ReturnPolicyMode = mode;
+        if (mode == ConnectedPoReturnPolicyMode.Custom)
+        {
+            ReturnPolicyReturnsAllowed = returnsAllowed ?? true;
+            ReturnPolicyWindowDays = returnWindowDays;
+        }
+        else
+        {
+            ReturnPolicyReturnsAllowed = null;
+            ReturnPolicyWindowDays = null;
+        }
     }
 }

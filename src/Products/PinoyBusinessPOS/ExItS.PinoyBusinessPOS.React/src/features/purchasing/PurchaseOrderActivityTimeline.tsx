@@ -1,10 +1,31 @@
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCheck,
+  CreditCard,
+  FilePlus2,
+  PackageCheck,
+  PackageX,
+  Send,
+  ShieldAlert,
+  Timer,
+  Truck,
+  Undo2,
+  Wallet,
+  XCircle,
+} from "lucide-react";
 import { StatusChip } from "@/components/exits/StatusChip";
+import {
+  ExitsActivityTimeline,
+  type ExitsActivityTimelineTone,
+} from "@/components/exits/ExitsActivityTimeline";
 import { ActorAttribution } from "@/features/actors/ActorAttribution";
-import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import type { useActorDirectory } from "@/features/actors/useActorDirectory";
 import {
   buildPurchaseOrderActivityEvents,
-  formatActivityDateTime,
   type PurchaseOrderActivityEvent,
 } from "@/features/purchasing/purchase-order-activity";
 import type {
@@ -14,11 +35,12 @@ import type {
 import { useI18n } from "@/i18n/I18nProvider";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight } from "lucide-react";
 
 type PurchaseOrderActivityTimelineProps = {
-  po: PosPurchaseOrderDto;
-  receipts: readonly PosGoodsReceiptDto[];
+  po?: PosPurchaseOrderDto;
+  receipts?: readonly PosGoodsReceiptDto[];
+  /** When set, used instead of building from po + receipts (seller / precomputed). */
+  events?: readonly PurchaseOrderActivityEvent[];
   resolveActor: ReturnType<typeof useActorDirectory>["resolve"];
   isResolving: boolean;
   /** Expand receipt detail (reverse / lines) when user opens a receipt node. */
@@ -64,22 +86,107 @@ function eventTitle(
       return t("purchasing.activity.receiptReversed").replace("{grn}", event.grnNumber ?? "");
     case "remaining_closed":
       return t("purchasing.activity.remainingClosed");
+    case "awaiting_payment":
+      return t("purchasing.activity.awaitingPayment");
+    case "payment_confirmed":
+      return t("purchasing.activity.paymentConfirmed");
+    case "no_payment_due":
+      return t("purchasing.activity.noPaymentDue");
     case "completed":
       return t("purchasing.activity.completed");
   }
 }
 
+function eventTone(kind: PurchaseOrderActivityEvent["kind"]): ExitsActivityTimelineTone {
+  switch (kind) {
+    case "created":
+    case "submitted":
+    case "supplier_preparing":
+      return "info";
+    case "supplier_accepted":
+    case "supplier_ready":
+    case "stock_reserved":
+    case "proposal_reservation":
+    case "reservation_confirmed":
+    case "payment_confirmed":
+    case "no_payment_due":
+    case "completed":
+      return "success";
+    case "changes_proposed":
+    case "awaiting_payment":
+    case "receipt":
+      return "warning";
+    case "supplier_declined":
+    case "cancelled":
+    case "withdrawn":
+    case "receipt_reversed":
+    case "reservation_released":
+    case "reservation_expired":
+    case "remaining_closed":
+      return "danger";
+    default:
+      return "primary";
+  }
+}
+
+function eventIcon(kind: PurchaseOrderActivityEvent["kind"]) {
+  const className = "size-4 shrink-0";
+  switch (kind) {
+    case "created":
+      return <FilePlus2 className={className} aria-hidden />;
+    case "submitted":
+      return <Send className={className} aria-hidden />;
+    case "supplier_accepted":
+    case "supplier_ready":
+      return <ClipboardCheck className={className} aria-hidden />;
+    case "supplier_declined":
+    case "cancelled":
+    case "withdrawn":
+      return <XCircle className={className} aria-hidden />;
+    case "supplier_preparing":
+      return <Truck className={className} aria-hidden />;
+    case "changes_proposed":
+      return <ShieldAlert className={className} aria-hidden />;
+    case "stock_reserved":
+    case "proposal_reservation":
+    case "reservation_confirmed":
+      return <Timer className={className} aria-hidden />;
+    case "reservation_released":
+    case "reservation_expired":
+      return <Ban className={className} aria-hidden />;
+    case "receipt":
+      return <PackageCheck className={className} aria-hidden />;
+    case "receipt_reversed":
+      return <Undo2 className={className} aria-hidden />;
+    case "remaining_closed":
+      return <PackageX className={className} aria-hidden />;
+    case "awaiting_payment":
+      return <Wallet className={className} aria-hidden />;
+    case "payment_confirmed":
+      return <CreditCard className={className} aria-hidden />;
+    case "no_payment_due":
+    case "completed":
+      return <CheckCircle2 className={className} aria-hidden />;
+  }
+}
+
 export function PurchaseOrderActivityTimeline({
   po,
-  receipts,
+  receipts = [],
+  events: eventsProp,
   resolveActor,
   isResolving,
   renderReceiptDetail,
 }: PurchaseOrderActivityTimelineProps) {
   const { t } = useI18n();
   const events = useMemo(
-    () => buildPurchaseOrderActivityEvents({ po, receipts }),
-    [po, receipts],
+    () =>
+      eventsProp
+        ? [...eventsProp]
+        : po
+          ? buildPurchaseOrderActivityEvents({ po, receipts })
+          : [],
+    [eventsProp, po, receipts],
   );
   const [expandedReceiptId, setExpandedReceiptId] = useState<string | null>(null);
 
@@ -92,60 +199,64 @@ export function PurchaseOrderActivityTimeline({
   }
 
   return (
-    <ol className="po-activity-timeline m-0 flex list-none flex-col p-0" data-testid="po-activity-timeline">
-      {events.map((event, index) => {
-        const { date, time } = formatActivityDateTime(event.atUtc);
-        const isLast = index === events.length - 1;
+    <ExitsActivityTimeline
+      testId="po-activity-timeline"
+      items={events.map((event) => {
         const canExpand =
           event.kind === "receipt" && Boolean(event.receiptId) && Boolean(renderReceiptDetail);
         const expanded = canExpand && expandedReceiptId === event.receiptId;
+        const resolved = resolveActor(event.actorId);
+        const actorName =
+          resolved?.displayName && resolved.actorStatus !== "NotAvailable"
+            ? resolved.displayName
+            : null;
 
-        return (
-          <li
-            key={event.id}
-            className="po-activity-timeline__item"
-            data-testid={`po-activity-${event.kind}-${event.id}`}
-          >
-            <div className="po-activity-timeline__rail" aria-hidden>
-              <span className="po-activity-timeline__dot" />
-              {!isLast ? <span className="po-activity-timeline__line" /> : null}
-            </div>
-            <div className="po-activity-timeline__body min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="m-0 font-medium text-[length:var(--exits-text-sm)]">
-                  {eventTitle(event, t)}
-                </p>
-                {event.receiptResult === "partial" ? (
-                  <StatusChip tone="warning">{t("purchasing.activity.partialReceipt")}</StatusChip>
-                ) : null}
-                {event.receiptResult === "fully_received" ? (
-                  <StatusChip tone="success">{t("purchasing.activity.fullyReceived")}</StatusChip>
-                ) : null}
-                {event.receiptResult === "reversed" ? (
-                  <StatusChip tone="danger">{t("purchasing.receiptStatus.voided")}</StatusChip>
-                ) : null}
-              </div>
-              <p className="m-0 mt-0.5 text-[length:var(--exits-text-xs)] text-muted">
-                {date}
-                {time ? ` · ${time}` : ""}
-              </p>
+        const chips =
+          event.receiptResult === "partial" ? (
+            <StatusChip tone="warning">{t("purchasing.activity.partialReceipt")}</StatusChip>
+          ) : event.receiptResult === "fully_received" ? (
+            <StatusChip tone="success">{t("purchasing.activity.fullyReceived")}</StatusChip>
+          ) : event.receiptResult === "reversed" ? (
+            <StatusChip tone="danger">{t("purchasing.receiptStatus.voided")}</StatusChip>
+          ) : null;
+
+        const hasDescription =
+          Boolean(chips) || Boolean(event.actorId) || Boolean(event.note?.trim());
+
+        return {
+          id: event.id,
+          atUtc: event.atUtc,
+          title: eventTitle(event, t),
+          description: hasDescription ? (
+            <div className="flex flex-col gap-1.5">
+              {chips ? <div className="flex flex-wrap gap-1.5">{chips}</div> : null}
               {event.actorId ? (
-                <div className="mt-1">
-                  <ActorAttribution
-                    labelKey="common.by"
-                    actorId={event.actorId}
-                    occurredAtUtc={undefined}
-                    hideTimestamp
-                    resolved={resolveActor(event.actorId)}
-                    isLoading={isResolving}
-                    testId={`po-activity-actor-${event.id}`}
-                  />
-                </div>
+                <ActorAttribution
+                  labelKey="common.by"
+                  actorId={event.actorId}
+                  hideTimestamp
+                  resolved={resolved}
+                  isLoading={isResolving}
+                  testId={`po-activity-actor-${event.id}`}
+                />
               ) : null}
-
+              {event.note?.trim() ? (
+                <p className="m-0">
+                  {t("incomingOrders.sellerRemarks")}: {event.note.trim()}
+                </p>
+              ) : null}
+            </div>
+          ) : undefined,
+          tone: eventTone(event.kind),
+          icon: eventIcon(event.kind),
+          actorName,
+          actorLoading: Boolean(event.actorId) && isResolving && !actorName,
+          testId: `po-activity-${event.kind}-${event.id}`,
+          children: (
+            <>
               {event.kind === "changes_proposed" && event.proposalSummary ? (
                 <div
-                  className="mt-2 space-y-1 text-[length:var(--exits-text-sm)]"
+                  className="space-y-1 text-[length:var(--exits-text-sm)]"
                   data-testid={`po-activity-proposal-summary-${event.id}`}
                 >
                   {event.proposalSummary.changedLines.map((line) => (
@@ -176,27 +287,33 @@ export function PurchaseOrderActivityTimeline({
               ) : null}
 
               {event.kind === "receipt" && event.lines && event.lines.length > 0 ? (
-                <ul className="m-0 mt-2 list-none space-y-0.5 p-0 text-[length:var(--exits-text-sm)]">
+                <ul className="exits-activity-timeline__lines m-0 list-none space-y-1 p-0 text-[length:var(--exits-text-sm)]">
                   {event.lines.map((line) => (
-                    <li key={`${event.id}-${line.productName}-${line.uom}`}>
-                      <span className="text-muted">{t("purchasing.activity.receivedLabel")}: </span>
-                      {line.productName}{" "}
-                      {line.orderedQty != null
-                        ? `${line.goodQty} / ${line.orderedQty}`
-                        : `${line.goodQty} ${line.uom}`}
-                      {line.damagedQty > 0
-                        ? ` · ${t("purchasing.damaged")} ${line.damagedQty}`
-                        : ""}
-                      {line.cancelledRemainingQty > 0
-                        ? ` · ${t("purchasing.cancelRemaining")} ${line.cancelledRemainingQty}`
-                        : ""}
+                    <li
+                      key={`${event.id}-${line.productName}-${line.uom}`}
+                      className="flex items-start gap-2 text-muted"
+                    >
+                      <PackageCheck className="mt-0.5 size-3.5 shrink-0 opacity-70" aria-hidden />
+                      <span>
+                        <span className="font-medium text-foreground">{line.productName}</span>
+                        {" · "}
+                        {line.orderedQty != null
+                          ? `${line.goodQty} / ${line.orderedQty}`
+                          : `${line.goodQty} ${line.uom}`}
+                        {line.damagedQty > 0
+                          ? ` · ${t("purchasing.damaged")} ${line.damagedQty}`
+                          : ""}
+                        {line.cancelledRemainingQty > 0
+                          ? ` · ${t("purchasing.cancelRemaining")} ${line.cancelledRemainingQty}`
+                          : ""}
+                      </span>
                     </li>
                   ))}
                 </ul>
               ) : null}
 
               {canExpand ? (
-                <div className="mt-2">
+                <div className="mt-1">
                   <Button
                     type="button"
                     variant="ghost"
@@ -227,10 +344,10 @@ export function PurchaseOrderActivityTimeline({
                   </div>
                 </div>
               ) : null}
-            </div>
-          </li>
-        );
+            </>
+          ),
+        };
       })}
-    </ol>
+    />
   );
 }

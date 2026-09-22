@@ -86,7 +86,7 @@ public sealed class PurchaseReceivingConsistencyTests
             ],
             Utc);
         po.Submit(
-            "PO-20260828-000001",
+            "260828-001",
             [
                 new PurchaseOrderLineSnapshotInput(
                     Product,
@@ -108,7 +108,7 @@ public sealed class PurchaseReceivingConsistencyTests
         var grn = GoodsReceipt.Create(
             Org,
             po.Id,
-            "GRN-20260828-000001",
+            "260828-001",
             po,
             [receive],
             Actor,
@@ -134,7 +134,7 @@ public sealed class PurchaseReceivingConsistencyTests
             [new PurchaseOrderLineDraft(Product, 10m, 18m)],
             Utc);
         po.Submit(
-            "PO-20260828-000002",
+            "260828-002",
             [
                 new PurchaseOrderLineSnapshotInput(
                     Product,
@@ -154,7 +154,7 @@ public sealed class PurchaseReceivingConsistencyTests
         var grn = GoodsReceipt.Create(
             Org,
             po.Id,
-            "GRN-20260828-000002",
+            "260828-002",
             po,
             [receive],
             Actor,
@@ -177,7 +177,7 @@ public sealed class PurchaseReceivingConsistencyTests
             [new PurchaseOrderLineDraft(Product, 10m, 18m)],
             Utc);
         po.Submit(
-            "PO-20260828-000003",
+            "260828-003",
             [
                 new PurchaseOrderLineSnapshotInput(
                     Product,
@@ -198,7 +198,7 @@ public sealed class PurchaseReceivingConsistencyTests
         var grn = GoodsReceipt.Create(
             Org,
             po.Id,
-            "GRN-20260828-000003",
+            "260828-003",
             po,
             [receive],
             Actor,

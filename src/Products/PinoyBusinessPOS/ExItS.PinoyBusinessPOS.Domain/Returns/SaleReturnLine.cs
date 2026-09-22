@@ -11,7 +11,9 @@ public sealed record SaleReturnLineDraft(
     SaleLineId SaleLineId,
     decimal QuantityReturned,
     RestockDisposition RestockDisposition,
-    string? LineReason = null);
+    string? LineReason = null,
+    decimal? SellableQuantity = null,
+    decimal? DamagedQuantity = null);
 
 /// <summary>One immutable line on a completed sale return.</summary>
 public sealed class SaleReturnLine
@@ -30,6 +32,8 @@ public sealed class SaleReturnLine
     public decimal UnitPriceSnapshot { get; }
     public decimal RefundAmount { get; }
     public RestockDisposition RestockDisposition { get; }
+    public decimal SellableQuantity { get; }
+    public decimal DamagedQuantity { get; }
     public string? LineReason { get; }
     public Guid? InventoryMovementId { get; private set; }
 
@@ -45,6 +49,8 @@ public sealed class SaleReturnLine
         decimal unitPriceSnapshot,
         decimal refundAmount,
         RestockDisposition restockDisposition,
+        decimal sellableQuantity,
+        decimal damagedQuantity,
         string? lineReason,
         Guid? inventoryMovementId)
     {
@@ -59,6 +65,8 @@ public sealed class SaleReturnLine
         UnitPriceSnapshot = unitPriceSnapshot;
         RefundAmount = refundAmount;
         RestockDisposition = restockDisposition;
+        SellableQuantity = sellableQuantity;
+        DamagedQuantity = damagedQuantity;
         LineReason = lineReason;
         InventoryMovementId = inventoryMovementId;
     }
@@ -104,6 +112,12 @@ public sealed class SaleReturnLine
                 "Refund amount must be greater than zero.");
         }
 
+        var (sellableQuantity, damagedQuantity) = ResolveDispositionQuantities(
+            quantity,
+            draft,
+            saleLine.UnitOfMeasureSnapshot,
+            saleLine.SellingModeSnapshot);
+
         return new SaleReturnLine(
             id ?? SaleReturnLineId.New(),
             saleReturnId,
@@ -116,6 +130,8 @@ public sealed class SaleReturnLine
             saleLine.UnitPrice,
             refundAmount,
             draft.RestockDisposition,
+            sellableQuantity,
+            damagedQuantity,
             NormalizeLineReason(draft.LineReason),
             inventoryMovementId: null);
     }
@@ -144,6 +160,8 @@ public sealed class SaleReturnLine
         decimal unitPriceSnapshot,
         decimal refundAmount,
         RestockDisposition restockDisposition,
+        decimal sellableQuantity,
+        decimal damagedQuantity,
         string? lineReason,
         Guid? inventoryMovementId) =>
         new(
@@ -158,8 +176,75 @@ public sealed class SaleReturnLine
             unitPriceSnapshot,
             refundAmount,
             restockDisposition,
+            sellableQuantity,
+            damagedQuantity,
             lineReason,
             inventoryMovementId);
+
+    private static (decimal SellableQuantity, decimal DamagedQuantity) ResolveDispositionQuantities(
+        decimal quantityReturned,
+        SaleReturnLineDraft draft,
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode)
+    {
+        var sellable = draft.SellableQuantity;
+        var damaged = draft.DamagedQuantity;
+        if (sellable is null && damaged is null)
+        {
+            return draft.RestockDisposition switch
+            {
+                RestockDisposition.ReturnToStock => (quantityReturned, 0m),
+                RestockDisposition.DoNotRestock => (0m, quantityReturned),
+                _ => throw new DomainException(
+                    DomainErrorCodes.InvalidSaleReturnRestockDisposition,
+                    "Unknown restock disposition.")
+            };
+        }
+
+        if (sellable is null || damaged is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnLine,
+                "Sellable and damaged quantities must both be provided when classifying a split disposition.");
+        }
+
+        var normalizedSellable = NormalizeSplitQuantity(sellable.Value, unitOfMeasure, sellingMode);
+        var normalizedDamaged = NormalizeSplitQuantity(damaged.Value, unitOfMeasure, sellingMode);
+
+        if (normalizedSellable < 0m || normalizedDamaged < 0m || normalizedSellable + normalizedDamaged != quantityReturned)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnLine,
+                "Sellable and damaged quantities must be non-negative and sum to returned quantity.");
+        }
+
+        return (normalizedSellable, normalizedDamaged);
+    }
+
+    private static decimal NormalizeSplitQuantity(
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        SellingMode sellingMode)
+    {
+        if (quantity < 0m)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnLine,
+                "Split disposition quantities cannot be negative.");
+        }
+
+        var maxDecimals = SaleMoney.MaxQuantityDecimals(unitOfMeasure, sellingMode);
+        if (!SaleMoney.HasAtMostDecimals(quantity, maxDecimals))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidSaleReturnLine,
+                maxDecimals == 0
+                    ? $"{unitOfMeasure} quantities must be whole numbers."
+                    : $"{unitOfMeasure} quantities may have at most {maxDecimals} decimal places.");
+        }
+
+        return quantity;
+    }
 
     private static string? NormalizeLineReason(string? reason)
     {

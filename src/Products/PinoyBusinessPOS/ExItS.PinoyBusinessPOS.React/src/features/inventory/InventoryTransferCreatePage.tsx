@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeftRight, ArrowRight, ArrowRightLeft, RotateCcw, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowLeftRight,
+  ArrowRightLeft,
+  RotateCcw,
+  Store,
+} from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listInventory,
@@ -12,23 +18,21 @@ import {
 import { PosApiError } from "@/api/pos/pos-http";
 import { createInventoryTransfer } from "@/api/pos/pos-inventory-transfer-client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { CountBadge } from "@/components/exits/CountChip";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { ExitsSelect } from "@/components/exits/ExitsSelect";
-import { StickyActionBar } from "@/components/exits/FoundationStates";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { QuantityStepper } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
+import { SelectedItemsPanel } from "@/components/exits/ProductSelectionWorkspace";
 import { ProductSelectionToolbar } from "@/components/exits/ProductSelectionView";
 import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { SearchField } from "@/components/exits/SearchField";
 import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
-import { EXITS_CANCEL_BUTTON_CLASS } from "@/components/exits/exits-cancel-button";
 import { useBrowserOnline } from "@/connectivity/browser-online";
+import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
 import {
   canAddTransferQuantity,
@@ -37,9 +41,9 @@ import {
   productDemandExcludingLine,
   type TransferLineStockIssue,
 } from "@/features/inventory/inventory-transfer-stock-guard";
+import { InventoryTransferItemsView } from "@/features/inventory/InventoryTransferItemsView";
 import { InventoryTransferProductSelection } from "@/features/inventory/InventoryTransferProductSelection";
 import { useI18n } from "@/i18n/I18nProvider";
-import { cn } from "@/lib/cn";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
 
@@ -83,10 +87,20 @@ export function InventoryTransferCreatePage() {
   const [lotsCache, setLotsCache] = useState<Record<string, PosInventoryLotDto[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [finderOpen, setFinderOpen] = useState(false);
+  const finderPanelId = "transfer-product-finder-panel";
   const operationIdRef = useRef<string | null>(null);
   const { layout: pickerLayout } = useResponsiveDataLayout({
     tableMinWidthPx: PRODUCT_SELECTION_TABLE_MIN_PX,
   });
+
+  function openFinder() {
+    setFinderOpen(true);
+  }
+
+  function closeFinder() {
+    setFinderOpen(false);
+  }
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -495,6 +509,24 @@ export function InventoryTransferCreatePage() {
     }
   }
 
+  const destinationOptions = useMemo(
+    () => [
+      { value: "", label: t("transfer.selectDestination") },
+      ...destinations.map((branch) => ({
+        value: branch.branchId,
+        label: branch.secondaryLine
+          ? `${branch.name} — ${branch.secondaryLine}`
+          : branch.name,
+      })),
+    ],
+    [destinations, t],
+  );
+
+  const unitCount = useMemo(
+    () => lines.reduce((sum, line) => sum + line.quantity, 0),
+    [lines],
+  );
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -536,22 +568,9 @@ export function InventoryTransferCreatePage() {
   const createDisabled =
     !online || saving || Boolean(createBlockedReason) || lines.length === 0 || !destinationBranchId;
 
-  const destinationOptions = useMemo(
-    () => [
-      { value: "", label: t("transfer.selectDestination") },
-      ...destinations.map((branch) => ({
-        value: branch.branchId,
-        label: branch.secondaryLine
-          ? `${branch.name} — ${branch.secondaryLine}`
-          : branch.name,
-      })),
-    ],
-    [destinations, t],
-  );
-
   return (
     <div
-      className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      className="inventory-transfer-create-page exits-page flex min-w-0 flex-col gap-4"
       data-testid="inventory-transfer-create-page"
     >
       <PageHeader
@@ -583,257 +602,230 @@ export function InventoryTransferCreatePage() {
         </p>
       ) : null}
 
-      <Card
-        as="section"
-        padding="compact"
-        className="transfer-create-details"
-        data-testid="transfer-create-details"
-        aria-labelledby="transfer-create-details-heading"
-      >
-        <h2
-          id="transfer-create-details-heading"
-          className="transfer-create-details__title m-0"
-        >
-          {t("transfer.detailsTitle")}
-        </h2>
-
-        <div className="transfer-create-route">
-          <div className="transfer-create-route__from flex min-w-0 flex-col gap-1">
-            <span className="exits-type-label">{t("transfer.fromBranch")}</span>
-            <p
-              className="m-0 text-[length:var(--exits-text-md)] font-semibold text-foreground"
-              data-testid="transfer-source-branch"
-            >
-              {sourceName}
-            </p>
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-              {t("transfer.sourceFixedHint")}
-            </p>
-          </div>
-
-          <div className="transfer-create-route__arrow" aria-hidden>
-            <ArrowRight className="size-5 text-muted" strokeWidth={1.75} />
-          </div>
-
-          <div className="transfer-create-route__to flex min-w-0 flex-col gap-1">
-            <span className="exits-type-label" id="transfer-to-branch-label">
-              {t("transfer.toBranch")}
+      <PoDocumentSummary
+        className="po-document-summary--create transfer-create-summary"
+        title={t("transfer.detailsTitle")}
+        fields={[
+          {
+            key: "from",
+            label: t("transfer.fromBranch"),
+            value: (
+              <span
+                className="inline-flex min-w-0 items-center gap-2 font-semibold"
+                data-testid="transfer-source-branch"
+              >
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">{sourceName}</span>
+              </span>
+            ),
+          },
+          {
+            key: "to",
+            label: t("transfer.toBranch"),
+            value: (
+              <ExitsSelect
+                value={destinationBranchId}
+                options={destinationOptions}
+                onChange={setDestinationBranchId}
+                searchable={destinations.length > 6}
+                searchPlaceholder={t("transfer.selectDestination")}
+                menuLabel={t("transfer.toBranch")}
+                aria-label={t("transfer.toBranch")}
+                testId="transfer-destination-branch"
+                invalid={!destinationBranchId && lines.length > 0}
+              />
+            ),
+          },
+        ]}
+        testId="transfer-create-details"
+        footer={
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            <span>
+              {t("transfer.notes")}{" "}
+              <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
             </span>
-            <ExitsSelect
-              value={destinationBranchId}
-              options={destinationOptions}
-              onChange={setDestinationBranchId}
-              searchable={destinations.length > 6}
-              searchPlaceholder={t("transfer.selectDestination")}
-              menuLabel={t("transfer.toBranch")}
-              aria-labelledby="transfer-to-branch-label"
-              testId="transfer-destination-branch"
-              invalid={!destinationBranchId && lines.length > 0}
+            <textarea
+              className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              maxLength={512}
+              data-testid="transfer-notes"
             />
-          </div>
-        </div>
+          </label>
+        }
+      />
 
-        <label className="transfer-create-notes flex min-w-0 flex-col gap-1">
-          <span className="exits-type-label">
-            {t("transfer.notes")}{" "}
-            <span className="font-normal text-muted">({t("transfer.notesOptional")})</span>
-          </span>
-          <textarea
-            className="exits-input transfer-create-notes__input resize-y"
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            maxLength={512}
-            data-testid="transfer-notes"
-          />
-        </label>
-      </Card>
-
-      {lines.length > 0 ? (
-        <section
-          className="transfer-draft-lines-panel flex flex-col gap-2"
-          data-testid="transfer-draft-lines"
-          aria-labelledby="transfer-draft-items-heading"
-        >
-          <h2
-            id="transfer-draft-items-heading"
-            className="m-0 flex items-center gap-2 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
-          >
-            <span>{t("transfer.items")}</span>
-            <CountBadge count={lines.length} tone="primary" />
-          </h2>
-          <ul className="transfer-draft-lines m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
-            {lines.map((line) => {
-              const issue = lineIssues.get(line.key);
-              const maxQty =
-                line.lotAvailableQuantity != null
-                  ? Math.min(line.availableQuantity, line.lotAvailableQuantity)
-                  : line.availableQuantity;
-              const canDecrease = line.quantity > 1;
-              const canIncrease = line.quantity < maxQty;
-              return (
-                <li
-                  key={line.key}
-                  className="transfer-draft-line flex flex-wrap items-center gap-2 rounded-[var(--exits-radius-md)] border border-border bg-surface px-3 py-2"
-                  data-testid={`transfer-line-${line.key}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="m-0 truncate text-[length:var(--exits-text-sm)] font-medium">
-                      {line.name}
-                    </p>
-                    <p
-                      className={cn(
-                        "m-0 text-[length:var(--exits-text-xs)]",
-                        maxQty <= 0 || issue ? "text-danger" : "text-muted",
-                      )}
-                      data-testid={`transfer-line-available-${line.key}`}
-                    >
-                      {maxQty <= 0
-                        ? t("transfer.outOfStock")
-                        : formatAvailable(maxQty, line.unitOfMeasure)}
-                      {line.lotNumber || line.expirationDate
-                        ? ` · ${t("transfer.lot")}: ${line.lotNumber ?? "—"} · ${t("transfer.expiry")}: ${line.expirationDate ?? "—"}`
-                        : ""}
-                    </p>
-                  </div>
-                  <QuantityStepper
-                    compact
-                    value={line.quantity}
-                    min={0}
-                    precision={4}
-                    step={1}
-                    onChange={(next) => updateLineQuantity(line.key, String(next))}
-                    increaseLabel={t("transfer.increaseQuantity")}
-                    decreaseLabel={t("transfer.decreaseQuantity")}
-                    incrementDisabled={!canIncrease}
-                    decrementDisabled={!canDecrease}
-                    invalid={Boolean(issue)}
-                    unit={line.unitOfMeasure}
-                    valueTestId={`transfer-line-qty-${line.key}`}
-                    ariaLabel={t("transfer.quantity")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0"
-                    aria-label={t("transfer.remove")}
-                    onClick={() => removeLine(line.key)}
-                    data-testid={`transfer-remove-${line.key}`}
-                  >
-                    <X className="size-4" aria-hidden />
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ) : null}
-
-      <section
-        className="transfer-find-products flex flex-col gap-2"
-        data-testid="transfer-add-products"
-        aria-labelledby="transfer-find-products-heading"
+      <div
+        className="product-selection-workspace receive-stock-workspace transfer-create-workspace flex flex-col gap-3"
+        data-testid="transfer-order-cart"
       >
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2
-            id="transfer-find-products-heading"
-            className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground"
-          >
-            {t("transfer.findProducts")}
-          </h2>
-          <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.baseUomHint")}</p>
-        </div>
-        <ProductSelectionToolbar
-          className="transfer-product-selection__filters"
-          testId="transfer-product-filters"
+        <SelectedItemsPanel
+          title={t("transfer.items")}
+          count={lines.length}
+          headingId="transfer-draft-items-heading"
+          addLabel={t("transfer.addProducts")}
+          onAddClick={openFinder}
+          finderOpen={finderOpen}
+          finderPanelId={finderPanelId}
+          emptyTitle={t("transfer.itemsEmpty")}
+          emptyDetail={t("transfer.itemsEmptyDetail")}
+          emptyTestId="transfer-selected-items-empty"
+          addTestId="transfer-add-products-trigger"
+          testId="transfer-draft-lines"
+          summary={
+            <div className="receive-stock-receipt__summary" data-testid="transfer-order-summary">
+              <div className="receive-stock-receipt__summary-row">
+                <span className="text-[length:var(--exits-text-sm)] text-muted">
+                  {t("transfer.items")}
+                </span>
+                <span className="text-[length:var(--exits-text-sm)] tabular-nums">
+                  {lines.length}
+                </span>
+              </div>
+              <div className="receive-stock-receipt__summary-row">
+                <span className="text-[length:var(--exits-text-sm)] text-muted">
+                  {t("transfer.units")}
+                </span>
+                <span className="text-[length:var(--exits-text-md)] font-semibold tabular-nums">
+                  {unitCount}
+                </span>
+              </div>
+            </div>
+          }
         >
-          <ProductCategoryMultiSelect
-            categories={transferCategoryOptions}
-            selectedIds={categoryIds}
-            onChange={setCategoryIds}
-            placeholder={t("purchasing.categoriesPlaceholder")}
-            selectedCountLabel={(count) =>
-              t("purchasing.categoriesSelected").replace("{count}", String(count))
-            }
-            selectAllLabel={t("purchasing.selectAllCategories")}
-            clearAllLabel={t("purchasing.deselectAllCategories")}
-            searchPlaceholder={t("catalog.searchCategories")}
-            menuLabel={t("purchasing.categoryFilter")}
-            aria-label={t("purchasing.categoryFilter")}
-            testId="transfer-category-multiselect"
-            className="transfer-category-multiselect"
-          />
-          <SearchField
-            label={t("transfer.searchProducts")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onClear={() => setSearch("")}
-            placeholder={t("transfer.searchProducts")}
-            data-testid="transfer-product-search"
-            containerClassName="transfer-product-selection__search"
-          />
-        </ProductSelectionToolbar>
-        {pickerQuery.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
-        {!pickerQuery.isLoading && pickerRows.length === 0 ? (
-          <EmptyState
-            align="center"
-            size="compact"
-            icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
-            title={t("transfer.noProducts")}
-            detail={t("transfer.noProductsDetail")}
-          />
-        ) : null}
-        {pickerRows.length > 0 ? (
-          <InventoryTransferProductSelection
-            layout={pickerLayout}
-            products={pickerRows}
-            lotByProduct={lotByProduct}
-            lotsCache={lotsCache}
-            online={online}
+          <InventoryTransferItemsView
+            lines={lines.map((line) => ({
+              key: line.key,
+              name: line.name,
+              quantity: line.quantity,
+              unitOfMeasure: line.unitOfMeasure,
+              availableQuantity: line.availableQuantity,
+              lotAvailableQuantity: line.lotAvailableQuantity,
+              lotNumber: line.lotNumber,
+              expirationDate: line.expirationDate,
+              hasIssue: Boolean(lineIssues.get(line.key)),
+              onQtyChange: (next) => updateLineQuantity(line.key, String(next)),
+              onRemove: () => removeLine(line.key),
+            }))}
             formatAvailable={formatAvailable}
-            onLotChange={(productId, lotId) =>
-              setLotByProduct((prev) => ({ ...prev, [productId]: lotId }))
-            }
-            onLotFocus={(productId) => void ensureLots(productId, true)}
-            onAddProduct={(row) => void addLine(row)}
             t={t}
           />
-        ) : null}
-      </section>
+        </SelectedItemsPanel>
 
-      <StickyActionBar className="justify-end shadow-[0_-4px_24px_color-mix(in_srgb,var(--exits-foreground)_8%,transparent)]">
-        <Button
-          type="button"
-          variant="outline"
-          className={EXITS_CANCEL_BUTTON_CLASS}
-          disabled={saving}
-          onClick={() => navigate("/inventory/transfers")}
-          data-testid="transfer-cancel-create"
+        <ExitsModal
+          open={finderOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeFinder();
+            }
+          }}
+          title={t("transfer.findProducts")}
+          closeLabel={t("transfer.closeFindProducts")}
+          testId="transfer-add-products"
+          id={finderPanelId}
+          size="lg"
+          fullHeightOnCompact
+          className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
         >
-          <X className="size-4 shrink-0" aria-hidden />
-          {t("transfer.cancelCreate")}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={saving}
-          onClick={resetForm}
-          data-testid="transfer-reset-create"
-        >
-          <RotateCcw className="size-4 shrink-0" aria-hidden />
-          {t("transfer.resetCreate")}
-        </Button>
-        <Button
-          type="button"
-          disabled={createDisabled}
-          onClick={() => void saveDraft()}
-          data-testid="transfer-save-draft"
-        >
-          <ArrowRightLeft className="size-4 shrink-0" aria-hidden />
-          {saving ? t("transfer.saving") : t("transfer.saveDraft")}
-        </Button>
-      </StickyActionBar>
+          <div className="flex flex-col gap-3">
+            <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+              {t("transfer.baseUomHint")}
+            </p>
+            <ProductSelectionToolbar
+              className="transfer-product-selection__filters"
+              testId="transfer-product-filters"
+            >
+              <ProductCategoryMultiSelect
+                categories={transferCategoryOptions}
+                selectedIds={categoryIds}
+                onChange={setCategoryIds}
+                placeholder={t("purchasing.categoriesPlaceholder")}
+                selectedCountLabel={(count) =>
+                  t("purchasing.categoriesSelected").replace("{count}", String(count))
+                }
+                selectAllLabel={t("purchasing.selectAllCategories")}
+                clearAllLabel={t("purchasing.deselectAllCategories")}
+                searchPlaceholder={t("catalog.searchCategories")}
+                menuLabel={t("purchasing.categoryFilter")}
+                aria-label={t("purchasing.categoryFilter")}
+                testId="transfer-category-multiselect"
+                className="transfer-category-multiselect"
+              />
+              <SearchField
+                label={t("transfer.searchProducts")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onClear={() => setSearch("")}
+                placeholder={t("transfer.searchProducts")}
+                data-testid="transfer-product-search"
+                containerClassName="transfer-product-selection__search"
+              />
+            </ProductSelectionToolbar>
+            {pickerQuery.isLoading ? <LoadingState label={t("transfer.loading")} /> : null}
+            {!pickerQuery.isLoading && pickerRows.length === 0 ? (
+              <EmptyState
+                align="center"
+                size="compact"
+                icon={<ArrowLeftRight className="size-5" strokeWidth={1.75} />}
+                title={t("transfer.noProducts")}
+                detail={t("transfer.noProductsDetail")}
+              />
+            ) : null}
+            {pickerRows.length > 0 ? (
+              <InventoryTransferProductSelection
+                layout={pickerLayout}
+                products={pickerRows}
+                lotByProduct={lotByProduct}
+                lotsCache={lotsCache}
+                online={online}
+                formatAvailable={formatAvailable}
+                onLotChange={(productId, lotId) =>
+                  setLotByProduct((prev) => ({ ...prev, [productId]: lotId }))
+                }
+                onLotFocus={(productId) => void ensureLots(productId, true)}
+                onAddProduct={(row) => void addLine(row)}
+                t={t}
+              />
+            ) : null}
+          </div>
+        </ExitsModal>
+
+        <div className="receive-stock-actions product-selection-workspace__actions">
+          <div className="receive-stock-actions__primary">
+            <Button
+              type="button"
+              intent="primary"
+              appearance="ghost"
+              className="font-semibold"
+              disabled={saving}
+              onClick={() => navigate("/inventory/transfers")}
+              data-testid="transfer-cancel-create"
+            >
+              <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+              {t("transfer.backList")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={resetForm}
+              data-testid="transfer-reset-create"
+            >
+              <RotateCcw className="size-4 shrink-0" aria-hidden />
+              {t("transfer.resetCreate")}
+            </Button>
+            <Button
+              type="button"
+              disabled={createDisabled}
+              onClick={() => void saveDraft()}
+              data-testid="transfer-save-draft"
+            >
+              <ArrowRightLeft className="size-4 shrink-0" aria-hidden />
+              {saving ? t("transfer.saving") : t("transfer.saveDraft")}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

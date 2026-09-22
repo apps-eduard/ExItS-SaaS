@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Search, Undo2 } from "lucide-react";
 import { canProcessReturn } from "@/access/pos-capabilities";
+import { listConnectedPoReturnSellerInbox } from "@/api/pos/pos-connected-po-returns-client";
 import { listSaleReturns } from "@/api/pos/pos-sale-returns-client";
 import { formatPaymentMethodLabel, listSales } from "@/api/pos/pos-sales-client";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,16 @@ export function ReturnsHubPage() {
     queryKey: ["sale-returns", "recent", workspace?.organizationId, workspace?.branchId],
     enabled: Boolean(workspace),
     queryFn: ({ signal }) => listSaleReturns(workspace!, { page: 1, pageSize: 15 }, signal),
+  });
+
+  const sellerInboxQuery = useQuery({
+    queryKey: [
+      "connected-po-return-seller-inbox",
+      workspace?.organizationId,
+      workspace?.branchId,
+    ],
+    enabled: Boolean(workspace),
+    queryFn: ({ signal }) => listConnectedPoReturnSellerInbox(workspace!, signal),
   });
 
   const saleSearchQuery = useQuery({
@@ -192,6 +203,67 @@ export function ReturnsHubPage() {
           </ul>
         </section>
       ) : null}
+
+      <section
+        className="catalog-form-section exits-animate-panel gap-2"
+        data-testid="returns-connected-po-inbox"
+      >
+        <h2 className="catalog-form-section__title">
+          {t("returns.connectedPo.sellerInboxTitle")}
+        </h2>
+        {sellerInboxQuery.isLoading ? <LoadingState label={t("loading.label")} /> : null}
+        {sellerInboxQuery.isError ? (
+          <ErrorState
+            title={t("error.title")}
+            detail={(sellerInboxQuery.error as Error).message}
+          />
+        ) : null}
+        {sellerInboxQuery.isSuccess && sellerInboxQuery.data.length === 0 ? (
+          <EmptyState
+            align="center"
+            icon={<Undo2 className="size-5" strokeWidth={1.75} />}
+            title={t("returns.connectedPo.sellerInboxEmpty")}
+            detail={t("returns.connectedPo.sectionTitle")}
+          />
+        ) : null}
+        <ul
+          className="exits-list m-0 grid list-none gap-2 p-0"
+          data-testid="returns-connected-po-inbox-items"
+        >
+          {sellerInboxQuery.data?.map((batch) => (
+            <li key={batch.returnBatchId}>
+              <div
+                className="exits-list__card returns-row min-w-0"
+                data-testid={`returns-connected-po-row-${batch.returnBatchId}`}
+              >
+                <span className="min-w-0">
+                  <span className="exits-list__name block truncate font-semibold">
+                    {batch.batchNumber}
+                  </span>
+                  <span className="mb-0 mt-1 block truncate text-[length:var(--exits-text-sm)] text-muted">
+                    {batch.poNumberSnapshot ?? ""} ·{" "}
+                    {batch.status === "AwaitingSellerReceipt"
+                      ? t("returns.connectedPo.awaitingSellerReceipt")
+                      : t("returns.connectedPo.statusReturnsPending")}
+                  </span>
+                </span>
+                <span className="returns-row__aside">
+                  <MoneyDisplay amount={batch.acceptedReturnValue} />
+                  {allowProcess ? (
+                    <Button
+                      type="button"
+                      data-testid={`returns-connected-po-process-${batch.returnBatchId}`}
+                      onClick={() => navigate(`/returns/supplier/${batch.returnBatchId}`)}
+                    >
+                      {t("returns.connectedPo.process")}
+                    </Button>
+                  ) : null}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section
         className="catalog-form-section exits-animate-panel gap-2"

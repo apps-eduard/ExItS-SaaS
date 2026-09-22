@@ -41,6 +41,9 @@ internal sealed class OrganizationFulfillmentSettingsRepository(PosDbContext db)
         else
         {
             record.OfferDelivery = settings.OfferDelivery;
+            record.DefaultPickupEnabled = settings.DefaultPickupEnabled;
+            record.DefaultDeliveryEnabled = settings.DefaultDeliveryEnabled;
+            record.DefaultOnlineOrdersEnabled = settings.DefaultOnlineOrdersEnabled;
             record.UpdatedAtUtc = settings.UpdatedAtUtc;
         }
 
@@ -52,6 +55,9 @@ internal sealed class OrganizationFulfillmentSettingsRepository(PosDbContext db)
             r.Id,
             PosOrganizationId.From(r.OrganizationId),
             r.OfferDelivery,
+            r.DefaultPickupEnabled,
+            r.DefaultDeliveryEnabled,
+            r.DefaultOnlineOrdersEnabled,
             r.CreatedAtUtc,
             r.UpdatedAtUtc);
 
@@ -61,6 +67,9 @@ internal sealed class OrganizationFulfillmentSettingsRepository(PosDbContext db)
             Id = x.SettingId,
             OrganizationId = x.OrganizationId.Value,
             OfferDelivery = x.OfferDelivery,
+            DefaultPickupEnabled = x.DefaultPickupEnabled,
+            DefaultDeliveryEnabled = x.DefaultDeliveryEnabled,
+            DefaultOnlineOrdersEnabled = x.DefaultOnlineOrdersEnabled,
             CreatedAtUtc = x.CreatedAtUtc,
             UpdatedAtUtc = x.UpdatedAtUtc,
         };

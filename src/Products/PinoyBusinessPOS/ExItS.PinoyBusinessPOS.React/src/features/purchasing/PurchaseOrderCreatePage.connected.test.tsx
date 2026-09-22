@@ -473,7 +473,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
   });
 
-  it("filters products, supports add/stepper totals, and updates subtotal", async () => {
+  it("filters products, supports add/qty edit totals, and updates subtotal", async () => {
     const user = userEvent.setup();
     renderPage();
     await selectSupplierAndOpenFinder(user);
@@ -490,22 +490,30 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     // Added product leaves Find products and appears on Purchase order items.
     expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
     expect(screen.getByTestId(`po-connected-selected-${buyerProductId}`)).toBeInTheDocument();
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("1");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("1");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱12.00");
 
-    await user.click(screen.getByRole("button", { name: "Increase quantity" }));
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("2");
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("1");
+
+    await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
+    await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "2");
+    await user.tab();
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("2");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱24.00");
 
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "5");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("5");
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("5");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱60.00");
 
-    // Minus floors at 1 — remove via trash (same as Receive Stock).
-    await user.click(screen.getByRole("button", { name: "Decrease quantity" }));
-    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("4");
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
+    await user.clear(screen.getByTestId(`po-qty-${buyerProductId}`));
+    await user.type(screen.getByTestId(`po-qty-${buyerProductId}`), "4");
+    await user.tab();
+    expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("4");
     await user.click(screen.getByTestId(`po-connected-selected-remove-${buyerProductId}`));
     // Removed from order items → returns to Find products.
     expect(screen.getByTestId(`po-add-${buyerProductId}`)).toBeInTheDocument();
@@ -513,7 +521,7 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     expect(screen.queryByTestId("po-subtotal")).not.toBeInTheDocument();
   });
 
-  it("allows measured Kg decimals on purchase order items via QuantityStepper", async () => {
+  it("allows measured Kg decimals on purchase order items via qty text input", async () => {
     const user = userEvent.setup();
     const kgBuyerProductId = buyerProductId2;
     listLinks.mockResolvedValue([
@@ -551,23 +559,25 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     await waitFor(() => screen.getByTestId(`po-connected-product-${kgBuyerProductId}`));
 
     await user.click(screen.getByTestId(`po-add-${kgBuyerProductId}`));
+    await user.click(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     const qty = screen.getByTestId(`po-qty-${kgBuyerProductId}`);
     expect(qty).toHaveValue("1");
 
     await user.clear(qty);
     await user.type(qty, "0.25");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("0.25");
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveTextContent("0.25");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱10.00");
 
+    await user.click(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     await user.clear(screen.getByTestId(`po-qty-${kgBuyerProductId}`));
     await user.type(screen.getByTestId(`po-qty-${kgBuyerProductId}`), "1.25");
     await user.tab();
-    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveValue("1.25");
+    expect(screen.getByTestId(`po-qty-${kgBuyerProductId}`)).toHaveTextContent("1.25");
     expect(screen.getByTestId("po-subtotal")).toHaveTextContent("₱50.00");
   });
 
-  it("shows Available now label and allows qty above stock with warning", async () => {
+  it("shows stock qty label and allows qty above stock with warning", async () => {
     const user = userEvent.setup();
     getConnectedOrderStock.mockResolvedValue({
       relationshipId,
@@ -585,36 +595,83 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     renderPage();
     await selectSupplierAndOpenFinder(user);
     await waitFor(() =>
-      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent(
-        "Available now: 5 pc",
-      ),
+      expect(screen.getByTestId(`po-stock-${buyerProductId}`)).toHaveTextContent("5"),
     );
     expect(getConnectedOrderStock).toHaveBeenCalled();
 
     await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
     await waitFor(() =>
       expect(screen.getByTestId(`po-connected-selected-availability-${buyerProductId}`)).toHaveTextContent(
-        "Available now: 5 pc",
+        "5",
       ),
     );
     expect(
       screen.queryByTestId(`po-connected-selected-over-order-${buyerProductId}`),
     ).not.toBeInTheDocument();
 
-    // Increase past available (5) using stepper + buttons.
-    for (let i = 0; i < 7; i += 1) {
-      await user.click(screen.getByRole("button", { name: "Increase quantity" }));
-    }
+    await user.click(screen.getByTestId(`po-qty-${buyerProductId}`));
+
+    // Type past available (5).
+    const qty = screen.getByTestId(`po-qty-${buyerProductId}`);
+    await user.clear(qty);
+    await user.type(qty, "8");
+    await user.tab();
     await waitFor(() =>
-      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveValue("8"),
+      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toHaveTextContent("8"),
     );
     await waitFor(() =>
       expect(screen.getByTestId(`po-connected-selected-over-order-${buyerProductId}`)).toHaveTextContent(
         /exceeds current available stock/i,
       ),
     );
-    await user.click(screen.getByTestId("po-payment-Cash"));
+    await user.click(screen.getByTestId("po-payment-option-Cash"));
+    await user.click(screen.getByTestId("po-fulfillment-option-Pickup"));
     expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
+  });
+
+  it("Not added / Added buttons switch product list without a toggle", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await selectSupplierAndOpenFinder(user);
+
+    const notAddedFilter = screen.getByTestId("po-filter-not-added");
+    const addedFilter = screen.getByTestId("po-filter-added");
+    expect(notAddedFilter).toHaveAttribute("aria-pressed", "true");
+    expect(addedFilter).toHaveAttribute("aria-pressed", "false");
+    expect(addedFilter).toHaveTextContent("Added (0)");
+
+    await user.click(addedFilter);
+    expect(addedFilter).toHaveAttribute("aria-pressed", "true");
+    expect(notAddedFilter).toHaveAttribute("aria-pressed", "false");
+    await waitFor(() =>
+      expect(screen.getByTestId("po-connected-filter-empty")).toBeInTheDocument(),
+    );
+
+    await user.click(notAddedFilter);
+    expect(notAddedFilter).toHaveAttribute("aria-pressed", "true");
+    expect(addedFilter).toHaveAttribute("aria-pressed", "false");
+    await waitFor(() => screen.getByTestId(`po-connected-product-${buyerProductId}`));
+
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
+    expect(addedFilter).toHaveTextContent("Added (1)");
+
+    await user.click(addedFilter);
+    await waitFor(() => {
+      expect(screen.getByTestId(`po-connected-product-${buyerProductId}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`po-remove-${buyerProductId}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`po-add-${buyerProductId}`)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId(`po-remove-${buyerProductId}`));
+    await waitFor(() => {
+      expect(screen.queryByTestId(`po-connected-product-${buyerProductId}`)).not.toBeInTheDocument();
+      expect(screen.getByTestId("po-connected-selected-items-empty")).toBeInTheDocument();
+    });
+    expect(addedFilter).toHaveTextContent("Added (0)");
+
+    await user.click(notAddedFilter);
+    await waitFor(() => screen.getByTestId(`po-add-${buyerProductId}`));
   });
 
   it("allows Add when supplier stock is zero and shows over-order warning", async () => {
@@ -657,26 +714,90 @@ describe("PurchaseOrderCreatePage connected product picker", () => {
     );
   });
 
-  it("blocks create and shows category banner when supplier commerce is not ready", async () => {
+  it("blocks draft create until fulfillment is chosen even when supplier commerce is not ready", async () => {
+    const user = userEvent.setup();
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: false,
+      supportedFulfillmentMethods: ["Pickup"],
+      requirements: null,
+      blockerCategories: ["Catalog"],
+    });
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+
+    const banner = await screen.findByTestId("po-supplier-not-ready-banner");
+    expect(banner).toHaveTextContent(/Supplier not ready for purchase orders/i);
+    expect(banner).toHaveTextContent(/You can save a draft now/i);
+    expect(banner).toHaveTextContent(/Issue:\s*Catalog/i);
+    expect(screen.queryByText(/Responsible contact/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Shared catalog/i)).not.toBeInTheDocument();
+
+    await selectSupplierAndOpenFinder(user);
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    await waitFor(() =>
+      expect(screen.getByTestId(`po-qty-${buyerProductId}`)).toBeInTheDocument(),
+    );
+    await user.click(screen.getByTestId("po-payment-option-Cash"));
+
+    // Single supported method is auto-selected → create remains available for draft.
+    await waitFor(() => {
+      expect(screen.getByTestId("po-create-submit")).not.toBeDisabled();
+    });
+  });
+
+  it("keeps create disabled when connected and no fulfillment method is available", async () => {
+    const user = userEvent.setup();
     getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
       relationshipId,
       isReady: false,
       supportedFulfillmentMethods: [],
       requirements: null,
-      blockerCategories: ["Catalog"],
+      blockerCategories: ["Fulfillment"],
     });
     renderPage(`/purchasing/new?supplierId=${supplierId}`);
-    await waitFor(() => expect(screen.getByRole("option", { name: /Mica Store/i })).toBeInTheDocument());
 
-    const banner = await screen.findByTestId("po-supplier-not-ready-banner");
-    expect(banner).toHaveTextContent(/Supplier not ready for purchase orders/i);
-    expect(banner).toHaveTextContent(/no products available for purchase ordering/i);
-    expect(screen.queryByText(/Responsible contact/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Shared catalog/i)).not.toBeInTheDocument();
+    await selectSupplierAndOpenFinder(user);
+    await user.click(screen.getByTestId(`po-add-${buyerProductId}`));
+    await user.click(screen.getByTestId("po-payment-option-Cash"));
 
     await waitFor(() => {
       expect(screen.getByTestId("po-create-submit")).toBeDisabled();
     });
-    expect(createPurchaseOrder).not.toHaveBeenCalled();
+  });
+
+  it("auto-selects Delivery fulfillment when Pay on Delivery timing is chosen", async () => {
+    const user = userEvent.setup();
+    getBuyerConnectedSupplierCommerceReadiness.mockResolvedValue({
+      relationshipId,
+      isReady: true,
+      supportedFulfillmentMethods: ["Pickup", "Delivery"],
+      allowPayBeforeFulfillment: true,
+      allowPayOnDeliveryOrReceipt: true,
+      allowSupplierCredit: false,
+      defaultPaymentTiming: "PayBeforeFulfillment",
+      requirements: null,
+    });
+    renderPage(`/purchasing/new?supplierId=${supplierId}`);
+
+    await selectSupplierAndOpenFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId("po-fulfillment-option-Pickup")).toHaveAttribute(
+        "data-selected",
+        "true",
+      );
+    });
+
+    await user.click(screen.getByTestId("po-payment-timing-select-option-PayOnDeliveryOrReceipt"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("po-fulfillment-option-Delivery")).toHaveAttribute(
+        "data-selected",
+        "true",
+      );
+    });
+    expect(screen.getByTestId("po-fulfillment-option-Pickup")).toHaveAttribute(
+      "data-selected",
+      "false",
+    );
   });
 });

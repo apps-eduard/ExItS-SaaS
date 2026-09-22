@@ -9,6 +9,8 @@ namespace ExItS.PinoyBusinessPOS.Application.Catalog;
 /// <summary>
 /// Canonical rule: only inventory-tracked products may be shared via Connected Buyer catalog.
 /// On-hand quantity (including 0) is irrelevant to share eligibility.
+/// Tracking may be disabled while a product was previously exposable; buyer visibility then
+/// drops via eligibility + exposure sync (AllEligible remains dynamic).
 /// </summary>
 public static class ConnectedBuyerSharingRules
 {
@@ -32,6 +34,10 @@ public static class ConnectedBuyerSharingRules
         return ApplicationResult.Success();
     }
 
+    /// <summary>
+    /// Legacy guard for explicit SelectedOnly share workflows. Prefer letting tracking disable
+    /// and deactivate exposures so AllEligible eligibility updates immediately.
+    /// </summary>
     public static ApplicationResult ValidateCanDisableTracking(bool isShared)
     {
         if (isShared)

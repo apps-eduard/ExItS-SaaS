@@ -122,7 +122,8 @@ internal static class SaleEntityMapper
                 ? null
                 : BusinessCreditEntryId.From(record.LinkedBusinessCreditEntryId.Value),
             SaleSellerDocumentIdentityJson.Deserialize(record.SellerDocumentIdentityJson),
-            record.SourceQuotationId);
+            record.SourceQuotationId,
+            record.CheckSettlementStatus is null ? null : CheckSettlementStatuses.Parse(record.CheckSettlementStatus));
     }
 
     public static SaleRecord ToRecord(Sale sale) =>
@@ -143,6 +144,7 @@ internal static class SaleEntityMapper
             AmountTendered = sale.AmountTendered,
             ChangeAmount = sale.ChangeAmount,
             GcashReference = sale.GCashReference,
+            CheckSettlementStatus = sale.CheckSettlementStatus is null ? null : CheckSettlementStatuses.ToCode(sale.CheckSettlementStatus.Value),
             CustomerId = sale.CustomerId?.Value,
             BuyerPartyKind = SaleBuyerParty.ToCode(sale.BuyerParty.Kind),
             BuyerDisplayNameSnapshot = sale.BuyerParty.DisplayNameSnapshot,
@@ -233,6 +235,7 @@ internal static class SaleEntityMapper
     {
         record.Status = sale.Status.ToString();
         record.GcashReference = sale.GCashReference;
+        record.CheckSettlementStatus = sale.CheckSettlementStatus is null ? null : CheckSettlementStatuses.ToCode(sale.CheckSettlementStatus.Value);
         record.VoidedAtUtc = sale.VoidedAtUtc;
         record.VoidedBy = sale.VoidedBy;
         record.VoidReason = sale.VoidReason;

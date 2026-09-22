@@ -32,7 +32,6 @@ export type StockRequestTab = RetailStockRequestTab | WarehouseStockRequestTab;
 
 const COMPLETED_STATUSES = new Set([
   "Fulfilled",
-  "PartiallyFulfilled",
   "Rejected",
   "Cancelled",
 ]);
@@ -47,8 +46,129 @@ export function pickPreferredSourceId(
   return active.find((r) => r.isPreferred)?.sourceLocationId ?? active[0]?.sourceLocationId ?? null;
 }
 
-export function remainingRequestQty(requested: number, fulfilled: number, inProgress: number): number {
-  return Math.max(0, requested - fulfilled - inProgress);
+export function remainingRequestQty(
+  approvedOrRequested: number,
+  received: number,
+  openInTransit: number,
+  waived = 0,
+): number {
+  return Math.max(0, approvedOrRequested - received - openInTransit - waived);
+}
+
+const SOURCE_PREPARE_TRANSFER_STATUSES = new Set([
+  "Approved",
+  "Preparing",
+  "InProgress",
+  "InTransit",
+  "PartiallyFulfilled",
+]);
+
+export function totalRemainingToDispatch(
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+): number {
+  return lines.reduce((sum, line) => sum + (line.remainingToDispatchQuantity ?? 0), 0);
+}
+
+function sourceMayPrepareTransfer(
+  status: string,
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+): boolean {
+  const normalized = normalizeStockRequestStatus(status);
+  if (
+    !SOURCE_PREPARE_TRANSFER_STATUSES.has(status) &&
+    !SOURCE_PREPARE_TRANSFER_STATUSES.has(normalized)
+  ) {
+    return false;
+  }
+  return lines.some((l) => (l.remainingToDispatchQuantity ?? 0) > 0);
+}
+
+/** True when source may create or reopen a draft transfer for remaining qty. */
+export function canPrepareTransfer(
+  status: string,
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+  _hasOpenCoveringTransfer = false,
+): boolean {
+  return sourceMayPrepareTransfer(status, lines);
+}
+
+/** Same gate as prepare; label differs when request is partially fulfilled after closed gaps. */
+export function canFulfillRemaining(
+  status: string,
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+  hasOpenCoveringTransfer = false,
+): boolean {
+  if (!canPrepareTransfer(status, lines, hasOpenCoveringTransfer)) {
+    return false;
+  }
+  return normalizeStockRequestStatus(status) === "PartiallyFulfilled";
+}
+
+/** @deprecated Use canPrepareTransfer — legacy name kept for tests migrating off dispatchStockRequest. */
+export function canDispatchRemainingStockRequest(
+  status: string,
+  lines: ReadonlyArray<{ remainingToDispatchQuantity?: number }>,
+): boolean {
+  return canPrepareTransfer(status, lines, false);
+}
+
+export type OpenCoveringTransfer = {
+  transferId: string;
+  transferLabel: string;
+  outstandingQty: number;
+};
+
+export function findOpenCoveringTransfer(
+  linkedTransfers: ReadonlyArray<{
+    transferId: string;
+    transferNumber?: string | null;
+    status: string;
+    totalOutstandingQty?: number;
+  }>,
+): OpenCoveringTransfer | null {
+  const open = linkedTransfers.find(
+    (t) =>
+      (t.status === "InTransit" || t.status === "PartiallyReceived") &&
+      (t.totalOutstandingQty ?? 0) > 0,
+  );
+  if (!open) return null;
+  return {
+    transferId: open.transferId,
+    transferLabel: open.transferNumber ?? open.transferId.slice(0, 8),
+    outstandingQty: open.totalOutstandingQty ?? 0,
+  };
+}
+
+export function openCoveringTransferMessage(
+  linkedTransfers: ReadonlyArray<{
+    transferId: string;
+    transferNumber?: string | null;
+    status: string;
+    totalOutstandingQty?: number;
+  }>,
+): { transferLabel: string; outstandingQty: number } | null {
+  const open = findOpenCoveringTransfer(linkedTransfers);
+  if (!open) return null;
+  return { transferLabel: open.transferLabel, outstandingQty: open.outstandingQty };
+}
+
+export function findLinkedDraftTransfer(
+  linkedTransfers: ReadonlyArray<{ transferId: string; status: string }>,
+): string | null {
+  return linkedTransfers.find((t) => t.status === "Draft")?.transferId ?? null;
+}
+
+export function prepareTransferPrimaryLabelKey(
+  status: string,
+  hasLinkedDraft: boolean,
+): "stockRequest.continueTransferPreparation" | "stockRequest.fulfillRemaining" | "stockRequest.reviewPrepareTransfer" {
+  if (hasLinkedDraft) {
+    return "stockRequest.continueTransferPreparation";
+  }
+  if (normalizeStockRequestStatus(status) === "PartiallyFulfilled") {
+    return "stockRequest.fulfillRemaining";
+  }
+  return "stockRequest.reviewPrepareTransfer";
 }
 
 export function hasConfiguredInternalSource(
@@ -84,7 +204,7 @@ export function warehouseTabStatuses(tab: WarehouseStockRequestTab): ReadonlySet
     case "preparing":
       return IN_PROGRESS_STATUSES;
     case "dispatched":
-      return new Set(["InTransit"]);
+      return new Set(["InTransit", "PartiallyFulfilled"]);
     case "history":
       return COMPLETED_STATUSES;
     case "all":

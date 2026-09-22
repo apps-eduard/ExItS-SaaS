@@ -50,7 +50,7 @@ public sealed class SaleDomainTests
         var sale = Checkout([Draft(25.50m, 3m), Draft(10m, 2m, name: "Kape")]);
 
         Assert.Equal(SaleStatus.Completed, sale.Status);
-        Assert.Equal("SALE-20260730-000001", sale.SaleNumber);
+        Assert.Equal("260730-001", sale.SaleNumber);
         Assert.Equal(Actor, sale.RecordedBy);
         Assert.Equal(Now, sale.RecordedAtUtc);
         Assert.Null(sale.VoidedAtUtc);
@@ -402,13 +402,13 @@ public sealed class SaleDomainTests
     [Fact]
     public void Sale_numbers_are_formatted_and_normalized_per_business_date()
     {
-        Assert.Equal("SALE-20260730-000001", SaleNumbers.Format(new DateOnly(2026, 7, 30), 1));
-        Assert.Equal("SALE-20260101-012345", SaleNumbers.Format(new DateOnly(2026, 1, 1), 12_345));
-        Assert.Equal("SALE-20260730-000001", SaleNumbers.Normalize(" sale-20260730-000001 "));
+        Assert.Equal("260730-001", SaleNumbers.Format(new DateOnly(2026, 7, 30), 1));
+        Assert.Equal("260101-12345", SaleNumbers.Format(new DateOnly(2026, 1, 1), 12_345));
+        Assert.Equal("260730-001", SaleNumbers.Normalize(" 260730-001 "));
 
         Assert.Equal(new DateOnly(2026, 7, 30), SaleNumbers.BusinessDateOf(Now));
 
-        foreach (var invalid in new[] { "", "SALE-2026-1", "INVOICE-20260730-000001", "SALE-20260730-1" })
+        foreach (var invalid in new[] { "", "SALE-2026-1", "INVOICE-20260730-000001", "260730-1", "260730-001-R1" })
         {
             var error = Assert.Throws<DomainException>(() => SaleNumbers.Normalize(invalid));
             Assert.Equal(DomainErrorCodes.InvalidSaleNumber, error.ErrorCode);

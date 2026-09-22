@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ClipboardList } from "lucide-react";
+import { ArrowLeft, ArrowRight, ClipboardList } from "lucide-react";
 import { canManageInventory } from "@/access/pos-capabilities";
 import {
   listCatalogCategories,
@@ -1195,11 +1195,14 @@ export function ReceiveStockPage() {
           <div className="receive-stock-actions receive-stock-actions--review">
             <Button
               type="button"
-              variant="ghost"
+              intent="primary"
+              appearance="ghost"
+              className="font-semibold"
               disabled={saving || statusLocked}
               onClick={() => setReviewing(false)}
               data-testid="direct-back-edit"
             >
+              <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
               {t("returns.backToEdit")}
             </Button>
             <Button

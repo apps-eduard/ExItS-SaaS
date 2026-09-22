@@ -46,11 +46,12 @@ public interface ICustomerOrderRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Allocates the next org-scoped order number, builds the order, optionally runs
+    /// Allocates the next org + business-date order number, builds the order, optionally runs
     /// <paramref name="afterCreated"/>, then persists in one transaction.
     /// </summary>
     Task<CustomerOrder> PlaceAsync(
         PosOrganizationId sellerOrganizationId,
+        DateOnly businessDateUtc,
         Func<string, CustomerOrder> createOrder,
         Func<CustomerOrder, CancellationToken, Task>? afterCreated = null,
         CancellationToken cancellationToken = default);

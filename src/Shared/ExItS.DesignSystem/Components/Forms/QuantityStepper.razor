@@ -1,20 +1,63 @@
 @namespace ExItS.DesignSystem.Components.Forms
 
-<div class="@CssClass" role="group" aria-label="@AriaLabel">
+<div class="@CssClass" role="group" aria-label="@AriaLabel" data-variant="@VariantName">
     <button type="button"
-            class="exds-qty-stepper__btn"
+            class="exds-qty-stepper__btn exds-qty-stepper__btn--minus"
             aria-label="@DecreaseLabel"
             disabled="@(Disabled || Value <= Min)"
             @onclick="OnDecrease">−</button>
-    <span class="exds-qty-stepper__value" aria-live="polite">@DisplayValue</span>
+    @if (_editing)
+    {
+        <input class="exds-qty-stepper__input"
+               type="text"
+               inputmode="@(DecimalPlaces > 0 ? "decimal" : "numeric")"
+               value="@_draft"
+               disabled="@Disabled"
+               aria-label="@AriaLabel"
+               @ref="_inputRef"
+               @oninput="OnDraftInput"
+               @onblur="OnDraftBlur"
+               @onkeydown="OnDraftKeyDown" />
+    }
+    else if (EditOnClick)
+    {
+        <button type="button"
+                class="exds-qty-stepper__value exds-qty-stepper__value--button"
+                aria-label="@ValueClickLabel"
+                disabled="@Disabled"
+                @onclick="BeginEdit">@DisplayValue</button>
+    }
+    else
+    {
+        <span class="exds-qty-stepper__value" aria-live="polite">@DisplayValue</span>
+    }
     <button type="button"
-            class="exds-qty-stepper__btn"
+            class="exds-qty-stepper__btn exds-qty-stepper__btn--plus"
             aria-label="@IncreaseLabel"
             disabled="@(Disabled || !CanIncrease)"
             @onclick="OnIncrease">+</button>
 </div>
 
 @code {
+    public enum QuantityStepperVariant
+    {
+        /// <summary>Form / editable field group: neutral −, bordered value, primary +.</summary>
+        Default = 0,
+        /// <summary>
+        /// Cart capsule with full pill radius. Prefer <see cref="Auto"/> so Preferences → Control Shape applies.
+        /// </summary>
+        Pill = 1,
+        /// <summary>Cart capsule with soft radius (<c>--exits-radius-soft</c>).</summary>
+        Soft = 2,
+        /// <summary>Cart capsule with standard radius (<c>--exits-radius-md</c>).</summary>
+        Standard = 3,
+        /// <summary>
+        /// Cart capsule; radius follows Preferences → Control Shape (<c>--exits-control-radius</c>).
+        /// Soft → soft, standard → standard, pill → pill.
+        /// </summary>
+        Auto = 4,
+    }
+
     [Parameter] public decimal Value { get; set; }
     [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
     [Parameter] public decimal Step { get; set; } = 1m;
@@ -29,16 +72,147 @@
     /// <summary>Dense inline variant for list rows; keeps a 44dp tap area behind a 34px control.</summary>
     [Parameter] public bool Compact { get; set; }
 
-    private string CssClass => Compact
-        ? "exds-qty-stepper exds-qty-stepper--compact"
-        : "exds-qty-stepper";
+    /// <summary>
+    /// Visual variant. Cart capsules: use <see cref="QuantityStepperVariant.Auto"/> to adopt Control Shape.
+    /// </summary>
+    [Parameter] public QuantityStepperVariant Variant { get; set; } = QuantityStepperVariant.Default;
+
+    /// <summary>
+    /// Center starts as a tap target; first tap reveals a numeric input (cart middle-edit mode).
+    /// </summary>
+    [Parameter] public bool EditOnClick { get; set; }
+
+    /// <summary>Accessible label for the middle tap target when <see cref="EditOnClick"/> is set.</summary>
+    [Parameter] public string ValueClickLabel { get; set; } = "Edit quantity";
+
+    private string VariantName => Variant switch
+    {
+        QuantityStepperVariant.Pill => "pill",
+        QuantityStepperVariant.Soft => "soft",
+        QuantityStepperVariant.Standard => "standard",
+        QuantityStepperVariant.Auto => "auto",
+        _ => "default",
+    };
+
+    private bool IsCartCapsule =>
+        Variant is QuantityStepperVariant.Pill
+            or QuantityStepperVariant.Soft
+            or QuantityStepperVariant.Standard
+            or QuantityStepperVariant.Auto;
+
+    private string CssClass
+    {
+        get
+        {
+            var classes = "exds-qty-stepper";
+            if (Compact)
+            {
+                classes += " exds-qty-stepper--compact";
+            }
+
+            if (IsCartCapsule)
+            {
+                classes += " exds-qty-stepper--cart";
+                classes += $" exds-qty-stepper--{VariantName}";
+            }
+
+            return classes;
+        }
+    }
+
+    private bool _editing;
+    private string _draft = string.Empty;
+    private ElementReference _inputRef;
+    private bool _focusPending;
 
     private bool CanIncrease => Max is null || Value < Max.Value;
 
     private string DisplayValue =>
         DecimalPlaces <= 0
             ? Value.ToString("0")
-            : Value.ToString($"0.{new string('0', DecimalPlaces)}");
+            : Value.ToString($"0.{new string('0', DecimalPlaces)}").TrimEnd('0').TrimEnd('.');
+
+    private async Task BeginEdit()
+    {
+        if (Disabled)
+        {
+            return;
+        }
+
+        _draft = DisplayValue;
+        _editing = true;
+        _focusPending = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending && _editing)
+        {
+            _focusPending = false;
+            try
+            {
+                await _inputRef.FocusAsync();
+            }
+            catch
+            {
+                // Element may unmount during rapid ±; ignore.
+            }
+        }
+    }
+
+    private void OnDraftInput(ChangeEventArgs e)
+    {
+        _draft = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task OnDraftBlur()
+    {
+        await CommitDraftAsync();
+    }
+
+    private async Task OnDraftKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CommitDraftAsync();
+        }
+    }
+
+    private async Task CommitDraftAsync()
+    {
+        if (!_editing)
+        {
+            return;
+        }
+
+        if (decimal.TryParse(_draft.Trim(), out var parsed))
+        {
+            var next = parsed;
+            if (DecimalPlaces >= 0)
+            {
+                next = Math.Round(next, DecimalPlaces, MidpointRounding.AwayFromZero);
+            }
+
+            if (next < Min)
+            {
+                next = Min;
+            }
+
+            if (Max is decimal max && next > max)
+            {
+                next = max;
+            }
+
+            if (next != Value)
+            {
+                await ValueChanged.InvokeAsync(next);
+            }
+        }
+
+        _editing = false;
+        _draft = string.Empty;
+    }
 
     private async Task OnDecrease()
     {

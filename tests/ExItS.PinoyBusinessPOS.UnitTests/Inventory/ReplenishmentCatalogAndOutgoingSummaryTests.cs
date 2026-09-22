@@ -466,6 +466,12 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<InventoryTransfer>>([]);
 
+        public Task<IReadOnlyList<InventoryTransfer>> ListByRootTransferIdAsync(
+            PosOrganizationId organizationId,
+            InventoryTransferId rootTransferId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<InventoryTransfer>>([]);
+
         public Task AddAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;

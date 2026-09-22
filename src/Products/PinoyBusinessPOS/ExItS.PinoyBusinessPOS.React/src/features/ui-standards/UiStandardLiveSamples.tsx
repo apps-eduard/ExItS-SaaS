@@ -183,6 +183,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [stepperWeighted, setStepperWeighted] = useState(1.5);
   const [stepperFractional, setStepperFractional] = useState(0.5);
   const [stepperLarge, setStepperLarge] = useState(1250.5);
+  const [stepperMiddleEdit, setStepperMiddleEdit] = useState(3);
   const [selectedRow, setSelectedRow] = useState("1");
   const [tableSearch, setTableSearch] = useState("");
   const [dataPreviewDevice, setDataPreviewDevice] = useState<UiStandardsDataPreviewDevice>(
@@ -199,6 +200,7 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
   const [selectSearch, setSelectSearch] = useState("");
   const [selectSwitch, setSelectSwitch] = useState(true);
   const [sizeSingle, setSizeSingle] = useState("M");
+  const [tileTiming, setTileTiming] = useState("PayBefore");
   const [sizeMulti, setSizeMulti] = useState<string[]>(["S", "L", "XL"]);
   const [coverImage, setCoverImage] = useState<ExitsUploadItem | null>(null);
   const [galleryImages, setGalleryImages] = useState<Array<ExitsUploadItem | null>>([
@@ -779,15 +781,17 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
               <SectionLabel>QuantityStepper</SectionLabel>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
                 Canonical <code className="text-foreground">QuantityStepper</code> (
-                <code className="text-foreground">MoneyQuantity.tsx</code>) —{" "}
+                <code className="text-foreground">MoneyQuantity.tsx</code> /{" "}
+                <code className="text-foreground">ExItS.DesignSystem</code>).
+              </p>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                <strong className="font-medium text-foreground">Default (forms)</strong> —{" "}
                 <strong className="font-medium text-foreground">
                   [ neutral − ][ editable qty ][ primary + ]
                 </strong>
-                . Minus is neutral; plus uses Primary. Measured units default to whole display
-                (1 not 1.00) but accept typed decimals up to 2 places (1.25). Fractions below 1
-                are allowed (min typically 0.01). Whole units stay integers (min 1). ±1 preserves
-                remainder. Thousands only on committed display; draft typing stays raw. Receive
-                Stock / Create PO reuse this component.
+                . Measured units default to whole display (1 not 1.00) but accept typed decimals
+                up to 2 places. Fractions below 1 allowed (min typically 0.01). Whole units stay
+                integers (min 1). Receive Stock / Create PO reuse default.
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <QuantityStepper
@@ -869,9 +873,133 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                   valueTestId="ui-standard-qty-disabled"
                 />
               </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                <strong className="font-medium text-foreground">Cart capsule</strong> — solid
+                primary, white rim, light − qty +. Radius follows Control Shape:{" "}
+                <code className="text-foreground">standard</code> /{" "}
+                <code className="text-foreground">soft</code> /{" "}
+                <code className="text-foreground">pill</code>, or{" "}
+                <code className="text-foreground">auto</code> (adopts Preferences → Control
+                Shape via <code className="text-foreground">--exits-control-radius</code>). Sell
+                cart uses <code className="text-foreground">variant=&quot;auto&quot;</code>.
+              </p>
+              <div
+                className="flex flex-wrap items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
+                data-testid="ui-standard-quantity-stepper-pill"
+              >
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  value={stepperWhole}
+                  onChange={setStepperWhole}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease auto quantity"
+                  increaseLabel="Increase auto quantity"
+                  ariaLabel="Auto cart quantity (follows Control Shape)"
+                  valueTestId="ui-standard-qty-auto"
+                />
+                <QuantityStepper
+                  compact
+                  variant="standard"
+                  value={stepperWhole}
+                  onChange={setStepperWhole}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease standard quantity"
+                  increaseLabel="Increase standard quantity"
+                  ariaLabel="Standard cart quantity"
+                  valueTestId="ui-standard-qty-standard"
+                />
+                <QuantityStepper
+                  compact
+                  variant="soft"
+                  value={stepperWhole}
+                  onChange={setStepperWhole}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease soft quantity"
+                  increaseLabel="Increase soft quantity"
+                  ariaLabel="Soft cart quantity"
+                  valueTestId="ui-standard-qty-soft"
+                />
+                <QuantityStepper
+                  compact
+                  variant="pill"
+                  value={stepperWhole}
+                  onChange={setStepperWhole}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease pill quantity"
+                  increaseLabel="Increase pill quantity"
+                  ariaLabel="Pill cart quantity"
+                  valueTestId="ui-standard-qty-pill"
+                />
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  value={1}
+                  onChange={() => undefined}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  disabled
+                  decreaseLabel="Decrease disabled cart quantity"
+                  increaseLabel="Increase disabled cart quantity"
+                  ariaLabel="Disabled cart quantity"
+                  valueTestId="ui-standard-qty-pill-disabled"
+                />
+              </div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                <strong className="font-medium text-foreground">
+                  Auto + middle edit
+                </strong>{" "}
+                — cart capsule with{" "}
+                <code className="text-foreground">editOnClick</code> (middle → input). Kg lines
+                keep display like <code className="text-foreground">1.5kg</code> and{" "}
+                <code className="text-foreground">onValueClick</code>.
+              </p>
+              <div
+                className="flex flex-wrap items-center gap-3 rounded-[var(--exits-radius-md)] border border-border bg-surface p-3"
+                data-testid="ui-standard-quantity-stepper-pill-edit"
+              >
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  editOnClick
+                  value={stepperMiddleEdit}
+                  onChange={setStepperMiddleEdit}
+                  min={1}
+                  step={1}
+                  precision={0}
+                  decreaseLabel="Decrease middle-edit quantity"
+                  increaseLabel="Increase middle-edit quantity"
+                  valueClickLabel="Edit quantity"
+                  ariaLabel="Auto middle-edit quantity"
+                  valueTestId="ui-standard-qty-pill-edit"
+                />
+                <QuantityStepper
+                  compact
+                  variant="auto"
+                  value="1.5kg"
+                  decreaseLabel="Decrease weight display"
+                  increaseLabel="Increase weight display"
+                  valueClickLabel="Edit weight"
+                  onDecrement={() => undefined}
+                  onIncrement={() => undefined}
+                  onValueClick={() => undefined}
+                  ariaLabel="Auto weight display (opens dialog in sell cart)"
+                  valueTestId="ui-standard-qty-pill-kg"
+                />
+              </div>
               <p className="m-0 text-[length:var(--exits-text-xs)] text-muted" data-testid="ui-standard-qty-playground">
                 Playground — Pack: {stepperWhole} · Kg: {stepperWeighted} (shows 1.5) · Fractional:{" "}
-                {stepperFractional} (shows 0.5) · Large: {stepperLarge} (shows 1,250.5)
+                {stepperFractional} (shows 0.5) · Large: {stepperLarge} (shows 1,250.5) · Middle
+                edit: {stepperMiddleEdit}
               </p>
             </div>
           </Card>
@@ -1037,6 +1165,22 @@ export function UiStandardLiveSamples({ visibleCardIds }: UiStandardLiveSamplesP
                       { value: "XXL", label: "XXL" },
                     ]}
                     testId="ui-standard-select-pill-single"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <SectionLabel>Attribute select — tile (single)</SectionLabel>
+                  <ExitsPillSelect
+                    appearance="tile"
+                    aria-label="Payment timing"
+                    value={tileTiming}
+                    onChange={setTileTiming}
+                    options={[
+                      { value: "PayBefore", label: "Pay in advance" },
+                      { value: "PayOnDelivery", label: "Pay on delivery" },
+                      { value: "Utang", label: "Supplier Utang" },
+                    ]}
+                    className="grid-cols-3"
+                    testId="ui-standard-select-tile-single"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">

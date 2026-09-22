@@ -83,7 +83,7 @@ export function ProductCategoryMultiSelect({
       className={cn("product-selection__field receive-stock-field", className)}
       data-testid={`${testId}-field`}
     >
-      <span className="product-selection__field-label receive-stock-field__label">{label}</span>
+      <span className="product-selection__field-label exits-type-label">{label}</span>
       {control}
     </label>
   );

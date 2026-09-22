@@ -21,6 +21,11 @@ internal sealed class ConnectedSupplierRelationshipRecord
     /// <summary>0 = SelectedOnly (legacy default), 1 = AllEligible.</summary>
     public int CatalogSharingMode { get; set; }
     public decimal? CustomerDiscountPercent { get; set; }
+    public bool UseOrganizationPaymentTimingDefaults { get; set; } = true;
+    public bool AllowPayBeforeFulfillment { get; set; } = true;
+    public bool AllowPayOnDeliveryOrReceipt { get; set; } = true;
+    public bool AllowSupplierCredit { get; set; }
+    public int CustomerDefaultPaymentTiming { get; set; } = (int)ConnectedPoPaymentTiming.PayBeforeFulfillment;
     public Guid? SupplierBranchId { get; set; }
     public string? SupplierBranchNameSnapshot { get; set; }
     public Guid[] SharedSupplierBranchIds { get; set; } = [];
@@ -38,8 +43,52 @@ internal sealed class ConnectedSupplierRelationshipRecord
     public string? CustomerDeliveryOverride { get; set; }
     public string? BillingContactNotes { get; set; }
     public string? InternalNotes { get; set; }
+    public List<ConnectedSupplierRelationshipCategoryDiscountOverrideRecord> CategoryDiscountOverrides { get; set; } = [];
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; } public uint Xmin { get; set; }
+}
+
+internal sealed class ConnectedSupplierRelationshipCategoryDiscountOverrideRecord
+{
+    public Guid RelationshipId { get; set; }
+    public Guid CategoryId { get; set; }
+    public decimal DiscountPercent { get; set; }
+}
+
+internal sealed class OrganizationConnectedCommerceSettingsRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public bool AllowPayBeforeFulfillment { get; set; } = true;
+    public bool AllowPayOnDeliveryOrReceipt { get; set; } = true;
+    public bool AllowSupplierCredit { get; set; }
+    public int DefaultPaymentTiming { get; set; } = (int)ConnectedPoPaymentTiming.PayBeforeFulfillment;
+    public decimal DefaultB2bDiscountPercent { get; set; }
+    public int ProposalReservationHoldHours { get; set; } = 24;
+    public bool ReturnsAllowed { get; set; } = true;
+    public int? ReturnWindowDays { get; set; }
+    public int ReceivingIssueWindowDays { get; set; } = 2;
+    public bool RequireReturnApproval { get; set; } = true;
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public List<OrganizationConnectedCommerceCategoryRuleRecord> CategoryRules { get; set; } = [];
+    public List<OrganizationConnectedCommerceCategoryReturnRuleRecord> CategoryReturnRules { get; set; } = [];
+}
+
+internal sealed class OrganizationConnectedCommerceCategoryRuleRecord
+{
+    public Guid OrganizationConnectedCommerceSettingsId { get; set; }
+    public Guid CategoryId { get; set; }
+    public decimal DiscountPercent { get; set; }
+}
+
+internal sealed class OrganizationConnectedCommerceCategoryReturnRuleRecord
+{
+    public Guid OrganizationConnectedCommerceSettingsId { get; set; }
+    public Guid CategoryId { get; set; }
+    public short Mode { get; set; }
+    public bool? ReturnsAllowed { get; set; }
+    public int? ReturnWindowDays { get; set; }
 }
 internal sealed class SupplierProductExposureRecord
 {
@@ -90,8 +139,13 @@ internal sealed class ConnectedPurchaseOrderRecord
     public int? DeclineReason { get; set; }
     public string? DeclineNote { get; set; }
     public int PaymentTerm { get; set; }
+    public int PaymentTiming { get; set; } = (int)ConnectedPoPaymentTiming.PayBeforeFulfillment;
+    public string? FulfillmentMethod { get; set; }
+    public string? ConfirmedFulfillmentMethod { get; set; }
     public int? ProposedPaymentTerm { get; set; }
+    public int? ProposedPaymentTiming { get; set; }
     public int? ConfirmedPaymentTerm { get; set; }
+    public int? ConfirmedPaymentTiming { get; set; }
     public decimal CreditPostedAmount { get; set; }
     public DateTimeOffset? ChangesProposedAtUtc { get; set; }
     public Guid? ChangesProposedByUserId { get; set; }
@@ -157,7 +211,15 @@ internal static class ConnectedSupplierEntityMapper
         r.DeliveryInstructions,
         r.BillingContactNotes,
         r.InternalNotes,
-        EffectiveDeliveryAllowance.ParseOverride(r.CustomerDeliveryOverride));
+        EffectiveDeliveryAllowance.ParseOverride(r.CustomerDeliveryOverride),
+        r.UseOrganizationPaymentTimingDefaults,
+        r.AllowPayBeforeFulfillment,
+        r.AllowPayOnDeliveryOrReceipt,
+        r.AllowSupplierCredit,
+        (ConnectedPoPaymentTiming)r.CustomerDefaultPaymentTiming,
+        r.CategoryDiscountOverrides
+            .Select(x => new ConnectedCustomerCategoryDiscountOverride(x.CategoryId, x.DiscountPercent))
+            .ToList());
     public static ConnectedSupplierRelationshipRecord ToRecord(ConnectedSupplierRelationship x)=>new(){Id=x.Id.Value,
         BuyerOrganizationId=x.BuyerOrganizationId.Value,SupplierOrganizationId=x.SupplierOrganizationId.Value,Status=(int)x.Status,
         RequestedAtUtc=x.RequestedAtUtc,RequestedByUserId=x.RequestedByUserId,RespondedAtUtc=x.RespondedAtUtc,
@@ -166,6 +228,11 @@ internal static class ConnectedSupplierEntityMapper
         BuyerDisplayNameSnapshot=x.BuyerDisplayNameSnapshot,BuyerPublicOrganizationIdSnapshot=x.BuyerPublicOrganizationIdSnapshot,
         SupplierDisplayNameSnapshot=x.SupplierDisplayNameSnapshot,SupplierPublicOrganizationIdSnapshot=x.SupplierPublicOrganizationIdSnapshot,
         CatalogSharingMode=(int)x.CatalogSharingMode,CustomerDiscountPercent=x.CustomerDiscountPercent,
+        UseOrganizationPaymentTimingDefaults=x.UseOrganizationPaymentTimingDefaults,
+        AllowPayBeforeFulfillment=x.AllowPayBeforeFulfillment,
+        AllowPayOnDeliveryOrReceipt=x.AllowPayOnDeliveryOrReceipt,
+        AllowSupplierCredit=x.AllowSupplierCredit,
+        CustomerDefaultPaymentTiming=(int)x.CustomerDefaultPaymentTiming,
         SupplierBranchId=x.SupplierBranchId,SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot,
         SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray(),
         ContactSource=(int)x.ContactSource,OrganizationMemberId=x.OrganizationMemberId,
@@ -173,11 +240,24 @@ internal static class ConnectedSupplierEntityMapper
         PreferredContactMethod=x.PreferredContactMethod,DeliveryInstructions=x.DeliveryInstructions,
         CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride),
         BillingContactNotes=x.BillingContactNotes,InternalNotes=x.InternalNotes,
+        CategoryDiscountOverrides=x.CustomerCategoryDiscountOverrides
+            .Select(o => new ConnectedSupplierRelationshipCategoryDiscountOverrideRecord
+            {
+                RelationshipId = x.Id.Value,
+                CategoryId = o.CategoryId,
+                DiscountPercent = o.DiscountPercent
+            })
+            .ToList(),
         CreatedAtUtc=x.CreatedAtUtc,UpdatedAtUtc=x.UpdatedAtUtc};
     public static void Apply(ConnectedSupplierRelationship x,ConnectedSupplierRelationshipRecord r)
     {r.Status=(int)x.Status;r.RespondedAtUtc=x.RespondedAtUtc;r.RespondedByUserId=x.RespondedByUserId;r.DisconnectedAtUtc=x.DisconnectedAtUtc;
      r.InitiatedByParty=(int)x.InitiatedByParty;
      r.CatalogSharingMode=(int)x.CatalogSharingMode;r.CustomerDiscountPercent=x.CustomerDiscountPercent;
+     r.UseOrganizationPaymentTimingDefaults = x.UseOrganizationPaymentTimingDefaults;
+     r.AllowPayBeforeFulfillment = x.AllowPayBeforeFulfillment;
+     r.AllowPayOnDeliveryOrReceipt = x.AllowPayOnDeliveryOrReceipt;
+     r.AllowSupplierCredit = x.AllowSupplierCredit;
+     r.CustomerDefaultPaymentTiming = (int)x.CustomerDefaultPaymentTiming;
      r.SupplierBranchId=x.SupplierBranchId;r.SupplierBranchNameSnapshot=x.SupplierBranchNameSnapshot;
      r.SharedSupplierBranchIds=x.SharedSupplierBranchIds.ToArray();
      r.ContactSource=(int)x.ContactSource;r.OrganizationMemberId=x.OrganizationMemberId;
@@ -185,7 +265,112 @@ internal static class ConnectedSupplierEntityMapper
      r.PreferredContactMethod=x.PreferredContactMethod;r.DeliveryInstructions=x.DeliveryInstructions;
      r.CustomerDeliveryOverride=EffectiveDeliveryAllowance.ToPersistence(x.CustomerDeliveryOverride);
      r.BillingContactNotes=x.BillingContactNotes;r.InternalNotes=x.InternalNotes;
+     r.CategoryDiscountOverrides = x.CustomerCategoryDiscountOverrides
+         .Select(o => new ConnectedSupplierRelationshipCategoryDiscountOverrideRecord
+         {
+             RelationshipId = x.Id.Value,
+             CategoryId = o.CategoryId,
+             DiscountPercent = o.DiscountPercent
+         })
+         .ToList();
      r.UpdatedAtUtc=x.UpdatedAtUtc;}
+
+    public static OrganizationConnectedCommerceSettings ToDomain(OrganizationConnectedCommerceSettingsRecord record) =>
+        OrganizationConnectedCommerceSettings.Rehydrate(
+            record.Id,
+            PosOrganizationId.From(record.OrganizationId),
+            record.AllowPayBeforeFulfillment,
+            record.AllowPayOnDeliveryOrReceipt,
+            record.AllowSupplierCredit,
+            (ConnectedPoPaymentTiming)record.DefaultPaymentTiming,
+            record.DefaultB2bDiscountPercent,
+            record.CategoryRules
+                .Select(r => new OrganizationConnectedCommerceCategoryRule(r.CategoryId, r.DiscountPercent))
+                .ToList(),
+            record.ProposalReservationHoldHours,
+            record.CreatedAtUtc,
+            record.UpdatedAtUtc,
+            record.ReturnsAllowed,
+            record.ReturnWindowDays,
+            record.ReceivingIssueWindowDays,
+            record.RequireReturnApproval,
+            record.CategoryReturnRules
+                .Select(r => new OrganizationConnectedCommerceCategoryReturnRule(
+                    r.CategoryId,
+                    (ConnectedPoReturnPolicyMode)r.Mode,
+                    r.ReturnsAllowed,
+                    r.ReturnWindowDays))
+                .ToList());
+
+    public static OrganizationConnectedCommerceSettingsRecord ToRecord(OrganizationConnectedCommerceSettings settings) =>
+        new()
+        {
+            Id = settings.SettingId,
+            OrganizationId = settings.OrganizationId.Value,
+            AllowPayBeforeFulfillment = settings.AllowPayBeforeFulfillment,
+            AllowPayOnDeliveryOrReceipt = settings.AllowPayOnDeliveryOrReceipt,
+            AllowSupplierCredit = settings.AllowSupplierCredit,
+            DefaultPaymentTiming = (int)settings.DefaultPaymentTiming,
+            DefaultB2bDiscountPercent = settings.DefaultB2bDiscountPercent,
+            ProposalReservationHoldHours = settings.ProposalReservationHoldHours,
+            ReturnsAllowed = settings.ReturnsAllowed,
+            ReturnWindowDays = settings.ReturnWindowDays,
+            ReceivingIssueWindowDays = settings.ReceivingIssueWindowDays,
+            RequireReturnApproval = settings.RequireReturnApproval,
+            CreatedAtUtc = settings.CreatedAtUtc,
+            UpdatedAtUtc = settings.UpdatedAtUtc,
+            CategoryRules = settings.CategoryRules
+                .Select(r => new OrganizationConnectedCommerceCategoryRuleRecord
+                {
+                    OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                    CategoryId = r.CategoryId,
+                    DiscountPercent = r.DiscountPercent
+                })
+                .ToList(),
+            CategoryReturnRules = settings.CategoryReturnRules
+                .Select(r => new OrganizationConnectedCommerceCategoryReturnRuleRecord
+                {
+                    OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                    CategoryId = r.CategoryId,
+                    Mode = (short)r.Mode,
+                    ReturnsAllowed = r.ReturnsAllowed,
+                    ReturnWindowDays = r.ReturnWindowDays
+                })
+                .ToList()
+        };
+
+    public static void Apply(OrganizationConnectedCommerceSettings settings, OrganizationConnectedCommerceSettingsRecord record)
+    {
+        record.AllowPayBeforeFulfillment = settings.AllowPayBeforeFulfillment;
+        record.AllowPayOnDeliveryOrReceipt = settings.AllowPayOnDeliveryOrReceipt;
+        record.AllowSupplierCredit = settings.AllowSupplierCredit;
+        record.DefaultPaymentTiming = (int)settings.DefaultPaymentTiming;
+        record.DefaultB2bDiscountPercent = settings.DefaultB2bDiscountPercent;
+        record.ProposalReservationHoldHours = settings.ProposalReservationHoldHours;
+        record.ReturnsAllowed = settings.ReturnsAllowed;
+        record.ReturnWindowDays = settings.ReturnWindowDays;
+        record.ReceivingIssueWindowDays = settings.ReceivingIssueWindowDays;
+        record.RequireReturnApproval = settings.RequireReturnApproval;
+        record.UpdatedAtUtc = settings.UpdatedAtUtc;
+        record.CategoryRules = settings.CategoryRules
+            .Select(r => new OrganizationConnectedCommerceCategoryRuleRecord
+            {
+                OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                CategoryId = r.CategoryId,
+                DiscountPercent = r.DiscountPercent
+            })
+            .ToList();
+        record.CategoryReturnRules = settings.CategoryReturnRules
+            .Select(r => new OrganizationConnectedCommerceCategoryReturnRuleRecord
+            {
+                OrganizationConnectedCommerceSettingsId = settings.SettingId,
+                CategoryId = r.CategoryId,
+                Mode = (short)r.Mode,
+                ReturnsAllowed = r.ReturnsAllowed,
+                ReturnWindowDays = r.ReturnWindowDays
+            })
+            .ToList();
+    }
 
     public static SupplierProductExposure ToDomain(SupplierProductExposureRecord r, string? categoryNameOverride = null)=>SupplierProductExposure.Rehydrate(
         SupplierProductExposureId.From(r.Id),PosOrganizationId.From(r.SupplierOrganizationId),CatalogProductId.From(r.ProductId),
@@ -296,16 +481,21 @@ internal static class ConnectedSupplierEntityMapper
             r.DeclineReason is int reason ? (ConnectedPoDeclineReason)reason : null,
             r.DeclineNote,
             (ConnectedPoPaymentTerm)r.PaymentTerm,
+            (ConnectedPoPaymentTiming)r.PaymentTiming,
             r.ChangesProposedAtUtc,
             r.ChangesProposedByUserId,
             r.BuyerRespondedAtUtc,
             r.BuyerRespondedByUserId,
             r.ProposedPaymentTerm is int ppt ? (ConnectedPoPaymentTerm)ppt : null,
+            r.ProposedPaymentTiming is int pptime ? (ConnectedPoPaymentTiming)pptime : null,
             r.ConfirmedPaymentTerm is int cpt ? (ConnectedPoPaymentTerm)cpt : null,
+            r.ConfirmedPaymentTiming is int cptm ? (ConnectedPoPaymentTiming)cptm : null,
             r.CreditPostedAmount,
             (ConnectedPoInventoryReservationState)r.InventoryReservationState,
             r.InventoryReservationExpiresAtUtc,
-            r.InventoryReservationRevision);
+            r.InventoryReservationRevision,
+            r.FulfillmentMethod,
+            r.ConfirmedFulfillmentMethod);
     }
 
     public static ConnectedPurchaseOrderRecord ToRecord(ConnectedPurchaseOrder x)=>new(){Id=x.Id.Value,RelationshipId=x.RelationshipId.Value,
@@ -315,8 +505,13 @@ internal static class ConnectedSupplierEntityMapper
         PreparingAtUtc=x.PreparingAtUtc,FulfilledAtUtc=x.FulfilledAtUtc,WithdrawnAtUtc=x.WithdrawnAtUtc,
         DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value,DeclineNote=x.DeclineNote,
         PaymentTerm=(int)x.PaymentTerm,
+        PaymentTiming=(int)x.PaymentTiming,
+        FulfillmentMethod=x.FulfillmentMethod,
+        ConfirmedFulfillmentMethod=x.ConfirmedFulfillmentMethod,
         ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value,
+        ProposedPaymentTiming=x.ProposedPaymentTiming is null ? null : (int)x.ProposedPaymentTiming.Value,
         ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value,
+        ConfirmedPaymentTiming=x.ConfirmedPaymentTiming is null ? null : (int)x.ConfirmedPaymentTiming.Value,
         CreditPostedAmount=x.CreditPostedAmount,
         ChangesProposedAtUtc=x.ChangesProposedAtUtc,ChangesProposedByUserId=x.ChangesProposedByUserId,
         BuyerRespondedAtUtc=x.BuyerRespondedAtUtc,BuyerRespondedByUserId=x.BuyerRespondedByUserId,
@@ -334,8 +529,13 @@ internal static class ConnectedSupplierEntityMapper
         r.PreparingAtUtc=x.PreparingAtUtc;r.FulfilledAtUtc=x.FulfilledAtUtc;r.WithdrawnAtUtc=x.WithdrawnAtUtc;
         r.DeclineReason=x.DeclineReason is null ? null : (int)x.DeclineReason.Value;r.DeclineNote=x.DeclineNote;
         r.PaymentTerm=(int)x.PaymentTerm;
+        r.PaymentTiming=(int)x.PaymentTiming;
+        r.FulfillmentMethod=x.FulfillmentMethod;
+        r.ConfirmedFulfillmentMethod=x.ConfirmedFulfillmentMethod;
         r.ProposedPaymentTerm=x.ProposedPaymentTerm is null ? null : (int)x.ProposedPaymentTerm.Value;
+        r.ProposedPaymentTiming=x.ProposedPaymentTiming is null ? null : (int)x.ProposedPaymentTiming.Value;
         r.ConfirmedPaymentTerm=x.ConfirmedPaymentTerm is null ? null : (int)x.ConfirmedPaymentTerm.Value;
+        r.ConfirmedPaymentTiming=x.ConfirmedPaymentTiming is null ? null : (int)x.ConfirmedPaymentTiming.Value;
         r.CreditPostedAmount=x.CreditPostedAmount;
         r.ChangesProposedAtUtc=x.ChangesProposedAtUtc;r.ChangesProposedByUserId=x.ChangesProposedByUserId;
         r.BuyerRespondedAtUtc=x.BuyerRespondedAtUtc;r.BuyerRespondedByUserId=x.BuyerRespondedByUserId;

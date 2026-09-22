@@ -83,7 +83,16 @@ internal static class AllEligibleCatalogBootstrap
                 }
 
                 await products.UpdateAsync(product, ct).ConfigureAwait(false);
-                await ConnectedProductExposureSync.SyncAsync(product, exposures, utcNow, ct, inventory)
+                // Already verified tracked above — pass knownIsTracked so Sync does not re-read
+                // inventory in a way that can miss the same-UoW enable.
+                await ConnectedProductExposureSync.SyncAsync(
+                        product,
+                        exposures,
+                        utcNow,
+                        ct,
+                        inventory: null,
+                        categories: null,
+                        knownIsTracked: true)
                     .ConfigureAwait(false);
             }
 

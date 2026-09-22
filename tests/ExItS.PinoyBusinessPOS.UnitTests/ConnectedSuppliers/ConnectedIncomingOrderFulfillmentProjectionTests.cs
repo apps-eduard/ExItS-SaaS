@@ -34,7 +34,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         var grn = GoodsReceipt.Create(
             Buyer,
             po.Id,
-            "GRN-20260917-000001",
+            "260917-001",
             po,
             receive,
             Actor,
@@ -63,7 +63,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
 
         var receipts = ConnectedIncomingOrderFulfillmentProjection.ProjectReceipts([grn], remainingOutstandingAfterLatest: 3m);
         var latest = Assert.Single(receipts);
-        Assert.Equal("GRN-20260917-000001", latest.GrnNumber);
+        Assert.Equal("260917-001", latest.GrnNumber);
         Assert.Equal(5m, latest.GoodQtyTotal);
         Assert.Equal(1m, latest.DamagedQtyTotal);
         Assert.Equal("DRV-1", latest.DeliveryReference);
@@ -84,7 +84,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         };
         po.ApplyReceiptLines(first, Now.AddMinutes(10));
         var grn1 = GoodsReceipt.Create(
-            Buyer, po.Id, "GRN-20260917-000001", po, first, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
+            Buyer, po.Id, "260917-001", po, first, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
 
         var second = new List<PurchaseOrderReceiveLineDraft>
         {
@@ -94,14 +94,14 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         };
         po.ApplyReceiptLines(second, Now.AddMinutes(20));
         var grn2 = GoodsReceipt.Create(
-            Buyer, po.Id, "GRN-20260917-000002", po, second, Actor, Now.AddMinutes(20), receivingBranchId: Branch);
+            Buyer, po.Id, "260917-002", po, second, Actor, Now.AddMinutes(20), receivingBranchId: Branch);
 
         var voidedDraft = new List<PurchaseOrderReceiveLineDraft>
         {
             new(CatalogProductId.From(BananaId), ReceiveQty: 1m),
         };
         var voided = GoodsReceipt.Create(
-            Buyer, po.Id, "GRN-20260917-000099", po, voidedDraft, Actor, Now.AddMinutes(5), receivingBranchId: Branch);
+            Buyer, po.Id, "260917-099", po, voidedDraft, Actor, Now.AddMinutes(5), receivingBranchId: Branch);
         voided.Void(Now.AddMinutes(6), Actor, "Mistake");
 
         var progress = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(
@@ -116,7 +116,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         var receipts = ConnectedIncomingOrderFulfillmentProjection.ProjectReceipts(
             [grn1, grn2, voided], remainingOutstandingAfterLatest: 1m);
         Assert.Equal(3, receipts.Count);
-        Assert.Equal("GRN-20260917-000002", receipts[0].GrnNumber);
+        Assert.Equal("260917-002", receipts[0].GrnNumber);
         Assert.Equal("Voided", receipts[2].Status);
     }
 
@@ -131,7 +131,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         };
         po.ApplyReceiptLines(receive, Now.AddMinutes(10));
         var grn = GoodsReceipt.Create(
-            Buyer, po.Id, "GRN-20260917-000010", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
+            Buyer, po.Id, "260917-010", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
 
         var apple = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(order, po, [grn])[AppleId];
         Assert.Equal(0m, apple.GoodReceivedQty);
@@ -150,12 +150,159 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
         };
         po.ApplyReceiptLines(receive, Now.AddMinutes(10));
         var grn = GoodsReceipt.Create(
-            Buyer, po.Id, "GRN-20260917-000011", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
+            Buyer, po.Id, "260917-011", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
 
         var apple = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(order, po, [grn])[AppleId];
         Assert.Equal(3m, apple.GoodReceivedQty);
         Assert.Equal(2m, apple.MissingQty);
         Assert.Equal(2m, apple.OutstandingQty);
+    }
+
+    [Fact]
+    public void Cross_catalog_ids_match_via_product_links_and_project_damage()
+    {
+        // Seller CPO uses supplier catalog ids; buyer PO/GRN use distinct buyer catalog ids.
+        // Without links, FindBuyerLine fails → good/damaged stay 0 and outstanding falls back to ordered.
+        var supplierApple = AppleId;
+        var buyerApple = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var supplierBanana = BananaId;
+        var buyerBanana = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+
+        var order = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
+            relationship,
+            PurchaseOrderId.New(),
+            "260920-001",
+            DateOnly.FromDateTime(Now.UtcDateTime),
+            null,
+            [
+                ConnectedPurchaseOrderLine.Create(CatalogProductId.From(supplierApple), "Apple", null, 1m, 10m, "Piece"),
+                ConnectedPurchaseOrderLine.Create(CatalogProductId.From(supplierBanana), "Banana", null, 1m, 8m, "Piece"),
+            ],
+            Now.AddMinutes(2));
+        order.Accept(Now.AddMinutes(3));
+        order.MarkFulfilled(Now.AddMinutes(4));
+
+        var po = PurchaseOrder.CreateDraft(
+            Buyer,
+            SupplierId.New(),
+            DateOnly.FromDateTime(Now.UtcDateTime),
+            [
+                new(CatalogProductId.From(buyerApple), 1m, 10m),
+                new(CatalogProductId.From(buyerBanana), 1m, 8m),
+            ],
+            Now);
+        po.Submit(
+            "260920-001",
+            [
+                new(CatalogProductId.From(buyerApple), "Apple", UnitOfMeasure.Piece, 1m, 10m),
+                new(CatalogProductId.From(buyerBanana), "Banana", UnitOfMeasure.Piece, 1m, 8m),
+            ],
+            Actor,
+            Now.AddMinutes(1));
+
+        // Banana fully good; Apple all damaged (deliver-later) → only 1 outstanding to fulfill.
+        var receive = new List<PurchaseOrderReceiveLineDraft>
+        {
+            new(CatalogProductId.From(buyerApple), ReceiveQty: 0m, DamagedQty: 1m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Damaged),
+            new(CatalogProductId.From(buyerBanana), ReceiveQty: 1m),
+        };
+        po.ApplyReceiptLines(receive, Now.AddMinutes(10));
+        var grn = GoodsReceipt.Create(
+            Buyer, po.Id, "260920-001", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
+
+        var withoutLinks = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(order, po, [grn]);
+        Assert.Equal(0m, withoutLinks[supplierApple].GoodReceivedQty);
+        Assert.Equal(0m, withoutLinks[supplierApple].DamagedQty);
+        Assert.Equal(1m, withoutLinks[supplierApple].OutstandingQty);
+        Assert.Equal(0m, withoutLinks[supplierBanana].GoodReceivedQty);
+        Assert.Equal(1m, withoutLinks[supplierBanana].OutstandingQty);
+
+        var links = new ConnectedIncomingOrderFulfillmentProjection.ProductLinkMaps(
+            new Dictionary<Guid, Guid>
+            {
+                [supplierApple] = buyerApple,
+                [supplierBanana] = buyerBanana,
+            },
+            new Dictionary<Guid, Guid>
+            {
+                [buyerApple] = supplierApple,
+                [buyerBanana] = supplierBanana,
+            });
+
+        var withLinks = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(order, po, [grn], links);
+        Assert.Equal(0m, withLinks[supplierApple].GoodReceivedQty);
+        Assert.Equal(1m, withLinks[supplierApple].DamagedQty);
+        Assert.Equal(1m, withLinks[supplierApple].OutstandingQty);
+        Assert.Equal(1m, withLinks[supplierBanana].GoodReceivedQty);
+        Assert.Equal(0m, withLinks[supplierBanana].DamagedQty);
+        Assert.Equal(0m, withLinks[supplierBanana].OutstandingQty);
+    }
+
+    [Fact]
+    public void Cross_catalog_ids_match_via_supplier_product_id_on_buyer_line()
+    {
+        var supplierApple = AppleId;
+        var buyerApple = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+
+        var relationship = ConnectedSupplierRelationship.Request(Buyer, Supplier, Now);
+        relationship.Approve(Now.AddMinutes(1));
+
+        var order = ConnectedPurchaseOrder.CreateFromBuyerSubmission(
+            relationship,
+            PurchaseOrderId.New(),
+            "PO-LINKED-SUPPLIER-ID",
+            DateOnly.FromDateTime(Now.UtcDateTime),
+            null,
+            [
+                ConnectedPurchaseOrderLine.Create(CatalogProductId.From(supplierApple), "Apple", null, 4m, 10m, "Piece"),
+            ],
+            Now.AddMinutes(2));
+        order.Accept(Now.AddMinutes(3));
+        order.MarkFulfilled(Now.AddMinutes(4));
+
+        var po = PurchaseOrder.CreateDraft(
+            Buyer,
+            SupplierId.New(),
+            DateOnly.FromDateTime(Now.UtcDateTime),
+            [
+                new(
+                    CatalogProductId.From(buyerApple),
+                    4m,
+                    10m,
+                    SupplierProductId: CatalogProductId.From(supplierApple)),
+            ],
+            Now);
+        po.Submit(
+            "260920-002",
+            [
+                new(
+                    CatalogProductId.From(buyerApple),
+                    "Apple",
+                    UnitOfMeasure.Piece,
+                    4m,
+                    10m,
+                    SupplierProductId: CatalogProductId.From(supplierApple)),
+            ],
+            Actor,
+            Now.AddMinutes(1));
+
+        var receive = new List<PurchaseOrderReceiveLineDraft>
+        {
+            new(CatalogProductId.From(buyerApple), ReceiveQty: 3m, DamagedQty: 1m,
+                DiscrepancyKind: ConnectedPoReceivingDiscrepancyKind.Damaged),
+        };
+        po.ApplyReceiptLines(receive, Now.AddMinutes(10));
+        var grn = GoodsReceipt.Create(
+            Buyer, po.Id, "260920-002", po, receive, Actor, Now.AddMinutes(10), receivingBranchId: Branch);
+
+        var apple = ConnectedIncomingOrderFulfillmentProjection.ProjectLineProgress(order, po, [grn])[supplierApple];
+        Assert.Equal(3m, apple.GoodReceivedQty);
+        Assert.Equal(1m, apple.DamagedQty);
+        Assert.Equal(1m, apple.OutstandingQty);
     }
 
     private static (ConnectedPurchaseOrder Order, PurchaseOrder BuyerPo) SeedTwoLineOrder(
@@ -207,7 +354,7 @@ public sealed class ConnectedIncomingOrderFulfillmentProjectionTests
             DateOnly.FromDateTime(Now.UtcDateTime),
             drafts,
             Now);
-        po.Submit("PO-20260917-000042", snapshots, Actor, Now.AddMinutes(1));
+        po.Submit("260917-042", snapshots, Actor, Now.AddMinutes(1));
         return (order, po);
     }
 }

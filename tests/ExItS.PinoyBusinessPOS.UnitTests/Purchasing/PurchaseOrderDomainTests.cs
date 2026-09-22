@@ -21,9 +21,9 @@ public sealed class PurchaseOrderDomainTests
     public void Po_and_grn_numbers_format_and_normalize()
     {
         var date = new DateOnly(2026, 7, 31);
-        Assert.Equal("PO-20260731-000001", PurchaseOrderNumbers.Format(date, 1));
-        Assert.Equal("GRN-20260731-000042", GoodsReceiptNumbers.Format(date, 42));
-        Assert.Equal("PO-20260731-000001", PurchaseOrderNumbers.Normalize(" po-20260731-000001 "));
+        Assert.Equal("260731-001", PurchaseOrderNumbers.Format(date, 1));
+        Assert.Equal("260731-042", GoodsReceiptNumbers.Format(date, 42));
+        Assert.Equal("260731-001", PurchaseOrderNumbers.Normalize(" 260731-001 "));
     }
 
     [Fact]
@@ -90,10 +90,10 @@ public sealed class PurchaseOrderDomainTests
                 "line note")
         };
 
-        po.Submit("PO-20260731-000001", snapshots, Guid.NewGuid(), Now);
+        po.Submit("260731-001", snapshots, Guid.NewGuid(), Now);
 
         Assert.Equal(PurchaseOrderStatus.Ordered, po.Status);
-        Assert.Equal("PO-20260731-000001", po.PoNumber);
+        Assert.Equal("260731-001", po.PoNumber);
         var line = po.Lines.Single();
         Assert.Equal("Bigas Premium", line.NameSnapshot);
         Assert.Equal(UnitOfMeasure.Kilogram, line.UomSnapshot);
@@ -118,7 +118,7 @@ public sealed class PurchaseOrderDomainTests
         var grn = GoodsReceipt.Create(
             org,
             po.Id,
-            "GRN-20260731-000001",
+            "260731-001",
             po,
             [new PurchaseOrderReceiveLineDraft(CatalogProductId.From(ProductA), 4m)],
             Guid.NewGuid(),
@@ -165,6 +165,50 @@ public sealed class PurchaseOrderDomainTests
         Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderStatusTransition, ex.ErrorCode);
     }
 
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_requires_reference_for_gcash()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 2m);
+
+        var missing = Assert.Throws<DomainException>(() =>
+            po.SubmitBuyerPrepaymentProof("ManualGCash", reference: null, details: null, Now));
+        Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderNotes, missing.ErrorCode);
+
+        po.SubmitBuyerPrepaymentProof("ManualGCash", "GC-123456", details: null, Now);
+        Assert.Equal("ManualGCash", po.BuyerPrepaymentMethod);
+        Assert.Equal("GC-123456", po.BuyerPrepaymentReference);
+        Assert.Equal(Now, po.BuyerPrepaymentSubmittedAtUtc);
+    }
+
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_requires_details_for_bank_or_check()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 2m);
+
+        var missing = Assert.Throws<DomainException>(() =>
+            po.SubmitBuyerPrepaymentProof("BankTransfer", reference: null, details: null, Now));
+        Assert.Equal(DomainErrorCodes.InvalidPurchaseOrderNotes, missing.ErrorCode);
+
+        po.SubmitBuyerPrepaymentProof(
+            "BankTransfer",
+            reference: "TRX-9",
+            details: "BDO transfer from Acme Trading",
+            Now);
+        Assert.Equal("BankTransfer", po.BuyerPrepaymentMethod);
+        Assert.Equal("TRX-9", po.BuyerPrepaymentReference);
+        Assert.Equal("BDO transfer from Acme Trading", po.BuyerPrepaymentDetails);
+    }
+
+    [Fact]
+    public void SubmitBuyerPrepaymentProof_allows_cash_without_reference()
+    {
+        var po = BuildOrderedPo(PosOrganizationId.From(OrgA), 1m);
+        po.SubmitBuyerPrepaymentProof("Cash", reference: null, details: null, Now);
+        Assert.Equal("Cash", po.BuyerPrepaymentMethod);
+        Assert.Null(po.BuyerPrepaymentReference);
+        Assert.Equal(Now, po.BuyerPrepaymentSubmittedAtUtc);
+    }
+
     private static PurchaseOrder BuildOrderedPo(PosOrganizationId org, decimal orderedQty)
     {
         var po = PurchaseOrder.CreateDraft(
@@ -174,7 +218,7 @@ public sealed class PurchaseOrderDomainTests
             [new PurchaseOrderLineDraft(CatalogProductId.From(ProductA), orderedQty, 10m)],
             Now);
         po.Submit(
-            "PO-20260731-000099",
+            "260731-099",
             [new PurchaseOrderLineSnapshotInput(
                 CatalogProductId.From(ProductA),
                 "Item",

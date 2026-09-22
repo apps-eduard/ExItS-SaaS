@@ -19,17 +19,68 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
     private static readonly DateTimeOffset Now = new(2026, 9, 16, 10, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Buyer_projection_omits_requirement_details()
+    public async Task Catalog_ready_when_SearchSharedCatalog_has_orderable_products()
     {
         var relationship = ReadyRelationship();
         var service = CreateService(relationship, readyBranch: true, shared: true);
-        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
-
+        var result = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
         Assert.True(result.IsSuccess, result.ErrorMessage);
-        Assert.True(result.Value!.IsReady);
-        Assert.Null(result.Value.Requirements);
-        Assert.Empty(result.Value.BlockerCategories ?? []);
-        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+        Assert.Equal(2, result.Value!.BuyerOrderableCount);
+        var catalog = Assert.Single(
+            result.Value.Requirements!,
+            r => r.Code == ConnectedSupplierCommerceReadiness.SharedCatalog);
+        Assert.Equal(ConnectedSupplierCommerceReadiness.StatusComplete, catalog.Status);
+        Assert.Contains("2 products available", catalog.Detail);
+        Assert.DoesNotContain("Share at least one product", catalog.Detail ?? "");
+    }
+
+    [Fact]
+    public async Task Catalog_not_ready_when_SearchSharedCatalog_empty_with_pricing_reason()
+    {
+        var relationship = ConnectedSupplierRelationship.Rehydrate(
+            ConnectedSupplierRelationshipId.From(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd")),
+            Buyer,
+            Supplier,
+            ConnectedSupplierRelationshipStatus.Active,
+            Now,
+            null,
+            Now,
+            null,
+            null,
+            Now,
+            Now,
+            "Buyer Co",
+            "ORG1",
+            "Supplier Co",
+            "ORG2",
+            CatalogSharingMode.AllEligible,
+            supplierBranchId: BranchId,
+            supplierBranchNameSnapshot: "Main",
+            contactPersonName: "Ana",
+            contactPhone: "0917");
+        // Eligible products exist but SearchSharedCatalog Total=0 → pricing/exposure gap.
+        var service = CreateService(relationship, readyBranch: true, shared: false, eligibleWhenEmpty: true);
+        var result = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(0, result.Value!.BuyerOrderableCount);
+        var catalog = Assert.Single(
+            result.Value.Requirements!,
+            r => r.Code == ConnectedSupplierCommerceReadiness.SharedCatalog);
+        Assert.Equal(ConnectedSupplierCommerceReadiness.StatusMissing, catalog.Status);
+        Assert.Contains("Default PO price", catalog.Detail ?? "", StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Catalog_not_ready_when_SearchSharedCatalog_empty()
+    {
+        var relationship = ReadyRelationship();
+        var service = CreateService(relationship, readyBranch: true, shared: false);
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(result.Value!.IsReady);
+        Assert.Contains(
+            ConnectedSupplierCommerceReadiness.BuyerBlockerCatalog,
+            result.Value.BlockerCategories ?? []);
     }
 
     [Fact]
@@ -161,7 +212,7 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
     }
 
     [Fact]
-    public async Task Supplier_delivery_only_without_org_offer_marks_fulfillment_complete()
+    public async Task Supplier_delivery_only_without_org_offer_does_not_list_delivery()
     {
         var relationship = ReadyRelationship();
         var service = new ConnectedSupplierCommerceReadinessService(
@@ -175,24 +226,18 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
 
         var supplier = await service.GetForSupplierAsync(Supplier.Value, relationship.Id.Value);
         Assert.True(supplier.IsSuccess, supplier.ErrorMessage);
-        Assert.True(supplier.Value!.IsReady);
+        Assert.False(supplier.Value!.IsReady);
+        Assert.Empty(supplier.Value.SupportedFulfillmentMethods);
         Assert.Equal(
-            ConnectedSupplierCommerceReadiness.StatusComplete,
+            ConnectedSupplierCommerceReadiness.StatusMissing,
             supplier.Value.Requirements!
                 .Single(r => r.Code == ConnectedSupplierCommerceReadiness.FulfillmentMethod)
                 .Status);
-        Assert.Equal(
-            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
-            supplier.Value.SupportedFulfillmentMethods);
 
-        // Buyer also gets Delivery from the branch channel (org Offer Delivery not required).
         var buyer = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
         Assert.True(buyer.IsSuccess, buyer.ErrorMessage);
-        Assert.True(buyer.Value!.IsReady);
-        Assert.Equal(
-            [ConnectedSupplierCommerceReadiness.FulfillmentDelivery],
-            buyer.Value.SupportedFulfillmentMethods);
-        Assert.Empty(buyer.Value.BlockerCategories ?? []);
+        Assert.False(buyer.Value!.IsReady);
+        Assert.Empty(buyer.Value.SupportedFulfillmentMethods);
     }
 
     [Fact]
@@ -208,6 +253,119 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
         Assert.Contains(
             ConnectedSupplierCommerceReadiness.BuyerBlockerNoUsableMethod,
             result.Value.BlockerCategories ?? []);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_exposes_both_methods_when_org_offer_on()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchPickupReady);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.False(result.Value.RelationshipDeliveryBlocked);
+        Assert.Null(result.Value.DeliveryUnavailableReason);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentDelivery, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_org_offer_off_reports_reason_not_false_pickup_only_capability()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: false));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableOrgOfferOff,
+            result.Value.DeliveryUnavailableReason);
+        Assert.DoesNotContain(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            result.Value.SupportedFulfillmentMethods);
+        Assert.Contains(ConnectedSupplierCommerceReadiness.FulfillmentPickup, result.Value.SupportedFulfillmentMethods);
+    }
+
+    [Fact]
+    public async Task Buyer_projection_relationship_block_reports_customer_reason()
+    {
+        var relationship = ReadyRelationship();
+        relationship.SetCustomerDeliveryOverride(CustomerDeliveryOverride.Block, Now);
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var result = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.True(result.Value!.OrgOfferDelivery);
+        Assert.True(result.Value.BranchDeliveryReady);
+        Assert.True(result.Value.RelationshipDeliveryBlocked);
+        Assert.Equal(
+            ConnectedSupplierCommerceReadiness.DeliveryUnavailableRelationshipBlocked,
+            result.Value.DeliveryUnavailableReason);
+        Assert.DoesNotContain(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            result.Value.SupportedFulfillmentMethods);
+
+        var gate = await service.EnsureFulfillmentMethodAllowedAsync(
+            relationship,
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            forBuyerMessage: true);
+        Assert.False(gate.IsSuccess);
+        Assert.Contains("business relationship", gate.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Ensure_fulfillment_and_buyer_projection_agree_on_delivery()
+    {
+        var relationship = ReadyRelationship();
+        var service = new ConnectedSupplierCommerceReadinessService(
+            new FakeRelationships(relationship),
+            new FakeShares(true),
+            new FakeBranchesDeliverySetupReadyStoreClosed(),
+            new FakePayments(),
+            new FakeCredits(),
+            new FakeAccess(),
+            new FakeOrgOfferDelivery(offer: true));
+
+        var projection = await service.GetForBuyerAsync(Buyer.Value, relationship.Id.Value);
+        var gate = await service.EnsureFulfillmentMethodAllowedAsync(
+            relationship,
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            forBuyerMessage: true);
+
+        Assert.True(projection.IsSuccess);
+        Assert.Contains(
+            ConnectedSupplierCommerceReadiness.FulfillmentDelivery,
+            projection.Value!.SupportedFulfillmentMethods);
+        Assert.True(gate.IsSuccess, gate.ErrorMessage);
     }
 
     private static ConnectedSupplierRelationship ReadyRelationship(
@@ -238,10 +396,11 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
     private static ConnectedSupplierCommerceReadinessService CreateService(
         ConnectedSupplierRelationship relationship,
         bool readyBranch,
-        bool shared)
+        bool shared,
+        bool eligibleWhenEmpty = false)
     {
         var relationships = new FakeRelationships(relationship);
-        var shares = new FakeShares(shared);
+        var shares = new FakeShares(shared, eligibleWhenEmpty);
         var branches = new FakeBranches(readyBranch);
         var payments = new FakePayments();
         var credits = new FakeCredits();
@@ -272,11 +431,11 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
         public Task UpdateAsync(ConnectedSupplierRelationship r, CancellationToken ct = default) => Task.CompletedTask;
     }
 
-    private sealed class FakeShares(bool shared) : IConnectedBuyerProductShareRepository
+    private sealed class FakeShares(bool shared, bool eligibleWhenEmpty = false) : IConnectedBuyerProductShareRepository
     {
         public Task AddAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
         public Task<int> CountEligibleSupplierProductsAsync(PosOrganizationId supplier, CancellationToken ct = default) =>
-            Task.FromResult(shared ? 3 : 0);
+            Task.FromResult(shared ? 3 : (eligibleWhenEmpty ? 3 : 0));
         public Task<ConnectedBuyerProductShare?> FindAsync(ConnectedSupplierRelationshipId relationshipId, CatalogProductId supplierProductId, CancellationToken ct = default) =>
             Task.FromResult<ConnectedBuyerProductShare?>(null);
         public Task<ConnectedBuyerProductShare?> GetAsync(ConnectedBuyerProductShareId id, CancellationToken ct = default) =>
@@ -291,11 +450,13 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     _ => new BuyerRelationshipShareStats(shared ? 2 : 0, 0, 0)));
         public Task<(IReadOnlyList<SupplierProductExposure> Exposures, IReadOnlyList<ConnectedBuyerProductShare> Shares, int Total)> SearchSharedCatalogAsync(
             ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, int skip, int take, CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
-            Task.FromResult<(IReadOnlyList<SupplierProductExposure>, IReadOnlyList<ConnectedBuyerProductShare>, int)>(([], [], 0));
+            Task.FromResult<(IReadOnlyList<SupplierProductExposure>, IReadOnlyList<ConnectedBuyerProductShare>, int)>(
+                ([], [], shared ? 2 : 0));
         public Task<BuyerProductShareSearchPage> SearchForSupplierManagementAsync(
             ConnectedSupplierRelationshipId relationshipId, PosOrganizationId supplier, string? query, string? category, string? shareFilter, int skip, int take, bool idsOnly, CancellationToken ct = default, CatalogSharingMode catalogSharingMode = CatalogSharingMode.SelectedOnly) =>
             Task.FromResult(new BuyerProductShareSearchPage([], [], 0, 0, 0, []));
         public Task UpdateAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
+        public Task RemoveAsync(ConnectedBuyerProductShare share, CancellationToken ct = default) => Task.CompletedTask;
     }
 
     private sealed class FakeBranches(bool ready) : ICustomerOrderBranchDirectory
@@ -415,6 +576,9 @@ public sealed class ConnectedSupplierCommerceReadinessServiceTests
                     Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
                     organizationId,
                     offer,
+                    defaultPickupEnabled: false,
+                    defaultDeliveryEnabled: false,
+                    defaultOnlineOrdersEnabled: false,
                     Now,
                     Now));
 

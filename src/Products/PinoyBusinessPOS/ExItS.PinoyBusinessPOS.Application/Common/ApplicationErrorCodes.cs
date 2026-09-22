@@ -167,9 +167,14 @@ public static class ApplicationErrorCodes
     public const string PurchasingReceivingBranchMismatch = "pos.purchasing.receiving_branch_mismatch";
     public const string PurchaseReceiptPaymentMethodMismatch = "pos.purchasing.receipt.payment_method_mismatch";
     public const string PurchaseReceiptPaymentInvalid = "pos.purchasing.receipt.payment_invalid";
+    public const string PurchaseReceiptPrepaymentMissing = "pos.purchasing.receipt.prepayment_missing";
     public const string PurchaseOrderNothingToCloseRemaining = "pos.purchasing.close_remaining.nothing_to_close";
     public const string PurchaseOrderCloseRemainingReasonRequired =
         "pos.purchasing.close_remaining.reason_required";
+    public const string PurchaseOrderNotAwaitingPayment = "pos.purchasing.settlement.not_awaiting_payment";
+    public const string PurchaseOrderSettlementNothingDue = "pos.purchasing.settlement.nothing_due";
+    public const string PurchaseOrderSettlementAmountInvalid = "pos.purchasing.settlement.amount_invalid";
+    public const string PurchaseOrderSettlementCheckNotCleared = "pos.purchasing.settlement.check_not_cleared";
     public const string PurchaseSupplierNotActive = "pos.purchase_order.supplier.not_active";
     public const string PurchaseProductNotFound = "pos.purchase_order.product.not_found";
     public const string PurchaseProductNotActive = "pos.purchase_order.product.not_active";
@@ -205,6 +210,7 @@ public static class ApplicationErrorCodes
     public const string CashierShiftMismatch = "pos.cashier_shift.mismatch";
 
     public const string SaleReturnNotFound = "pos.sale_return.not_found";
+    public const string ReturnBatchNotFound = "pos.return_batch.not_found";
     public const string SaleReturnNumberConflict = "pos.sale_return.number.conflict";
     public const string SaleVoidBlockedByReturns = "pos.sale.void.blocked_by_returns";
     /// <summary>

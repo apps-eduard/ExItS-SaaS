@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Check, ClipboardList, PackageSearch, Plus, Store } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, ClipboardList, Plus, Store } from "lucide-react";
 import { canManageCatalog, canManagePurchasing } from "@/access/pos-capabilities";
 import { describePosApiError } from "@/access/pos-commercial-errors";
 import { listCatalogProducts } from "@/api/pos/pos-catalog-client";
@@ -20,6 +20,7 @@ import {
 import {
   createPurchaseOrder,
   getPurchaseOrder,
+  updatePurchaseOrder,
 } from "@/api/pos/pos-purchase-orders-client";
 import {
   isConnectedSupplier,
@@ -28,9 +29,11 @@ import {
 } from "@/api/pos/pos-suppliers-client";
 import { PosApiError } from "@/api/pos/pos-http";
 import { Button } from "@/components/ui/button";
+import { ExitsPillSelect } from "@/components/exits/ExitsPillSelect";
 import { EmptyState } from "@/components/exits/EmptyState";
+import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
-import { MoneyDisplay, QuantityStepper } from "@/components/exits/MoneyQuantity";
+import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SearchField } from "@/components/exits/SearchField";
@@ -55,6 +58,7 @@ import {
   orderUnitCount,
   requestedExceedsSupplierAvailability,
   resolveConnectedCategoryId,
+  resolveSupplierAvailability,
   retainCompatibleDraftLines,
   type ConnectedPoCategoryFilter,
   type ConnectedPoDraftLine,
@@ -62,17 +66,23 @@ import {
 } from "@/features/purchasing/purchase-order-create-connected";
 import { ProductCategoryMultiSelect } from "@/components/exits/ProductCategoryMultiSelect";
 import {
-  ProductFinderPanel,
   SelectedItemsPanel,
 } from "@/components/exits/ProductSelectionWorkspace";
+import { ExitsModal } from "@/components/exits/ExitsModal";
 import { PRODUCT_SELECTION_TABLE_MIN_PX } from "@/components/exits/product-selection-view";
 import { RESPONSIVE_DATA_TABLE_MIN_LG } from "@/components/exits/responsive-data-view";
+import { useActorDirectory } from "@/features/actors/useActorDirectory";
+import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
 import { PurchaseOrderLinkedProductsFinder } from "@/features/purchasing/PurchaseOrderLinkedProductsFinder";
 import { PurchaseOrderItemsView } from "@/features/purchasing/PurchaseOrderItemsView";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
+import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
+import { buildPurchaseOrderActivityEvents } from "@/features/purchasing/purchase-order-activity";
+import { PurchaseOrderTimelineDrawer } from "@/features/purchasing/PurchaseOrderTimelineDrawer";
 import { SupplierNotReadyForPoBanner } from "@/features/purchasing/SupplierNotReadyForPoBanner";
 import {
   CONNECTED_PO_PAYMENT_OPTIONS,
+  resolveConnectedPoPaymentHelpKey,
   resolvePoUtangEligibility,
   type ConnectedPoPaymentMethodCode,
 } from "@/features/purchasing/po-payment-methods";
@@ -88,10 +98,15 @@ import {
   type CatalogReadinessFilter,
 } from "@/features/suppliers/connected-catalog-readiness";
 import { useI18n } from "@/i18n/I18nProvider";
+import { buildCsvWithMetadata, downloadCsvFile, sanitizeCsvFilenamePart } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download-blob";
 import { formatPeso } from "@/lib/format-money";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { resolveAmbiguousMutationOutcome } from "@/runtime/ambiguous-mutation-outcome";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 type ExternalDraftLine = {
   productId: string;
@@ -142,6 +157,8 @@ async function loadAllExposedCatalog(
 export function PurchaseOrderCreatePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { purchaseOrderId: editPurchaseOrderId } = useParams<{ purchaseOrderId?: string }>();
+  const isEdit = Boolean(editPurchaseOrderId);
   const [searchParams] = useSearchParams();
   const online = useBrowserOnline();
   const queryClient = useQueryClient();
@@ -158,7 +175,7 @@ export function PurchaseOrderCreatePage() {
   const finderPanelId = "po-product-finder-panel";
 
   const [supplierId, setSupplierId] = useState(
-    () => searchParams.get("supplierId")?.trim() ?? "",
+    () => (isEdit ? "" : searchParams.get("supplierId")?.trim() ?? ""),
   );
   const [orderDate, setOrderDate] = useState(todayIsoDate);
   const [notes, setNotes] = useState("");
@@ -168,6 +185,7 @@ export function PurchaseOrderCreatePage() {
     emptyConnectedCategoryFilter,
   );
   const [readinessFilter, setReadinessFilter] = useState<PoCatalogSetupFilter>("linked");
+  const [linkedProductScope, setLinkedProductScope] = useState<"notAdded" | "added">("notAdded");
   const [connectedLines, setConnectedLines] = useState<ConnectedPoDraftLine[]>([]);
   const [externalLines, setExternalLines] = useState<ExternalDraftLine[]>([]);
   const [qtyText, setQtyText] = useState("1");
@@ -180,8 +198,14 @@ export function PurchaseOrderCreatePage() {
   const [setupBusyKey, setSetupBusyKey] = useState<string | null>(null);
   const [setupBulkBusy, setSetupBulkBusy] = useState(false);
   const [paymentTerm, setPaymentTerm] = useState<ConnectedPoPaymentMethodCode | "">("Cash");
+  const [paymentTiming, setPaymentTiming] = useState<string>("PayBeforeFulfillment");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"Pickup" | "Delivery" | "">("");
   const purchaseOrderIdRef = useRef<string | null>(null);
+  const [expectedUpdatedAtUtc, setExpectedUpdatedAtUtc] = useState<string | null>(null);
+  const [editMetaHydrated, setEditMetaHydrated] = useState(false);
+  const [editLinesHydrated, setEditLinesHydrated] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDebounced(search.trim()), 250);
@@ -203,6 +227,16 @@ export function PurchaseOrderCreatePage() {
         : null,
     [boundWorkspace],
   );
+
+  const existingOrderQuery = useQuery({
+    queryKey: ["purchase-order", workspace?.organizationId, editPurchaseOrderId, "edit"],
+    enabled: Boolean(workspace) && online && allowManage && isEdit && Boolean(editPurchaseOrderId),
+    queryFn: ({ signal }) => getPurchaseOrder(workspace!, editPurchaseOrderId!, signal),
+  });
+
+  const actors = useActorDirectory(workspace?.organizationId, [
+    existingOrderQuery.data?.orderedBy,
+  ]);
 
   const suppliersQuery = useQuery({
     queryKey: ["suppliers", "po-create", workspace?.organizationId],
@@ -255,6 +289,91 @@ export function PurchaseOrderCreatePage() {
     },
   });
 
+  useEffect(() => {
+    if (!isEdit || editMetaHydrated || !existingOrderQuery.data) {
+      return;
+    }
+    const po = existingOrderQuery.data;
+    if (po.status !== "Draft") {
+      navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
+      return;
+    }
+    setSupplierId(po.supplierId);
+    setOrderDate(po.orderDate.slice(0, 10));
+    setNotes(po.notes ?? "");
+    setPaymentTerm(
+      (po.paymentTerm as ConnectedPoPaymentMethodCode | undefined) &&
+        CONNECTED_PO_PAYMENT_OPTIONS.some((o) => o.code === po.paymentTerm)
+        ? (po.paymentTerm as ConnectedPoPaymentMethodCode)
+        : "Cash",
+    );
+    if (po.paymentTiming) {
+      setPaymentTiming(po.paymentTiming);
+    }
+    if (po.fulfillmentMethod === "Pickup" || po.fulfillmentMethod === "Delivery") {
+      setFulfillmentMethod(po.fulfillmentMethod);
+    }
+    setExpectedUpdatedAtUtc(po.updatedAtUtc);
+    setEditMetaHydrated(true);
+  }, [isEdit, editMetaHydrated, existingOrderQuery.data, navigate]);
+
+  useEffect(() => {
+    if (!isEdit || !editMetaHydrated || editLinesHydrated || !existingOrderQuery.data) {
+      return;
+    }
+    if (!suppliersQuery.isSuccess) {
+      return;
+    }
+    const po = existingOrderQuery.data;
+    if (connected) {
+      if (linkedProductsQuery.isLoading) {
+        return;
+      }
+      const readyByBuyerId = new Map(
+        (linkedProductsQuery.data?.ready ?? []).map((p) => [p.buyerProductId, p] as const),
+      );
+      setConnectedLines(
+        po.lines
+          .filter((line): line is typeof line & { productId: string } => Boolean(line.productId))
+          .map((line) => {
+            const ready = readyByBuyerId.get(line.productId);
+            return {
+              productId: line.productId,
+              name: line.nameSnapshot?.trim() || ready?.productName || "—",
+              uom: line.uomSnapshot?.trim() || ready?.unitOfMeasure || "",
+              orderedQty: line.orderedQty,
+              unitPurchaseCost: line.unitPurchaseCost,
+              purchaseUnitId: line.purchaseUnitId ?? ready?.purchaseUnitId ?? null,
+            };
+          }),
+      );
+      setExternalLines([]);
+    } else {
+      setExternalLines(
+        po.lines
+          .filter((line): line is typeof line & { productId: string } => Boolean(line.productId))
+          .map((line) => ({
+            productId: line.productId,
+            name: line.nameSnapshot?.trim() || "—",
+            uom: line.uomSnapshot?.trim() || "",
+            orderedQty: line.orderedQty,
+            unitPurchaseCost: line.unitPurchaseCost,
+          })),
+      );
+      setConnectedLines([]);
+    }
+    setEditLinesHydrated(true);
+  }, [
+    isEdit,
+    editMetaHydrated,
+    editLinesHydrated,
+    existingOrderQuery.data,
+    suppliersQuery.isSuccess,
+    connected,
+    linkedProductsQuery.isLoading,
+    linkedProductsQuery.data,
+  ]);
+
   const supplierProductIdsKey = useMemo(() => {
     const ids = (linkedProductsQuery.data?.ready ?? []).map((p) => p.supplierProductId);
     return [...new Set(ids)].sort().join(",");
@@ -298,24 +417,129 @@ export function PurchaseOrderCreatePage() {
   });
 
   const supplierCommerceReady = !connected || commerceReadinessQuery.data?.isReady === true;
-  const supportedFulfillmentMethods = commerceReadinessQuery.data?.supportedFulfillmentMethods ?? [];
+  const buyerReceivingReady = Boolean(boundWorkspace?.branchId);
+  const fulfillmentUi = useMemo(() => {
+    const data = commerceReadinessQuery.data;
+    const methods = (data?.supportedFulfillmentMethods ?? []).filter(
+      (m): m is "Pickup" | "Delivery" => m === "Pickup" || m === "Delivery",
+    );
+    const pickupAvailable = methods.includes("Pickup");
+    const deliverySupplierAvailable = methods.includes("Delivery");
+    const deliverySelectable = deliverySupplierAvailable && buyerReceivingReady;
+    const deliverySetupRequired = deliverySupplierAvailable && !buyerReceivingReady;
+    const deliveryReason = data?.deliveryUnavailableReason ?? null;
+    let helpKey:
+      | "purchasing.fulfillment.singleMethodHelp"
+      | "purchasing.fulfillment.deliveryUnavailableOrgOff"
+      | "purchasing.fulfillment.deliveryUnavailableCustomer"
+      | "purchasing.fulfillment.deliveryUnavailableBranch"
+      | "purchasing.fulfillment.deliverySetupRequired"
+      | null = null;
+    let helpMethod: "Pickup" | "Delivery" | null = null;
+
+    if (deliverySetupRequired) {
+      // Card carries setup copy — avoid duplicate help line.
+      helpKey = null;
+    } else if (pickupAvailable && !deliverySupplierAvailable) {
+      if (deliveryReason === "RelationshipBlocked") {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableCustomer";
+      } else if (deliveryReason === "OrgOfferOff") {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableOrgOff";
+      } else if (deliveryReason === "BranchNotReady" || !data?.branchDeliveryReady) {
+        helpKey = "purchasing.fulfillment.singleMethodHelp";
+        helpMethod = "Pickup";
+      } else {
+        helpKey = "purchasing.fulfillment.deliveryUnavailableBranch";
+      }
+    } else if (!pickupAvailable && deliverySelectable) {
+      helpKey = "purchasing.fulfillment.singleMethodHelp";
+      helpMethod = "Delivery";
+    }
+
+    const choosable: Array<"Pickup" | "Delivery"> = [];
+    if (pickupAvailable) choosable.push("Pickup");
+    if (deliverySelectable) choosable.push("Delivery");
+
+    return {
+      pickupAvailable,
+      deliverySupplierAvailable,
+      deliverySelectable,
+      deliverySetupRequired,
+      deliveryReason,
+      helpKey,
+      helpMethod,
+      choosable,
+      showSection: pickupAvailable || deliverySupplierAvailable,
+    };
+  }, [commerceReadinessQuery.data, buyerReceivingReady]);
 
   useEffect(() => {
     if (!connected) {
       setFulfillmentMethod("");
       return;
     }
-    const methods = supportedFulfillmentMethods.filter(
-      (m): m is "Pickup" | "Delivery" => m === "Pickup" || m === "Delivery",
-    );
-    if (methods.length === 1) {
-      setFulfillmentMethod(methods[0]!);
+    const methods = fulfillmentUi.choosable;
+    setFulfillmentMethod((prev) => {
+      if (prev && methods.includes(prev)) {
+        return prev;
+      }
+      if (paymentTiming === "PayOnDeliveryOrReceipt" && methods.includes("Delivery")) {
+        return "Delivery";
+      }
+      if (methods.includes("Pickup")) {
+        return "Pickup";
+      }
+      if (methods.includes("Delivery")) {
+        return "Delivery";
+      }
+      return "";
+    });
+  }, [connected, fulfillmentUi.choosable.join("|"), paymentTiming]);
+
+  const effectivePaymentTimings = useMemo(() => {
+    const data = commerceReadinessQuery.data;
+    if (!data) {
+      return [] as Array<{ code: string; labelKey: "connectedCommerce.timing.payBefore" | "connectedCommerce.timing.payOnDelivery" | "connectedCommerce.timing.supplierCredit" }>;
+    }
+    const options: Array<{
+      code: string;
+      labelKey:
+        | "connectedCommerce.timing.payBefore"
+        | "connectedCommerce.timing.payOnDelivery"
+        | "connectedCommerce.timing.supplierCredit";
+    }> = [];
+    if (data.allowPayBeforeFulfillment) {
+      options.push({ code: "PayBeforeFulfillment", labelKey: "connectedCommerce.timing.payBefore" });
+    }
+    if (data.allowPayOnDeliveryOrReceipt) {
+      options.push({
+        code: "PayOnDeliveryOrReceipt",
+        labelKey: "connectedCommerce.timing.payOnDelivery",
+      });
+    }
+    if (data.allowSupplierCredit) {
+      options.push({ code: "SupplierCredit", labelKey: "connectedCommerce.timing.supplierCredit" });
+    }
+    return options;
+  }, [commerceReadinessQuery.data]);
+
+  useEffect(() => {
+    if (!connected) {
+      setPaymentTiming("PayBeforeFulfillment");
       return;
     }
-    setFulfillmentMethod((prev) =>
-      prev && methods.includes(prev) ? prev : "",
-    );
-  }, [connected, supportedFulfillmentMethods.join("|")]);
+    const allowed = effectivePaymentTimings.map((o) => o.code);
+    const preferred = commerceReadinessQuery.data?.defaultPaymentTiming;
+    setPaymentTiming((prev) => {
+      if (prev && allowed.includes(prev)) {
+        return prev;
+      }
+      if (preferred && allowed.includes(preferred)) {
+        return preferred;
+      }
+      return allowed[0] ?? "PayBeforeFulfillment";
+    });
+  }, [connected, effectivePaymentTimings, commerceReadinessQuery.data?.defaultPaymentTiming]);
 
   const productsQuery = useQuery({
     queryKey: ["catalog-products", "po-create", workspace?.organizationId, debounced],
@@ -393,13 +617,23 @@ export function PurchaseOrderCreatePage() {
     () => filterConnectedReadyProducts(readyProducts, debounced, categoryFilter),
     [readyProducts, debounced, categoryFilter],
   );
-  /** Already on the PO — hide from Find products until removed. */
+  /** Find products list — not-added (default) or already-on-order. */
   const findConnectedProducts = useMemo(() => {
     const selected = new Set(connectedLines.map((line) => line.productId));
+    if (linkedProductScope === "added") {
+      return filteredConnected.filter((product) => selected.has(product.buyerProductId));
+    }
     return filteredConnected.filter((product) => !selected.has(product.buyerProductId));
-  }, [connectedLines, filteredConnected]);
+  }, [connectedLines, filteredConnected, linkedProductScope]);
   const hasLinkedProductFilters =
-    debounced.length > 0 || isConnectedCategoryFilterActive(categoryFilter);
+    debounced.length > 0 ||
+    isConnectedCategoryFilterActive(categoryFilter) ||
+    linkedProductScope === "added";
+  const addedOnOrderCount = connectedLines.length;
+  const notAddedCount = useMemo(() => {
+    const selected = new Set(connectedLines.map((line) => line.productId));
+    return filteredConnected.filter((product) => !selected.has(product.buyerProductId)).length;
+  }, [connectedLines, filteredConnected]);
   const setupItems = useMemo(() => {
     if (!readinessQuery.data || readinessFilter === "linked") {
       return [];
@@ -448,8 +682,11 @@ export function PurchaseOrderCreatePage() {
     if (!connected || !linkedProductsQuery.isSuccess) {
       return;
     }
+    if (isEdit && !editLinesHydrated) {
+      return;
+    }
     setConnectedLines((prev) => retainCompatibleDraftLines(prev, readyProducts));
-  }, [connected, linkedProductsQuery.isSuccess, readyProducts]);
+  }, [connected, linkedProductsQuery.isSuccess, readyProducts, isEdit, editLinesHydrated]);
 
   function onSupplierChange(nextSupplierId: string) {
     setSupplierId(nextSupplierId);
@@ -457,6 +694,7 @@ export function PurchaseOrderCreatePage() {
     setDebounced("");
     setCategoryFilter(emptyConnectedCategoryFilter());
     setReadinessFilter("linked");
+    setLinkedProductScope("notAdded");
     setSelectedProduct(null);
     setQtyText("1");
     setCostText("");
@@ -651,11 +889,12 @@ export function PurchaseOrderCreatePage() {
 
   function setConnectedQty(product: ConnectedPoReadyProduct, nextQty: number) {
     const current = qtyByProductId.get(product.buyerProductId) ?? 0;
-    const delta = nextQty - current;
-    if (delta === 0) {
+    const target = Math.round(nextQty * 100) / 100;
+    if (Math.abs(target - current) < 1e-9) {
       return;
     }
-    setConnectedLines((prev) => applyConnectedQuantityDelta(prev, product, delta));
+    // Absolute replace (not current+delta) so float noise never accumulates.
+    setConnectedLines((prev) => applyConnectedQuantityDelta(prev, product, target - current));
     setError(null);
   }
 
@@ -716,8 +955,157 @@ export function PurchaseOrderCreatePage() {
       allowManage,
     ],
   );
-  const selectedPaymentHelp = CONNECTED_PO_PAYMENT_OPTIONS.find((o) => o.code === paymentTerm)?.helpKey;
+  const selectedPaymentHelp = resolveConnectedPoPaymentHelpKey(
+    paymentTerm || "Cash",
+    paymentTiming,
+  );
   const unitCount = orderUnitCount(activeLines);
+  const editPo = existingOrderQuery.data;
+  const hasTimeline = useMemo(
+    () => (editPo ? buildPurchaseOrderActivityEvents({ po: editPo, receipts: [] }).length > 0 : false),
+    [editPo],
+  );
+
+  // Supplier Utang timing stays listed when org-enabled, but cannot be chosen without buyer credit.
+  useEffect(() => {
+    if (!connected || utangEligibility.eligible) {
+      return;
+    }
+    if (paymentTiming === "SupplierCredit") {
+      const fallback =
+        effectivePaymentTimings.find((option) => option.code !== "SupplierCredit")?.code ??
+        "PayBeforeFulfillment";
+      setPaymentTiming(fallback);
+    }
+    if (paymentTerm === "Utang") {
+      setPaymentTerm("Cash");
+    }
+  }, [
+    connected,
+    utangEligibility.eligible,
+    paymentTiming,
+    paymentTerm,
+    effectivePaymentTimings,
+  ]);
+
+  function runDraftOutput(action: "csv" | "xlsx" | "pdf" | "print") {
+    const poLabel =
+      editPo?.poNumber?.trim() ||
+      (isEdit ? t("purchasing.editTitle") : t("purchasing.createTitle"));
+    const filenameBase = `PO-${sanitizeCsvFilenamePart(editPo?.poNumber || "draft")}`;
+    const rows = activeLines.map((line) => [
+      line.name,
+      line.uom,
+      line.orderedQty,
+      line.unitPurchaseCost,
+      line.orderedQty * line.unitPurchaseCost,
+    ]);
+
+    if (action === "csv") {
+      const text = buildCsvWithMetadata(
+        [
+          ["Purchase order", poLabel],
+          ["Status", t("purchasing.statusDraft")],
+          ["Exported at", new Date().toISOString()],
+        ],
+        {
+          headers: ["Product", "Unit", "Ordered", "Unit cost", "Line total"],
+          rows,
+        },
+      );
+      downloadCsvFile(`${filenameBase}.csv`, text);
+      return;
+    }
+
+    if (action === "xlsx") {
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet([
+        ["Purchase order", poLabel],
+        ["Status", t("purchasing.statusDraft")],
+        [],
+        ["Product", "Unit", "Ordered", "Unit cost", "Line total"],
+        ...rows,
+      ]);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Purchase order");
+      const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+      downloadBlob(
+        `${filenameBase}.xlsx`,
+        buffer,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      return;
+    }
+
+    if (action === "pdf") {
+      const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      doc.setFontSize(14);
+      doc.text(poLabel, 40, 40);
+      doc.setFontSize(10);
+      doc.text(`${t("purchasing.statusDraft")} · ${new Date().toLocaleString()}`, 40, 58);
+      autoTable(doc, {
+        startY: 72,
+        head: [["Product", "Unit", "Ordered", "Unit cost", "Line total"]],
+        body: rows.map((row) =>
+          row.map((cell) => (typeof cell === "number" ? cell.toFixed(2) : String(cell))),
+        ),
+        styles: { fontSize: 9, cellPadding: 4 },
+        headStyles: { fillColor: [55, 75, 60] },
+      });
+      downloadBlob(
+        `${filenameBase}.pdf`,
+        new Blob([new Uint8Array(doc.output("arraybuffer") as ArrayBuffer)], {
+          type: "application/pdf",
+        }),
+        "application/pdf",
+      );
+      return;
+    }
+
+    const previous = document.body.classList.contains("exits-printing");
+    document.body.classList.add("exits-printing");
+    const cleanup = () => {
+      if (!previous) {
+        document.body.classList.remove("exits-printing");
+      }
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    window.setTimeout(cleanup, 1000);
+  }
+
+  const draftPrintDocument = (
+    <div className="incoming-order-print-root" data-testid="po-create-print-root">
+      <h1>{editPo?.poNumber?.trim() || t(isEdit ? "purchasing.editTitle" : "purchasing.createTitle")}</h1>
+      <p>{t("purchasing.statusDraft")}</p>
+      {selectedSupplier ? <p>{selectedSupplier.name}</p> : null}
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Unit</th>
+            <th>Ordered</th>
+            <th>Unit cost</th>
+            <th>Line total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {activeLines.map((line) => (
+            <tr key={line.productId}>
+              <td>{line.name}</td>
+              <td>{line.uom || "—"}</td>
+              <td>{line.orderedQty}</td>
+              <td>{formatPeso(line.unitPurchaseCost)}</td>
+              <td>{formatPeso(line.orderedQty * line.unitPurchaseCost)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>
+        <strong>{t("purchasing.orderTotal")}</strong> {formatPeso(subtotal)}
+      </p>
+    </div>
+  );
 
   async function submit() {
     if (!workspace || !allowManage || !online || saving || statusLocked) {
@@ -736,30 +1124,62 @@ export function PurchaseOrderCreatePage() {
         setError(t("purchasing.poPaymentMethodRequired"));
         return;
       }
+      if (!paymentTiming) {
+        setError(t("purchasing.paymentTimingRequired"));
+        return;
+      }
+      if (paymentTiming === "SupplierCredit" && !utangEligibility.eligible) {
+        setError(t(utangEligibility.reasonKey));
+        return;
+      }
       if (paymentTerm === "Utang" && !utangEligibility.eligible) {
         setError(t(utangEligibility.reasonKey));
         return;
       }
-      try {
-        const readiness = await getBuyerConnectedSupplierCommerceReadiness(
-          workspace,
-          relationshipId!,
-        );
-        await queryClient.invalidateQueries({
-          queryKey: ["connected-suppliers", "commerce-readiness", relationshipId],
-        });
-        if (!readiness.isReady) {
-          setError(t("purchasing.supplierNotReadyBody"));
-          return;
-        }
-      } catch {
-        setError(t("purchasing.supplierNotReadyBody"));
+      if (!fulfillmentMethod) {
+        setError(t("purchasing.fulfillmentMethodRequired"));
         return;
       }
     }
     setSaving(true);
     setError(null);
     try {
+      const linePayload = activeLines.map((l) => ({
+        productId: l.productId,
+        orderedQty: l.orderedQty,
+        unitPurchaseCost: l.unitPurchaseCost,
+        purchaseUnitId:
+          "purchaseUnitId" in l ? ((l as ConnectedPoDraftLine).purchaseUnitId ?? null) : null,
+      }));
+      const sharedBody = {
+        supplierId,
+        orderDate,
+        notes: notes.trim() || null,
+        intendedReceivingBranchId: workspace.branchId ?? null,
+        paymentTerm: connected ? paymentTerm || null : null,
+        paymentTiming: connected ? paymentTiming || null : null,
+        fulfillmentMethod: connected && fulfillmentMethod ? fulfillmentMethod : null,
+        lines: linePayload,
+      };
+
+      if (isEdit && editPurchaseOrderId) {
+        if (!expectedUpdatedAtUtc) {
+          setError(t("purchasing.saveFailed"));
+          return;
+        }
+        const po = await updatePurchaseOrder(workspace, editPurchaseOrderId, {
+          ...sharedBody,
+          expectedUpdatedAtUtc,
+        });
+        setExpectedUpdatedAtUtc(po.updatedAtUtc);
+        await queryClient.invalidateQueries({
+          queryKey: ["purchase-order", workspace.organizationId, editPurchaseOrderId],
+        });
+        await queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+        navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
+        return;
+      }
+
       if (!purchaseOrderIdRef.current) {
         const generated = createSecureMutationId();
         if (!generated.ok) {
@@ -771,23 +1191,28 @@ export function PurchaseOrderCreatePage() {
       const purchaseOrderId = purchaseOrderIdRef.current;
       const po = await createPurchaseOrder(workspace, {
         purchaseOrderId,
-        supplierId,
-        orderDate,
-        notes: notes.trim() || null,
-        intendedReceivingBranchId: workspace.branchId ?? null,
-        paymentTerm: connected ? paymentTerm || null : null,
-        fulfillmentMethod: connected && fulfillmentMethod ? fulfillmentMethod : null,
-        lines: activeLines.map((l) => ({
-          productId: l.productId,
-          orderedQty: l.orderedQty,
-          unitPurchaseCost: l.unitPurchaseCost,
-          purchaseUnitId:
-            "purchaseUnitId" in l ? ((l as ConnectedPoDraftLine).purchaseUnitId ?? null) : null,
-        })),
+        ...sharedBody,
       });
       purchaseOrderIdRef.current = null;
       navigate(`/purchasing/${po.purchaseOrderId}`, { replace: true });
     } catch (err) {
+      if (isEdit) {
+        if (
+          err instanceof PosApiError &&
+          (err.errorCode === "pos.connected_supplier.out_of_stock" ||
+            err.errorCode === "pos.connected_supplier.insufficient_stock")
+        ) {
+          void orderStockQuery.refetch();
+          setError(err.problem.detail ?? t("purchasing.stockChanged"));
+          return;
+        }
+        setError(
+          err instanceof PosApiError
+            ? (err.problem.detail ?? t("purchasing.saveFailed"))
+            : t("purchasing.saveFailed"),
+        );
+        return;
+      }
       const purchaseOrderId = purchaseOrderIdRef.current;
       if (purchaseOrderId && workspace) {
         setError(t("checkout.confirmingTransaction"));
@@ -833,14 +1258,57 @@ export function PurchaseOrderCreatePage() {
     return <LoadingState label={t("session.loading")} />;
   }
 
-  return (
-    <div className="flex min-w-0 flex-col gap-4" data-testid="purchase-order-create-page">
-      <PageHeader
-        title={t("purchasing.createTitle")}
-        backTo="/purchasing/orders"
-        backLabel={t("purchasing.backOrders")}
-        backTestId="page-header-back-purchasing"
+  if (isEdit && existingOrderQuery.isLoading) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  if (isEdit && existingOrderQuery.isError) {
+    return (
+      <ErrorState
+        title={t("purchasing.loadFailed")}
+        detail={describePosApiError(existingOrderQuery.error, t, "error.detail")}
       />
+    );
+  }
+
+  if (isEdit && (!editMetaHydrated || !editLinesHydrated)) {
+    return <LoadingState label={t("loading.label")} />;
+  }
+
+  const detailBackTo = editPurchaseOrderId
+    ? `/purchasing/${editPurchaseOrderId}`
+    : "/purchasing/orders";
+
+  return (
+    <div
+      className="flex min-w-0 flex-col gap-4"
+      data-testid={isEdit ? "purchase-order-edit-page" : "purchase-order-create-page"}
+    >
+      <PageHeader
+        title={t(isEdit ? "purchasing.editTitle" : "purchasing.createTitle")}
+        backTo={detailBackTo}
+        backLabel={t(isEdit ? "purchasing.detailTitle" : "purchasing.backOrders")}
+        backTestId="page-header-back-purchasing"
+        actions={
+          <PoProcessHeaderActions
+            statusLabel={t("purchasing.statusDraft")}
+            statusTone="info"
+            timelineEnabled={hasTimeline}
+            previewEnabled={activeLines.length > 0}
+            exportEnabled={activeLines.length > 0}
+            onTimeline={() => setTimelineOpen(true)}
+            onPreview={() => setDocumentPreviewOpen(true)}
+            onPrint={() => runDraftOutput("print")}
+            onCsv={() => runDraftOutput("csv")}
+            onXlsx={() => runDraftOutput("xlsx")}
+            onPdf={() => runDraftOutput("pdf")}
+          />
+        }
+      />
+
+      <div className="exits-bizdoc-print-host" aria-hidden>
+        {draftPrintDocument}
+      </div>
 
       {connected && commerceReadinessQuery.isSuccess && !supplierCommerceReady ? (
         <SupplierNotReadyForPoBanner
@@ -863,22 +1331,32 @@ export function PurchaseOrderCreatePage() {
 
       <PoDocumentSummary
         className="po-document-summary--create"
-        counterpartyLabel={t("purchasing.seller")}
-        counterpartyIcon={<Store className="size-5" strokeWidth={1.75} />}
-        counterpartyName={
-          selectedSupplier
-            ? selectedSupplier.supplierBranchName
-              ? `${selectedSupplier.name} — ${selectedSupplier.supplierBranchName}`
-              : selectedSupplier.name
-            : t("purchasing.selectSupplier")
-        }
         fields={[
+          {
+            key: "seller",
+            label: t("purchasing.seller"),
+            value: (
+              <span
+                className="inline-flex min-w-0 items-center gap-2 font-semibold"
+                data-testid="po-create-summary-counterparty"
+              >
+                <Store className="size-4 shrink-0 text-primary" strokeWidth={1.75} aria-hidden />
+                <span className="min-w-0 truncate">
+                  {selectedSupplier
+                    ? selectedSupplier.supplierBranchName
+                      ? `${selectedSupplier.name} — ${selectedSupplier.supplierBranchName}`
+                      : selectedSupplier.name
+                    : t("purchasing.selectSupplier")}
+                </span>
+              </span>
+            ),
+          },
           {
             key: "receiving",
             label: t("purchasing.receivingBranch"),
             value: (
               <span data-testid="po-branch">
-                <StatusChip tone="neutral">
+                <StatusChip tone="primary" appearance="soft">
                   {boundWorkspace?.branchName ?? boundWorkspace?.branchId ?? "—"}
                 </StatusChip>
               </span>
@@ -888,34 +1366,34 @@ export function PurchaseOrderCreatePage() {
             key: "supplier",
             label: t("purchasing.supplier"),
             value: (
-        <select
+              <select
                 className="exits-select w-full"
-          value={supplierId}
+                value={supplierId}
                 onChange={(e) => onSupplierChange(e.target.value)}
-          disabled={!allowManage || !online}
-          data-testid="po-supplier"
+                disabled={!allowManage || !online || isEdit}
+                data-testid="po-supplier"
                 aria-label={t("purchasing.supplier")}
-        >
-          <option value="">{t("purchasing.selectSupplier")}</option>
-          {(suppliersQuery.data?.items ?? []).map((s) => (
-            <option key={s.supplierId} value={s.supplierId}>
+              >
+                <option value="">{t("purchasing.selectSupplier")}</option>
+                {(suppliersQuery.data?.items ?? []).map((s) => (
+                  <option key={s.supplierId} value={s.supplierId}>
                     {s.supplierBranchName ? `${s.name} — ${s.supplierBranchName}` : s.name}
-            </option>
-          ))}
-        </select>
+                  </option>
+                ))}
+              </select>
             ),
           },
           {
             key: "orderDate",
             label: t("purchasing.orderDate"),
             value: (
-        <input
-          type="date"
+              <input
+                type="date"
                 className="exits-input w-full"
-          value={orderDate}
-          onChange={(e) => setOrderDate(e.target.value)}
-          disabled={!allowManage || !online}
-          data-testid="po-order-date"
+                value={orderDate}
+                onChange={(e) => setOrderDate(e.target.value)}
+                disabled={!allowManage || !online}
+                data-testid="po-order-date"
                 aria-label={t("purchasing.orderDate")}
               />
             ),
@@ -923,15 +1401,15 @@ export function PurchaseOrderCreatePage() {
         ]}
         testId="po-create-summary"
         footer={
-      <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-        {t("purchasing.notes")}
-        <textarea
+          <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+            {t("purchasing.notes")}
+            <textarea
               className="min-h-16 rounded-md border border-border bg-background px-3 py-2"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          disabled={!allowManage || !online}
-        />
-      </label>
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              disabled={!allowManage || !online}
+            />
+          </label>
         }
       />
 
@@ -989,6 +1467,7 @@ export function PurchaseOrderCreatePage() {
                           product.packageLabel || product.unitOfMeasure || "",
                         )
                       : "");
+                  const availability = product ? resolveSupplierAvailability(product) : null;
                   const availabilityLabel = product
                     ? formatSupplierAvailabilityLabel(product, t)
                     : null;
@@ -1001,27 +1480,16 @@ export function PurchaseOrderCreatePage() {
                     name: line.name,
                     sku: product?.supplierSku,
                     orderedQty: line.orderedQty,
+                    unitLabel: unitOfMeasure || null,
                     unitPurchaseCost: line.unitPurchaseCost,
                     availabilityLabel,
+                    availabilityKind: availability?.kind ?? null,
                     overOrderWarning,
-                    quantityControl: product ? (
-                      <QuantityStepper
-                        compact
-                        value={line.orderedQty}
-                        onChange={(next) => setConnectedQty(product, next)}
-                        unitOfMeasure={product.unitOfMeasure || line.uom}
-                        sellingMode="PerItem"
-                        unit={unitOfMeasure || undefined}
-                        disabled={!allowManage || !online || saving}
-                        decreaseLabel={t("purchasing.decreaseQty")}
-                        increaseLabel={t("purchasing.increaseQty")}
-                        ariaLabel={t("purchasing.qtyShort")}
-                        valueTestId={`po-qty-${line.productId}`}
-                        className="po-order-qty-stepper"
-                      />
-                    ) : (
-                      <span className="tabular-nums">{line.orderedQty}</span>
-                    ),
+                    canEditQty: Boolean(product) && allowManage && online && !saving,
+                    unitOfMeasure: product?.unitOfMeasure || line.uom || null,
+                    onQtyChange: product
+                      ? (next) => setConnectedQty(product, next)
+                      : undefined,
                     onRemove: product
                       ? () => setConnectedQty(product, 0)
                       : () =>
@@ -1041,9 +1509,7 @@ export function PurchaseOrderCreatePage() {
                   name: line.name,
                   orderedQty: line.orderedQty,
                   unitPurchaseCost: line.unitPurchaseCost,
-                  quantityControl: (
-                    <span className="tabular-nums">{line.orderedQty}</span>
-                  ),
+                  canEditQty: false,
                   onRemove: () =>
                     setExternalLines((prev) =>
                       prev.filter((l) => l.productId !== line.productId),
@@ -1052,17 +1518,21 @@ export function PurchaseOrderCreatePage() {
               />
             )}
           </SelectedItemsPanel>
-          {finderOpen ? (
-            <ProductFinderPanel
-              title={t("purchasing.supplierProducts")}
-              titleIcon={<PackageSearch className="size-5" strokeWidth={1.75} />}
-              headingId="po-find-products-heading"
-              panelId={finderPanelId}
-              closeLabel={t("purchasing.closeFindProducts")}
-              onClose={closeFinder}
-              closeTestId="po-close-finder"
-              testId="po-add-products"
-            >
+          <ExitsModal
+            open={finderOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                closeFinder();
+              }
+            }}
+            title={t("purchasing.supplierProducts")}
+            closeLabel={t("purchasing.closeFindProducts")}
+            testId="po-add-products"
+            id={finderPanelId}
+            size="lg"
+            fullHeightOnCompact
+            className="lg:max-h-[min(92dvh,48rem)] lg:max-w-3xl"
+          >
               {connected ? (
                 <div
                   className="flex flex-col gap-3"
@@ -1140,6 +1610,36 @@ export function PurchaseOrderCreatePage() {
                 data-testid="po-product-search"
                 containerClassName="po-setup-filter-search"
               />
+              {showLinkedOrdering ? (
+                <div
+                  className="po-linked-list-mode"
+                  role="group"
+                  aria-label={t("purchasing.linkedListMode")}
+                >
+                  <Button
+                    type="button"
+                    intent="primary"
+                    appearance={linkedProductScope === "notAdded" ? "solid" : "outline"}
+                    className="po-filter-added-btn"
+                    data-testid="po-filter-not-added"
+                    aria-pressed={linkedProductScope === "notAdded"}
+                    onClick={() => setLinkedProductScope("notAdded")}
+                  >
+                    {t("purchasing.filterNotAdded").replace("{n}", String(notAddedCount))}
+                  </Button>
+                  <Button
+                    type="button"
+                    intent="primary"
+                    appearance={linkedProductScope === "added" ? "solid" : "outline"}
+                    className="po-filter-added-btn"
+                    data-testid="po-filter-added"
+                    aria-pressed={linkedProductScope === "added"}
+                    onClick={() => setLinkedProductScope("added")}
+                  >
+                    {t("purchasing.filterAdded").replace("{n}", String(addedOnOrderCount))}
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
           {connectedLoading ? <LoadingState label={t("loading.label")} /> : null}
@@ -1159,11 +1659,10 @@ export function PurchaseOrderCreatePage() {
                   }
                 />
               ) : null}
-                      {linkedProductsQuery.isSuccess &&
-                      readyProducts.length > 0 &&
-                      filteredConnected.length === 0 &&
-                      hasLinkedProductFilters ? (
-
+              {linkedProductsQuery.isSuccess &&
+              readyProducts.length > 0 &&
+              findConnectedProducts.length === 0 &&
+              hasLinkedProductFilters ? (
                 <EmptyState
                   align="center"
                   icon={<ClipboardList className="size-5" strokeWidth={1.75} />}
@@ -1180,19 +1679,33 @@ export function PurchaseOrderCreatePage() {
                       >
                         {t("purchasing.clearCategories")}
                       </Button>
+                    ) : linkedProductScope === "added" ? (
+                      <Button
+                        type="button"
+                        intent="primary"
+                        appearance="outline"
+                        data-testid="po-show-not-added"
+                        onClick={() => setLinkedProductScope("notAdded")}
+                      >
+                        {t("purchasing.filterNotAdded").replace("{n}", String(notAddedCount))}
+                      </Button>
                     ) : undefined
                   }
                 />
               ) : null}
-                        <PurchaseOrderLinkedProductsFinder
-                          layout={linkedProductsLayout}
-                          products={findConnectedProducts}
-                          allowManage={allowManage}
-                          online={online}
-                          saving={saving}
-                          onAddProduct={(product) => setConnectedQty(product, 1)}
-                          t={t}
-                        />
+              {findConnectedProducts.length > 0 ? (
+                <PurchaseOrderLinkedProductsFinder
+                  layout={linkedProductsLayout}
+                  products={findConnectedProducts}
+                  allowManage={allowManage}
+                  online={online}
+                  saving={saving}
+                  actionMode={linkedProductScope === "added" ? "added" : "add"}
+                  onAddProduct={(product) => setConnectedQty(product, 1)}
+                  onRemoveProduct={(product) => setConnectedQty(product, 0)}
+                  t={t}
+                />
+              ) : null}
             </>
           ) : (
             <>
@@ -1271,7 +1784,6 @@ export function PurchaseOrderCreatePage() {
                   </span>
                   <span>{t("purchasing.colProduct")}</span>
                   <span>{t("purchasing.colSku")}</span>
-                  <span>{t("purchasing.colUnit")}</span>
                   <span className="po-order-table__price-head">{t("purchasing.supplierPrice")}</span>
                   <span className="po-order-table__action-head">{t("purchasing.colAction")}</span>
                 </div>
@@ -1304,9 +1816,6 @@ export function PurchaseOrderCreatePage() {
                           </span>
                           <span className="po-order-table__sku">
                             {item.supplierSku ?? t("connected.noSku")}
-                          </span>
-                          <span className="po-order-table__unit">
-                            {formatUnitOfMeasureLabel(item.unitOfMeasureCode)}
                           </span>
                           <span className="po-order-table__price tabular-nums">
                             {formatPeso(item.poPrice)}
@@ -1500,66 +2009,161 @@ export function PurchaseOrderCreatePage() {
         ) : null}
       </section>
               )}
-            </ProductFinderPanel>
-          ) : null}
+          </ExitsModal>
 
-          {connected && supportedFulfillmentMethods.length > 0 ? (
-            <section
-              className="flex flex-col gap-2 rounded-md border border-border p-3"
-              data-testid="po-fulfillment-method"
-              aria-labelledby="po-fulfillment-method-heading"
+          {connected && (fulfillmentUi.showSection || effectivePaymentTimings.length > 0) ? (
+            <div
+              className="po-create-fulfillment-timing-row grid gap-3 md:grid-cols-2"
+              data-testid="po-fulfillment-timing-row"
             >
-              <h3
-                id="po-fulfillment-method-heading"
-                className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
-              >
-                {t("purchasing.fulfillmentMethod")}
-              </h3>
-              {supportedFulfillmentMethods.length === 1 ? (
-                <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="po-fulfillment-readonly">
-                  {t("purchasing.fulfillment.singleMethodHelp").replace(
-                    "{method}",
-                    supportedFulfillmentMethods[0] === "Pickup"
-                      ? t("purchasing.fulfillment.pickup")
-                      : t("purchasing.fulfillment.delivery"),
-                  )}
-                </p>
-              ) : (
-                <div
-                  className="flex flex-col gap-2"
-                  role="radiogroup"
-                  aria-label={t("purchasing.fulfillmentMethod")}
+              {fulfillmentUi.showSection ? (
+                <section
+                  className="flex min-w-0 flex-col gap-2 rounded-md border border-border bg-surface p-3"
+                  data-testid="po-fulfillment-method"
+                  aria-labelledby="po-fulfillment-method-heading"
                 >
-                  {supportedFulfillmentMethods.map((method) => (
-                    <label
-                      key={method}
-                      className="flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2"
+                  <h3
+                    id="po-fulfillment-method-heading"
+                    className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                  >
+                    {t("purchasing.fulfillmentMethod")}
+                  </h3>
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("purchasing.fulfillmentMethodHelp")}
+                  </p>
+
+                  {fulfillmentUi.choosable.length > 0 ? (
+                    <ExitsPillSelect<"Pickup" | "Delivery">
+                      aria-label={t("purchasing.fulfillmentMethod")}
+                      value={
+                        fulfillmentUi.choosable.includes(fulfillmentMethod as "Pickup" | "Delivery")
+                          ? (fulfillmentMethod as "Pickup" | "Delivery")
+                          : fulfillmentUi.choosable[0]!
+                      }
+                      onChange={setFulfillmentMethod}
+                      disabled={!allowManage || fulfillmentUi.choosable.length === 1}
+                      options={fulfillmentUi.choosable.map((method) => ({
+                        value: method,
+                        label:
+                          method === "Pickup"
+                            ? t("purchasing.fulfillment.pickup")
+                            : t("purchasing.fulfillment.delivery"),
+                      }))}
+                      testId="po-fulfillment"
+                    />
+                  ) : null}
+
+                  {fulfillmentUi.deliverySetupRequired ? (
+                    <div
+                      className="flex flex-col gap-1 rounded-md border border-border px-3 py-2"
+                      data-testid="po-fulfillment-delivery-setup"
                     >
-                      <input
-                        type="radio"
-                        name="po-fulfillment-method"
-                        value={method}
-                        checked={fulfillmentMethod === method}
-                        onChange={() =>
-                          setFulfillmentMethod(method === "Pickup" ? "Pickup" : "Delivery")
-                        }
-                        disabled={!allowManage}
-                      />
-                      <span className="text-[length:var(--exits-text-sm)] font-medium">
-                        {method === "Pickup"
-                          ? t("purchasing.fulfillment.pickup")
-                          : t("purchasing.fulfillment.delivery")}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-        )}
-      </section>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[length:var(--exits-text-sm)] font-medium">
+                          {t("purchasing.fulfillment.delivery")}
+                        </span>
+                        <StatusChip tone="warning">
+                          {t("purchasing.fulfillment.deliverySetupBadge")}
+                        </StatusChip>
+                      </div>
+                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("purchasing.fulfillment.deliverySetupRequired")}
+                      </p>
+                      <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("purchasing.fulfillment.deliverySetupRequiredDetail").replace(
+                          "{branch}",
+                          boundWorkspace?.branchName ?? t("purchasing.receivingBranch"),
+                        )}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        asChild
+                        data-testid="po-fulfillment-complete-receiving"
+                      >
+                        <Link to="/org/branches">{t("purchasing.fulfillment.completeReceivingSetup")}</Link>
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {fulfillmentUi.helpKey ? (
+                    <p
+                      className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                      data-testid={
+                        fulfillmentUi.helpKey === "purchasing.fulfillment.singleMethodHelp"
+                          ? "po-fulfillment-single-help"
+                          : "po-fulfillment-delivery-unavailable"
+                      }
+                    >
+                      {fulfillmentUi.helpKey === "purchasing.fulfillment.singleMethodHelp"
+                        ? t("purchasing.fulfillment.singleMethodHelp").replace(
+                            "{method}",
+                            (fulfillmentUi.helpMethod ?? "Pickup") === "Pickup"
+                              ? t("purchasing.fulfillment.pickup")
+                              : t("purchasing.fulfillment.delivery"),
+                          )
+                        : t(fulfillmentUi.helpKey)}
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {effectivePaymentTimings.length > 0 ? (
+                <section
+                  className="flex min-w-0 flex-col gap-2 rounded-md border border-border bg-surface p-3"
+                  data-testid="po-payment-timing"
+                  aria-labelledby="po-payment-timing-heading"
+                >
+                  <h3
+                    id="po-payment-timing-heading"
+                    className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                  >
+                    {t("purchasing.paymentTiming")}
+                  </h3>
+                  <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                    {t("purchasing.paymentTimingHelp")}
+                  </p>
+                  <ExitsPillSelect
+                    aria-label={t("purchasing.paymentTiming")}
+                    value={
+                      effectivePaymentTimings.some((option) => option.code === paymentTiming)
+                        ? paymentTiming
+                        : (effectivePaymentTimings[0]?.code ?? paymentTiming)
+                    }
+                    onChange={(next) => {
+                      if (next === "SupplierCredit" && !utangEligibility.eligible) {
+                        return;
+                      }
+                      setPaymentTiming(next);
+                      if (
+                        next === "PayOnDeliveryOrReceipt" &&
+                        fulfillmentUi.choosable.includes("Delivery")
+                      ) {
+                        setFulfillmentMethod("Delivery");
+                      }
+                    }}
+                    disabled={!allowManage}
+                    options={effectivePaymentTimings.map((option) => {
+                      const creditBlocked =
+                        option.code === "SupplierCredit" && !utangEligibility.eligible;
+                      return {
+                        value: option.code,
+                        label: creditBlocked
+                          ? `${t(option.labelKey)} — ${t("purchasing.utang.unavailable")}`
+                          : t(option.labelKey),
+                        disabled: creditBlocked,
+                      };
+                    })}
+                    testId="po-payment-timing-select"
+                  />
+                </section>
+              ) : null}
+            </div>
           ) : null}
 
           {connected ? (
             <section
-              className="po-payment-method-section flex flex-col gap-2 rounded-md border border-border p-3"
+              className="po-payment-method-section flex flex-col gap-2 rounded-md border border-border bg-surface p-3"
               data-testid="po-payment-method"
               aria-labelledby="po-payment-method-heading"
             >
@@ -1569,49 +2173,32 @@ export function PurchaseOrderCreatePage() {
               <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
                 {t("purchasing.paymentMethodIntendedHelp")}
               </p>
-              <div
-                className="flex flex-col gap-2"
-                role="radiogroup"
+              <ExitsPillSelect<ConnectedPoPaymentMethodCode>
                 aria-label={t("purchasing.paymentMethod")}
-              >
-                {CONNECTED_PO_PAYMENT_OPTIONS.map((option) => {
+                value={paymentTerm || "Cash"}
+                onChange={setPaymentTerm}
+                disabled={!allowManage}
+                options={CONNECTED_PO_PAYMENT_OPTIONS.map((option) => {
                   const utangBlocked =
                     option.requiresUtangEligibility === true && !utangEligibility.eligible;
-                  const disabled = !allowManage || utangBlocked;
-                  return (
-                    <label
-                      key={option.code}
-                      className={`flex cursor-pointer items-start gap-2 rounded-md border border-border px-3 py-2 ${
-                        disabled ? "opacity-60" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="po-payment-term"
-                        value={option.code}
-                        checked={paymentTerm === option.code}
-                        disabled={disabled}
-                        onChange={() => setPaymentTerm(option.code)}
-                        data-testid={`po-payment-${option.code}`}
-                      />
-                      <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-[length:var(--exits-text-sm)] font-medium">
-                          {t(option.labelKey)}
-                          {utangBlocked ? ` — ${t("purchasing.utang.unavailable")}` : null}
-                        </span>
-                        {utangBlocked ? (
-                          <span className="text-[length:var(--exits-text-xs)] text-muted">
-                            {t(utangEligibility.reasonKey)}
-                          </span>
-                        ) : null}
-                      </span>
-                    </label>
-                  );
+                  return {
+                    value: option.code,
+                    label: utangBlocked
+                      ? `${t(option.labelKey)} — ${t("purchasing.utang.unavailable")}`
+                      : t(option.labelKey),
+                    disabled: utangBlocked,
+                  };
                 })}
-              </div>
+                testId="po-payment"
+              />
               {selectedPaymentHelp ? (
                 <Notice tone="info" testId="po-payment-help">
-                  {t(selectedPaymentHelp)}
+                  {t(selectedPaymentHelp as Parameters<typeof t>[0])}
+                </Notice>
+              ) : null}
+              {paymentTerm === "Utang" && !utangEligibility.eligible ? (
+                <Notice tone="warning" testId="po-utang-blocked">
+                  {t(utangEligibility.reasonKey)}
                 </Notice>
               ) : null}
               {paymentTerm === "Utang" && creditPolicyQuery.data ? (
@@ -1662,35 +2249,51 @@ export function PurchaseOrderCreatePage() {
       ) : null}
 
           <div className="receive-stock-actions product-selection-workspace__actions">
-      <Button
-        type="button"
-              variant="destructive"
-              onClick={() => navigate("/purchasing/orders")}
-              data-testid="po-create-cancel"
-            >
-              {t("purchasing.cancel")}
-            </Button>
-            <Button
-              type="button"
-              disabled={
-                !allowManage ||
-                !online ||
-                saving ||
-                statusLocked ||
-                activeLines.length === 0 ||
-                (connected && !paymentTerm) ||
-                (connected && !supplierCommerceReady)
-              }
-        onClick={() => void submit()}
-        data-testid="po-create-submit"
-      >
-        {saving ? t("purchasing.saving") : t("purchasing.createOrder")}
-      </Button>
+            <div className="receive-stock-actions__primary">
+              <Button
+                type="button"
+                intent="primary"
+                appearance="ghost"
+                className="font-semibold"
+                onClick={() => navigate(detailBackTo)}
+                aria-label={t(isEdit ? "purchasing.backDetail" : "purchasing.backOrders")}
+                data-testid="po-create-footer-back"
+              >
+                <ArrowLeft className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+                {t(isEdit ? "purchasing.backDetail" : "purchasing.backOrders")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => navigate(detailBackTo)}
+                data-testid="po-create-cancel"
+              >
+                {t("purchasing.cancel")}
+              </Button>
+              <Button
+                type="button"
+                disabled={
+                  !allowManage ||
+                  !online ||
+                  saving ||
+                  statusLocked ||
+                  activeLines.length === 0 ||
+                  (connected && !paymentTerm) ||
+                  (connected && !fulfillmentMethod)
+                }
+                onClick={() => void submit()}
+                data-testid="po-create-submit"
+              >
+                {saving
+                  ? t("purchasing.saving")
+                  : t(isEdit ? "purchasing.saveOrder" : "purchasing.createOrder")}
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
         <Button type="button" disabled data-testid="po-create-submit">
-          {t("purchasing.createOrder")}
+          {t(isEdit ? "purchasing.saveOrder" : "purchasing.createOrder")}
         </Button>
       )}
 
@@ -1700,6 +2303,29 @@ export function PurchaseOrderCreatePage() {
         </Notice>
       ) : null}
 
+      <PurchaseOrderTimelineDrawer
+        open={timelineOpen}
+        onOpenChange={setTimelineOpen}
+        po={editPo}
+        receipts={[]}
+        resolveActor={actors.resolve}
+        isResolving={actors.isResolving}
+      />
+
+      {documentPreviewOpen ? (
+        <BusinessDocumentPreview
+          open={documentPreviewOpen}
+          onClose={() => setDocumentPreviewOpen(false)}
+          title={editPo?.poNumber ?? t(isEdit ? "purchasing.editTitle" : "purchasing.createTitle")}
+          closeLabel={t("summary.closePreview")}
+          printLabel={t("exitsTable.print")}
+          pdfLabel={t("exitsTable.exportPdf")}
+          showPdf={false}
+          testId="po-create-document-preview"
+        >
+          {draftPrintDocument}
+        </BusinessDocumentPreview>
+      ) : null}
     </div>
   );
 }

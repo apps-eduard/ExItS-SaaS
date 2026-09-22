@@ -53,6 +53,8 @@ public static class DependencyInjection
         services.AddScoped<IPaymentAttemptRepository, PaymentAttemptRepository>();
         services.AddScoped<IOrganizationPaymentMethodSettingRepository, OrganizationPaymentMethodSettingRepository>();
         services.AddScoped<IOrganizationFulfillmentSettingsRepository, OrganizationFulfillmentSettingsRepository>();
+        services.AddScoped<IOrganizationConnectedCommerceSettingsRepository, OrganizationConnectedCommerceSettingsRepository>();
+        services.AddScoped<IConnectedPoReturnEligibilityBucketRepository, ConnectedPoReturnEligibilityBucketRepository>();
         services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
         services.AddScoped<IProductCategoryRepository, ProductCategoryRepository>();
         services.AddScoped<IProductBrandRepository, ProductBrandRepository>();
@@ -75,12 +77,14 @@ public static class DependencyInjection
         services.AddScoped<ICustomerOrderStockService, CustomerOrderStockService>();
         services.AddScoped<ICustomerOrderUtangLedgerService, CustomerOrderUtangLedgerService>();
         services.AddScoped<ISaleReturnRepository, SaleReturnRepository>();
+        services.AddScoped<IReturnBatchRepository, ReturnBatchRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IInventoryLotRepository, InventoryLotRepository>();
         services.AddScoped<ExItS.PinoyBusinessPOS.Application.Reporting.IManagementOverviewReadStore, ManagementOverviewReadStore>();
         services.AddScoped<InventoryLotStockService>();
         services.AddScoped<IInventoryReorderChangeRepository, InventoryReorderChangeRepository>();
         services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();
+        services.AddScoped<IInventoryTransferDamageCustodyRepository, InventoryTransferDamageCustodyRepository>();
         services.AddScoped<ISupplyRouteRepository, SupplyRouteRepository>();
         services.AddScoped<IStockRequestRepository, StockRequestRepository>();
         services.AddScoped<IInventoryBranchBalanceRepository, InventoryBranchBalanceRepository>();
@@ -109,6 +113,7 @@ public static class DependencyInjection
         services.AddScoped<IBuyerSupplierProductLinkRepository, BuyerSupplierProductLinkRepository>();
         services.AddScoped<IConnectedPurchaseOrderRepository, ConnectedPurchaseOrderRepository>();
         services.AddScoped<IConnectedPoInventoryReservationRepository, ConnectedPoInventoryReservationRepository>();
+        services.AddScoped<IConnectedPoReceivingIssueRepository, ConnectedPoReceivingIssueRepository>();
         services.AddScoped<IRegisterRepository, RegisterRepository>();
         services.AddScoped<IPosOperationalSetupRepository, OperationalSetupRepository>();
         services.AddScoped<IOrganizationOnboardingProgressRepository, OrganizationOnboardingProgressRepository>();

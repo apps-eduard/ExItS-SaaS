@@ -32,7 +32,7 @@ public sealed class BusinessCustomerStatementUseCaseTests
             seller,
             buyer,
             542m,
-            "Product sale SALE-20260914-000008",
+            "Product sale 260914-008",
             Now.AddDays(-1),
             connectionId);
         inPeriod.ApplyCurrentDueDate(DateOnly.FromDateTime(Now.AddDays(29).UtcDateTime));

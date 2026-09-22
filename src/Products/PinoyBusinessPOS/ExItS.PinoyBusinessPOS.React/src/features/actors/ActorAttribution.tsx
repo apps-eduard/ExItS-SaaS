@@ -67,32 +67,38 @@ export function ActorAttribution({
   return (
     <div
       className={cn(
-        "min-h-[2.75rem] text-[length:var(--exits-text-sm)] text-muted",
+        "flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[length:var(--exits-text-sm)] text-muted",
         className,
       )}
       data-testid={testId ?? "actor-attribution"}
     >
-      <p className="m-0 text-[length:var(--exits-text-xs)] uppercase tracking-wide opacity-80">
-        {t(labelKey)}
-      </p>
-      <p
+      <span className="font-semibold text-foreground">{t(labelKey)}</span>
+      <span aria-hidden className="opacity-60">
+        ·
+      </span>
+      <span
         className={cn(
-          "m-0 font-medium text-foreground",
-          isLoading && !resolved && !isSystem && "animate-pulse bg-muted/40 text-transparent",
+          "font-medium text-foreground",
+          isLoading && !resolved && !isSystem && "inline-block min-w-[6rem] animate-pulse bg-muted/40 text-transparent",
         )}
         data-testid="actor-attribution-name"
       >
         {name}
-      </p>
+      </span>
       {statusHint ? (
-        <p className="m-0 text-[length:var(--exits-text-xs)]" data-testid="actor-attribution-status">
-          {statusHint}
-        </p>
+        <span className="text-[length:var(--exits-text-xs)]" data-testid="actor-attribution-status">
+          ({statusHint})
+        </span>
       ) : null}
       {!hideTimestamp && occurredAtUtc ? (
-        <p className="m-0 text-[length:var(--exits-text-xs)]" data-testid="actor-attribution-when">
-          {formatActorWhen(occurredAtUtc)}
-        </p>
+        <>
+          <span aria-hidden className="opacity-60">
+            ·
+          </span>
+          <span className="text-[length:var(--exits-text-sm)]" data-testid="actor-attribution-when">
+            {formatActorWhen(occurredAtUtc)}
+          </span>
+        </>
       ) : null}
     </div>
   );

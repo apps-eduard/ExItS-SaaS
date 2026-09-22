@@ -13,7 +13,7 @@ public sealed class PosSaleClientTests
         {
           "saleId": "11111111-1111-1111-1111-111111111111",
           "organizationId": "22222222-2222-2222-2222-222222222222",
-          "saleNumber": "SALE-20260730-000001",
+          "saleNumber": "260730-001",
           "status": "Completed",
           "paymentMethod": "Cash",
           "subtotal": 118.50,
@@ -61,7 +61,7 @@ public sealed class PosSaleClientTests
         Assert.True(result.IsSuccess);
         Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
         Assert.Equal("/api/v1/pos/sales", handler.LastRequest.RequestUri!.AbsolutePath);
-        Assert.Equal("SALE-20260730-000001", result.Data!.SaleNumber);
+        Assert.Equal("260730-001", result.Data!.SaleNumber);
         Assert.Equal(118.50m, result.Data.Total);
         Assert.Equal(81.50m, result.Data.ChangeAmount);
         Assert.Equal("Bigas", Assert.Single(result.Data.Lines).Name);
@@ -125,7 +125,7 @@ public sealed class PosSaleClientTests
             paymentMethod: PosSaleOptions.ManualGCashPaymentMethod,
             fromDateUtc: new DateOnly(2026, 7, 1),
             toDateUtc: new DateOnly(2026, 7, 30),
-            saleNumber: "SALE-20260730-000001",
+            saleNumber: "260730-001",
             page: 2,
             pageSize: 10);
 
@@ -139,7 +139,7 @@ public sealed class PosSaleClientTests
         Assert.Contains("paymentMethod=ManualGCash", query, StringComparison.Ordinal);
         Assert.Contains("fromDate=2026-07-01", query, StringComparison.Ordinal);
         Assert.Contains("toDate=2026-07-30", query, StringComparison.Ordinal);
-        Assert.Contains("saleNumber=SALE-20260730-000001", query, StringComparison.Ordinal);
+        Assert.Contains("saleNumber=260730-001", query, StringComparison.Ordinal);
     }
 
     [Fact]

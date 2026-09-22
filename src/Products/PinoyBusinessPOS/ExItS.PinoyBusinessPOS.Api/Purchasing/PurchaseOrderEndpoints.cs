@@ -198,6 +198,26 @@ internal static class PurchaseOrderEndpoints
             return PosApiResults.FromResult(result, Results.Ok);
         });
 
+        group.MapPost("/{purchaseOrderId:guid}/submit-prepayment", async (
+            HttpRequest request,
+            Guid purchaseOrderId,
+            SubmitBuyerPrepaymentProofRequest? body,
+            SubmitBuyerPrepaymentProof useCase,
+            IPosCommercialAccessAccessor access,
+            CancellationToken ct) =>
+        {
+            if (!TryAuthorize(request, access, UtangCapability.ManagePurchasing, out var organizationId, out var problem)
+                || !DenyInventoryStaffPoMutation(out problem))
+            {
+                return problem!;
+            }
+
+            var result = await useCase
+                .ExecuteAsync(organizationId, purchaseOrderId, body ?? new SubmitBuyerPrepaymentProofRequest(""), ct)
+                .ConfigureAwait(false);
+            return PosApiResults.FromResult(result, Results.Ok);
+        });
+
         group.MapPost("/{purchaseOrderId:guid}/decline-changes", async (
             HttpRequest request,
             Guid purchaseOrderId,

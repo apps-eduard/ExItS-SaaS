@@ -232,6 +232,18 @@ Do **not** couple POS date controls to Ant Design.
 
 See [reusable-component-catalog.md](reusable-component-catalog.md) for phase classification (`Ex*` naming).
 
+### QuantityStepper (POS / DesignSystem)
+
+| Variant / mode | Use when | Look / interaction |
+|---|---|---|
+| **Default** | Forms, editable receiving / PO lines | `[ neutral − ][ qty ][ primary + ]` field group; qty always editable |
+| **Auto** (preferred cart) | Sell cart, stock-request cart | Primary capsule; **adopts Preferences → Control Shape** (`--exits-control-radius`: soft / standard / pill) |
+| **Standard / Soft / Pill** | Explicit cart radius override | Same primary capsule; fixed radius |
+| **+ middle edit** | Sell cart **non-kg** lines | `editOnClick` — center tap → numeric input |
+| **+ value click** | Sell cart **kg** lines | Center shows `1kg` / `1.5kg` / `0.5kg`; tap opens weight dialog (`onValueClick`) |
+
+React: `QuantityStepper` `variant="auto"` (+ optional `editOnClick` / `onValueClick`). Blazor: `Variant="Auto"` (+ optional `EditOnClick`). Live gallery: POS UI Standards → Form controls (change Control Shape in the preference strip to see auto adopt).
+
 Naming in earlier drafts (`ExTextField`, …) remains the documentation convention until projects are created.
 
 ---
