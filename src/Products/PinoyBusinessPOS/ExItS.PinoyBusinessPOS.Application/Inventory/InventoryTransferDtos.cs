@@ -89,6 +89,8 @@ public sealed record InventoryTransferDto(
     Guid? ReceivedBy,
     DateTimeOffset? CancelledAtUtc,
     Guid? CancelledBy,
+    DateTimeOffset? ClosedAtUtc,
+    Guid? ClosedBy,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
     decimal TotalClosedQty,
@@ -116,7 +118,9 @@ public sealed record InventoryTransferListItemDto(
     Guid CreatedBy,
     Guid? DispatchedBy = null,
     Guid? ReceivedBy = null,
-    Guid? CancelledBy = null);
+    Guid? CancelledBy = null,
+    DateTimeOffset? ClosedAtUtc = null,
+    Guid? ClosedBy = null);
 
 public sealed record InventoryTransferFilter(
     string? Status = null,

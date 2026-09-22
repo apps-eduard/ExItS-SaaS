@@ -65,7 +65,27 @@ public sealed record StockRequestLinkedTransferDto(
     decimal TotalSentQty,
     decimal TotalReceivedQty,
     decimal TotalOutstandingQty,
-    DateTimeOffset UpdatedAtUtc);
+    decimal TotalClosedQty,
+    DateTimeOffset CreatedAtUtc,
+    Guid CreatedBy,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? DispatchedAtUtc,
+    Guid? DispatchedBy,
+    DateTimeOffset? ClosedAtUtc,
+    Guid? ClosedBy);
+
+public sealed record StockRequestActivityEventDto(
+    Guid EventId,
+    string EventType,
+    DateTimeOffset OccurredAtUtc,
+    Guid? ActorId,
+    Guid? TransferId,
+    string? TransferNumber,
+    Guid? ReceiptId,
+    int? ReceiptSequence,
+    decimal? Quantity,
+    string? Reason,
+    string? Note);
 
 public sealed record StockRequestDto(
     Guid StockRequestId,

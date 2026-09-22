@@ -19,6 +19,8 @@ internal sealed class InventoryTransferRecord
     public Guid? ReceivedBy { get; set; }
     public DateTimeOffset? CancelledAtUtc { get; set; }
     public Guid? CancelledBy { get; set; }
+    public DateTimeOffset? ClosedAtUtc { get; set; }
+    public Guid? ClosedBy { get; set; }
     public uint Xmin { get; set; }
 }
 

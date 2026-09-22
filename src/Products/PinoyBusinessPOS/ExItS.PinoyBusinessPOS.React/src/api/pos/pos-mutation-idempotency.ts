@@ -36,6 +36,7 @@ export const OFFLINE_OPERATION_TYPES = {
   StockRequestCreate: "stock_request.create",
   StockRequestApprove: "stock_request.approve",
   StockRequestPrepare: "stock_request.prepare",
+  StockRequestPrepareTransfer: "stock_request.prepare_transfer",
   StockRequestDispatch: "stock_request.dispatch",
   StockRequestReject: "stock_request.reject",
   StockRequestCancel: "stock_request.cancel",

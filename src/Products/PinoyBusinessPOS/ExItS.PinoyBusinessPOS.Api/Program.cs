@@ -432,6 +432,8 @@ builder.Services.AddScoped<ListReplenishmentCatalog>();
 builder.Services.AddScoped<CreateStockRequest>();
 builder.Services.AddScoped<ApproveStockRequest>();
 builder.Services.AddScoped<StartPreparingStockRequest>();
+builder.Services.AddScoped<PrepareStockRequestTransfer>();
+builder.Services.AddScoped<GetStockRequestActivity>();
 builder.Services.AddScoped<DispatchStockRequest>();
 builder.Services.AddScoped<RejectStockRequest>();
 builder.Services.AddScoped<CancelStockRequest>();

@@ -101,6 +101,16 @@ Examples:
 - `LinkedInventoryTransferId` remains the first dispatched transfer for backward compatibility; reads and recalculation use `ListByStockRequestId`.
 - `DispatchStockRequest` builds lines from RemainingToDispatch only and rejects when that is zero for all lines (except idempotent re-dispatch before any receipt).
 
+### Prepare → dispatch (preferred source workflow)
+
+1. `POST /api/v1/pos/inventory/stock-requests/{id}/prepare-transfer` — source branch + `ManageInventory`. Starts preparing when approved, computes `RemainingToDispatch`, returns an existing **Draft** when one is already linked (idempotent), otherwise creates a draft transfer **without** dispatch, `MarkDispatched`, or `TransferOut`.
+2. `POST /api/v1/pos/inventory/transfers/{id}/dispatch` — explicit dispatch; when the transfer has `StockRequestId`, marks the parent request dispatched when still approved/preparing.
+3. `POST .../stock-requests/{id}/dispatch` — **legacy** one-shot (create draft if needed + immediate dispatch). Kept for API compatibility.
+
+Close remainder persists `ClosedAtUtc` / `ClosedBy` on the transfer; stock-request activity timeline uses those fields (legacy `ClosedWithDiscrepancy` rows without them omit `TransferRemainderClosed`).
+
+`GET /api/v1/pos/inventory/stock-requests/{id}/activity` — chronological audit from request fields, linked transfers (including cancelled), and receipts.
+
 ## Authorization
 
 - Same `OrganizationId` on every row.

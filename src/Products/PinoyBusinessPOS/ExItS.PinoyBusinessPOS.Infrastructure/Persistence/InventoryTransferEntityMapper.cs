@@ -32,6 +32,8 @@ internal static class InventoryTransferEntityMapper
             record.ReceivedBy,
             record.CancelledAtUtc,
             record.CancelledBy,
+            record.ClosedAtUtc,
+            record.ClosedBy,
             lines.OrderBy(l => l.LineNumber).Select(ToDomain).ToList(),
             receiptDomains);
     }
@@ -112,7 +114,9 @@ internal static class InventoryTransferEntityMapper
             ReceivedAtUtc = transfer.ReceivedAtUtc,
             ReceivedBy = transfer.ReceivedBy,
             CancelledAtUtc = transfer.CancelledAtUtc,
-            CancelledBy = transfer.CancelledBy
+            CancelledBy = transfer.CancelledBy,
+            ClosedAtUtc = transfer.ClosedAtUtc,
+            ClosedBy = transfer.ClosedBy
         };
 
     public static void ApplyToRecord(InventoryTransfer transfer, InventoryTransferRecord record)
@@ -128,6 +132,8 @@ internal static class InventoryTransferEntityMapper
         record.ReceivedBy = transfer.ReceivedBy;
         record.CancelledAtUtc = transfer.CancelledAtUtc;
         record.CancelledBy = transfer.CancelledBy;
+        record.ClosedAtUtc = transfer.ClosedAtUtc;
+        record.ClosedBy = transfer.ClosedBy;
     }
 
     public static InventoryTransferLineRecord ToRecord(InventoryTransferLine line) =>

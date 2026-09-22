@@ -3354,6 +3354,8 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.ReceivedBy).HasColumnName("received_by");
             entity.Property(e => e.CancelledAtUtc).HasColumnName("cancelled_at_utc");
             entity.Property(e => e.CancelledBy).HasColumnName("cancelled_by");
+            entity.Property(e => e.ClosedAtUtc).HasColumnName("closed_at_utc");
+            entity.Property(e => e.ClosedBy).HasColumnName("closed_by");
             entity.Property(e => e.Xmin)
                 .HasColumnName("xmin")
                 .HasColumnType("xid")

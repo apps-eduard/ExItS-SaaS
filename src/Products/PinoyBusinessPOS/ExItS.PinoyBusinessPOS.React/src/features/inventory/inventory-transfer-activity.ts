@@ -58,12 +58,12 @@ export function buildTransferActivityEvents(
     });
   }
 
-  if (transfer.status === "ClosedWithDiscrepancy") {
+  if (transfer.status === "ClosedWithDiscrepancy" && transfer.closedAtUtc) {
     events.push({
       id: `${transfer.transferId}-closed-remainder`,
       kind: "closedRemainder",
-      atUtc: transfer.lastReceiptAtUtc ?? transfer.updatedAtUtc,
-      actorId: transfer.receivedBy,
+      atUtc: transfer.closedAtUtc,
+      actorId: transfer.closedBy ?? null,
     });
   }
 

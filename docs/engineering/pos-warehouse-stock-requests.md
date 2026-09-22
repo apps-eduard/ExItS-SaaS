@@ -36,9 +36,10 @@ Create StockRequest
                              (approvedQuantity per line)
                              Approve → Approved
                              Start preparing → Preparing
-                             Dispatch stock
-                               creates InventoryTransfer
-                               dispatches transfer
+                             Prepare transfer (preferred)
+                               POST .../prepare-transfer → Draft InventoryTransfer
+                             Review draft on transfer detail
+                             Dispatch transfer (explicit)
                                StockRequest → InTransit
                                                ──────────────────► Receive transfer
                                                                     StockRequest →
@@ -89,7 +90,9 @@ Approved quantities on the request only constrain what the dispatch step puts on
 | POST | `/api/v1/pos/inventory/stock-requests` | Create |
 | POST | `.../{id}/approve` | Body `{ lineApprovals: [{ productId, approvedQuantity }] }` |
 | POST | `.../{id}/prepare` | Start preparing |
-| POST | `.../{id}/dispatch` | Create+dispatch transfer; returns `InventoryTransferDto` |
+| POST | `.../{id}/prepare-transfer` | Create or return Draft transfer for `RemainingToDispatch`; no stock effect |
+| GET | `.../{id}/activity` | Chronological audit (request + linked transfers + receipts) |
+| POST | `.../{id}/dispatch` | **Legacy** one-shot create+dispatch; UI prefers prepare-transfer → transfer dispatch |
 | POST | `.../{id}/reject` | Decline with reason |
 | POST | `.../{id}/cancel` | Destination cancel |
 | POST | `.../{id}/fulfill-transfer` | Legacy; delegates to dispatch |

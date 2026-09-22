@@ -92,6 +92,8 @@ export const inventoryTransferDtoSchema = z.object({
   receivedBy: guidSchema.nullable().optional(),
   cancelledAtUtc: z.string().nullable().optional(),
   cancelledBy: guidSchema.nullable().optional(),
+  closedAtUtc: z.string().nullable().optional(),
+  closedBy: guidSchema.nullable().optional(),
   totalSentQty: z.number(),
   totalReceivedQty: z.number(),
   totalClosedQty: z.number().optional(),

@@ -49,6 +49,35 @@ describe("buildTransferActivityEvents", () => {
     expect(events.map((e) => e.kind)).toEqual(["created", "receipt"]);
   });
 
+  it("uses closedAtUtc and closedBy for closed remainder without legacy fallbacks", () => {
+    const events = buildTransferActivityEvents({
+      ...base,
+      status: "ClosedWithDiscrepancy",
+      closedAtUtc: "2026-03-04T10:00:00Z",
+      closedBy: "55555555-5555-5555-5555-555555555555",
+      lastReceiptAtUtc: "2026-03-03T10:00:00Z",
+      updatedAtUtc: "2026-03-03T12:00:00Z",
+      receivedBy: "33333333-3333-3333-3333-333333333333",
+    });
+
+    expect(events.map((e) => e.kind)).toEqual(["created", "closedRemainder"]);
+    const closed = events.find((e) => e.kind === "closedRemainder");
+    expect(closed?.atUtc).toBe("2026-03-04T10:00:00Z");
+    expect(closed?.actorId).toBe("55555555-5555-5555-5555-555555555555");
+  });
+
+  it("omits closed remainder when closedAtUtc is missing", () => {
+    const events = buildTransferActivityEvents({
+      ...base,
+      status: "ClosedWithDiscrepancy",
+      lastReceiptAtUtc: "2026-03-03T10:00:00Z",
+      updatedAtUtc: "2026-03-03T12:00:00Z",
+      receivedBy: "33333333-3333-3333-3333-333333333333",
+    });
+
+    expect(events.map((e) => e.kind)).toEqual(["created"]);
+  });
+
   it("includes cancelled when present", () => {
     const events = buildTransferActivityEvents({
       ...base,

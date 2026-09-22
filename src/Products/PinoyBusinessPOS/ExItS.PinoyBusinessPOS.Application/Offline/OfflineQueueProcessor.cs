@@ -517,6 +517,9 @@ public static class OfflineOperationTypes
     /// <summary>Server-side idempotency for stock request prepare. Online-only.</summary>
     public const string StockRequestPrepare = "stock_request.prepare";
 
+    /// <summary>Server-side idempotency for stock request prepare-transfer (draft only). Online-only.</summary>
+    public const string StockRequestPrepareTransfer = "stock_request.prepare_transfer";
+
     /// <summary>Server-side idempotency for stock request dispatch. Online-only.</summary>
     public const string StockRequestDispatch = "stock_request.dispatch";
 

@@ -157,6 +157,8 @@ public sealed class InventoryTransferDomainTests
             transferLevelNote: "trailer short");
 
         Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, transfer.Status);
+        Assert.Equal(Utc.AddMinutes(4), transfer.ClosedAtUtc);
+        Assert.Equal(Actor, transfer.ClosedBy);
         Assert.Equal(7m, transfer.Lines[0].ReceivedQty);
         Assert.Equal(3m, transfer.Lines[0].ClosedQty);
         Assert.Equal(0m, transfer.Lines[0].OutstandingQty);

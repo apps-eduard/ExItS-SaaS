@@ -203,6 +203,10 @@ export function InventoryTransferDetailPage() {
       );
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-request-activity"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
       showToast(successMessage, "success");
       setMode("detail");
     } catch (err) {
@@ -328,6 +332,10 @@ export function InventoryTransferDetailPage() {
       );
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-request-activity"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["wh-dash"] });
       const dest = branchDisplayName(updated.destinationBranchName, updated.destinationBranchId);
       showToast(
         updated.status === "Received"

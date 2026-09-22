@@ -35,6 +35,8 @@ public sealed class InventoryTransfer
     public Guid? ReceivedBy { get; private set; }
     public DateTimeOffset? CancelledAtUtc { get; private set; }
     public Guid? CancelledBy { get; private set; }
+    public DateTimeOffset? ClosedAtUtc { get; private set; }
+    public Guid? ClosedBy { get; private set; }
 
     public IReadOnlyList<InventoryTransferLine> Lines => _lines;
 
@@ -68,6 +70,8 @@ public sealed class InventoryTransfer
         Guid? receivedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
+        DateTimeOffset? closedAtUtc,
+        Guid? closedBy,
         List<InventoryTransferLine> lines,
         List<InventoryTransferReceipt>? receipts = null)
     {
@@ -88,6 +92,8 @@ public sealed class InventoryTransfer
         ReceivedBy = receivedBy;
         CancelledAtUtc = cancelledAtUtc;
         CancelledBy = cancelledBy;
+        ClosedAtUtc = closedAtUtc;
+        ClosedBy = closedBy;
         _lines = lines;
         _receipts = receipts ?? [];
     }
@@ -127,6 +133,8 @@ public sealed class InventoryTransfer
             receivedBy: null,
             cancelledAtUtc: null,
             cancelledBy: null,
+            closedAtUtc: null,
+            closedBy: null,
             BuildDraftLines(transferId, organizationId, lines));
     }
 
@@ -361,6 +369,8 @@ public sealed class InventoryTransfer
         }
 
         Status = InventoryTransferStatus.ClosedWithDiscrepancy;
+        ClosedAtUtc = utcNow;
+        ClosedBy = actorId;
         UpdatedAtUtc = utcNow;
     }
 
@@ -419,6 +429,8 @@ public sealed class InventoryTransfer
         Guid? receivedBy,
         DateTimeOffset? cancelledAtUtc,
         Guid? cancelledBy,
+        DateTimeOffset? closedAtUtc,
+        Guid? closedBy,
         IReadOnlyList<InventoryTransferLine> lines,
         IReadOnlyList<InventoryTransferReceipt>? receipts = null) =>
         new(
@@ -439,6 +451,8 @@ public sealed class InventoryTransfer
             receivedBy,
             cancelledAtUtc,
             cancelledBy,
+            closedAtUtc,
+            closedBy,
             lines.ToList(),
             receipts?.OrderBy(r => r.Sequence).ToList());
 

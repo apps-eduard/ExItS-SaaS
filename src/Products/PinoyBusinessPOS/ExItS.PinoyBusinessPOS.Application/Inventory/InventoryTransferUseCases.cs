@@ -99,6 +99,8 @@ public sealed class InventoryTransferQueryService
             transfer.ReceivedBy,
             transfer.CancelledAtUtc,
             transfer.CancelledBy,
+            transfer.ClosedAtUtc,
+            transfer.ClosedBy,
             transfer.TotalSentQty,
             transfer.TotalReceivedQty,
             transfer.TotalClosedQty,
@@ -158,7 +160,9 @@ public sealed class InventoryTransferQueryService
             transfer.CreatedBy,
             transfer.DispatchedBy,
             transfer.ReceivedBy,
-            transfer.CancelledBy);
+            transfer.CancelledBy,
+            transfer.ClosedAtUtc,
+            transfer.ClosedBy);
 }
 
 public sealed class CreateInventoryTransfer
@@ -314,6 +318,8 @@ public sealed class DispatchInventoryTransfer
     private readonly InventoryLotStockService _lots;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly IInventoryTransferAlertSink _alerts;
+    private readonly IStockRequestRepository _stockRequests;
+    private readonly IOrganizationBusinessNotificationPublisher _notifications;
     private readonly InventoryCostResolver _costs;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
@@ -327,6 +333,8 @@ public sealed class DispatchInventoryTransfer
         InventoryLotStockService lots,
         IOrganizationBranchDirectory branches,
         IInventoryTransferAlertSink alerts,
+        IStockRequestRepository stockRequests,
+        IOrganizationBusinessNotificationPublisher notifications,
         IPosUnitOfWork unitOfWork,
         IClock clock,
         InventoryCostResolver? costs = null)
@@ -339,6 +347,8 @@ public sealed class DispatchInventoryTransfer
         _lots = lots;
         _branches = branches;
         _alerts = alerts;
+        _stockRequests = stockRequests;
+        _notifications = notifications;
         _costs = costs ?? new InventoryCostResolver(inventory);
         _unitOfWork = unitOfWork;
         _clock = clock;
@@ -521,6 +531,31 @@ public sealed class DispatchInventoryTransfer
 
             transfer.Dispatch(number, actorId, utcNow);
             await _transfers.UpdateAsync(transfer, ct).ConfigureAwait(false);
+
+            if (transfer.StockRequestId is StockRequestId stockRequestId)
+            {
+                var stockRequest = await _stockRequests
+                    .GetByIdAsync(orgId, stockRequestId, ct)
+                    .ConfigureAwait(false);
+                if (stockRequest is not null
+                    && stockRequest.Status is StockRequestStatus.Approved or StockRequestStatus.Preparing)
+                {
+                    stockRequest.MarkDispatched(actorId, utcNow, transfer.Id.Value);
+                    await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
+                    await StockRequestNotificationHelper
+                        .PublishAsync(
+                            _notifications,
+                            organizationId,
+                            StockRequestNotificationTypes.Dispatched,
+                            stockRequest,
+                            stockRequest.DestinationLocationId.Value,
+                            "Stock request dispatched",
+                            $"{stockRequest.RequestNumber ?? stockRequest.Id.Value.ToString("D")} is in transit.",
+                            ct)
+                        .ConfigureAwait(false);
+                }
+            }
+
             await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
             await _alerts.PublishAsync(
                     new InventoryTransferAlert(
