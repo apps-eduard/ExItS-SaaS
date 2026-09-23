@@ -24,6 +24,26 @@ describe("inventory-movement-bucket-effects", () => {
     const e = describeMovementBucketEffects("TransferDamageReturnIn", 5);
     expect(e.physicalDelta).toBe(5);
     expect(e.sellableDelta).toBe(0);
+    expect(e.damagedDelta).toBe(0);
     expect(e.inspectionHoldDelta).toBe(5);
+  });
+
+  it("return out clears damaged without sellable", () => {
+    const e = describeMovementBucketEffects("TransferDamageReturnOut", -5);
+    expect(e.physicalDelta).toBe(-5);
+    expect(e.sellableDelta).toBe(0);
+    expect(e.damagedDelta).toBe(-5);
+  });
+
+  it("recovery and write-off reclassify inspection hold", () => {
+    const recovered = describeMovementBucketEffects("TransferDamageRecovery", 2);
+    expect(recovered.physicalDelta).toBe(0);
+    expect(recovered.sellableDelta).toBe(2);
+    expect(recovered.inspectionHoldDelta).toBe(-2);
+
+    const writtenOff = describeMovementBucketEffects("TransferDamageWriteOff", 3);
+    expect(writtenOff.sellableDelta).toBe(0);
+    expect(writtenOff.damagedDelta).toBe(3);
+    expect(writtenOff.inspectionHoldDelta).toBe(-3);
   });
 });

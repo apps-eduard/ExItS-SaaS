@@ -61,7 +61,52 @@ public sealed class StockMovementPresentationTests
             5m);
         Assert.Equal(5m, effects.PhysicalDelta);
         Assert.Equal(0m, effects.SellableDelta);
+        Assert.Equal(0m, effects.DamagedDelta);
         Assert.Equal(5m, effects.InspectionHoldDelta);
+        Assert.Equal(
+            "Damaged return received",
+            StockMovementPresentation.ToFriendlyLabel("TransferDamageReturnIn"));
+    }
+
+    [Fact]
+    public void Damage_return_out_clears_destination_damaged_not_sellable()
+    {
+        var effects = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferDamageReturnOut),
+            -5m);
+        Assert.Equal(-5m, effects.PhysicalDelta);
+        Assert.Equal(0m, effects.SellableDelta);
+        Assert.Equal(-5m, effects.DamagedDelta);
+        Assert.Equal(0m, effects.InspectionHoldDelta);
+        Assert.Equal(
+            "Damaged returned to source",
+            StockMovementPresentation.ToFriendlyLabel("TransferDamageReturnOut"));
+    }
+
+    [Fact]
+    public void Damage_recovery_and_write_off_reclassify_inspection_hold()
+    {
+        var recovered = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferDamageRecovery),
+            2m);
+        Assert.Equal(0m, recovered.PhysicalDelta);
+        Assert.Equal(2m, recovered.SellableDelta);
+        Assert.Equal(0m, recovered.DamagedDelta);
+        Assert.Equal(-2m, recovered.InspectionHoldDelta);
+        Assert.Equal(
+            "Returned damage recovered",
+            StockMovementPresentation.ToFriendlyLabel("TransferDamageRecovery"));
+
+        var writtenOff = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferDamageWriteOff),
+            3m);
+        Assert.Equal(0m, writtenOff.PhysicalDelta);
+        Assert.Equal(0m, writtenOff.SellableDelta);
+        Assert.Equal(3m, writtenOff.DamagedDelta);
+        Assert.Equal(-3m, writtenOff.InspectionHoldDelta);
+        Assert.Equal(
+            "Confirmed damaged",
+            StockMovementPresentation.ToFriendlyLabel("TransferDamageWriteOff"));
     }
 
     [Fact]

@@ -81,6 +81,9 @@ export function InventoryMovementTransactionDrawer({
 
   const transfer = transferQuery.data;
   const familyMembers = transfer?.familyMembers ?? [];
+  const isDamageReturnIn = movement?.movementType === "TransferDamageReturnIn";
+  const isDamageReturnOut = movement?.movementType === "TransferDamageReturnOut";
+  const isDamageReturnMovement = isDamageReturnIn || isDamageReturnOut;
   const matchedCustody =
     movement?.movementType === "TransferDamageHold"
       ? (transfer?.damageCustodies ?? []).find(
@@ -91,6 +94,13 @@ export function InventoryMovementTransactionDrawer({
       : null;
   const damageHoldDecision = movement
     ? resolveDamageHoldDecisionDisplay(movement, matchedCustody)
+    : null;
+  // Damage return: physical flow is destination → source (opposite of original ship).
+  const returnFromBranch = transfer
+    ? branchLabel(transfer.destinationBranchName, transfer.destinationBranchId)
+    : null;
+  const returnToBranch = transfer
+    ? branchLabel(transfer.sourceBranchName, transfer.sourceBranchId)
     : null;
 
   return (
@@ -149,24 +159,70 @@ export function InventoryMovementTransactionDrawer({
                     {t(damageHoldDecision.custodyLabelKey)}
                   </p>
                 ) : null}
-                <p className="mt-1 mb-0 font-semibold tabular-nums">
-                  {movement.quantityEffect > 0 ? "+" : ""}
-                  {movement.quantityEffect} {unitOfMeasure}
-                </p>
+
+                {isDamageReturnMovement && transfer ? (
+                  <dl
+                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
+                    data-testid="inventory-movement-damage-return-route"
+                  >
+                    <div>
+                      <dt className="text-muted">{t("inventory.transactionFrom")}</dt>
+                      <dd className="m-0 font-semibold">{returnFromBranch}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("inventory.transactionTo")}</dt>
+                      <dd className="m-0 font-semibold">{returnToBranch}</dd>
+                    </div>
+                  </dl>
+                ) : null}
+
                 {effects ? (
-                  <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                    {t("inventory.transactionPhysical")}:{" "}
-                    {formatSignedBucketQty(effects.physicalDelta)}
-                    {" · "}
-                    {t("inventory.transactionSellable")}:{" "}
-                    {formatSignedBucketQty(effects.sellableDelta)}
-                    {" · "}
-                    {t("inventory.transactionDamaged")}:{" "}
-                    {formatSignedBucketQty(effects.damagedDelta)}
-                    {effects.inspectionHoldDelta !== 0
-                      ? ` · ${t("inventory.transactionHold")}: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
-                      : null}
+                  <>
+                    <p className="mt-2 mb-0 font-semibold tabular-nums">
+                      {t("inventory.quantity")}:{" "}
+                      {Math.abs(movement.quantityEffect)} {unitOfMeasure}
+                    </p>
+                    <div
+                      className="mt-2"
+                      data-testid="inventory-movement-transaction-inventory-effect"
+                    >
+                      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                        {t("inventory.transactionInventoryEffect")}
+                      </p>
+                      <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                        {t("inventory.bucketPhysical")}:{" "}
+                        {formatSignedBucketQty(effects.physicalDelta)}
+                        {" · "}
+                        {t("inventory.bucketSellable")}:{" "}
+                        {formatSignedBucketQty(effects.sellableDelta)}
+                        {effects.damagedDelta !== 0 || !isDamageReturnIn
+                          ? ` · ${t("inventory.bucketDamaged")}: ${formatSignedBucketQty(effects.damagedDelta)}`
+                          : null}
+                        {effects.inspectionHoldDelta !== 0
+                          ? ` · ${t("inventory.bucketInspectionHold")}: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
+                          : null}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-1 mb-0 font-semibold tabular-nums">
+                    {movement.quantityEffect > 0 ? "+" : ""}
+                    {movement.quantityEffect} {unitOfMeasure}
                   </p>
+                )}
+
+                {isDamageReturnMovement ? (
+                  <div
+                    className="mt-2"
+                    data-testid="inventory-movement-damage-disposition"
+                  >
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("inventory.transactionDamageDisposition")}
+                    </p>
+                    <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("inventory.damageDisposition.returnedToSource")}
+                    </p>
+                  </div>
                 ) : null}
               </section>
 

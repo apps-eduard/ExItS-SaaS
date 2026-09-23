@@ -125,4 +125,20 @@ describe("InventoryMovementsResponsiveList transaction open", () => {
       }),
     );
   });
+
+  it("shows inspection-hold bucket effects for damaged return received", () => {
+    const movement = transferOutMovement({
+      movementId: "mov-return-in",
+      movementType: "TransferDamageReturnIn",
+      quantityEffect: 5,
+      reason: "Transfer damage return in TR-260922-001",
+    });
+    renderList([movement]);
+
+    const effects = screen.getAllByTestId("inventory-movement-bucket-effects")[0]!;
+    expect(effects).toHaveTextContent(/Physical:\s*\+5/);
+    expect(effects).toHaveTextContent(/Sellable:\s*0/);
+    expect(effects).toHaveTextContent(/Inspection hold:\s*\+5/);
+    expect(screen.getAllByText(/Damaged return received/i)[0]).toBeInTheDocument();
+  });
 });

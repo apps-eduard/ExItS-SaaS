@@ -38,6 +38,7 @@ function MovementBucketBreakdown({
   movementType: string;
   quantityEffect: number;
 }) {
+  const { t } = useI18n();
   if (!movementNeedsBucketBreakdown(movementType)) {
     return null;
   }
@@ -47,13 +48,13 @@ function MovementBucketBreakdown({
       className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted"
       data-testid="inventory-movement-bucket-effects"
     >
-      Physical: {formatSignedBucketQty(effects.physicalDelta)}
+      {t("inventory.bucketPhysical")}: {formatSignedBucketQty(effects.physicalDelta)}
       {" · "}
-      Sellable: {formatSignedBucketQty(effects.sellableDelta)}
+      {t("inventory.bucketSellable")}: {formatSignedBucketQty(effects.sellableDelta)}
       {" · "}
-      Damaged: {formatSignedBucketQty(effects.damagedDelta)}
+      {t("inventory.bucketDamaged")}: {formatSignedBucketQty(effects.damagedDelta)}
       {effects.inspectionHoldDelta !== 0
-        ? ` · Hold: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
+        ? ` · ${t("inventory.bucketInspectionHold")}: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
         : null}
     </p>
   );

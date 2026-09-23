@@ -1451,6 +1451,229 @@ public sealed class InventoryTransferUseCaseTests
         Assert.Equal(StockRequestStatus.Fulfilled, srFinal!.Status);
     }
 
+    /// <summary>
+    /// Scenario 2 foundation: damage return reaches source before R1.
+    /// Source parks inspection hold; sellable/available stay 90; RemainingToDispatch stays 5.
+    /// </summary>
+    [Fact]
+    public async Task Scenario2_damage_return_before_R1_parks_inspection_hold_without_sellable()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Apple", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.Equal(90m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(90m, fx.Balances.OnHand(BranchA, fx.CokeId));
+
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 5m,
+                    DamagedQty: 5m,
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.RequestReplacement),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.ReturnToSource))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        Assert.Equal(10m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Damaged(BranchB, fx.CokeId));
+
+        var custody = Assert.Single(fx.DamageCustodies.Items);
+        Assert.True((await fx.DispatchDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorB, BranchB)).IsSuccess);
+        Assert.Equal(5m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(0m, fx.Balances.Damaged(BranchB, fx.CokeId));
+
+        Assert.True((await fx.ReceiveDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorA, BranchA)).IsSuccess);
+
+        Assert.Equal(95m, fx.Balances.OnHand(BranchA, fx.CokeId));
+        Assert.Equal(90m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.InspectionHold(BranchA, fx.CokeId));
+
+        var returnIn = Assert.Single(
+            fx.Inventory.Movements.Where(m => m.MovementType == StockMovementType.TransferDamageReturnIn));
+        var effects = StockMovementPresentation.DescribeBucketEffects(
+            StockMovementTypes.ToCode(returnIn.MovementType),
+            returnIn.QuantityEffect);
+        Assert.Equal(5m, effects.PhysicalDelta);
+        Assert.Equal(0m, effects.SellableDelta);
+        Assert.Equal(5m, effects.InspectionHoldDelta);
+
+        var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(5m, dto!.RemainingToDispatchQty);
+        Assert.Equal(5m, custody.ReplacementDemandQty);
+
+        var r1Prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.True(r1Prep.IsSuccess, r1Prep.ErrorMessage);
+        Assert.Equal(5m, r1Prep.Value!.TotalSentQty);
+    }
+
+    /// <summary>
+    /// Scenario 3: Accept damage / no replacement + keep at destination.
+    /// Waives replacement demand; no R1; destination keeps non-sellable damaged.
+    /// </summary>
+    [Fact]
+    public async Task Scenario3_AcceptShortage_KeepAtDestination_end_to_end()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Apple", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 5m,
+                    DamagedQty: 5m,
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.AcceptShortage),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.KeepAtDestination))
+            ]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess, received.ErrorMessage);
+
+        Assert.Equal(InventoryTransferStatus.ClosedWithDiscrepancy, received.Value!.Status);
+        Assert.Equal(10m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Damaged(BranchB, fx.CokeId));
+        Assert.Equal(0m, fx.Balances.InspectionHold(BranchB, fx.CokeId));
+
+        var custody = Assert.Single(fx.DamageCustodies.Items);
+        Assert.Equal(InventoryTransferDamagedCustodyDecision.KeepAtDestination, custody.Decision);
+        Assert.Equal(InventoryTransferDamageCustodyStatus.HeldAtDestination, custody.Status);
+        Assert.Equal(InventoryTransferDiscrepancyFollowUp.AcceptShortage, custody.FollowUpIntent);
+        Assert.Equal(0m, custody.ReplacementDemandQty);
+
+        var dto = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(5m, dto!.SatisfiedAtDestinationQty);
+        Assert.Equal(5m, dto.WaivedQty);
+        Assert.Equal(0m, dto.RemainingToDispatchQty);
+        Assert.Equal(0m, dto.OpenInTransitQty);
+        Assert.DoesNotContain(
+            dto.FamilyMembers ?? [],
+            m => !m.IsRoot && m.ReplacementSequence is > 0);
+
+        var blocked = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.False(blocked.IsSuccess);
+
+        var srFinal = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), sr.Id);
+        Assert.Equal(StockRequestStatus.Fulfilled, srFinal!.Status);
+    }
+
+    /// <summary>
+    /// Scenario 4: Accept damage / no replacement + return to source.
+    /// No R1; returned damage parks inspection hold at source; source may inspect independently.
+    /// </summary>
+    [Fact]
+    public async Task Scenario4_AcceptShortage_ReturnToSource_end_to_end()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var sr = StockRequest.Create(
+            PosOrganizationId.From(OrgA),
+            PosBranchId.From(BranchB),
+            PosBranchId.From(BranchA),
+            [new StockRequestLineDraft(CatalogProductId.From(fx.CokeId), 10m, "Apple", UnitOfMeasure.Piece)],
+            ActorB,
+            Utc);
+        sr.Approve(ActorA, Utc, new Dictionary<Guid, decimal> { [fx.CokeId] = 10m });
+        await fx.StockRequests.AddAsync(sr);
+
+        var prep = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, prep.Value!.TransferId, ActorA, BranchA);
+        Assert.True((await fx.Receive.ExecuteAsync(
+            OrgA,
+            dispatched.Value!.Id.Value,
+            new ReceiveInventoryTransferRequest([
+                new InventoryTransferReceiveLineRequest(
+                    fx.CokeId,
+                    GoodQty: 5m,
+                    DamagedQty: 5m,
+                    DamagedFollowUp: nameof(InventoryTransferDiscrepancyFollowUp.AcceptShortage),
+                    DamagedCustodyDecision: nameof(InventoryTransferDamagedCustodyDecision.ReturnToSource))
+            ]),
+            ActorB,
+            BranchB)).IsSuccess);
+
+        Assert.Equal(10m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Damaged(BranchB, fx.CokeId));
+
+        var custody = Assert.Single(fx.DamageCustodies.Items);
+        Assert.Equal(InventoryTransferDamagedCustodyDecision.ReturnToSource, custody.Decision);
+        Assert.Equal(InventoryTransferDiscrepancyFollowUp.AcceptShortage, custody.FollowUpIntent);
+        Assert.Equal(0m, custody.ReplacementDemandQty);
+
+        var dtoAfterReceive = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(5m, dtoAfterReceive!.WaivedQty);
+        Assert.Equal(0m, dtoAfterReceive.RemainingToDispatchQty);
+
+        var blocked = await fx.PrepareStockRequestTransfer.ExecuteAsync(OrgA, sr.Id.Value, ActorA, BranchA);
+        Assert.False(blocked.IsSuccess);
+
+        Assert.True((await fx.DispatchDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorB, BranchB)).IsSuccess);
+        Assert.Equal(5m, fx.Balances.OnHand(BranchB, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.Available(BranchB, fx.CokeId));
+        Assert.Equal(0m, fx.Balances.Damaged(BranchB, fx.CokeId));
+
+        Assert.Equal(90m, fx.Balances.OnHand(BranchA, fx.CokeId));
+        Assert.Equal(90m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.True((await fx.ReceiveDamageReturn.ExecuteAsync(OrgA, custody.Id.Value, ActorA, BranchA)).IsSuccess);
+
+        Assert.Equal(95m, fx.Balances.OnHand(BranchA, fx.CokeId));
+        Assert.Equal(90m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(5m, fx.Balances.InspectionHold(BranchA, fx.CokeId));
+        Assert.Contains(fx.Inventory.Movements, m => m.MovementType == StockMovementType.TransferDamageReturnIn);
+
+        Assert.True((await fx.InspectDamageCustody.ExecuteAsync(
+            OrgA,
+            custody.Id.Value,
+            new InspectInventoryTransferDamageCustodyRequest(2m, 3m),
+            ActorA,
+            BranchA)).IsSuccess);
+
+        Assert.Equal(95m, fx.Balances.OnHand(BranchA, fx.CokeId));
+        Assert.Equal(92m, fx.Balances.Available(BranchA, fx.CokeId));
+        Assert.Equal(0m, fx.Balances.InspectionHold(BranchA, fx.CokeId));
+        Assert.Equal(3m, fx.Balances.Damaged(BranchA, fx.CokeId));
+        Assert.Equal(InventoryTransferDamageCustodyStatus.Inspected, custody.Status);
+
+        // Source recovery must never create replacement demand.
+        Assert.Equal(0m, custody.ReplacementDemandQty);
+        var dtoFinal = await fx.Queries.GetByIdAsync(OrgA, dispatched.Value.Id.Value);
+        Assert.Equal(0m, dtoFinal!.RemainingToDispatchQty);
+        Assert.DoesNotContain(
+            dtoFinal.FamilyMembers ?? [],
+            m => !m.IsRoot && m.ReplacementSequence is > 0);
+
+        var srFinal = await fx.StockRequests.GetByIdAsync(PosOrganizationId.From(OrgA), sr.Id);
+        Assert.Equal(StockRequestStatus.Fulfilled, srFinal!.Status);
+    }
+
     [Fact]
     public async Task B_Keep_at_destination_request_replacement_exposes_remaining_without_destination_inspection()
     {

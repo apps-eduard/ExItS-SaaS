@@ -145,6 +145,74 @@ describe("InventoryMovementTransactionDrawer", () => {
     });
   });
 
+  it("shows damage return received route, inventory effect, and disposition", async () => {
+    const movement: PosStockMovementDto = {
+      movementId: "mov-return-in",
+      productId: "prod-1",
+      inventoryAccountId: "acc-1",
+      movementType: "TransferDamageReturnIn",
+      quantityEffect: 5,
+      reason: "Transfer damage return in TR-260922-001",
+      sourceType: "InventoryTransfer",
+      sourceId: transferId,
+      transactionType: "InventoryTransfer",
+      transactionId: transferId,
+      transactionReference: "TR-260922-001",
+      recordedAtUtc: "2026-09-22T20:00:00Z",
+      recordedBy: "actor-1",
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={movement}
+                  unitOfMeasure="Kilogram"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("inventory-movement-transaction-this-movement")).toHaveTextContent(
+      /Damaged return received/i,
+    );
+    expect(screen.queryByTestId("inventory-reservations-drawer")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("inventory-movement-damage-return-route")).toBeInTheDocument();
+    });
+    const route = screen.getByTestId("inventory-movement-damage-return-route");
+    expect(route).toHaveTextContent(/Iloilo Branch/);
+    expect(route).toHaveTextContent(/Main Branch/);
+    expect(screen.getByTestId("inventory-movement-transaction-inventory-effect")).toHaveTextContent(
+      /Physical:\s*\+5/,
+    );
+    expect(screen.getByTestId("inventory-movement-transaction-inventory-effect")).toHaveTextContent(
+      /Sellable:\s*0/,
+    );
+    expect(screen.getByTestId("inventory-movement-transaction-inventory-effect")).toHaveTextContent(
+      /Inspection hold:\s*\+5/,
+    );
+    expect(screen.getByTestId("inventory-movement-damage-disposition")).toHaveTextContent(
+      /Returned to source/i,
+    );
+    expect(screen.getByTestId("inventory-movement-view-full-transfer")).toBeInTheDocument();
+  });
+
   it("shows replacement and return-to-source under Damaged transfer received", async () => {
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
       transferId,
