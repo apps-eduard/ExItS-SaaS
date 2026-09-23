@@ -189,6 +189,7 @@ describe("Inventory Transfer React flow", () => {
     expect(await screen.findByTestId(`transfer-row-${transferId}`)).toHaveTextContent(
       "Main Store → Branch B",
     );
+    expect(screen.getByTestId("transfer-list-desktop")).toHaveTextContent("Lines");
     await userEvent.click(screen.getByTestId("transfer-direction-outgoing"));
     await waitFor(() => {
       expect(transferClient.listInventoryTransfers).toHaveBeenCalledWith(
@@ -405,6 +406,10 @@ describe("Inventory Transfer React flow", () => {
     );
     await user.click(await screen.findByTestId("transfer-receive"));
     expect(await screen.findByTestId("inventory-transfer-receive-page")).toBeInTheDocument();
+    // Destination receive keeps canonical process header (status / timeline / preview / export).
+    expect(screen.getByTestId("po-process-header-actions")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-timeline-open")).toBeEnabled();
+    expect(screen.getByTestId("transfer-document-preview-open")).toBeEnabled();
     expect(screen.getByTestId(`transfer-receive-row-${lineId}`)).toHaveTextContent("24");
     await user.click(screen.getByTestId("transfer-receive-review"));
     await waitFor(() =>
@@ -468,6 +473,42 @@ describe("Inventory Transfer React flow", () => {
     });
   });
 
+  it("hides fulfillment panel on a lone draft with only remaining-to-dispatch", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...draftTransfer(),
+      remainingToDispatchQty: 10,
+      satisfiedAtDestinationQty: 0,
+      openInTransitQty: 0,
+      waivedQty: 0,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: null,
+          status: "Draft",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 0,
+          totalOutstandingQty: 10,
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("inventory-transfer-detail-page")).toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-family-coverage")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Original 94209ce4/i)).not.toBeInTheDocument();
+  });
+
   it("shows replacement family coverage panel", async () => {
     workspaceMock.boundWorkspace.branchId = branchBId;
     workspaceMock.boundWorkspace.branchName = "Branch B";
@@ -480,6 +521,27 @@ describe("Inventory Transfer React flow", () => {
       openInTransitQty: 5,
       remainingToDispatchQty: 3,
       waivedQty: 0,
+      stockRequestId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 10,
+              quantityDamaged: 5,
+              quantityMissing: 0,
+              quantityOther: 0,
+              damagedFollowUp: "RequestReplacement",
+            },
+          ],
+        },
+      ],
       familyMembers: [
         {
           transferId,
@@ -490,6 +552,7 @@ describe("Inventory Transfer React flow", () => {
           totalSentQty: 24,
           totalReceivedQty: 10,
           totalOutstandingQty: 5,
+          totalDamagedQty: 5,
         },
         {
           transferId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
@@ -535,10 +598,419 @@ describe("Inventory Transfer React flow", () => {
       </AppProviders>,
     );
     expect(await screen.findByTestId("transfer-family-coverage")).toBeInTheDocument();
+    expect(screen.getByText("Fulfillment")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-this-shipment")).toBeInTheDocument();
+    expect(screen.getByTestId("this-shipment-sent")).toHaveTextContent("24");
+    expect(screen.getByTestId("this-shipment-good")).toHaveTextContent("10");
+    expect(screen.getByTestId("this-shipment-damaged")).toHaveTextContent("5");
+    expect(screen.getByTestId("transfer-receiving-decision")).toBeInTheDocument();
+    expect(screen.getByTestId("receiving-decision-damaged-follow-up")).toHaveTextContent(
+      "Requested",
+    );
+    expect(screen.getByTestId("receiving-decision-custody")).toHaveTextContent(
+      "Keep at destination",
+    );
+    expect(screen.getByTestId("receiving-decision-inventory-state")).toHaveTextContent(
+      /Non-sellable/,
+    );
     expect(screen.getByTestId("transfer-family-members")).toBeInTheDocument();
-    expect(screen.getByText(/Replacement 260829-001-R1/)).toBeInTheDocument();
+    expect(screen.getByText("Replacement R1")).toBeInTheDocument();
+    expect(screen.getByText("260829-001-R1")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("transfer-family-member-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+    ).toHaveAttribute("href", "/inventory/transfers/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
     expect(screen.getByTestId("transfer-damage-custodies")).toBeInTheDocument();
-    expect(screen.getByTestId("transfer-custody-inspect-ffffffff-ffff-ffff-ffff-ffffffffffff")).toBeInTheDocument();
+    // Keep-at-destination damage is already classified; destination must not re-inspect.
+    expect(
+      screen.queryByTestId("transfer-custody-inspect-ffffffff-ffff-ffff-ffff-ffffffffffff"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("KeepAtDestination")).not.toBeInTheDocument();
+    expect(screen.queryByText("HeldAtDestination")).not.toBeInTheDocument();
+    expect(screen.queryByText("RequestReplacement")).not.toBeInTheDocument();
+    expect(screen.queryByText("ClosedWithDiscrepancy")).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Good received/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Needs fulfillment/i).length).toBeGreaterThan(0);
+    // Destination branch must not see source-only fulfill CTA.
+    expect(screen.queryByTestId("transfer-fulfill-remaining")).not.toBeInTheDocument();
+    expect(screen.getByTestId("transfer-view-stock-request")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-lines-desktop")).toBeInTheDocument();
+    expect(screen.getAllByText("Good").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Damaged").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Missing").length).toBeGreaterThan(0);
+    // Header still exposes timeline / status chip tooling.
+    expect(screen.getByTestId("transfer-timeline-open")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-route-summary")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-number-summary")).toHaveTextContent("260829-001");
+  });
+
+  it("keeps original this-shipment totals after replacement satisfies family", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const originalAfterR1 = {
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      totalOutstandingQty: 0,
+      satisfiedAtDestinationQty: 10,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 0,
+      waivedQty: 0,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityDamaged: 5,
+              quantityMissing: 0,
+              quantityOther: 0,
+              damagedFollowUp: "RequestReplacement",
+            },
+          ],
+        },
+      ],
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "TR-260922-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 5,
+        },
+        {
+          transferId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+          transferNumber: "TR-260922-001-R1",
+          status: "Received",
+          replacementSequence: 1,
+          isRoot: false,
+          totalSentQty: 5,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+        },
+      ],
+      damageCustodies: [
+        {
+          custodyId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          productId: cokeId,
+          quantity: 5,
+          decision: "KeepAtDestination",
+          followUpIntent: "RequestReplacement",
+          status: "HeldAtDestination",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedDamagedQty: 0,
+          waivedQty: 0,
+          destinationRecoveredSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(originalAfterR1 as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("this-shipment-sent")).toHaveTextContent("10");
+    expect(screen.getByTestId("this-shipment-good")).toHaveTextContent("5");
+    expect(screen.getByTestId("this-shipment-damaged")).toHaveTextContent("5");
+    expect(screen.getByTestId("transfer-fulfillment-target")).toHaveTextContent("10");
+    expect(screen.getByTestId("transfer-fulfillment-good")).toHaveTextContent("10");
+    expect(screen.getByTestId("transfer-fulfillment-needs-replacement")).toHaveTextContent("0");
+    expect(screen.queryByTestId("transfer-fulfill-remaining")).not.toBeInTheDocument();
+  });
+
+  it("shows AcceptShortage + ReturnToSource receiving decision labels", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityDamaged: 5,
+              damagedFollowUp: "AcceptShortage",
+            },
+          ],
+        },
+      ],
+      damageCustodies: [
+        {
+          custodyId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          productId: cokeId,
+          quantity: 5,
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "AwaitingReturn",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedDamagedQty: 0,
+          waivedQty: 0,
+          destinationRecoveredSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("receiving-decision-damaged-follow-up")).toHaveTextContent(
+      "No replacement",
+    );
+    expect(screen.getByTestId("receiving-decision-custody")).toHaveTextContent(
+      "Return to source",
+    );
+    expect(screen.getByTestId("receiving-decision-return-status")).toHaveTextContent(
+      "Waiting to return",
+    );
+    expect(screen.queryByText("AcceptShortage")).not.toBeInTheDocument();
+    expect(screen.queryByText("ReturnToSource")).not.toBeInTheDocument();
+    expect(screen.queryByText("AwaitingReturn")).not.toBeInTheDocument();
+  });
+
+  it("shows missing disposition from persisted receipt decision", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "PartiallyReceived",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      openInTransitQty: 5,
+      remainingToDispatchQty: 0,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityDamaged: 0,
+              quantityMissing: 5,
+              missingDisposition: "ExpectedLater",
+            },
+          ],
+        },
+      ],
+      damageCustodies: [],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("this-shipment-missing")).toHaveTextContent("5");
+    expect(screen.getByTestId("receiving-decision-missing-disposition")).toHaveTextContent(
+      "Wait for remaining delivery",
+    );
+    expect(screen.queryByText("ExpectedLater")).not.toBeInTheDocument();
+  });
+
+  it("source can fulfill remaining from transfer coverage panel", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const draftId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const familyTransfer = {
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalReceivedQty: 5,
+      totalOutstandingQty: 0,
+      satisfiedAtDestinationQty: 5,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 5,
+      waivedQty: 0,
+      stockRequestId: null,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityDamaged: 5,
+              damagedFollowUp: "RequestReplacement",
+            },
+          ],
+        },
+      ],
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 5,
+        },
+      ],
+      damageCustodies: [
+        {
+          custodyId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          productId: cokeId,
+          quantity: 5,
+          decision: "KeepAtDestination",
+          followUpIntent: "RequestReplacement",
+          status: "HeldAtDestination",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedDamagedQty: 0,
+          waivedQty: 0,
+          destinationRecoveredSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(familyTransfer as never);
+    const prepareSpy = vi
+      .spyOn(transferClient, "prepareInventoryTransferRemaining")
+      .mockResolvedValue({
+        ...draftTransfer(),
+        transferId: draftId,
+        rootTransferId: transferId,
+        replacementSequence: 1,
+        transferNumber: "260829-001-R1",
+      } as never);
+    const user = userEvent.setup();
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("transfer-family-coverage")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-fulfillment-needs-replacement")).toHaveTextContent("5");
+    expect(screen.queryByTestId("transfer-view-stock-request")).not.toBeInTheDocument();
+    expect(screen.getByTestId("transfer-fulfill-remaining-notice")).toBeInTheDocument();
+    expect(screen.getByTestId("transfer-fulfill-remaining-header")).toHaveTextContent(
+      /Fulfill remaining 5/i,
+    );
+    expect(screen.getByTestId("transfer-fulfill-remaining-actions")).toHaveTextContent(
+      /Fulfill remaining 5/i,
+    );
+    const fulfillBtn = screen.getByTestId("transfer-fulfill-remaining");
+    expect(fulfillBtn).toHaveTextContent(/Fulfill remaining 5/i);
+    await user.click(fulfillBtn);
+    await waitFor(() => expect(prepareSpy).toHaveBeenCalled());
+    expect(prepareSpy.mock.calls[0]?.[1]).toBe(transferId);
+  });
+
+  it("source can fulfill remaining when branch ids differ only by case", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId.toUpperCase();
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const familyTransfer = {
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalReceivedQty: 5,
+      totalOutstandingQty: 0,
+      satisfiedAtDestinationQty: 5,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 5,
+      waivedQty: 0,
+      stockRequestId: null,
+      sourceBranchId: mainId.toLowerCase(),
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+        },
+      ],
+      damageCustodies: [],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue(familyTransfer as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+    expect(await screen.findByTestId("transfer-fulfill-remaining-header")).toHaveTextContent(
+      /Fulfill remaining 5/i,
+    );
+    expect(screen.getByTestId("inventory-transfer-detail-page")).toHaveAttribute(
+      "data-can-fulfill-remaining",
+      "true",
+    );
   });
 
   it("rejects received quantity above sent and disables receive", async () => {

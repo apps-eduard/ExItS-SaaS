@@ -20,6 +20,7 @@ internal static class InventoryTransferEndpoints
         group.MapPost("/transfers/{transferId:guid}/receive", ReceiveTransfer);
         group.MapPost("/transfers/{transferId:guid}/close-remainder", CloseRemainderTransfer);
         group.MapPost("/transfers/{transferId:guid}/cancel", CancelTransfer);
+        group.MapPost("/transfers/{transferId:guid}/prepare-remaining", PrepareRemainingTransfer);
         group.MapPost("/transfers/{transferId:guid}/damage-handling-policy", SetDamageHandlingPolicy);
         group.MapPost("/transfers/damage-custodies/{custodyId:guid}/dispatch-return", DispatchDamageReturn);
         group.MapPost("/transfers/damage-custodies/{custodyId:guid}/receive-return", ReceiveDamageReturn);
@@ -135,6 +136,33 @@ internal static class InventoryTransferEndpoints
                     organizationId,
                     queries,
                     ct2),
+                dto => dto,
+                Results.Ok,
+                ct)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task<IResult> PrepareRemainingTransfer(
+        HttpRequest request,
+        Guid transferId,
+        PrepareInventoryTransferRemaining useCase,
+        IPosIdempotencyService idempotency,
+        IPosCommercialAccessAccessor access,
+        CancellationToken ct)
+    {
+        if (!TryAuthorize(request, access, UtangCapability.ManageInventory, out var organizationId, out var problem)
+            || !PosOrganizationScope.TryGetActorId(request, out var actorId, out problem)
+            || !PosOrganizationScope.TryGetBranchId(request, out var branchId, out problem))
+        {
+            return problem!;
+        }
+
+        return await PosIdempotencyEndpointHelper.ExecuteMutationAsync(
+                request,
+                organizationId,
+                OfflineOperationTypes.InventoryTransferCreate,
+                idempotency,
+                ct2 => useCase.ExecuteAsync(organizationId, transferId, actorId, branchId, ct2),
                 dto => dto,
                 Results.Ok,
                 ct)

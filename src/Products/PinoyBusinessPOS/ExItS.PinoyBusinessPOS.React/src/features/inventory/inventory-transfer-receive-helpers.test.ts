@@ -5,6 +5,8 @@ import {
   canDestinationReceiveTransfer,
   defaultReceiveNowByLine,
   isReceiveSubmissionReady,
+  lineDamagedQty,
+  lineNeedsFulfillmentQty,
   lineOutstandingQty,
   parseReceiveNowQuantity,
 } from "@/features/inventory/inventory-transfer-receive-helpers";
@@ -69,5 +71,43 @@ describe("inventory-transfer-receive-helpers", () => {
     const byLine = { [line.lineId]: "0" };
     expect(isReceiveSubmissionReady(transfer.lines, byLine)).toBe(false);
     expect(isReceiveSubmissionReady(transfer.lines, { [line.lineId]: "2" })).toBe(true);
+  });
+
+  it("Scenario 1 table: Sent Good Damaged InTransit NeedsFulfillment", () => {
+    const scenarioLine = {
+      ...line,
+      sentQty: 10,
+      receivedQty: 5,
+      outstandingQty: 0,
+      closedQty: 5,
+      waivedQty: 0,
+      differenceQty: 5,
+    };
+    const scenarioTransfer = {
+      ...transfer,
+      status: "ClosedWithDiscrepancy",
+      lines: [scenarioLine],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T12:00:00Z",
+          receivedBy: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          lines: [
+            {
+              receiptLineId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              lineId: scenarioLine.lineId,
+              productId: scenarioLine.productId,
+              quantityReceived: 5,
+              quantityDamaged: 5,
+            },
+          ],
+        },
+      ],
+    } as InventoryTransferDto;
+
+    expect(lineDamagedQty(scenarioTransfer, scenarioLine.lineId)).toBe(5);
+    expect(lineOutstandingQty(scenarioLine)).toBe(0);
+    expect(lineNeedsFulfillmentQty(scenarioLine)).toBe(5);
   });
 });

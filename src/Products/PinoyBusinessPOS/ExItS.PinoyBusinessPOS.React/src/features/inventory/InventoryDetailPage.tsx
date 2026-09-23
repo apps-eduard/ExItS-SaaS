@@ -16,6 +16,7 @@ import {
   listProductLots,
   type PosInventoryAreaRollupDto,
   type PosInventoryLotDto,
+  type PosStockMovementDto,
 } from "@/api/pos/pos-inventory-client";
 import { getCatalogProduct } from "@/api/pos/pos-catalog-client";
 import { PosApiError } from "@/api/pos/pos-http";
@@ -45,6 +46,7 @@ import {
 import { expirationSettingsPath } from "@/features/inventory/expiration-settings-routes";
 import { InventoryLotList } from "@/features/inventory/InventoryLotList";
 import { InventoryMovementsResponsiveList } from "@/features/inventory/InventoryMovementsResponsiveList";
+import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
 import {
   formatInventoryQty,
   InventoryInTransitBadge,
@@ -119,6 +121,7 @@ export function InventoryDetailPage() {
   const [statusLocked, setStatusLocked] = useState(false);
   const [statusDetailsOpen, setStatusDetailsOpen] = useState(false);
   const [reservationsOpen, setReservationsOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<PosStockMovementDto | null>(null);
   const [areaOverrides, setAreaOverrides] = useState<Record<string, boolean>>({});
   const movementIdRef = useRef<string | null>(null);
   const statusDetailsId = useId();
@@ -1499,7 +1502,7 @@ export function InventoryDetailPage() {
           unitOfMeasure={account.unitOfMeasure}
           resolveActor={(actorId) => actors.resolve(actorId)}
           actorsLoading={actors.isResolving}
-          onOpenReservations={() => setReservationsOpen(true)}
+          onOpenMovement={(movement) => setSelectedMovement(movement)}
         />
       </div>
 
@@ -1512,6 +1515,20 @@ export function InventoryDetailPage() {
           productNameFallback={account.name}
         />
       ) : null}
+
+      <InventoryMovementTransactionDrawer
+        open={selectedMovement != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedMovement(null);
+          }
+        }}
+        movement={selectedMovement}
+        unitOfMeasure={account.unitOfMeasure}
+        workspace={workspace}
+        resolveActor={(actorId) => actors.resolve(actorId)}
+        actorsLoading={actors.isResolving}
+      />
     </div>
   );
 }

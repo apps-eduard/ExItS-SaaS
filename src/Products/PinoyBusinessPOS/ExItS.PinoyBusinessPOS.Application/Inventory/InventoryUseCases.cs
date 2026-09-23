@@ -259,9 +259,17 @@ public sealed class InventoryQueryService
             .ConfigureAwait(false);
 
         var lotById = await LoadMovementLotsAsync(orgId, items, cancellationToken).ConfigureAwait(false);
+        var transactionRefs = await _transfers
+            .ResolveStockMovementTransactionRefsAsync(orgId, items, cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosStockMovementDto>(
-            items.Select(m => MapMovement(m, ResolveMovementLot(m, lotById))).ToList(),
+            items.Select(m =>
+                {
+                    transactionRefs.TryGetValue(m.Id.Value, out var trx);
+                    return MapMovement(m, ResolveMovementLot(m, lotById), trx);
+                })
+                .ToList(),
             total,
             Math.Max(page ?? 1, 1),
             take);
@@ -293,7 +301,11 @@ public sealed class InventoryQueryService
             lot = await _lots.GetByIdAsync(orgId, lotId, cancellationToken).ConfigureAwait(false);
         }
 
-        return MapMovement(movement, lot);
+        var transactionRefs = await _transfers
+            .ResolveStockMovementTransactionRefsAsync(orgId, [movement], cancellationToken)
+            .ConfigureAwait(false);
+        transactionRefs.TryGetValue(movement.Id.Value, out var trx);
+        return MapMovement(movement, lot, trx);
     }
 
     private static bool MovementBelongsToBranch(StockMovement movement, BranchInventoryContext context)
@@ -539,11 +551,24 @@ public sealed class InventoryQueryService
             0m);
     }
 
-    public static PosStockMovementDto MapMovement(StockMovement movement, InventoryLot? lot = null)
+    public static PosStockMovementDto MapMovement(
+        StockMovement movement,
+        InventoryLot? lot = null,
+        InventoryTransferTransactionRef? transactionRef = null)
     {
         decimal? stockValue = movement.UnitCost is { } cost
             ? SaleMoney.RoundMoney(cost * movement.QuantityEffect)
             : null;
+
+        string? transactionType = null;
+        Guid? transactionId = null;
+        string? transactionReference = null;
+        if (transactionRef is not null)
+        {
+            transactionType = StockMovementSourceTypes.ToCode(StockMovementSourceType.InventoryTransfer);
+            transactionId = transactionRef.TransferId;
+            transactionReference = transactionRef.TransferNumber;
+        }
 
         return new PosStockMovementDto(
             movement.Id.Value,
@@ -560,7 +585,10 @@ public sealed class InventoryQueryService
             lot?.LotNumber,
             movement.UnitCost,
             stockValue,
-            movement.BranchId);
+            movement.BranchId,
+            transactionType,
+            transactionId,
+            transactionReference);
     }
 }
 
@@ -1481,7 +1509,12 @@ public sealed class SaleStockService : ISaleStockService
                     PosBranchId.From(location),
                     balances,
                     productId);
-                available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                available = BranchStockResolver.ResolveAvailable(
+                    PosBranchId.From(location),
+                    balances,
+                    productId,
+                    onHand,
+                    reserved);
             }
 
             if (available < needed)
@@ -1545,7 +1578,12 @@ public sealed class SaleStockService : ISaleStockService
                                 PosBranchId.From(location),
                                 balances,
                                 line.ProductId);
-                            if (BranchStockResolver.ResolveAvailable(onHand, reserved) < line.Quantity)
+                            if (BranchStockResolver.ResolveAvailable(
+                                    PosBranchId.From(location),
+                                    balances,
+                                    line.ProductId,
+                                    onHand,
+                                    reserved) < line.Quantity)
                             {
                                 throw new DomainException(
                                     ApplicationErrorCodes.InsufficientStock,

@@ -124,6 +124,7 @@ public static class ApplicationErrorCodes
     public const string InventoryTransferProductNotTracked = "pos.inventory.transfer.product.not_tracked";
     public const string InventoryTransferAlreadyReceived = "pos.inventory.transfer.already_received";
     public const string InventoryTransferBranchForbidden = "pos.inventory.transfer.branch.forbidden";
+    public const string InventoryTransferNoRemainingToFulfill = "pos.inventory.transfer.no_remaining_to_fulfill";
 
     /// <summary>On-hand stock must be allocated into lots via enable-expiration-tracking.</summary>
     public const string ExpirationInitializationRequired = "pos.inventory.expiration.initialization_required";

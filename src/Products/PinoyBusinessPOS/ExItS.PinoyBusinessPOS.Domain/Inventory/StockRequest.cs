@@ -287,6 +287,19 @@ public sealed class StockRequest
 
     public void RecalculateStatusFromReceivedQuantities(
         IReadOnlyDictionary<Guid, decimal> receivedByProduct,
+        DateTimeOffset utcNow) =>
+        RecalculateStatusFromFulfillmentCoverage(
+            receivedByProduct,
+            waivedByProduct: new Dictionary<Guid, decimal>(),
+            utcNow);
+
+    /// <summary>
+    /// Recalculates status from good received + waived (accepted shortage/damage/other).
+    /// Damaged physical inventory never counts as good received.
+    /// </summary>
+    public void RecalculateStatusFromFulfillmentCoverage(
+        IReadOnlyDictionary<Guid, decimal> goodReceivedByProduct,
+        IReadOnlyDictionary<Guid, decimal> waivedByProduct,
         DateTimeOffset utcNow)
     {
         SaleMoney.EnsureUtc(utcNow);
@@ -295,34 +308,37 @@ public sealed class StockRequest
             return;
         }
 
-        var anyReceived = false;
+        var anyProgress = false;
         var allFulfilled = true;
         foreach (var line in _lines)
         {
-            var received = receivedByProduct.GetValueOrDefault(line.ProductId.Value);
+            var productId = line.ProductId.Value;
+            var good = goodReceivedByProduct.GetValueOrDefault(productId);
+            var waived = waivedByProduct.GetValueOrDefault(productId);
+            var covered = good + waived;
             var target = line.FulfillmentTargetQuantity;
-            if (received > 0m)
+            if (covered > 0m)
             {
-                anyReceived = true;
+                anyProgress = true;
             }
 
-            if (received < target)
+            if (covered < target)
             {
                 allFulfilled = false;
             }
         }
 
-        if (allFulfilled && anyReceived)
+        if (allFulfilled && anyProgress)
         {
             Status = StockRequestStatus.Fulfilled;
         }
-        else if (anyReceived)
+        else if (anyProgress)
         {
             Status = StockRequestStatus.PartiallyFulfilled;
         }
         else if (Status == StockRequestStatus.InTransit)
         {
-            // Keep InTransit when nothing has been received yet.
+            // Keep InTransit when nothing has been received/waived yet.
         }
         else if (Status == StockRequestStatus.Pending)
         {

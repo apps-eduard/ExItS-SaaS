@@ -46,6 +46,38 @@ export function lineOutstandingQty(
   return line.sentQty - line.receivedQty - lineClosedQty(line as InventoryTransferLineDto);
 }
 
+/** Damaged qty received for a transfer line (from immutable receipt classification). */
+export function lineDamagedQty(
+  transfer: Pick<InventoryTransferDto, "receipts">,
+  lineId: string,
+): number {
+  let total = 0;
+  for (const receipt of transfer.receipts ?? []) {
+    for (const rl of receipt.lines ?? []) {
+      if (rl.lineId === lineId) {
+        total += rl.quantityDamaged ?? 0;
+      }
+    }
+  }
+  return total;
+}
+
+/**
+ * Remaining fulfillment obligation for this line on the transfer family / stock request:
+ * MAX(0, Sent − Good − InTransit − Waived). Damaged itself never reduces this.
+ */
+export function lineNeedsFulfillmentQty(
+  line: Pick<
+    InventoryTransferLineDto,
+    "sentQty" | "receivedQty" | "closedQty" | "outstandingQty" | "waivedQty"
+  >,
+): number {
+  const good = line.receivedQty;
+  const inTransit = lineOutstandingQty(line);
+  const waived = line.waivedQty ?? 0;
+  return Math.max(0, line.sentQty - good - inTransit - waived);
+}
+
 export function transferTotalOutstanding(transfer: InventoryTransferDto): number {
   if (transfer.totalOutstandingQty != null && Number.isFinite(transfer.totalOutstandingQty)) {
     return transfer.totalOutstandingQty;

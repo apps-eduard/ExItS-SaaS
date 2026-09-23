@@ -19,6 +19,8 @@ export function resolveAvailableQuantity(item: {
   availableQuantity?: number | null;
   reservedQuantity?: number | null;
   pendingReturnQuantity?: number | null;
+  inspectionHoldQuantity?: number | null;
+  damagedQuantity?: number | null;
 }): number {
   if (!item.isTracked) return item.onHandQuantity;
   if (item.availableQuantity != null && Number.isFinite(item.availableQuantity)) {
@@ -32,7 +34,15 @@ export function resolveAvailableQuantity(item: {
     item.pendingReturnQuantity != null && Number.isFinite(item.pendingReturnQuantity)
       ? Math.max(0, item.pendingReturnQuantity)
       : 0;
-  return Math.max(0, item.onHandQuantity - reserved - pendingReturn);
+  const inspectionHold =
+    item.inspectionHoldQuantity != null && Number.isFinite(item.inspectionHoldQuantity)
+      ? Math.max(0, item.inspectionHoldQuantity)
+      : 0;
+  const damaged =
+    item.damagedQuantity != null && Number.isFinite(item.damagedQuantity)
+      ? Math.max(0, item.damagedQuantity)
+      : 0;
+  return Math.max(0, item.onHandQuantity - reserved - pendingReturn - inspectionHold - damaged);
 }
 
 export function resolveReservedQuantity(item: {

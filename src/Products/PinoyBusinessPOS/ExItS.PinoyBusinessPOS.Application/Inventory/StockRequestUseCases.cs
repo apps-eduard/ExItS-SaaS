@@ -463,6 +463,14 @@ public sealed class StockRequestQueryService
         IReadOnlyDictionary<Guid, string> names)
     {
         var coverage = StockRequestDispatchCoverage.Compute(request, linkedTransfers);
+        var activeTransfers = linkedTransfers
+            .Where(t => t.Status != InventoryTransferStatus.Cancelled)
+            .ToList();
+        var damagedByProduct = activeTransfers
+            .SelectMany(t => t.Receipts)
+            .SelectMany(r => r.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.QuantityDamaged));
 
         return new(
             request.Id.Value,
@@ -507,7 +515,9 @@ public sealed class StockRequestQueryService
                     remaining,
                     waived,
                     line.NameSnapshot,
-                    UnitOfMeasures.ToCode(line.UnitOfMeasure));
+                    UnitOfMeasures.ToCode(line.UnitOfMeasure),
+                    damagedByProduct.GetValueOrDefault(productId),
+                    line.FulfillmentTargetQuantity);
             }).ToList(),
             linkedTransfers
                 .OrderByDescending(t => t.UpdatedAtUtc)
@@ -1533,14 +1543,12 @@ public sealed class DispatchStockRequest
 }
 
 /// <summary>
-/// Authoritative stock-request dispatch coverage.
-/// SatisfiedAtDestination = GoodReceived + DestinationRecoveredSellable.
-/// RemainingToDispatch = MAX(0, Approved − Satisfied − OpenInTransit − Waived − UninspectedKeepHold)
-/// where OpenInTransit is outstanding on InTransit/PartiallyReceived transfers only
-/// (not Draft, Received, ClosedWithDiscrepancy, Cancelled).
-/// Waived = sum of WaivedQty on non-cancelled linked transfer lines.
-/// UninspectedKeepHold blocks premature replacement of keep-at-destination damage until inspection.
-/// Source recovered sellable never counts as destination satisfaction.
+/// Authoritative stock-request dispatch coverage (used by query + prepare/dispatch).
+/// SatisfiedGood = SUM(GoodReceived) across non-cancelled linked transfers.
+/// OpenInTransit = outstanding on InTransit / PartiallyReceived family members only.
+/// Waived = accepted shortage / accepted damage / accepted other on transfer lines.
+/// RemainingToDispatch = MAX(0, FulfillmentTarget − SatisfiedGood − OpenInTransit − Waived).
+/// Damaged physical inventory, destination hold, and source recovery never satisfy destination demand.
 /// </summary>
 internal static class StockRequestDispatchCoverage
 {
@@ -1548,8 +1556,6 @@ internal static class StockRequestDispatchCoverage
         IReadOnlyDictionary<Guid, decimal> ReceivedByProduct,
         IReadOnlyDictionary<Guid, decimal> OpenInTransitByProduct,
         IReadOnlyDictionary<Guid, decimal> WaivedByProduct,
-        IReadOnlyDictionary<Guid, decimal> DestinationRecoveredByProduct,
-        IReadOnlyDictionary<Guid, decimal> UninspectedKeepHoldByProduct,
         IReadOnlyDictionary<Guid, decimal> RemainingToDispatchByProduct);
 
     internal static Snapshot Compute(
@@ -1557,8 +1563,10 @@ internal static class StockRequestDispatchCoverage
         IReadOnlyList<InventoryTransfer> linkedTransfers,
         IReadOnlyList<InventoryTransferDamageCustody>? damageCustodies = null)
     {
+        // damageCustodies retained for call-site compatibility; they never adjust Remaining.
+        _ = damageCustodies;
+
         var active = linkedTransfers.Where(t => t.Status != InventoryTransferStatus.Cancelled).ToList();
-        var custodies = damageCustodies ?? [];
 
         var receivedByProduct = active
             .SelectMany(t => t.Lines)
@@ -1576,31 +1584,16 @@ internal static class StockRequestDispatchCoverage
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.WaivedQty));
 
-        var destinationRecoveredByProduct = custodies
-            .GroupBy(c => c.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.DestinationRecoveredSellableQty));
-
-        var uninspectedKeepHoldByProduct = custodies
-            .Where(c =>
-                c.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
-                && c.Status != InventoryTransferDamageCustodyStatus.Inspected
-                && c.FollowUpIntent != InventoryTransferDiscrepancyFollowUp.AcceptShortage)
-            .GroupBy(c => c.ProductId.Value)
-            .ToDictionary(g => g.Key, g => g.Sum(x => x.Quantity));
-
         var remainingByProduct = new Dictionary<Guid, decimal>();
         foreach (var line in stockRequest.Lines)
         {
             var productId = line.ProductId.Value;
-            var satisfied = receivedByProduct.GetValueOrDefault(productId)
-                + destinationRecoveredByProduct.GetValueOrDefault(productId);
             var remaining = Math.Max(
                 0m,
                 line.FulfillmentTargetQuantity
-                - satisfied
+                - receivedByProduct.GetValueOrDefault(productId)
                 - openInTransitByProduct.GetValueOrDefault(productId)
-                - waivedByProduct.GetValueOrDefault(productId)
-                - uninspectedKeepHoldByProduct.GetValueOrDefault(productId));
+                - waivedByProduct.GetValueOrDefault(productId));
             remainingByProduct[productId] = remaining;
         }
 
@@ -1608,8 +1601,6 @@ internal static class StockRequestDispatchCoverage
             receivedByProduct,
             openInTransitByProduct,
             waivedByProduct,
-            destinationRecoveredByProduct,
-            uninspectedKeepHoldByProduct,
             remainingByProduct);
     }
 

@@ -144,7 +144,10 @@ public sealed record InventoryTransferFamilyMemberDto(
     bool IsRoot,
     decimal TotalSentQty,
     decimal TotalReceivedQty,
-    decimal TotalOutstandingQty);
+    decimal TotalOutstandingQty,
+    decimal TotalDamagedQty = 0,
+    decimal TotalMissingQty = 0,
+    decimal TotalOtherQty = 0);
 
 public sealed record InventoryTransferDamageCustodyDto(
     Guid CustodyId,

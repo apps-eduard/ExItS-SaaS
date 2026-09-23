@@ -143,6 +143,9 @@ export const inventoryTransferDtoSchema = z.object({
         totalSentQty: z.number(),
         totalReceivedQty: z.number(),
         totalOutstandingQty: z.number(),
+        totalDamagedQty: z.number().optional(),
+        totalMissingQty: z.number().optional(),
+        totalOtherQty: z.number().optional(),
       }),
     )
     .nullable()
@@ -394,6 +397,27 @@ export async function dispatchInventoryTransfer(
     workspace,
     signal,
     path: `${PATH}/${transferId}/dispatch`,
+    body: {},
+    headers,
+  });
+  return inventoryTransferDtoSchema.parse(raw);
+}
+
+export async function prepareInventoryTransferRemaining(
+  workspace: PosWorkspaceScope,
+  transferId: string,
+  signal?: AbortSignal,
+): Promise<InventoryTransferDto> {
+  const headers = await buildPosMutationIdempotencyHeaders(
+    transferId,
+    "{}",
+    OFFLINE_OPERATION_TYPES.InventoryTransferCreate,
+  );
+  const raw = await posRequest<unknown>({
+    method: "POST",
+    workspace,
+    signal,
+    path: `${PATH}/${transferId}/prepare-remaining`,
     body: {},
     headers,
   });

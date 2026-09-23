@@ -62,10 +62,11 @@ public sealed class InventoryTransferQueryService
             .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
             .ConfigureAwait(false);
 
+        // Authoritative family coverage (same formula as StockRequestDispatchCoverage):
+        // Remaining = MAX(0, Target − GoodReceived − OpenInTransit − Waived)
         var goodReceived = family.Where(t => t.Status != InventoryTransferStatus.Cancelled)
             .SelectMany(t => t.Lines)
             .Sum(l => l.ReceivedQty);
-        var destRecovered = custodies.Sum(c => c.DestinationRecoveredSellableQty);
         var openInTransit = family
             .Where(t => t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived)
             .SelectMany(t => t.Lines)
@@ -73,30 +74,31 @@ public sealed class InventoryTransferQueryService
         var waived = family.Where(t => t.Status != InventoryTransferStatus.Cancelled)
             .SelectMany(t => t.Lines)
             .Sum(l => l.WaivedQty);
-        var uninspectedKeep = custodies
-            .Where(c =>
-                c.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
-                && c.Status != InventoryTransferDamageCustodyStatus.Inspected
-                && c.FollowUpIntent != InventoryTransferDiscrepancyFollowUp.AcceptShortage)
-            .Sum(c => c.Quantity);
         var target = family.Where(t => t.RootTransferId is null).SelectMany(t => t.Lines).Sum(l => l.SentQty);
-        var remaining = Math.Max(0m, target - goodReceived - destRecovered - openInTransit - waived - uninspectedKeep);
+        var remaining = Math.Max(0m, target - goodReceived - openInTransit - waived);
 
         return Map(
             transfer,
             names,
             skuByProduct,
-            family.Select(t => new InventoryTransferFamilyMemberDto(
-                t.Id.Value,
-                t.TransferNumber,
-                InventoryTransferStatuses.ToCode(t.Status),
-                t.ReplacementSequence,
-                t.RootTransferId is null,
-                t.TotalSentQty,
-                t.TotalReceivedQty,
-                t.TotalOutstandingQty)).ToList(),
+            family.Select(t =>
+            {
+                var receiptLines = t.Receipts.SelectMany(r => r.Lines);
+                return new InventoryTransferFamilyMemberDto(
+                    t.Id.Value,
+                    t.TransferNumber,
+                    InventoryTransferStatuses.ToCode(t.Status),
+                    t.ReplacementSequence,
+                    t.RootTransferId is null,
+                    t.TotalSentQty,
+                    t.TotalReceivedQty,
+                    t.TotalOutstandingQty,
+                    receiptLines.Sum(l => l.QuantityDamaged),
+                    receiptLines.Sum(l => l.QuantityMissing),
+                    receiptLines.Sum(l => l.QuantityOther));
+            }).ToList(),
             custodies.Select(InventoryTransferDamageCustodyMapping.Map).ToList(),
-            goodReceived + destRecovered,
+            goodReceived,
             openInTransit,
             remaining,
             waived);
@@ -395,6 +397,167 @@ public sealed class CreateInventoryTransfer
         {
             return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+}
+
+/// <summary>
+/// Source prepares a draft replacement transfer for family remaining qty
+/// (direct transfers without a stock request, or when remaining is still open).
+/// Idempotent: returns an existing linked Draft when present.
+/// </summary>
+public sealed class PrepareInventoryTransferRemaining
+{
+    private readonly IInventoryTransferRepository _transfers;
+    private readonly CreateInventoryTransfer _createTransfer;
+    private readonly InventoryTransferQueryService _queries;
+    private readonly PrepareStockRequestTransfer _prepareStockRequestTransfer;
+
+    public PrepareInventoryTransferRemaining(
+        IInventoryTransferRepository transfers,
+        CreateInventoryTransfer createTransfer,
+        InventoryTransferQueryService queries,
+        PrepareStockRequestTransfer prepareStockRequestTransfer)
+    {
+        _transfers = transfers;
+        _createTransfer = createTransfer;
+        _queries = queries;
+        _prepareStockRequestTransfer = prepareStockRequestTransfer;
+    }
+
+    public async Task<ApplicationResult<InventoryTransferDto>> ExecuteAsync(
+        Guid organizationId,
+        Guid transferId,
+        Guid actorId,
+        Guid actingBranchId,
+        CancellationToken cancellationToken = default)
+    {
+        var orgId = PosOrganizationId.From(organizationId);
+        var transfer = await _transfers
+            .GetByIdAsync(orgId, InventoryTransferId.From(transferId), cancellationToken)
+            .ConfigureAwait(false);
+        if (transfer is null)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferNotFound,
+                "Inventory transfer was not found.");
+        }
+
+        if (transfer.StockRequestId is StockRequestId stockRequestId)
+        {
+            return await _prepareStockRequestTransfer
+                .ExecuteAsync(organizationId, stockRequestId.Value, actorId, actingBranchId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (actingBranchId != transfer.SourceBranchId.Value)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferBranchForbidden,
+                "Only the source branch can prepare remaining fulfillment.");
+        }
+
+        var family = await _transfers
+            .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
+            .ConfigureAwait(false);
+        if (family.Count == 0)
+        {
+            family = [transfer];
+        }
+
+        var existingDraft = family.FirstOrDefault(t => t.Status == InventoryTransferStatus.Draft);
+        if (existingDraft is not null)
+        {
+            var existingDto = await _queries
+                .GetByIdAsync(organizationId, existingDraft.Id.Value, cancellationToken)
+                .ConfigureAwait(false);
+            return existingDto is null
+                ? ApplicationResult<InventoryTransferDto>.Failure(
+                    ApplicationErrorCodes.InventoryTransferNotFound,
+                    "Inventory transfer was not found.")
+                : ApplicationResult<InventoryTransferDto>.Success(existingDto);
+        }
+
+        var root = family.FirstOrDefault(t => t.RootTransferId is null)
+            ?? family.OrderBy(t => t.CreatedAtUtc).First();
+        var remainingLines = BuildRemainingFamilyLines(family, root);
+        if (remainingLines.Count == 0)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferNoRemainingToFulfill,
+                "No remaining quantity is available to prepare. Outstanding quantity is already covered.");
+        }
+
+        var nextSequence = family
+            .Where(t => t.RootTransferId == root.Id || t.Id == root.Id)
+            .Select(t => t.ReplacementSequence ?? 0)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        var createRequest = new CreateInventoryTransferRequest(
+            root.SourceBranchId.Value,
+            root.DestinationBranchId.Value,
+            remainingLines,
+            root.Notes,
+            StockRequestId: null,
+            RootTransferId: root.Id.Value,
+            ReplacementSequence: nextSequence,
+            ReplacementReason: "Replacement for remaining / discrepancy fulfillment",
+            DamageHandlingPolicy: InventoryTransferDamageHandlingPolicies.ToCode(root.DamageHandlingPolicy));
+
+        var created = await _createTransfer
+            .ExecuteAsync(organizationId, createRequest, actorId, actingBranchId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!created.IsSuccess)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(created.ErrorCode!, created.ErrorMessage!);
+        }
+
+        var dto = await _queries
+            .GetByIdAsync(organizationId, created.Value!.Id.Value, cancellationToken)
+            .ConfigureAwait(false);
+        return dto is null
+            ? ApplicationResult<InventoryTransferDto>.Failure(
+                ApplicationErrorCodes.InventoryTransferNotFound,
+                "Inventory transfer was not found.")
+            : ApplicationResult<InventoryTransferDto>.Success(dto);
+    }
+
+    internal static IReadOnlyList<InventoryTransferLineRequest> BuildRemainingFamilyLines(
+        IReadOnlyList<InventoryTransfer> family,
+        InventoryTransfer root)
+    {
+        var active = family.Where(t => t.Status != InventoryTransferStatus.Cancelled).ToList();
+        var goodByProduct = active
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(l => l.ReceivedQty));
+        var openByProduct = family
+            .Where(t => t.Status is InventoryTransferStatus.InTransit or InventoryTransferStatus.PartiallyReceived)
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(l => Math.Max(0m, l.OutstandingQty)));
+        var waivedByProduct = active
+            .SelectMany(t => t.Lines)
+            .GroupBy(l => l.ProductId.Value)
+            .ToDictionary(g => g.Key, g => g.Sum(l => l.WaivedQty));
+
+        var lines = new List<InventoryTransferLineRequest>();
+        foreach (var line in root.Lines)
+        {
+            var productId = line.ProductId.Value;
+            var remaining = Math.Max(
+                0m,
+                line.SentQty
+                - goodByProduct.GetValueOrDefault(productId)
+                - openByProduct.GetValueOrDefault(productId)
+                - waivedByProduct.GetValueOrDefault(productId));
+            if (remaining > 0m)
+            {
+                lines.Add(new InventoryTransferLineRequest(productId, remaining, line.SourceLotId?.Value));
+            }
+        }
+
+        return lines;
     }
 }
 
@@ -1111,7 +1274,10 @@ public sealed class ReceiveInventoryTransfer
                     transfer.TransferNumber!,
                     actorId,
                     utcNow,
-                    sellingMode: product.SellingMode);
+                    sellingMode: product.SellingMode,
+                    decisionDetail: StockMovementPresentation.FormatDamageHoldDecisionDetail(
+                        decision,
+                        followUp));
 
                 var destBalance = InventoryTransferStock.EnsureBalance(
                     orgId,
@@ -1119,8 +1285,10 @@ public sealed class ReceiveInventoryTransfer
                     line.ProductId,
                     balances,
                     utcNow);
+                // Damaged is physical at destination but never sellable.
+                // Park in DamagedQuantity (not InspectionHold). Destination does not re-inspect.
                 destBalance.Apply(holdMovement.QuantityEffect, utcNow);
-                destBalance.IncreaseInspectionHold(receiptLine.QuantityDamaged, utcNow);
+                destBalance.IncreaseDamaged(receiptLine.QuantityDamaged, utcNow);
 
                 await _damageCustodies.AddAsync(custody, ct).ConfigureAwait(false);
                 await _inventory.AddMovementAsync(holdMovement, ct).ConfigureAwait(false);
@@ -1137,12 +1305,11 @@ public sealed class ReceiveInventoryTransfer
                     var linkedTransfers = await _transfers
                         .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
                         .ConfigureAwait(false);
-                    var receivedByProduct = linkedTransfers
-                        .SelectMany(t => t.Lines)
-                        .GroupBy(l => l.ProductId.Value)
-                        .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
-
-                    stockRequest.RecalculateStatusFromReceivedQuantities(receivedByProduct, utcNow);
+                    var coverage = StockRequestDispatchCoverage.Compute(stockRequest, linkedTransfers);
+                    stockRequest.RecalculateStatusFromFulfillmentCoverage(
+                        coverage.ReceivedByProduct,
+                        coverage.WaivedByProduct,
+                        utcNow);
                     await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
 
                     if (stockRequest.Status is StockRequestStatus.Fulfilled or StockRequestStatus.PartiallyFulfilled)
@@ -1330,11 +1497,11 @@ public sealed class CloseRemainderInventoryTransfer
                             var linkedTransfers = await _transfers
                                 .ListByStockRequestIdAsync(orgId, stockRequestId, ct)
                                 .ConfigureAwait(false);
-                            var receivedByProduct = linkedTransfers
-                                .SelectMany(t => t.Lines)
-                                .GroupBy(l => l.ProductId.Value)
-                                .ToDictionary(g => g.Key, g => g.Sum(x => x.ReceivedQty));
-                            stockRequest.RecalculateStatusFromReceivedQuantities(receivedByProduct, utcNow);
+                            var coverage = StockRequestDispatchCoverage.Compute(stockRequest, linkedTransfers);
+                            stockRequest.RecalculateStatusFromFulfillmentCoverage(
+                                coverage.ReceivedByProduct,
+                                coverage.WaivedByProduct,
+                                utcNow);
                             await _stockRequests.UpdateAsync(stockRequest, ct).ConfigureAwait(false);
                         }
                     }

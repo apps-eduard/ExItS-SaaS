@@ -127,6 +127,12 @@ export type PosStockMovementDto = {
   lotNumber?: string | null;
   unitCost?: number | null;
   stockValue?: number | null;
+  /** Authoritative transaction kind (e.g. InventoryTransfer). */
+  transactionType?: string | null;
+  /** Authoritative parent transaction id (transfer id, not receipt/custody child id). */
+  transactionId?: string | null;
+  /** Human document reference (e.g. TR-260922-001). */
+  transactionReference?: string | null;
 };
 
 export type PosInventoryLotDto = {

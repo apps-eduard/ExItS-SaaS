@@ -476,7 +476,13 @@ public sealed class ReplenishmentCatalogAndOutgoingSummaryTests
 
         public Task UpdateAsync(InventoryTransfer transfer, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        
+        public Task<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>> ResolveStockMovementTransactionRefsAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyList<StockMovement> movements,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>>(
+                new Dictionary<Guid, InventoryTransferTransactionRef>());
+
         public Task<IReadOnlyList<InventoryTransferOpenCommitment>> ListOpenCommitmentsForBranchAsync(
             PosOrganizationId organizationId,
             PosBranchId branchId,

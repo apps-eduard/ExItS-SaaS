@@ -25,20 +25,38 @@ const TRANSFER_MOVEMENT_TYPES = new Set([
 /** True when the movement is transfer-sourced (any transfer movement type). */
 export function isInventoryTransferMovement(movement: PosStockMovementDto): boolean {
   return (
+    movement.transactionType === "InventoryTransfer" ||
     movement.sourceType === "InventoryTransfer" ||
     TRANSFER_MOVEMENT_TYPES.has(movement.movementType)
   );
 }
 
 /**
- * Transfer document number embedded in stock-movement reason
- * (e.g. "Transfer out TR-260922-001" → "TR-260922-001").
+ * Authoritative inventory transfer id for navigation / drawer loading.
+ * Prefer server-resolved <c>transactionId</c>; never guess from reason text.
+ * Do not fall back to <c>sourceId</c> — TransferIn / damage movements use child ids.
+ */
+export function resolveInventoryTransferTransactionId(
+  movement: PosStockMovementDto,
+): string | null {
+  const id = movement.transactionId?.trim();
+  return id && id.length > 0 ? id : null;
+}
+
+/**
+ * Transfer document number: prefer server <c>transactionReference</c>,
+ * otherwise parse the reason prefix for display only.
  */
 export function extractTransferReferenceNumber(
   movement: PosStockMovementDto,
 ): string | null {
   if (!isInventoryTransferMovement(movement)) {
     return null;
+  }
+
+  const fromServer = movement.transactionReference?.trim();
+  if (fromServer) {
+    return fromServer;
   }
 
   const reason = movement.reason?.trim() ?? "";
@@ -48,7 +66,9 @@ export function extractTransferReferenceNumber(
 
   for (const prefix of TRANSFER_REASON_PREFIXES) {
     if (reason.startsWith(prefix)) {
-      const number = reason.slice(prefix.length).trim();
+      const rest = reason.slice(prefix.length).trim();
+      // Damage-hold reasons may append " · Return to source · Replacement requested"
+      const number = rest.split(" · ")[0]?.trim() ?? "";
       return number.length > 0 ? number : null;
     }
   }

@@ -30,4 +30,48 @@ public sealed class StockMovementPresentationTests
         Assert.Equal("CustomType", StockMovementPresentation.ToFriendlyLabel("CustomType"));
         Assert.Equal(string.Empty, StockMovementPresentation.ToFriendlyLabel("  "));
     }
+
+    [Fact]
+    public void Damage_hold_is_physical_not_sellable()
+    {
+        var effects = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferDamageHold),
+            5m);
+        Assert.Equal(5m, effects.PhysicalDelta);
+        Assert.Equal(0m, effects.SellableDelta);
+        Assert.Equal(5m, effects.DamagedDelta);
+        Assert.Equal("Damaged transfer received", StockMovementPresentation.ToFriendlyLabel("TransferDamageHold"));
+        Assert.Equal(
+            "Return to source · Replacement requested",
+            StockMovementPresentation.FormatDamageHoldDecisionDetail(
+                InventoryTransferDamagedCustodyDecision.ReturnToSource,
+                InventoryTransferDiscrepancyFollowUp.RequestReplacement));
+        Assert.Equal(
+            "Keep at destination · Accepted — no replacement",
+            StockMovementPresentation.FormatDamageHoldDecisionDetail(
+                InventoryTransferDamagedCustodyDecision.KeepAtDestination,
+                InventoryTransferDiscrepancyFollowUp.AcceptShortage));
+    }
+
+    [Fact]
+    public void Damage_return_in_parks_inspection_hold_not_sellable()
+    {
+        var effects = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferDamageReturnIn),
+            5m);
+        Assert.Equal(5m, effects.PhysicalDelta);
+        Assert.Equal(0m, effects.SellableDelta);
+        Assert.Equal(5m, effects.InspectionHoldDelta);
+    }
+
+    [Fact]
+    public void Good_transfer_in_is_sellable()
+    {
+        var effects = StockMovementPresentation.DescribeBucketEffects(
+            nameof(StockMovementType.TransferIn),
+            5m);
+        Assert.Equal(5m, effects.PhysicalDelta);
+        Assert.Equal(5m, effects.SellableDelta);
+        Assert.Equal(0m, effects.DamagedDelta);
+    }
 }

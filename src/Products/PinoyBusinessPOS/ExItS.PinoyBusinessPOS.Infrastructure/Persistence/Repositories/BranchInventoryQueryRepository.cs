@@ -208,6 +208,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 : (primaryBranchId != null && primaryBranchId == branchId ? unallocated : 0m)
             let branchReservedRaw = explicitBal != null ? explicitBal.ReservedQuantity : 0m
             let branchPendingReturn = explicitBal != null ? explicitBal.PendingReturnQuantity : 0m
+            let branchInspectionHold = explicitBal != null ? explicitBal.InspectionHoldQuantity : 0m
+            let branchDamaged = explicitBal != null ? explicitBal.DamagedQuantity : 0m
             let expiredStillActive = _db.ConnectedPoInventoryReservations
                 .Where(r =>
                     r.OrganizationId == orgId
@@ -222,7 +224,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             let branchReserved = branchReservedRaw - expiredStillActive < 0m
                 ? 0m
                 : branchReservedRaw - expiredStillActive
-            let branchAvailable = branchOnHand - branchReserved < 0m ? 0m : branchOnHand - branchReserved
+            let branchAvailableRaw =
+                branchOnHand - branchReserved - branchPendingReturn - branchInspectionHold - branchDamaged
+            let branchAvailable = branchAvailableRaw < 0m ? 0m : branchAvailableRaw
             let monitoringMode = reorder != null
                 ? (reorder.ReorderLevel == null
                     ? InventoryReorderMonitoringModes.NotMonitored

@@ -190,7 +190,12 @@ public sealed class ConnectedPurchaseOrderFulfillStock
                             supplierBranch,
                             balanceRows,
                             demand.ProductId);
-                        var availableBase = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                        var availableBase = BranchStockResolver.ResolveAvailable(
+                            supplierBranch,
+                            balanceRows,
+                            demand.ProductId,
+                            onHand,
+                            reserved);
                         var availablePurchase = availableBase / multiplier;
 
                         var useReservation = _reservations is not null

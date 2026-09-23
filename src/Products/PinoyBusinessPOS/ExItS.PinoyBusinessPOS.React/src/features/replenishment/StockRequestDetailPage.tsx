@@ -13,14 +13,29 @@ import {
   rejectStockRequest,
 } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/exits/EmptyState";
 import { ErrorState } from "@/components/exits/ErrorState";
 import { LoadingState } from "@/components/exits/LoadingState";
 import { PageHeader } from "@/components/exits/PageHeader";
+import {
+  ExitsTable,
+  ExitsTableBody,
+  ExitsTableCell,
+  ExitsTableContainer,
+  ExitsTableHead,
+  ExitsTableHeader,
+  ExitsTableMobile,
+  ExitsTableMobileRow,
+  ExitsTableRow,
+} from "@/components/exits/ExitsTable";
 import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { StatusChip } from "@/components/exits/StatusChip";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
-import { inventoryTransferStatusLabelKey } from "@/features/inventory/inventory-transfer-labels";
+import {
+  formatTransferQty,
+  inventoryTransferStatusLabelKey,
+} from "@/features/inventory/inventory-transfer-labels";
 import { StockRequestActivityTimeline } from "@/features/replenishment/StockRequestActivityTimeline";
 import {
   canCancelStockRequestAsDestination,
@@ -239,6 +254,8 @@ export function StockRequestDetailPage() {
     )?.transferId ?? linkedTransferId;
   const canCancel =
     allowManage && isDestination && canCancelStockRequestAsDestination(dto.status);
+  const showSourceFulfillmentSummary =
+    allowManage && isSource && remainingDispatchQty > 0 && canPrepareTransferAction;
 
   return (
     <div className="exits-page flex flex-col gap-3" data-testid="stock-request-detail">
@@ -257,66 +274,180 @@ export function StockRequestDetailPage() {
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{dto.notes}</p>
       ) : null}
 
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {dto.lines.map((line) => (
-          <li
-            key={line.lineId}
-            className="rounded-[var(--exits-radius-md)] border border-border p-3"
-            data-testid={`stock-request-line-${line.productId}`}
+      {showSourceFulfillmentSummary ? (
+        <Card
+          className="flex min-w-0 flex-col gap-2 p-3"
+          treatment="bordered"
+          data-testid="stock-request-fulfillment"
+        >
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+            {t("transfer.fulfillment")}
+          </h2>
+          <p
+            className="m-0 text-[length:var(--exits-text-sm)]"
+            data-testid="stock-request-needs-fulfillment"
           >
-            <div className="font-medium">{line.nameSnapshot}</div>
-            <dl className="mt-2 m-0 grid grid-cols-2 gap-x-3 gap-y-1 text-[length:var(--exits-text-sm)] text-muted sm:grid-cols-3">
-              <div>
-                <dt className="inline">{t("stockRequest.requested")}: </dt>
-                <dd className="inline m-0">{line.requestedQuantity}</dd>
-              </div>
-              <div>
-                <dt className="inline">{t("stockRequest.approved")}: </dt>
-                <dd className="inline m-0">{line.approvedQuantity ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="inline">{t("stockRequest.received")}: </dt>
-                <dd className="inline m-0" data-testid={`stock-request-received-${line.productId}`}>
-                  {line.fulfilledQuantity}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">{t("stockRequest.stillInTransit")}: </dt>
-                <dd className="inline m-0" data-testid={`stock-request-in-transit-${line.productId}`}>
-                  {line.inProgressQuantity}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">{t("stockRequest.remainingToDispatch")}: </dt>
-                <dd
-                  className="inline m-0"
-                  data-testid={`stock-request-remaining-dispatch-${line.productId}`}
+            {t("stockRequest.needsFulfillmentSummary").replace(
+              "{qty}",
+              formatTransferQty(remainingDispatchQty),
+            )}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              onClick={() => prepareTransferMutation.mutate()}
+              disabled={prepareTransferMutation.isPending || prepareMutation.isPending}
+              data-testid="stock-request-fulfill-remaining"
+            >
+              {prepareTransferButtonLabel}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      <ExitsTableContainer data-testid="stock-request-lines">
+        <ExitsTable data-testid="stock-request-lines-desktop">
+          <ExitsTableHeader>
+            <ExitsTableRow>
+              <ExitsTableHead cellAlign="text" colSize="flex">
+                {t("purchasing.colProduct")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.sent")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.good")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.damaged")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.inTransit")}
+              </ExitsTableHead>
+              <ExitsTableHead cellAlign="center" colSize="numeric">
+                {t("transfer.needsFulfillment")}
+              </ExitsTableHead>
+            </ExitsTableRow>
+          </ExitsTableHeader>
+          <ExitsTableBody>
+            {dto.lines.map((line) => {
+              const sent =
+                line.sentQuantity > 0
+                  ? line.sentQuantity
+                  : (line.approvedQuantity ?? line.requestedQuantity);
+              return (
+                <ExitsTableRow
+                  key={line.lineId}
+                  data-testid={`stock-request-line-${line.productId}`}
                 >
-                  {line.remainingToDispatchQuantity}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">{t("stockRequest.unit")}: </dt>
-                <dd className="inline m-0">{line.unitOfMeasure}</dd>
-              </div>
-            </dl>
-            {pendingAtSource ? (
-              <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)]">
-                <span>{t("stockRequest.approvedQty")}</span>
-                <input
-                  className="exits-input w-24 max-w-[6rem] shrink-0"
-                  inputMode="decimal"
-                  value={approvedQtys[line.productId] ?? String(line.requestedQuantity)}
-                  onChange={(e) =>
-                    setApprovedQtys((prev) => ({ ...prev, [line.productId]: e.target.value }))
-                  }
-                  data-testid={`stock-request-approve-qty-${line.productId}`}
-                />
-              </label>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+                  <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
+                    <div>{line.nameSnapshot}</div>
+                    <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+                      {line.unitOfMeasure}
+                      {pendingAtSource ? ` · ${t("stockRequest.requested")}: ${line.requestedQuantity}` : ""}
+                    </div>
+                    {pendingAtSource ? (
+                      <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)] font-normal">
+                        <span>{t("stockRequest.approvedQty")}</span>
+                        <input
+                          className="exits-input w-24 max-w-[6rem] shrink-0"
+                          inputMode="decimal"
+                          value={approvedQtys[line.productId] ?? String(line.requestedQuantity)}
+                          onChange={(e) =>
+                            setApprovedQtys((prev) => ({
+                              ...prev,
+                              [line.productId]: e.target.value,
+                            }))
+                          }
+                          data-testid={`stock-request-approve-qty-${line.productId}`}
+                        />
+                      </label>
+                    ) : null}
+                  </ExitsTableCell>
+                  <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                    {formatTransferQty(sent)}
+                  </ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="center"
+                    colSize="numeric"
+                    className="tabular-nums"
+                    data-testid={`stock-request-received-${line.productId}`}
+                  >
+                    {formatTransferQty(line.fulfilledQuantity)}
+                  </ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="center"
+                    colSize="numeric"
+                    className="tabular-nums"
+                    data-testid={`stock-request-damaged-${line.productId}`}
+                  >
+                    {formatTransferQty(line.damagedQuantity ?? 0)}
+                  </ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="center"
+                    colSize="numeric"
+                    className="tabular-nums"
+                    data-testid={`stock-request-in-transit-${line.productId}`}
+                  >
+                    {formatTransferQty(line.inProgressQuantity)}
+                  </ExitsTableCell>
+                  <ExitsTableCell
+                    cellAlign="center"
+                    colSize="numeric"
+                    className="tabular-nums"
+                    data-testid={`stock-request-remaining-dispatch-${line.productId}`}
+                  >
+                    {formatTransferQty(line.remainingToDispatchQuantity)}
+                  </ExitsTableCell>
+                </ExitsTableRow>
+              );
+            })}
+          </ExitsTableBody>
+        </ExitsTable>
+
+        <ExitsTableMobile data-testid="stock-request-lines-mobile">
+          {dto.lines.map((line) => {
+            const sent =
+              line.sentQuantity > 0
+                ? line.sentQuantity
+                : (line.approvedQuantity ?? line.requestedQuantity);
+            return (
+              <ExitsTableMobileRow
+                key={line.lineId}
+                data-testid={`stock-request-line-${line.productId}`}
+              >
+                <div className="exits-table-mobile__title-row">
+                  <span className="exits-table-mobile__title">{line.nameSnapshot}</span>
+                </div>
+                <p className="exits-table-mobile__math mt-1 mb-0">
+                  {t("transfer.sent")}: {formatTransferQty(sent)}
+                  {` · ${t("transfer.good")}: ${formatTransferQty(line.fulfilledQuantity)}`}
+                  {` · ${t("transfer.damaged")}: ${formatTransferQty(line.damagedQuantity ?? 0)}`}
+                  {` · ${t("transfer.inTransit")}: ${formatTransferQty(line.inProgressQuantity)}`}
+                  {` · ${t("transfer.needsFulfillment")}: ${formatTransferQty(line.remainingToDispatchQuantity)}`}
+                </p>
+                {pendingAtSource ? (
+                  <label className="mt-2 flex items-center gap-2 text-[length:var(--exits-text-sm)]">
+                    <span>{t("stockRequest.approvedQty")}</span>
+                    <input
+                      className="exits-input w-24 max-w-[6rem] shrink-0"
+                      inputMode="decimal"
+                      value={approvedQtys[line.productId] ?? String(line.requestedQuantity)}
+                      onChange={(e) =>
+                        setApprovedQtys((prev) => ({
+                          ...prev,
+                          [line.productId]: e.target.value,
+                        }))
+                      }
+                      data-testid={`stock-request-approve-qty-${line.productId}`}
+                    />
+                  </label>
+                ) : null}
+              </ExitsTableMobileRow>
+            );
+          })}
+        </ExitsTableMobile>
+      </ExitsTableContainer>
 
       {openCover ? (
         <div
@@ -445,7 +576,7 @@ export function StockRequestDetailPage() {
               {t("stockRequest.startPreparing")}
             </Button>
           ) : null}
-          {canPrepareTransferAction ? (
+          {canPrepareTransferAction && !showSourceFulfillmentSummary ? (
             <Button
               type="button"
               onClick={() => prepareTransferMutation.mutate()}

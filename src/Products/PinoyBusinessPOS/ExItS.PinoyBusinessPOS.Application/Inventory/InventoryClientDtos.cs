@@ -59,7 +59,13 @@ public sealed record PosStockMovementDto(
     string? LotNumber = null,
     decimal? UnitCost = null,
     decimal? StockValue = null,
-    Guid? BranchId = null);
+    Guid? BranchId = null,
+    /// <summary>Authoritative transaction kind (e.g. InventoryTransfer). Null when unresolved.</summary>
+    string? TransactionType = null,
+    /// <summary>Authoritative parent transaction id (transfer id, not receipt/custody child id).</summary>
+    Guid? TransactionId = null,
+    /// <summary>Human document reference (e.g. TR-260922-001).</summary>
+    string? TransactionReference = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,

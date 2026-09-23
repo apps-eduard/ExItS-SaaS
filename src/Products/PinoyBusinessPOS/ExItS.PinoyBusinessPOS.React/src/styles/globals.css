@@ -7196,6 +7196,30 @@ html:has(.admin-shell) #root {
   background: #fff;
 }
 
+/* Fit transfer list/detail tables to the page — no inner horizontal scrollbar. */
+.inventory-transfer-list-page .exits-table-container,
+.inventory-transfer-list-page .exits-table-scroll,
+.inventory-transfer-detail-page .exits-table-container,
+.inventory-transfer-detail-page .exits-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.inventory-transfer-list-page .exits-table,
+.inventory-transfer-detail-page .exits-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+.inventory-transfer-list-page .exits-table__head,
+.inventory-transfer-detail-page .exits-table__head {
+  white-space: normal;
+}
+
 /* Purchasing hub + list pages */
 .purchasing-hub-page > header,
 .purchasing-orders-page > header,
@@ -13551,6 +13575,10 @@ a.dashboard-metric-card:focus-visible {
 
 .inventory-movements-table__row:hover {
   background: color-mix(in srgb, var(--exits-primary) 5%, var(--exits-surface));
+}
+
+.inventory-movements-table__row--interactive:focus-visible {
+  background: color-mix(in srgb, var(--exits-primary) 8%, var(--exits-surface));
 }
 
 :root:not([data-theme="dark"]) .inventory-movements-table-shell,

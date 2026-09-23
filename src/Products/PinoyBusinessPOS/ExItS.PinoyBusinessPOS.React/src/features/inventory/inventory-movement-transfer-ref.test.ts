@@ -4,6 +4,7 @@ import {
   extractTransferReferenceNumber,
   inventoryTransferDetailPath,
   isInventoryTransferMovement,
+  resolveInventoryTransferTransactionId,
 } from "@/features/inventory/inventory-movement-transfer-ref";
 
 function movement(
@@ -53,6 +54,51 @@ describe("inventory-movement-transfer-ref", () => {
           movementType: "SaleDeduction",
           sourceType: "Sale",
           reason: "Sale deduction",
+        }),
+      ),
+    ).toBeNull();
+  });
+
+  it("prefers server transactionReference and transactionId over sourceId/reason", () => {
+    const m = movement({
+      movementType: "TransferDamageHold",
+      sourceType: "InventoryTransfer",
+      reason: "Transfer damage hold TR-260922-001",
+      sourceId: "receipt-line-id",
+      transactionType: "InventoryTransfer",
+      transactionId: "real-transfer-id",
+      transactionReference: "TR-260922-001",
+    });
+    expect(isInventoryTransferMovement(m)).toBe(true);
+    expect(extractTransferReferenceNumber(m)).toBe("TR-260922-001");
+    expect(resolveInventoryTransferTransactionId(m)).toBe("real-transfer-id");
+    expect(inventoryTransferDetailPath(resolveInventoryTransferTransactionId(m)!)).toBe(
+      "/inventory/transfers/real-transfer-id",
+    );
+  });
+
+  it("strips damage-hold decision suffix when parsing transfer number from reason", () => {
+    expect(
+      extractTransferReferenceNumber(
+        movement({
+          movementType: "TransferDamageHold",
+          sourceType: "InventoryTransfer",
+          reason:
+            "Transfer damage hold TR-260922-001 · Return to source · Replacement requested",
+          sourceId: "receipt-line-id",
+        }),
+      ),
+    ).toBe("TR-260922-001");
+  });
+
+  it("does not treat damage sourceId as transfer id when transactionId is missing", () => {
+    expect(
+      resolveInventoryTransferTransactionId(
+        movement({
+          movementType: "TransferDamageHold",
+          sourceType: "InventoryTransfer",
+          reason: "Transfer damage hold TR-260922-001",
+          sourceId: "receipt-line-id",
         }),
       ),
     ).toBeNull();

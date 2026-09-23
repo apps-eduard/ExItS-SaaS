@@ -312,7 +312,7 @@ export function InventoryTransferListPage() {
                   {t("transfer.colRoute")}
                 </ExitsTableHead>
                 <ExitsTableHead cellAlign="numeric" colSize="numeric">
-                  {t("transfer.lines")}
+                  {t("transfer.colLines")}
                 </ExitsTableHead>
                 <ExitsTableHead cellAlign="numeric" colSize="numeric">
                   {t("transfer.sent")}

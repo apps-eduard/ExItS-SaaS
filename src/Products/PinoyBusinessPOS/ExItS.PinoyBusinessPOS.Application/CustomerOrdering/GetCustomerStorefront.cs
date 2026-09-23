@@ -275,7 +275,12 @@ public sealed class GetCustomerStorefront
             PosBranchId.From(branchId),
             balances,
             productId);
-        var available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+        var available = BranchStockResolver.ResolveAvailable(
+            PosBranchId.From(branchId),
+            balances,
+            productId,
+            onHand,
+            reserved);
         return CustomerStorefrontAvailability.FromTrackedQuantity(available);
     }
 }

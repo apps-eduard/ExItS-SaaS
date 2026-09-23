@@ -7,6 +7,7 @@ import {
   type ProductSelectionColumn,
   type ProductSelectionRow,
 } from "@/components/exits/ProductSelectionView";
+import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import { cn } from "@/lib/cn";
 
 type Translate = (key: string) => string;
@@ -51,7 +52,7 @@ export function InventoryTransferProductSelection({
   const rows: ProductSelectionRow[] = products.map((row) => {
     const tracksExpiration = row.tracksExpiration === true;
     const lots = lotsCache[row.productId] ?? [];
-    const available = Math.max(0, row.onHandQuantity);
+    const available = Math.max(0, resolveAvailableQuantity(row));
     const outOfStock = available <= 0;
     const selectedLotId = lotByProduct[row.productId] ?? "";
     const selectedLot = lots.find((l) => l.lotId === selectedLotId);

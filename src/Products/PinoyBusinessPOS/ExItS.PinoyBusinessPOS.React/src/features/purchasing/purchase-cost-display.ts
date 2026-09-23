@@ -26,6 +26,16 @@ export function inventoryMovementTypeLabelKey(movementType: string): MessageKey 
       return "inventory.movementType.transferIn";
     case "TransferCancelRestore":
       return "inventory.movementType.transferCancel";
+    case "TransferDamageHold":
+      return "inventory.movementType.transferDamageHold";
+    case "TransferDamageRecovery":
+      return "inventory.movementType.transferDamageRecovery";
+    case "TransferDamageReturnOut":
+      return "inventory.movementType.transferDamageReturnOut";
+    case "TransferDamageReturnIn":
+      return "inventory.movementType.transferDamageReturnIn";
+    case "TransferDamageWriteOff":
+      return "inventory.movementType.transferDamageWriteOff";
     case "StockCountVarianceIncrease":
       return "inventory.movementType.stockCountIncrease";
     case "StockCountVarianceDecrease":

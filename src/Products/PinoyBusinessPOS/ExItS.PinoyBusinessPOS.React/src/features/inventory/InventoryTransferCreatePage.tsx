@@ -34,6 +34,7 @@ import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLay
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
+import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import {
   canAddTransferQuantity,
   evaluateTransferLineStock,
@@ -151,7 +152,7 @@ export function InventoryTransferCreatePage() {
     const map = new Map<string, number>();
     for (const row of pickerQuery.data?.items ?? []) {
       if (row.isTracked) {
-        map.set(row.productId, Math.max(0, row.onHandQuantity));
+        map.set(row.productId, Math.max(0, resolveAvailableQuantity(row)));
       }
     }
     return map;
@@ -184,7 +185,7 @@ export function InventoryTransferCreatePage() {
       if (addedProductIds.has(row.productId)) {
         return false;
       }
-      const outOfStock = row.onHandQuantity <= 0;
+      const outOfStock = resolveAvailableQuantity(row) <= 0;
       if (wantOutOfStock) {
         if (!outOfStock) {
           return false;
@@ -214,11 +215,11 @@ export function InventoryTransferCreatePage() {
       if (addedProductIds.has(row.productId)) {
         continue;
       }
-      if (row.onHandQuantity <= 0) {
+      if (resolveAvailableQuantity(row) <= 0) {
         outOfStockCount += 1;
       }
       const id = row.categoryId?.trim();
-      if (!id || row.onHandQuantity <= 0) {
+      if (!id || resolveAvailableQuantity(row) <= 0) {
         // Real category counts reflect in-stock products (default table).
         continue;
       }
@@ -285,7 +286,7 @@ export function InventoryTransferCreatePage() {
 
   async function addLine(row: PosInventoryAccountDto) {
     const tracksExpiration = row.tracksExpiration === true;
-    const availableQuantity = Math.max(0, row.onHandQuantity);
+    const availableQuantity = Math.max(0, resolveAvailableQuantity(row));
     const lots = await ensureLots(row.productId, tracksExpiration);
     let sourceLotId: string | null = null;
     let lotNumber: string | null = null;

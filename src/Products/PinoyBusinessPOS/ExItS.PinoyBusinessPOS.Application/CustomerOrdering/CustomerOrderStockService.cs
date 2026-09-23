@@ -102,7 +102,12 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                     balances,
                     productId);
                 var reserved = BranchStockResolver.ResolveReserved(branchId, balances, productId);
-                available = BranchStockResolver.ResolveAvailable(onHand, reserved);
+                available = BranchStockResolver.ResolveAvailable(
+                    branchId,
+                    balances,
+                    productId,
+                    onHand,
+                    reserved);
             }
 
             if (available < needed)
@@ -166,7 +171,12 @@ public sealed class CustomerOrderStockService : ICustomerOrderStockService
                                 balances,
                                 line.ProductId);
                             var reserved = BranchStockResolver.ResolveReserved(branchId, balances, line.ProductId);
-                            if (BranchStockResolver.ResolveAvailable(onHand, reserved) < line.Quantity)
+                            if (BranchStockResolver.ResolveAvailable(
+                                    branchId,
+                                    balances,
+                                    line.ProductId,
+                                    onHand,
+                                    reserved) < line.Quantity)
                             {
                                 throw new DomainException(
                                     ApplicationErrorCodes.InsufficientStock,

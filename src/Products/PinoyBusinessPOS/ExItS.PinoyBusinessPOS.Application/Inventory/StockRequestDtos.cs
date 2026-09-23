@@ -57,7 +57,9 @@ public sealed record StockRequestLineDto(
     decimal RemainingToDispatchQuantity,
     decimal WaivedQuantity,
     string NameSnapshot,
-    string UnitOfMeasure);
+    string UnitOfMeasure,
+    decimal DamagedQuantity = 0m,
+    decimal SentQuantity = 0m);
 
 public sealed record StockRequestLinkedTransferDto(
     Guid TransferId,

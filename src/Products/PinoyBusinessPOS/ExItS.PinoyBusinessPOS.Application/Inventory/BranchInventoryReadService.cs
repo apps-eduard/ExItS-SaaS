@@ -94,7 +94,16 @@ public sealed class BranchInventoryReadService
                 account.ProductId);
             expiredStillActive.TryGetValue(account.ProductId.Value, out var expiredQty);
             var branchReserved = Math.Max(0m, branchReservedRaw - expiredQty);
-            var branchAvailable = BranchStockResolver.ResolveAvailable(branchOnHand, branchReserved);
+            var (pendingReturn, inspectionHold, damaged) = BranchStockResolver.ResolveNonSellableBuckets(
+                branchId,
+                productBalances,
+                account.ProductId);
+            var branchAvailable = BranchStockResolver.ResolveAvailable(
+                branchOnHand,
+                branchReserved,
+                pendingReturn,
+                inspectionHold,
+                damaged);
 
             var (reorderLevel, reorderQuantity) = ResolveReorderConfiguration(
                 context,

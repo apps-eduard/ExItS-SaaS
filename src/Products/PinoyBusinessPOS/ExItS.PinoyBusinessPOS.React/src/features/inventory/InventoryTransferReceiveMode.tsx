@@ -109,6 +109,8 @@ export type InventoryTransferReceiveModeProps = {
   localErrorAlert: ReactNode;
   onBack: () => void;
   onSubmitReceive: (body: ReceiveInventoryTransferRequest) => void;
+  /** When true, parent page already owns PageHeader / status / timeline actions. */
+  embedded?: boolean;
 };
 
 export function InventoryTransferReceiveMode({
@@ -122,6 +124,7 @@ export function InventoryTransferReceiveMode({
   localErrorAlert,
   onBack,
   onSubmitReceive,
+  embedded = false,
 }: InventoryTransferReceiveModeProps) {
   const { t } = useI18n();
   const linkedStockRequest = Boolean(transfer.stockRequestId);
@@ -505,20 +508,27 @@ export function InventoryTransferReceiveMode({
 
   return (
     <div
-      className="inventory-transfer-receive-page exits-page flex min-w-0 flex-col gap-3 pb-4"
-      data-testid="inventory-transfer-receive-page"
+      className={
+        embedded
+          ? "inventory-transfer-receive-body flex min-w-0 flex-col gap-3"
+          : "inventory-transfer-receive-page exits-page flex min-w-0 flex-col gap-3 pb-4"
+      }
+      data-testid={embedded ? "inventory-transfer-receive-body" : "inventory-transfer-receive-page"}
     >
-      <PageHeader
-        title={
-          transfer.status === "PartiallyReceived"
-            ? t("transfer.receiveRemainingTitle")
-            : t("transfer.receiveTitle")
-        }
-        description={`${transfer.transferNumber ?? t("transfer.draftNumber")} · ${sourceName} → ${destName}`}
-        backTo={`/inventory/transfers/${transfer.transferId}`}
-        backLabel={t("transfer.backToTransfer")}
-        backTestId="page-header-back-transfer"
-      />
+      {embedded ? null : (
+        <PageHeader
+          title={
+            transfer.status === "PartiallyReceived"
+              ? t("transfer.receiveRemainingTitle")
+              : t("transfer.receiveTitle")
+          }
+          description={`${transfer.transferNumber ?? t("transfer.draftNumber")} · ${sourceName} → ${destName}`}
+          backTo={`/inventory/transfers/${transfer.transferId}`}
+          backLabel={t("transfer.backToTransfer")}
+          backTestId="page-header-back-transfer"
+          onBack={onBack}
+        />
+      )}
 
       <Card
         className="po-document-summary po-document-summary--meta-cards grid gap-3 p-3"
@@ -552,7 +562,7 @@ export function InventoryTransferReceiveMode({
             </dd>
           </div>
           <div className="po-document-summary__field min-w-0">
-            <dt className="text-[length:var(--exits-text-xs)] text-muted">{t("transfer.lines")}</dt>
+            <dt className="text-[length:var(--exits-text-xs)] text-muted">{t("transfer.colLines")}</dt>
             <dd className="m-0 font-medium tabular-nums">{transfer.lines.length}</dd>
           </div>
         </dl>

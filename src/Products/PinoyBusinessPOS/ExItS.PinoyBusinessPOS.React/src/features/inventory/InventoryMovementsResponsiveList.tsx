@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import type { PosStockMovementDto } from "@/api/pos/pos-inventory-client";
 import { ActorAttribution, ActorName } from "@/features/actors/ActorAttribution";
 import type { OrganizationActorDisplayName } from "@/api/platform/actor-directory-client";
@@ -6,13 +7,16 @@ import {
   resolveMovementStockValue,
 } from "@/features/purchasing/purchase-cost-display";
 import {
-  extractTransferReferenceNumber,
-  inventoryTransferDetailPath,
-} from "@/features/inventory/inventory-movement-transfer-ref";
-import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
+  describeMovementBucketEffects,
+  formatSignedBucketQty,
+  movementNeedsBucketBreakdown,
+} from "@/features/inventory/inventory-movement-bucket-effects";
+import { resolveDamageHoldDecisionDisplay } from "@/features/inventory/inventory-movement-damage-hold-display";
+import { extractTransferReferenceNumber } from "@/features/inventory/inventory-movement-transfer-ref";
 import { MoneyDisplay } from "@/components/exits/MoneyQuantity";
 import { Card } from "@/components/ui/card";
 import { useI18n } from "@/i18n/I18nProvider";
+import { cn } from "@/lib/cn";
 
 function formatMovementWhen(iso: string): string {
   const date = new Date(iso);
@@ -27,54 +31,78 @@ function formatQtyEffect(quantityEffect: number, unitOfMeasure: string): string 
   return `${sign}${quantityEffect} ${unitOfMeasure}`;
 }
 
-function MovementTypeCell({
-  movement,
-  onOpenReservations,
+function MovementBucketBreakdown({
+  movementType,
+  quantityEffect,
 }: {
-  movement: PosStockMovementDto;
-  onOpenReservations?: () => void;
+  movementType: string;
+  quantityEffect: number;
 }) {
+  if (!movementNeedsBucketBreakdown(movementType)) {
+    return null;
+  }
+  const effects = describeMovementBucketEffects(movementType, quantityEffect);
+  return (
+    <p
+      className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted"
+      data-testid="inventory-movement-bucket-effects"
+    >
+      Physical: {formatSignedBucketQty(effects.physicalDelta)}
+      {" · "}
+      Sellable: {formatSignedBucketQty(effects.sellableDelta)}
+      {" · "}
+      Damaged: {formatSignedBucketQty(effects.damagedDelta)}
+      {effects.inspectionHoldDelta !== 0
+        ? ` · Hold: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
+        : null}
+    </p>
+  );
+}
+
+function MovementTypeCell({ movement }: { movement: PosStockMovementDto }) {
   const { t } = useI18n();
   const typeLabel = t(inventoryMovementTypeLabelKey(movement.movementType));
   const transferNumber = extractTransferReferenceNumber(movement);
-  const transferId = movement.sourceId?.trim() || null;
-  const canOpenDrawer = Boolean(transferNumber && onOpenReservations);
-  const transferPath =
-    transferNumber && transferId ? inventoryTransferDetailPath(transferId) : null;
+  const damageHoldDecision = resolveDamageHoldDecisionDisplay(movement);
 
   return (
     <span
-      className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5"
+      className="inline-flex min-w-0 flex-col gap-0.5"
       data-testid={`inventory-movement-type-${movement.movementId}`}
     >
-      <span className="text-muted">{typeLabel}</span>
-      {transferNumber && canOpenDrawer ? (
-        <button
-          type="button"
-          className="min-w-0 truncate font-semibold text-primary underline-offset-2 hover:underline"
-          onClick={onOpenReservations}
-          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
-        >
-          {transferNumber}
-        </button>
-      ) : transferNumber && transferPath ? (
-        <AppLinkWithReturn
-          to={transferPath}
-          className="min-w-0 truncate font-semibold text-primary no-underline hover:underline"
-          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
-        >
-          {transferNumber}
-        </AppLinkWithReturn>
-      ) : transferNumber ? (
+      <span className="inline-flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        <span className="text-muted">{typeLabel}</span>
+        {transferNumber ? (
+          <span
+            className="min-w-0 truncate font-semibold text-primary"
+            data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
+          >
+            {transferNumber}
+          </span>
+        ) : null}
+      </span>
+      {damageHoldDecision ? (
         <span
-          className="min-w-0 truncate font-semibold"
-          data-testid={`inventory-movement-transfer-ref-${movement.movementId}`}
+          className="text-[length:var(--exits-text-xs)] text-muted"
+          data-testid={`inventory-movement-damage-hold-decision-${movement.movementId}`}
         >
-          {transferNumber}
+          {t(damageHoldDecision.followUpLabelKey)}
+          {" · "}
+          {t(damageHoldDecision.custodyLabelKey)}
         </span>
       ) : null}
     </span>
   );
+}
+
+function activateOnKeyboard(
+  event: KeyboardEvent<HTMLElement>,
+  onActivate: () => void,
+) {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    onActivate();
+  }
 }
 
 export type InventoryMovementsResponsiveListProps = {
@@ -82,21 +110,23 @@ export type InventoryMovementsResponsiveListProps = {
   unitOfMeasure: string;
   resolveActor: (actorId: string) => OrganizationActorDisplayName | null | undefined;
   actorsLoading: boolean;
-  /** Opens the product reservations drawer (same as reserved / in-transit badges). */
-  onOpenReservations?: () => void;
+  /** Opens transaction details for the selected movement (not stock reservations). */
+  onOpenMovement?: (movement: PosStockMovementDto) => void;
 };
 
 /**
  * Movement history: cards on small screens, table from md up.
+ * Entire row / card opens transaction details when onOpenMovement is provided.
  */
 export function InventoryMovementsResponsiveList({
   movements,
   unitOfMeasure,
   resolveActor,
   actorsLoading,
-  onOpenReservations,
+  onOpenMovement,
 }: InventoryMovementsResponsiveListProps) {
   const { t } = useI18n();
+  const interactive = Boolean(onOpenMovement);
 
   if (movements.length === 0) {
     return null;
@@ -110,17 +140,25 @@ export function InventoryMovementsResponsiveList({
       >
         {movements.map((movement) => {
           const stockValue = resolveMovementStockValue(movement);
+          const open = () => onOpenMovement?.(movement);
           return (
             <li key={movement.movementId}>
-              <Card className="p-3" data-testid={`inventory-movement-card-${movement.movementId}`}>
+              <Card
+                as="div"
+                className="p-3"
+                interactive={interactive}
+                data-testid={`inventory-movement-card-${movement.movementId}`}
+                onClick={interactive ? open : undefined}
+              >
                 <p className="m-0 font-semibold">
                   {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
                 </p>
+                <MovementBucketBreakdown
+                  movementType={movement.movementType}
+                  quantityEffect={movement.quantityEffect}
+                />
                 <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)]">
-                  <MovementTypeCell
-                    movement={movement}
-                    onOpenReservations={onOpenReservations}
-                  />
+                  <MovementTypeCell movement={movement} />
                 </p>
                 {movement.unitCost != null ? (
                   <dl
@@ -208,23 +246,37 @@ export function InventoryMovementsResponsiveList({
               if (movement.lotNumber) {
                 batchParts.push(`${t("inventory.movementLot")}: ${movement.lotNumber}`);
               }
+              const open = () => onOpenMovement?.(movement);
               return (
                 <tr
                   key={movement.movementId}
-                  className="inventory-movements-table__row border-b border-border"
+                  className={cn(
+                    "inventory-movements-table__row border-b border-border",
+                    interactive &&
+                      "inventory-movements-table__row--interactive cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary",
+                  )}
                   data-testid={`inventory-movement-row-${movement.movementId}`}
+                  role={interactive ? "button" : undefined}
+                  tabIndex={interactive ? 0 : undefined}
+                  onClick={interactive ? open : undefined}
+                  onKeyDown={
+                    interactive
+                      ? (event) => activateOnKeyboard(event, open)
+                      : undefined
+                  }
                 >
                   <td className="whitespace-nowrap px-3 py-2.5 text-muted tabular-nums">
                     {formatMovementWhen(movement.recordedAtUtc)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 font-semibold tabular-nums">
                     {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
+                    <MovementBucketBreakdown
+                      movementType={movement.movementType}
+                      quantityEffect={movement.quantityEffect}
+                    />
                   </td>
                   <td className="px-3 py-2.5">
-                    <MovementTypeCell
-                      movement={movement}
-                      onOpenReservations={onOpenReservations}
-                    />
+                    <MovementTypeCell movement={movement} />
                   </td>
                   <td
                     className="whitespace-nowrap px-3 py-2.5 text-right tabular-nums"

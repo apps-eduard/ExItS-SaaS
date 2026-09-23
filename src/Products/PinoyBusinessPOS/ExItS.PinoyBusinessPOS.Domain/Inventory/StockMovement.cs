@@ -1225,7 +1225,8 @@ public sealed class StockMovement
         Guid actorId,
         DateTimeOffset utcNow,
         StockMovementId? id = null,
-        SellingMode sellingMode = SellingMode.PerItem)
+        SellingMode sellingMode = SellingMode.PerItem,
+        string? decisionDetail = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -1249,6 +1250,12 @@ public sealed class StockMovement
         };
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reason = TransferReason(reasonPrefix, transferNumber);
+        if (!string.IsNullOrWhiteSpace(decisionDetail))
+        {
+            reason = $"{reason} · {decisionDetail.Trim()}";
+        }
+
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -1256,7 +1263,7 @@ public sealed class StockMovement
             inventoryAccountId,
             movementType,
             sign * absolute,
-            TransferReason(reasonPrefix, transferNumber),
+            reason,
             StockMovementSourceType.InventoryTransfer,
             custodyOrReceiptLineId,
             utcNow,

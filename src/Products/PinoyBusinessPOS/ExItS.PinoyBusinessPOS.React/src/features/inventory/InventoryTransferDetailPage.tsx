@@ -20,11 +20,13 @@ import {
   dispatchInventoryTransferDamageReturn,
   getInventoryTransfer,
   inspectInventoryTransferDamageCustody,
+  prepareInventoryTransferRemaining,
   receiveInventoryTransfer,
   receiveInventoryTransferDamageReturn,
   type InventoryTransferDto,
   type ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
+import { prepareStockRequestTransfer } from "@/api/pos/pos-stock-requests-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/exits/ErrorState";
@@ -43,6 +45,7 @@ import { LoadingState } from "@/components/exits/LoadingState";
 import { Notice } from "@/components/exits/Notice";
 import { PageHeader } from "@/components/exits/PageHeader";
 import { SideDrawer } from "@/components/exits/SideDrawer";
+import { StatusChip } from "@/components/exits/StatusChip";
 import { usePageSmartBack } from "@/navigation/useSmartBack";
 import { ConfirmationDialog } from "@/components/exits/SheetDialog";
 import { useToast } from "@/components/exits/ToastProvider";
@@ -55,7 +58,6 @@ import { InventoryTransferReceiveMode } from "@/features/inventory/InventoryTran
 import {
   branchDisplayName,
   formatTransferQty,
-  inventoryTransferDiscrepancyLabelKey,
   inventoryTransferStatusLabelKey,
   inventoryTransferStatusTone,
 } from "@/features/inventory/inventory-transfer-labels";
@@ -63,8 +65,26 @@ import {
   canDestinationCloseRemainder,
   canDestinationReceiveTransfer,
   isTransferTerminalStatus,
+  lineDamagedQty,
+  lineNeedsFulfillmentQty,
   lineOutstandingQty,
 } from "@/features/inventory/inventory-transfer-receive-helpers";
+import {
+  buildReceivingDecisionView,
+  computeThisShipmentTotals,
+  familyFulfillmentTargetQty,
+  familyMemberDamagedQty,
+  isKeepAtDestinationCustody,
+  isReturnToSourceCustody,
+  lineFollowUpDisplay,
+  lineMissingQty,
+  lineOtherQty,
+  otherReasonLabelKey,
+  transferCustodyDecisionLabelKey,
+  transferCustodyStatusLabelKey,
+  transferDiscrepancyFollowUpLabelKey,
+  transferMissingDispositionLabelKey,
+} from "@/features/inventory/inventory-transfer-summary-presentation";
 import { TransferCloseRemainderDialog } from "@/features/inventory/TransferCloseRemainderDialog";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -366,6 +386,31 @@ export function InventoryTransferDetailPage() {
     setInspectCustodyId(null);
   }
 
+  async function onFulfillRemaining() {
+    if (!workspace || !transfer || busyRef.current) {
+      return;
+    }
+    busyRef.current = true;
+    setBusy(true);
+    setLocalError(null);
+    try {
+      const draft = transfer.stockRequestId
+        ? await prepareStockRequestTransfer(workspace, transfer.stockRequestId)
+        : await prepareInventoryTransferRemaining(workspace, transfer.transferId);
+      await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
+      await queryClient.invalidateQueries({ queryKey: ["stock-requests"] });
+      navigate(`/inventory/transfers/${draft.transferId}`);
+    } catch (err) {
+      const detail = resolveTransferActionError(err, t("transfer.actionFailed"));
+      setLocalError({ title: t("transfer.actionFailed"), detail });
+      showToast(detail, "error");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
   }
@@ -388,18 +433,42 @@ export function InventoryTransferDetailPage() {
 
   const sourceName = branchDisplayName(transfer.sourceBranchName, transfer.sourceBranchId);
   const destName = branchDisplayName(transfer.destinationBranchName, transfer.destinationBranchId);
-  const isSource = actingBranchId === transfer.sourceBranchId;
-  const isDestination = actingBranchId === transfer.destinationBranchId;
+  // GUID strings may differ by case across session grant vs transfer DTO.
+  const sameBranch = (a: string | null | undefined, b: string | null | undefined) =>
+    Boolean(a && b && a.toLowerCase() === b.toLowerCase());
+  const isSource = sameBranch(actingBranchId, transfer.sourceBranchId);
+  const isDestination = sameBranch(actingBranchId, transfer.destinationBranchId);
   const isDraft = transfer.status === "Draft";
   const isInTransit = transfer.status === "InTransit";
   const isPartiallyReceived = transfer.status === "PartiallyReceived";
   const isFinal = isTransferTerminalStatus(transfer.status);
-  const showReceiptProgress = isInTransit || isPartiallyReceived || isFinal;
   const canMutate = allowManage && online && !busy;
   const canDispatch = canMutate && isSource && isDraft;
   const canCancel = canMutate && isSource && (isDraft || isInTransit);
   const canReceive = canMutate && isDestination && canDestinationReceiveTransfer(transfer);
   const canCloseRemainder = canMutate && isDestination && canDestinationCloseRemainder(transfer);
+  const remainingToDispatchQty = transfer.remainingToDispatchQty ?? 0;
+  // Match stock-request detail: gate on allowManage + source, not busy/online.
+  // Never offer fulfill on a lone Draft — that qty is the first dispatch, not a replacement.
+  const canFulfillRemaining =
+    allowManage && isSource && remainingToDispatchQty > 0 && !isDraft;
+  const familyMembers = transfer.familyMembers ?? [];
+  const damageCustodies = transfer.damageCustodies ?? [];
+  const thisShipment = computeThisShipmentTotals(transfer);
+  const receivingDecision = buildReceivingDecisionView(transfer);
+  const fulfillmentTargetQty = familyFulfillmentTargetQty(transfer);
+  // Fulfillment coverage is for receive / replacement waves — not a lone Draft
+  // where Remaining simply equals the yet-to-dispatch send qty.
+  const showFulfillmentCoverage =
+    familyMembers.length > 1 ||
+    (transfer.satisfiedAtDestinationQty ?? 0) > 0 ||
+    (transfer.openInTransitQty ?? 0) > 0 ||
+    (transfer.waivedQty ?? 0) > 0 ||
+    damageCustodies.length > 0 ||
+    (remainingToDispatchQty > 0 && transfer.status !== "Draft");
+  const thisTransferCustodies = damageCustodies.filter(
+    (c) => c.transferId.toLowerCase() === transfer.transferId.toLowerCase(),
+  );
   const receiveButtonLabel =
     isPartiallyReceived ? t("transfer.receiveRemaining") : t("transfer.receive");
 
@@ -426,18 +495,18 @@ export function InventoryTransferDetailPage() {
             headers: [
               t("purchasing.colProduct"),
               t("transfer.sent"),
-              t("transfer.received"),
-              t("transfer.difference"),
-              t("transfer.lot"),
-              t("transfer.expiry"),
+              t("transfer.good"),
+              t("transfer.damaged"),
+              t("transfer.inTransit"),
+              t("transfer.needsFulfillment"),
             ],
             rows: transfer.lines.map((line) => [
               line.productName,
               formatTransferQty(line.sentQty),
               formatTransferQty(line.receivedQty),
-              formatTransferQty(line.differenceQty),
-              line.lotNumber ?? "",
-              line.expirationDate ?? "",
+              formatTransferQty(lineDamagedQty(transfer, line.lineId)),
+              formatTransferQty(lineOutstandingQty(line)),
+              formatTransferQty(lineNeedsFulfillmentQty(line)),
             ]),
           },
         );
@@ -453,18 +522,18 @@ export function InventoryTransferDetailPage() {
           [
             t("purchasing.colProduct"),
             t("transfer.sent"),
-            t("transfer.received"),
-            t("transfer.difference"),
-            t("transfer.lot"),
-            t("transfer.expiry"),
+            t("transfer.good"),
+            t("transfer.damaged"),
+            t("transfer.inTransit"),
+            t("transfer.needsFulfillment"),
           ],
           ...transfer.lines.map((line) => [
             line.productName,
             formatTransferQty(line.sentQty),
             formatTransferQty(line.receivedQty),
-            formatTransferQty(line.differenceQty),
-            line.lotNumber ?? "",
-            line.expirationDate ?? "",
+            formatTransferQty(lineDamagedQty(transfer, line.lineId)),
+            formatTransferQty(lineOutstandingQty(line)),
+            formatTransferQty(lineNeedsFulfillmentQty(line)),
           ]),
         ]);
         const book = XLSX.utils.book_new();
@@ -498,8 +567,10 @@ export function InventoryTransferDetailPage() {
           <tr>
             <th>{t("purchasing.colProduct")}</th>
             <th>{t("transfer.sent")}</th>
-            <th>{t("transfer.received")}</th>
-            <th>{t("transfer.difference")}</th>
+            <th>{t("transfer.good")}</th>
+            <th>{t("transfer.damaged")}</th>
+            <th>{t("transfer.inTransit")}</th>
+            <th>{t("transfer.needsFulfillment")}</th>
           </tr>
         </thead>
         <tbody>
@@ -512,7 +583,15 @@ export function InventoryTransferDetailPage() {
               <td>
                 {formatTransferQty(line.receivedQty)} {line.unitOfMeasure}
               </td>
-              <td>{formatTransferQty(line.differenceQty)}</td>
+              <td>
+                {formatTransferQty(lineDamagedQty(transfer, line.lineId))} {line.unitOfMeasure}
+              </td>
+              <td>
+                {formatTransferQty(lineOutstandingQty(line))} {line.unitOfMeasure}
+              </td>
+              <td>
+                {formatTransferQty(lineNeedsFulfillmentQty(line))} {line.unitOfMeasure}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -594,39 +673,37 @@ export function InventoryTransferDetailPage() {
       />
     ) : null;
 
-  if (mode === "receive" && canReceive) {
-    return (
-      <InventoryTransferReceiveMode
-        transfer={transfer}
-        sourceName={sourceName}
-        destName={destName}
-        statusLabel={statusLabel}
-        statusIcon={inventoryTransferStatusIcon(transfer.status)}
-        busy={busy}
-        online={online}
-        localErrorAlert={localErrorAlert}
-        onBack={() => setMode("detail")}
-        onSubmitReceive={(body) => {
-          setLocalError(null);
-          void onReceive(body);
-        }}
-      />
-    );
-  }
+  const receiveTitle =
+    isPartiallyReceived ? t("transfer.receiveRemainingTitle") : t("transfer.receiveTitle");
+  const headerTitle = mode === "receive" ? receiveTitle : t("transfer.summaryTitle");
+  const headerBack =
+    mode === "receive"
+      ? {
+          backTo: `/inventory/transfers/${transfer.transferId}`,
+          backLabel: t("transfer.backToTransfer"),
+          backTestId: "page-header-back-transfer",
+          onBack: () => setMode("detail"),
+        }
+      : smartBack;
 
   return (
     <div
       className="inventory-transfer-detail-page exits-page flex min-w-0 flex-col gap-3 pb-4"
-      data-testid="inventory-transfer-detail-page"
+      data-testid={
+        mode === "receive" ? "inventory-transfer-receive-page" : "inventory-transfer-detail-page"
+      }
       data-status={transfer.status}
+      data-is-source={isSource ? "true" : "false"}
+      data-can-fulfill-remaining={canFulfillRemaining ? "true" : "false"}
+      data-remaining-to-dispatch={String(remainingToDispatchQty)}
     >
       <div className="exits-bizdoc-print-host" aria-hidden>
         {printDocument}
       </div>
 
       <PageHeader
-        title={t("transfer.summaryTitle")}
-        {...smartBack}
+        title={headerTitle}
+        {...headerBack}
         actions={
           <PoProcessHeaderActions
             statusLabel={statusLabel}
@@ -641,14 +718,75 @@ export function InventoryTransferDetailPage() {
             onPdf={() => void runTransferOutput("pdf")}
             timelineTestId="transfer-timeline-open"
             previewTestId="transfer-document-preview-open"
+            trailing={
+              canFulfillRemaining ? (
+                <Button
+                  type="button"
+                  disabled={!online || busy}
+                  onClick={() => void onFulfillRemaining()}
+                  data-testid="transfer-fulfill-remaining-header"
+                >
+                  <Truck className="size-4 shrink-0" aria-hidden />
+                  {t("stockRequest.fulfillRemaining").replace(
+                    "{qty}",
+                    formatTransferQty(remainingToDispatchQty),
+                  )}
+                </Button>
+              ) : null
+            }
           />
         }
       />
 
+      {mode === "receive" && canReceive ? (
+        <InventoryTransferReceiveMode
+          transfer={transfer}
+          sourceName={sourceName}
+          destName={destName}
+          statusLabel={statusLabel}
+          statusIcon={inventoryTransferStatusIcon(transfer.status)}
+          busy={busy}
+          online={online}
+          localErrorAlert={localErrorAlert}
+          embedded
+          onBack={() => setMode("detail")}
+          onSubmitReceive={(body) => {
+            setLocalError(null);
+            void onReceive(body);
+          }}
+        />
+      ) : (
+        <>
       {!online ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{t("transfer.offline")}</p>
       ) : null}
       {localErrorAlert}
+
+      {canFulfillRemaining ? (
+        <Notice tone="info" testId="transfer-fulfill-remaining-notice">
+          {t("transfer.fulfillRemainingHint").replace(
+            "{qty}",
+            formatTransferQty(remainingToDispatchQty),
+          )}
+        </Notice>
+      ) : null}
+      {!canFulfillRemaining &&
+      isDestination &&
+      remainingToDispatchQty > 0 &&
+      transfer.stockRequestId ? (
+        <Notice tone="info" testId="transfer-fulfill-at-source-notice">
+          {t("transfer.fulfillAtSourceHint").replace(
+            "{qty}",
+            formatTransferQty(remainingToDispatchQty),
+          )}{" "}
+          <Link
+            className="underline"
+            to={`/inventory/stock-requests/${transfer.stockRequestId}`}
+          >
+            {t("transfer.viewStockRequest")}
+          </Link>
+        </Notice>
+      ) : null}
 
       <Card
         className="flex min-w-0 flex-col gap-3 p-3"
@@ -665,10 +803,7 @@ export function InventoryTransferDetailPage() {
           </span>
         </div>
 
-        <div
-          className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-          data-testid="transfer-qty-summary"
-        >
+        <div data-testid="transfer-qty-summary">
           <Card
             className="flex flex-col gap-0.5 p-3"
             treatment="bordered"
@@ -679,18 +814,6 @@ export function InventoryTransferDetailPage() {
             </p>
             <p className="m-0 truncate text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
               {transfer.transferNumber?.trim() || "—"}
-            </p>
-          </Card>
-          <Card className="flex flex-col gap-0.5 p-3" treatment="bordered">
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.sent")}</p>
-            <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
-              {formatTransferQty(transfer.totalSentQty)}
-            </p>
-          </Card>
-          <Card className="flex flex-col gap-0.5 p-3" treatment="bordered">
-            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.received")}</p>
-            <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold tabular-nums">
-              {formatTransferQty(transfer.totalReceivedQty)}
             </p>
           </Card>
         </div>
@@ -715,163 +838,499 @@ export function InventoryTransferDetailPage() {
         </p>
       ) : null}
 
-      {(transfer.familyMembers?.length ?? 0) > 1 ||
-      (transfer.satisfiedAtDestinationQty ?? 0) > 0 ||
-      (transfer.remainingToDispatchQty ?? 0) > 0 ? (
+      <div
+        className="grid grid-cols-1 gap-3 lg:grid-cols-2"
+        data-testid="transfer-summary-body-top"
+      >
         <Card
           className="flex min-w-0 flex-col gap-2 p-3"
           treatment="bordered"
+          data-testid="transfer-this-shipment"
+        >
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+            {t("transfer.thisShipment")}
+          </h2>
+          <dl className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]">
+            <dt className="m-0 text-muted">{t("transfer.sent")}</dt>
+            <dd className="m-0 text-end font-semibold tabular-nums" data-testid="this-shipment-sent">
+              {formatTransferQty(thisShipment.sent)}
+            </dd>
+            <dt className="m-0 text-muted">{t("transfer.goodReceived")}</dt>
+            <dd
+              className="m-0 text-end font-semibold tabular-nums"
+              data-testid="this-shipment-good"
+            >
+              {formatTransferQty(thisShipment.goodReceived)}
+            </dd>
+            <dt className="m-0 text-muted">{t("transfer.damaged")}</dt>
+            <dd
+              className="m-0 text-end font-semibold tabular-nums"
+              data-testid="this-shipment-damaged"
+            >
+              {formatTransferQty(thisShipment.damaged)}
+            </dd>
+            <dt className="m-0 text-muted">{t("transfer.missing")}</dt>
+            <dd
+              className="m-0 text-end font-semibold tabular-nums"
+              data-testid="this-shipment-missing"
+            >
+              {formatTransferQty(thisShipment.missing)}
+            </dd>
+            <dt className="m-0 text-muted">{t("transfer.other")}</dt>
+            <dd
+              className="m-0 text-end font-semibold tabular-nums"
+              data-testid="this-shipment-other"
+            >
+              {formatTransferQty(thisShipment.other)}
+            </dd>
+          </dl>
+        </Card>
+
+        {receivingDecision.hasDiscrepancy ? (
+          <Card
+            className="flex min-w-0 flex-col gap-2 p-3"
+            treatment="bordered"
+            data-testid="transfer-receiving-decision"
+          >
+            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+              {t("transfer.receivingDecision")}
+            </h2>
+            <dl className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]">
+              {receivingDecision.damagedQty > 1e-9 ? (
+                <>
+                  <dt className="m-0 text-muted">{t("transfer.damaged")}</dt>
+                  <dd
+                    className="m-0 text-end font-semibold tabular-nums"
+                    data-testid="receiving-decision-damaged-qty"
+                  >
+                    {formatTransferQty(receivingDecision.damagedQty)}
+                  </dd>
+                  {receivingDecision.damagedFollowUp ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.replacement")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-damaged-follow-up"
+                      >
+                        {receivingDecision.damagedFollowUp === "RequestReplacement"
+                          ? t("transfer.replacementRequestedShort")
+                          : receivingDecision.damagedFollowUp === "AcceptShortage"
+                            ? t("transfer.noReplacement")
+                            : (transferDiscrepancyFollowUpLabelKey(
+                                receivingDecision.damagedFollowUp,
+                              )
+                                ? t(
+                                    transferDiscrepancyFollowUpLabelKey(
+                                      receivingDecision.damagedFollowUp,
+                                    )!,
+                                  )
+                                : null)}
+                      </dd>
+                    </>
+                  ) : null}
+                  {receivingDecision.custodyDecision ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.custodyLabel")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-custody"
+                      >
+                        {transferCustodyDecisionLabelKey(receivingDecision.custodyDecision)
+                          ? t(
+                              transferCustodyDecisionLabelKey(
+                                receivingDecision.custodyDecision,
+                              )!,
+                            )
+                          : null}
+                      </dd>
+                    </>
+                  ) : null}
+                  {isKeepAtDestinationCustody(receivingDecision.custodyDecision) ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.inventoryState")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-inventory-state"
+                      >
+                        {t("transfer.inventoryNonSellableAt").replace("{branch}", destName)}
+                      </dd>
+                      <dt className="m-0 text-muted">{t("transfer.currentLocation")}</dt>
+                      <dd className="m-0 text-end font-medium">{destName}</dd>
+                    </>
+                  ) : null}
+                  {isReturnToSourceCustody(receivingDecision.custodyDecision) &&
+                  receivingDecision.custodyStatus ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.returnStatus")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-return-status"
+                      >
+                        {transferCustodyStatusLabelKey(receivingDecision.custodyStatus)
+                          ? t(
+                              transferCustodyStatusLabelKey(
+                                receivingDecision.custodyStatus,
+                              )!,
+                            )
+                          : null}
+                      </dd>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+
+              {receivingDecision.missingQty > 1e-9 ? (
+                <>
+                  <dt className="m-0 text-muted">{t("transfer.missing")}</dt>
+                  <dd
+                    className="m-0 text-end font-semibold tabular-nums"
+                    data-testid="receiving-decision-missing-qty"
+                  >
+                    {formatTransferQty(receivingDecision.missingQty)}
+                  </dd>
+                  {receivingDecision.missingDisposition ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.followUp.decisionCol")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-missing-disposition"
+                      >
+                        {transferMissingDispositionLabelKey(
+                          receivingDecision.missingDisposition,
+                        )
+                          ? t(
+                              transferMissingDispositionLabelKey(
+                                receivingDecision.missingDisposition,
+                              )!,
+                            )
+                          : null}
+                      </dd>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+
+              {receivingDecision.otherQty > 1e-9 ? (
+                <>
+                  <dt className="m-0 text-muted">{t("transfer.otherDiscrepancy")}</dt>
+                  <dd
+                    className="m-0 text-end font-semibold tabular-nums"
+                    data-testid="receiving-decision-other-qty"
+                  >
+                    {formatTransferQty(receivingDecision.otherQty)}
+                  </dd>
+                  <dt className="m-0 text-muted">{t("transfer.reason")}</dt>
+                  <dd className="m-0 text-end font-medium" data-testid="receiving-decision-other-reason">
+                    {t(otherReasonLabelKey(receivingDecision.otherReasonCode))}
+                  </dd>
+                  {receivingDecision.otherReasonNote ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.note")}</dt>
+                      <dd className="m-0 text-end font-medium">
+                        {receivingDecision.otherReasonNote}
+                      </dd>
+                    </>
+                  ) : null}
+                  {receivingDecision.otherFollowUp ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.followUp.decisionCol")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="receiving-decision-other-follow-up"
+                      >
+                        {transferDiscrepancyFollowUpLabelKey(receivingDecision.otherFollowUp)
+                          ? t(
+                              transferDiscrepancyFollowUpLabelKey(
+                                receivingDecision.otherFollowUp,
+                              )!,
+                            )
+                          : null}
+                      </dd>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+            </dl>
+
+            {thisTransferCustodies.length > 0 ? (
+              <ul className="m-0 list-none p-0" data-testid="transfer-damage-custodies">
+                {inspectCustodyId ? (
+                  <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                      Inspect damage custody
+                    </p>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      Recovered sellable
+                      <input
+                        className="rounded-md border border-border px-2 py-1"
+                        inputMode="decimal"
+                        value={inspectRecoveredText}
+                        onChange={(e) => setInspectRecoveredText(e.target.value)}
+                        data-testid="transfer-custody-inspect-recovered"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      Confirmed damaged
+                      <input
+                        className="rounded-md border border-border px-2 py-1"
+                        inputMode="decimal"
+                        value={inspectConfirmedText}
+                        onChange={(e) => setInspectConfirmedText(e.target.value)}
+                        data-testid="transfer-custody-inspect-confirmed"
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onInspectDamageCustody()}
+                        data-testid="transfer-custody-inspect-confirm"
+                      >
+                        Confirm inspection
+                      </Button>
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => setInspectCustodyId(null)}
+                        data-testid="transfer-custody-inspect-cancel"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </li>
+                ) : null}
+                {thisTransferCustodies.map((c) => {
+                  const canDispatchReturn =
+                    canMutate &&
+                    isDestination &&
+                    c.decision === "ReturnToSource" &&
+                    (c.status === "AwaitingReturn" || c.status === "HeldAtDestination");
+                  const canReceiveReturn =
+                    canMutate && isSource && c.status === "ReturnInTransit";
+                  const canInspect =
+                    canMutate &&
+                    isSource &&
+                    c.decision === "ReturnToSource" &&
+                    (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection");
+                  if (!canDispatchReturn && !canReceiveReturn && !canInspect) {
+                    return null;
+                  }
+                  return (
+                    <li
+                      key={c.custodyId}
+                      className="flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]"
+                    >
+                      {canDispatchReturn ? (
+                        <Button
+                          type="button"
+                          appearance="ghost"
+                          disabled={busy}
+                          onClick={() => void onDispatchDamageReturn(c.custodyId)}
+                          data-testid={`transfer-custody-dispatch-return-${c.custodyId}`}
+                        >
+                          Dispatch return
+                        </Button>
+                      ) : null}
+                      {canReceiveReturn ? (
+                        <Button
+                          type="button"
+                          appearance="ghost"
+                          disabled={busy}
+                          onClick={() => void onReceiveDamageReturn(c.custodyId)}
+                          data-testid={`transfer-custody-receive-return-${c.custodyId}`}
+                        >
+                          Receive return
+                        </Button>
+                      ) : null}
+                      {canInspect ? (
+                        <Button
+                          type="button"
+                          appearance="ghost"
+                          disabled={busy}
+                          onClick={() => {
+                            setInspectCustodyId(c.custodyId);
+                            setInspectRecoveredText("0");
+                            setInspectConfirmedText(String(c.quantity));
+                          }}
+                          data-testid={`transfer-custody-inspect-${c.custodyId}`}
+                        >
+                          Inspect
+                        </Button>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </Card>
+        ) : null}
+      </div>
+
+      {showFulfillmentCoverage ? (
+        <Card
+          className="flex min-w-0 flex-col gap-3 p-3"
+          treatment="bordered"
           data-testid="transfer-family-coverage"
         >
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+            {t("transfer.fulfillment")}
+          </h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Satisfied</p>
-              <p className="m-0 font-semibold tabular-nums">
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.targetRequested")}
+              </p>
+              <p
+                className="m-0 font-semibold tabular-nums"
+                data-testid="transfer-fulfillment-target"
+              >
+                {formatTransferQty(fulfillmentTargetQty)}
+              </p>
+            </div>
+            <div>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.goodReceived")}
+              </p>
+              <p
+                className="m-0 font-semibold tabular-nums"
+                data-testid="transfer-fulfillment-good"
+              >
                 {formatTransferQty(transfer.satisfiedAtDestinationQty ?? 0)}
               </p>
             </div>
             <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Still in transit</p>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.stillInTransit")}
+              </p>
               <p className="m-0 font-semibold tabular-nums">
                 {formatTransferQty(transfer.openInTransitQty ?? 0)}
               </p>
             </div>
             <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Needs fulfillment</p>
-              <p className="m-0 font-semibold tabular-nums">
-                {formatTransferQty(transfer.remainingToDispatchQty ?? 0)}
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.needsFulfillment")}
+              </p>
+              <p
+                className="m-0 font-semibold tabular-nums"
+                data-testid="transfer-fulfillment-needs-replacement"
+              >
+                {formatTransferQty(remainingToDispatchQty)}
               </p>
             </div>
             <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">Waived</p>
+              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                {t("transfer.acceptedWaived")}
+              </p>
               <p className="m-0 font-semibold tabular-nums">
                 {formatTransferQty(transfer.waivedQty ?? 0)}
               </p>
             </div>
           </div>
-          {(transfer.familyMembers?.length ?? 0) > 0 ? (
-            <ul className="m-0 list-none p-0" data-testid="transfer-family-members">
-              {transfer.familyMembers!.map((member) => (
-                <li key={member.transferId} className="text-[length:var(--exits-text-sm)]">
-                  <Link className="underline" to={`/inventory/transfers/${member.transferId}`}>
-                    {member.isRoot
-                      ? `Original ${member.transferNumber ?? member.transferId.slice(0, 8)}`
-                      : `Replacement ${member.transferNumber ?? `R${member.replacementSequence}`}`}
-                  </Link>{" "}
-                  <span className="text-muted">({member.status})</span>
-                </li>
-              ))}
-            </ul>
+          {canFulfillRemaining ? (
+            <p
+              className="m-0 text-[length:var(--exits-text-sm)] font-medium"
+              data-testid="transfer-fulfillment-needs-banner"
+            >
+              {t("transfer.fulfillRemainingBanner").replace(
+                "{qty}",
+                formatTransferQty(remainingToDispatchQty),
+              )}
+            </p>
           ) : null}
-          {(transfer.damageCustodies?.length ?? 0) > 0 ? (
-            <ul className="m-0 list-none p-0" data-testid="transfer-damage-custodies">
-              {inspectCustodyId ? (
-                <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
-                  <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
-                    Inspect damage custody
-                  </p>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    Recovered sellable
-                    <input
-                      className="rounded-md border border-border px-2 py-1"
-                      inputMode="decimal"
-                      value={inspectRecoveredText}
-                      onChange={(e) => setInspectRecoveredText(e.target.value)}
-                      data-testid="transfer-custody-inspect-recovered"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
-                    Confirmed damaged
-                    <input
-                      className="rounded-md border border-border px-2 py-1"
-                      inputMode="decimal"
-                      value={inspectConfirmedText}
-                      onChange={(e) => setInspectConfirmedText(e.target.value)}
-                      data-testid="transfer-custody-inspect-confirmed"
-                    />
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void onInspectDamageCustody()}
-                      data-testid="transfer-custody-inspect-confirm"
-                    >
-                      Confirm inspection
-                    </Button>
-                    <Button
-                      type="button"
-                      appearance="ghost"
-                      disabled={busy}
-                      onClick={() => setInspectCustodyId(null)}
-                      data-testid="transfer-custody-inspect-cancel"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </li>
+          {canFulfillRemaining || transfer.stockRequestId ? (
+            <div className="flex flex-wrap gap-2" data-testid="transfer-fulfillment-actions">
+              {canFulfillRemaining ? (
+                <Button
+                  type="button"
+                  disabled={!online || busy}
+                  onClick={() => void onFulfillRemaining()}
+                  data-testid="transfer-fulfill-remaining"
+                >
+                  {t("stockRequest.fulfillRemaining").replace(
+                    "{qty}",
+                    formatTransferQty(remainingToDispatchQty),
+                  )}
+                </Button>
               ) : null}
-              {transfer.damageCustodies!.map((c) => {
-                const canDispatchReturn =
-                  canMutate &&
-                  isDestination &&
-                  c.decision === "ReturnToSource" &&
-                  (c.status === "AwaitingReturn" || c.status === "HeldAtDestination");
-                const canReceiveReturn =
-                  canMutate && isSource && c.status === "ReturnInTransit";
-                const canInspect =
-                  canMutate &&
-                  ((isDestination &&
-                    c.decision === "KeepAtDestination" &&
-                    (c.status === "HeldAtDestination" || c.status === "AwaitingInspection")) ||
-                    (isSource &&
-                      c.decision === "ReturnToSource" &&
-                      (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection")));
+              {transfer.stockRequestId ? (
+                <Button asChild variant="outline" data-testid="transfer-view-stock-request">
+                  <Link to={`/inventory/stock-requests/${transfer.stockRequestId}`}>
+                    {t("transfer.viewStockRequest")}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+          {familyMembers.length > 0 ? (
+            <ul
+              className="m-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2"
+              data-testid="transfer-family-members"
+            >
+              {familyMembers.map((member) => {
+                const damaged = familyMemberDamagedQty(member);
+                const isCurrent =
+                  member.transferId.toLowerCase() === transfer.transferId.toLowerCase();
+                const roleLabel = member.isRoot
+                  ? member.transferNumber
+                    ? t("transfer.family.original")
+                    : t("transfer.family.originalDraft")
+                  : member.transferNumber
+                    ? t("transfer.family.replacementN").replace(
+                        "{n}",
+                        String(member.replacementSequence ?? ""),
+                      )
+                    : t("transfer.family.replacementDraft").replace(
+                        "{n}",
+                        String(member.replacementSequence ?? ""),
+                      );
+                const qtyParts = [
+                  `${t("transfer.sent")} ${formatTransferQty(member.totalSentQty)}`,
+                  `${t("transfer.good")} ${formatTransferQty(member.totalReceivedQty)}`,
+                ];
+                if (damaged > 1e-9) {
+                  qtyParts.push(`${t("transfer.damaged")} ${formatTransferQty(damaged)}`);
+                }
+                const missing = member.totalMissingQty ?? 0;
+                if (missing > 1e-9) {
+                  qtyParts.push(`${t("transfer.missing")} ${formatTransferQty(missing)}`);
+                }
                 return (
-                  <li
-                    key={c.custodyId}
-                    className="flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]"
-                  >
-                    <span className="text-muted">
-                      Damage custody {c.status}: {formatTransferQty(c.quantity)} ({c.decision})
-                    </span>
-                    {canDispatchReturn ? (
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => void onDispatchDamageReturn(c.custodyId)}
-                        data-testid={`transfer-custody-dispatch-return-${c.custodyId}`}
+                  <li key={member.transferId} className="min-w-0">
+                    <Link
+                      to={`/inventory/transfers/${member.transferId}`}
+                      className="block h-full no-underline"
+                      data-testid={`transfer-family-member-${member.transferId}`}
+                    >
+                      <Card
+                        className={`flex h-full flex-col gap-0.5 p-3 ${
+                          isCurrent
+                            ? "ring-1 ring-[color-mix(in_srgb,var(--exits-border)_80%,transparent)]"
+                            : ""
+                        }`}
+                        treatment="bordered"
+                        padding="compact"
                       >
-                        Dispatch return
-                      </Button>
-                    ) : null}
-                    {canReceiveReturn ? (
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => void onReceiveDamageReturn(c.custodyId)}
-                        data-testid={`transfer-custody-receive-return-${c.custodyId}`}
-                      >
-                        Receive return
-                      </Button>
-                    ) : null}
-                    {canInspect ? (
-                      <Button
-                        type="button"
-                        appearance="ghost"
-                        disabled={busy}
-                        onClick={() => {
-                          setInspectCustodyId(c.custodyId);
-                          setInspectRecoveredText("0");
-                          setInspectConfirmedText(String(c.quantity));
-                        }}
-                        data-testid={`transfer-custody-inspect-${c.custodyId}`}
-                      >
-                        Inspect
-                      </Button>
-                    ) : null}
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+                            {roleLabel}
+                          </span>
+                          <span className="truncate font-mono text-[length:var(--exits-text-xs)] text-muted">
+                            {member.transferNumber?.trim() || "—"}
+                          </span>
+                          <StatusChip
+                            tone={inventoryTransferStatusTone(member.status)}
+                            appearance="soft"
+                            shape="soft"
+                          >
+                            {t(inventoryTransferStatusLabelKey(member.status))}
+                          </StatusChip>
+                        </div>
+                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                          {qtyParts.join(" · ")}
+                        </p>
+                      </Card>
+                    </Link>
                   </li>
                 );
               })}
@@ -900,31 +1359,37 @@ export function InventoryTransferDetailPage() {
                 <ExitsTableHead cellAlign="text" colSize="flex">
                   {t("purchasing.colProduct")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="text" colSize="sku">
-                  {t("purchasing.colSku")}
-                </ExitsTableHead>
-                <ExitsTableHead cellAlign="text">{t("purchasing.colUnit")}</ExitsTableHead>
                 <ExitsTableHead cellAlign="center" colSize="numeric">
                   {t("transfer.sent")}
                 </ExitsTableHead>
                 <ExitsTableHead cellAlign="center" colSize="numeric">
-                  {t("transfer.received")}
+                  {t("transfer.good")}
                 </ExitsTableHead>
-                {showReceiptProgress ? (
-                  <ExitsTableHead cellAlign="center" colSize="numeric">
-                    {t("transfer.outstanding")}
-                  </ExitsTableHead>
-                ) : null}
                 <ExitsTableHead cellAlign="center" colSize="numeric">
-                  {t("transfer.difference")}
+                  {t("transfer.damaged")}
                 </ExitsTableHead>
-                <ExitsTableHead cellAlign="text">{t("transfer.lot")}</ExitsTableHead>
+                <ExitsTableHead cellAlign="center" colSize="numeric">
+                  {t("transfer.missing")}
+                </ExitsTableHead>
+                <ExitsTableHead cellAlign="center" colSize="numeric">
+                  {t("transfer.other")}
+                </ExitsTableHead>
+                <ExitsTableHead cellAlign="text" colSize="flex">
+                  {t("transfer.followUp.decisionCol")}
+                </ExitsTableHead>
               </ExitsTableRow>
             </ExitsTableHeader>
             <ExitsTableBody>
               {transfer.lines.map((line) => {
-                const showReceived = showReceiptProgress;
-                const outstanding = lineOutstandingQty(line);
+                const damaged = lineDamagedQty(transfer, line.lineId);
+                const missing = lineMissingQty(transfer, line.lineId);
+                const other = lineOtherQty(transfer, line.lineId);
+                const followUp = lineFollowUpDisplay(transfer, line);
+                const followUpText = followUp
+                  ? followUp.qty != null
+                    ? t(followUp.labelKey).replace("{qty}", formatTransferQty(followUp.qty))
+                    : t(followUp.labelKey)
+                  : t("transfer.followUp.none");
                 return (
                   <ExitsTableRow
                     key={line.lineId}
@@ -932,36 +1397,28 @@ export function InventoryTransferDetailPage() {
                   >
                     <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
                       <div>{line.productName}</div>
-                      {line.discrepancyReason ? (
-                        <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
-                          {t("transfer.discrepancy")}:{" "}
-                          {t(inventoryTransferDiscrepancyLabelKey(line.discrepancyReason))}
-                          {line.discrepancyNote ? ` — ${line.discrepancyNote}` : ""}
-                        </div>
-                      ) : null}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text" colSize="sku" className="text-muted tabular-nums">
-                      {line.sku?.trim() || "—"}
-                    </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text">{line.unitOfMeasure}</ExitsTableCell>
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
                       {formatTransferQty(line.sentQty)}
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                      {showReceived ? formatTransferQty(line.receivedQty) : "—"}
+                      {formatTransferQty(line.receivedQty)}
                     </ExitsTableCell>
-                    {showReceiptProgress ? (
-                      <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                        {formatTransferQty(outstanding)}
-                      </ExitsTableCell>
-                    ) : null}
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
-                      {line.differenceQty !== 0 ? formatTransferQty(line.differenceQty) : "—"}
+                      {formatTransferQty(damaged)}
                     </ExitsTableCell>
-                    <ExitsTableCell cellAlign="text" className="text-muted">
-                      {line.lotNumber || line.expirationDate
-                        ? `${line.lotNumber ?? "—"} · ${line.expirationDate ?? "—"}`
-                        : "—"}
+                    <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                      {formatTransferQty(missing)}
+                    </ExitsTableCell>
+                    <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
+                      {formatTransferQty(other)}
+                    </ExitsTableCell>
+                    <ExitsTableCell
+                      cellAlign="text"
+                      colSize="flex"
+                      data-testid={`transfer-line-follow-up-${line.lineId}`}
+                    >
+                      {followUpText}
                     </ExitsTableCell>
                   </ExitsTableRow>
                 );
@@ -971,8 +1428,15 @@ export function InventoryTransferDetailPage() {
 
           <ExitsTableMobile data-testid="transfer-lines-mobile">
             {transfer.lines.map((line) => {
-              const showReceived = showReceiptProgress;
-              const outstanding = lineOutstandingQty(line);
+              const damaged = lineDamagedQty(transfer, line.lineId);
+              const missing = lineMissingQty(transfer, line.lineId);
+              const other = lineOtherQty(transfer, line.lineId);
+              const followUp = lineFollowUpDisplay(transfer, line);
+              const followUpText = followUp
+                ? followUp.qty != null
+                  ? t(followUp.labelKey).replace("{qty}", formatTransferQty(followUp.qty))
+                  : t(followUp.labelKey)
+                : t("transfer.followUp.none");
               return (
                 <ExitsTableMobileRow
                   key={line.lineId}
@@ -981,36 +1445,16 @@ export function InventoryTransferDetailPage() {
                   <div className="exits-table-mobile__title-row">
                     <span className="exits-table-mobile__title">{line.productName}</span>
                   </div>
-                  <p className="exits-table-mobile__meta m-0">
-                    {t("purchasing.colSku")}: {line.sku?.trim() || "—"}
-                    {" · "}
-                    {t("purchasing.colUnit")}: {line.unitOfMeasure}
-                  </p>
                   <p className="exits-table-mobile__math mt-1 mb-0">
                     {t("transfer.sent")}: {formatTransferQty(line.sentQty)}
-                    {showReceived
-                      ? ` · ${t("transfer.received")}: ${formatTransferQty(line.receivedQty)}`
-                      : ""}
-                    {showReceived
-                      ? ` · ${t("transfer.outstanding")}: ${formatTransferQty(outstanding)}`
-                      : ""}
-                    {line.differenceQty !== 0
-                      ? ` · ${t("transfer.difference")}: ${formatTransferQty(line.differenceQty)}`
-                      : ""}
+                    {` · ${t("transfer.good")}: ${formatTransferQty(line.receivedQty)}`}
+                    {` · ${t("transfer.damaged")}: ${formatTransferQty(damaged)}`}
+                    {` · ${t("transfer.missing")}: ${formatTransferQty(missing)}`}
+                    {` · ${t("transfer.other")}: ${formatTransferQty(other)}`}
                   </p>
-                  {line.lotNumber || line.expirationDate ? (
-                    <p className="exits-table-mobile__meta m-0">
-                      {t("transfer.lot")}: {line.lotNumber ?? "—"} · {t("transfer.expiry")}:{" "}
-                      {line.expirationDate ?? "—"}
-                    </p>
-                  ) : null}
-                  {line.discrepancyReason ? (
-                    <p className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted">
-                      {t("transfer.discrepancy")}:{" "}
-                      {t(inventoryTransferDiscrepancyLabelKey(line.discrepancyReason))}
-                      {line.discrepancyNote ? ` — ${line.discrepancyNote}` : ""}
-                    </p>
-                  ) : null}
+                  <p className="mt-1 mb-0 text-[length:var(--exits-text-xs)] text-muted">
+                    {t("transfer.followUp.decisionCol")}: {followUpText}
+                  </p>
                 </ExitsTableMobileRow>
               );
             })}
@@ -1018,11 +1462,22 @@ export function InventoryTransferDetailPage() {
         </ExitsTableContainer>
       </section>
 
-      {canCancel || canDispatch || canReceive || canCloseRemainder ? (
+      {canCancel || canDispatch || canReceive || canCloseRemainder || canFulfillRemaining ? (
         <div className="receive-stock-actions" data-testid="transfer-detail-actions">
           {isDraft ? (
             <p className="m-0 me-auto text-[length:var(--exits-text-xs)] text-muted">
               {t("transfer.draftNoEdit")}
+            </p>
+          ) : null}
+          {canFulfillRemaining ? (
+            <p
+              className="m-0 me-auto text-[length:var(--exits-text-sm)] font-medium"
+              data-testid="transfer-actions-needs-fulfillment"
+            >
+              {t("stockRequest.needsFulfillmentSummary").replace(
+                "{qty}",
+                formatTransferQty(remainingToDispatchQty),
+              )}
             </p>
           ) : null}
           <div className="receive-stock-actions__primary">
@@ -1081,6 +1536,20 @@ export function InventoryTransferDetailPage() {
                 {t("transfer.closeRemainder")}
               </Button>
             ) : null}
+            {canFulfillRemaining ? (
+              <Button
+                type="button"
+                disabled={!online || busy}
+                onClick={() => void onFulfillRemaining()}
+                data-testid="transfer-fulfill-remaining-actions"
+              >
+                <Truck className="size-4 shrink-0" aria-hidden />
+                {t("stockRequest.fulfillRemaining").replace(
+                  "{qty}",
+                  formatTransferQty(remainingToDispatchQty),
+                )}
+              </Button>
+            ) : null}
             {canDispatch ? (
               <Button
                 type="button"
@@ -1100,6 +1569,8 @@ export function InventoryTransferDetailPage() {
       ) : isDraft ? (
         <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{t("transfer.draftNoEdit")}</p>
       ) : null}
+        </>
+      )}
       {confirmDialog}
 
       {closeRemainderOpen ? (

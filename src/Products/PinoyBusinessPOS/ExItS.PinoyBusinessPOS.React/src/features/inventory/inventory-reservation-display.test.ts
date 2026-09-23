@@ -53,6 +53,18 @@ describe("inventory-reservation-display", () => {
     ).toBe(5);
   });
 
+  it("excludes damaged and inspection hold from sellable fallback", () => {
+    expect(
+      resolveAvailableQuantity({
+        isTracked: true,
+        onHandQuantity: 20,
+        reservedQuantity: 0,
+        damagedQuantity: 10,
+        inspectionHoldQuantity: 0,
+      }),
+    ).toBe(10);
+  });
+
   it("formats weighted quantities with precision", () => {
     expect(formatInventoryQty(1.25)).toBe("1.25");
     expect(formatInventoryQty(2)).toBe("2");

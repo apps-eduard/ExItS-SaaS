@@ -46,7 +46,23 @@ public interface IInventoryTransferRepository
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves authoritative inventory-transfer transaction refs for stock movements.
+    /// SourceId may be transfer id, receipt id, receipt-line id, or damage-custody id
+    /// depending on <see cref="StockMovement.MovementType"/>.
+    /// Keyed by movement id.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, InventoryTransferTransactionRef>> ResolveStockMovementTransactionRefsAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<StockMovement> movements,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>Authoritative transfer document linked from a stock movement.</summary>
+public sealed record InventoryTransferTransactionRef(
+    Guid TransferId,
+    string? TransferNumber);
 
 /// <summary>Open transfer commitment for inventory badge / reservation drawer.</summary>
 public sealed record InventoryTransferOpenCommitment(
