@@ -3871,6 +3871,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.viewReservations": "View reservations",
 
   "inventory.reservationsTitle": "Stock reservations",
+  "inventory.commitmentsTitle": "Inventory commitments",
   "inventory.viewTransfer": "View transfer",
   "inventory.viewFullTransfer": "View full transfer",
   "inventory.transactionDetailsTitle": "Transaction details",
@@ -3907,21 +3908,24 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.reservationsEmpty": "No active reservations",
 
   "inventory.reservationsEmptyDetail": "Reserved stock will appear here when purchase orders hold inventory.",
-
+  "inventory.commitmentsLoading": "Loading commitments…",
+  "inventory.commitmentsEmpty": "No active commitments",
+  "inventory.commitmentsEmptyDetail": "Reservations and in-transit transfers will appear here.",
+  "inventory.commitmentsGroupReservations": "Reservations",
+  "inventory.commitmentsGroupInTransit": "In transit",
+  "inventory.inTransitOutbound": "In transit out",
+  "inventory.inTransitInbound": "In transit in",
+  "inventory.transferRoute": "{from} → {to}",
   "inventory.reservationTypeTemporary": "Temporary proposal",
-
   "inventory.reservationTypeConfirmed": "Confirmed order",
-
+  "inventory.reservationTypeTransferOutbound": "Transfer out",
+  "inventory.reservationTypeTransferInbound": "Transfer in",
   "inventory.reservationStatusTemporary": "Temporary",
-
   "inventory.reservationStatusConfirmed": "Confirmed",
-
+  "inventory.reservationStatusInTransit": "In transit",
   "inventory.reservationExpires": "Expires {when}",
-
   "inventory.reservationCreated": "Created {when}",
-
   "inventory.viewPurchaseOrder": "View purchase order",
-
   "inventory.onHandAtBranch": "On hand sa {branch}: {qty} {uom}",
 
   "inventory.organizationInventory": "Organization inventory",
@@ -5642,6 +5646,18 @@ export const filPH: Record<keyof typeof en, string> = {
   "inventory.totalOnHand": "Total on hand",
 
   "inventory.tracked": "Tracked",
+  "inventory.enablingTracking": "Enable tracking",
+  "inventory.enableStock": "Enable stock",
+  "inventory.enableCancel": "Cancel",
+  "inventory.viewInventoryDetails": "View inventory details",
+  "inventory.col.product": "Product",
+  "inventory.col.unit": "Unit",
+  "inventory.col.tracking": "Tracking",
+  "inventory.col.openingQty": "Opening Qty",
+  "inventory.col.purchaseCost": "Purchase Cost",
+  "inventory.col.sellingPrice": "Selling Price",
+  "inventory.col.available": "Available",
+  "inventory.col.action": "Action",
 
   "inventory.trackingFilter": "Tracking status",
   "inventory.categoryFilter": "Categories",

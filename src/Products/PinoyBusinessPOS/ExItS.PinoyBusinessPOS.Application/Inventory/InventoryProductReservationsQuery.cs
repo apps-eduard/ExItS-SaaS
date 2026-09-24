@@ -34,7 +34,9 @@ public sealed record PosInventoryReservationsDto(
     decimal OnHandQuantity,
     decimal ReservedQuantity,
     decimal AvailableQuantity,
-    IReadOnlyList<PosInventoryReservationItemDto> Reservations);
+    IReadOnlyList<PosInventoryReservationItemDto> Reservations,
+    decimal InTransitOutboundQuantity = 0m,
+    decimal InTransitInboundQuantity = 0m);
 
 /// <summary>
 /// Authoritative product reservation visibility: stock breakdown + active CPO holds
@@ -215,9 +217,14 @@ public sealed class InventoryProductReservationsQuery
                 .ConfigureAwait(false);
         }
 
+        decimal inTransitOutbound = 0m;
+        decimal inTransitInbound = 0m;
+        (inTransitOutbound, inTransitInbound) = InventoryTransferCommitmentTotals.Sum(transferCommitments);
         foreach (var commitment in transferCommitments.OrderByDescending(c => c.CreatedAtUtc))
         {
             peerNames.TryGetValue(commitment.PeerBranchId, out var peerName);
+            var isOutbound = string.Equals(commitment.Direction, "Outbound", StringComparison.Ordinal);
+
             items.Add(new PosInventoryReservationItemDto(
                 commitment.TransferId,
                 "InventoryTransfer",
@@ -226,7 +233,7 @@ public sealed class InventoryProductReservationsQuery
                 commitment.TransferNumber,
                 peerName,
                 commitment.OutstandingQuantity,
-                commitment.Direction == "Outbound" ? "TransferOutbound" : "TransferInbound",
+                isOutbound ? "TransferOutbound" : "TransferInbound",
                 "InTransit",
                 null,
                 branchId.Value,
@@ -235,6 +242,9 @@ public sealed class InventoryProductReservationsQuery
                 commitment.TransferId));
         }
 
+        // Reserved stays true reservation quantity only (ledger / branch reserved).
+        // In-transit transfer commitments are surface separately and must not be
+        // double-deducted from Available — on-hand already reflects dispatch.
         return ApplicationResult<PosInventoryReservationsDto>.Success(
             new PosInventoryReservationsDto(
                 productId,
@@ -243,6 +253,32 @@ public sealed class InventoryProductReservationsQuery
                 onHand,
                 reserved,
                 available,
-                items));
+                items,
+                inTransitOutbound,
+                inTransitInbound));
+    }
+}
+
+/// <summary>Sums open transfer commitments without treating them as reservations.</summary>
+public static class InventoryTransferCommitmentTotals
+{
+    public static (decimal Outbound, decimal Inbound) Sum(
+        IEnumerable<InventoryTransferOpenCommitment> commitments)
+    {
+        decimal outbound = 0m;
+        decimal inbound = 0m;
+        foreach (var commitment in commitments)
+        {
+            if (string.Equals(commitment.Direction, "Outbound", StringComparison.Ordinal))
+            {
+                outbound += commitment.OutstandingQuantity;
+            }
+            else
+            {
+                inbound += commitment.OutstandingQuantity;
+            }
+        }
+
+        return (outbound, inbound);
     }
 }

@@ -26,6 +26,7 @@ import {
   resolvePendingReturnQuantity,
   resolveReservedQuantity,
 } from "@/features/inventory/inventory-reservation-display";
+import { InventoryListDesktopTable } from "@/features/inventory/InventoryListDesktopTable";
 import { InventoryReservationsDrawer } from "@/features/inventory/InventoryReservationsDrawer";
 import { BranchRequiredPanel } from "@/features/workspace/BranchRequiredPanel";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -386,7 +387,7 @@ export function InventoryListPage() {
           <BackgroundRefreshIndicator active label={t("loading.updating")} />
         ) : null}
 
-        <div className="inventory-list-page__scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+        <div className="inventory-list-page__scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto overscroll-y-contain">
           <OrganizationQueryGate
             title={t("inventory.title")}
             isLoading={query.isLoading}
@@ -421,7 +422,12 @@ export function InventoryListPage() {
             ) : null}
 
             {!query.isError ? (
-            <ul className="exits-list m-0 grid list-none gap-2 p-0" data-testid="inventory-list">
+              <>
+            <ul
+              className="exits-list m-0 grid list-none gap-2 p-0 lg:hidden"
+              data-testid="inventory-list"
+              aria-hidden={false}
+            >
               {items.map((item) => {
                 const tracked = item.isTracked;
                 const lowStock = tracked && item.isLowStock;
@@ -560,6 +566,13 @@ export function InventoryListPage() {
                 );
               })}
             </ul>
+            <InventoryListDesktopTable
+              items={items}
+              workspace={workspace}
+              allowManage={allowManage}
+              onOpenReservations={setReservationsProduct}
+            />
+              </>
             ) : null}
           </OrganizationQueryGate>
         </div>

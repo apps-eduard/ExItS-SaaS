@@ -41,7 +41,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         var productIds = rows.Select(r => CatalogProductId.From(r.ProductId)).ToList();
         var summaries = await LoadMovementSummariesAsync(context.OrganizationId, productIds, cancellationToken)
             .ConfigureAwait(false);
-        var openingFlags = await LoadOpeningFlagsAsync(
+        var openingByProduct = await LoadOpeningSummariesAsync(
                 context.OrganizationId,
                 productIds,
                 context.BranchId,
@@ -52,7 +52,8 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         var items = rows.Select(row =>
         {
             summaries.TryGetValue(row.ProductId, out var summary);
-            openingFlags.TryGetValue(row.ProductId, out var hasOpening);
+            openingByProduct.TryGetValue(row.ProductId, out var opening);
+            var hasOpening = opening.HasOpening;
             var isLow = row.IsTracked
                 && row.ReorderLevel is not null
                 && row.BranchAvailable > 0m
@@ -94,7 +95,9 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 row.MonitoringMode,
                 row.BranchReserved,
                 row.BranchAvailable,
-                row.BranchPendingReturn);
+                row.BranchPendingReturn,
+                row.SellingPrice,
+                opening.Quantity);
         }).ToList();
 
         return (items, total);
@@ -271,6 +274,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
                 CategoryId = p.CategoryId,
                 CategoryName = cat != null ? cat.Name : null,
                 MonitoringMode = monitoringMode,
+                SellingPrice = p.SellingPrice,
             };
 
         if (filter.TrackedOnly == true)
@@ -413,6 +417,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
         public Guid? CategoryId { get; set; }
         public string? CategoryName { get; set; }
         public string MonitoringMode { get; set; } = InventoryReorderMonitoringModes.BranchDefault;
+        public decimal SellingPrice { get; set; }
     }
 
     private async Task<Dictionary<Guid, (DateTimeOffset? LatestAt, int Count)>> LoadMovementSummariesAsync(
@@ -438,7 +443,7 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
             g => ((DateTimeOffset?)g.LatestAt, g.Count));
     }
 
-    private async Task<Dictionary<Guid, bool>> LoadOpeningFlagsAsync(
+    private async Task<Dictionary<Guid, (bool HasOpening, decimal? Quantity)>> LoadOpeningSummariesAsync(
         Guid organizationId,
         IReadOnlyList<CatalogProductId> productIds,
         Guid branchId,
@@ -447,16 +452,27 @@ internal sealed class BranchInventoryQueryRepository : IBranchInventoryQueryRepo
     {
         var ids = productIds.Select(p => p.Value).ToList();
         var isPrimary = primaryBranchId is not null && primaryBranchId.Value == branchId;
-        var withOpening = await _db.StockMovements.AsNoTracking()
+        var grouped = await _db.StockMovements.AsNoTracking()
             .Where(m => m.OrganizationId == organizationId
                 && ids.Contains(m.ProductId)
                 && m.MovementType == nameof(StockMovementType.OpeningStock)
                 && (m.BranchId == branchId || (isPrimary && m.BranchId == null)))
-            .Select(m => m.ProductId)
-            .Distinct()
+            .GroupBy(m => m.ProductId)
+            .Select(g => new
+            {
+                ProductId = g.Key,
+                Quantity = g.Sum(m => m.QuantityEffect),
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        return ids.ToDictionary(id => id, id => withOpening.Contains(id));
+
+        var byProduct = grouped.ToDictionary(
+            g => g.ProductId,
+            g => (HasOpening: true, Quantity: (decimal?)g.Quantity));
+
+        return ids.ToDictionary(
+            id => id,
+            id => byProduct.TryGetValue(id, out var row) ? row : (false, null));
     }
 
     public async Task<(IReadOnlyList<ReplenishmentCatalogRow> Items, int TotalCount)> ListReplenishmentCatalogAsync(

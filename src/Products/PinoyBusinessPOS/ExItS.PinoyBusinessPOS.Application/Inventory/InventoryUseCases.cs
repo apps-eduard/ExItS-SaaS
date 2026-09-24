@@ -21,6 +21,8 @@ public sealed class InventoryQueryService
     private readonly BranchInventoryContextResolver _branchContext;
     private readonly IInventoryTransferRepository _transfers;
     private readonly IOrganizationBranchDirectory? _branches;
+    private readonly IEffectivePriceResolver? _effectivePrices;
+    private readonly InventoryCostResolver? _costs;
     private readonly IClock _clock;
 
     public InventoryQueryService(
@@ -32,7 +34,9 @@ public sealed class InventoryQueryService
         BranchInventoryContextResolver branchContext,
         IInventoryTransferRepository transfers,
         IClock clock,
-        IOrganizationBranchDirectory? branches = null)
+        IOrganizationBranchDirectory? branches = null,
+        IEffectivePriceResolver? effectivePrices = null,
+        InventoryCostResolver? costs = null)
     {
         _inventory = inventory;
         _products = products;
@@ -43,6 +47,8 @@ public sealed class InventoryQueryService
         _transfers = transfers;
         _clock = clock;
         _branches = branches;
+        _effectivePrices = effectivePrices;
+        _costs = costs;
     }
 
     public async Task<PosInventoryAccountDto?> GetByProductIdAsync(
@@ -130,14 +136,21 @@ public sealed class InventoryQueryService
             near,
             hasOpeningStock,
             branchRead);
-        return await EnrichWithTransferCommitmentsAsync(
+        var withCommitments = await EnrichWithTransferCommitmentsAsync(
                 organizationId,
                 context.BranchId,
                 [mapped],
                 cancellationToken)
-            .ConfigureAwait(false) is [var single]
-            ? single
-            : mapped;
+            .ConfigureAwait(false);
+        var enriched = await EnrichWithEffectivePricesAsync(
+                organizationId,
+                context.BranchId,
+                withCommitments,
+                cancellationToken)
+            .ConfigureAwait(false);
+        enriched = await EnrichWithUnitCostsAsync(organizationId, enriched, cancellationToken)
+            .ConfigureAwait(false);
+        return enriched is [var single] ? single : mapped;
     }
 
     public async Task<PagedResult<PosInventoryAccountDto>> ListAsync(
@@ -169,6 +182,14 @@ public sealed class InventoryQueryService
                 rows.Select(MapFromBranchRow).ToList(),
                 cancellationToken)
             .ConfigureAwait(false);
+        dtos = await EnrichWithEffectivePricesAsync(
+                context.OrganizationId,
+                context.BranchId,
+                dtos,
+                cancellationToken)
+            .ConfigureAwait(false);
+        dtos = await EnrichWithUnitCostsAsync(context.OrganizationId, dtos, cancellationToken)
+            .ConfigureAwait(false);
         return new PagedResult<PosInventoryAccountDto>(dtos, total, Math.Max(page ?? 1, 1), take);
     }
 
@@ -190,10 +211,19 @@ public sealed class InventoryQueryService
             .ConfigureAwait(false);
 
         return new PagedResult<PosInventoryAccountDto>(
-            await EnrichWithTransferCommitmentsAsync(
+            await EnrichWithUnitCostsAsync(
                     context.OrganizationId,
-                    context.BranchId,
-                    rows.Select(MapFromBranchRow).ToList(),
+                    await EnrichWithEffectivePricesAsync(
+                            context.OrganizationId,
+                            context.BranchId,
+                            await EnrichWithTransferCommitmentsAsync(
+                                    context.OrganizationId,
+                                    context.BranchId,
+                                    rows.Select(MapFromBranchRow).ToList(),
+                                    cancellationToken)
+                                .ConfigureAwait(false),
+                            cancellationToken)
+                        .ConfigureAwait(false),
                     cancellationToken)
                 .ConfigureAwait(false),
             total,
@@ -219,10 +249,19 @@ public sealed class InventoryQueryService
             .ConfigureAwait(false);
 
         return new PagedResult<PosInventoryAccountDto>(
-            await EnrichWithTransferCommitmentsAsync(
+            await EnrichWithUnitCostsAsync(
                     context.OrganizationId,
-                    context.BranchId,
-                    rows.Select(MapFromBranchRow).ToList(),
+                    await EnrichWithEffectivePricesAsync(
+                            context.OrganizationId,
+                            context.BranchId,
+                            await EnrichWithTransferCommitmentsAsync(
+                                    context.OrganizationId,
+                                    context.BranchId,
+                                    rows.Select(MapFromBranchRow).ToList(),
+                                    cancellationToken)
+                                .ConfigureAwait(false),
+                            cancellationToken)
+                        .ConfigureAwait(false),
                     cancellationToken)
                 .ConfigureAwait(false),
             total,
@@ -479,6 +518,91 @@ public sealed class InventoryQueryService
         }).ToList();
     }
 
+    private async Task<IReadOnlyList<PosInventoryAccountDto>> EnrichWithEffectivePricesAsync(
+        Guid organizationId,
+        Guid branchId,
+        IReadOnlyList<PosInventoryAccountDto> accounts,
+        CancellationToken cancellationToken)
+    {
+        if (_effectivePrices is null || accounts.Count == 0)
+        {
+            return accounts;
+        }
+
+        var productIds = accounts.Select(a => CatalogProductId.From(a.ProductId)).Distinct().ToList();
+        var products = await _products
+            .ListByIdsAsync(PosOrganizationId.From(organizationId), productIds, cancellationToken)
+            .ConfigureAwait(false);
+        if (products.Count == 0)
+        {
+            return accounts;
+        }
+
+        var resolved = await _effectivePrices
+            .ResolveAsync(
+                PosOrganizationId.From(organizationId),
+                PosBranchId.From(branchId),
+                products,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return accounts.Select(account =>
+        {
+            var key = EffectivePriceKeys.ForBaseProduct(account.ProductId);
+            if (!resolved.TryGetValue(key, out var price))
+            {
+                return account;
+            }
+
+            return account with
+            {
+                SellingPrice = price.OrganizationDefaultPrice,
+                EffectiveSellingPrice = price.EffectivePrice,
+                HasBranchPriceOverride = price.HasBranchPriceOverride,
+            };
+        }).ToList();
+    }
+
+    private async Task<IReadOnlyList<PosInventoryAccountDto>> EnrichWithUnitCostsAsync(
+        Guid organizationId,
+        IReadOnlyList<PosInventoryAccountDto> accounts,
+        CancellationToken cancellationToken)
+    {
+        if (_costs is null || accounts.Count == 0)
+        {
+            return accounts;
+        }
+
+        var trackedIds = accounts
+            .Where(a => a.IsTracked)
+            .Select(a => CatalogProductId.From(a.ProductId))
+            .Distinct()
+            .ToList();
+        if (trackedIds.Count == 0)
+        {
+            return accounts;
+        }
+
+        var costs = await _costs
+            .ResolveUnitCostsAsync(PosOrganizationId.From(organizationId), trackedIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        return accounts.Select(account =>
+        {
+            if (!account.IsTracked)
+            {
+                return account;
+            }
+
+            if (!costs.TryGetValue(account.ProductId, out var unitCost) || unitCost is null)
+            {
+                return account;
+            }
+
+            return account with { UnitCost = unitCost };
+        }).ToList();
+    }
+
     private static string? ResolveSinglePeerName(
         IReadOnlyList<InventoryTransferOpenCommitment> rows,
         IReadOnlyDictionary<Guid, string> peerNames)
@@ -544,7 +668,12 @@ public sealed class InventoryQueryService
             row.MonitoringMode,
             row.BranchReserved,
             available,
-            row.BranchPendingReturn);
+            row.BranchPendingReturn,
+            SellingPrice: row.SellingPrice,
+            EffectiveSellingPrice: row.SellingPrice,
+            HasBranchPriceOverride: false,
+            UnitCost: null,
+            OpeningQuantity: row.OpeningQuantity);
     }
 
     public static PosInventoryAccountDto Map(
@@ -608,7 +737,10 @@ public sealed class InventoryQueryService
             "BranchDefault",
             reserved,
             available,
-            0m);
+            0m,
+            SellingPrice: product.SellingPrice,
+            EffectiveSellingPrice: product.SellingPrice,
+            HasBranchPriceOverride: false);
     }
 
     public static PosStockMovementDto MapMovement(

@@ -3915,6 +3915,7 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.viewReservations": "Tan-awa ang reservations",
 
   "inventory.reservationsTitle": "Stock reservations",
+  "inventory.commitmentsTitle": "Inventory commitments",
   "inventory.viewTransfer": "View transfer",
   "inventory.viewFullTransfer": "View full transfer",
   "inventory.transactionDetailsTitle": "Transaction details",
@@ -3951,8 +3952,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.reservationsEmpty": "Walay active reservations",
 
   "inventory.reservationsEmptyDetail": "Reserved stock mo-appear dinhi kung ang purchase orders mag-hold og inventory.",
-
+  "inventory.commitmentsLoading": "Loading commitments…",
+  "inventory.commitmentsEmpty": "No active commitments",
+  "inventory.commitmentsEmptyDetail": "Reservations and in-transit transfers will appear here.",
+  "inventory.commitmentsGroupReservations": "Reservations",
+  "inventory.commitmentsGroupInTransit": "In transit",
+  "inventory.inTransitOutbound": "In transit out",
+  "inventory.inTransitInbound": "In transit in",
+  "inventory.transferRoute": "{from} → {to}",
   "inventory.reservationTypeTemporary": "Temporary proposal",
+  "inventory.reservationTypeTransferOutbound": "Transfer out",
+  "inventory.reservationTypeTransferInbound": "Transfer in",
+  "inventory.reservationStatusInTransit": "In transit",
 
   "inventory.reservationTypeConfirmed": "Confirmed order",
 
@@ -5666,6 +5677,18 @@ export const cebPH: Record<keyof typeof en, string> = {
   "inventory.totalOnHand": "Kinatibuk-ang naay stock",
 
   "inventory.tracked": "Gi-track",
+  "inventory.enablingTracking": "Enable tracking",
+  "inventory.enableStock": "Enable stock",
+  "inventory.enableCancel": "Cancel",
+  "inventory.viewInventoryDetails": "View inventory details",
+  "inventory.col.product": "Product",
+  "inventory.col.unit": "Unit",
+  "inventory.col.tracking": "Tracking",
+  "inventory.col.openingQty": "Opening Qty",
+  "inventory.col.purchaseCost": "Purchase Cost",
+  "inventory.col.sellingPrice": "Selling Price",
+  "inventory.col.available": "Available",
+  "inventory.col.action": "Action",
 
   "inventory.trackingFilter": "Tracking status",
   "inventory.categoryFilter": "Categories",

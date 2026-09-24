@@ -42,6 +42,15 @@ export type PosInventoryAccountDto = {
   inTransitOutboundBranchName?: string | null;
   inTransitInboundQuantity?: number;
   inTransitInboundBranchName?: string | null;
+  /** Organization-default selling price (guide for opening unit cost). */
+  sellingPrice?: number | null;
+  /** Branch-effective selling price (BranchOverride ?? OrganizationDefault). */
+  effectiveSellingPrice?: number | null;
+  hasBranchPriceOverride?: boolean | null;
+  /** Latest acquisition unit cost when known (tracked products; display only). */
+  unitCost?: number | null;
+  /** Recorded opening-stock quantity for this branch when an OpeningStock movement exists. */
+  openingQuantity?: number | null;
 };
 
 export type PosInventoryReservationItemDto = {
@@ -69,6 +78,10 @@ export type PosInventoryReservationsDto = {
   reservedQuantity: number;
   availableQuantity: number;
   reservations: PosInventoryReservationItemDto[];
+  /** Dispatched transfer outbound outstanding (not part of reservedQuantity). */
+  inTransitOutboundQuantity?: number;
+  /** Open transfer inbound outstanding (not part of reservedQuantity). */
+  inTransitInboundQuantity?: number;
 };
 
 export type PosInventoryBranchReorderDefaultDto = {

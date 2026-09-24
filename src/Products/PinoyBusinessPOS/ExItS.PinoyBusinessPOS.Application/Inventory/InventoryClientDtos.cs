@@ -36,7 +36,16 @@ public sealed record PosInventoryAccountDto(
     decimal InTransitOutboundQuantity = 0m,
     string? InTransitOutboundBranchName = null,
     decimal InTransitInboundQuantity = 0m,
-    string? InTransitInboundBranchName = null);
+    string? InTransitInboundBranchName = null,
+    /// <summary>Organization-default selling price (guide for opening unit cost).</summary>
+    decimal? SellingPrice = null,
+    /// <summary>Branch-effective selling price (BranchOverride ?? OrganizationDefault).</summary>
+    decimal? EffectiveSellingPrice = null,
+    bool HasBranchPriceOverride = false,
+    /// <summary>Latest acquisition unit cost when known (tracked products; display only).</summary>
+    decimal? UnitCost = null,
+    /// <summary>Recorded opening-stock quantity for this branch when an OpeningStock movement exists.</summary>
+    decimal? OpeningQuantity = null);
 
 public sealed record AddOpeningStockRequest(
     decimal OpeningQuantity,

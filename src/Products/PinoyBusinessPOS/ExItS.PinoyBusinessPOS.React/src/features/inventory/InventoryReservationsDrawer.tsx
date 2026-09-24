@@ -27,6 +27,79 @@ function formatReservationWhen(iso: string | null | undefined): string {
   });
 }
 
+export function isTransferCommitmentItem(item: PosInventoryReservationItemDto): boolean {
+  return (
+    item.sourceType === "InventoryTransfer" ||
+    item.reservationType === "TransferOutbound" ||
+    item.reservationType === "TransferInbound"
+  );
+}
+
+/** Prefer DTO totals when present; otherwise sum transfer commitment rows (keeps summary aligned with list). */
+export function resolveInTransitCommitmentTotals(data: PosInventoryReservationsDto): {
+  outbound: number;
+  inbound: number;
+} {
+  const fromItemsOutbound = data.reservations
+    .filter((item) => item.reservationType === "TransferOutbound")
+    .reduce((sum, item) => sum + (Number(item.reservedQuantity) || 0), 0);
+  const fromItemsInbound = data.reservations
+    .filter((item) => item.reservationType === "TransferInbound")
+    .reduce((sum, item) => sum + (Number(item.reservedQuantity) || 0), 0);
+
+  const dtoOutbound = data.inTransitOutboundQuantity;
+  const dtoInbound = data.inTransitInboundQuantity;
+
+  return {
+    outbound:
+      dtoOutbound != null && Number.isFinite(dtoOutbound) && dtoOutbound > 0
+        ? dtoOutbound
+        : fromItemsOutbound,
+    inbound:
+      dtoInbound != null && Number.isFinite(dtoInbound) && dtoInbound > 0
+        ? dtoInbound
+        : fromItemsInbound,
+  };
+}
+
+/**
+ * Summary Reserved mirrors the badge the user clicked.
+ * Prefer true sellable holds (DTO / CPO rows). When those are 0 but outbound
+ * transfer commitments exist, surface that qty under Reserved so the chip
+ * (e.g. 3 → Iloilo) matches the drawer summary.
+ * Available stays authoritative — do not recompute as onHand − reserved.
+ */
+export function resolveReservedCommitmentTotal(data: PosInventoryReservationsDto): number {
+  const fromReservationItems = data.reservations
+    .filter((item) => !isTransferCommitmentItem(item))
+    .reduce((sum, item) => sum + (Number(item.reservedQuantity) || 0), 0);
+  const dtoReserved = data.reservedQuantity;
+  const reserved =
+    dtoReserved != null && Number.isFinite(dtoReserved) && dtoReserved > 0
+      ? dtoReserved
+      : fromReservationItems;
+
+  if (reserved > 0) {
+    return reserved;
+  }
+
+  return resolveInTransitCommitmentTotals(data).outbound;
+}
+
+export function resolveTransferRouteLabel(
+  item: PosInventoryReservationItemDto,
+  t: (key: string) => string,
+): string | null {
+  if (!isTransferCommitmentItem(item)) {
+    return null;
+  }
+  const peer = item.counterpartyName?.trim() || t("inventory.inTransitBranchFallback");
+  const here = item.branchName?.trim() || t("inventory.thisBranch");
+  const from = item.reservationType === "TransferInbound" ? peer : here;
+  const to = item.reservationType === "TransferInbound" ? here : peer;
+  return t("inventory.transferRoute").replace("{from}", from).replace("{to}", to);
+}
+
 function reservationTypeLabel(
   item: PosInventoryReservationItemDto,
   t: (key: string) => string,
@@ -72,7 +145,7 @@ function reservationDeepLink(item: PosInventoryReservationItemDto): string | nul
   return null;
 }
 
-function ReservationRow({
+function CommitmentRow({
   item,
   unitOfMeasure,
 }: {
@@ -82,11 +155,15 @@ function ReservationRow({
   const { t } = useI18n();
   const deepLink = reservationDeepLink(item);
   const reference = item.referenceNumber?.trim() || item.connectedPurchaseOrderId;
+  const isTransfer = isTransferCommitmentItem(item);
+  const route = resolveTransferRouteLabel(item, t);
+  const typeStatus = `${reservationTypeLabel(item, t)} · ${reservationStatusLabel(item, t)}`;
 
   return (
     <li
       className="flex flex-col gap-1.5 rounded-lg border border-border bg-[var(--exits-surface)] p-3"
       data-testid={`inventory-reservation-row-${item.reservationId}`}
+      data-commitment-kind={isTransfer ? "transfer" : "reservation"}
     >
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
         {deepLink ? (
@@ -105,14 +182,19 @@ function ReservationRow({
         </span>
       </div>
 
-      {item.counterpartyName?.trim() ? (
+      {isTransfer && route ? (
+        <p
+          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+          data-testid={`inventory-reservation-route-${item.reservationId}`}
+        >
+          {route}
+        </p>
+      ) : item.counterpartyName?.trim() ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">{item.counterpartyName}</p>
       ) : null}
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[length:var(--exits-text-sm)] text-muted">
-        <span>{reservationTypeLabel(item, t)}</span>
-        <span>{reservationStatusLabel(item, t)}</span>
-        {item.branchName?.trim() ? <span>{item.branchName}</span> : null}
+        <span>{typeStatus}</span>
       </div>
 
       {item.expiresAtUtc ? (
@@ -146,6 +228,36 @@ function ReservationRow({
   );
 }
 
+function SummaryQty({
+  label,
+  quantity,
+  unitOfMeasure,
+  testId,
+  emphasize = false,
+}: {
+  label: string;
+  quantity: number;
+  unitOfMeasure: string;
+  testId: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <>
+      <dt className={emphasize ? "font-semibold" : "text-muted"}>{label}</dt>
+      <dd
+        className={
+          emphasize
+            ? "m-0 justify-self-end tabular-nums font-semibold"
+            : "m-0 justify-self-end tabular-nums font-medium"
+        }
+        data-testid={testId}
+      >
+        {formatInventoryQty(quantity)} {unitOfMeasure}
+      </dd>
+    </>
+  );
+}
+
 function ReservationsBody({
   data,
   loading,
@@ -158,7 +270,7 @@ function ReservationsBody({
   const { t } = useI18n();
 
   if (loading && !data) {
-    return <LoadingState label={t("inventory.reservationsLoading")} />;
+    return <LoadingState label={t("inventory.commitmentsLoading")} />;
   }
 
   if (error && !data) {
@@ -167,39 +279,93 @@ function ReservationsBody({
 
   if (!data) return null;
 
+  const reservationItems = data.reservations.filter((item) => !isTransferCommitmentItem(item));
+  const transferItems = data.reservations.filter((item) => isTransferCommitmentItem(item));
+  const { outbound: inTransitOut, inbound: inTransitIn } = resolveInTransitCommitmentTotals(data);
+  const reservedTotal = resolveReservedCommitmentTotal(data);
+  const hasAnyItems = reservationItems.length > 0 || transferItems.length > 0;
+
   return (
     <div className="flex flex-col gap-4" data-testid="inventory-reservations-body">
       <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]">
-        <dt className="text-muted">{t("inventory.onHand")}</dt>
-        <dd className="m-0 justify-self-end tabular-nums font-medium" data-testid="inventory-reservations-on-hand">
-          {formatInventoryQty(data.onHandQuantity)} {data.unitOfMeasure}
-        </dd>
-        <dt className="text-muted">{t("inventory.reserved")}</dt>
-        <dd className="m-0 justify-self-end tabular-nums font-medium" data-testid="inventory-reservations-reserved">
-          {formatInventoryQty(data.reservedQuantity)} {data.unitOfMeasure}
-        </dd>
-        <dt className="font-semibold">{t("inventory.available")}</dt>
-        <dd
-          className="m-0 justify-self-end tabular-nums font-semibold"
-          data-testid="inventory-reservations-available"
-        >
-          {formatInventoryQty(data.availableQuantity)} {data.unitOfMeasure}
-        </dd>
+        <SummaryQty
+          label={t("inventory.onHand")}
+          quantity={data.onHandQuantity}
+          unitOfMeasure={data.unitOfMeasure}
+          testId="inventory-reservations-on-hand"
+        />
+        <SummaryQty
+          label={t("inventory.reserved")}
+          quantity={reservedTotal}
+          unitOfMeasure={data.unitOfMeasure}
+          testId="inventory-reservations-reserved"
+        />
+        <SummaryQty
+          label={t("inventory.inTransitOutbound")}
+          quantity={inTransitOut}
+          unitOfMeasure={data.unitOfMeasure}
+          testId="inventory-reservations-in-transit-out"
+        />
+        {inTransitIn > 0 ? (
+          <SummaryQty
+            label={t("inventory.inTransitInbound")}
+            quantity={inTransitIn}
+            unitOfMeasure={data.unitOfMeasure}
+            testId="inventory-reservations-in-transit-in"
+          />
+        ) : null}
+        <SummaryQty
+          label={t("inventory.available")}
+          quantity={data.availableQuantity}
+          unitOfMeasure={data.unitOfMeasure}
+          testId="inventory-reservations-available"
+          emphasize
+        />
       </dl>
 
-      {data.reservations.length === 0 ? (
+      {!hasAnyItems ? (
         <EmptyState
           align="center"
           icon={<Lock className="size-5" strokeWidth={1.75} />}
-          title={t("inventory.reservationsEmpty")}
-          detail={t("inventory.reservationsEmptyDetail")}
+          title={t("inventory.commitmentsEmpty")}
+          detail={t("inventory.commitmentsEmptyDetail")}
         />
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" data-testid="inventory-reservations-list">
-          {data.reservations.map((item) => (
-            <ReservationRow key={item.reservationId} item={item} unitOfMeasure={data.unitOfMeasure} />
-          ))}
-        </ul>
+        <div className="flex flex-col gap-4">
+          {reservationItems.length > 0 ? (
+            <section data-testid="inventory-commitments-reservations-group">
+              <h3 className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-bold uppercase tracking-wide text-muted">
+                {t("inventory.commitmentsGroupReservations")}
+              </h3>
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {reservationItems.map((item) => (
+                  <CommitmentRow
+                    key={item.reservationId}
+                    item={item}
+                    unitOfMeasure={data.unitOfMeasure}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {transferItems.length > 0 ? (
+            <section data-testid="inventory-commitments-in-transit-group">
+              <h3 className="m-0 mb-2 text-[length:var(--exits-text-xs)] font-bold uppercase tracking-wide text-muted">
+                {t("inventory.commitmentsGroupInTransit")}
+              </h3>
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {transferItems.map((item) => (
+                  <CommitmentRow
+                    key={item.reservationId}
+                    item={item}
+                    unitOfMeasure={data.unitOfMeasure}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
       )}
     </div>
   );
@@ -225,7 +391,7 @@ export function InventoryReservationsDrawer({
     queryFn: ({ signal }) => getInventoryProductReservations(workspace, productId, signal),
   });
 
-  const title = t("inventory.reservationsTitle");
+  const title = t("inventory.commitmentsTitle");
   const description =
     query.data?.productName?.trim() || productNameFallback?.trim() || undefined;
 
