@@ -5,6 +5,7 @@ import type {
 import type { MessageKey } from "@/i18n/messages";
 import { inventoryTransferDiscrepancyLabelKey } from "@/features/inventory/inventory-transfer-labels";
 import { lineDamagedQty } from "@/features/inventory/inventory-transfer-receive-helpers";
+import { requiresActualProduct } from "@/features/inventory/transfer-exception-custody-policy";
 
 export type ThisShipmentTotals = {
   sent: number;
@@ -28,7 +29,12 @@ export type ReceivingDecisionView = {
   otherFollowUp: string | null;
   otherCustodyDecision: string | null;
   otherCustodyStatus: string | null;
+  expectedProductId: string | null;
+  expectedProductName: string | null;
   actualReceivedProductId: string | null;
+  actualReceivedProductName: string | null;
+  /** WrongItem / WrongVariant: show Expected + Actual as distinct rows. */
+  showExpectedAndActualItems: boolean;
   confirmedNonSellableQty: number | null;
 };
 
@@ -130,10 +136,36 @@ export function transferHasReceivingDiscrepancy(
  * Persisted receiving decisions for THIS transfer only.
  * Prefer damage-custody fields when present; otherwise receipt-line follow-ups.
  */
+function trimNonEmpty(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * Persisted receiving/discrepancy note for display.
+ * Prefer otherReasonNote, then receipt-line note; omit empties; never invent text.
+ */
+export function pickReceivingDecisionNote(
+  otherReasonNote: string | null | undefined,
+  receiptLineNote: string | null | undefined,
+  discrepancyNote: string | null | undefined,
+): string | null {
+  const primary = trimNonEmpty(otherReasonNote);
+  if (primary) {
+    return primary;
+  }
+  const secondary = trimNonEmpty(receiptLineNote);
+  if (secondary) {
+    return secondary;
+  }
+  const tertiary = trimNonEmpty(discrepancyNote);
+  return tertiary;
+}
+
 export function buildReceivingDecisionView(
   transfer: Pick<
     InventoryTransferDto,
-    "transferId" | "receipts" | "damageCustodies" | "exceptionCustodies"
+    "transferId" | "receipts" | "damageCustodies" | "exceptionCustodies" | "lines"
   >,
 ): ReceivingDecisionView {
   const receipts = transfer.receipts ?? [];
@@ -145,6 +177,8 @@ export function buildReceivingDecisionView(
   let otherFollowUp: string | null = null;
   let otherReasonCode: string | null = null;
   let otherReasonNote: string | null = null;
+  let receiptLineNote: string | null = null;
+  let receiptLineExpectedProductId: string | null = null;
 
   for (const receipt of receipts) {
     for (const line of receipt.lines ?? []) {
@@ -167,8 +201,14 @@ export function buildReceivingDecisionView(
         if (line.otherReasonCode && !otherReasonCode) {
           otherReasonCode = line.otherReasonCode;
         }
-        if (line.otherReasonNote && !otherReasonNote) {
-          otherReasonNote = line.otherReasonNote;
+        if (!otherReasonNote) {
+          otherReasonNote = trimNonEmpty(line.otherReasonNote);
+        }
+        if (!receiptLineNote) {
+          receiptLineNote = trimNonEmpty(line.note);
+        }
+        if (!receiptLineExpectedProductId) {
+          receiptLineExpectedProductId = line.productId;
         }
       }
     }
@@ -196,13 +236,19 @@ export function buildReceivingDecisionView(
   );
   let otherCustodyDecision: string | null = null;
   let otherCustodyStatus: string | null = null;
+  let expectedProductId: string | null = null;
+  let expectedProductName: string | null = null;
   let actualReceivedProductId: string | null = null;
+  let actualReceivedProductName: string | null = null;
   let confirmedNonSellableQty: number | null = null;
   if (exceptionCustodies.length > 0) {
     const primaryException = exceptionCustodies[0]!;
     otherCustodyDecision = primaryException.decision;
     otherCustodyStatus = primaryException.status;
+    expectedProductId = primaryException.expectedProductId;
     actualReceivedProductId = primaryException.actualProductId;
+    expectedProductName = trimNonEmpty(primaryException.expectedProductName);
+    actualReceivedProductName = trimNonEmpty(primaryException.actualProductName);
     confirmedNonSellableQty = primaryException.confirmedNonSellableQty;
     if (primaryException.followUpIntent) {
       otherFollowUp = primaryException.followUpIntent;
@@ -226,6 +272,47 @@ export function buildReceivingDecisionView(
     }
   }
 
+  if (!expectedProductId) {
+    expectedProductId = receiptLineExpectedProductId;
+  }
+
+  const lineDiscrepancyNote =
+    expectedProductId != null
+      ? trimNonEmpty(
+          transfer.lines?.find(
+            (l) => l.productId.toLowerCase() === expectedProductId!.toLowerCase(),
+          )?.discrepancyNote,
+        )
+      : null;
+
+  const resolvedNote = pickReceivingDecisionNote(
+    otherReasonNote,
+    receiptLineNote,
+    lineDiscrepancyNote,
+  );
+
+  if (!expectedProductName && expectedProductId) {
+    expectedProductName = resolveTransferProductDisplayName(transfer, expectedProductId);
+    if (expectedProductName === "—") {
+      expectedProductName = null;
+    }
+  }
+  if (!actualReceivedProductName && actualReceivedProductId) {
+    // Resolve actual name only from custody/catalog-style sources — never expected line.
+    const fromLines = transfer.lines?.find(
+      (entry) => entry.productId.toLowerCase() === actualReceivedProductId!.toLowerCase(),
+    )?.productName;
+    const candidate = trimNonEmpty(fromLines);
+    if (
+      candidate &&
+      !looksLikeProductIdFragment(candidate, actualReceivedProductId)
+    ) {
+      actualReceivedProductName = candidate;
+    }
+  }
+
+  const showExpectedAndActualItems = requiresActualProduct(otherReasonCode ?? "");
+
   return {
     hasDiscrepancy: damagedQty > 1e-9 || missingQty > 1e-9 || otherQty > 1e-9,
     damagedQty,
@@ -236,11 +323,15 @@ export function buildReceivingDecisionView(
     missingDisposition,
     otherQty,
     otherReasonCode,
-    otherReasonNote,
+    otherReasonNote: resolvedNote,
     otherFollowUp,
     otherCustodyDecision,
     otherCustodyStatus,
+    expectedProductId,
+    expectedProductName,
     actualReceivedProductId,
+    actualReceivedProductName,
+    showExpectedAndActualItems,
     confirmedNonSellableQty,
   };
 }
@@ -292,6 +383,60 @@ export function transferCustodyDecisionLabelKey(
       return "transfer.custody.returnToSource";
     default:
       return null;
+  }
+}
+
+/**
+ * Branch-aware "Return to {source}" for exception/damage ReturnToSource custody.
+ * Uses the physical transfer's source branch name — never destination or current login branch.
+ */
+export function formatReturnToSourceCustodyLabel(
+  sourceBranchName: string | null | undefined,
+  templateWithBranch: string,
+  fallback: string,
+): string {
+  const branch = sourceBranchName?.trim();
+  return branch ? templateWithBranch.replace("{branch}", branch) : fallback;
+}
+
+/**
+ * Branch-aware return status for exception custody presentation.
+ * Internal status codes stay unchanged; only display copy is branch-aware.
+ */
+export function formatExceptionCustodyReturnStatusLabel(
+  status: string | null | undefined,
+  sourceBranchName: string | null | undefined,
+  templates: {
+    awaitingReturn: string;
+    returningToBranch: string;
+    returnInTransitFallback: string;
+    returnedToBranch: string;
+    receivedAtSourceFallback: string;
+    heldAtDestination: string;
+    awaitingInspection: string;
+  },
+): string | null {
+  if (!status) {
+    return null;
+  }
+  const branch = sourceBranchName?.trim();
+  switch (status) {
+    case "AwaitingReturn":
+      return templates.awaitingReturn;
+    case "ReturnInTransit":
+      return branch
+        ? templates.returningToBranch.replace("{branch}", branch)
+        : templates.returnInTransitFallback;
+    case "ReceivedAtSource":
+      return branch
+        ? templates.returnedToBranch.replace("{branch}", branch)
+        : templates.receivedAtSourceFallback;
+    case "HeldAtDestination":
+      return templates.heldAtDestination;
+    case "AwaitingInspection":
+      return templates.awaitingInspection;
+    default:
+      return status;
   }
 }
 
@@ -407,8 +552,8 @@ function looksLikeProductIdFragment(label: string, productId: string): boolean {
 export { looksLikeProductIdFragment as looksLikeTransferProductIdFragment };
 
 /**
- * User-facing product label for exception custody. Never prefers raw id fragments
- * when a catalog/line/custody name is available.
+ * User-facing product label for the ACTUAL exception custody product.
+ * Never substitutes the expected transfer-line product when actual differs.
  */
 export function resolveExceptionCustodyItemLabel(
   transfer: Pick<InventoryTransferDto, "lines" | "exceptionCustodies">,
@@ -421,6 +566,9 @@ export function resolveExceptionCustodyItemLabel(
 ): string {
   const actualCandidates = [
     custody.actualProductName?.trim(),
+    transfer.exceptionCustodies?.find(
+      (c) => c.actualProductId.toLowerCase() === custody.actualProductId.toLowerCase(),
+    )?.actualProductName?.trim(),
     transfer.lines.find(
       (line) => line.productId.toLowerCase() === custody.actualProductId.toLowerCase(),
     )?.productName?.trim(),
@@ -436,6 +584,10 @@ export function resolveExceptionCustodyItemLabel(
   if (sameAsExpected) {
     const expectedCandidates = [
       custody.expectedProductName?.trim(),
+      transfer.exceptionCustodies?.find(
+        (c) =>
+          c.expectedProductId.toLowerCase() === custody.expectedProductId.toLowerCase(),
+      )?.expectedProductName?.trim(),
       transfer.lines.find(
         (line) => line.productId.toLowerCase() === custody.expectedProductId.toLowerCase(),
       )?.productName?.trim(),
@@ -447,20 +599,33 @@ export function resolveExceptionCustodyItemLabel(
     }
   }
 
-  // Last resort: expected name when actual catalog name is unavailable (still better than a GUID).
-  const expectedFallback =
-    custody.expectedProductName?.trim() ||
+  // When actual ≠ expected and actual catalog name is unavailable, do not show expected name.
+  return "—";
+}
+
+/** Expected (sent) product label for WrongItem / WrongVariant receiving decision. */
+export function resolveExceptionCustodyExpectedItemLabel(
+  transfer: Pick<InventoryTransferDto, "lines" | "exceptionCustodies">,
+  custody: {
+    expectedProductId: string;
+    expectedProductName?: string | null;
+  },
+): string {
+  const candidates = [
+    custody.expectedProductName?.trim(),
+    transfer.exceptionCustodies?.find(
+      (c) => c.expectedProductId.toLowerCase() === custody.expectedProductId.toLowerCase(),
+    )?.expectedProductName?.trim(),
     transfer.lines.find(
       (line) => line.productId.toLowerCase() === custody.expectedProductId.toLowerCase(),
-    )?.productName?.trim();
-  if (
-    expectedFallback &&
-    !looksLikeProductIdFragment(expectedFallback, custody.expectedProductId)
-  ) {
-    return expectedFallback;
+    )?.productName?.trim(),
+  ];
+  for (const candidate of candidates) {
+    if (candidate && !looksLikeProductIdFragment(candidate, custody.expectedProductId)) {
+      return candidate;
+    }
   }
-
-  return "—";
+  return resolveTransferProductDisplayName(transfer, custody.expectedProductId);
 }
 
 export function lineOtherExceptionSecondaryText(

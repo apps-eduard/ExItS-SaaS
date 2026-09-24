@@ -4,8 +4,12 @@ import {
   buildReceivingDecisionView,
   computeThisShipmentTotals,
   familyFulfillmentTargetQty,
+  formatExceptionCustodyReturnStatusLabel,
+  formatReturnToSourceCustodyLabel,
   lineFollowUpDisplay,
   lineOtherExceptionSecondaryText,
+  pickReceivingDecisionNote,
+  resolveExceptionCustodyExpectedItemLabel,
   resolveExceptionCustodyItemLabel,
   transferCustodyDecisionLabelKey,
   transferCustodyStatusLabelKey,
@@ -20,6 +24,8 @@ const receiptId = "44444444-4444-4444-4444-444444444444";
 const receiptLineId = "55555555-5555-5555-5555-555555555555";
 const custodyId = "66666666-6666-6666-6666-666666666666";
 const branchId = "77777777-7777-7777-7777-777777777777";
+const actualBananaId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const destinationBranchId = "99999999-9999-9999-9999-999999999999";
 
 function baseTransfer(
   overrides: Partial<InventoryTransferDto> = {},
@@ -29,7 +35,9 @@ function baseTransfer(
     organizationId: "88888888-8888-8888-8888-888888888888",
     transferNumber: "TR-260922-001",
     sourceBranchId: branchId,
-    destinationBranchId: "99999999-9999-9999-9999-999999999999",
+    sourceBranchName: "Main Branch",
+    destinationBranchId,
+    destinationBranchName: "Branch 2",
     status: "ClosedWithDiscrepancy",
     notes: null,
     createdBy: branchId,
@@ -331,6 +339,8 @@ describe("buildReceivingDecisionView", () => {
             receiptLineId,
             expectedProductId: productId,
             actualProductId,
+            expectedProductName: "Coke 1.5L",
+            actualProductName: "Coke 500ml",
             quantity: 2,
             reasonCode: "WrongVariant",
             decision: "ReturnToSource",
@@ -351,7 +361,126 @@ describe("buildReceivingDecisionView", () => {
     expect(view.otherCustodyDecision).toBe("ReturnToSource");
     expect(view.otherCustodyStatus).toBe("AwaitingReturn");
     expect(view.actualReceivedProductId).toBe(actualProductId);
+    expect(view.expectedProductId).toBe(productId);
+    expect(view.expectedProductName).toBe("Coke 1.5L");
+    expect(view.actualReceivedProductName).toBe("Coke 500ml");
+    expect(view.showExpectedAndActualItems).toBe(true);
     expect(view.otherFollowUp).toBe("RequestReplacement");
+  });
+
+  it("resolves WrongItem Apple expected / Banana actual with note", () => {
+    const view = buildReceivingDecisionView(
+      baseTransfer({
+        totalReceivedQty: 5,
+        damageCustodies: [],
+        receipts: [
+          {
+            receiptId,
+            sequence: 1,
+            receivedAtUtc: "2026-09-22T12:00:00Z",
+            receivedBy: branchId,
+            lines: [
+              {
+                receiptLineId,
+                lineId,
+                productId,
+                quantityReceived: 5,
+                quantityOther: 5,
+                otherReasonCode: "WrongItem",
+                otherReasonNote: "Banana was packed instead of Apple",
+                otherFollowUp: "RequestReplacement",
+                actualReceivedProductId: actualBananaId,
+                otherCustodyDecision: "ReturnToSource",
+              },
+            ],
+          },
+        ],
+        exceptionCustodies: [
+          {
+            custodyId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            transferId,
+            rootTransferId: transferId,
+            receiptLineId,
+            expectedProductId: productId,
+            actualProductId: actualBananaId,
+            expectedProductName: "Apple",
+            actualProductName: "Banana",
+            quantity: 5,
+            reasonCode: "WrongItem",
+            decision: "ReturnToSource",
+            followUpIntent: "RequestReplacement",
+            status: "AwaitingReturn",
+            heldBranchId: destinationBranchId,
+            recoveredSellableQty: 0,
+            confirmedNonSellableQty: 0,
+            replacementDemandQty: 5,
+            createdAtUtc: "2026-09-22T12:00:00Z",
+            updatedAtUtc: "2026-09-22T12:00:00Z",
+          },
+        ],
+      }),
+    );
+    expect(view.otherReasonCode).toBe("WrongItem");
+    expect(view.expectedProductName).toBe("Apple");
+    expect(view.actualReceivedProductName).toBe("Banana");
+    expect(view.actualReceivedProductName).not.toBe("Apple");
+    expect(view.otherReasonNote).toBe("Banana was packed instead of Apple");
+    expect(view.showExpectedAndActualItems).toBe(true);
+    expect(view.otherCustodyDecision).toBe("ReturnToSource");
+    expect(view.otherCustodyStatus).toBe("AwaitingReturn");
+  });
+
+  it("omits note when empty and does not invent text", () => {
+    const view = buildReceivingDecisionView(
+      baseTransfer({
+        damageCustodies: [],
+        receipts: [
+          {
+            receiptId,
+            sequence: 1,
+            receivedAtUtc: "2026-09-22T12:00:00Z",
+            receivedBy: branchId,
+            lines: [
+              {
+                receiptLineId,
+                lineId,
+                productId,
+                quantityReceived: 5,
+                quantityOther: 5,
+                otherReasonCode: "Expired",
+                otherReasonNote: "   ",
+                note: null,
+              },
+            ],
+          },
+        ],
+        exceptionCustodies: [
+          {
+            custodyId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            transferId,
+            rootTransferId: transferId,
+            receiptLineId,
+            expectedProductId: productId,
+            actualProductId: productId,
+            expectedProductName: "Apple",
+            actualProductName: "Apple",
+            quantity: 5,
+            reasonCode: "Expired",
+            decision: "ReturnToSource",
+            followUpIntent: "AcceptShortage",
+            status: "AwaitingReturn",
+            heldBranchId: destinationBranchId,
+            recoveredSellableQty: 0,
+            confirmedNonSellableQty: 0,
+            replacementDemandQty: 0,
+            createdAtUtc: "2026-09-22T12:00:00Z",
+            updatedAtUtc: "2026-09-22T12:00:00Z",
+          },
+        ],
+      }),
+    );
+    expect(view.otherReasonNote).toBeNull();
+    expect(view.showExpectedAndActualItems).toBe(false);
   });
 
   it("surfaces missing disposition without inferring from remainingToDispatch", () => {
@@ -422,14 +551,74 @@ describe("friendly decision labels", () => {
   });
 });
 
+describe("branch-aware exception custody labels", () => {
+  it("uses source branch name for Return to {branch}", () => {
+    expect(
+      formatReturnToSourceCustodyLabel(
+        "Main Branch",
+        "Return to {branch}",
+        "Return to source",
+      ),
+    ).toBe("Return to Main Branch");
+    expect(
+      formatReturnToSourceCustodyLabel(
+        "Branch 2",
+        "Return to {branch}",
+        "Return to source",
+      ),
+    ).toBe("Return to Branch 2");
+    expect(
+      formatReturnToSourceCustodyLabel(null, "Return to {branch}", "Return to source"),
+    ).toBe("Return to source");
+  });
+
+  it("formats return status with source branch, not destination", () => {
+    const templates = {
+      awaitingReturn: "Waiting to return",
+      returningToBranch: "Returning to {branch}",
+      returnInTransitFallback: "Return in transit",
+      returnedToBranch: "Returned to {branch}",
+      receivedAtSourceFallback: "Returned to source",
+      heldAtDestination: "Held at destination",
+      awaitingInspection: "Awaiting inspection",
+    };
+    expect(
+      formatExceptionCustodyReturnStatusLabel("AwaitingReturn", "Main Branch", templates),
+    ).toBe("Waiting to return");
+    expect(
+      formatExceptionCustodyReturnStatusLabel("ReturnInTransit", "Main Branch", templates),
+    ).toBe("Returning to Main Branch");
+    expect(
+      formatExceptionCustodyReturnStatusLabel("ReceivedAtSource", "Main Branch", templates),
+    ).toBe("Returned to Main Branch");
+    expect(
+      formatExceptionCustodyReturnStatusLabel("ReturnInTransit", "Branch 2", templates),
+    ).not.toBe("Returning to Main Branch");
+    expect(formatExceptionCustodyReturnStatusLabel("ReturnInTransit", null, templates)).toBe(
+      "Return in transit",
+    );
+  });
+});
+
+describe("pickReceivingDecisionNote", () => {
+  it("prefers otherReasonNote and omits empties", () => {
+    expect(
+      pickReceivingDecisionNote("Banana was packed instead of Apple", "other", "disc"),
+    ).toBe("Banana was packed instead of Apple");
+    expect(pickReceivingDecisionNote("  ", "Line note", null)).toBe("Line note");
+    expect(pickReceivingDecisionNote(null, null, "  ")).toBeNull();
+    expect(pickReceivingDecisionNote(undefined, undefined, undefined)).toBeNull();
+  });
+});
+
 describe("resolveExceptionCustodyItemLabel", () => {
-  it("prefers actualProductName and never shows id fragments", () => {
+  it("prefers actualProductName and never falls back to expected when different", () => {
     const transfer = baseTransfer({
       lines: [
         {
           lineId,
           productId,
-          productName: "Coke 330ml",
+          productName: "Apple",
           unitOfMeasure: "pcs",
           lineNumber: 1,
           sentQty: 10,
@@ -444,33 +633,103 @@ describe("resolveExceptionCustodyItemLabel", () => {
         },
       ],
     });
-    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
     expect(
       resolveExceptionCustodyItemLabel(transfer, {
-        actualProductId: actualId,
+        actualProductId: actualBananaId,
         expectedProductId: productId,
-        actualProductName: "Pepsi 330ml",
-        expectedProductName: "Coke 330ml",
+        actualProductName: "Banana",
+        expectedProductName: "Apple",
       }),
-    ).toBe("Pepsi 330ml");
+    ).toBe("Banana");
 
     expect(
       resolveExceptionCustodyItemLabel(transfer, {
-        actualProductId: actualId,
+        actualProductId: actualBananaId,
         expectedProductId: productId,
         actualProductName: null,
-        expectedProductName: "Coke 330ml",
+        expectedProductName: "Apple",
       }),
-    ).toBe("Coke 330ml");
+    ).toBe("—");
 
     expect(
+      resolveExceptionCustodyExpectedItemLabel(transfer, {
+        expectedProductId: productId,
+        expectedProductName: "Apple",
+      }),
+    ).toBe("Apple");
+  });
+
+  it("may use expected name only when actual product id equals expected", () => {
+    const transfer = baseTransfer();
+    expect(
       resolveExceptionCustodyItemLabel(transfer, {
-        actualProductId: actualId,
+        actualProductId: productId,
         expectedProductId: productId,
         actualProductName: null,
-        expectedProductName: null,
+        expectedProductName: "Apple",
       }),
-    ).toBe("Coke 330ml");
+    ).toBe("Apple");
+  });
+});
+
+describe("inventoryTransferDtoSchema retains exception product names", () => {
+  it("does not strip actualProductName / expectedProductName from transfer GET payloads", async () => {
+    const { inventoryTransferDtoSchema } = await import(
+      "@/api/pos/pos-inventory-transfer-client"
+    );
+    const parsed = inventoryTransferDtoSchema.parse({
+      transferId,
+      organizationId: "88888888-8888-8888-8888-888888888888",
+      transferNumber: "TR-260922-001",
+      sourceBranchId: branchId,
+      destinationBranchId,
+      status: "ClosedWithDiscrepancy",
+      notes: null,
+      createdBy: branchId,
+      createdAtUtc: "2026-09-22T10:00:00Z",
+      updatedAtUtc: "2026-09-22T12:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      totalDifferenceQty: 5,
+      lines: [
+        {
+          lineId,
+          productId,
+          productName: "Apple",
+          unitOfMeasure: "kg",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 5,
+          differenceQty: 5,
+          lineStatus: "Partial",
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId,
+          expectedProductId: productId,
+          actualProductId: actualBananaId,
+          expectedProductName: "Apple",
+          actualProductName: "Banana",
+          quantity: 5,
+          reasonCode: "WrongItem",
+          decision: "ReturnToSource",
+          followUpIntent: "RequestReplacement",
+          status: "AwaitingReturn",
+          heldBranchId: destinationBranchId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-09-22T12:00:00Z",
+          updatedAtUtc: "2026-09-22T12:00:00Z",
+        },
+      ],
+    });
+    expect(parsed.exceptionCustodies?.[0]?.expectedProductName).toBe("Apple");
+    expect(parsed.exceptionCustodies?.[0]?.actualProductName).toBe("Banana");
   });
 });
 

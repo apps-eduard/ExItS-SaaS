@@ -30,7 +30,10 @@ import {
   buildReceivingDecisionView,
   computeThisShipmentTotals,
   computeThisTransferWaivedQty,
+  formatExceptionCustodyReturnStatusLabel,
+  formatReturnToSourceCustodyLabel,
   otherReasonLabelKey,
+  resolveExceptionCustodyExpectedItemLabel,
   resolveExceptionCustodyItemLabel,
   resolveTransferProductDisplayName,
   transferCustodyDecisionLabelKey,
@@ -453,10 +456,47 @@ export function InventoryMovementTransactionDrawer({
                         <dd className="m-0 text-end font-medium">
                           {t(otherReasonLabelKey(receivingDecision.otherReasonCode))}
                         </dd>
+                        {receivingDecision.showExpectedAndActualItems &&
+                        receivingDecision.expectedProductId ? (
+                          <>
+                            <dt className="m-0 text-muted">{t("transfer.expectedItem")}</dt>
+                            <dd
+                              className="m-0 text-end font-medium"
+                              data-testid="inventory-movement-receiving-expected-item"
+                            >
+                              {receivingDecision.expectedProductName ??
+                                resolveExceptionCustodyExpectedItemLabel(transfer, {
+                                  expectedProductId: receivingDecision.expectedProductId,
+                                  expectedProductName: receivingDecision.expectedProductName,
+                                })}
+                            </dd>
+                            <dt className="m-0 text-muted">{t("transfer.actualItem")}</dt>
+                            <dd
+                              className="m-0 text-end font-medium"
+                              data-testid="inventory-movement-receiving-actual-item"
+                            >
+                              {receivingDecision.actualReceivedProductName ??
+                                (receivingDecision.actualReceivedProductId
+                                  ? resolveExceptionCustodyItemLabel(transfer, {
+                                      actualProductId:
+                                        receivingDecision.actualReceivedProductId,
+                                      expectedProductId: receivingDecision.expectedProductId,
+                                      actualProductName:
+                                        receivingDecision.actualReceivedProductName,
+                                      expectedProductName:
+                                        receivingDecision.expectedProductName,
+                                    })
+                                  : "—")}
+                            </dd>
+                          </>
+                        ) : null}
                         {receivingDecision.otherReasonNote ? (
                           <>
                             <dt className="m-0 text-muted">{t("transfer.note")}</dt>
-                            <dd className="m-0 text-end font-medium">
+                            <dd
+                              className="m-0 text-end font-medium"
+                              data-testid="inventory-movement-receiving-note"
+                            >
                               {receivingDecision.otherReasonNote}
                             </dd>
                           </>
@@ -475,54 +515,57 @@ export function InventoryMovementTransactionDrawer({
                             </dd>
                           </>
                         ) : null}
-                        {receivingDecision.actualReceivedProductId ? (
-                          <>
-                            <dt className="m-0 text-muted">{t("transfer.actualItem")}</dt>
-                            <dd className="m-0 text-end font-medium">
-                              {resolveExceptionCustodyItemLabel(transfer, {
-                                actualProductId: receivingDecision.actualReceivedProductId,
-                                expectedProductId:
-                                  transfer.exceptionCustodies?.[0]?.expectedProductId ??
-                                  receivingDecision.actualReceivedProductId,
-                                actualProductName:
-                                  transfer.exceptionCustodies?.find(
-                                    (c) =>
-                                      c.actualProductId.toLowerCase() ===
-                                      receivingDecision.actualReceivedProductId!.toLowerCase(),
-                                  )?.actualProductName ?? null,
-                                expectedProductName:
-                                  transfer.exceptionCustodies?.[0]?.expectedProductName ?? null,
-                              })}
-                            </dd>
-                          </>
-                        ) : null}
                         {receivingDecision.otherCustodyDecision ? (
                           <>
                             <dt className="m-0 text-muted">{t("transfer.exceptionCustodyLabel")}</dt>
-                            <dd className="m-0 text-end font-medium">
-                              {transferCustodyDecisionLabelKey(
-                                receivingDecision.otherCustodyDecision,
-                              )
-                                ? t(
-                                    transferCustodyDecisionLabelKey(
-                                      receivingDecision.otherCustodyDecision,
-                                    )!,
+                            <dd
+                              className="m-0 text-end font-medium"
+                              data-testid="inventory-movement-receiving-exception-custody"
+                            >
+                              {receivingDecision.otherCustodyDecision === "ReturnToSource"
+                                ? formatReturnToSourceCustodyLabel(
+                                    transfer.sourceBranchName,
+                                    t("transfer.custody.returnToBranch"),
+                                    t("transfer.custody.returnToSource"),
                                   )
-                                : receivingDecision.otherCustodyDecision}
+                                : transferCustodyDecisionLabelKey(
+                                      receivingDecision.otherCustodyDecision,
+                                    )
+                                  ? t(
+                                      transferCustodyDecisionLabelKey(
+                                        receivingDecision.otherCustodyDecision,
+                                      )!,
+                                    )
+                                  : receivingDecision.otherCustodyDecision}
                             </dd>
                           </>
                         ) : null}
                         {receivingDecision.otherCustodyStatus ? (
                           <>
                             <dt className="m-0 text-muted">{t("transfer.returnStatus")}</dt>
-                            <dd className="m-0 text-end font-medium">
-                              {transferCustodyStatusLabelKey(receivingDecision.otherCustodyStatus)
-                                ? t(
-                                    transferCustodyStatusLabelKey(
-                                      receivingDecision.otherCustodyStatus,
-                                    )!,
-                                  )
-                                : receivingDecision.otherCustodyStatus}
+                            <dd
+                              className="m-0 text-end font-medium"
+                              data-testid="inventory-movement-receiving-return-status"
+                            >
+                              {formatExceptionCustodyReturnStatusLabel(
+                                receivingDecision.otherCustodyStatus,
+                                transfer.sourceBranchName,
+                                {
+                                  awaitingReturn: t("transfer.custody.awaitingReturn"),
+                                  returningToBranch: t("transfer.custody.returningToBranch"),
+                                  returnInTransitFallback: t(
+                                    "transfer.custody.returnInTransit",
+                                  ),
+                                  returnedToBranch: t("transfer.custody.returnedToBranch"),
+                                  receivedAtSourceFallback: t(
+                                    "transfer.custody.receivedAtSource",
+                                  ),
+                                  heldAtDestination: t("transfer.custody.heldAtDestination"),
+                                  awaitingInspection: t(
+                                    "transfer.custody.awaitingInspection",
+                                  ),
+                                },
+                              )}
                             </dd>
                           </>
                         ) : null}

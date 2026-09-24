@@ -2115,6 +2115,11 @@ public sealed class InventoryTransferUseCaseTests
         Assert.NotNull(dto);
         Assert.Equal(5m, dto!.RemainingToDispatchQty);
         Assert.Equal(0m, dto.WaivedQty);
+        var exceptionDto = Assert.Single(dto.ExceptionCustodies!);
+        Assert.Equal(fx.CokeId, exceptionDto.ExpectedProductId);
+        Assert.Equal(fx.SpriteId, exceptionDto.ActualProductId);
+        Assert.Equal("Coke", exceptionDto.ExpectedProductName);
+        Assert.Equal("Sprite", exceptionDto.ActualProductName);
 
         Assert.Contains(
             fx.Inventory.Movements,

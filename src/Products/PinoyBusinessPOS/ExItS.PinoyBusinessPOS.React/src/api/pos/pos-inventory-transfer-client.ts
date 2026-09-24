@@ -202,6 +202,8 @@ export const inventoryTransferDtoSchema = z.object({
         returnDispatchedAtUtc: z.string().nullable().optional(),
         returnReceivedAtUtc: z.string().nullable().optional(),
         inspectedAtUtc: z.string().nullable().optional(),
+        expectedProductName: z.string().nullable().optional(),
+        actualProductName: z.string().nullable().optional(),
       }),
     )
     .nullable()

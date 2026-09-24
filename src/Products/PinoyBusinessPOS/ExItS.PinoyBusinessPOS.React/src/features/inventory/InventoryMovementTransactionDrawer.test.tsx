@@ -640,4 +640,307 @@ describe("InventoryMovementTransactionDrawer", () => {
     expect(await screen.findByTestId("inventory-movement-transaction-this-transfer")).toBeInTheDocument();
     expect(screen.getByTestId("inventory-movement-view-full-transfer")).toBeInTheDocument();
   });
+
+  it("shows WrongItem expected Apple / actual Banana with branch-aware custody", async () => {
+    const appleId = "33333333-3333-3333-3333-333333333333";
+    const bananaId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const lineId = "22222222-2222-2222-2222-222222222222";
+    const receiptLineId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId,
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      transferNumber: "TR-260922-001",
+      sourceBranchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      sourceBranchName: "Main Branch",
+      destinationBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      destinationBranchName: "Branch 2",
+      status: "ClosedWithDiscrepancy",
+      notes: null,
+      createdBy: "actor-1",
+      createdAtUtc: "2026-09-22T18:00:00Z",
+      updatedAtUtc: "2026-09-22T19:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      totalClosedQty: 0,
+      totalOutstandingQty: 0,
+      totalDifferenceQty: 5,
+      receiptCount: 1,
+      lines: [
+        {
+          lineId,
+          productId: appleId,
+          productName: "Apple",
+          unitOfMeasure: "pcs",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 5,
+          differenceQty: 5,
+          lineStatus: "Partial",
+          discrepancyReason: null,
+          discrepancyNote: null,
+          sourceLotId: null,
+          lotNumber: null,
+          expirationDate: null,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T19:00:00Z",
+          receivedBy: "actor-1",
+          lines: [
+            {
+              receiptLineId,
+              lineId,
+              productId: appleId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "WrongItem",
+              otherReasonNote: "Banana was packed instead of Apple",
+              otherFollowUp: "RequestReplacement",
+              actualReceivedProductId: bananaId,
+              otherCustodyDecision: "ReturnToSource",
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId,
+          expectedProductId: appleId,
+          actualProductId: bananaId,
+          expectedProductName: "Apple",
+          actualProductName: "Banana",
+          quantity: 5,
+          reasonCode: "WrongItem",
+          decision: "ReturnToSource",
+          followUpIntent: "RequestReplacement",
+          status: "AwaitingReturn",
+          heldBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-09-22T19:00:00Z",
+          updatedAtUtc: "2026-09-22T19:00:00Z",
+        },
+      ],
+      damageCustodies: [],
+      familyMembers: [],
+      satisfiedAtDestinationQty: 5,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 5,
+      waivedQty: 0,
+    } as never);
+
+    const movement: PosStockMovementDto = {
+      movementId: "mov-exc",
+      productId: bananaId,
+      inventoryAccountId: "acc-1",
+      movementType: "TransferExceptionHold",
+      quantityEffect: 5,
+      reason: "Transfer exception hold",
+      sourceType: "InventoryTransfer",
+      sourceId: receiptLineId,
+      transactionType: "InventoryTransfer",
+      transactionId: transferId,
+      transactionReference: "TR-260922-001",
+      recordedAtUtc: "2026-09-22T19:00:00Z",
+      recordedBy: "actor-1",
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={movement}
+                  unitOfMeasure="pcs"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const receiving = await screen.findByTestId(
+      "inventory-movement-transaction-receiving-decision",
+    );
+    expect(receiving).toHaveTextContent(/Wrong item/i);
+    expect(screen.getByTestId("inventory-movement-receiving-expected-item")).toHaveTextContent(
+      "Apple",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-actual-item")).toHaveTextContent(
+      "Banana",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-actual-item")).not.toHaveTextContent(
+      "Apple",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-note")).toHaveTextContent(
+      "Banana was packed instead of Apple",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-exception-custody")).toHaveTextContent(
+      "Return to Main Branch",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-exception-custody")).not.toHaveTextContent(
+      "Branch 2",
+    );
+    expect(screen.getByTestId("inventory-movement-receiving-return-status")).toHaveTextContent(
+      "Waiting to return",
+    );
+    expect(receiving).not.toHaveTextContent("ReturnToSource");
+    expect(receiving).not.toHaveTextContent("AwaitingReturn");
+    expect(receiving).not.toHaveTextContent(bananaId);
+
+    const holdDetail = screen.getByTestId("inventory-movement-exception-hold-detail");
+    expect(holdDetail).toHaveTextContent(/Expected item:\s*Apple/i);
+    expect(holdDetail).toHaveTextContent(/Actual item:\s*Banana/i);
+  });
+
+  it("shows Returning to Main Branch after return dispatch", async () => {
+    const appleId = "33333333-3333-3333-3333-333333333333";
+    const bananaId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const lineId = "22222222-2222-2222-2222-222222222222";
+    const receiptLineId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId,
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      transferNumber: "TR-260922-001",
+      sourceBranchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      sourceBranchName: "Main Branch",
+      destinationBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      destinationBranchName: "Branch 2",
+      status: "ClosedWithDiscrepancy",
+      notes: null,
+      createdBy: "actor-1",
+      createdAtUtc: "2026-09-22T18:00:00Z",
+      updatedAtUtc: "2026-09-22T19:00:00Z",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      totalClosedQty: 0,
+      totalOutstandingQty: 0,
+      totalDifferenceQty: 5,
+      receiptCount: 1,
+      lines: [
+        {
+          lineId,
+          productId: appleId,
+          productName: "Apple",
+          unitOfMeasure: "pcs",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 5,
+          differenceQty: 5,
+          lineStatus: "Partial",
+          discrepancyReason: null,
+          discrepancyNote: null,
+          sourceLotId: null,
+          lotNumber: null,
+          expirationDate: null,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T19:00:00Z",
+          receivedBy: "actor-1",
+          lines: [
+            {
+              receiptLineId,
+              lineId,
+              productId: appleId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "WrongItem",
+              otherReasonNote: "Banana was packed instead of Apple",
+              otherFollowUp: "RequestReplacement",
+              actualReceivedProductId: bananaId,
+              otherCustodyDecision: "ReturnToSource",
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId,
+          expectedProductId: appleId,
+          actualProductId: bananaId,
+          expectedProductName: "Apple",
+          actualProductName: "Banana",
+          quantity: 5,
+          reasonCode: "WrongItem",
+          decision: "ReturnToSource",
+          followUpIntent: "RequestReplacement",
+          status: "ReturnInTransit",
+          heldBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 5,
+          createdAtUtc: "2026-09-22T19:00:00Z",
+          updatedAtUtc: "2026-09-22T19:30:00Z",
+        },
+      ],
+      damageCustodies: [],
+      familyMembers: [],
+      satisfiedAtDestinationQty: 5,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 5,
+      waivedQty: 0,
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={null}
+                  transferContext={{ transferId, transferNumber: "TR-260922-001" }}
+                  unitOfMeasure="pcs"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(
+      await screen.findByTestId("inventory-movement-receiving-return-status"),
+    ).toHaveTextContent("Returning to Main Branch");
+    expect(screen.getByTestId("inventory-movement-receiving-exception-custody")).toHaveTextContent(
+      "Return to Main Branch",
+    );
+  });
 });
