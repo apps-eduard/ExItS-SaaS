@@ -77,6 +77,21 @@ describe("inventory-movement-transfer-ref", () => {
     );
   });
 
+  it("recognizes TransferExceptionActualOut as InventoryTransfer and prefers transactionId", () => {
+    const m = movement({
+      movementType: "TransferExceptionActualOut",
+      sourceType: "InventoryTransfer",
+      reason: "Transfer exception actual out TR-260924-001",
+      sourceId: "receipt-line-id",
+      transactionType: "InventoryTransfer",
+      transactionId: "physical-transfer-id",
+      transactionReference: "TR-260924-001",
+    });
+    expect(isInventoryTransferMovement(m)).toBe(true);
+    expect(extractTransferReferenceNumber(m)).toBe("TR-260924-001");
+    expect(resolveInventoryTransferTransactionId(m)).toBe("physical-transfer-id");
+  });
+
   it("strips damage-hold decision suffix when parsing transfer number from reason", () => {
     expect(
       extractTransferReferenceNumber(
@@ -102,5 +117,18 @@ describe("inventory-movement-transfer-ref", () => {
         }),
       ),
     ).toBeNull();
+  });
+
+  it("falls back to sourceId for TransferOut when transactionId is missing", () => {
+    expect(
+      resolveInventoryTransferTransactionId(
+        movement({
+          movementType: "TransferOut",
+          sourceType: "InventoryTransfer",
+          reason: "Transfer out TR-260922-001",
+          sourceId: "sender-transfer-id",
+        }),
+      ),
+    ).toBe("sender-transfer-id");
   });
 });

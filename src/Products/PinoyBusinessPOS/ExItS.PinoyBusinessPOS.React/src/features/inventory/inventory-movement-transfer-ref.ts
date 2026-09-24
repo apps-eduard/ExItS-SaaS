@@ -9,6 +9,14 @@ const TRANSFER_REASON_PREFIXES = [
   "Transfer damage return out ",
   "Transfer damage return in ",
   "Transfer damage write-off ",
+  "Transfer exception hold ",
+  "Transfer exception expected restore ",
+  "Transfer exception actual out ",
+  "Transfer exception return out ",
+  "Transfer exception return in ",
+  "Wrong item return received ",
+  "Transfer exception recovery ",
+  "Transfer exception write-off ",
 ] as const;
 
 const TRANSFER_MOVEMENT_TYPES = new Set([
@@ -20,6 +28,25 @@ const TRANSFER_MOVEMENT_TYPES = new Set([
   "TransferDamageReturnOut",
   "TransferDamageReturnIn",
   "TransferDamageWriteOff",
+  "TransferExceptionHold",
+  "TransferExceptionExpectedRestore",
+  "TransferExceptionActualOut",
+  "TransferExceptionReturnOut",
+  "TransferExceptionReturnIn",
+  "TransferExceptionReturnRestock",
+  "TransferExceptionRecovery",
+  "TransferExceptionWriteOff",
+]);
+
+export const TRANSFER_EXCEPTION_MOVEMENT_TYPES = new Set([
+  "TransferExceptionHold",
+  "TransferExceptionExpectedRestore",
+  "TransferExceptionActualOut",
+  "TransferExceptionReturnOut",
+  "TransferExceptionReturnIn",
+  "TransferExceptionReturnRestock",
+  "TransferExceptionRecovery",
+  "TransferExceptionWriteOff",
 ]);
 
 /** True when the movement is transfer-sourced (any transfer movement type). */
@@ -31,16 +58,33 @@ export function isInventoryTransferMovement(movement: PosStockMovementDto): bool
   );
 }
 
+export function isTransferExceptionMovement(movementType: string): boolean {
+  return TRANSFER_EXCEPTION_MOVEMENT_TYPES.has(movementType);
+}
+
 /**
  * Authoritative inventory transfer id for navigation / drawer loading.
  * Prefer server-resolved <c>transactionId</c>; never guess from reason text.
- * Do not fall back to <c>sourceId</c> — TransferIn / damage movements use child ids.
+ * TransferOut / TransferCancelRestore may use sourceId (the transfer itself).
+ * Do not fall back to sourceId for TransferIn / damage / exception movements.
  */
 export function resolveInventoryTransferTransactionId(
   movement: PosStockMovementDto,
 ): string | null {
   const id = movement.transactionId?.trim();
-  return id && id.length > 0 ? id : null;
+  if (id && id.length > 0) {
+    return id;
+  }
+
+  if (
+    movement.movementType === "TransferOut" ||
+    movement.movementType === "TransferCancelRestore"
+  ) {
+    const sourceId = movement.sourceId?.trim();
+    return sourceId && sourceId.length > 0 ? sourceId : null;
+  }
+
+  return null;
 }
 
 /**
@@ -67,7 +111,7 @@ export function extractTransferReferenceNumber(
   for (const prefix of TRANSFER_REASON_PREFIXES) {
     if (reason.startsWith(prefix)) {
       const rest = reason.slice(prefix.length).trim();
-      // Damage-hold reasons may append " · Return to source · Replacement requested"
+      // Decision suffixes may append " · Return to source · Replacement requested"
       const number = rest.split(" · ")[0]?.trim() ?? "";
       return number.length > 0 ? number : null;
     }

@@ -388,6 +388,7 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
         var receiptSourceIds = new HashSet<Guid>();
         var receiptLineSourceIds = new HashSet<Guid>();
         var custodySourceIds = new HashSet<Guid>();
+        var exceptionCustodySourceIds = new HashSet<Guid>();
 
         foreach (var movement in movements)
         {
@@ -408,6 +409,9 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
                     receiptSourceIds.Add(sourceId);
                     break;
                 case StockMovementType.TransferDamageHold:
+                case StockMovementType.TransferExceptionHold:
+                case StockMovementType.TransferExceptionExpectedRestore:
+                case StockMovementType.TransferExceptionActualOut:
                     receiptLineSourceIds.Add(sourceId);
                     break;
                 case StockMovementType.TransferDamageRecovery:
@@ -415,6 +419,13 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
                 case StockMovementType.TransferDamageReturnIn:
                 case StockMovementType.TransferDamageWriteOff:
                     custodySourceIds.Add(sourceId);
+                    break;
+                case StockMovementType.TransferExceptionReturnOut:
+                case StockMovementType.TransferExceptionReturnIn:
+                case StockMovementType.TransferExceptionReturnRestock:
+                case StockMovementType.TransferExceptionRecovery:
+                case StockMovementType.TransferExceptionWriteOff:
+                    exceptionCustodySourceIds.Add(sourceId);
                     break;
             }
         }
@@ -472,6 +483,23 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             }
         }
 
+        var transferIdByExceptionCustodyId = new Dictionary<Guid, Guid>();
+        if (exceptionCustodySourceIds.Count > 0)
+        {
+            var exceptionCustodies = await _db.InventoryTransferExceptionCustodies.AsNoTracking()
+                .Where(c =>
+                    c.OrganizationId == organizationId.Value
+                    && exceptionCustodySourceIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.TransferId })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var custody in exceptionCustodies)
+            {
+                transferIdByExceptionCustodyId[custody.Id] = custody.TransferId;
+                transferSourceIds.Add(custody.TransferId);
+            }
+        }
+
         var transferNumberById = new Dictionary<Guid, string?>();
         if (transferSourceIds.Count > 0)
         {
@@ -503,12 +531,22 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
                 StockMovementType.TransferIn
                     when transferIdByReceiptId.TryGetValue(sourceId, out var fromReceipt) => fromReceipt,
                 StockMovementType.TransferDamageHold
+                    or StockMovementType.TransferExceptionHold
+                    or StockMovementType.TransferExceptionExpectedRestore
+                    or StockMovementType.TransferExceptionActualOut
                     when transferIdByReceiptLineId.TryGetValue(sourceId, out var fromLine) => fromLine,
                 StockMovementType.TransferDamageRecovery
                     or StockMovementType.TransferDamageReturnOut
                     or StockMovementType.TransferDamageReturnIn
                     or StockMovementType.TransferDamageWriteOff
                     when transferIdByCustodyId.TryGetValue(sourceId, out var fromCustody) => fromCustody,
+                StockMovementType.TransferExceptionReturnOut
+                    or StockMovementType.TransferExceptionReturnIn
+                    or StockMovementType.TransferExceptionReturnRestock
+                    or StockMovementType.TransferExceptionRecovery
+                    or StockMovementType.TransferExceptionWriteOff
+                    when transferIdByExceptionCustodyId.TryGetValue(sourceId, out var fromExceptionCustody)
+                        => fromExceptionCustody,
                 _ => null
             };
 
@@ -521,7 +559,95 @@ internal sealed class InventoryTransferRepository : IInventoryTransferRepository
             result[movement.Id.Value] = new InventoryTransferTransactionRef(resolvedId, number);
         }
 
+        // Fallback: unresolved transfer-sourced movements → match TransferNumber from Reason.
+        var unresolved = movements
+            .Where(m =>
+                m.SourceType == StockMovementSourceType.InventoryTransfer
+                && !result.ContainsKey(m.Id.Value)
+                && !string.IsNullOrWhiteSpace(m.Reason))
+            .ToList();
+        if (unresolved.Count > 0)
+        {
+            var numbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var numberByMovementId = new Dictionary<Guid, string>();
+            foreach (var movement in unresolved)
+            {
+                var parsed = TryParseTransferNumberFromReason(movement.Reason);
+                if (parsed is null)
+                {
+                    continue;
+                }
+
+                numbers.Add(parsed);
+                numberByMovementId[movement.Id.Value] = parsed;
+            }
+
+            if (numbers.Count > 0)
+            {
+                var byNumber = await _db.InventoryTransfers.AsNoTracking()
+                    .Where(t =>
+                        t.OrganizationId == organizationId.Value
+                        && t.TransferNumber != null
+                        && numbers.Contains(t.TransferNumber))
+                    .Select(t => new { t.Id, t.TransferNumber })
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                var transferByNumber = byNumber
+                    .Where(t => !string.IsNullOrWhiteSpace(t.TransferNumber))
+                    .GroupBy(t => t.TransferNumber!, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                foreach (var (movementId, number) in numberByMovementId)
+                {
+                    if (transferByNumber.TryGetValue(number, out var transfer))
+                    {
+                        result[movementId] = new InventoryTransferTransactionRef(
+                            transfer.Id,
+                            transfer.TransferNumber);
+                    }
+                }
+            }
+        }
+
         return result;
+    }
+
+    private static string? TryParseTransferNumberFromReason(string reason)
+    {
+        ReadOnlySpan<string> prefixes =
+        [
+            "Transfer out ",
+            "Transfer in ",
+            "Transfer cancelled ",
+            "Transfer damage hold ",
+            "Transfer damage recovery ",
+            "Transfer damage return out ",
+            "Transfer damage return in ",
+            "Transfer damage write-off ",
+            "Transfer exception hold ",
+            "Transfer exception expected restore ",
+            "Transfer exception actual out ",
+            "Transfer exception return out ",
+            "Transfer exception return in ",
+            "Wrong item return received ",
+            "Transfer exception recovery ",
+            "Transfer exception write-off ",
+        ];
+        var trimmed = reason.Trim();
+        foreach (var prefix in prefixes)
+        {
+            if (!trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var rest = trimmed[prefix.Length..].Trim();
+            var separatorIndex = rest.IndexOf(" · ", StringComparison.Ordinal);
+            var number = (separatorIndex >= 0 ? rest[..separatorIndex] : rest).Trim();
+            return number.Length > 0 ? number : null;
+        }
+
+        return null;
     }
 
     private static long SequenceLockKey(PosOrganizationId organizationId, DateOnly businessDateUtc)

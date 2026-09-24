@@ -944,16 +944,6 @@ export function InventoryTransferDetailPage() {
         </p>
       ) : null}
 
-      {transfer.rootTransferId ? (
-        <p className="m-0 text-[length:var(--exits-text-sm)]" data-testid="transfer-replacement-banner">
-          Replacement for{" "}
-          <Link className="underline" to={`/inventory/transfers/${transfer.rootTransferId}`}>
-            root transfer
-          </Link>
-          {transfer.replacementReason ? ` — ${transfer.replacementReason}` : null}
-        </p>
-      ) : null}
-
       <div
         className="grid grid-cols-1 gap-3 lg:grid-cols-2"
         data-testid="transfer-summary-body-top"

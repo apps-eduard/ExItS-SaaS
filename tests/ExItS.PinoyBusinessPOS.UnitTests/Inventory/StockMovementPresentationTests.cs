@@ -110,6 +110,23 @@ public sealed class StockMovementPresentationTests
     }
 
     [Fact]
+    public void Exception_actual_out_and_expected_restore_use_business_labels()
+    {
+        Assert.Equal(
+            "Wrong item sent",
+            StockMovementPresentation.ToFriendlyLabel(nameof(StockMovementType.TransferExceptionActualOut)));
+        Assert.Equal(
+            "Expected item restored",
+            StockMovementPresentation.ToFriendlyLabel(nameof(StockMovementType.TransferExceptionExpectedRestore)));
+        Assert.Equal(
+            "Wrong item returned to source",
+            StockMovementPresentation.ToFriendlyLabel(nameof(StockMovementType.TransferExceptionReturnOut)));
+        Assert.Equal(
+            "Wrong item return received",
+            StockMovementPresentation.ToFriendlyLabel(nameof(StockMovementType.TransferExceptionReturnRestock)));
+    }
+
+    [Fact]
     public void Good_transfer_in_is_sellable()
     {
         var effects = StockMovementPresentation.DescribeBucketEffects(

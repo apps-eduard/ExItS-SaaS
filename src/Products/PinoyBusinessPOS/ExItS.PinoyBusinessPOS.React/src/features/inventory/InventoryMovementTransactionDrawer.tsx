@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import type { PosStockMovementDto } from "@/api/pos/pos-inventory-client";
-import { getInventoryTransfer } from "@/api/pos/pos-inventory-transfer-client";
+import {
+  getInventoryTransfer,
+  listInventoryTransfers,
+} from "@/api/pos/pos-inventory-transfer-client";
 import type { PosWorkspaceScope } from "@/api/pos/pos-http";
 import { SideDrawer } from "@/components/exits/SideDrawer";
 import { LoadingState } from "@/components/exits/LoadingState";
@@ -14,11 +17,18 @@ import {
   formatSignedBucketQty,
   movementNeedsBucketBreakdown,
 } from "@/features/inventory/inventory-movement-bucket-effects";
+import {
+  buildExceptionCustodyReceivingDecisionView,
+  exceptionMovementTypeLabelKey,
+  matchExceptionCustodyForMovement,
+  resolveExceptionMovementRoute,
+} from "@/features/inventory/inventory-movement-exception-display";
 import { resolveDamageHoldDecisionDisplay } from "@/features/inventory/inventory-movement-damage-hold-display";
 import {
   extractTransferReferenceNumber,
   inventoryTransferDetailPath,
   isInventoryTransferMovement,
+  isTransferExceptionMovement,
   resolveInventoryTransferTransactionId,
 } from "@/features/inventory/inventory-movement-transfer-ref";
 import {
@@ -35,13 +45,13 @@ import {
   otherReasonLabelKey,
   resolveExceptionCustodyExpectedItemLabel,
   resolveExceptionCustodyItemLabel,
-  resolveTransferProductDisplayName,
   transferCustodyDecisionLabelKey,
   transferCustodyStatusLabelKey,
   transferDiscrepancyFollowUpLabelKey,
   transferMissingDispositionLabelKey,
 } from "@/features/inventory/inventory-transfer-summary-presentation";
 import { inventoryMovementTypeLabelKey } from "@/features/purchasing/purchase-cost-display";
+import { requiresActualProduct } from "@/features/inventory/transfer-exception-custody-policy";
 import { AppLinkWithReturn } from "@/navigation/AppLinkWithReturn";
 import { useI18n } from "@/i18n/I18nProvider";
 
@@ -71,7 +81,7 @@ export function InventoryMovementTransactionDrawer({
   actorsLoading: boolean;
 }) {
   const { t } = useI18n();
-  const transferId =
+  const transferIdFromMovement =
     movement && isInventoryTransferMovement(movement)
       ? resolveInventoryTransferTransactionId(movement)
       : (transferContext?.transferId?.trim() || null);
@@ -79,15 +89,43 @@ export function InventoryMovementTransactionDrawer({
     ? extractTransferReferenceNumber(movement)
     : (transferContext?.transferNumber?.trim() || null);
 
+  /** When server omitted transactionId, resolve by TR# so the header link still works. */
+  const transferIdByNumberQuery = useQuery({
+    queryKey: [
+      "inventory-transfer-by-number",
+      workspace?.organizationId,
+      transferNumber,
+    ],
+    enabled:
+      open &&
+      Boolean(workspace) &&
+      !transferIdFromMovement &&
+      Boolean(transferNumber),
+    queryFn: async ({ signal }) => {
+      const page = await listInventoryTransfers(
+        workspace!,
+        { transferNumber: transferNumber!, page: 1, pageSize: 5 },
+        signal,
+      );
+      const exact =
+        page.items.find(
+          (item) =>
+            item.transferNumber?.trim().toLowerCase() ===
+            transferNumber!.toLowerCase(),
+        ) ?? page.items[0];
+      return exact?.transferId?.trim() || null;
+    },
+  });
+
+  const transferId =
+    transferIdFromMovement || transferIdByNumberQuery.data || null;
+
   const transferQuery = useQuery({
     queryKey: ["inventory-transfer", workspace?.organizationId, transferId],
     enabled: open && Boolean(workspace) && Boolean(transferId),
     queryFn: ({ signal }) => getInventoryTransfer(workspace!, transferId!, signal),
   });
 
-  const typeLabel = movement
-    ? t(inventoryMovementTypeLabelKey(movement.movementType))
-    : "";
   const effects =
     movement && movementNeedsBucketBreakdown(movement.movementType)
       ? describeMovementBucketEffects(movement.movementType, movement.quantityEffect)
@@ -98,10 +136,12 @@ export function InventoryMovementTransactionDrawer({
   const thisShipment = transfer ? computeThisShipmentTotals(transfer) : null;
   const thisTransferWaived = transfer ? computeThisTransferWaivedQty(transfer) : 0;
   const overallFulfillment = transfer ? buildOverallFulfillmentView(transfer) : null;
-  const receivingDecision = transfer ? buildReceivingDecisionView(transfer) : null;
   const isDamageReturnIn = movement?.movementType === "TransferDamageReturnIn";
   const isDamageReturnOut = movement?.movementType === "TransferDamageReturnOut";
   const isDamageReturnMovement = isDamageReturnIn || isDamageReturnOut;
+  const isExceptionMovement = movement
+    ? isTransferExceptionMovement(movement.movementType)
+    : false;
   const matchedCustody =
     movement?.movementType === "TransferDamageHold"
       ? (transfer?.damageCustodies ?? []).find(
@@ -111,13 +151,29 @@ export function InventoryMovementTransactionDrawer({
         ) ?? (transfer?.damageCustodies ?? [])[0]
       : null;
   const matchedExceptionCustody =
-    movement?.movementType === "TransferExceptionHold"
-      ? (transfer?.exceptionCustodies ?? []).find(
-          (c) =>
-            !movement.sourceId ||
-            c.receiptLineId.toLowerCase() === movement.sourceId.toLowerCase(),
-        ) ?? (transfer?.exceptionCustodies ?? [])[0]
+    movement && transfer && isExceptionMovement
+      ? matchExceptionCustodyForMovement(transfer, movement)
       : null;
+  const receivingDecision =
+    transfer && matchedExceptionCustody
+      ? buildExceptionCustodyReceivingDecisionView(transfer, matchedExceptionCustody)
+      : transfer
+        ? buildReceivingDecisionView(transfer)
+        : null;
+  const exceptionRoute =
+    movement && transfer && isExceptionMovement
+      ? resolveExceptionMovementRoute(movement.movementType, transfer)
+      : null;
+  const typeLabel = movement
+    ? t(
+        isExceptionMovement
+          ? exceptionMovementTypeLabelKey(
+              movement.movementType,
+              matchedExceptionCustody?.reasonCode ?? receivingDecision?.otherReasonCode,
+            )
+          : inventoryMovementTypeLabelKey(movement.movementType),
+      )
+    : "";
   const damageHoldDecision = movement
     ? resolveDamageHoldDecisionDisplay(movement, matchedCustody)
     : null;
@@ -128,11 +184,28 @@ export function InventoryMovementTransactionDrawer({
   const returnToBranch = transfer
     ? branchLabel(transfer.sourceBranchName, transfer.sourceBranchId)
     : null;
-  const hasContent = movement != null || transferId != null;
+  const hasContent = movement != null || transferId != null || transferNumber != null;
   const attributionActorId = movement?.recordedBy ?? transfer?.createdBy ?? null;
   const attributionAtUtc = movement?.recordedAtUtc ?? transfer?.createdAtUtc ?? null;
   const headerTransferNumber =
     transfer?.transferNumber?.trim() || transferNumber || null;
+  const transferLookupPending =
+    !transferIdFromMovement &&
+    Boolean(transferNumber) &&
+    (transferIdByNumberQuery.isLoading || transferIdByNumberQuery.isFetching);
+
+  const expectedItemLabel =
+    matchedExceptionCustody && transfer
+      ? resolveExceptionCustodyExpectedItemLabel(transfer, matchedExceptionCustody)
+      : null;
+  const actualItemLabel =
+    matchedExceptionCustody && transfer
+      ? resolveExceptionCustodyItemLabel(transfer, matchedExceptionCustody)
+      : null;
+  const exceptionNote = receivingDecision?.otherReasonNote?.trim() || null;
+  const requiresActualForMovement = requiresActualProduct(
+    matchedExceptionCustody?.reasonCode ?? "",
+  );
 
   return (
     <SideDrawer
@@ -150,10 +223,23 @@ export function InventoryMovementTransactionDrawer({
             <>
               {headerTransferNumber || transferId ? (
                 <div data-testid="inventory-movement-transaction-transfer-header">
-                  <p className="m-0 text-[length:var(--exits-text-lg)] font-semibold">
-                    {headerTransferNumber ?? transferId}
-                  </p>
-                  {transferQuery.isLoading ? (
+                  {transferId ? (
+                    <AppLinkWithReturn
+                      to={inventoryTransferDetailPath(transferId)}
+                      className="m-0 inline-block text-[length:var(--exits-text-lg)] font-semibold text-primary underline underline-offset-2"
+                      data-testid="inventory-movement-transaction-transfer-number"
+                    >
+                      {headerTransferNumber ?? transferId}
+                    </AppLinkWithReturn>
+                  ) : (
+                    <p
+                      className="m-0 text-[length:var(--exits-text-lg)] font-semibold"
+                      data-testid="inventory-movement-transaction-transfer-number-pending"
+                    >
+                      {headerTransferNumber}
+                    </p>
+                  )}
+                  {transferLookupPending || transferQuery.isLoading ? (
                     <LoadingState label={t("transfer.loading")} />
                   ) : transferQuery.isError ? (
                     <ErrorState
@@ -180,7 +266,9 @@ export function InventoryMovementTransactionDrawer({
                 <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
                   {t("inventory.transactionThisMovement")}
                 </h3>
-                <p className="mt-1 mb-0">{typeLabel}</p>
+                <p className="mt-1 mb-0" data-testid="inventory-movement-type-label">
+                  {typeLabel}
+                </p>
                 {damageHoldDecision ? (
                   <p
                     className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted"
@@ -191,20 +279,150 @@ export function InventoryMovementTransactionDrawer({
                     {t(damageHoldDecision.custodyLabelKey)}
                   </p>
                 ) : null}
+
                 {matchedExceptionCustody && transfer ? (
-                  <p
-                    className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted"
-                    data-testid="inventory-movement-exception-hold-detail"
+                  <dl
+                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)]"
+                    data-testid="inventory-movement-exception-this-movement"
                   >
-                    {t("transfer.expectedItem")}:{" "}
-                    {resolveTransferProductDisplayName(
-                      transfer,
-                      matchedExceptionCustody.expectedProductId,
-                    )}
-                    {" · "}
-                    {t("transfer.actualItem")}:{" "}
-                    {resolveExceptionCustodyItemLabel(transfer, matchedExceptionCustody)}
-                  </p>
+                    {movement.movementType === "TransferExceptionExpectedRestore" &&
+                    expectedItemLabel &&
+                    expectedItemLabel !== "—" ? (
+                      <>
+                        <div>
+                          <dt className="text-muted">{t("transfer.expectedItem")}</dt>
+                          <dd
+                            className="m-0 font-semibold"
+                            data-testid="inventory-movement-exception-expected-item"
+                          >
+                            {expectedItemLabel}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted">{t("inventory.exceptionWhy")}</dt>
+                          <dd className="m-0 text-muted">
+                            {t("inventory.exceptionExpectedRestoreWhy")
+                              .replace("{qty}", formatTransferQty(Math.abs(movement.quantityEffect)))
+                              .replace("{product}", expectedItemLabel)}
+                          </dd>
+                        </div>
+                      </>
+                    ) : null}
+                    {movement.movementType !== "TransferExceptionExpectedRestore" &&
+                    actualItemLabel &&
+                    actualItemLabel !== "—" ? (
+                      <div>
+                        <dt className="text-muted">{t("transfer.actualItem")}</dt>
+                        <dd
+                          className="m-0 font-semibold"
+                          data-testid="inventory-movement-exception-actual-item"
+                        >
+                          {actualItemLabel}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {matchedExceptionCustody.reasonCode ? (
+                      <div>
+                        <dt className="text-muted">{t("transfer.reason")}</dt>
+                        <dd
+                          className="m-0 font-medium"
+                          data-testid="inventory-movement-exception-reason"
+                        >
+                          {t(otherReasonLabelKey(matchedExceptionCustody.reasonCode))}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {movement.movementType !== "TransferExceptionExpectedRestore" &&
+                    expectedItemLabel &&
+                    expectedItemLabel !== "—" &&
+                    requiresActualForMovement ? (
+                      <div>
+                        <dt className="text-muted">{t("transfer.expectedItem")}</dt>
+                        <dd
+                          className="m-0 font-medium"
+                          data-testid="inventory-movement-exception-expected-item"
+                        >
+                          {expectedItemLabel}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {movement.movementType === "TransferExceptionExpectedRestore" &&
+                    actualItemLabel &&
+                    actualItemLabel !== "—" ? (
+                      <div>
+                        <dt className="text-muted">{t("transfer.actualItem")}</dt>
+                        <dd
+                          className="m-0 font-medium"
+                          data-testid="inventory-movement-exception-actual-item"
+                        >
+                          {actualItemLabel}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {exceptionNote ? (
+                      <div>
+                        <dt className="text-muted">{t("transfer.note")}</dt>
+                        <dd
+                          className="m-0 font-medium"
+                          data-testid="inventory-movement-exception-note"
+                        >
+                          {exceptionNote}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {movement.movementType === "TransferExceptionReturnRestock" ||
+                    movement.movementType === "TransferExceptionReturnIn" ? (
+                      <>
+                        <div>
+                          <dt className="text-muted">{t("inventory.exceptionReturnedFrom")}</dt>
+                          <dd className="m-0 font-medium">{returnFromBranch}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-muted">{t("inventory.exceptionReceivedBy")}</dt>
+                          <dd className="m-0 font-medium">{returnToBranch}</dd>
+                        </div>
+                      </>
+                    ) : null}
+                  </dl>
+                ) : null}
+
+                {exceptionRoute &&
+                transfer &&
+                movement.movementType !== "TransferExceptionReturnRestock" &&
+                movement.movementType !== "TransferExceptionReturnIn" ? (
+                  <dl
+                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
+                    data-testid="inventory-movement-exception-route"
+                  >
+                    <div>
+                      <dt className="text-muted">{t("inventory.transactionFrom")}</dt>
+                      <dd className="m-0 font-semibold">
+                        {exceptionRoute.fromBranchName ??
+                          branchLabel(
+                            exceptionRoute.isReturnRoute
+                              ? transfer.destinationBranchName
+                              : transfer.sourceBranchName,
+                            exceptionRoute.isReturnRoute
+                              ? transfer.destinationBranchId
+                              : transfer.sourceBranchId,
+                          )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">{t("inventory.transactionTo")}</dt>
+                      <dd className="m-0 font-semibold">
+                        {exceptionRoute.toBranchName ??
+                          branchLabel(
+                            exceptionRoute.isReturnRoute
+                              ? transfer.sourceBranchName
+                              : transfer.destinationBranchName,
+                            exceptionRoute.isReturnRoute
+                              ? transfer.sourceBranchId
+                              : transfer.destinationBranchId,
+                          )}
+                      </dd>
+                    </div>
+                  </dl>
                 ) : null}
 
                 {isDamageReturnMovement && transfer ? (
