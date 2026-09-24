@@ -262,16 +262,24 @@ export function InventoryMovementTransactionDrawer({
               ) : null}
 
               {movement ? (
-              <section data-testid="inventory-movement-transaction-this-movement">
-                <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+              <Card
+                className="flex min-w-0 flex-col gap-2 p-3"
+                treatment="bordered"
+                padding="compact"
+                data-testid="inventory-movement-transaction-this-movement"
+              >
+                <h3 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
                   {t("inventory.transactionThisMovement")}
                 </h3>
-                <p className="mt-1 mb-0" data-testid="inventory-movement-type-label">
+                <p
+                  className="m-0 text-[length:var(--exits-text-sm)] font-semibold"
+                  data-testid="inventory-movement-type-label"
+                >
                   {typeLabel}
                 </p>
                 {damageHoldDecision ? (
                   <p
-                    className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted"
+                    className="m-0 text-[length:var(--exits-text-sm)] text-muted"
                     data-testid="inventory-movement-damage-hold-decision"
                   >
                     {t(damageHoldDecision.followUpLabelKey)}
@@ -280,123 +288,129 @@ export function InventoryMovementTransactionDrawer({
                   </p>
                 ) : null}
 
-                {matchedExceptionCustody && transfer ? (
-                  <dl
-                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)]"
-                    data-testid="inventory-movement-exception-this-movement"
-                  >
-                    {movement.movementType === "TransferExceptionExpectedRestore" &&
-                    expectedItemLabel &&
-                    expectedItemLabel !== "—" ? (
-                      <>
-                        <div>
-                          <dt className="text-muted">{t("transfer.expectedItem")}</dt>
-                          <dd
-                            className="m-0 font-semibold"
-                            data-testid="inventory-movement-exception-expected-item"
-                          >
-                            {expectedItemLabel}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted">{t("inventory.exceptionWhy")}</dt>
-                          <dd className="m-0 text-muted">
-                            {t("inventory.exceptionExpectedRestoreWhy")
-                              .replace("{qty}", formatTransferQty(Math.abs(movement.quantityEffect)))
-                              .replace("{product}", expectedItemLabel)}
-                          </dd>
-                        </div>
-                      </>
-                    ) : null}
-                    {movement.movementType !== "TransferExceptionExpectedRestore" &&
-                    actualItemLabel &&
-                    actualItemLabel !== "—" ? (
-                      <div>
-                        <dt className="text-muted">{t("transfer.actualItem")}</dt>
-                        <dd
-                          className="m-0 font-semibold"
-                          data-testid="inventory-movement-exception-actual-item"
-                        >
-                          {actualItemLabel}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {matchedExceptionCustody.reasonCode ? (
-                      <div>
-                        <dt className="text-muted">{t("transfer.reason")}</dt>
-                        <dd
-                          className="m-0 font-medium"
-                          data-testid="inventory-movement-exception-reason"
-                        >
-                          {t(otherReasonLabelKey(matchedExceptionCustody.reasonCode))}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {movement.movementType !== "TransferExceptionExpectedRestore" &&
-                    expectedItemLabel &&
-                    expectedItemLabel !== "—" &&
-                    requiresActualForMovement ? (
-                      <div>
-                        <dt className="text-muted">{t("transfer.expectedItem")}</dt>
-                        <dd
-                          className="m-0 font-medium"
-                          data-testid="inventory-movement-exception-expected-item"
-                        >
-                          {expectedItemLabel}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {movement.movementType === "TransferExceptionExpectedRestore" &&
-                    actualItemLabel &&
-                    actualItemLabel !== "—" ? (
-                      <div>
-                        <dt className="text-muted">{t("transfer.actualItem")}</dt>
-                        <dd
-                          className="m-0 font-medium"
-                          data-testid="inventory-movement-exception-actual-item"
-                        >
-                          {actualItemLabel}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {exceptionNote ? (
-                      <div>
-                        <dt className="text-muted">{t("transfer.note")}</dt>
-                        <dd
-                          className="m-0 font-medium"
-                          data-testid="inventory-movement-exception-note"
-                        >
-                          {exceptionNote}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {movement.movementType === "TransferExceptionReturnRestock" ||
-                    movement.movementType === "TransferExceptionReturnIn" ? (
-                      <>
-                        <div>
-                          <dt className="text-muted">{t("inventory.exceptionReturnedFrom")}</dt>
-                          <dd className="m-0 font-medium">{returnFromBranch}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-muted">{t("inventory.exceptionReceivedBy")}</dt>
-                          <dd className="m-0 font-medium">{returnToBranch}</dd>
-                        </div>
-                      </>
-                    ) : null}
-                  </dl>
-                ) : null}
+                <dl
+                  className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
+                  data-testid="inventory-movement-exception-this-movement"
+                >
+                  {matchedExceptionCustody &&
+                  transfer &&
+                  movement.movementType === "TransferExceptionExpectedRestore" &&
+                  expectedItemLabel &&
+                  expectedItemLabel !== "—" ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.expectedItem")}</dt>
+                      <dd
+                        className="m-0 text-end font-semibold"
+                        data-testid="inventory-movement-exception-expected-item"
+                      >
+                        {expectedItemLabel}
+                      </dd>
+                      <dt className="m-0 text-muted">{t("inventory.exceptionWhy")}</dt>
+                      <dd className="m-0 max-w-[14rem] text-end text-muted">
+                        {t("inventory.exceptionExpectedRestoreWhy")
+                          .replace("{qty}", formatTransferQty(Math.abs(movement.quantityEffect)))
+                          .replace("{product}", expectedItemLabel)}
+                      </dd>
+                    </>
+                  ) : null}
 
-                {exceptionRoute &&
-                transfer &&
-                movement.movementType !== "TransferExceptionReturnRestock" &&
-                movement.movementType !== "TransferExceptionReturnIn" ? (
-                  <dl
-                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
-                    data-testid="inventory-movement-exception-route"
-                  >
-                    <div>
-                      <dt className="text-muted">{t("inventory.transactionFrom")}</dt>
-                      <dd className="m-0 font-semibold">
+                  {matchedExceptionCustody &&
+                  transfer &&
+                  movement.movementType !== "TransferExceptionExpectedRestore" &&
+                  actualItemLabel &&
+                  actualItemLabel !== "—" ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.actualItem")}</dt>
+                      <dd
+                        className="m-0 text-end font-semibold"
+                        data-testid="inventory-movement-exception-actual-item"
+                      >
+                        {actualItemLabel}
+                      </dd>
+                    </>
+                  ) : null}
+
+                  {matchedExceptionCustody?.reasonCode ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.reason")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="inventory-movement-exception-reason"
+                      >
+                        {t(otherReasonLabelKey(matchedExceptionCustody.reasonCode))}
+                      </dd>
+                    </>
+                  ) : null}
+
+                  {matchedExceptionCustody &&
+                  transfer &&
+                  movement.movementType !== "TransferExceptionExpectedRestore" &&
+                  expectedItemLabel &&
+                  expectedItemLabel !== "—" &&
+                  requiresActualForMovement ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.expectedItem")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="inventory-movement-exception-expected-item"
+                      >
+                        {expectedItemLabel}
+                      </dd>
+                    </>
+                  ) : null}
+
+                  {matchedExceptionCustody &&
+                  transfer &&
+                  movement.movementType === "TransferExceptionExpectedRestore" &&
+                  actualItemLabel &&
+                  actualItemLabel !== "—" ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.actualItem")}</dt>
+                      <dd
+                        className="m-0 text-end font-medium"
+                        data-testid="inventory-movement-exception-actual-item"
+                      >
+                        {actualItemLabel}
+                      </dd>
+                    </>
+                  ) : null}
+
+                  {matchedExceptionCustody && exceptionNote ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("transfer.note")}</dt>
+                      <dd
+                        className="m-0 max-w-[14rem] text-end font-medium"
+                        data-testid="inventory-movement-exception-note"
+                      >
+                        {exceptionNote}
+                      </dd>
+                    </>
+                  ) : null}
+
+                  {matchedExceptionCustody &&
+                  (movement.movementType === "TransferExceptionReturnRestock" ||
+                    movement.movementType === "TransferExceptionReturnIn") ? (
+                    <>
+                      <dt className="m-0 text-muted">{t("inventory.exceptionReturnedFrom")}</dt>
+                      <dd className="m-0 text-end font-medium">{returnFromBranch}</dd>
+                      <dt className="m-0 text-muted">{t("inventory.exceptionReceivedBy")}</dt>
+                      <dd className="m-0 text-end font-medium">{returnToBranch}</dd>
+                    </>
+                  ) : null}
+
+                  {exceptionRoute &&
+                  transfer &&
+                  movement.movementType !== "TransferExceptionReturnRestock" &&
+                  movement.movementType !== "TransferExceptionReturnIn" ? (
+                    <div
+                      className="contents"
+                      data-testid="inventory-movement-exception-route"
+                    >
+                      <dt className="m-0 text-muted">{t("inventory.transactionFrom")}</dt>
+                      <dd
+                        className="m-0 text-end font-semibold"
+                        data-testid="inventory-movement-exception-route-from"
+                      >
                         {exceptionRoute.fromBranchName ??
                           branchLabel(
                             exceptionRoute.isReturnRoute
@@ -407,10 +421,11 @@ export function InventoryMovementTransactionDrawer({
                               : transfer.sourceBranchId,
                           )}
                       </dd>
-                    </div>
-                    <div>
-                      <dt className="text-muted">{t("inventory.transactionTo")}</dt>
-                      <dd className="m-0 font-semibold">
+                      <dt className="m-0 text-muted">{t("inventory.transactionTo")}</dt>
+                      <dd
+                        className="m-0 text-end font-semibold"
+                        data-testid="inventory-movement-exception-route-to"
+                      >
                         {exceptionRoute.toBranchName ??
                           branchLabel(
                             exceptionRoute.isReturnRoute
@@ -422,93 +437,73 @@ export function InventoryMovementTransactionDrawer({
                           )}
                       </dd>
                     </div>
-                  </dl>
-                ) : null}
+                  ) : null}
 
-                {isDamageReturnMovement && transfer ? (
-                  <dl
-                    className="mt-2 mb-0 grid grid-cols-1 gap-2 text-[length:var(--exits-text-sm)] sm:grid-cols-2"
-                    data-testid="inventory-movement-damage-return-route"
-                  >
-                    <div>
-                      <dt className="text-muted">{t("inventory.transactionFrom")}</dt>
-                      <dd className="m-0 font-semibold">{returnFromBranch}</dd>
+                  {isDamageReturnMovement && transfer ? (
+                    <div
+                      className="contents"
+                      data-testid="inventory-movement-damage-return-route"
+                    >
+                      <dt className="m-0 text-muted">{t("inventory.transactionFrom")}</dt>
+                      <dd className="m-0 text-end font-semibold">{returnFromBranch}</dd>
+                      <dt className="m-0 text-muted">{t("inventory.transactionTo")}</dt>
+                      <dd className="m-0 text-end font-semibold">{returnToBranch}</dd>
                     </div>
-                    <div>
-                      <dt className="text-muted">{t("inventory.transactionTo")}</dt>
-                      <dd className="m-0 font-semibold">{returnToBranch}</dd>
-                    </div>
-                  </dl>
-                ) : null}
+                  ) : null}
+
+                  <dt className="m-0 text-muted">{t("inventory.quantity")}</dt>
+                  <dd className="m-0 text-end font-semibold tabular-nums">
+                    {effects
+                      ? `${Math.abs(movement.quantityEffect)} ${unitOfMeasure}`
+                      : `${movement.quantityEffect > 0 ? "+" : ""}${movement.quantityEffect} ${unitOfMeasure}`}
+                  </dd>
+                </dl>
 
                 {effects ? (
-                  <>
-                    <p className="mt-2 mb-0 font-semibold tabular-nums">
-                      {t("inventory.quantity")}:{" "}
-                      {Math.abs(movement.quantityEffect)} {unitOfMeasure}
+                  <div data-testid="inventory-movement-transaction-inventory-effect">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
+                      {t("inventory.transactionInventoryEffect")}
                     </p>
-                    <div
-                      className="mt-2"
-                      data-testid="inventory-movement-transaction-inventory-effect"
-                    >
-                      <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
-                        {t("inventory.transactionInventoryEffect")}
-                      </p>
-                      <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
-                        {t("inventory.bucketPhysical")}:{" "}
-                        {formatSignedBucketQty(effects.physicalDelta)}
-                        {" · "}
-                        {t("inventory.bucketSellable")}:{" "}
-                        {formatSignedBucketQty(effects.sellableDelta)}
-                        {effects.damagedDelta !== 0 || !isDamageReturnIn
-                          ? ` · ${t("inventory.bucketDamaged")}: ${formatSignedBucketQty(effects.damagedDelta)}`
-                          : null}
-                        {effects.inspectionHoldDelta !== 0
-                          ? ` · ${t("inventory.bucketInspectionHold")}: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
-                          : null}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <p className="mt-1 mb-0 font-semibold tabular-nums">
-                    {movement.quantityEffect > 0 ? "+" : ""}
-                    {movement.quantityEffect} {unitOfMeasure}
-                  </p>
-                )}
+                    <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)] text-muted">
+                      {t("inventory.bucketPhysical")}:{" "}
+                      {formatSignedBucketQty(effects.physicalDelta)}
+                      {" · "}
+                      {t("inventory.bucketSellable")}:{" "}
+                      {formatSignedBucketQty(effects.sellableDelta)}
+                      {effects.damagedDelta !== 0 || !isDamageReturnIn
+                        ? ` · ${t("inventory.bucketDamaged")}: ${formatSignedBucketQty(effects.damagedDelta)}`
+                        : null}
+                      {effects.inspectionHoldDelta !== 0
+                        ? ` · ${t("inventory.bucketInspectionHold")}: ${formatSignedBucketQty(effects.inspectionHoldDelta)}`
+                        : null}
+                    </p>
+                  </div>
+                ) : null}
 
                 {movement.sellableBefore != null &&
                 movement.sellableDelta != null &&
                 movement.sellableAfter != null ? (
                   <dl
-                    className="mt-3 mb-0 grid grid-cols-1 gap-1 text-[length:var(--exits-text-sm)]"
+                    className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]"
                     data-testid="inventory-movement-sellable-balance"
                   >
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("inventory.sellableBefore")}</dt>
-                      <dd className="m-0 font-semibold tabular-nums">
-                        {movement.sellableBefore} {unitOfMeasure}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("inventory.transactionThisMovement")}</dt>
-                      <dd className="m-0 font-semibold tabular-nums">
-                        {formatSignedBucketQty(movement.sellableDelta)} {unitOfMeasure}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <dt className="text-muted">{t("inventory.sellableAfter")}</dt>
-                      <dd className="m-0 font-semibold tabular-nums">
-                        {movement.sellableAfter} {unitOfMeasure}
-                      </dd>
-                    </div>
+                    <dt className="m-0 text-muted">{t("inventory.sellableBefore")}</dt>
+                    <dd className="m-0 text-end font-semibold tabular-nums">
+                      {movement.sellableBefore} {unitOfMeasure}
+                    </dd>
+                    <dt className="m-0 text-muted">{t("inventory.transactionThisMovement")}</dt>
+                    <dd className="m-0 text-end font-semibold tabular-nums">
+                      {formatSignedBucketQty(movement.sellableDelta)} {unitOfMeasure}
+                    </dd>
+                    <dt className="m-0 text-muted">{t("inventory.sellableAfter")}</dt>
+                    <dd className="m-0 text-end font-semibold tabular-nums">
+                      {movement.sellableAfter} {unitOfMeasure}
+                    </dd>
                   </dl>
                 ) : null}
 
                 {isDamageReturnMovement ? (
-                  <div
-                    className="mt-2"
-                    data-testid="inventory-movement-damage-disposition"
-                  >
+                  <div data-testid="inventory-movement-damage-disposition">
                     <p className="m-0 text-[length:var(--exits-text-sm)] font-semibold">
                       {t("inventory.transactionDamageDisposition")}
                     </p>
@@ -517,7 +512,7 @@ export function InventoryMovementTransactionDrawer({
                     </p>
                   </div>
                 ) : null}
-              </section>
+              </Card>
               ) : null}
 
               {transfer && thisShipment ? (
