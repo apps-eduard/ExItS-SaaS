@@ -603,23 +603,18 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.getByTestId("this-shipment-sent")).toHaveTextContent("24");
     expect(screen.getByTestId("this-shipment-good")).toHaveTextContent("10");
     expect(screen.getByTestId("this-shipment-damaged")).toHaveTextContent("5");
-    expect(screen.getByTestId("transfer-receiving-decision")).toBeInTheDocument();
-    expect(screen.getByTestId("receiving-decision-damaged-follow-up")).toHaveTextContent(
-      "Requested",
-    );
-    expect(screen.getByTestId("receiving-decision-custody")).toHaveTextContent(
-      "Keep at destination",
-    );
-    expect(screen.getByTestId("receiving-decision-inventory-state")).toHaveTextContent(
-      /Non-sellable/,
-    );
     expect(screen.getByTestId("transfer-family-members")).toBeInTheDocument();
     expect(screen.getByText("Replacement R1")).toBeInTheDocument();
     expect(screen.getByText("260829-001-R1")).toBeInTheDocument();
     expect(
-      screen.getByTestId("transfer-family-member-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
-    ).toHaveAttribute("href", "/inventory/transfers/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+      screen.getByTestId("transfer-family-member-link-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+    ).toHaveTextContent("Replacement R1");
+    expect(screen.getByTestId("transfer-family-member-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")).toBeInTheDocument();
+    expect(
+      screen.getByTestId("transfer-family-member-open-eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+    ).toBeInTheDocument();
     expect(screen.getByTestId("transfer-damage-custodies")).toBeInTheDocument();
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
     // Keep-at-destination damage is already classified; destination must not re-inspect.
     expect(
       screen.queryByTestId("transfer-custody-inspect-ffffffff-ffff-ffff-ffff-ffffffffffff"),
@@ -740,7 +735,7 @@ describe("Inventory Transfer React flow", () => {
     expect(screen.queryByTestId("transfer-fulfill-remaining")).not.toBeInTheDocument();
   });
 
-  it("shows AcceptShortage + ReturnToSource receiving decision labels", async () => {
+  it("does not render Receiving decision card for return-to-source damage", async () => {
     workspaceMock.boundWorkspace.branchId = branchBId;
     workspaceMock.boundWorkspace.branchName = "Branch B";
     vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
@@ -800,18 +795,768 @@ describe("Inventory Transfer React flow", () => {
         </MemoryRouter>
       </AppProviders>,
     );
-    expect(await screen.findByTestId("receiving-decision-damaged-follow-up")).toHaveTextContent(
-      "No replacement",
-    );
-    expect(screen.getByTestId("receiving-decision-custody")).toHaveTextContent(
-      "Return to source",
-    );
-    expect(screen.getByTestId("receiving-decision-return-status")).toHaveTextContent(
-      "Waiting to return",
-    );
+    expect(await screen.findByTestId("this-shipment-damaged")).toHaveTextContent("5");
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
     expect(screen.queryByText("AcceptShortage")).not.toBeInTheDocument();
     expect(screen.queryByText("ReturnToSource")).not.toBeInTheDocument();
     expect(screen.queryByText("AwaitingReturn")).not.toBeInTheDocument();
+  });
+
+  it("shows Send back to source for exception custody at destination", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "Other",
+              otherReasonNote: "Wrong box",
+              otherFollowUp: "AcceptShortage",
+              otherCustodyDecision: "ReturnToSource",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          expectedProductId: cokeId,
+          actualProductId: actualId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Pepsi 330ml",
+          quantity: 5,
+          reasonCode: "Other",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "AwaitingReturn",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId(`transfer-family-member-dispatch-return-${custodyId}`)).toBeEnabled();
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
+    expect(screen.queryByText("7477f670")).not.toBeInTheDocument();
+
+    const familyCard = screen.getByTestId(`transfer-family-member-${transferId}`);
+    expect(familyCard).toHaveTextContent("Original");
+    const sendBackOnOriginal = screen.getByTestId(
+      `transfer-family-member-dispatch-return-${custodyId}`,
+    );
+    expect(sendBackOnOriginal).toBeEnabled();
+    expect(sendBackOnOriginal).toHaveTextContent(/Send back 5 Pepsi 330ml/);
+    expect(sendBackOnOriginal).toHaveTextContent(/Main Store/);
+    expect(screen.queryByTestId(`transfer-family-member-return-status-${custodyId}`)).not.toBeInTheDocument();
+    expect(familyCard).toHaveTextContent(/Sent 10/);
+    expect(familyCard).toHaveTextContent(/Other 5/);
+    expect(
+      screen.queryByTestId(`transfer-exception-custody-dispatch-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+  });
+
+  it("opens movement transaction drawer when Original family card header is clicked", async () => {
+    const user = userEvent.setup();
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [],
+      exceptionCustodies: [],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    await user.click(await screen.findByTestId(`transfer-family-member-open-${transferId}`));
+    expect(screen.getByTestId(`transfer-family-member-open-${transferId}`)).toHaveTextContent(
+      "View details",
+    );
+    expect(await screen.findByTestId("inventory-movement-transaction-drawer")).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-movement-transaction-transfer-header")).toHaveTextContent(
+      "260829-001",
+    );
+    expect(screen.queryByTestId("inventory-movement-transaction-this-movement")).not.toBeInTheDocument();
+    expect(screen.getByTestId("inventory-movement-transaction-this-transfer")).toBeInTheDocument();
+  });
+
+  it("shows Return in transit status at destination after exception return is sent", async () => {
+    workspaceMock.boundWorkspace.branchId = branchBId;
+    workspaceMock.boundWorkspace.branchName = "Branch B";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "Other",
+              otherReasonNote: "Wrong box",
+              otherFollowUp: "AcceptShortage",
+              otherCustodyDecision: "ReturnToSource",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          expectedProductId: cokeId,
+          actualProductId: actualId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Pepsi 330ml",
+          quantity: 5,
+          reasonCode: "Other",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "ReturnInTransit",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(
+      screen.queryByTestId(`transfer-family-member-dispatch-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+    const status = await screen.findByTestId(
+      `transfer-family-member-return-status-${custodyId}`,
+    );
+    expect(status).toHaveTextContent(/5 Pepsi 330ml/);
+    expect(status).toHaveTextContent(/Main Store/);
+    expect(status).toHaveTextContent(/Return in transit/);
+  });
+
+  it("shows Incoming return and Receive return at source when return is in transit", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "Other",
+              otherReasonNote: "Wrong box",
+              otherFollowUp: "AcceptShortage",
+              otherCustodyDecision: "ReturnToSource",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          expectedProductId: cokeId,
+          actualProductId: actualId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Pepsi 330ml",
+          quantity: 5,
+          reasonCode: "Other",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "ReturnInTransit",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const status = await screen.findByTestId(
+      `transfer-family-member-return-status-${custodyId}`,
+    );
+    expect(status).toHaveTextContent(/Incoming return/);
+    expect(status).toHaveTextContent(/5 Pepsi 330ml/);
+    expect(status).toHaveTextContent(/Branch B/);
+    expect(
+      screen.getByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).toBeEnabled();
+    expect(
+      screen.getByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).toHaveTextContent(/Receive return/);
+    expect(
+      screen.queryByTestId(`transfer-family-member-dispatch-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows Returned to source completed state after receive", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "Other",
+              otherReasonNote: "Wrong box",
+              otherFollowUp: "AcceptShortage",
+              otherCustodyDecision: "ReturnToSource",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          expectedProductId: cokeId,
+          actualProductId: actualId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Pepsi 330ml",
+          quantity: 5,
+          reasonCode: "Other",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "ReceivedAtSource",
+          heldBranchId: mainId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const status = await screen.findByTestId(
+      `transfer-family-member-return-status-${custodyId}`,
+    );
+    expect(status).toHaveTextContent(/Returned to source/);
+    expect(status).toHaveTextContent(/5 Pepsi 330ml received from Branch B/);
+    expect(
+      screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`transfer-family-member-dispatch-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides Receive return after source receive succeeds and shows Returned to source", async () => {
+    const user = userEvent.setup();
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    const inTransitCustody = {
+      custodyId,
+      transferId,
+      rootTransferId: transferId,
+      receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+      expectedProductId: cokeId,
+      actualProductId: actualId,
+      expectedProductName: "Coke 330ml",
+      actualProductName: "Pepsi 330ml",
+      quantity: 5,
+      reasonCode: "WrongVariant",
+      decision: "ReturnToSource",
+      followUpIntent: "AcceptShortage",
+      status: "ReturnInTransit",
+      heldBranchId: branchBId,
+      recoveredSellableQty: 0,
+      confirmedNonSellableQty: 0,
+      replacementDemandQty: 0,
+      createdAtUtc: "2026-08-29T10:00:00Z",
+      updatedAtUtc: "2026-08-29T10:00:00Z",
+      returnDispatchedAtUtc: "2026-08-29T11:00:00Z",
+    };
+    const receivedCustody = {
+      ...inTransitCustody,
+      status: "ReceivedAtSource",
+      heldBranchId: mainId,
+      returnReceivedAtUtc: "2026-08-29T12:00:00Z",
+      updatedAtUtc: "2026-08-29T12:00:00Z",
+    };
+    const baseTransfer = {
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [],
+      exceptionCustodies: [inTransitCustody],
+    };
+    vi.spyOn(transferClient, "getInventoryTransfer")
+      .mockResolvedValueOnce(baseTransfer as never)
+      .mockResolvedValue({ ...baseTransfer, exceptionCustodies: [receivedCustody] } as never);
+    vi.spyOn(transferClient, "receiveInventoryTransferExceptionReturn").mockResolvedValue({
+      ...receivedCustody,
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const receiveBtn = await screen.findByTestId(
+      `transfer-family-member-receive-return-${custodyId}`,
+    );
+    expect(receiveBtn).toBeEnabled();
+    await user.click(receiveBtn);
+
+    expect(
+      await screen.findByTestId(`transfer-family-member-return-status-${custodyId}`),
+    ).toHaveTextContent(/Returned to source/);
+    expect(
+      screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+    expect(transferClient.receiveInventoryTransferExceptionReturn).toHaveBeenCalled();
+    expect(transferClient.getInventoryTransfer).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows Waiting for return at source before destination sends back", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const custodyId = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 10,
+      totalReceivedQty: 5,
+      satisfiedAtDestinationQty: 5,
+      remainingToDispatchQty: 0,
+      waivedQty: 5,
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "260829-001",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 0,
+          totalOtherQty: 5,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId,
+              productId: cokeId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "Other",
+              otherFollowUp: "AcceptShortage",
+              otherCustodyDecision: "ReturnToSource",
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId,
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+          expectedProductId: cokeId,
+          actualProductId: cokeId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Coke 330ml",
+          quantity: 5,
+          reasonCode: "Other",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "AwaitingReturn",
+          heldBranchId: branchBId,
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-08-29T10:00:00Z",
+          updatedAtUtc: "2026-08-29T10:00:00Z",
+        },
+      ],
+    } as never);
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${transferId}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(
+      await screen.findByTestId(`transfer-family-member-return-status-${custodyId}`),
+    ).toHaveTextContent(/Waiting for return/);
+    expect(
+      screen.queryByTestId(`transfer-family-member-dispatch-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId(`transfer-family-member-receive-return-${custodyId}`),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides Fulfill remaining after R2 AcceptShortage waives family remainder", async () => {
+    workspaceMock.boundWorkspace.branchId = mainId;
+    workspaceMock.boundWorkspace.branchName = "Main Store";
+    const r2Id = "22222222-2222-2222-2222-222222222222";
+    const r2LineId = "33333333-3333-3333-3333-333333333333";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      ...inTransitTransfer(),
+      transferId: r2Id,
+      transferNumber: "TR-260922-003-R2",
+      rootTransferId: transferId,
+      status: "ClosedWithDiscrepancy",
+      totalSentQty: 4,
+      totalReceivedQty: 2,
+      totalOutstandingQty: 0,
+      satisfiedAtDestinationQty: 8,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 0,
+      waivedQty: 2,
+      lines: [
+        {
+          lineId: r2LineId,
+          productId: cokeId,
+          productName: "Coke 1.5L",
+          unitOfMeasure: "Piece",
+          lineNumber: 1,
+          sentQty: 4,
+          receivedQty: 2,
+          outstandingQty: 0,
+          closedQty: 2,
+          waivedQty: 2,
+          differenceQty: 2,
+          lineStatus: "Closed",
+          discrepancyReason: "ShortShipment",
+          discrepancyNote: null,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee1",
+          sequence: 1,
+          receivedAtUtc: "2026-08-29T10:00:00Z",
+          receivedBy: "99999999-9999-9999-9999-999999999999",
+          lines: [
+            {
+              receiptLineId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeee2",
+              lineId: r2LineId,
+              productId: cokeId,
+              quantityReceived: 2,
+              quantityDamaged: 0,
+              quantityMissing: 2,
+              quantityOther: 0,
+              missingDisposition: "AcceptShortage",
+              quantityWaived: 2,
+            },
+          ],
+        },
+      ],
+      familyMembers: [
+        {
+          transferId,
+          transferNumber: "TR-260922-003",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 5,
+        },
+        {
+          transferId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+          transferNumber: "TR-260922-003-R1",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: 1,
+          isRoot: false,
+          totalSentQty: 5,
+          totalReceivedQty: 1,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 4,
+        },
+        {
+          transferId: r2Id,
+          transferNumber: "TR-260922-003-R2",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: 2,
+          isRoot: false,
+          totalSentQty: 4,
+          totalReceivedQty: 2,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 2,
+        },
+      ],
+      damageCustodies: [],
+    } as never);
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={[`/inventory/transfers/${r2Id}`]}>
+          <Routes>
+            <Route path="/inventory/transfers/:transferId" element={<InventoryTransferDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("this-shipment-sent")).toHaveTextContent("4");
+    expect(screen.getByTestId("this-shipment-good")).toHaveTextContent("2");
+    expect(screen.getByTestId("this-shipment-damaged")).toHaveTextContent("0");
+    expect(screen.getByTestId("this-shipment-missing")).toHaveTextContent("2");
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
+    expect(screen.getByTestId("transfer-fulfillment-target")).toHaveTextContent("10");
+    expect(screen.getByTestId("transfer-fulfillment-good")).toHaveTextContent("8");
+    expect(screen.getByTestId("transfer-fulfillment-needs-replacement")).toHaveTextContent("0");
+    expect(screen.queryByTestId("transfer-fulfill-remaining")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Fulfill remaining 2/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 still needs fulfillment/i)).not.toBeInTheDocument();
   });
 
   it("shows missing disposition from persisted receipt decision", async () => {
@@ -856,9 +1601,7 @@ describe("Inventory Transfer React flow", () => {
       </AppProviders>,
     );
     expect(await screen.findByTestId("this-shipment-missing")).toHaveTextContent("5");
-    expect(screen.getByTestId("receiving-decision-missing-disposition")).toHaveTextContent(
-      "Wait for remaining delivery",
-    );
+    expect(screen.queryByTestId("transfer-receiving-decision")).not.toBeInTheDocument();
     expect(screen.queryByText("ExpectedLater")).not.toBeInTheDocument();
   });
 

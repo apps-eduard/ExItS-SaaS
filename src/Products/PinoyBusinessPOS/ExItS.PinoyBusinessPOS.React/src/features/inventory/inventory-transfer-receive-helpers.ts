@@ -26,11 +26,14 @@ export type TransferReceiveLineEdit = {
   otherReasonCode: string;
   otherReasonText: string;
   otherExpanded?: boolean;
+  actualReceivedProductId: string | null;
+  actualReceivedProductName: string | null;
   remarksText: string;
   missingFollowUp: TransferMissingFollowUp | null;
   damagedFollowUp: TransferDamagedOtherFollowUp | null;
   otherFollowUp: TransferDamagedOtherFollowUp | null;
   damagedCustodyDecision: InventoryTransferDamagedCustodyDecisionCode | null;
+  otherCustodyDecision: InventoryTransferDamagedCustodyDecisionCode | null;
 };
 
 export function lineClosedQty(line: InventoryTransferLineDto): number {
@@ -175,11 +178,14 @@ export function buildTransferReceiveLineEdits(
       otherText: "0",
       otherReasonCode: "",
       otherReasonText: "",
+      actualReceivedProductId: null,
+      actualReceivedProductName: null,
       remarksText: "",
       missingFollowUp: defaults?.missingFollowUp ?? null,
       damagedFollowUp: defaults?.damagedFollowUp ?? null,
       otherFollowUp: defaults?.otherFollowUp ?? null,
       damagedCustodyDecision: "KeepAtDestination",
+      otherCustodyDecision: null,
     };
   });
 }

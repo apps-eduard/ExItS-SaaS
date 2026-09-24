@@ -47,6 +47,14 @@ public sealed class StockMovement
     public const string TransferDamageReturnOutReasonPrefix = "Transfer damage return out";
     public const string TransferDamageReturnInReasonPrefix = "Transfer damage return in";
     public const string TransferDamageWriteOffReasonPrefix = "Transfer damage write-off";
+    public const string TransferExceptionHoldReasonPrefix = "Transfer exception hold";
+    public const string TransferExceptionExpectedRestoreReasonPrefix = "Transfer exception expected restore";
+    public const string TransferExceptionActualOutReasonPrefix = "Transfer exception actual out";
+    public const string TransferExceptionReturnOutReasonPrefix = "Transfer exception return out";
+    public const string TransferExceptionReturnInReasonPrefix = "Transfer exception return in";
+    public const string TransferExceptionReturnRestockReasonPrefix = "Wrong item return received";
+    public const string TransferExceptionRecoveryReasonPrefix = "Transfer exception recovery";
+    public const string TransferExceptionWriteOffReasonPrefix = "Transfer exception write-off";
 
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
@@ -1247,6 +1255,72 @@ public sealed class StockMovement
             _ => throw new DomainException(
                 DomainErrorCodes.InvalidInventoryMovementType,
                 "Movement type is not a transfer damage custody movement.")
+        };
+
+        var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
+        var reason = TransferReason(reasonPrefix, transferNumber);
+        if (!string.IsNullOrWhiteSpace(decisionDetail))
+        {
+            reason = $"{reason} · {decisionDetail.Trim()}";
+        }
+
+        return new StockMovement(
+            id ?? StockMovementId.New(),
+            organizationId,
+            productId,
+            inventoryAccountId,
+            movementType,
+            sign * absolute,
+            reason,
+            StockMovementSourceType.InventoryTransfer,
+            custodyOrReceiptLineId,
+            utcNow,
+            actorId,
+            branchId.Value);
+    }
+
+    /// <summary>
+    /// Transfer exception ("Other") custody ledger movement. Quantity effect is signed for audit;
+    /// callers decide whether org <see cref="InventoryAccount"/> sellable is updated.
+    /// </summary>
+    public static StockMovement TransferExceptionCustody(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        InventoryAccountId inventoryAccountId,
+        PosBranchId branchId,
+        StockMovementType movementType,
+        decimal quantity,
+        UnitOfMeasure unitOfMeasure,
+        Guid custodyOrReceiptLineId,
+        string transferNumber,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        StockMovementId? id = null,
+        SellingMode sellingMode = SellingMode.PerItem,
+        string? decisionDetail = null)
+    {
+        EnsureUtc(utcNow);
+        EnsureActor(actorId);
+        if (custodyOrReceiptLineId == Guid.Empty)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferExceptionCustodyId,
+                "Exception custody / receipt line source id must be a non-empty GUID.");
+        }
+
+        var (reasonPrefix, sign) = movementType switch
+        {
+            StockMovementType.TransferExceptionHold => (TransferExceptionHoldReasonPrefix, 1m),
+            StockMovementType.TransferExceptionExpectedRestore => (TransferExceptionExpectedRestoreReasonPrefix, 1m),
+            StockMovementType.TransferExceptionReturnIn => (TransferExceptionReturnInReasonPrefix, 1m),
+            StockMovementType.TransferExceptionReturnRestock => (TransferExceptionReturnRestockReasonPrefix, 1m),
+            StockMovementType.TransferExceptionRecovery => (TransferExceptionRecoveryReasonPrefix, 1m),
+            StockMovementType.TransferExceptionActualOut => (TransferExceptionActualOutReasonPrefix, -1m),
+            StockMovementType.TransferExceptionReturnOut => (TransferExceptionReturnOutReasonPrefix, -1m),
+            StockMovementType.TransferExceptionWriteOff => (TransferExceptionWriteOffReasonPrefix, -1m),
+            _ => throw new DomainException(
+                DomainErrorCodes.InvalidInventoryMovementType,
+                "Movement type is not a transfer exception custody movement.")
         };
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);

@@ -5,6 +5,8 @@ import {
   computeThisShipmentTotals,
   familyFulfillmentTargetQty,
   lineFollowUpDisplay,
+  lineOtherExceptionSecondaryText,
+  resolveExceptionCustodyItemLabel,
   transferCustodyDecisionLabelKey,
   transferCustodyStatusLabelKey,
   transferDiscrepancyFollowUpLabelKey,
@@ -294,6 +296,64 @@ describe("buildReceivingDecisionView", () => {
     expect(view.custodyDecision).toBe("ReturnToSource");
   });
 
+  it("surfaces other exception custody from exceptionCustodies", () => {
+    const actualProductId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const view = buildReceivingDecisionView(
+      baseTransfer({
+        totalReceivedQty: 8,
+        damageCustodies: [],
+        receipts: [
+          {
+            receiptId,
+            sequence: 1,
+            receivedAtUtc: "2026-09-22T12:00:00Z",
+            receivedBy: branchId,
+            lines: [
+              {
+                receiptLineId,
+                lineId,
+                productId,
+                quantityReceived: 8,
+                quantityOther: 2,
+                otherReasonCode: "WrongVariant",
+                otherFollowUp: "RequestReplacement",
+                actualReceivedProductId: actualProductId,
+                otherCustodyDecision: "ReturnToSource",
+              },
+            ],
+          },
+        ],
+        exceptionCustodies: [
+          {
+            custodyId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+            transferId,
+            rootTransferId: transferId,
+            receiptLineId,
+            expectedProductId: productId,
+            actualProductId,
+            quantity: 2,
+            reasonCode: "WrongVariant",
+            decision: "ReturnToSource",
+            followUpIntent: "RequestReplacement",
+            status: "AwaitingReturn",
+            heldBranchId: "99999999-9999-9999-9999-999999999999",
+            recoveredSellableQty: 0,
+            confirmedNonSellableQty: 0,
+            replacementDemandQty: 2,
+            createdAtUtc: "2026-09-22T12:00:00Z",
+            updatedAtUtc: "2026-09-22T12:00:00Z",
+          },
+        ],
+      }),
+    );
+    expect(view.otherQty).toBe(2);
+    expect(view.otherReasonCode).toBe("WrongVariant");
+    expect(view.otherCustodyDecision).toBe("ReturnToSource");
+    expect(view.otherCustodyStatus).toBe("AwaitingReturn");
+    expect(view.actualReceivedProductId).toBe(actualProductId);
+    expect(view.otherFollowUp).toBe("RequestReplacement");
+  });
+
   it("surfaces missing disposition without inferring from remainingToDispatch", () => {
     const view = buildReceivingDecisionView(
       baseTransfer({
@@ -359,6 +419,185 @@ describe("friendly decision labels", () => {
     expect(transferCustodyStatusLabelKey("ReceivedAtSource")).toBe(
       "transfer.custody.receivedAtSource",
     );
+  });
+});
+
+describe("resolveExceptionCustodyItemLabel", () => {
+  it("prefers actualProductName and never shows id fragments", () => {
+    const transfer = baseTransfer({
+      lines: [
+        {
+          lineId,
+          productId,
+          productName: "Coke 330ml",
+          unitOfMeasure: "pcs",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 5,
+          differenceQty: 5,
+          lineStatus: "Partial",
+          discrepancyReason: null,
+          discrepancyNote: null,
+          sourceLotId: null,
+          lotNumber: null,
+          expirationDate: null,
+        },
+      ],
+    });
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    expect(
+      resolveExceptionCustodyItemLabel(transfer, {
+        actualProductId: actualId,
+        expectedProductId: productId,
+        actualProductName: "Pepsi 330ml",
+        expectedProductName: "Coke 330ml",
+      }),
+    ).toBe("Pepsi 330ml");
+
+    expect(
+      resolveExceptionCustodyItemLabel(transfer, {
+        actualProductId: actualId,
+        expectedProductId: productId,
+        actualProductName: null,
+        expectedProductName: "Coke 330ml",
+      }),
+    ).toBe("Coke 330ml");
+
+    expect(
+      resolveExceptionCustodyItemLabel(transfer, {
+        actualProductId: actualId,
+        expectedProductId: productId,
+        actualProductName: null,
+        expectedProductName: null,
+      }),
+    ).toBe("Coke 330ml");
+  });
+});
+
+describe("lineOtherExceptionSecondaryText", () => {
+  it("shows product name for Wrong variant and never GUID fragments", () => {
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    const transfer = baseTransfer({
+      status: "ClosedWithDiscrepancy",
+      totalReceivedQty: 5,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T19:00:00Z",
+          receivedBy: branchId,
+          lines: [
+            {
+              receiptLineId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              lineId,
+              productId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "WrongVariant",
+              otherCustodyDecision: "ReturnToSource",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          expectedProductId: productId,
+          actualProductId: actualId,
+          expectedProductName: "Coke 330ml",
+          actualProductName: "Pepsi 330ml",
+          quantity: 5,
+          reasonCode: "WrongVariant",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "AwaitingReturn",
+          heldBranchId: "99999999-9999-9999-9999-999999999999",
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-09-22T19:00:00Z",
+          updatedAtUtc: "2026-09-22T19:00:00Z",
+        },
+      ],
+    });
+
+    expect(lineOtherExceptionSecondaryText(transfer, transfer.lines[0]!)).toBe(
+      "Wrong variant · Actual: Pepsi 330ml",
+    );
+  });
+
+  it("omits Actual GUID when product name is unavailable", () => {
+    const actualId = "7477f670-aaaa-bbbb-cccc-dddddddddddd";
+    const transfer = baseTransfer({
+      status: "ClosedWithDiscrepancy",
+      totalReceivedQty: 5,
+      receipts: [
+        {
+          receiptId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T19:00:00Z",
+          receivedBy: branchId,
+          lines: [
+            {
+              receiptLineId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              lineId,
+              productId,
+              quantityReceived: 5,
+              quantityOther: 5,
+              otherReasonCode: "WrongVariant",
+              actualReceivedProductId: actualId,
+            },
+          ],
+        },
+      ],
+      exceptionCustodies: [
+        {
+          custodyId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+          transferId,
+          rootTransferId: transferId,
+          receiptLineId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+          expectedProductId: productId,
+          actualProductId: actualId,
+          expectedProductName: null,
+          actualProductName: null,
+          quantity: 5,
+          reasonCode: "WrongVariant",
+          decision: "ReturnToSource",
+          followUpIntent: "AcceptShortage",
+          status: "AwaitingReturn",
+          heldBranchId: "99999999-9999-9999-9999-999999999999",
+          recoveredSellableQty: 0,
+          confirmedNonSellableQty: 0,
+          replacementDemandQty: 0,
+          createdAtUtc: "2026-09-22T19:00:00Z",
+          updatedAtUtc: "2026-09-22T19:00:00Z",
+        },
+      ],
+      lines: [
+        {
+          lineId,
+          productId,
+          productName: "Coke 330ml",
+          unitOfMeasure: "pcs",
+          lineNumber: 1,
+          sentQty: 10,
+          receivedQty: 5,
+          differenceQty: 5,
+          lineStatus: "Partial",
+          discrepancyReason: null,
+          discrepancyNote: null,
+          sourceLotId: null,
+          lotNumber: null,
+          expirationDate: null,
+        },
+      ],
+    });
+
+    expect(lineOtherExceptionSecondaryText(transfer, transfer.lines[0]!)).toBe("Wrong variant");
   });
 });
 

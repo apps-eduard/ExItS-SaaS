@@ -286,6 +286,12 @@ public static class DomainErrorCodes
     public const string InvalidInventoryTransferDamagedCustodyDecision = "pos.inventory.transfer.damaged_custody_decision.invalid";
     public const string InvalidInventoryTransferDamageCustodyStatus = "pos.inventory.transfer.damage_custody.status.invalid";
     public const string InvalidInventoryTransferDamageCustodyId = "pos.inventory.transfer.damage_custody.id.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyDecision = "pos.inventory.transfer.exception_custody_decision.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyStatus = "pos.inventory.transfer.exception_custody.status.invalid";
+    public const string InvalidInventoryTransferExceptionCustodyId = "pos.inventory.transfer.exception_custody.id.invalid";
+    public const string InvalidInventoryTransferOtherReason = "pos.inventory.transfer.other_reason.invalid";
+    public const string InvalidInventoryTransferActualProduct = "pos.inventory.transfer.actual_product.invalid";
+    public const string InsufficientStockForExceptionCorrection = "pos.inventory.transfer.exception_correction.insufficient_stock";
     public const string InvalidInventoryTransferReplacementSequence = "pos.inventory.transfer.replacement_sequence.invalid";
     public const string InvalidInventoryInspectionHoldQuantity = "pos.inventory.inspection_hold.quantity.invalid";
     public const string InvalidInventoryDamagedQuantity = "pos.inventory.damaged.quantity.invalid";

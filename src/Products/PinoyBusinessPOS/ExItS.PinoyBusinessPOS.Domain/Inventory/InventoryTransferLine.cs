@@ -35,7 +35,9 @@ public sealed record InventoryTransferReceiveLineDraft(
     InventoryTransferMissingDisposition? MissingDisposition = null,
     InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
     InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null,
-    InventoryTransferDamagedCustodyDecision? DamagedCustodyDecision = null)
+    InventoryTransferDamagedCustodyDecision? DamagedCustodyDecision = null,
+    InventoryTransferExceptionCustodyDecision? OtherCustodyDecision = null,
+    CatalogProductId? ActualReceivedProductId = null)
 {
     /// <summary>Backward-compatible alias for <see cref="GoodQty"/>.</summary>
     public decimal ReceivedQty => GoodQty;

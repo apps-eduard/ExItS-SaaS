@@ -4,6 +4,8 @@ import type {
   InventoryTransferDto,
   ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
+import type { PosWorkspaceScope } from "@/api/pos/pos-http";
+import { ConfirmActionDialog } from "@/components/exits/ConfirmActionDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { QuantityInput } from "@/components/exits/MoneyQuantityInputs";
@@ -44,6 +46,11 @@ import {
   type TransferFollowUpIssueKind,
 } from "@/features/inventory/transfer-receive-follow-up";
 import { buildTransferReceivePayload } from "@/features/inventory/transfer-receive-plan";
+import { TransferReceiveActualProductPicker } from "@/features/inventory/TransferReceiveActualProductPicker";
+import {
+  requiresActualProduct,
+  resolveDefaultOtherCustody,
+} from "@/features/inventory/transfer-exception-custody-policy";
 import { ReceiveDiscrepancyDialog } from "@/features/purchasing/ReceiveDiscrepancyDialog";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import {
@@ -99,6 +106,7 @@ function ReceiveIconAction({
 }
 
 export type InventoryTransferReceiveModeProps = {
+  workspace: PosWorkspaceScope;
   transfer: InventoryTransferDto;
   sourceName: string;
   destName: string;
@@ -114,6 +122,7 @@ export type InventoryTransferReceiveModeProps = {
 };
 
 export function InventoryTransferReceiveMode({
+  workspace,
   transfer,
   sourceName,
   destName,
@@ -151,6 +160,10 @@ export function InventoryTransferReceiveMode({
   );
   const [highlightUnclassified, setHighlightUnclassified] = useState(false);
   const [highlightUnresolvedRemaining, setHighlightUnresolvedRemaining] = useState(false);
+  const [exceptionConfirmOpen, setExceptionConfirmOpen] = useState(false);
+  const [pendingReceiveBody, setPendingReceiveBody] = useState<ReceiveInventoryTransferRequest | null>(
+    null,
+  );
 
   useEffect(() => {
     setLines(buildTransferReceiveLineEdits(transfer, followUpDefaults));
@@ -266,9 +279,20 @@ export function InventoryTransferReceiveMode({
         otherReasonCode: line.otherReasonCode,
         otherReasonText: line.otherReasonText,
         otherExpanded: line.otherExpanded,
+        actualReceivedProductId: line.actualReceivedProductId,
+        actualReceivedProductName: line.actualReceivedProductName,
         remarksText: line.remarksText,
       }));
   }, [lines, discrepancyTargetProductId]);
+
+  const exceptionConfirmLines = useMemo(
+    () =>
+      lines.filter((line) => {
+        const other = parseNonNegativeQty(line.otherText ?? "0") ?? 0;
+        return other > 1e-9 && requiresActualProduct(line.otherReasonCode.trim());
+      }),
+    [lines],
+  );
 
   function updateLine(productId: string, patch: Partial<TransferReceiveLineEdit>) {
     setLines((prev) =>
@@ -349,11 +373,14 @@ export function InventoryTransferReceiveMode({
         otherReasonCode: "",
         otherReasonText: "",
         otherExpanded: false,
+        actualReceivedProductId: null,
+        actualReceivedProductName: null,
         remarksText: "",
         missingFollowUp: null,
         damagedFollowUp: null,
         otherFollowUp: null,
         damagedCustodyDecision: "KeepAtDestination",
+        otherCustodyDecision: null,
       });
     }
     if (mobile) cancelMobileEdit();
@@ -394,12 +421,15 @@ export function InventoryTransferReceiveMode({
     const missing = parseNonNegativeQty(target.notDeliveredText) ?? 0;
     const damaged = parseNonNegativeQty(target.damagedText) ?? 0;
     const other = parseNonNegativeQty(target.otherText ?? "0") ?? 0;
+    const otherCode = target.otherReasonCode.trim();
     updateLine(target.productId, {
       missingFollowUp:
         missing > 1e-9 ? target.missingFollowUp ?? followUpDefaults.missingFollowUp : null,
       damagedFollowUp:
         damaged > 1e-9 ? target.damagedFollowUp ?? followUpDefaults.damagedFollowUp : null,
       otherFollowUp: other > 1e-9 ? target.otherFollowUp ?? followUpDefaults.otherFollowUp : null,
+      otherCustodyDecision:
+        other > 1e-9 && otherCode ? resolveDefaultOtherCustody(otherCode) : null,
     });
     setFlowError(null);
     setHighlightUnclassified(false);
@@ -420,6 +450,10 @@ export function InventoryTransferReceiveMode({
         setFlowError(
           t("transfer.receiveExceedsOutstanding").replace("{outstanding}", t("transfer.outstanding")),
         );
+      } else if (result.error === "other_actual_product_required") {
+        setFlowError(t("transfer.exceptionActualProductRequired"));
+      } else if (result.error === "other_custody_required") {
+        setFlowError(t("transfer.exceptionCustodyRequired"));
       } else {
         setFlowError(t("transfer.invalidReceiveNowQuantity"));
       }
@@ -469,7 +503,21 @@ export function InventoryTransferReceiveMode({
     if (!body) {
       return;
     }
+    if (exceptionConfirmLines.length > 0) {
+      setPendingReceiveBody(body);
+      setExceptionConfirmOpen(true);
+      return;
+    }
     onSubmitReceive(body);
+  }
+
+  function submitPendingReceive() {
+    if (!pendingReceiveBody) {
+      return;
+    }
+    onSubmitReceive(pendingReceiveBody);
+    setExceptionConfirmOpen(false);
+    setPendingReceiveBody(null);
   }
 
   useEffect(() => {
@@ -893,7 +941,11 @@ export function InventoryTransferReceiveMode({
                                 ? ` · ${t("transfer.notDelivered")}: ${formatStockQtyLabel(notDelivered, line.uom)} (${followUpLabel(line, "missing")})`
                                 : ""}
                               {other > 0
-                                ? ` · ${t("purchasing.otherDiscrepancy")}: ${formatStockQtyLabel(other, line.uom)} (${followUpLabel(line, "other")})`
+                                ? ` · ${t("purchasing.otherDiscrepancy")}: ${formatStockQtyLabel(other, line.uom)} (${followUpLabel(line, "other")})${
+                                    line.actualReceivedProductName?.trim()
+                                      ? ` · ${t("transfer.actualItem")}: ${line.actualReceivedProductName.trim()}`
+                                      : ""
+                                  }`
                                 : ""}
                             </div>
                           ) : null}
@@ -929,6 +981,18 @@ export function InventoryTransferReceiveMode({
           custodyDecisionByProductId={
             new Map(lines.map((line) => [line.productId, line.damagedCustodyDecision]))
           }
+          otherCustodyDecisionColLabel={t("transfer.exceptionCustodyLabel")}
+          otherCustodyDecisionByProductId={
+            new Map(
+              lines.map((line) => [
+                line.productId,
+                line.otherCustodyDecision ??
+                  (line.otherReasonCode.trim()
+                    ? resolveDefaultOtherCustody(line.otherReasonCode.trim())
+                    : "KeepAtDestination"),
+              ]),
+            )
+          }
           linkedStockRequest={linkedStockRequest}
           rows={followUpRows}
           highlightUnresolved={highlightUnresolvedRemaining}
@@ -949,6 +1013,9 @@ export function InventoryTransferReceiveMode({
           }}
           onCustodyDecisionChange={(productId, decision) => {
             updateLine(productId, { damagedCustodyDecision: decision });
+          }}
+          onOtherCustodyDecisionChange={(productId, decision) => {
+            updateLine(productId, { otherCustodyDecision: decision });
           }}
           testId="transfer-receive-follow-up"
         />
@@ -1014,9 +1081,35 @@ export function InventoryTransferReceiveMode({
             ...(patch.otherReasonCode !== undefined ? { otherReasonCode: patch.otherReasonCode } : {}),
             ...(patch.otherReasonText !== undefined ? { otherReasonText: patch.otherReasonText } : {}),
             ...(patch.otherExpanded !== undefined ? { otherExpanded: patch.otherExpanded } : {}),
+            ...(patch.actualReceivedProductId !== undefined
+              ? { actualReceivedProductId: patch.actualReceivedProductId }
+              : {}),
+            ...(patch.actualReceivedProductName !== undefined
+              ? { actualReceivedProductName: patch.actualReceivedProductName }
+              : {}),
             ...(patch.remarksText !== undefined ? { remarksText: patch.remarksText } : {}),
           });
         }}
+        actualProductLabel={t("transfer.actualItem")}
+        actualProductRequiredHint={t("transfer.exceptionActualProductHint")}
+        forceReturnHint={t("transfer.exceptionForceReturnHint")}
+        renderActualProductPicker={(draftLine) => (
+          <TransferReceiveActualProductPicker
+            workspace={workspace}
+            excludeProductId={draftLine.productId}
+            onSelect={(product) => {
+              if (
+                product.productId.toLowerCase() === draftLine.productId.toLowerCase()
+              ) {
+                return;
+              }
+              updateLine(draftLine.productId, {
+                actualReceivedProductId: product.productId,
+                actualReceivedProductName: product.name,
+              });
+            }}
+          />
+        )}
         onCancel={closeDiscrepancyDialog}
         onConfirm={onDiscrepancyConfirmed}
         title={t("transfer.classifyDiscrepancyTitle")}
@@ -1040,6 +1133,46 @@ export function InventoryTransferReceiveMode({
         confirmLabel={t("transfer.classifyDiscrepancyConfirm")}
         notAcceptedTemplate={t("purchasing.notAcceptedQty")}
       />
+
+      <ConfirmActionDialog
+        open={exceptionConfirmOpen}
+        variant="warning"
+        title={t("transfer.exceptionConfirmTitle")}
+        description={t("transfer.exceptionConfirmIntro")}
+        confirmLabel={t("transfer.receive")}
+        cancelLabel={t("transfer.dialogCancel")}
+        onCancel={() => {
+          setExceptionConfirmOpen(false);
+          setPendingReceiveBody(null);
+        }}
+        onConfirm={submitPendingReceive}
+        testId="transfer-exception-receive-confirm"
+      >
+        <div className="flex flex-col gap-2 text-[length:var(--exits-text-sm)]">
+          <ul className="m-0 list-disc ps-5">
+            {exceptionConfirmLines.map((line) => {
+              const other = parseNonNegativeQty(line.otherText ?? "0") ?? 0;
+              const custody = resolveDefaultOtherCustody(line.otherReasonCode.trim());
+              return (
+                <li key={line.productId} data-testid={`transfer-exception-confirm-${line.productId}`}>
+                  {t("transfer.exceptionConfirmLine")
+                    .replace("{expected}", line.name)
+                    .replace("{actual}", line.actualReceivedProductName ?? "—")
+                    .replace("{qty}", formatStockQtyLabel(other, line.uom))
+                    .replace(
+                      "{custody}",
+                      custody === "ReturnToSource"
+                        ? t("transfer.custody.returnToSource")
+                        : t("transfer.custody.keepAtDestination"),
+                    )
+                    .replace("{followUp}", followUpLabel(line, "other"))}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="m-0 text-muted">{t("transfer.exceptionConfirmStockHint")}</p>
+        </div>
+      </ConfirmActionDialog>
     </div>
   );
 }

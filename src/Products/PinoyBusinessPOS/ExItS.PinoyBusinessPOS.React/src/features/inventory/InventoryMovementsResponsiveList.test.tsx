@@ -141,4 +141,34 @@ describe("InventoryMovementsResponsiveList transaction open", () => {
     expect(effects).toHaveTextContent(/Inspection hold:\s*\+5/);
     expect(screen.getAllByText(/Damaged return received/i)[0]).toBeInTheDocument();
   });
+
+  it("renders Sellable after tag in qty area on cards and table", () => {
+    const movement = transferOutMovement({
+      sellableBefore: 100,
+      sellableDelta: -10,
+      sellableAfter: 90,
+    });
+    renderList([movement]);
+
+    const tags = screen.getAllByTestId("inventory-movement-sellable-after");
+    expect(tags.length).toBeGreaterThanOrEqual(1);
+    for (const tag of tags) {
+      expect(tag).toHaveTextContent(/Sellable after:\s*90\s*Kilogram/);
+    }
+  });
+
+  it("still shows Sellable after when sellable delta is zero", () => {
+    const movement = transferOutMovement({
+      movementId: "mov-hold",
+      movementType: "TransferDamageHold",
+      quantityEffect: 5,
+      sellableBefore: 45,
+      sellableDelta: 0,
+      sellableAfter: 45,
+    });
+    renderList([movement]);
+
+    const tags = screen.getAllByTestId("inventory-movement-sellable-after");
+    expect(tags[0]).toHaveTextContent(/Sellable after:\s*45\s*Kilogram/);
+  });
 });

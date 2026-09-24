@@ -262,12 +262,24 @@ public sealed class InventoryQueryService
         var transactionRefs = await _transfers
             .ResolveStockMovementTransactionRefsAsync(orgId, items, cancellationToken)
             .ConfigureAwait(false);
+        var sellableBalances = await LoadSellableBalancesAsync(
+                orgId,
+                catalogProductId,
+                context,
+                cancellationToken)
+            .ConfigureAwait(false);
 
         return new PagedResult<PosStockMovementDto>(
             items.Select(m =>
                 {
                     transactionRefs.TryGetValue(m.Id.Value, out var trx);
-                    return MapMovement(m, ResolveMovementLot(m, lotById), trx);
+                    StockMovementHistoricalSellable.Balance? balance = null;
+                    if (sellableBalances.TryGetValue(m.Id.Value, out var found))
+                    {
+                        balance = found;
+                    }
+
+                    return MapMovement(m, ResolveMovementLot(m, lotById), trx, balance);
                 })
                 .ToList(),
             total,
@@ -305,7 +317,55 @@ public sealed class InventoryQueryService
             .ResolveStockMovementTransactionRefsAsync(orgId, [movement], cancellationToken)
             .ConfigureAwait(false);
         transactionRefs.TryGetValue(movement.Id.Value, out var trx);
-        return MapMovement(movement, lot, trx);
+        var sellableBalances = await LoadSellableBalancesAsync(
+                orgId,
+                movement.ProductId,
+                context,
+                cancellationToken)
+            .ConfigureAwait(false);
+        StockMovementHistoricalSellable.Balance? balance = null;
+        if (sellableBalances.TryGetValue(movement.Id.Value, out var found))
+        {
+            balance = found;
+        }
+
+        return MapMovement(movement, lot, trx, balance);
+    }
+
+    /// <summary>
+    /// Full branch+product sellable ledger (not page-scoped) so pagination/date filters
+    /// cannot reset historical running balances.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<Guid, StockMovementHistoricalSellable.Balance>> LoadSellableBalancesAsync(
+        PosOrganizationId organizationId,
+        CatalogProductId productId,
+        BranchInventoryContext context,
+        CancellationToken cancellationToken)
+    {
+        var ledgerFilter = new StockMovementFilter(
+            BranchId: context.BranchId,
+            PrimaryBranchId: context.PrimaryBranchId);
+        const int pageSize = 2000;
+        var ledger = new List<StockMovement>();
+        var skip = 0;
+        int total;
+        do
+        {
+            var (pageItems, pageTotal) = await _inventory
+                .ListMovementsAsync(organizationId, productId, ledgerFilter, skip, pageSize, cancellationToken)
+                .ConfigureAwait(false);
+            total = pageTotal;
+            if (pageItems.Count == 0)
+            {
+                break;
+            }
+
+            ledger.AddRange(pageItems);
+            skip += pageSize;
+        }
+        while (ledger.Count < total);
+
+        return StockMovementHistoricalSellable.ComputeBalances(ledger);
     }
 
     private static bool MovementBelongsToBranch(StockMovement movement, BranchInventoryContext context)
@@ -554,7 +614,8 @@ public sealed class InventoryQueryService
     public static PosStockMovementDto MapMovement(
         StockMovement movement,
         InventoryLot? lot = null,
-        InventoryTransferTransactionRef? transactionRef = null)
+        InventoryTransferTransactionRef? transactionRef = null,
+        StockMovementHistoricalSellable.Balance? sellableBalance = null)
     {
         decimal? stockValue = movement.UnitCost is { } cost
             ? SaleMoney.RoundMoney(cost * movement.QuantityEffect)
@@ -568,6 +629,16 @@ public sealed class InventoryQueryService
             transactionType = StockMovementSourceTypes.ToCode(StockMovementSourceType.InventoryTransfer);
             transactionId = transactionRef.TransferId;
             transactionReference = transactionRef.TransferNumber;
+        }
+
+        decimal? sellableBefore = null;
+        decimal? sellableDelta = null;
+        decimal? sellableAfter = null;
+        if (sellableBalance is { } balance)
+        {
+            sellableBefore = balance.Before;
+            sellableDelta = balance.Delta;
+            sellableAfter = balance.After;
         }
 
         return new PosStockMovementDto(
@@ -588,7 +659,10 @@ public sealed class InventoryQueryService
             movement.BranchId,
             transactionType,
             transactionId,
-            transactionReference);
+            transactionReference,
+            sellableBefore,
+            sellableDelta,
+            sellableAfter);
     }
 }
 

@@ -49,6 +49,25 @@ describe("receive-discrepancy-display", () => {
     expect(summary).toBe("0.5 damaged · 0.5 not delivered · 1 wrong item");
   });
 
+  it("includes actual received product name for wrong item/variant", () => {
+    const summary = formatReceiveDiscrepancySummary(
+      {
+        outstandingQty: 4,
+        goodText: "0",
+        damagedText: "1",
+        notDeliveredText: "1",
+        otherText: "2",
+        otherReasonCode: "WrongItem",
+        actualReceivedProductId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        actualReceivedProductName: "Battery AA",
+        remarksText: "wrong item. battery",
+        uom: "Kg",
+      },
+      labels,
+    );
+    expect(summary).toBe("1 damaged · 1 not delivered · 2 wrong item (Battery AA)");
+  });
+
   it("requires other reason and custom description when other qty present", () => {
     const line = {
       outstandingQty: 2,

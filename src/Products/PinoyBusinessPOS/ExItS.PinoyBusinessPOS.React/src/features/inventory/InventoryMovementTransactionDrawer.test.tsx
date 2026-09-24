@@ -24,6 +24,9 @@ function transferOutMovement(): PosStockMovementDto {
     transactionReference: "TR-260922-001",
     recordedAtUtc: "2026-09-22T19:07:00Z",
     recordedBy: "actor-1",
+    sellableBefore: 100,
+    sellableDelta: -10,
+    sellableAfter: 90,
   };
 }
 
@@ -122,6 +125,14 @@ describe("InventoryMovementTransactionDrawer", () => {
     expect(screen.getByTestId("inventory-movement-transaction-this-movement")).toHaveTextContent(
       /Transfer out/i,
     );
+
+    const sellableBalance = screen.getByTestId("inventory-movement-sellable-balance");
+    expect(sellableBalance).toHaveTextContent(/Sellable before/);
+    expect(sellableBalance).toHaveTextContent(/100\s*Kilogram/);
+    expect(sellableBalance).toHaveTextContent(/This movement/);
+    expect(sellableBalance).toHaveTextContent(/-10\s*Kilogram/);
+    expect(sellableBalance).toHaveTextContent(/Sellable after/);
+    expect(sellableBalance).toHaveTextContent(/90\s*Kilogram/);
 
     await waitFor(() => {
       expect(screen.getByTestId("inventory-movement-transaction-drawer")).toHaveAttribute(
@@ -311,5 +322,322 @@ describe("InventoryMovementTransactionDrawer", () => {
     expect(await screen.findByTestId("inventory-movement-damage-hold-decision")).toHaveTextContent(
       /Replacement requested.*Return to source/i,
     );
+  });
+
+  it("keeps R2 this-transfer metrics separate from overall fulfillment", async () => {
+    const r2Id = "22222222-2222-2222-2222-222222222222";
+    const rootId = "11111111-1111-1111-1111-111111111111";
+    const r2LineId = "33333333-3333-3333-3333-333333333333";
+    vi.spyOn(transferClient, "getInventoryTransfer").mockResolvedValue({
+      transferId: r2Id,
+      organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      transferNumber: "TR-260922-003-R2",
+      rootTransferId: rootId,
+      sourceBranchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      sourceBranchName: "Main Branch",
+      destinationBranchId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      destinationBranchName: "Iloilo Branch",
+      status: "ClosedWithDiscrepancy",
+      notes: null,
+      createdBy: "actor-1",
+      createdAtUtc: "2026-09-22T18:00:00Z",
+      updatedAtUtc: "2026-09-22T20:00:00Z",
+      totalSentQty: 4,
+      totalReceivedQty: 2,
+      totalClosedQty: 2,
+      totalOutstandingQty: 0,
+      totalDifferenceQty: 2,
+      receiptCount: 1,
+      lines: [
+        {
+          lineId: r2LineId,
+          productId: "prod-1",
+          productName: "Apple",
+          unitOfMeasure: "Kilogram",
+          lineNumber: 1,
+          sentQty: 4,
+          receivedQty: 2,
+          outstandingQty: 0,
+          closedQty: 2,
+          waivedQty: 2,
+          differenceQty: 2,
+          lineStatus: "Closed",
+          discrepancyReason: "ShortShipment",
+          discrepancyNote: null,
+        },
+      ],
+      receipts: [
+        {
+          receiptId: "44444444-4444-4444-4444-444444444444",
+          sequence: 1,
+          receivedAtUtc: "2026-09-22T20:00:00Z",
+          receivedBy: "actor-1",
+          lines: [
+            {
+              receiptLineId: "55555555-5555-5555-5555-555555555555",
+              lineId: r2LineId,
+              productId: "prod-1",
+              quantityReceived: 2,
+              quantityDamaged: 0,
+              quantityMissing: 2,
+              quantityOther: 0,
+              missingDisposition: "AcceptShortage",
+              quantityWaived: 2,
+            },
+          ],
+        },
+      ],
+      satisfiedAtDestinationQty: 8,
+      openInTransitQty: 0,
+      remainingToDispatchQty: 0,
+      waivedQty: 2,
+      damageCustodies: [],
+      familyMembers: [
+        {
+          transferId: rootId,
+          transferNumber: "TR-260922-003",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: null,
+          isRoot: true,
+          totalSentQty: 10,
+          totalReceivedQty: 5,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 5,
+        },
+        {
+          transferId: "66666666-6666-6666-6666-666666666666",
+          transferNumber: "TR-260922-003-R1",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: 1,
+          isRoot: false,
+          totalSentQty: 5,
+          totalReceivedQty: 1,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 4,
+        },
+        {
+          transferId: r2Id,
+          transferNumber: "TR-260922-003-R2",
+          status: "ClosedWithDiscrepancy",
+          replacementSequence: 2,
+          isRoot: false,
+          totalSentQty: 4,
+          totalReceivedQty: 2,
+          totalOutstandingQty: 0,
+          totalDamagedQty: 0,
+          totalMissingQty: 2,
+        },
+      ],
+    } as never);
+
+    const movement: PosStockMovementDto = {
+      movementId: "mov-r2-in",
+      productId: "prod-1",
+      inventoryAccountId: "acc-1",
+      movementType: "TransferIn",
+      quantityEffect: 2,
+      reason: "Transfer in TR-260922-003-R2",
+      sourceType: "InventoryTransfer",
+      sourceId: r2Id,
+      transactionType: "InventoryTransfer",
+      transactionId: r2Id,
+      transactionReference: "TR-260922-003-R2",
+      recordedAtUtc: "2026-09-22T20:00:00Z",
+      recordedBy: "actor-1",
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={movement}
+                  unitOfMeasure="Kilogram"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const thisTransfer = await screen.findByTestId("inventory-movement-transaction-this-transfer");
+    expect(thisTransfer).toHaveTextContent(/Sent/);
+    expect(thisTransfer).toHaveTextContent("4");
+    expect(thisTransfer).toHaveTextContent(/Good received/);
+    expect(thisTransfer).toHaveTextContent("2");
+    expect(thisTransfer).toHaveTextContent(/Missing/);
+    expect(thisTransfer).toHaveTextContent(/Accepted \/ waived/);
+    expect(thisTransfer).not.toHaveTextContent(/Receiving decision/);
+
+    const receivingDecision = screen.getByTestId(
+      "inventory-movement-transaction-receiving-decision",
+    );
+    expect(receivingDecision).toHaveTextContent(/Receiving decision/);
+    expect(receivingDecision).toHaveTextContent(/Missing/);
+    expect(receivingDecision).toHaveTextContent(/Accepted shortage/i);
+
+    const overall = screen.getByTestId("inventory-movement-transaction-overall-fulfillment");
+    expect(overall).toHaveTextContent(/Target \/ requested/);
+    expect(overall).toHaveTextContent("10");
+    expect(overall).toHaveTextContent(/Needs fulfillment/);
+    expect(overall).toHaveTextContent("0");
+    // Must not mix R2 sent=4 with family good=8 and family damaged=9 in one Transfer section.
+    expect(screen.queryByTestId("inventory-movement-transaction-transfer-summary")).not.toBeInTheDocument();
+  });
+
+  it("shows sellable before / this movement / after including zero sellable delta", async () => {
+    const movement: PosStockMovementDto = {
+      movementId: "mov-hold",
+      productId: "prod-1",
+      inventoryAccountId: "acc-1",
+      movementType: "TransferDamageHold",
+      quantityEffect: 5,
+      reason: "Transfer damage hold",
+      sourceType: "InventoryTransfer",
+      sourceId: transferId,
+      transactionType: "InventoryTransfer",
+      transactionId: transferId,
+      transactionReference: "TR-260922-001",
+      recordedAtUtc: "2026-09-22T20:00:00Z",
+      recordedBy: "actor-1",
+      sellableBefore: 45,
+      sellableDelta: 0,
+      sellableAfter: 45,
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={movement}
+                  unitOfMeasure="Kilogram"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const balance = await screen.findByTestId("inventory-movement-sellable-balance");
+    expect(balance).toHaveTextContent(/Sellable before/);
+    expect(balance).toHaveTextContent(/45\s*Kilogram/);
+    expect(balance).toHaveTextContent(/This movement/);
+    expect(balance).toHaveTextContent(/0\s*Kilogram/);
+    expect(balance).toHaveTextContent(/Sellable after/);
+  });
+
+  it("shows opening stock sellable progression from zero", async () => {
+    const movement: PosStockMovementDto = {
+      movementId: "mov-open",
+      productId: "prod-1",
+      inventoryAccountId: "acc-1",
+      movementType: "OpeningStock",
+      quantityEffect: 100,
+      reason: "Opening stock",
+      sourceType: "Manual",
+      recordedAtUtc: "2026-09-01T10:00:00Z",
+      recordedBy: "actor-1",
+      sellableBefore: 0,
+      sellableDelta: 100,
+      sellableAfter: 100,
+    };
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={movement}
+                  unitOfMeasure="Kilogram"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    const balance = await screen.findByTestId("inventory-movement-sellable-balance");
+    expect(balance).toHaveTextContent(/Sellable before/);
+    expect(balance).toHaveTextContent(/0\s*Kilogram/);
+    expect(balance).toHaveTextContent(/\+100\s*Kilogram/);
+    expect(balance).toHaveTextContent(/Sellable after/);
+    expect(balance).toHaveTextContent(/100\s*Kilogram/);
+  });
+
+  it("opens transfer transaction details from transferContext without a movement", async () => {
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/inventory/prod-1"]}>
+          <Routes>
+            <Route
+              path="/inventory/:productId"
+              element={
+                <InventoryMovementTransactionDrawer
+                  open
+                  onOpenChange={() => undefined}
+                  movement={null}
+                  transferContext={{
+                    transferId,
+                    transferNumber: "TR-260922-001",
+                  }}
+                  unitOfMeasure="Kilogram"
+                  workspace={{
+                    organizationId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                    branchId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                  }}
+                  resolveActor={() => ({ displayName: "Mica Uy", email: null })}
+                  actorsLoading={false}
+                />
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>,
+    );
+
+    expect(await screen.findByTestId("inventory-movement-transaction-drawer")).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-movement-transaction-transfer-header")).toHaveTextContent(
+      "TR-260922-001",
+    );
+    expect(screen.queryByTestId("inventory-movement-transaction-this-movement")).not.toBeInTheDocument();
+    expect(await screen.findByTestId("inventory-movement-transaction-this-transfer")).toBeInTheDocument();
+    expect(screen.getByTestId("inventory-movement-view-full-transfer")).toBeInTheDocument();
   });
 });

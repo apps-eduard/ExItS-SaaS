@@ -7,6 +7,7 @@ using ExItS.PinoyBusinessPOS.Domain.Catalog;
 using ExItS.PinoyBusinessPOS.Domain.Common;
 using ExItS.PinoyBusinessPOS.Domain.Customers;
 using ExItS.PinoyBusinessPOS.Domain.Inventory;
+using ExItS.PinoyBusinessPOS.Domain.Purchasing;
 
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 
@@ -14,17 +15,20 @@ public sealed class InventoryTransferQueryService
 {
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
+    private readonly IInventoryTransferExceptionCustodyRepository _exceptionCustodies;
     private readonly IOrganizationBranchDirectory _branches;
     private readonly ICatalogProductRepository _products;
 
     public InventoryTransferQueryService(
         IInventoryTransferRepository transfers,
         IInventoryTransferDamageCustodyRepository damageCustodies,
+        IInventoryTransferExceptionCustodyRepository exceptionCustodies,
         IOrganizationBranchDirectory branches,
         ICatalogProductRepository products)
     {
         _transfers = transfers;
         _damageCustodies = damageCustodies;
+        _exceptionCustodies = exceptionCustodies;
         _branches = branches;
         _products = products;
     }
@@ -47,8 +51,23 @@ public sealed class InventoryTransferQueryService
             .GetNamesAsync(organizationId, [transfer.SourceBranchId.Value, transfer.DestinationBranchId.Value], cancellationToken)
             .ConfigureAwait(false);
         var productIds = transfer.Lines.Select(l => l.ProductId).Distinct().ToList();
-        var skuByProduct = (await _products.ListByIdsAsync(orgId, productIds, cancellationToken).ConfigureAwait(false))
-            .ToDictionary(p => p.Id.Value, p => p.Sku);
+        var exceptionCustodies = await _exceptionCustodies
+            .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
+            .ConfigureAwait(false);
+        var exceptionProductIds = exceptionCustodies
+            .SelectMany(c => new[] { c.ExpectedProductId, c.ActualProductId });
+        var catalogProductIds = productIds
+            .Concat(exceptionProductIds)
+            .GroupBy(id => id.Value)
+            .Select(g => g.First())
+            .ToList();
+        var catalogProducts = await _products
+            .ListByIdsAsync(orgId, catalogProductIds, cancellationToken)
+            .ConfigureAwait(false);
+        var skuByProduct = catalogProducts.ToDictionary(p => p.Id.Value, p => p.Sku);
+        var nameByProduct = catalogProducts
+            .Where(p => !string.IsNullOrWhiteSpace(p.Name))
+            .ToDictionary(p => p.Id.Value, p => p.Name);
 
         var family = await _transfers
             .ListByRootTransferIdAsync(orgId, transfer.FamilyRootId, cancellationToken)
@@ -98,6 +117,15 @@ public sealed class InventoryTransferQueryService
                     receiptLines.Sum(l => l.QuantityOther));
             }).ToList(),
             custodies.Select(InventoryTransferDamageCustodyMapping.Map).ToList(),
+            exceptionCustodies.Select(c =>
+                InventoryTransferExceptionCustodyMapping.Map(
+                    c,
+                    nameByProduct.TryGetValue(c.ExpectedProductId.Value, out var expectedName)
+                        ? expectedName
+                        : null,
+                    nameByProduct.TryGetValue(c.ActualProductId.Value, out var actualName)
+                        ? actualName
+                        : null)).ToList(),
             goodReceived,
             openInTransit,
             remaining,
@@ -133,6 +161,7 @@ public sealed class InventoryTransferQueryService
         IReadOnlyDictionary<Guid, string?>? skuByProduct = null,
         IReadOnlyList<InventoryTransferFamilyMemberDto>? familyMembers = null,
         IReadOnlyList<InventoryTransferDamageCustodyDto>? damageCustodies = null,
+        IReadOnlyList<InventoryTransferExceptionCustodyDto>? exceptionCustodies = null,
         decimal satisfiedAtDestinationQty = 0,
         decimal openInTransitQty = 0,
         decimal remainingToDispatchQty = 0,
@@ -191,7 +220,11 @@ public sealed class InventoryTransferQueryService
                         ? null
                         : InventoryTransferDiscrepancyFollowUps.ToCode(rl.OtherFollowUp.Value),
                     rl.QuantityWaived,
-                    rl.Note)).ToList())).ToList(),
+                    rl.Note,
+                    rl.ActualReceivedProductId?.Value,
+                    rl.OtherCustodyDecision is null
+                        ? null
+                        : InventoryTransferExceptionCustodyDecisions.ToCode(rl.OtherCustodyDecision.Value))).ToList())).ToList(),
             transfer.Lines.Select(l => new InventoryTransferLineDto(
                 l.Id.Value,
                 l.ProductId.Value,
@@ -220,6 +253,7 @@ public sealed class InventoryTransferQueryService
             InventoryTransferDamageHandlingPolicies.ToCode(transfer.DamageHandlingPolicy),
             familyMembers,
             damageCustodies,
+            exceptionCustodies,
             satisfiedAtDestinationQty,
             openInTransitQty,
             remainingToDispatchQty,
@@ -881,6 +915,7 @@ public sealed class ReceiveInventoryTransfer
 {
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryTransferDamageCustodyRepository _damageCustodies;
+    private readonly IInventoryTransferExceptionCustodyRepository _exceptionCustodies;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
     private readonly ICatalogProductRepository _products;
@@ -896,6 +931,7 @@ public sealed class ReceiveInventoryTransfer
     public ReceiveInventoryTransfer(
         IInventoryTransferRepository transfers,
         IInventoryTransferDamageCustodyRepository damageCustodies,
+        IInventoryTransferExceptionCustodyRepository exceptionCustodies,
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
         ICatalogProductRepository products,
@@ -910,6 +946,7 @@ public sealed class ReceiveInventoryTransfer
     {
         _transfers = transfers;
         _damageCustodies = damageCustodies;
+        _exceptionCustodies = exceptionCustodies;
         _inventory = inventory;
         _balances = balances;
         _products = products;
@@ -1046,6 +1083,19 @@ public sealed class ReceiveInventoryTransfer
                 damagedDecision = parsedDecision;
             }
 
+            InventoryTransferExceptionCustodyDecision? otherCustodyDecision = null;
+            if (!string.IsNullOrWhiteSpace(line.OtherCustodyDecision))
+            {
+                if (!InventoryTransferExceptionCustodyDecisions.TryParse(line.OtherCustodyDecision, out var parsedOtherDecision))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferExceptionCustodyDecision,
+                        "Exception custody decision is not recognized.");
+                }
+
+                otherCustodyDecision = parsedOtherDecision;
+            }
+
             receiveDrafts.Add(new InventoryTransferReceiveLineDraft(
                 CatalogProductId.From(line.ProductId),
                 goodQty,
@@ -1060,15 +1110,29 @@ public sealed class ReceiveInventoryTransfer
                 MissingDisposition: missingDisposition,
                 DamagedFollowUp: damagedFollowUp,
                 OtherFollowUp: otherFollowUp,
-                DamagedCustodyDecision: damagedDecision));
+                DamagedCustodyDecision: damagedDecision,
+                OtherCustodyDecision: otherCustodyDecision,
+                ActualReceivedProductId: line.ActualReceivedProductId is null
+                    ? null
+                    : CatalogProductId.From(line.ActualReceivedProductId.Value)));
         }
 
-        var productIds = transfer.Lines.Select(l => l.ProductId).ToList();
-        var accounts = (await _inventory.ListByProductIdsAsync(orgId, productIds, ct).ConfigureAwait(false))
+        var productIds = transfer.Lines.Select(l => l.ProductId.Value).ToList();
+        foreach (var draft in receiveDrafts.Where(d => d.OtherQty > 0m && d.ActualReceivedProductId is not null))
+        {
+            if (!productIds.Contains(draft.ActualReceivedProductId!.Value))
+            {
+                productIds.Add(draft.ActualReceivedProductId.Value);
+            }
+        }
+
+        productIds = productIds.Distinct().ToList();
+        var catalogProductIds = productIds.Select(CatalogProductId.From).ToList();
+        var accounts = (await _inventory.ListByProductIdsAsync(orgId, catalogProductIds, ct).ConfigureAwait(false))
             .ToDictionary(a => a.ProductId.Value);
-        var catalog = (await _products.ListByIdsAsync(orgId, productIds, ct).ConfigureAwait(false))
+        var catalog = (await _products.ListByIdsAsync(orgId, catalogProductIds, ct).ConfigureAwait(false))
             .ToDictionary(p => p.Id.Value);
-        var balances = (await _balances.ListByProductIdsAsync(orgId, productIds, ct).ConfigureAwait(false))
+        var balances = (await _balances.ListByProductIdsAsync(orgId, catalogProductIds, ct).ConfigureAwait(false))
             .ToList();
 
         try
@@ -1295,6 +1359,279 @@ public sealed class ReceiveInventoryTransfer
                 await _balances.UpsertAsync(destBalance, ct).ConfigureAwait(false);
             }
 
+            var otherDecisionByLineId = receiveDrafts
+                .Where(d => d.LineId is not null)
+                .ToDictionary(d => d.LineId!.Value, d => d.OtherCustodyDecision);
+            var otherDecisionByProduct = receiveDrafts
+                .GroupBy(d => d.ProductId.Value)
+                .ToDictionary(g => g.Key, g => g.Last().OtherCustodyDecision);
+            var actualByLineId = receiveDrafts
+                .Where(d => d.LineId is not null)
+                .ToDictionary(d => d.LineId!.Value, d => d.ActualReceivedProductId);
+            var actualByProduct = receiveDrafts
+                .GroupBy(d => d.ProductId.Value)
+                .ToDictionary(g => g.Key, g => g.Last().ActualReceivedProductId);
+
+            foreach (var receiptLine in receipt.Lines)
+            {
+                if (receiptLine.QuantityOther <= 0m)
+                {
+                    continue;
+                }
+
+                if (!lineById.TryGetValue(receiptLine.TransferLineId, out var line))
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(receiptLine.OtherReasonCode))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferOtherReason,
+                        "Other discrepancy reason is required when other quantity is greater than zero.");
+                }
+
+                if (!ReceiveDiscrepancyOtherReason.TryParse(receiptLine.OtherReasonCode, out var normalizedOtherReason))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferOtherReason,
+                        "Other discrepancy reason is not recognized.");
+                }
+
+                actualByLineId.TryGetValue(receiptLine.TransferLineId.Value, out var requestedActual);
+                if (requestedActual is null)
+                {
+                    actualByProduct.TryGetValue(line.ProductId.Value, out requestedActual);
+                }
+
+                CatalogProductId actualProductId;
+                try
+                {
+                    actualProductId = InventoryTransferExceptionReceive.ResolveActualProductId(
+                        normalizedOtherReason,
+                        line.ProductId,
+                        requestedActual,
+                        catalog);
+                }
+                catch (DomainException ex)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
+                }
+
+                otherDecisionByLineId.TryGetValue(receiptLine.TransferLineId.Value, out var requestedOtherDecision);
+                if (requestedOtherDecision is null)
+                {
+                    otherDecisionByProduct.TryGetValue(line.ProductId.Value, out requestedOtherDecision);
+                }
+
+                InventoryTransferExceptionCustodyDecision exceptionDecision;
+                try
+                {
+                    exceptionDecision = TransferExceptionCustodyPolicy.ResolveDecision(
+                        normalizedOtherReason,
+                        requestedOtherDecision);
+                }
+                catch (DomainException ex)
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
+                }
+
+                if (!catalog.TryGetValue(actualProductId.Value, out var actualProduct))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InventoryProductNotFound,
+                        "Actual received product was not found.");
+                }
+
+                if (!catalog.TryGetValue(line.ProductId.Value, out var expectedProduct))
+                {
+                    return ApplicationResult<InventoryTransfer>.Failure(
+                        ApplicationErrorCodes.InventoryProductNotFound,
+                        $"Product '{line.NameSnapshot}' was not found.");
+                }
+
+                if (await _inventory
+                        .HasInventoryTransferSourceMovementAsync(
+                            orgId,
+                            receiptLine.Id.Value,
+                            actualProductId,
+                            StockMovementType.TransferExceptionHold,
+                            line.SourceLotId,
+                            ct)
+                        .ConfigureAwait(false))
+                {
+                    continue;
+                }
+
+                var exceptionFollowUp = receiptLine.OtherFollowUp
+                    ?? InventoryTransferDiscrepancyFollowUp.RequestReplacement;
+                var exceptionCustody = InventoryTransferExceptionCustody.Open(
+                    orgId,
+                    transfer.Id,
+                    transfer.FamilyRootId,
+                    receiptLine.Id,
+                    line.ProductId,
+                    actualProductId,
+                    receiptLine.QuantityOther,
+                    normalizedOtherReason,
+                    exceptionDecision,
+                    exceptionFollowUp,
+                    transfer.DestinationBranchId,
+                    actorId,
+                    utcNow);
+
+                var transferNumber = transfer.TransferNumber!;
+                var holdDetail = StockMovementPresentation.FormatExceptionHoldDecisionDetail(
+                    exceptionDecision,
+                    exceptionFollowUp,
+                    normalizedOtherReason);
+                var otherQty = receiptLine.QuantityOther;
+
+                if (TransferExceptionCustodyPolicy.RequiresActualProduct(normalizedOtherReason))
+                {
+                    var sourceExpectedAccount = await InventoryTransferExceptionReceive.EnsureAccountAsync(
+                            orgId,
+                            line.ProductId,
+                            expectedProduct,
+                            accounts,
+                            actorId,
+                            utcNow,
+                            _inventory,
+                            ct)
+                        .ConfigureAwait(false);
+
+                    if (!await _inventory
+                            .HasInventoryTransferSourceMovementAsync(
+                                orgId,
+                                receiptLine.Id.Value,
+                                line.ProductId,
+                                StockMovementType.TransferExceptionExpectedRestore,
+                                line.SourceLotId,
+                                ct)
+                            .ConfigureAwait(false))
+                    {
+                        var restore = StockMovement.TransferExceptionCustody(
+                            orgId,
+                            line.ProductId,
+                            sourceExpectedAccount.Id,
+                            transfer.SourceBranchId,
+                            StockMovementType.TransferExceptionExpectedRestore,
+                            otherQty,
+                            line.UnitOfMeasure,
+                            receiptLine.Id.Value,
+                            transferNumber,
+                            actorId,
+                            utcNow,
+                            sellingMode: expectedProduct.SellingMode,
+                            decisionDetail: holdDetail);
+                        var sourceExpectedBalance = InventoryTransferStock.EnsureBalance(
+                            orgId,
+                            transfer.SourceBranchId,
+                            line.ProductId,
+                            balances,
+                            utcNow);
+                        sourceExpectedBalance.Apply(restore.QuantityEffect, utcNow);
+                        sourceExpectedAccount.ApplyMovementEffect(restore.QuantityEffect);
+                        sourceExpectedAccount.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(sourceExpectedAccount, ct).ConfigureAwait(false);
+                        await _inventory.AddMovementAsync(restore, ct).ConfigureAwait(false);
+                        await _balances.UpsertAsync(sourceExpectedBalance, ct).ConfigureAwait(false);
+                    }
+
+                    if (!await _inventory
+                            .HasInventoryTransferSourceMovementAsync(
+                                orgId,
+                                receiptLine.Id.Value,
+                                actualProductId,
+                                StockMovementType.TransferExceptionActualOut,
+                                line.SourceLotId,
+                                ct)
+                            .ConfigureAwait(false))
+                    {
+                        var sourceActualBalance = InventoryTransferStock.EnsureBalance(
+                            orgId,
+                            transfer.SourceBranchId,
+                            actualProductId,
+                            balances,
+                            utcNow);
+                        if (sourceActualBalance.AvailableQuantity < otherQty)
+                        {
+                            return ApplicationResult<InventoryTransfer>.Failure(
+                                DomainErrorCodes.InsufficientStockForExceptionCorrection,
+                                "Source branch does not have enough sellable stock to correct the actual SKU.");
+                        }
+
+                        var sourceActualAccount = await InventoryTransferExceptionReceive.EnsureAccountAsync(
+                                orgId,
+                                actualProductId,
+                                actualProduct,
+                                accounts,
+                                actorId,
+                                utcNow,
+                                _inventory,
+                                ct)
+                            .ConfigureAwait(false);
+                        var actualOut = StockMovement.TransferExceptionCustody(
+                            orgId,
+                            actualProductId,
+                            sourceActualAccount.Id,
+                            transfer.SourceBranchId,
+                            StockMovementType.TransferExceptionActualOut,
+                            otherQty,
+                            actualProduct.UnitOfMeasure,
+                            receiptLine.Id.Value,
+                            transferNumber,
+                            actorId,
+                            utcNow,
+                            sellingMode: actualProduct.SellingMode,
+                            decisionDetail: holdDetail);
+                        sourceActualBalance.Apply(actualOut.QuantityEffect, utcNow);
+                        sourceActualAccount.ApplyMovementEffect(actualOut.QuantityEffect);
+                        sourceActualAccount.Touch(utcNow);
+                        await _inventory.UpdateAccountAsync(sourceActualAccount, ct).ConfigureAwait(false);
+                        await _inventory.AddMovementAsync(actualOut, ct).ConfigureAwait(false);
+                        await _balances.UpsertAsync(sourceActualBalance, ct).ConfigureAwait(false);
+                    }
+                }
+
+                var destHoldAccount = await InventoryTransferExceptionReceive.EnsureAccountAsync(
+                        orgId,
+                        actualProductId,
+                        actualProduct,
+                        accounts,
+                        actorId,
+                        utcNow,
+                        _inventory,
+                        ct)
+                    .ConfigureAwait(false);
+                var holdMovement = StockMovement.TransferExceptionCustody(
+                    orgId,
+                    actualProductId,
+                    destHoldAccount.Id,
+                    transfer.DestinationBranchId,
+                    StockMovementType.TransferExceptionHold,
+                    otherQty,
+                    actualProduct.UnitOfMeasure,
+                    receiptLine.Id.Value,
+                    transferNumber,
+                    actorId,
+                    utcNow,
+                    sellingMode: actualProduct.SellingMode,
+                    decisionDetail: holdDetail);
+                var destExceptionBalance = InventoryTransferStock.EnsureBalance(
+                    orgId,
+                    transfer.DestinationBranchId,
+                    actualProductId,
+                    balances,
+                    utcNow);
+                destExceptionBalance.Apply(holdMovement.QuantityEffect, utcNow);
+                destExceptionBalance.IncreaseInspectionHold(otherQty, utcNow);
+
+                await _exceptionCustodies.AddAsync(exceptionCustody, ct).ConfigureAwait(false);
+                await _inventory.AddMovementAsync(holdMovement, ct).ConfigureAwait(false);
+                await _balances.UpsertAsync(destExceptionBalance, ct).ConfigureAwait(false);
+            }
+
             if (transfer.StockRequestId is StockRequestId stockRequestId)
             {
                 var stockRequest = await _stockRequests
@@ -1359,7 +1696,9 @@ public sealed class ReceiveInventoryTransfer
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransfer>.Failure(
+                ReceiveInventoryTransfer.MapReceiveInventoryError(ex.ErrorCode),
+                ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
@@ -1369,12 +1708,87 @@ public sealed class ReceiveInventoryTransfer
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransfer>.Failure(
+                ReceiveInventoryTransfer.MapReceiveInventoryError(ex.ErrorCode),
+                ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
             return ApplicationResult<InventoryTransfer>.Failure(ex.ErrorCode, ex.Message);
         }
+    }
+
+    private static string MapReceiveInventoryError(string errorCode) =>
+        errorCode switch
+        {
+            DomainErrorCodes.InsufficientStockForExceptionCorrection => ApplicationErrorCodes.InsufficientStock,
+            DomainErrorCodes.InventoryInsufficientStock => ApplicationErrorCodes.InsufficientStock,
+            _ => errorCode
+        };
+}
+
+internal static class InventoryTransferExceptionReceive
+{
+    public static CatalogProductId ResolveActualProductId(
+        string reasonCode,
+        CatalogProductId expectedProductId,
+        CatalogProductId? requestedActualProductId,
+        IReadOnlyDictionary<Guid, CatalogProduct> catalog)
+    {
+        if (!TransferExceptionCustodyPolicy.RequiresActualProduct(reasonCode))
+        {
+            return expectedProductId;
+        }
+
+        if (requestedActualProductId is null)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferActualProduct,
+                "Actual received product is required for this other reason.");
+        }
+
+        if (requestedActualProductId.Value == expectedProductId.Value)
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferActualProduct,
+                "Wrong item or wrong variant must specify a different actual product than expected.");
+        }
+
+        if (!catalog.ContainsKey(requestedActualProductId.Value))
+        {
+            throw new DomainException(
+                DomainErrorCodes.InvalidInventoryTransferActualProduct,
+                "Actual received product was not found.");
+        }
+
+        return requestedActualProductId;
+    }
+
+    public static async Task<InventoryAccount> EnsureAccountAsync(
+        PosOrganizationId orgId,
+        CatalogProductId productId,
+        CatalogProduct product,
+        Dictionary<Guid, InventoryAccount> accounts,
+        Guid actorId,
+        DateTimeOffset utcNow,
+        IInventoryRepository inventory,
+        CancellationToken ct)
+    {
+        if (accounts.TryGetValue(productId.Value, out var account))
+        {
+            if (!account.IsTracked)
+            {
+                account.Enable(0m, product.UnitOfMeasure, actorId, utcNow, hasOpeningStockAlready: true, product.SellingMode);
+            }
+
+            return account;
+        }
+
+        account = InventoryAccount.CreateUntracked(orgId, productId, utcNow);
+        account.Enable(0m, product.UnitOfMeasure, actorId, utcNow, hasOpeningStockAlready: false, product.SellingMode);
+        await inventory.AddAccountAsync(account, ct).ConfigureAwait(false);
+        accounts[productId.Value] = account;
+        return account;
     }
 }
 

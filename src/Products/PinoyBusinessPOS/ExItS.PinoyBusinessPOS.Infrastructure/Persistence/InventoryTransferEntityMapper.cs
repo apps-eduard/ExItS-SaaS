@@ -116,7 +116,13 @@ internal static class InventoryTransferEntityMapper
                 ? null
                 : InventoryTransferDiscrepancyFollowUps.Parse(record.OtherFollowUp),
             record.QuantityWaived,
-            record.Note);
+            record.Note,
+            record.ActualReceivedProductId is null
+                ? null
+                : CatalogProductId.From(record.ActualReceivedProductId.Value),
+            string.IsNullOrWhiteSpace(record.OtherCustodyDecision)
+                ? null
+                : InventoryTransferExceptionCustodyDecisions.Parse(record.OtherCustodyDecision));
 
     public static InventoryTransferRecord ToRecord(InventoryTransfer transfer) =>
         new()
@@ -225,7 +231,11 @@ internal static class InventoryTransferEntityMapper
                 ? null
                 : InventoryTransferDiscrepancyFollowUps.ToCode(line.OtherFollowUp.Value),
             QuantityWaived = line.QuantityWaived,
-            Note = line.Note
+            Note = line.Note,
+            ActualReceivedProductId = line.ActualReceivedProductId?.Value,
+            OtherCustodyDecision = line.OtherCustodyDecision is null
+                ? null
+                : InventoryTransferExceptionCustodyDecisions.ToCode(line.OtherCustodyDecision.Value)
         };
 
     public static InventoryBranchBalance ToDomain(InventoryBranchBalanceRecord record) =>
@@ -325,6 +335,79 @@ internal static class InventoryTransferEntityMapper
         record.RecoveredSellableQty = custody.RecoveredSellableQty;
         record.ConfirmedDamagedQty = custody.ConfirmedDamagedQty;
         record.WaivedQty = custody.WaivedQty;
+        record.UpdatedAtUtc = custody.UpdatedAtUtc;
+        record.ReturnDispatchedAtUtc = custody.ReturnDispatchedAtUtc;
+        record.ReturnDispatchedBy = custody.ReturnDispatchedBy;
+        record.ReturnReceivedAtUtc = custody.ReturnReceivedAtUtc;
+        record.ReturnReceivedBy = custody.ReturnReceivedBy;
+        record.InspectedAtUtc = custody.InspectedAtUtc;
+        record.InspectedBy = custody.InspectedBy;
+    }
+
+    public static InventoryTransferExceptionCustody ToDomain(InventoryTransferExceptionCustodyRecord record) =>
+        InventoryTransferExceptionCustody.Rehydrate(
+            InventoryTransferExceptionCustodyId.From(record.Id),
+            PosOrganizationId.From(record.OrganizationId),
+            InventoryTransferId.From(record.TransferId),
+            InventoryTransferId.From(record.RootTransferId),
+            InventoryTransferReceiptLineId.From(record.ReceiptLineId),
+            CatalogProductId.From(record.ExpectedProductId),
+            CatalogProductId.From(record.ActualProductId),
+            record.Quantity,
+            record.ReasonCode,
+            InventoryTransferExceptionCustodyDecisions.Parse(record.Decision),
+            InventoryTransferDiscrepancyFollowUps.Parse(record.FollowUpIntent),
+            InventoryTransferExceptionCustodyStatuses.Parse(record.Status),
+            PosBranchId.From(record.HeldBranchId),
+            record.RecoveredSellableQty,
+            record.ConfirmedNonSellableQty,
+            record.CreatedAtUtc,
+            record.CreatedBy,
+            record.UpdatedAtUtc,
+            record.ReturnDispatchedAtUtc,
+            record.ReturnDispatchedBy,
+            record.ReturnReceivedAtUtc,
+            record.ReturnReceivedBy,
+            record.InspectedAtUtc,
+            record.InspectedBy);
+
+    public static InventoryTransferExceptionCustodyRecord ToRecord(InventoryTransferExceptionCustody custody) =>
+        new()
+        {
+            Id = custody.Id.Value,
+            OrganizationId = custody.OrganizationId.Value,
+            TransferId = custody.TransferId.Value,
+            RootTransferId = custody.RootTransferId.Value,
+            ReceiptLineId = custody.ReceiptLineId.Value,
+            ExpectedProductId = custody.ExpectedProductId.Value,
+            ActualProductId = custody.ActualProductId.Value,
+            Quantity = custody.Quantity,
+            ReasonCode = custody.ReasonCode,
+            Decision = InventoryTransferExceptionCustodyDecisions.ToCode(custody.Decision),
+            FollowUpIntent = InventoryTransferDiscrepancyFollowUps.ToCode(custody.FollowUpIntent),
+            Status = InventoryTransferExceptionCustodyStatuses.ToCode(custody.Status),
+            HeldBranchId = custody.HeldBranchId.Value,
+            RecoveredSellableQty = custody.RecoveredSellableQty,
+            ConfirmedNonSellableQty = custody.ConfirmedNonSellableQty,
+            CreatedAtUtc = custody.CreatedAtUtc,
+            CreatedBy = custody.CreatedBy,
+            UpdatedAtUtc = custody.UpdatedAtUtc,
+            ReturnDispatchedAtUtc = custody.ReturnDispatchedAtUtc,
+            ReturnDispatchedBy = custody.ReturnDispatchedBy,
+            ReturnReceivedAtUtc = custody.ReturnReceivedAtUtc,
+            ReturnReceivedBy = custody.ReturnReceivedBy,
+            InspectedAtUtc = custody.InspectedAtUtc,
+            InspectedBy = custody.InspectedBy
+        };
+
+    public static void ApplyToRecord(
+        InventoryTransferExceptionCustody custody,
+        InventoryTransferExceptionCustodyRecord record)
+    {
+        record.Status = InventoryTransferExceptionCustodyStatuses.ToCode(custody.Status);
+        record.HeldBranchId = custody.HeldBranchId.Value;
+        record.RecoveredSellableQty = custody.RecoveredSellableQty;
+        record.ConfirmedNonSellableQty = custody.ConfirmedNonSellableQty;
         record.UpdatedAtUtc = custody.UpdatedAtUtc;
         record.ReturnDispatchedAtUtc = custody.ReturnDispatchedAtUtc;
         record.ReturnDispatchedBy = custody.ReturnDispatchedBy;

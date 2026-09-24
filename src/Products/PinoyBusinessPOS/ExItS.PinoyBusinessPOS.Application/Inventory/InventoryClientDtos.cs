@@ -65,7 +65,13 @@ public sealed record PosStockMovementDto(
     /// <summary>Authoritative parent transaction id (transfer id, not receipt/custody child id).</summary>
     Guid? TransactionId = null,
     /// <summary>Human document reference (e.g. TR-260922-001).</summary>
-    string? TransactionReference = null);
+    string? TransactionReference = null,
+    /// <summary>Sellable on-hand immediately before this movement (branch + product history).</summary>
+    decimal? SellableBefore = null,
+    /// <summary>Authoritative sellable bucket delta for this movement type.</summary>
+    decimal? SellableDelta = null,
+    /// <summary>Sellable on-hand immediately after this movement (branch + product history).</summary>
+    decimal? SellableAfter = null);
 
 public sealed record EnableInventoryTrackingRequest(
     decimal? OpeningQuantity = null,

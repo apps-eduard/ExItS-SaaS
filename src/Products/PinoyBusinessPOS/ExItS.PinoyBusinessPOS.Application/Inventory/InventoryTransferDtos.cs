@@ -34,7 +34,9 @@ public sealed record InventoryTransferReceiveLineRequest(
     string? MissingDisposition = null,
     string? DamagedFollowUp = null,
     string? OtherFollowUp = null,
-    string? DamagedCustodyDecision = null);
+    string? DamagedCustodyDecision = null,
+    string? OtherCustodyDecision = null,
+    Guid? ActualReceivedProductId = null);
 
 public sealed record ReceiveInventoryTransferRequest(
     IReadOnlyList<InventoryTransferReceiveLineRequest> Lines);
@@ -64,7 +66,9 @@ public sealed record InventoryTransferReceiptLineDto(
     string? DamagedFollowUp = null,
     string? OtherFollowUp = null,
     decimal QuantityWaived = 0,
-    string? Note = null);
+    string? Note = null,
+    Guid? ActualReceivedProductId = null,
+    string? OtherCustodyDecision = null);
 
 public sealed record InventoryTransferReceiptDto(
     Guid ReceiptId,
@@ -131,6 +135,7 @@ public sealed record InventoryTransferDto(
     string DamageHandlingPolicy = nameof(InventoryTransferDamageHandlingPolicy.ReceiverMayDecide),
     IReadOnlyList<InventoryTransferFamilyMemberDto>? FamilyMembers = null,
     IReadOnlyList<InventoryTransferDamageCustodyDto>? DamageCustodies = null,
+    IReadOnlyList<InventoryTransferExceptionCustodyDto>? ExceptionCustodies = null,
     decimal SatisfiedAtDestinationQty = 0,
     decimal OpenInTransitQty = 0,
     decimal RemainingToDispatchQty = 0,
@@ -175,6 +180,34 @@ public sealed record InspectInventoryTransferDamageCustodyRequest(
     decimal RecoveredSellableQty,
     decimal ConfirmedDamagedQty,
     string? FollowUpOverride = null);
+
+public sealed record InventoryTransferExceptionCustodyDto(
+    Guid CustodyId,
+    Guid TransferId,
+    Guid RootTransferId,
+    Guid ReceiptLineId,
+    Guid ExpectedProductId,
+    Guid ActualProductId,
+    decimal Quantity,
+    string ReasonCode,
+    string Decision,
+    string FollowUpIntent,
+    string Status,
+    Guid HeldBranchId,
+    decimal RecoveredSellableQty,
+    decimal ConfirmedNonSellableQty,
+    decimal ReplacementDemandQty,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc,
+    DateTimeOffset? ReturnDispatchedAtUtc = null,
+    DateTimeOffset? ReturnReceivedAtUtc = null,
+    DateTimeOffset? InspectedAtUtc = null,
+    string? ExpectedProductName = null,
+    string? ActualProductName = null);
+
+public sealed record InspectInventoryTransferExceptionCustodyRequest(
+    decimal RecoveredSellableQty,
+    decimal ConfirmedNonSellableQty);
 
 public sealed record InventoryTransferListItemDto(
     Guid TransferId,

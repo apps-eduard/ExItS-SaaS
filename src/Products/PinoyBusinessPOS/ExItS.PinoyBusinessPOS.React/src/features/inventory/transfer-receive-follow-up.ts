@@ -1,6 +1,7 @@
 import { parseNonNegativeQty } from "@/features/purchasing/receive-math";
 import { formatStockQtyLabel } from "@/features/purchasing/incoming-order-stock-review";
 import type { TransferReceiveLineEdit } from "@/features/inventory/inventory-transfer-receive-helpers";
+import { requiresActualProduct } from "@/features/inventory/transfer-exception-custody-policy";
 
 export type TransferMissingFollowUp = "wait_original" | "request_replacement" | "accept_shortage";
 export type TransferDamagedOtherFollowUp = "request_replacement" | "accept_shortage";
@@ -16,7 +17,10 @@ export type TransferFollowUpRow = {
   qty: number;
   qtyLabel: string;
   issueLabel: string;
+  otherReasonCode?: string;
+  /** Secondary line under Issue — remarks, or actual product for wrong item/variant. */
   remark: string | null;
+  actualReceivedProductName?: string | null;
   action: TransferMissingFollowUp | TransferDamagedOtherFollowUp | null;
 };
 
@@ -93,6 +97,8 @@ export function buildTransferFollowUpRows(
     }
     if (other > 1e-9) {
       const code = line.otherReasonCode?.trim() ?? "";
+      const actualName = line.actualReceivedProductName?.trim() || null;
+      const showActualInsteadOfRemark = requiresActualProduct(code) && Boolean(actualName);
       rows.push({
         rowKey: `${line.productId}-other`,
         productId: line.productId,
@@ -102,7 +108,9 @@ export function buildTransferFollowUpRows(
         qty: other,
         qtyLabel: formatStockQtyLabel(other, line.uom),
         issueLabel: (code && labels.otherReasons?.[code]) || labels.otherFallback || "Other",
-        remark,
+        otherReasonCode: code || undefined,
+        remark: showActualInsteadOfRemark ? null : remark,
+        actualReceivedProductName: showActualInsteadOfRemark ? actualName : null,
         action: line.otherFollowUp,
       });
     }

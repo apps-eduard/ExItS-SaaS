@@ -144,6 +144,8 @@ internal sealed class InventoryTransferReceiptLineRecord
     public string? OtherFollowUp { get; set; }
     public decimal QuantityWaived { get; set; }
     public string? Note { get; set; }
+    public Guid? ActualReceivedProductId { get; set; }
+    public string? OtherCustodyDecision { get; set; }
 }
 
 internal sealed class InventoryBranchBalanceRecord
@@ -175,6 +177,34 @@ internal sealed class InventoryTransferDamageCustodyRecord
     public decimal RecoveredSellableQty { get; set; }
     public decimal ConfirmedDamagedQty { get; set; }
     public decimal WaivedQty { get; set; }
+    public DateTimeOffset CreatedAtUtc { get; set; }
+    public Guid CreatedBy { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
+    public DateTimeOffset? ReturnDispatchedAtUtc { get; set; }
+    public Guid? ReturnDispatchedBy { get; set; }
+    public DateTimeOffset? ReturnReceivedAtUtc { get; set; }
+    public Guid? ReturnReceivedBy { get; set; }
+    public DateTimeOffset? InspectedAtUtc { get; set; }
+    public Guid? InspectedBy { get; set; }
+}
+
+internal sealed class InventoryTransferExceptionCustodyRecord
+{
+    public Guid Id { get; set; }
+    public Guid OrganizationId { get; set; }
+    public Guid TransferId { get; set; }
+    public Guid RootTransferId { get; set; }
+    public Guid ReceiptLineId { get; set; }
+    public Guid ExpectedProductId { get; set; }
+    public Guid ActualProductId { get; set; }
+    public decimal Quantity { get; set; }
+    public string ReasonCode { get; set; } = string.Empty;
+    public string Decision { get; set; } = string.Empty;
+    public string FollowUpIntent { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public Guid HeldBranchId { get; set; }
+    public decimal RecoveredSellableQty { get; set; }
+    public decimal ConfirmedNonSellableQty { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public Guid CreatedBy { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }

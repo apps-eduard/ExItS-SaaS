@@ -10,9 +10,9 @@ using ExItS.PinoyBusinessPOS.Domain.Inventory;
 
 namespace ExItS.PinoyBusinessPOS.Application.Inventory;
 
-public sealed class DispatchInventoryTransferDamageReturn
+public sealed class DispatchInventoryTransferExceptionReturn
 {
-    private readonly IInventoryTransferDamageCustodyRepository _custodies;
+    private readonly IInventoryTransferExceptionCustodyRepository _custodies;
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
@@ -20,8 +20,8 @@ public sealed class DispatchInventoryTransferDamageReturn
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public DispatchInventoryTransferDamageReturn(
-        IInventoryTransferDamageCustodyRepository custodies,
+    public DispatchInventoryTransferExceptionReturn(
+        IInventoryTransferExceptionCustodyRepository custodies,
         IInventoryTransferRepository transfers,
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
@@ -38,7 +38,7 @@ public sealed class DispatchInventoryTransferDamageReturn
         _clock = clock;
     }
 
-    public async Task<ApplicationResult<InventoryTransferDamageCustodyDto>> ExecuteAsync(
+    public async Task<ApplicationResult<InventoryTransferExceptionCustodyDto>> ExecuteAsync(
         Guid organizationId,
         Guid custodyId,
         Guid actorId,
@@ -47,7 +47,7 @@ public sealed class DispatchInventoryTransferDamageReturn
     {
         if (actorId == Guid.Empty)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required.");
         }
@@ -58,13 +58,13 @@ public sealed class DispatchInventoryTransferDamageReturn
             {
                 var orgId = PosOrganizationId.From(organizationId);
                 var custody = await _custodies
-                    .GetByIdAsync(orgId, InventoryTransferDamageCustodyId.From(custodyId), ct)
+                    .GetByIdAsync(orgId, InventoryTransferExceptionCustodyId.From(custodyId), ct)
                     .ConfigureAwait(false);
                 if (custody is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
-                        DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
-                        "Damage custody was not found.");
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferExceptionCustodyId,
+                        "Exception custody was not found.");
                 }
 
                 var transfer = await _transfers
@@ -72,16 +72,16 @@ public sealed class DispatchInventoryTransferDamageReturn
                     .ConfigureAwait(false);
                 if (transfer is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferNotFound,
                         "Inventory transfer was not found.");
                 }
 
                 if (actingBranchId != transfer.DestinationBranchId.Value)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferBranchForbidden,
-                        "Only the destination branch can dispatch a damage return.");
+                        "Only the destination branch can dispatch an exception return.");
                 }
 
                 var utcNow = _clock.UtcNow;
@@ -89,29 +89,37 @@ public sealed class DispatchInventoryTransferDamageReturn
                         .HasInventoryTransferSourceMovementAsync(
                             orgId,
                             custody.Id.Value,
-                            custody.ProductId,
-                            StockMovementType.TransferDamageReturnOut,
+                            custody.ActualProductId,
+                            StockMovementType.TransferExceptionReturnOut,
                             null,
                             ct)
                         .ConfigureAwait(false))
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(Map(custody));
+                    if (custody.Status is InventoryTransferExceptionCustodyStatus.AwaitingReturn
+                        or InventoryTransferExceptionCustodyStatus.HeldAtDestination)
+                    {
+                        custody.MarkReturnDispatched(actorId, utcNow, transfer.SourceBranchId);
+                        await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
+                        await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
+                    }
+
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(Map(custody));
                 }
 
                 custody.MarkReturnDispatched(actorId, utcNow, transfer.SourceBranchId);
 
-                var account = await EnsureAccountAsync(orgId, custody.ProductId, actorId, utcNow, ct)
+                var account = await EnsureAccountAsync(orgId, custody.ActualProductId, actorId, utcNow, ct)
                     .ConfigureAwait(false);
-                var product = await _products.GetByIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false);
+                var product = await _products.GetByIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false);
                 var uom = product?.UnitOfMeasure ?? UnitOfMeasure.Piece;
                 var sellingMode = product?.SellingMode ?? SellingMode.PerItem;
 
-                var movement = StockMovement.TransferDamageCustody(
+                var movement = StockMovement.TransferExceptionCustody(
                     orgId,
-                    custody.ProductId,
+                    custody.ActualProductId,
                     account.Id,
                     transfer.DestinationBranchId,
-                    StockMovementType.TransferDamageReturnOut,
+                    StockMovementType.TransferExceptionReturnOut,
                     custody.Quantity,
                     uom,
                     custody.Id.Value,
@@ -121,33 +129,32 @@ public sealed class DispatchInventoryTransferDamageReturn
                     sellingMode: sellingMode);
 
                 var balances = (await _balances
-                        .ListByProductIdsAsync(orgId, [custody.ProductId], ct)
+                        .ListByProductIdsAsync(orgId, [custody.ActualProductId], ct)
                         .ConfigureAwait(false))
                     .ToList();
                 var dest = InventoryTransferStock.EnsureBalance(
                     orgId,
                     transfer.DestinationBranchId,
-                    custody.ProductId,
+                    custody.ActualProductId,
                     balances,
                     utcNow);
-                // Damaged was parked in DamagedQuantity at destination; return clears that bucket.
-                dest.DecreaseDamaged(custody.Quantity, utcNow);
+                dest.DecreaseInspectionHold(custody.Quantity, utcNow);
                 dest.Apply(movement.QuantityEffect, utcNow);
 
                 await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
                 await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                 await _balances.UpsertAsync(dest, ct).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-                return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(Map(custody));
+                return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(Map(custody));
             }, cancellationToken).ConfigureAwait(false);
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 
@@ -174,13 +181,13 @@ public sealed class DispatchInventoryTransferDamageReturn
         return account;
     }
 
-    internal static InventoryTransferDamageCustodyDto Map(InventoryTransferDamageCustody c) =>
-        InventoryTransferDamageCustodyMapping.Map(c);
+    internal static InventoryTransferExceptionCustodyDto Map(InventoryTransferExceptionCustody c) =>
+        InventoryTransferExceptionCustodyMapping.Map(c);
 }
 
-public sealed class ReceiveInventoryTransferDamageReturn
+public sealed class ReceiveInventoryTransferExceptionReturn
 {
-    private readonly IInventoryTransferDamageCustodyRepository _custodies;
+    private readonly IInventoryTransferExceptionCustodyRepository _custodies;
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
@@ -188,8 +195,8 @@ public sealed class ReceiveInventoryTransferDamageReturn
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public ReceiveInventoryTransferDamageReturn(
-        IInventoryTransferDamageCustodyRepository custodies,
+    public ReceiveInventoryTransferExceptionReturn(
+        IInventoryTransferExceptionCustodyRepository custodies,
         IInventoryTransferRepository transfers,
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
@@ -206,7 +213,7 @@ public sealed class ReceiveInventoryTransferDamageReturn
         _clock = clock;
     }
 
-    public async Task<ApplicationResult<InventoryTransferDamageCustodyDto>> ExecuteAsync(
+    public async Task<ApplicationResult<InventoryTransferExceptionCustodyDto>> ExecuteAsync(
         Guid organizationId,
         Guid custodyId,
         Guid actorId,
@@ -215,7 +222,7 @@ public sealed class ReceiveInventoryTransferDamageReturn
     {
         if (actorId == Guid.Empty)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required.");
         }
@@ -226,13 +233,13 @@ public sealed class ReceiveInventoryTransferDamageReturn
             {
                 var orgId = PosOrganizationId.From(organizationId);
                 var custody = await _custodies
-                    .GetByIdAsync(orgId, InventoryTransferDamageCustodyId.From(custodyId), ct)
+                    .GetByIdAsync(orgId, InventoryTransferExceptionCustodyId.From(custodyId), ct)
                     .ConfigureAwait(false);
                 if (custody is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
-                        DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
-                        "Damage custody was not found.");
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferExceptionCustodyId,
+                        "Exception custody was not found.");
                 }
 
                 var transfer = await _transfers
@@ -240,54 +247,61 @@ public sealed class ReceiveInventoryTransferDamageReturn
                     .ConfigureAwait(false);
                 if (transfer is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferNotFound,
                         "Inventory transfer was not found.");
                 }
 
                 if (actingBranchId != transfer.SourceBranchId.Value)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferBranchForbidden,
-                        "Only the source branch can receive a damage return.");
+                        "Only the source branch can receive an exception return.");
                 }
 
                 var utcNow = _clock.UtcNow;
+                var directSellable =
+                    TransferExceptionCustodyPolicy.RestoresDirectlyToSellableOnSourceReceive(custody.ReasonCode);
+                var returnInType = directSellable
+                    ? StockMovementType.TransferExceptionReturnRestock
+                    : StockMovementType.TransferExceptionReturnIn;
+
                 if (await _inventory
                         .HasInventoryTransferSourceMovementAsync(
                             orgId,
                             custody.Id.Value,
-                            custody.ProductId,
-                            StockMovementType.TransferDamageReturnIn,
+                            custody.ActualProductId,
+                            returnInType,
                             null,
                             ct)
                         .ConfigureAwait(false))
                 {
-                    if (custody.Status == InventoryTransferDamageCustodyStatus.ReturnInTransit)
+                    // Heal custody if a prior attempt posted the movement but status lagged.
+                    if (custody.Status == InventoryTransferExceptionCustodyStatus.ReturnInTransit)
                     {
                         custody.MarkReturnReceivedAtSource(actorId, utcNow);
                         await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
                         await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
                     }
 
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(
-                        InventoryTransferDamageCustodyMapping.Map(custody));
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(
+                        InventoryTransferExceptionCustodyMapping.Map(custody));
                 }
 
                 custody.MarkReturnReceivedAtSource(actorId, utcNow);
 
-                var account = await _inventory.GetByProductIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false)
-                    ?? InventoryAccount.CreateUntracked(orgId, custody.ProductId, utcNow);
-                var product = await _products.GetByIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false);
+                var account = await _inventory.GetByProductIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false)
+                    ?? InventoryAccount.CreateUntracked(orgId, custody.ActualProductId, utcNow);
+                var product = await _products.GetByIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false);
                 var uom = product?.UnitOfMeasure ?? UnitOfMeasure.Piece;
                 var sellingMode = product?.SellingMode ?? SellingMode.PerItem;
 
-                var movement = StockMovement.TransferDamageCustody(
+                var movement = StockMovement.TransferExceptionCustody(
                     orgId,
-                    custody.ProductId,
+                    custody.ActualProductId,
                     account.Id,
                     transfer.SourceBranchId,
-                    StockMovementType.TransferDamageReturnIn,
+                    returnInType,
                     custody.Quantity,
                     uom,
                     custody.Id.Value,
@@ -297,40 +311,43 @@ public sealed class ReceiveInventoryTransferDamageReturn
                     sellingMode: sellingMode);
 
                 var balances = (await _balances
-                        .ListByProductIdsAsync(orgId, [custody.ProductId], ct)
+                        .ListByProductIdsAsync(orgId, [custody.ActualProductId], ct)
                         .ConfigureAwait(false))
                     .ToList();
                 var source = InventoryTransferStock.EnsureBalance(
                     orgId,
                     transfer.SourceBranchId,
-                    custody.ProductId,
+                    custody.ActualProductId,
                     balances,
                     utcNow);
                 source.Apply(movement.QuantityEffect, utcNow);
-                source.IncreaseInspectionHold(custody.Quantity, utcNow);
+                if (!directSellable)
+                {
+                    source.IncreaseInspectionHold(custody.Quantity, utcNow);
+                }
 
                 await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
                 await _inventory.AddMovementAsync(movement, ct).ConfigureAwait(false);
                 await _balances.UpsertAsync(source, ct).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-                return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(
-                    InventoryTransferDamageCustodyMapping.Map(custody));
+                return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(
+                    InventoryTransferExceptionCustodyMapping.Map(custody));
             }, cancellationToken).ConfigureAwait(false);
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 }
 
-public sealed class InspectInventoryTransferDamageCustody
+public sealed class InspectInventoryTransferExceptionCustody
 {
-    private readonly IInventoryTransferDamageCustodyRepository _custodies;
+    private readonly IInventoryTransferExceptionCustodyRepository _custodies;
     private readonly IInventoryTransferRepository _transfers;
     private readonly IInventoryRepository _inventory;
     private readonly IInventoryBranchBalanceRepository _balances;
@@ -338,8 +355,8 @@ public sealed class InspectInventoryTransferDamageCustody
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
-    public InspectInventoryTransferDamageCustody(
-        IInventoryTransferDamageCustodyRepository custodies,
+    public InspectInventoryTransferExceptionCustody(
+        IInventoryTransferExceptionCustodyRepository custodies,
         IInventoryTransferRepository transfers,
         IInventoryRepository inventory,
         IInventoryBranchBalanceRepository balances,
@@ -356,17 +373,17 @@ public sealed class InspectInventoryTransferDamageCustody
         _clock = clock;
     }
 
-    public async Task<ApplicationResult<InventoryTransferDamageCustodyDto>> ExecuteAsync(
+    public async Task<ApplicationResult<InventoryTransferExceptionCustodyDto>> ExecuteAsync(
         Guid organizationId,
         Guid custodyId,
-        InspectInventoryTransferDamageCustodyRequest request,
+        InspectInventoryTransferExceptionCustodyRequest request,
         Guid actorId,
         Guid actingBranchId,
         CancellationToken cancellationToken = default)
     {
         if (actorId == Guid.Empty)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                 ApplicationErrorCodes.ActorRequired,
                 "An actor identifier is required.");
         }
@@ -377,13 +394,13 @@ public sealed class InspectInventoryTransferDamageCustody
             {
                 var orgId = PosOrganizationId.From(organizationId);
                 var custody = await _custodies
-                    .GetByIdAsync(orgId, InventoryTransferDamageCustodyId.From(custodyId), ct)
+                    .GetByIdAsync(orgId, InventoryTransferExceptionCustodyId.From(custodyId), ct)
                     .ConfigureAwait(false);
                 if (custody is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
-                        DomainErrorCodes.InvalidInventoryTransferDamageCustodyId,
-                        "Damage custody was not found.");
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferExceptionCustodyId,
+                        "Exception custody was not found.");
                 }
 
                 var transfer = await _transfers
@@ -391,26 +408,23 @@ public sealed class InspectInventoryTransferDamageCustody
                     .ConfigureAwait(false);
                 if (transfer is null)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferNotFound,
                         "Inventory transfer was not found.");
                 }
 
-                var expectedBranch = custody.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination
-                    ? transfer.DestinationBranchId.Value
-                    : transfer.SourceBranchId.Value;
-                if (custody.Decision == InventoryTransferDamagedCustodyDecision.KeepAtDestination)
+                if (custody.Decision == InventoryTransferExceptionCustodyDecision.KeepAtDestination)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
-                        DomainErrorCodes.InvalidInventoryTransferDamageCustodyStatus,
-                        "Destination-received damaged goods are already classified as damaged. Only source inspects returned damage.");
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
+                        DomainErrorCodes.InvalidInventoryTransferExceptionCustodyStatus,
+                        "Destination-held exception goods are not source-inspected. Only returned exception custody is inspected at source.");
                 }
 
-                if (actingBranchId != expectedBranch)
+                if (actingBranchId != transfer.SourceBranchId.Value)
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(
                         ApplicationErrorCodes.InventoryTransferBranchForbidden,
-                        "Damage custody must be inspected at the holding branch.");
+                        "Exception custody must be inspected at the source branch.");
                 }
 
                 var utcNow = _clock.UtcNow;
@@ -418,8 +432,8 @@ public sealed class InspectInventoryTransferDamageCustody
                         .HasInventoryTransferSourceMovementAsync(
                             orgId,
                             custody.Id.Value,
-                            custody.ProductId,
-                            StockMovementType.TransferDamageRecovery,
+                            custody.ActualProductId,
+                            StockMovementType.TransferExceptionRecovery,
                             null,
                             ct)
                         .ConfigureAwait(false)
@@ -427,50 +441,36 @@ public sealed class InspectInventoryTransferDamageCustody
                         .HasInventoryTransferSourceMovementAsync(
                             orgId,
                             custody.Id.Value,
-                            custody.ProductId,
-                            StockMovementType.TransferDamageWriteOff,
+                            custody.ActualProductId,
+                            StockMovementType.TransferExceptionWriteOff,
                             null,
                             ct)
                         .ConfigureAwait(false))
                 {
-                    return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(
-                        InventoryTransferDamageCustodyMapping.Map(custody));
+                    return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(
+                        InventoryTransferExceptionCustodyMapping.Map(custody));
                 }
 
-                InventoryTransferDiscrepancyFollowUp? followUpOverride = null;
-                if (!string.IsNullOrWhiteSpace(request.FollowUpOverride))
-                {
-                    if (!InventoryTransferDiscrepancyFollowUps.TryParse(request.FollowUpOverride, out var parsed))
-                    {
-                        return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(
-                            DomainErrorCodes.InvalidInventoryTransferDiscrepancyFollowUp,
-                            "Follow-up override is not recognized.");
-                    }
-
-                    followUpOverride = parsed;
-                }
-
-                if (custody.Decision == InventoryTransferDamagedCustodyDecision.ReturnToSource
-                    && custody.Status == InventoryTransferDamageCustodyStatus.ReceivedAtSource)
+                if (custody.Decision == InventoryTransferExceptionCustodyDecision.ReturnToSource
+                    && custody.Status == InventoryTransferExceptionCustodyStatus.ReceivedAtSource)
                 {
                     custody.MarkReadyForSourceInspection(actorId, utcNow);
                 }
 
                 custody.Inspect(
                     request.RecoveredSellableQty,
-                    request.ConfirmedDamagedQty,
+                    request.ConfirmedNonSellableQty,
                     actorId,
-                    utcNow,
-                    followUpOverride);
+                    utcNow);
 
-                var account = await _inventory.GetByProductIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false);
+                var account = await _inventory.GetByProductIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false);
                 if (account is null)
                 {
-                    var catalogProduct = await _products.GetByIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false)
+                    var catalogProduct = await _products.GetByIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false)
                         ?? throw new DomainException(
                             ApplicationErrorCodes.InventoryProductNotFound,
                             "Product was not found.");
-                    account = InventoryAccount.CreateUntracked(orgId, custody.ProductId, utcNow);
+                    account = InventoryAccount.CreateUntracked(orgId, custody.ActualProductId, utcNow);
                     account.Enable(
                         0m,
                         catalogProduct.UnitOfMeasure,
@@ -481,31 +481,31 @@ public sealed class InspectInventoryTransferDamageCustody
                     await _inventory.AddAccountAsync(account, ct).ConfigureAwait(false);
                 }
 
-                var product = await _products.GetByIdAsync(orgId, custody.ProductId, ct).ConfigureAwait(false);
+                var product = await _products.GetByIdAsync(orgId, custody.ActualProductId, ct).ConfigureAwait(false);
                 var uom = product?.UnitOfMeasure ?? UnitOfMeasure.Piece;
                 var sellingMode = product?.SellingMode ?? SellingMode.PerItem;
                 var transferNumber = transfer.TransferNumber ?? transfer.Id.Value.ToString("D");
-                var holdBranch = PosBranchId.From(expectedBranch);
+                var holdBranch = transfer.SourceBranchId;
 
                 var balances = (await _balances
-                        .ListByProductIdsAsync(orgId, [custody.ProductId], ct)
+                        .ListByProductIdsAsync(orgId, [custody.ActualProductId], ct)
                         .ConfigureAwait(false))
                     .ToList();
                 var balance = InventoryTransferStock.EnsureBalance(
                     orgId,
                     holdBranch,
-                    custody.ProductId,
+                    custody.ActualProductId,
                     balances,
                     utcNow);
 
                 if (custody.RecoveredSellableQty > 0m)
                 {
-                    var recovery = StockMovement.TransferDamageCustody(
+                    var recovery = StockMovement.TransferExceptionCustody(
                         orgId,
-                        custody.ProductId,
+                        custody.ActualProductId,
                         account.Id,
                         holdBranch,
-                        StockMovementType.TransferDamageRecovery,
+                        StockMovementType.TransferExceptionRecovery,
                         custody.RecoveredSellableQty,
                         uom,
                         custody.Id.Value,
@@ -520,66 +520,71 @@ public sealed class InspectInventoryTransferDamageCustody
                     await _inventory.AddMovementAsync(recovery, ct).ConfigureAwait(false);
                 }
 
-                if (custody.ConfirmedDamagedQty > 0m)
+                if (custody.ConfirmedNonSellableQty > 0m)
                 {
-                    var writeOff = StockMovement.TransferDamageCustody(
+                    var writeOff = StockMovement.TransferExceptionCustody(
                         orgId,
-                        custody.ProductId,
+                        custody.ActualProductId,
                         account.Id,
                         holdBranch,
-                        StockMovementType.TransferDamageWriteOff,
-                        custody.ConfirmedDamagedQty,
+                        StockMovementType.TransferExceptionWriteOff,
+                        custody.ConfirmedNonSellableQty,
                         uom,
                         custody.Id.Value,
                         transferNumber,
                         actorId,
                         utcNow,
                         sellingMode: sellingMode);
-                    balance.ConfirmDamagedFromHold(custody.ConfirmedDamagedQty, utcNow);
-                    // Write-off is branch bucket only — org sellable was never increased for damaged hold.
+                    balance.DecreaseInspectionHold(custody.ConfirmedNonSellableQty, utcNow);
+                    balance.IncreaseDamaged(custody.ConfirmedNonSellableQty, utcNow);
                     await _inventory.AddMovementAsync(writeOff, ct).ConfigureAwait(false);
                 }
 
                 await _custodies.UpdateAsync(custody, ct).ConfigureAwait(false);
                 await _balances.UpsertAsync(balance, ct).ConfigureAwait(false);
                 await _unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-                return ApplicationResult<InventoryTransferDamageCustodyDto>.Success(
-                    InventoryTransferDamageCustodyMapping.Map(custody));
+                return ApplicationResult<InventoryTransferExceptionCustodyDto>.Success(
+                    InventoryTransferExceptionCustodyMapping.Map(custody));
             }, cancellationToken).ConfigureAwait(false);
         }
         catch (DomainException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
         catch (PersistenceConflictException ex)
         {
-            return ApplicationResult<InventoryTransferDamageCustodyDto>.Failure(ex.ErrorCode, ex.Message);
+            return ApplicationResult<InventoryTransferExceptionCustodyDto>.Failure(ex.ErrorCode, ex.Message);
         }
     }
 }
 
-internal static class InventoryTransferDamageCustodyMapping
+internal static class InventoryTransferExceptionCustodyMapping
 {
-    public static InventoryTransferDamageCustodyDto Map(InventoryTransferDamageCustody c) =>
+    public static InventoryTransferExceptionCustodyDto Map(
+        InventoryTransferExceptionCustody c,
+        string? expectedProductName = null,
+        string? actualProductName = null) =>
         new(
             c.Id.Value,
             c.TransferId.Value,
             c.RootTransferId.Value,
             c.ReceiptLineId.Value,
-            c.ProductId.Value,
+            c.ExpectedProductId.Value,
+            c.ActualProductId.Value,
             c.Quantity,
-            InventoryTransferDamagedCustodyDecisions.ToCode(c.Decision),
+            c.ReasonCode,
+            InventoryTransferExceptionCustodyDecisions.ToCode(c.Decision),
             InventoryTransferDiscrepancyFollowUps.ToCode(c.FollowUpIntent),
-            InventoryTransferDamageCustodyStatuses.ToCode(c.Status),
+            InventoryTransferExceptionCustodyStatuses.ToCode(c.Status),
             c.HeldBranchId.Value,
             c.RecoveredSellableQty,
-            c.ConfirmedDamagedQty,
-            c.WaivedQty,
-            c.DestinationRecoveredSellableQty,
+            c.ConfirmedNonSellableQty,
             c.ReplacementDemandQty,
             c.CreatedAtUtc,
             c.UpdatedAtUtc,
             c.ReturnDispatchedAtUtc,
             c.ReturnReceivedAtUtc,
-            c.InspectedAtUtc);
+            c.InspectedAtUtc,
+            expectedProductName,
+            actualProductName);
 }

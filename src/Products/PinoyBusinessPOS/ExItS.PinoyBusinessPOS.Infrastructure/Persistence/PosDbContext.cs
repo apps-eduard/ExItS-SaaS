@@ -117,6 +117,7 @@ public sealed class PosDbContext : DbContext
     internal DbSet<InventoryTransferReceiptLineRecord> InventoryTransferReceiptLines => Set<InventoryTransferReceiptLineRecord>();
     internal DbSet<InventoryTransferNumberSequenceRecord> InventoryTransferNumberSequences => Set<InventoryTransferNumberSequenceRecord>();
     internal DbSet<InventoryTransferDamageCustodyRecord> InventoryTransferDamageCustodies => Set<InventoryTransferDamageCustodyRecord>();
+    internal DbSet<InventoryTransferExceptionCustodyRecord> InventoryTransferExceptionCustodies => Set<InventoryTransferExceptionCustodyRecord>();
     internal DbSet<DirectPurchaseReceiptRecord> DirectPurchaseReceipts => Set<DirectPurchaseReceiptRecord>();
     internal DbSet<DirectPurchaseReceiptLineRecord> DirectPurchaseReceiptLines => Set<DirectPurchaseReceiptLineRecord>();
     internal DbSet<DirectPurchaseReceiptNumberSequenceRecord> DirectPurchaseReceiptNumberSequences => Set<DirectPurchaseReceiptNumberSequenceRecord>();
@@ -3571,6 +3572,10 @@ public sealed class PosDbContext : DbContext
             entity.Property(e => e.Note)
                 .HasColumnName("note")
                 .HasMaxLength(InventoryTransferLine.DiscrepancyNoteMaxLength);
+            entity.Property(e => e.ActualReceivedProductId).HasColumnName("actual_received_product_id");
+            entity.Property(e => e.OtherCustodyDecision)
+                .HasColumnName("other_custody_decision")
+                .HasMaxLength(InventoryTransferExceptionCustodyDecisions.CodeMaxLength);
 
             entity.HasIndex(e => new { e.ReceiptId, e.TransferLineId })
                 .IsUnique()
@@ -4508,6 +4513,91 @@ public sealed class PosDbContext : DbContext
                 .HasForeignKey(e => e.ReceiptLineId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_itdc_receipt_line");
+        });
+
+        modelBuilder.Entity<InventoryTransferExceptionCustodyRecord>(entity =>
+        {
+            entity.ToTable("inventory_transfer_exception_custodies", tb =>
+            {
+                tb.HasCheckConstraint(
+                    "ck_itec_quantity_positive",
+                    "quantity > 0");
+                tb.HasCheckConstraint(
+                    "ck_itec_decision",
+                    $"decision IN ({string.Join(", ", InventoryTransferExceptionCustodyDecisions.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_follow_up",
+                    $"follow_up_intent IN ({string.Join(", ", InventoryTransferDiscrepancyFollowUps.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_status",
+                    $"status IN ({string.Join(", ", InventoryTransferExceptionCustodyStatuses.Codes.Select(c => $"'{c}'"))})");
+                tb.HasCheckConstraint(
+                    "ck_itec_inspection_split",
+                    "recovered_sellable_qty >= 0 AND confirmed_non_sellable_qty >= 0");
+            });
+
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.OrganizationId).HasColumnName("organization_id").IsRequired();
+            entity.Property(e => e.TransferId).HasColumnName("transfer_id").IsRequired();
+            entity.Property(e => e.RootTransferId).HasColumnName("root_transfer_id").IsRequired();
+            entity.Property(e => e.ReceiptLineId).HasColumnName("receipt_line_id").IsRequired();
+            entity.Property(e => e.ExpectedProductId).HasColumnName("expected_product_id").IsRequired();
+            entity.Property(e => e.ActualProductId).HasColumnName("actual_product_id").IsRequired();
+            entity.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 3).IsRequired();
+            entity.Property(e => e.ReasonCode)
+                .HasColumnName("reason_code")
+                .HasMaxLength(ReceiveDiscrepancyOtherReason.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Decision)
+                .HasColumnName("decision")
+                .HasMaxLength(InventoryTransferExceptionCustodyDecisions.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.FollowUpIntent)
+                .HasColumnName("follow_up_intent")
+                .HasMaxLength(InventoryTransferDiscrepancyFollowUps.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.Status)
+                .HasColumnName("status")
+                .HasMaxLength(InventoryTransferExceptionCustodyStatuses.CodeMaxLength)
+                .IsRequired();
+            entity.Property(e => e.HeldBranchId).HasColumnName("held_branch_id").IsRequired();
+            entity.Property(e => e.RecoveredSellableQty)
+                .HasColumnName("recovered_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.ConfirmedNonSellableQty)
+                .HasColumnName("confirmed_non_sellable_qty")
+                .HasPrecision(18, 3)
+                .IsRequired();
+            entity.Property(e => e.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by").IsRequired();
+            entity.Property(e => e.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(e => e.ReturnDispatchedAtUtc).HasColumnName("return_dispatched_at_utc");
+            entity.Property(e => e.ReturnDispatchedBy).HasColumnName("return_dispatched_by");
+            entity.Property(e => e.ReturnReceivedAtUtc).HasColumnName("return_received_at_utc");
+            entity.Property(e => e.ReturnReceivedBy).HasColumnName("return_received_by");
+            entity.Property(e => e.InspectedAtUtc).HasColumnName("inspected_at_utc");
+            entity.Property(e => e.InspectedBy).HasColumnName("inspected_by");
+
+            entity.HasIndex(e => new { e.OrganizationId, e.TransferId })
+                .HasDatabaseName("ix_itec_org_transfer");
+            entity.HasIndex(e => new { e.OrganizationId, e.RootTransferId })
+                .HasDatabaseName("ix_itec_org_root");
+            entity.HasIndex(e => new { e.OrganizationId, e.ReceiptLineId })
+                .IsUnique()
+                .HasDatabaseName("ux_itec_org_receipt_line");
+
+            entity.HasOne<InventoryTransferRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.TransferId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_itec_transfer");
+            entity.HasOne<InventoryTransferReceiptLineRecord>()
+                .WithMany()
+                .HasForeignKey(e => e.ReceiptLineId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_itec_receipt_line");
         });
 
         modelBuilder.Entity<InventoryBranchReorderSettingRecord>(entity =>

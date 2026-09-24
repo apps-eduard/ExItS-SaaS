@@ -5,6 +5,31 @@ import {
 } from "./inventory-movement-bucket-effects";
 
 describe("inventory-movement-bucket-effects", () => {
+  it("treats wrong-item return restock as sellable", () => {
+    const e = describeMovementBucketEffects("TransferExceptionReturnRestock", 5);
+    expect(e.physicalDelta).toBe(5);
+    expect(e.sellableDelta).toBe(5);
+    expect(e.inspectionHoldDelta).toBe(0);
+    expect(movementNeedsBucketBreakdown("TransferExceptionReturnRestock")).toBe(true);
+  });
+
+  it("treats wrong-item return restock as sellable", () => {
+    const e = describeMovementBucketEffects("TransferExceptionReturnRestock", 5);
+    expect(e.physicalDelta).toBe(5);
+    expect(e.sellableDelta).toBe(5);
+    expect(e.inspectionHoldDelta).toBe(0);
+    expect(movementNeedsBucketBreakdown("TransferExceptionReturnRestock")).toBe(true);
+  });
+
+  it("treats exception hold as physical inspection hold", () => {
+    const e = describeMovementBucketEffects("TransferExceptionHold", 3);
+    expect(e.physicalDelta).toBe(3);
+    expect(e.sellableDelta).toBe(0);
+    expect(e.damagedDelta).toBe(0);
+    expect(e.inspectionHoldDelta).toBe(3);
+    expect(movementNeedsBucketBreakdown("TransferExceptionHold")).toBe(true);
+  });
+
   it("treats damaged hold as physical non-sellable", () => {
     const e = describeMovementBucketEffects("TransferDamageHold", 5);
     expect(e.physicalDelta).toBe(5);

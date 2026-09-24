@@ -32,6 +32,22 @@ export function describeMovementBucketEffects(
       return { physicalDelta: abs, sellableDelta: 0, damagedDelta: 0, inspectionHoldDelta: abs };
     case "TransferDamageWriteOff":
       return { physicalDelta: 0, sellableDelta: 0, damagedDelta: abs, inspectionHoldDelta: -abs };
+    case "TransferExceptionHold":
+      return { physicalDelta: abs, sellableDelta: 0, damagedDelta: 0, inspectionHoldDelta: abs };
+    case "TransferExceptionExpectedRestore":
+      return { physicalDelta: abs, sellableDelta: abs, damagedDelta: 0, inspectionHoldDelta: 0 };
+    case "TransferExceptionActualOut":
+      return { physicalDelta: -abs, sellableDelta: -abs, damagedDelta: 0, inspectionHoldDelta: 0 };
+    case "TransferExceptionReturnOut":
+      return { physicalDelta: -abs, sellableDelta: 0, damagedDelta: 0, inspectionHoldDelta: -abs };
+    case "TransferExceptionReturnIn":
+      return { physicalDelta: abs, sellableDelta: 0, damagedDelta: 0, inspectionHoldDelta: abs };
+    case "TransferExceptionReturnRestock":
+      return { physicalDelta: abs, sellableDelta: abs, damagedDelta: 0, inspectionHoldDelta: 0 };
+    case "TransferExceptionRecovery":
+      return { physicalDelta: 0, sellableDelta: abs, damagedDelta: 0, inspectionHoldDelta: -abs };
+    case "TransferExceptionWriteOff":
+      return { physicalDelta: 0, sellableDelta: 0, damagedDelta: abs, inspectionHoldDelta: -abs };
     default:
       return {
         physicalDelta: signedQuantityEffect,
@@ -57,6 +73,14 @@ export function movementNeedsBucketBreakdown(movementType: string): boolean {
     movementType === "TransferDamageReturnOut" ||
     movementType === "TransferDamageReturnIn" ||
     movementType === "TransferDamageWriteOff" ||
+    movementType === "TransferExceptionHold" ||
+    movementType === "TransferExceptionExpectedRestore" ||
+    movementType === "TransferExceptionActualOut" ||
+    movementType === "TransferExceptionReturnOut" ||
+    movementType === "TransferExceptionReturnIn" ||
+    movementType === "TransferExceptionReturnRestock" ||
+    movementType === "TransferExceptionRecovery" ||
+    movementType === "TransferExceptionWriteOff" ||
     movementType === "TransferIn" ||
     movementType === "TransferOut"
   );

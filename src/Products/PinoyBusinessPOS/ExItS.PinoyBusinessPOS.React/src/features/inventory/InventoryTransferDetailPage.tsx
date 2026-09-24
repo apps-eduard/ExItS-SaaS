@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowUpRight,
   Ban,
+  ChevronRight,
   FilePlus2,
   PackageCheck,
   PackageOpen,
@@ -18,11 +20,14 @@ import {
   closeRemainderInventoryTransfer,
   dispatchInventoryTransfer,
   dispatchInventoryTransferDamageReturn,
+  dispatchInventoryTransferExceptionReturn,
   getInventoryTransfer,
   inspectInventoryTransferDamageCustody,
+  inspectInventoryTransferExceptionCustody,
   prepareInventoryTransferRemaining,
   receiveInventoryTransfer,
   receiveInventoryTransferDamageReturn,
+  receiveInventoryTransferExceptionReturn,
   type InventoryTransferDto,
   type ReceiveInventoryTransferRequest,
 } from "@/api/pos/pos-inventory-transfer-client";
@@ -52,6 +57,7 @@ import { useToast } from "@/components/exits/ToastProvider";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { useActorDirectory } from "@/features/actors/useActorDirectory";
 import { BusinessDocumentPreview } from "@/features/documents/BusinessDocumentPreview";
+import { InventoryMovementTransactionDrawer } from "@/features/inventory/InventoryMovementTransactionDrawer";
 import { InventoryTransferActivityTimeline } from "@/features/inventory/InventoryTransferActivityTimeline";
 import { buildTransferActivityEvents } from "@/features/inventory/inventory-transfer-activity";
 import { InventoryTransferReceiveMode } from "@/features/inventory/InventoryTransferReceiveMode";
@@ -70,21 +76,18 @@ import {
   lineOutstandingQty,
 } from "@/features/inventory/inventory-transfer-receive-helpers";
 import {
-  buildReceivingDecisionView,
   computeThisShipmentTotals,
   familyFulfillmentTargetQty,
   familyMemberDamagedQty,
-  isKeepAtDestinationCustody,
-  isReturnToSourceCustody,
   lineFollowUpDisplay,
   lineMissingQty,
+  lineOtherExceptionSecondaryText,
   lineOtherQty,
-  otherReasonLabelKey,
-  transferCustodyDecisionLabelKey,
-  transferCustodyStatusLabelKey,
-  transferDiscrepancyFollowUpLabelKey,
-  transferMissingDispositionLabelKey,
+  resolveTransferProductDisplayName,
+  resolveExceptionCustodyItemLabel,
+  looksLikeTransferProductIdFragment,
 } from "@/features/inventory/inventory-transfer-summary-presentation";
+import { restoresDirectlyToSellableOnSourceReceive } from "@/features/inventory/transfer-exception-custody-policy";
 import { TransferCloseRemainderDialog } from "@/features/inventory/TransferCloseRemainderDialog";
 import { PoProcessHeaderActions } from "@/features/purchasing/PoProcessHeaderActions";
 import { useI18n } from "@/i18n/I18nProvider";
@@ -112,6 +115,47 @@ function resolveTransferActionError(err: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+function isExceptionReturnPendingSend(status: string): boolean {
+  return status === "AwaitingReturn" || status === "HeldAtDestination";
+}
+
+function isExceptionReturnInTransit(status: string): boolean {
+  return status === "ReturnInTransit";
+}
+
+function isExceptionReturnAlreadyReceived(status: string): boolean {
+  return (
+    status === "ReceivedAtSource" ||
+    status === "AwaitingInspection" ||
+    status === "Inspected"
+  );
+}
+
+function isExceptionReturnWorkflowStatus(status: string): boolean {
+  return (
+    isExceptionReturnPendingSend(status) ||
+    isExceptionReturnInTransit(status) ||
+    isExceptionReturnAlreadyReceived(status)
+  );
+}
+
+function ExceptionSendBackButtonContent({
+  label,
+  branchName,
+}: {
+  label: string;
+  branchName: string;
+}) {
+  return (
+    <>
+      <ArrowUpRight className="size-4 shrink-0" aria-hidden />
+      <span className="min-w-0 truncate">{label}</span>
+      <ArrowRight className="size-4 shrink-0 rtl:rotate-180" aria-hidden />
+      <span className="min-w-0 truncate font-medium">{branchName}</span>
+    </>
+  );
 }
 
 function inventoryTransferStatusIcon(status: string) {
@@ -155,10 +199,17 @@ export function InventoryTransferDetailPage() {
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [closeRemainderOpen, setCloseRemainderOpen] = useState<CloseRemainderOpen>(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  const [familyTransactionOpen, setFamilyTransactionOpen] = useState<{
+    transferId: string;
+    transferNumber: string | null;
+  } | null>(null);
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
   const [inspectCustodyId, setInspectCustodyId] = useState<string | null>(null);
   const [inspectRecoveredText, setInspectRecoveredText] = useState("0");
   const [inspectConfirmedText, setInspectConfirmedText] = useState("0");
+  const [inspectExceptionCustodyId, setInspectExceptionCustodyId] = useState<string | null>(null);
+  const [inspectExceptionRecoveredText, setInspectExceptionRecoveredText] = useState("0");
+  const [inspectExceptionNonSellableText, setInspectExceptionNonSellableText] = useState("0");
 
   const workspace = useMemo(
     () =>
@@ -231,10 +282,18 @@ export function InventoryTransferDetailPage() {
           updated,
         );
       } else {
+        // Custody mutations return custody DTOs (not full transfer). Always refetch transfer detail.
         await queryClient.invalidateQueries({
           queryKey: ["inventory-transfer", workspace.organizationId, transferId],
         });
       }
+      await queryClient.invalidateQueries({
+        queryKey: ["inventory-transfer", workspace.organizationId],
+        predicate: (query) => {
+          const cachedId = query.queryKey[2];
+          return typeof cachedId === "string" && cachedId !== transferId;
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
@@ -318,6 +377,14 @@ export function InventoryTransferDetailPage() {
         ["inventory-transfer", workspace.organizationId, transferId],
         updated,
       );
+      // Refetch sibling family pages (root / R1…) without clobbering the just-updated DTO.
+      await queryClient.invalidateQueries({
+        queryKey: ["inventory-transfer", workspace.organizationId],
+        predicate: (query) => {
+          const cachedId = query.queryKey[2];
+          return typeof cachedId === "string" && cachedId !== transferId;
+        },
+      });
       await queryClient.invalidateQueries({ queryKey: ["inventory-transfers"] });
       await queryClient.invalidateQueries({ queryKey: ["inventory"] });
       await queryClient.invalidateQueries({ queryKey: ["stock-request"] });
@@ -359,9 +426,53 @@ export function InventoryTransferDetailPage() {
     }
     await refreshAfter(
       () => receiveInventoryTransferDamageReturn(workspace, custodyId),
-      "Damage return received",
+      t("transfer.exceptionReturnReceiveSuccess"),
       t("transfer.actionFailed"),
     );
+  }
+
+  async function onDispatchExceptionReturn(custodyId: string) {
+    if (!workspace || busyRef.current) {
+      return;
+    }
+    await refreshAfter(
+      () => dispatchInventoryTransferExceptionReturn(workspace, custodyId),
+      t("transfer.exceptionReturnDispatched"),
+      t("transfer.actionFailed"),
+    );
+  }
+
+  async function onReceiveExceptionReturn(custodyId: string) {
+    if (!workspace || busyRef.current) {
+      return;
+    }
+    await refreshAfter(
+      () => receiveInventoryTransferExceptionReturn(workspace, custodyId),
+      t("transfer.exceptionReturnReceiveSuccess"),
+      t("transfer.actionFailed"),
+    );
+  }
+
+  async function onInspectExceptionCustody() {
+    if (!workspace || !inspectExceptionCustodyId || busyRef.current) {
+      return;
+    }
+    const recovered = Number(inspectExceptionRecoveredText);
+    const confirmed = Number(inspectExceptionNonSellableText);
+    if (!Number.isFinite(recovered) || recovered < 0 || !Number.isFinite(confirmed) || confirmed < 0) {
+      showToast(t("transfer.exceptionInspectInvalidQty"), "error");
+      return;
+    }
+    await refreshAfter(
+      () =>
+        inspectInventoryTransferExceptionCustody(workspace, inspectExceptionCustodyId, {
+          recoveredSellableQty: recovered,
+          confirmedNonSellableQty: confirmed,
+        }),
+      t("transfer.exceptionInspected"),
+      t("transfer.actionFailed"),
+    );
+    setInspectExceptionCustodyId(null);
   }
 
   async function onInspectDamageCustody() {
@@ -454,8 +565,8 @@ export function InventoryTransferDetailPage() {
     allowManage && isSource && remainingToDispatchQty > 0 && !isDraft;
   const familyMembers = transfer.familyMembers ?? [];
   const damageCustodies = transfer.damageCustodies ?? [];
+  const exceptionCustodies = transfer.exceptionCustodies ?? [];
   const thisShipment = computeThisShipmentTotals(transfer);
-  const receivingDecision = buildReceivingDecisionView(transfer);
   const fulfillmentTargetQty = familyFulfillmentTargetQty(transfer);
   // Fulfillment coverage is for receive / replacement waves — not a lone Draft
   // where Remaining simply equals the yet-to-dispatch send qty.
@@ -465,8 +576,12 @@ export function InventoryTransferDetailPage() {
     (transfer.openInTransitQty ?? 0) > 0 ||
     (transfer.waivedQty ?? 0) > 0 ||
     damageCustodies.length > 0 ||
+    exceptionCustodies.length > 0 ||
     (remainingToDispatchQty > 0 && transfer.status !== "Draft");
   const thisTransferCustodies = damageCustodies.filter(
+    (c) => c.transferId.toLowerCase() === transfer.transferId.toLowerCase(),
+  );
+  const thisTransferExceptionCustodies = exceptionCustodies.filter(
     (c) => c.transferId.toLowerCase() === transfer.transferId.toLowerCase(),
   );
   const receiveButtonLabel =
@@ -740,6 +855,7 @@ export function InventoryTransferDetailPage() {
 
       {mode === "receive" && canReceive ? (
         <InventoryTransferReceiveMode
+          workspace={workspace}
           transfer={transfer}
           sourceName={sourceName}
           destName={destName}
@@ -843,215 +959,66 @@ export function InventoryTransferDetailPage() {
         data-testid="transfer-summary-body-top"
       >
         <Card
-          className="flex min-w-0 flex-col gap-2 p-3"
+          className="flex min-w-0 flex-col gap-2 p-3 lg:col-span-2"
           treatment="bordered"
           data-testid="transfer-this-shipment"
         >
           <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
             {t("transfer.thisShipment")}
           </h2>
-          <dl className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]">
-            <dt className="m-0 text-muted">{t("transfer.sent")}</dt>
-            <dd className="m-0 text-end font-semibold tabular-nums" data-testid="this-shipment-sent">
-              {formatTransferQty(thisShipment.sent)}
-            </dd>
-            <dt className="m-0 text-muted">{t("transfer.goodReceived")}</dt>
-            <dd
-              className="m-0 text-end font-semibold tabular-nums"
-              data-testid="this-shipment-good"
-            >
-              {formatTransferQty(thisShipment.goodReceived)}
-            </dd>
-            <dt className="m-0 text-muted">{t("transfer.damaged")}</dt>
-            <dd
-              className="m-0 text-end font-semibold tabular-nums"
-              data-testid="this-shipment-damaged"
-            >
-              {formatTransferQty(thisShipment.damaged)}
-            </dd>
-            <dt className="m-0 text-muted">{t("transfer.missing")}</dt>
-            <dd
-              className="m-0 text-end font-semibold tabular-nums"
-              data-testid="this-shipment-missing"
-            >
-              {formatTransferQty(thisShipment.missing)}
-            </dd>
-            <dt className="m-0 text-muted">{t("transfer.other")}</dt>
-            <dd
-              className="m-0 text-end font-semibold tabular-nums"
-              data-testid="this-shipment-other"
-            >
-              {formatTransferQty(thisShipment.other)}
-            </dd>
-          </dl>
+          <div className="flex flex-col gap-1.5 lg:grid lg:grid-cols-5 lg:gap-2">
+            {(
+              [
+                {
+                  key: "sent",
+                  label: t("transfer.sent"),
+                  value: thisShipment.sent,
+                  testId: "this-shipment-sent",
+                },
+                {
+                  key: "good",
+                  label: t("transfer.goodReceived"),
+                  value: thisShipment.goodReceived,
+                  testId: "this-shipment-good",
+                },
+                {
+                  key: "damaged",
+                  label: t("transfer.damaged"),
+                  value: thisShipment.damaged,
+                  testId: "this-shipment-damaged",
+                },
+                {
+                  key: "missing",
+                  label: t("transfer.missing"),
+                  value: thisShipment.missing,
+                  testId: "this-shipment-missing",
+                },
+                {
+                  key: "other",
+                  label: t("transfer.other"),
+                  value: thisShipment.other,
+                  testId: "this-shipment-other",
+                },
+              ] as const
+            ).map((metric) => (
+              <div
+                key={metric.key}
+                className="flex items-baseline justify-between gap-4 text-[length:var(--exits-text-sm)] lg:flex-col lg:items-start lg:justify-start lg:gap-1 lg:rounded-[var(--exits-radius-soft)] lg:border lg:border-border lg:bg-[color-mix(in_srgb,var(--exits-surface)_92%,var(--exits-border))] lg:p-2.5"
+              >
+                <span className="text-muted">{metric.label}</span>
+                <span
+                  className="font-semibold tabular-nums lg:text-[length:var(--exits-text-md)]"
+                  data-testid={metric.testId}
+                >
+                  {formatTransferQty(metric.value)}
+                </span>
+              </div>
+            ))}
+          </div>
         </Card>
 
-        {receivingDecision.hasDiscrepancy ? (
-          <Card
-            className="flex min-w-0 flex-col gap-2 p-3"
-            treatment="bordered"
-            data-testid="transfer-receiving-decision"
-          >
-            <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
-              {t("transfer.receivingDecision")}
-            </h2>
-            <dl className="m-0 grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 text-[length:var(--exits-text-sm)]">
-              {receivingDecision.damagedQty > 1e-9 ? (
-                <>
-                  <dt className="m-0 text-muted">{t("transfer.damaged")}</dt>
-                  <dd
-                    className="m-0 text-end font-semibold tabular-nums"
-                    data-testid="receiving-decision-damaged-qty"
-                  >
-                    {formatTransferQty(receivingDecision.damagedQty)}
-                  </dd>
-                  {receivingDecision.damagedFollowUp ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.replacement")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-damaged-follow-up"
-                      >
-                        {receivingDecision.damagedFollowUp === "RequestReplacement"
-                          ? t("transfer.replacementRequestedShort")
-                          : receivingDecision.damagedFollowUp === "AcceptShortage"
-                            ? t("transfer.noReplacement")
-                            : (transferDiscrepancyFollowUpLabelKey(
-                                receivingDecision.damagedFollowUp,
-                              )
-                                ? t(
-                                    transferDiscrepancyFollowUpLabelKey(
-                                      receivingDecision.damagedFollowUp,
-                                    )!,
-                                  )
-                                : null)}
-                      </dd>
-                    </>
-                  ) : null}
-                  {receivingDecision.custodyDecision ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.custodyLabel")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-custody"
-                      >
-                        {transferCustodyDecisionLabelKey(receivingDecision.custodyDecision)
-                          ? t(
-                              transferCustodyDecisionLabelKey(
-                                receivingDecision.custodyDecision,
-                              )!,
-                            )
-                          : null}
-                      </dd>
-                    </>
-                  ) : null}
-                  {isKeepAtDestinationCustody(receivingDecision.custodyDecision) ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.inventoryState")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-inventory-state"
-                      >
-                        {t("transfer.inventoryNonSellableAt").replace("{branch}", destName)}
-                      </dd>
-                      <dt className="m-0 text-muted">{t("transfer.currentLocation")}</dt>
-                      <dd className="m-0 text-end font-medium">{destName}</dd>
-                    </>
-                  ) : null}
-                  {isReturnToSourceCustody(receivingDecision.custodyDecision) &&
-                  receivingDecision.custodyStatus ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.returnStatus")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-return-status"
-                      >
-                        {transferCustodyStatusLabelKey(receivingDecision.custodyStatus)
-                          ? t(
-                              transferCustodyStatusLabelKey(
-                                receivingDecision.custodyStatus,
-                              )!,
-                            )
-                          : null}
-                      </dd>
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-
-              {receivingDecision.missingQty > 1e-9 ? (
-                <>
-                  <dt className="m-0 text-muted">{t("transfer.missing")}</dt>
-                  <dd
-                    className="m-0 text-end font-semibold tabular-nums"
-                    data-testid="receiving-decision-missing-qty"
-                  >
-                    {formatTransferQty(receivingDecision.missingQty)}
-                  </dd>
-                  {receivingDecision.missingDisposition ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.followUp.decisionCol")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-missing-disposition"
-                      >
-                        {transferMissingDispositionLabelKey(
-                          receivingDecision.missingDisposition,
-                        )
-                          ? t(
-                              transferMissingDispositionLabelKey(
-                                receivingDecision.missingDisposition,
-                              )!,
-                            )
-                          : null}
-                      </dd>
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-
-              {receivingDecision.otherQty > 1e-9 ? (
-                <>
-                  <dt className="m-0 text-muted">{t("transfer.otherDiscrepancy")}</dt>
-                  <dd
-                    className="m-0 text-end font-semibold tabular-nums"
-                    data-testid="receiving-decision-other-qty"
-                  >
-                    {formatTransferQty(receivingDecision.otherQty)}
-                  </dd>
-                  <dt className="m-0 text-muted">{t("transfer.reason")}</dt>
-                  <dd className="m-0 text-end font-medium" data-testid="receiving-decision-other-reason">
-                    {t(otherReasonLabelKey(receivingDecision.otherReasonCode))}
-                  </dd>
-                  {receivingDecision.otherReasonNote ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.note")}</dt>
-                      <dd className="m-0 text-end font-medium">
-                        {receivingDecision.otherReasonNote}
-                      </dd>
-                    </>
-                  ) : null}
-                  {receivingDecision.otherFollowUp ? (
-                    <>
-                      <dt className="m-0 text-muted">{t("transfer.followUp.decisionCol")}</dt>
-                      <dd
-                        className="m-0 text-end font-medium"
-                        data-testid="receiving-decision-other-follow-up"
-                      >
-                        {transferDiscrepancyFollowUpLabelKey(receivingDecision.otherFollowUp)
-                          ? t(
-                              transferDiscrepancyFollowUpLabelKey(
-                                receivingDecision.otherFollowUp,
-                              )!,
-                            )
-                          : null}
-                      </dd>
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-            </dl>
-
+        {thisTransferCustodies.length > 0 || thisTransferExceptionCustodies.length > 0 ? (
+          <div className="flex min-w-0 flex-col gap-2" data-testid="transfer-custody-actions">
             {thisTransferCustodies.length > 0 ? (
               <ul className="m-0 list-none p-0" data-testid="transfer-damage-custodies">
                 {inspectCustodyId ? (
@@ -1101,19 +1068,12 @@ export function InventoryTransferDetailPage() {
                   </li>
                 ) : null}
                 {thisTransferCustodies.map((c) => {
-                  const canDispatchReturn =
-                    canMutate &&
-                    isDestination &&
-                    c.decision === "ReturnToSource" &&
-                    (c.status === "AwaitingReturn" || c.status === "HeldAtDestination");
-                  const canReceiveReturn =
-                    canMutate && isSource && c.status === "ReturnInTransit";
                   const canInspect =
                     canMutate &&
                     isSource &&
                     c.decision === "ReturnToSource" &&
                     (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection");
-                  if (!canDispatchReturn && !canReceiveReturn && !canInspect) {
+                  if (!canInspect) {
                     return null;
                   }
                   return (
@@ -1121,49 +1081,110 @@ export function InventoryTransferDetailPage() {
                       key={c.custodyId}
                       className="flex flex-wrap items-center gap-2 text-[length:var(--exits-text-sm)]"
                     >
-                      {canDispatchReturn ? (
-                        <Button
-                          type="button"
-                          appearance="ghost"
-                          disabled={busy}
-                          onClick={() => void onDispatchDamageReturn(c.custodyId)}
-                          data-testid={`transfer-custody-dispatch-return-${c.custodyId}`}
-                        >
-                          Dispatch return
-                        </Button>
-                      ) : null}
-                      {canReceiveReturn ? (
-                        <Button
-                          type="button"
-                          appearance="ghost"
-                          disabled={busy}
-                          onClick={() => void onReceiveDamageReturn(c.custodyId)}
-                          data-testid={`transfer-custody-receive-return-${c.custodyId}`}
-                        >
-                          Receive return
-                        </Button>
-                      ) : null}
-                      {canInspect ? (
-                        <Button
-                          type="button"
-                          appearance="ghost"
-                          disabled={busy}
-                          onClick={() => {
-                            setInspectCustodyId(c.custodyId);
-                            setInspectRecoveredText("0");
-                            setInspectConfirmedText(String(c.quantity));
-                          }}
-                          data-testid={`transfer-custody-inspect-${c.custodyId}`}
-                        >
-                          Inspect
-                        </Button>
-                      ) : null}
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => {
+                          setInspectCustodyId(c.custodyId);
+                          setInspectRecoveredText("0");
+                          setInspectConfirmedText(String(c.quantity));
+                        }}
+                        data-testid={`transfer-custody-inspect-${c.custodyId}`}
+                      >
+                        Inspect
+                      </Button>
                     </li>
                   );
                 })}
               </ul>
             ) : null}
-          </Card>
+            {thisTransferExceptionCustodies.length > 0 ? (
+              <ul className="m-0 list-none p-0" data-testid="transfer-exception-custodies">
+                {inspectExceptionCustodyId ? (
+                  <li className="mb-2 flex flex-col gap-2 rounded-md border border-border p-2">
+                    <p className="m-0 text-[length:var(--exits-text-sm)] font-medium">
+                      {t("transfer.exceptionInspectTitle")}
+                    </p>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      {t("transfer.exceptionRecoveredSellable")}
+                      <input
+                        className="rounded-md border border-border px-2 py-1"
+                        inputMode="decimal"
+                        value={inspectExceptionRecoveredText}
+                        onChange={(e) => setInspectExceptionRecoveredText(e.target.value)}
+                        data-testid="transfer-exception-custody-inspect-recovered"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]">
+                      {t("transfer.exceptionConfirmedNonSellable")}
+                      <input
+                        className="rounded-md border border-border px-2 py-1"
+                        inputMode="decimal"
+                        value={inspectExceptionNonSellableText}
+                        onChange={(e) => setInspectExceptionNonSellableText(e.target.value)}
+                        data-testid="transfer-exception-custody-inspect-non-sellable"
+                      />
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void onInspectExceptionCustody()}
+                        data-testid="transfer-exception-custody-inspect-confirm"
+                      >
+                        {t("transfer.exceptionInspectConfirm")}
+                      </Button>
+                      <Button
+                        type="button"
+                        appearance="ghost"
+                        disabled={busy}
+                        onClick={() => setInspectExceptionCustodyId(null)}
+                        data-testid="transfer-exception-custody-inspect-cancel"
+                      >
+                        {t("transfer.dialogCancel")}
+                      </Button>
+                    </div>
+                  </li>
+                ) : null}
+                {thisTransferExceptionCustodies.map((c) => {
+                  const pendingInspect =
+                    c.decision === "ReturnToSource" &&
+                    !restoresDirectlyToSellableOnSourceReceive(c.reasonCode) &&
+                    (c.status === "ReceivedAtSource" || c.status === "AwaitingInspection");
+                  if (!pendingInspect) {
+                    return null;
+                  }
+
+                  const canInspect = canMutate && isSource && pendingInspect;
+
+                  return (
+                    <li
+                      key={c.custodyId}
+                      className="flex flex-col gap-1 text-[length:var(--exits-text-sm)]"
+                      data-testid={`transfer-exception-custody-actions-${c.custodyId}`}
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          appearance="ghost"
+                          disabled={!canInspect || busy}
+                          onClick={() => {
+                            setInspectExceptionCustodyId(c.custodyId);
+                            setInspectExceptionRecoveredText("0");
+                            setInspectExceptionNonSellableText(String(c.quantity));
+                          }}
+                          data-testid={`transfer-exception-custody-inspect-${c.custodyId}`}
+                        >
+                          {t("transfer.exceptionInspect")}
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -1176,56 +1197,54 @@ export function InventoryTransferDetailPage() {
           <h2 className="m-0 text-[length:var(--exits-text-sm)] font-semibold text-foreground">
             {t("transfer.fulfillment")}
           </h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("transfer.targetRequested")}
-              </p>
-              <p
-                className="m-0 font-semibold tabular-nums"
-                data-testid="transfer-fulfillment-target"
+          <div className="flex flex-col gap-1.5 lg:grid lg:grid-cols-5 lg:gap-2">
+            {(
+              [
+                {
+                  key: "target",
+                  label: t("transfer.targetRequested"),
+                  value: fulfillmentTargetQty,
+                  testId: "transfer-fulfillment-target",
+                },
+                {
+                  key: "good",
+                  label: t("transfer.goodReceived"),
+                  value: transfer.satisfiedAtDestinationQty ?? 0,
+                  testId: "transfer-fulfillment-good",
+                },
+                {
+                  key: "inTransit",
+                  label: t("transfer.stillInTransit"),
+                  value: transfer.openInTransitQty ?? 0,
+                  testId: "transfer-fulfillment-in-transit",
+                },
+                {
+                  key: "needs",
+                  label: t("transfer.needsFulfillment"),
+                  value: remainingToDispatchQty,
+                  testId: "transfer-fulfillment-needs-replacement",
+                },
+                {
+                  key: "waived",
+                  label: t("transfer.acceptedWaived"),
+                  value: transfer.waivedQty ?? 0,
+                  testId: "transfer-fulfillment-waived",
+                },
+              ] as const
+            ).map((metric) => (
+              <div
+                key={metric.key}
+                className="flex items-baseline justify-between gap-4 text-[length:var(--exits-text-sm)] lg:flex-col lg:items-start lg:justify-start lg:gap-1 lg:rounded-[var(--exits-radius-soft)] lg:border lg:border-border lg:bg-[color-mix(in_srgb,var(--exits-surface)_92%,var(--exits-border))] lg:p-2.5"
               >
-                {formatTransferQty(fulfillmentTargetQty)}
-              </p>
-            </div>
-            <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("transfer.goodReceived")}
-              </p>
-              <p
-                className="m-0 font-semibold tabular-nums"
-                data-testid="transfer-fulfillment-good"
-              >
-                {formatTransferQty(transfer.satisfiedAtDestinationQty ?? 0)}
-              </p>
-            </div>
-            <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("transfer.stillInTransit")}
-              </p>
-              <p className="m-0 font-semibold tabular-nums">
-                {formatTransferQty(transfer.openInTransitQty ?? 0)}
-              </p>
-            </div>
-            <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("transfer.needsFulfillment")}
-              </p>
-              <p
-                className="m-0 font-semibold tabular-nums"
-                data-testid="transfer-fulfillment-needs-replacement"
-              >
-                {formatTransferQty(remainingToDispatchQty)}
-              </p>
-            </div>
-            <div>
-              <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                {t("transfer.acceptedWaived")}
-              </p>
-              <p className="m-0 font-semibold tabular-nums">
-                {formatTransferQty(transfer.waivedQty ?? 0)}
-              </p>
-            </div>
+                <span className="text-muted">{metric.label}</span>
+                <span
+                  className="font-semibold tabular-nums lg:text-[length:var(--exits-text-md)]"
+                  data-testid={metric.testId}
+                >
+                  {formatTransferQty(metric.value)}
+                </span>
+              </div>
+            ))}
           </div>
           {canFulfillRemaining ? (
             <p
@@ -1284,6 +1303,22 @@ export function InventoryTransferDetailPage() {
                         "{n}",
                         String(member.replacementSequence ?? ""),
                       );
+                const memberExceptionCustodies = exceptionCustodies.filter(
+                  (c) =>
+                    c.transferId.toLowerCase() === member.transferId.toLowerCase(),
+                );
+                const memberReturnCustodies = memberExceptionCustodies.filter(
+                  (c) =>
+                    c.decision === "ReturnToSource" &&
+                    isExceptionReturnWorkflowStatus(c.status),
+                );
+                const memberDamageReturnCustodies = damageCustodies.filter(
+                  (c) =>
+                    c.transferId.toLowerCase() === member.transferId.toLowerCase() &&
+                    c.decision === "ReturnToSource" &&
+                    isExceptionReturnWorkflowStatus(c.status),
+                );
+                const otherQty = member.totalOtherQty ?? 0;
                 const qtyParts = [
                   `${t("transfer.sent")} ${formatTransferQty(member.totalSentQty)}`,
                   `${t("transfer.good")} ${formatTransferQty(member.totalReceivedQty)}`,
@@ -1295,42 +1330,351 @@ export function InventoryTransferDetailPage() {
                 if (missing > 1e-9) {
                   qtyParts.push(`${t("transfer.missing")} ${formatTransferQty(missing)}`);
                 }
+                if (otherQty > 1e-9) {
+                  qtyParts.push(`${t("transfer.other")} ${formatTransferQty(otherQty)}`);
+                }
+                const viewDetailsButton = (
+                  <button
+                    type="button"
+                    className="inline-flex shrink-0 items-center gap-0.5 border-0 bg-transparent p-0 text-[length:var(--exits-text-sm)] font-medium text-primary no-underline hover:text-[color-mix(in_srgb,var(--exits-primary)_82%,black)] hover:underline"
+                    onClick={() =>
+                      setFamilyTransactionOpen({
+                        transferId: member.transferId,
+                        transferNumber: member.transferNumber?.trim() || null,
+                      })
+                    }
+                    data-testid={`transfer-family-member-open-${member.transferId}`}
+                  >
+                    {t("transfer.viewDetails")}
+                    <ChevronRight className="size-3.5 shrink-0" aria-hidden />
+                  </button>
+                );
+                const renderExceptionReturnUi = (
+                  c: (typeof memberReturnCustodies)[number],
+                ) => {
+                  const productName = resolveExceptionCustodyItemLabel(transfer, c);
+                  const hasProduct = productName !== "—" && c.quantity > 1e-9;
+                  const pendingSend = isExceptionReturnPendingSend(c.status);
+                  const inTransit = isExceptionReturnInTransit(c.status);
+                  const received = isExceptionReturnAlreadyReceived(c.status);
+                  const canDispatchReturn = canMutate && isDestination && pendingSend;
+                  const canReceiveReturn = canMutate && isSource && inTransit;
+                  const sendBackButtonLabel = hasProduct
+                    ? t("transfer.exceptionDispatchReturnWithProduct")
+                        .replace("{qty}", formatTransferQty(c.quantity))
+                        .replace("{product}", productName)
+                    : t("transfer.exceptionDispatchReturn");
+                  const toSourceLine = hasProduct
+                    ? t("transfer.exceptionReturnInTransitLine")
+                        .replace("{qty}", formatTransferQty(c.quantity))
+                        .replace("{product}", productName)
+                        .replace("{branch}", sourceName)
+                    : sourceName;
+                  const fromDestLine = hasProduct
+                    ? t("transfer.exceptionIncomingReturnLine")
+                        .replace("{qty}", formatTransferQty(c.quantity))
+                        .replace("{product}", productName)
+                        .replace("{branch}", destName)
+                    : destName;
+                  const receivedFromLine = hasProduct
+                    ? t("transfer.exceptionReceivedFromBranch")
+                        .replace("{qty}", formatTransferQty(c.quantity))
+                        .replace("{product}", productName)
+                        .replace("{branch}", destName)
+                    : null;
+
+                  return (
+                    <div
+                      key={c.custodyId}
+                      className="flex min-w-0 flex-col items-start gap-1"
+                      data-testid={`transfer-family-member-send-back-${c.custodyId}`}
+                    >
+                      {isDestination && pendingSend && canDispatchReturn ? (
+                        <Button
+                          type="button"
+                          intent="primary"
+                          appearance="solid"
+                          className="w-auto self-start"
+                          disabled={busy}
+                          onClick={() => void onDispatchExceptionReturn(c.custodyId)}
+                          data-testid={`transfer-family-member-dispatch-return-${c.custodyId}`}
+                        >
+                          <ExceptionSendBackButtonContent
+                            label={sendBackButtonLabel}
+                            branchName={sourceName}
+                          />
+                        </Button>
+                      ) : null}
+                      {isDestination && pendingSend && !canDispatchReturn ? (
+                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                          {!online
+                            ? t("transfer.exceptionSendBackOffline")
+                            : !allowManage
+                              ? t("transfer.exceptionSendBackNoPermission")
+                              : t("transfer.custody.awaitingReturn")}
+                        </p>
+                      ) : null}
+                      {isDestination && (inTransit || received) ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`transfer-family-member-return-status-${c.custodyId}`}
+                        >
+                          {toSourceLine}
+                          {" · "}
+                          {received
+                            ? t("transfer.exceptionReturnedToSource")
+                            : t("transfer.exceptionReturnInTransitStatus")}
+                        </p>
+                      ) : null}
+                      {isSource && pendingSend ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`transfer-family-member-return-status-${c.custodyId}`}
+                        >
+                          {t("transfer.exceptionWaitingForReturn")}
+                        </p>
+                      ) : null}
+                      {isSource && inTransit ? (
+                        <>
+                          <div
+                            className="flex min-w-0 flex-col gap-0.5"
+                            data-testid={`transfer-family-member-return-status-${c.custodyId}`}
+                          >
+                            <span className="font-medium text-foreground">
+                              {t("transfer.exceptionIncomingReturn")}
+                            </span>
+                            <span className="text-muted">{fromDestLine}</span>
+                          </div>
+                          {canReceiveReturn ? (
+                            <Button
+                              type="button"
+                              intent="primary"
+                              appearance="solid"
+                              className="w-auto self-start"
+                              disabled={busy}
+                              onClick={() => void onReceiveExceptionReturn(c.custodyId)}
+                              data-testid={`transfer-family-member-receive-return-${c.custodyId}`}
+                            >
+                              <PackageOpen className="size-4 shrink-0" aria-hidden />
+                              {t("transfer.exceptionReceiveReturn")}
+                            </Button>
+                          ) : (
+                            <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
+                              {!online
+                                ? t("transfer.exceptionSendBackOffline")
+                                : !allowManage
+                                  ? t("transfer.exceptionSendBackNoPermission")
+                                  : null}
+                            </p>
+                          )}
+                        </>
+                      ) : null}
+                      {isSource && received ? (
+                        <div
+                          className="flex min-w-0 flex-col gap-0.5"
+                          data-testid={`transfer-family-member-return-status-${c.custodyId}`}
+                        >
+                          <span className="font-medium text-foreground">
+                            {t("transfer.exceptionReturnedToSource")}
+                          </span>
+                          {receivedFromLine ? (
+                            <span className="text-muted">{receivedFromLine}</span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                };
+                const renderDamageReturnUi = (
+                  c: (typeof memberDamageReturnCustodies)[number],
+                ) => {
+                  const productName = resolveTransferProductDisplayName(transfer, c.productId);
+                  const hasProduct =
+                    !!productName &&
+                    !looksLikeTransferProductIdFragment(productName, c.productId) &&
+                    c.quantity > 1e-9;
+                  const qtyProduct = hasProduct
+                    ? `${formatTransferQty(c.quantity)} ${productName}`
+                    : c.quantity > 1e-9
+                      ? formatTransferQty(c.quantity)
+                      : null;
+                  const pendingSend = isExceptionReturnPendingSend(c.status);
+                  const inTransit = isExceptionReturnInTransit(c.status);
+                  const received = isExceptionReturnAlreadyReceived(c.status);
+                  const canDispatchReturn = canMutate && isDestination && pendingSend;
+                  const canReceiveReturn = canMutate && isSource && inTransit;
+                  const sendBackButtonLabel = hasProduct
+                    ? t("transfer.exceptionDispatchReturnWithProduct")
+                        .replace("{qty}", formatTransferQty(c.quantity))
+                        .replace("{product}", productName)
+                    : t("transfer.exceptionDispatchReturn");
+
+                  return (
+                    <div
+                      key={c.custodyId}
+                      className="flex min-w-0 flex-col items-start gap-1"
+                      data-testid={`transfer-family-member-damage-send-back-${c.custodyId}`}
+                    >
+                      {isDestination && pendingSend && canDispatchReturn ? (
+                        <Button
+                          type="button"
+                          intent="primary"
+                          appearance="solid"
+                          className="w-auto self-start"
+                          disabled={busy}
+                          onClick={() => void onDispatchDamageReturn(c.custodyId)}
+                          data-testid={`transfer-family-member-damage-dispatch-return-${c.custodyId}`}
+                        >
+                          <ExceptionSendBackButtonContent
+                            label={sendBackButtonLabel}
+                            branchName={sourceName}
+                          />
+                        </Button>
+                      ) : null}
+                      {isDestination && pendingSend && !canDispatchReturn ? (
+                        <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
+                          {!online
+                            ? t("transfer.exceptionSendBackOffline")
+                            : !allowManage
+                              ? t("transfer.exceptionSendBackNoPermission")
+                              : t("transfer.custody.awaitingReturn")}
+                        </p>
+                      ) : null}
+                      {isDestination && (inTransit || received) ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`transfer-family-member-damage-return-status-${c.custodyId}`}
+                        >
+                          {hasProduct
+                            ? t("transfer.exceptionReturnInTransitLine")
+                                .replace("{qty}", formatTransferQty(c.quantity))
+                                .replace("{product}", productName)
+                                .replace("{branch}", sourceName)
+                            : sourceName}
+                          {" · "}
+                          {received
+                            ? t("transfer.exceptionReturnedToSource")
+                            : t("transfer.exceptionReturnInTransitStatus")}
+                        </p>
+                      ) : null}
+                      {isSource && pendingSend ? (
+                        <p
+                          className="m-0 text-[length:var(--exits-text-sm)] text-muted"
+                          data-testid={`transfer-family-member-damage-return-status-${c.custodyId}`}
+                        >
+                          {t("transfer.exceptionWaitingForReturn")}
+                        </p>
+                      ) : null}
+                      {isSource && inTransit ? (
+                        <>
+                          <div
+                            className="flex min-w-0 flex-col gap-0.5"
+                            data-testid={`transfer-family-member-damage-return-status-${c.custodyId}`}
+                          >
+                            <span className="font-medium text-foreground">
+                              {t("transfer.exceptionIncomingReturn")}
+                            </span>
+                            {hasProduct ? (
+                              <span className="text-muted">
+                                {t("transfer.exceptionIncomingReturnLine")
+                                  .replace("{qty}", formatTransferQty(c.quantity))
+                                  .replace("{product}", productName)
+                                  .replace("{branch}", destName)}
+                              </span>
+                            ) : null}
+                          </div>
+                          {canReceiveReturn ? (
+                            <Button
+                              type="button"
+                              intent="primary"
+                              appearance="solid"
+                              className="w-auto self-start"
+                              disabled={busy}
+                              onClick={() => void onReceiveDamageReturn(c.custodyId)}
+                              data-testid={`transfer-family-member-damage-receive-return-${c.custodyId}`}
+                            >
+                              <PackageOpen className="size-4 shrink-0" aria-hidden />
+                              {t("transfer.exceptionReceiveReturn")}
+                            </Button>
+                          ) : null}
+                        </>
+                      ) : null}
+                      {isSource && received ? (
+                        <div
+                          className="flex min-w-0 flex-col gap-0.5"
+                          data-testid={`transfer-family-member-damage-return-status-${c.custodyId}`}
+                        >
+                          <span className="font-medium text-foreground">
+                            {t("transfer.exceptionReturnedToSource")}
+                          </span>
+                          {qtyProduct && hasProduct ? (
+                            <span className="text-muted">
+                              {t("transfer.exceptionReceivedFromBranch")
+                                .replace("{qty}", formatTransferQty(c.quantity))
+                                .replace("{product}", productName)
+                                .replace("{branch}", destName)}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                };
                 return (
                   <li key={member.transferId} className="min-w-0">
-                    <Link
-                      to={`/inventory/transfers/${member.transferId}`}
-                      className="block h-full no-underline"
+                    <Card
+                      className={`flex h-full flex-col gap-1.5 p-3 ${
+                        isCurrent
+                          ? "ring-1 ring-[color-mix(in_srgb,var(--exits-border)_80%,transparent)]"
+                          : ""
+                      }`}
+                      treatment="bordered"
+                      padding="compact"
                       data-testid={`transfer-family-member-${member.transferId}`}
                     >
-                      <Card
-                        className={`flex h-full flex-col gap-0.5 p-3 ${
-                          isCurrent
-                            ? "ring-1 ring-[color-mix(in_srgb,var(--exits-border)_80%,transparent)]"
-                            : ""
-                        }`}
-                        treatment="bordered"
-                        padding="compact"
-                      >
+                      <div className="flex min-w-0 items-start justify-between gap-2">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
-                          <span className="text-[length:var(--exits-text-sm)] font-semibold text-foreground">
+                          <span
+                            className="min-w-0 truncate text-[length:var(--exits-text-sm)] font-semibold text-foreground"
+                            data-testid={`transfer-family-member-link-${member.transferId}`}
+                          >
                             {roleLabel}
                           </span>
-                          <span className="truncate font-mono text-[length:var(--exits-text-xs)] text-muted">
-                            {member.transferNumber?.trim() || "—"}
-                          </span>
-                          <StatusChip
-                            tone={inventoryTransferStatusTone(member.status)}
-                            appearance="soft"
-                            shape="soft"
-                          >
-                            {t(inventoryTransferStatusLabelKey(member.status))}
-                          </StatusChip>
+                          {qtyParts.map((part) => (
+                            <StatusChip
+                              key={part}
+                              tone="info"
+                              appearance="outline"
+                              shape="soft"
+                            >
+                              {part}
+                            </StatusChip>
+                          ))}
                         </div>
-                        <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">
-                          {qtyParts.join(" · ")}
-                        </p>
-                      </Card>
-                    </Link>
+                        <StatusChip
+                          tone={inventoryTransferStatusTone(member.status)}
+                          appearance="soft"
+                          shape="soft"
+                        >
+                          {t(inventoryTransferStatusLabelKey(member.status))}
+                        </StatusChip>
+                      </div>
+
+                      <span
+                        className="min-w-0 truncate font-mono text-[length:var(--exits-text-xs)] font-semibold text-primary"
+                        data-testid={`transfer-family-member-number-${member.transferId}`}
+                      >
+                        {member.transferNumber?.trim() || "—"}
+                      </span>
+
+                      <div className="flex min-w-0 items-end justify-between gap-x-3 gap-y-2">
+                        <div className="flex min-w-0 flex-col items-start gap-2">
+                          {memberReturnCustodies.map((c) => renderExceptionReturnUi(c))}
+                          {memberDamageReturnCustodies.map((c) => renderDamageReturnUi(c))}
+                        </div>
+                        {viewDetailsButton}
+                      </div>
+                    </Card>
                   </li>
                 );
               })}
@@ -1385,6 +1729,7 @@ export function InventoryTransferDetailPage() {
                 const missing = lineMissingQty(transfer, line.lineId);
                 const other = lineOtherQty(transfer, line.lineId);
                 const followUp = lineFollowUpDisplay(transfer, line);
+                const otherSecondary = lineOtherExceptionSecondaryText(transfer, line);
                 const followUpText = followUp
                   ? followUp.qty != null
                     ? t(followUp.labelKey).replace("{qty}", formatTransferQty(followUp.qty))
@@ -1397,6 +1742,11 @@ export function InventoryTransferDetailPage() {
                   >
                     <ExitsTableCell cellAlign="text" colSize="flex" className="font-medium">
                       <div>{line.productName}</div>
+                      {otherSecondary ? (
+                        <div className="text-[length:var(--exits-text-xs)] font-normal text-muted">
+                          {otherSecondary}
+                        </div>
+                      ) : null}
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="center" colSize="numeric" className="tabular-nums">
                       {formatTransferQty(line.sentQty)}
@@ -1432,6 +1782,7 @@ export function InventoryTransferDetailPage() {
               const missing = lineMissingQty(transfer, line.lineId);
               const other = lineOtherQty(transfer, line.lineId);
               const followUp = lineFollowUpDisplay(transfer, line);
+              const otherSecondary = lineOtherExceptionSecondaryText(transfer, line);
               const followUpText = followUp
                 ? followUp.qty != null
                   ? t(followUp.labelKey).replace("{qty}", formatTransferQty(followUp.qty))
@@ -1445,6 +1796,9 @@ export function InventoryTransferDetailPage() {
                   <div className="exits-table-mobile__title-row">
                     <span className="exits-table-mobile__title">{line.productName}</span>
                   </div>
+                  {otherSecondary ? (
+                    <p className="m-0 text-[length:var(--exits-text-xs)] text-muted">{otherSecondary}</p>
+                  ) : null}
                   <p className="exits-table-mobile__math mt-1 mb-0">
                     {t("transfer.sent")}: {formatTransferQty(line.sentQty)}
                     {` · ${t("transfer.good")}: ${formatTransferQty(line.receivedQty)}`}
@@ -1607,6 +1961,21 @@ export function InventoryTransferDetailPage() {
           </div>
         </div>
       </SideDrawer>
+
+      <InventoryMovementTransactionDrawer
+        open={familyTransactionOpen != null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFamilyTransactionOpen(null);
+          }
+        }}
+        movement={null}
+        transferContext={familyTransactionOpen}
+        unitOfMeasure=""
+        workspace={workspace}
+        resolveActor={actors.resolve}
+        actorsLoading={actors.isResolving}
+      />
 
       {documentPreviewOpen ? (
         <BusinessDocumentPreview

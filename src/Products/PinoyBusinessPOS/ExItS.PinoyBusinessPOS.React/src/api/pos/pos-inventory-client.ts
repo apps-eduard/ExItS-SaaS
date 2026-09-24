@@ -133,6 +133,12 @@ export type PosStockMovementDto = {
   transactionId?: string | null;
   /** Human document reference (e.g. TR-260922-001). */
   transactionReference?: string | null;
+  /** Sellable on-hand immediately before this movement (branch + product history). */
+  sellableBefore?: number | null;
+  /** Authoritative sellable bucket delta for this movement type. */
+  sellableDelta?: number | null;
+  /** Sellable on-hand immediately after this movement (branch + product history). */
+  sellableAfter?: number | null;
 };
 
 export type PosInventoryLotDto = {

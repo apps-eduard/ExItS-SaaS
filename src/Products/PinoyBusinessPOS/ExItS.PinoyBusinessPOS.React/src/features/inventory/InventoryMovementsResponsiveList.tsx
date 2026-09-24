@@ -31,6 +31,34 @@ function formatQtyEffect(quantityEffect: number, unitOfMeasure: string): string 
   return `${sign}${quantityEffect} ${unitOfMeasure}`;
 }
 
+function formatSellableBalanceQty(value: number): string {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+  return Number.isInteger(value) ? String(value) : String(value);
+}
+
+function MovementSellableAfterTag({
+  sellableAfter,
+  unitOfMeasure,
+}: {
+  sellableAfter: number | null | undefined;
+  unitOfMeasure: string;
+}) {
+  const { t } = useI18n();
+  if (sellableAfter == null || !Number.isFinite(sellableAfter)) {
+    return null;
+  }
+  return (
+    <span
+      className="mt-1 inline-flex max-w-full rounded border border-border bg-muted/30 px-1.5 py-0.5 text-[length:var(--exits-text-xs)] font-normal text-muted"
+      data-testid="inventory-movement-sellable-after"
+    >
+      {t("inventory.sellableAfter")}: {formatSellableBalanceQty(sellableAfter)} {unitOfMeasure}
+    </span>
+  );
+}
+
 function MovementBucketBreakdown({
   movementType,
   quantityEffect,
@@ -158,6 +186,12 @@ export function InventoryMovementsResponsiveList({
                   movementType={movement.movementType}
                   quantityEffect={movement.quantityEffect}
                 />
+                <div className="mt-0.5">
+                  <MovementSellableAfterTag
+                    sellableAfter={movement.sellableAfter}
+                    unitOfMeasure={unitOfMeasure}
+                  />
+                </div>
                 <p className="mt-1 mb-0 text-[length:var(--exits-text-sm)]">
                   <MovementTypeCell movement={movement} />
                 </p>
@@ -269,12 +303,20 @@ export function InventoryMovementsResponsiveList({
                   <td className="whitespace-nowrap px-3 py-2.5 text-muted tabular-nums">
                     {formatMovementWhen(movement.recordedAtUtc)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-semibold tabular-nums">
-                    {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
+                  <td className="px-3 py-2.5 font-semibold tabular-nums">
+                    <div className="whitespace-nowrap">
+                      {formatQtyEffect(movement.quantityEffect, unitOfMeasure)}
+                    </div>
                     <MovementBucketBreakdown
                       movementType={movement.movementType}
                       quantityEffect={movement.quantityEffect}
                     />
+                    <div className="mt-0.5 font-normal">
+                      <MovementSellableAfterTag
+                        sellableAfter={movement.sellableAfter}
+                        unitOfMeasure={unitOfMeasure}
+                      />
+                    </div>
                   </td>
                   <td className="px-3 py-2.5">
                     <MovementTypeCell movement={movement} />

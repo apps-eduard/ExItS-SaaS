@@ -26,6 +26,10 @@ export type ReceivingDecisionView = {
   otherReasonCode: string | null;
   otherReasonNote: string | null;
   otherFollowUp: string | null;
+  otherCustodyDecision: string | null;
+  otherCustodyStatus: string | null;
+  actualReceivedProductId: string | null;
+  confirmedNonSellableQty: number | null;
 };
 
 function sumFinite(values: number[]): number {
@@ -68,6 +72,53 @@ export function computeThisShipmentTotals(
   };
 }
 
+/** Authoritative waived qty for THIS transfer only (never family aggregate). */
+export function computeThisTransferWaivedQty(
+  transfer: Pick<InventoryTransferDto, "lines" | "receipts">,
+): number {
+  const fromLines = sumFinite((transfer.lines ?? []).map((l) => l.waivedQty ?? 0));
+  if (fromLines > 1e-9) {
+    return fromLines;
+  }
+  return sumFinite(
+    (transfer.receipts ?? []).flatMap((r) =>
+      (r.lines ?? []).map((l) => l.quantityWaived ?? 0),
+    ),
+  );
+}
+
+export type OverallFulfillmentView = {
+  target: number;
+  goodReceived: number;
+  openInTransit: number;
+  waived: number;
+  remainingToDispatch: number;
+};
+
+/** Family coverage metrics from authoritative transfer DTO fields. */
+export function buildOverallFulfillmentView(
+  transfer: Pick<
+    InventoryTransferDto,
+    | "totalSentQty"
+    | "familyMembers"
+    | "rootTransferId"
+    | "satisfiedAtDestinationQty"
+    | "totalReceivedQty"
+    | "openInTransitQty"
+    | "totalOutstandingQty"
+    | "waivedQty"
+    | "remainingToDispatchQty"
+  >,
+): OverallFulfillmentView {
+  return {
+    target: familyFulfillmentTargetQty(transfer),
+    goodReceived: transfer.satisfiedAtDestinationQty ?? transfer.totalReceivedQty,
+    openInTransit: transfer.openInTransitQty ?? transfer.totalOutstandingQty,
+    waived: transfer.waivedQty ?? 0,
+    remainingToDispatch: transfer.remainingToDispatchQty ?? 0,
+  };
+}
+
 export function transferHasReceivingDiscrepancy(
   transfer: Pick<InventoryTransferDto, "totalSentQty" | "totalReceivedQty" | "receipts">,
 ): boolean {
@@ -80,7 +131,10 @@ export function transferHasReceivingDiscrepancy(
  * Prefer damage-custody fields when present; otherwise receipt-line follow-ups.
  */
 export function buildReceivingDecisionView(
-  transfer: Pick<InventoryTransferDto, "transferId" | "receipts" | "damageCustodies">,
+  transfer: Pick<
+    InventoryTransferDto,
+    "transferId" | "receipts" | "damageCustodies" | "exceptionCustodies"
+  >,
 ): ReceivingDecisionView {
   const receipts = transfer.receipts ?? [];
   let damagedQty = 0;
@@ -137,6 +191,41 @@ export function buildReceivingDecisionView(
     }
   }
 
+  const exceptionCustodies = (transfer.exceptionCustodies ?? []).filter(
+    (c) => c.transferId.toLowerCase() === transfer.transferId.toLowerCase(),
+  );
+  let otherCustodyDecision: string | null = null;
+  let otherCustodyStatus: string | null = null;
+  let actualReceivedProductId: string | null = null;
+  let confirmedNonSellableQty: number | null = null;
+  if (exceptionCustodies.length > 0) {
+    const primaryException = exceptionCustodies[0]!;
+    otherCustodyDecision = primaryException.decision;
+    otherCustodyStatus = primaryException.status;
+    actualReceivedProductId = primaryException.actualProductId;
+    confirmedNonSellableQty = primaryException.confirmedNonSellableQty;
+    if (primaryException.followUpIntent) {
+      otherFollowUp = primaryException.followUpIntent;
+    }
+    if (!otherReasonCode && primaryException.reasonCode) {
+      otherReasonCode = primaryException.reasonCode;
+    }
+    if (otherQty < 1e-9) {
+      otherQty = sumFinite(exceptionCustodies.map((c) => c.quantity));
+    }
+  }
+
+  for (const receipt of receipts) {
+    for (const line of receipt.lines ?? []) {
+      if ((line.quantityOther ?? 0) > 1e-9 && line.actualReceivedProductId && !actualReceivedProductId) {
+        actualReceivedProductId = line.actualReceivedProductId;
+      }
+      if ((line.quantityOther ?? 0) > 1e-9 && line.otherCustodyDecision && !otherCustodyDecision) {
+        otherCustodyDecision = line.otherCustodyDecision;
+      }
+    }
+  }
+
   return {
     hasDiscrepancy: damagedQty > 1e-9 || missingQty > 1e-9 || otherQty > 1e-9,
     damagedQty,
@@ -149,6 +238,10 @@ export function buildReceivingDecisionView(
     otherReasonCode,
     otherReasonNote,
     otherFollowUp,
+    otherCustodyDecision,
+    otherCustodyStatus,
+    actualReceivedProductId,
+    confirmedNonSellableQty,
   };
 }
 
@@ -268,8 +361,164 @@ export type LineFollowUpDisplay = {
 } | null;
 
 /** Compact follow-up cell for THIS transfer's line from persisted receipt decisions. */
+export function resolveTransferProductDisplayName(
+  transfer: Pick<InventoryTransferDto, "lines" | "exceptionCustodies">,
+  productId: string,
+): string {
+  const match = transfer.lines.find(
+    (entry) => entry.productId.toLowerCase() === productId.toLowerCase(),
+  );
+  if (
+    match?.productName?.trim() &&
+    !looksLikeProductIdFragment(match.productName.trim(), productId)
+  ) {
+    return match.productName.trim();
+  }
+  for (const custody of transfer.exceptionCustodies ?? []) {
+    if (
+      custody.actualProductId.toLowerCase() === productId.toLowerCase() &&
+      custody.actualProductName?.trim() &&
+      !looksLikeProductIdFragment(custody.actualProductName.trim(), productId)
+    ) {
+      return custody.actualProductName.trim();
+    }
+    if (
+      custody.expectedProductId.toLowerCase() === productId.toLowerCase() &&
+      custody.expectedProductName?.trim() &&
+      !looksLikeProductIdFragment(custody.expectedProductName.trim(), productId)
+    ) {
+      return custody.expectedProductName.trim();
+    }
+  }
+  return "—";
+}
+
+function looksLikeProductIdFragment(label: string, productId: string): boolean {
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return true;
+  }
+  return (
+    trimmed.length <= 8 &&
+    productId.toLowerCase().startsWith(trimmed.toLowerCase())
+  );
+}
+
+export { looksLikeProductIdFragment as looksLikeTransferProductIdFragment };
+
+/**
+ * User-facing product label for exception custody. Never prefers raw id fragments
+ * when a catalog/line/custody name is available.
+ */
+export function resolveExceptionCustodyItemLabel(
+  transfer: Pick<InventoryTransferDto, "lines" | "exceptionCustodies">,
+  custody: {
+    actualProductId: string;
+    expectedProductId: string;
+    actualProductName?: string | null;
+    expectedProductName?: string | null;
+  },
+): string {
+  const actualCandidates = [
+    custody.actualProductName?.trim(),
+    transfer.lines.find(
+      (line) => line.productId.toLowerCase() === custody.actualProductId.toLowerCase(),
+    )?.productName?.trim(),
+  ];
+  for (const candidate of actualCandidates) {
+    if (candidate && !looksLikeProductIdFragment(candidate, custody.actualProductId)) {
+      return candidate;
+    }
+  }
+
+  const sameAsExpected =
+    custody.actualProductId.toLowerCase() === custody.expectedProductId.toLowerCase();
+  if (sameAsExpected) {
+    const expectedCandidates = [
+      custody.expectedProductName?.trim(),
+      transfer.lines.find(
+        (line) => line.productId.toLowerCase() === custody.expectedProductId.toLowerCase(),
+      )?.productName?.trim(),
+    ];
+    for (const candidate of expectedCandidates) {
+      if (candidate && !looksLikeProductIdFragment(candidate, custody.expectedProductId)) {
+        return candidate;
+      }
+    }
+  }
+
+  // Last resort: expected name when actual catalog name is unavailable (still better than a GUID).
+  const expectedFallback =
+    custody.expectedProductName?.trim() ||
+    transfer.lines.find(
+      (line) => line.productId.toLowerCase() === custody.expectedProductId.toLowerCase(),
+    )?.productName?.trim();
+  if (
+    expectedFallback &&
+    !looksLikeProductIdFragment(expectedFallback, custody.expectedProductId)
+  ) {
+    return expectedFallback;
+  }
+
+  return "—";
+}
+
+export function lineOtherExceptionSecondaryText(
+  transfer: Pick<
+    InventoryTransferDto,
+    "transferId" | "receipts" | "exceptionCustodies" | "lines"
+  >,
+  line: Pick<InventoryTransferLineDto, "lineId" | "productId">,
+): string | null {
+  let reasonCode: string | null = null;
+  let actualProductId: string | null = null;
+  for (const receipt of transfer.receipts ?? []) {
+    for (const rl of receipt.lines ?? []) {
+      if (rl.lineId !== line.lineId || (rl.quantityOther ?? 0) <= 1e-9) {
+        continue;
+      }
+      reasonCode = rl.otherReasonCode ?? null;
+      actualProductId = rl.actualReceivedProductId ?? null;
+    }
+  }
+  const custody = (transfer.exceptionCustodies ?? []).find(
+    (c) =>
+      c.transferId.toLowerCase() === transfer.transferId.toLowerCase() &&
+      c.expectedProductId.toLowerCase() === line.productId.toLowerCase(),
+  );
+  if (custody) {
+    reasonCode = reasonCode ?? custody.reasonCode;
+    actualProductId = actualProductId ?? custody.actualProductId;
+  }
+  if (reasonCode !== "WrongItem" && reasonCode !== "WrongVariant") {
+    return null;
+  }
+  const reasonLabel = reasonCode === "WrongVariant" ? "Wrong variant" : "Wrong item";
+  if (!actualProductId) {
+    return reasonLabel;
+  }
+  const actualNameCandidates = [
+    custody?.actualProductName?.trim() ?? null,
+    transfer.lines.find(
+      (entry) => entry.productId.toLowerCase() === actualProductId!.toLowerCase(),
+    )?.productName?.trim() ?? null,
+  ];
+  const actualName =
+    actualNameCandidates.find(
+      (candidate) =>
+        !!candidate && !looksLikeProductIdFragment(candidate, actualProductId!),
+    ) ?? null;
+  if (!actualName) {
+    return reasonLabel;
+  }
+  return `${reasonLabel} · Actual: ${actualName}`;
+}
+
 export function lineFollowUpDisplay(
-  transfer: Pick<InventoryTransferDto, "receipts" | "damageCustodies" | "transferId">,
+  transfer: Pick<
+    InventoryTransferDto,
+    "receipts" | "damageCustodies" | "exceptionCustodies" | "transferId" | "lines"
+  >,
   line: Pick<InventoryTransferLineDto, "lineId">,
 ): LineFollowUpDisplay {
   const damaged = lineDamagedQty(transfer, line.lineId);

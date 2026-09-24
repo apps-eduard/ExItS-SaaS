@@ -48,6 +48,14 @@ public static class StockMovementPresentation
             StockMovementType.TransferDamageReturnOut => "Damaged returned to source",
             StockMovementType.TransferDamageReturnIn => "Damaged return received",
             StockMovementType.TransferDamageWriteOff => "Confirmed damaged",
+            StockMovementType.TransferExceptionHold => "Exception transfer received",
+            StockMovementType.TransferExceptionExpectedRestore => "Exception expected restore",
+            StockMovementType.TransferExceptionActualOut => "Exception actual out",
+            StockMovementType.TransferExceptionReturnOut => "Exception returned to source",
+            StockMovementType.TransferExceptionReturnIn => "Exception return received",
+            StockMovementType.TransferExceptionReturnRestock => "Wrong item return received",
+            StockMovementType.TransferExceptionRecovery => "Returned exception recovered",
+            StockMovementType.TransferExceptionWriteOff => "Confirmed non-sellable exception",
             StockMovementType.DirectPurchaseReceipt => "Direct purchase",
             StockMovementType.ExpirationInitialization => "Expiration initialization",
             StockMovementType.StockUse => "Stock use",
@@ -83,6 +91,20 @@ public static class StockMovementPresentation
         return $"{custody} · {replacement}";
     }
 
+    public static string FormatExceptionHoldDecisionDetail(
+        InventoryTransferExceptionCustodyDecision decision,
+        InventoryTransferDiscrepancyFollowUp followUp,
+        string reasonCode)
+    {
+        var custody = decision == InventoryTransferExceptionCustodyDecision.ReturnToSource
+            ? "Return to source"
+            : "Keep at destination";
+        var replacement = followUp == InventoryTransferDiscrepancyFollowUp.RequestReplacement
+            ? "Replacement requested"
+            : "Accepted — no replacement";
+        return $"{reasonCode} · {custody} · {replacement}";
+    }
+
     /// <summary>
     /// Bucket semantics for transfer (and damage) movements so UI never treats
     /// <see cref="StockMovementType.TransferDamageHold"/> as +sellable.
@@ -113,6 +135,14 @@ public static class StockMovementPresentation
             StockMovementType.TransferDamageReturnIn => new(abs, 0m, 0m, abs),
             // Physical unchanged; inspection hold −qty; damaged +qty; sellable 0
             StockMovementType.TransferDamageWriteOff => new(0m, 0m, abs, -abs),
+            StockMovementType.TransferExceptionHold => new(abs, 0m, 0m, abs),
+            StockMovementType.TransferExceptionExpectedRestore => new(abs, abs, 0m, 0m),
+            StockMovementType.TransferExceptionActualOut => new(-abs, -abs, 0m, 0m),
+            StockMovementType.TransferExceptionReturnOut => new(-abs, 0m, 0m, -abs),
+            StockMovementType.TransferExceptionReturnIn => new(abs, 0m, 0m, abs),
+            StockMovementType.TransferExceptionReturnRestock => new(abs, abs, 0m, 0m),
+            StockMovementType.TransferExceptionRecovery => new(0m, abs, 0m, -abs),
+            StockMovementType.TransferExceptionWriteOff => new(0m, 0m, abs, -abs),
             _ => new(signedQuantityEffect, signedQuantityEffect, 0m, 0m)
         };
     }

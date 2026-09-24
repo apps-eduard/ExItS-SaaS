@@ -80,7 +80,9 @@ public sealed class InventoryTransferReceipt
                 line.DamagedFollowUp,
                 line.OtherFollowUp,
                 line.QuantityWaived,
-                line.Note));
+                line.Note,
+                line.OtherCustodyDecision,
+                line.ActualReceivedProductId));
         }
 
         return new InventoryTransferReceipt(
@@ -124,7 +126,9 @@ internal sealed record InventoryTransferReceiptLineDraft(
     InventoryTransferDiscrepancyFollowUp? DamagedFollowUp = null,
     InventoryTransferDiscrepancyFollowUp? OtherFollowUp = null,
     decimal QuantityWaived = 0m,
-    string? Note = null);
+    string? Note = null,
+    InventoryTransferExceptionCustodyDecision? OtherCustodyDecision = null,
+    CatalogProductId? ActualReceivedProductId = null);
 
 public sealed class InventoryTransferReceiptLine
 {
@@ -144,6 +148,8 @@ public sealed class InventoryTransferReceiptLine
     public InventoryTransferDiscrepancyFollowUp? OtherFollowUp { get; }
     public decimal QuantityWaived { get; }
     public string? Note { get; }
+    public CatalogProductId? ActualReceivedProductId { get; }
+    public InventoryTransferExceptionCustodyDecision? OtherCustodyDecision { get; }
 
     private InventoryTransferReceiptLine(
         InventoryTransferReceiptLineId id,
@@ -160,7 +166,9 @@ public sealed class InventoryTransferReceiptLine
         InventoryTransferDiscrepancyFollowUp? damagedFollowUp,
         InventoryTransferDiscrepancyFollowUp? otherFollowUp,
         decimal quantityWaived,
-        string? note)
+        string? note,
+        CatalogProductId? actualReceivedProductId,
+        InventoryTransferExceptionCustodyDecision? otherCustodyDecision)
     {
         Id = id;
         ReceiptId = receiptId;
@@ -177,6 +185,8 @@ public sealed class InventoryTransferReceiptLine
         OtherFollowUp = otherFollowUp;
         QuantityWaived = quantityWaived;
         Note = note;
+        ActualReceivedProductId = actualReceivedProductId;
+        OtherCustodyDecision = otherCustodyDecision;
     }
 
     internal static InventoryTransferReceiptLine Create(
@@ -194,6 +204,8 @@ public sealed class InventoryTransferReceiptLine
         InventoryTransferDiscrepancyFollowUp? otherFollowUp = null,
         decimal quantityWaived = 0m,
         string? note = null,
+        InventoryTransferExceptionCustodyDecision? otherCustodyDecision = null,
+        CatalogProductId? actualReceivedProductId = null,
         InventoryTransferReceiptLineId? id = null)
     {
         if (quantityReceived < 0m || quantityDamaged < 0m || quantityMissing < 0m || quantityOther < 0m || quantityWaived < 0m)
@@ -251,7 +263,9 @@ public sealed class InventoryTransferReceiptLine
             damagedFollowUp,
             otherFollowUp,
             quantityWaived,
-            note);
+            note,
+            actualReceivedProductId,
+            otherCustodyDecision);
     }
 
     public static InventoryTransferReceiptLine Rehydrate(
@@ -269,7 +283,9 @@ public sealed class InventoryTransferReceiptLine
         InventoryTransferDiscrepancyFollowUp? damagedFollowUp = null,
         InventoryTransferDiscrepancyFollowUp? otherFollowUp = null,
         decimal quantityWaived = 0m,
-        string? note = null) =>
+        string? note = null,
+        CatalogProductId? actualReceivedProductId = null,
+        InventoryTransferExceptionCustodyDecision? otherCustodyDecision = null) =>
         new(
             id,
             receiptId,
@@ -285,5 +301,7 @@ public sealed class InventoryTransferReceiptLine
             damagedFollowUp,
             otherFollowUp,
             quantityWaived,
-            note);
+            note,
+            actualReceivedProductId,
+            otherCustodyDecision);
 }

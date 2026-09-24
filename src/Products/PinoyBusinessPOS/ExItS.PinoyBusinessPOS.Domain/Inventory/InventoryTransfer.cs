@@ -304,7 +304,9 @@ public sealed class InventoryTransfer
                 receive.DamagedFollowUp,
                 receive.OtherFollowUp,
                 waivedDelta,
-                receive.DiscrepancyNote));
+                receive.DiscrepancyNote,
+                receive.OtherCustodyDecision,
+                receive.ActualReceivedProductId));
         }
 
         if (applied.Count == 0)
