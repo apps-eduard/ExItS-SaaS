@@ -433,6 +433,168 @@ public sealed class InventoryTransferUseCaseTests
     }
 
     [Fact]
+    public async Task Create_allows_expired_source_lot_as_physical_move()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var expired = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 8, 1),
+            10m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-EXPIRED");
+        fx.Lots.Items.Add(expired);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m, expired.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess, $"{created.ErrorCode}: {created.ErrorMessage}");
+        Assert.Equal(expired.Id, created.Value!.Lines[0].SourceLotId);
+    }
+
+    [Fact]
+    public async Task Create_allows_lot_backed_qty_when_branch_balance_is_behind_lots()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var lot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2027, 1, 1),
+            20m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-FULL");
+        fx.Lots.Items.Add(lot);
+
+        // Stale branch balance behind physical lot on-hand (common drift).
+        var balance = fx.Balances.Items.Single(b =>
+            b.BranchId.Value == BranchA && b.ProductId.Value == fx.CokeId);
+        balance.Apply(-5m, Utc);
+        Assert.Equal(15m, fx.Balances.OnHand(BranchA, fx.CokeId));
+        Assert.Equal(20m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 20m, lot.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess, $"{created.ErrorCode}: {created.ErrorMessage}");
+    }
+
+    [Fact]
+    public async Task Create_allows_source_lot_that_expires_today()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var expiresToday = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            InventoryLot.BusinessDateOf(Utc),
+            10m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-TODAY");
+        fx.Lots.Items.Add(expiresToday);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m, expiresToday.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess, $"{created.ErrorCode}: {created.ErrorMessage}");
+    }
+
+    [Fact]
+    public async Task Dispatch_allows_when_source_lot_expired_after_draft()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var lot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 8, 14),
+            10m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-SOON");
+        fx.Lots.Items.Add(lot);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m, lot.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess, $"{created.ErrorCode}: {created.ErrorMessage}");
+
+        fx.Clock.UtcNow = new DateTimeOffset(2026, 8, 15, 8, 0, 0, TimeSpan.Zero);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess, $"{dispatched.ErrorCode}: {dispatched.ErrorMessage}");
+        Assert.Equal(InventoryTransferStatus.InTransit, created.Value.Status);
+    }
+
+    [Fact]
+    public async Task Receive_allows_in_transit_lot_that_expired_after_dispatch()
+    {
+        var fx = await SeedAsync(cokeOnHand: 20m);
+        fx.Products.Items.Single(p => p.Id.Value == fx.CokeId).SetExpirationTracking(true, 7, Utc);
+        var lot = InventoryLot.Create(
+            PosOrganizationId.From(OrgA),
+            CatalogProductId.From(fx.CokeId),
+            new DateOnly(2026, 8, 14),
+            10m,
+            Utc,
+            PosBranchId.From(BranchA),
+            "LOT-TRANSIT");
+        fx.Lots.Items.Add(lot);
+
+        var created = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateInventoryTransferRequest(
+                BranchA,
+                BranchB,
+                [new InventoryTransferLineRequest(fx.CokeId, 5m, lot.Id.Value)]),
+            ActorA,
+            BranchA);
+        Assert.True(created.IsSuccess);
+        var dispatched = await fx.Dispatch.ExecuteAsync(OrgA, created.Value!.Id.Value, ActorA, BranchA);
+        Assert.True(dispatched.IsSuccess, $"{dispatched.ErrorCode}: {dispatched.ErrorMessage}");
+
+        fx.Clock.UtcNow = new DateTimeOffset(2026, 8, 16, 8, 0, 0, TimeSpan.Zero);
+        var received = await fx.Receive.ExecuteAsync(
+            OrgA,
+            created.Value.Id.Value,
+            new ReceiveInventoryTransferRequest([new InventoryTransferReceiveLineRequest(fx.CokeId, 5m)]),
+            ActorB,
+            BranchB);
+        Assert.True(received.IsSuccess, $"{received.ErrorCode}: {received.ErrorMessage}");
+        Assert.Equal(InventoryTransferStatus.Received, received.Value!.Status);
+        Assert.Equal(new DateOnly(2026, 8, 14), received.Value.Lines.Single().ExpirationDate);
+        var destLot = fx.Lots.Items.Single(l =>
+            l.BranchId == PosBranchId.From(BranchB) && l.ProductId.Value == fx.CokeId);
+        Assert.Equal(5m, destLot.QuantityOnHand);
+        Assert.Equal(new DateOnly(2026, 8, 14), destLot.ExpirationDate);
+        Assert.True(destLot.IsExpired(InventoryLot.BusinessDateOf(fx.Clock.UtcNow)));
+        Assert.False(destLot.IsSellable(InventoryLot.BusinessDateOf(fx.Clock.UtcNow)));
+    }
+
+    [Fact]
     public async Task Isolation_idempotency_and_cancel_guards()
     {
         var fx = await SeedAsync(cokeOnHand: 30m);

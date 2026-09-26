@@ -35,7 +35,11 @@ import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
 import {
   allocateTransferLotsFefo,
+  resolveChangeLotsMaxQuantity,
+  resolveTransferableAvailableQuantity,
   selectTransferEligibleLots,
+  sumTransferLotAllocationQty,
+  sumTransferPhysicalLotQuantity,
   type TransferLotAllocationSlice,
 } from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
@@ -76,7 +80,19 @@ type DraftProduct = {
 };
 
 function eligibleLotQtyFromLots(lots: readonly PosInventoryLotDto[]): number {
-  return selectTransferEligibleLots(lots).reduce((sum, lot) => sum + lot.quantityOnHand, 0);
+  // Draft / line max includes expired physical stock (Change lots may move it).
+  return sumTransferPhysicalLotQuantity(lots);
+}
+
+function transferableForPicker(
+  row: PosInventoryAccountDto,
+  lotsCache: Record<string, PosInventoryLotDto[]>,
+): number {
+  return resolveTransferableAvailableQuantity({
+    branchAvailable: Math.max(0, resolveAvailableQuantity(row)),
+    tracksExpiration: row.tracksExpiration === true,
+    lots: lotsCache[row.productId],
+  });
 }
 
 function toStockProduct(draft: DraftProduct): TransferDraftStockProduct {
@@ -260,7 +276,14 @@ export function InventoryTransferCreatePage() {
       if (addedProductIds.has(row.productId)) {
         return false;
       }
-      const outOfStock = resolveAvailableQuantity(row) <= 0;
+      const branchAvailable = Math.max(0, resolveAvailableQuantity(row));
+      const transferable = transferableForPicker(row, lotsCache);
+      const outOfStock = transferable <= 0;
+      const expiredOnlyPhysical =
+        row.tracksExpiration === true &&
+        lotsCache[row.productId] != null &&
+        branchAvailable > 0 &&
+        transferable <= 0;
       if (wantOutOfStock) {
         if (!outOfStock) {
           return false;
@@ -270,8 +293,8 @@ export function InventoryTransferCreatePage() {
         }
         return row.categoryId != null && realSelected.has(row.categoryId);
       }
-      // Default: in-stock only. Optional real category filter.
-      if (outOfStock) {
+      // Default: transferable in-stock, or expired-only physical (show as unavailable).
+      if (outOfStock && !expiredOnlyPhysical) {
         return false;
       }
       if (realSelected.size === 0) {
@@ -279,7 +302,7 @@ export function InventoryTransferCreatePage() {
       }
       return row.categoryId != null && realSelected.has(row.categoryId);
     });
-  }, [pickerQuery.data?.items, categoryIds, lines]);
+  }, [pickerQuery.data?.items, categoryIds, lines, lotsCache]);
 
   const transferCategoryOptions = useMemo(() => {
     const tracked = (pickerQuery.data?.items ?? []).filter((r) => r.isTracked);
@@ -290,12 +313,12 @@ export function InventoryTransferCreatePage() {
       if (addedProductIds.has(row.productId)) {
         continue;
       }
-      if (resolveAvailableQuantity(row) <= 0) {
+      if (transferableForPicker(row, lotsCache) <= 0) {
         outOfStockCount += 1;
       }
       const id = row.categoryId?.trim();
-      if (!id || resolveAvailableQuantity(row) <= 0) {
-        // Real category counts reflect in-stock products (default table).
+      if (!id || transferableForPicker(row, lotsCache) <= 0) {
+        // Real category counts reflect transferable in-stock products (default table).
         continue;
       }
       const name = row.categoryName?.trim() || id;
@@ -321,7 +344,7 @@ export function InventoryTransferCreatePage() {
       },
       ...categories,
     ];
-  }, [pickerQuery.data?.items, lines, t]);
+  }, [pickerQuery.data?.items, lines, lotsCache, t]);
 
   function stockIssueMessage(issue: TransferLineStockIssue, available: number, uom: string): string {
     switch (issue) {
@@ -524,14 +547,32 @@ export function InventoryTransferCreatePage() {
     allocations: TransferLotAllocationSlice[],
     mode: AllocationMode,
   ) {
+    const total = sumTransferLotAllocationQty(allocations);
+    const lots = lotsCache[productId] ?? [];
+    const physicalLotQuantity = sumTransferPhysicalLotQuantity(lots);
     setLines((prev) =>
-      prev.map((line) =>
-        line.productId === productId
-          ? { ...line, allocations, allocationMode: mode }
-          : line,
-      ),
+      prev.map((line) => {
+        if (line.productId !== productId) {
+          return line;
+        }
+        const nextLine: DraftProduct = {
+          ...line,
+          quantity: total,
+          allocations,
+          allocationMode: mode,
+          // Allow total that includes expired lots (physical move).
+          eligibleLotQuantity: line.tracksExpiration ? physicalLotQuantity : null,
+        };
+        const issue = evaluateTransferDraftProduct(toStockProduct(nextLine));
+        if (issue) {
+          const cap = maxTransferableQuantity(nextLine);
+          setError(stockIssueMessage(issue, cap, nextLine.unitOfMeasure));
+        } else {
+          setError(null);
+        }
+        return nextLine;
+      }),
     );
-    setError(null);
   }
 
   function resetForm() {
@@ -668,12 +709,22 @@ export function InventoryTransferCreatePage() {
           : t("transfer.saveFailed");
       const errorCode =
         err instanceof PosApiError ? (err.problem.errorCode ?? "").toLowerCase() : "";
+      // Only remap true lot identity / concurrency failures — not ordinary insufficient stock.
       const looksLikeLotConcurrency =
-        lines.some((l) => l.tracksExpiration) &&
-        (errorCode.includes("lot") ||
-          errorCode.includes("insufficient") ||
-          /lot|expir|insufficient/i.test(detail));
-      setError(looksLikeLotConcurrency ? t("transfer.lotStockChanged") : detail);
+        errorCode.includes("lot_mismatch") ||
+        errorCode.includes("lotmismatch") ||
+        /lot (was not found|does not belong|mismatch)/i.test(detail);
+      if (errorCode.includes("expired") || /expired.*transfer|lot.*expired/i.test(detail)) {
+        setError(
+          /dispatch|review the lot allocation before dispatching/i.test(detail)
+            ? t("transfer.dispatchLotsExpired")
+            : t("transfer.lotExpiredCannotTransfer"),
+        );
+      } else if (looksLikeLotConcurrency) {
+        setError(t("transfer.lotStockChanged"));
+      } else {
+        setError(detail);
+      }
       await refreshAvailability();
       await refetchLotsAndRecalcFefo();
       // Keep entered lines for correction after server rejection.
@@ -974,6 +1025,11 @@ export function InventoryTransferCreatePage() {
             productName={changeLotsLine.name}
             unitOfMeasure={changeLotsLine.unitOfMeasure}
             transferQuantity={changeLotsLine.quantity}
+            maxTransferableQuantity={resolveChangeLotsMaxQuantity({
+              branchAvailable: changeLotsLine.availableQuantity,
+              tracksExpiration: changeLotsLine.tracksExpiration,
+              lots: lotsCache[changeLotsLine.productId],
+            })}
             lots={lotsCache[changeLotsLine.productId] ?? []}
             initialAllocations={changeLotsLine.allocations}
             onOpenChange={(open) => {

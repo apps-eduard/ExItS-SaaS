@@ -4923,10 +4923,33 @@ export const hilPH: Record<keyof typeof en, string> = {
 
   "transfer.overAllocatedBy": "Over allocated by: {qty} {uom}",
 
+  "transfer.lotExceedsAvailable": "Only {qty} {uom} available.",
+
+  "transfer.lotExceedsTransferNeed": "Only {qty} {uom} needed for this transfer.",
+
+  "transfer.useMax": "Use max",
+
+  "transfer.overAllocatedHint": "Use FEFO to reset, or Use max on each lot.",
+
+  "transfer.lotTotalBecomesQuantity": "Transfer quantity will be {qty} {uom}",
+
+  "transfer.lotTotalHint": "Apply updates the line quantity to this total.",
+
+  "transfer.lotTotalExceedsAvailable": "Total exceeds available ({qty} {uom}).",
+
   "transfer.allocationMismatch": "Lot allocation must equal the transfer quantity.",
 
   "transfer.lotStockChanged":
     "Stock for this expiry lot changed. Review the lot allocation and try again.",
+  "transfer.expired": "Expired",
+
+  "transfer.expiredQtyHint": "{qty} {uom} expired",
+
+  "transfer.lotExpiredCannotTransfer":
+    "This lot is expired and cannot be transferred.",
+
+  "transfer.dispatchLotsExpired":
+    "Selected stock has expired. Review the lot allocation before dispatching.",
   "transfer.sent": "Ginpadala",
 
   "transfer.singleBranchDetail": "Add another branch to start transferring stock.",

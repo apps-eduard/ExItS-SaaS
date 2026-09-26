@@ -77,7 +77,8 @@ export function maxTransferableQuantity(product: {
   tracksExpiration: boolean;
 }): number {
   if (product.tracksExpiration && product.eligibleLotQuantity != null) {
-    return Math.max(0, Math.min(product.availableQuantity, product.eligibleLotQuantity));
+    // Physical lot sum is authoritative for expiry-tracked transfers.
+    return Math.max(0, product.eligibleLotQuantity);
   }
   return Math.max(0, product.availableQuantity);
 }

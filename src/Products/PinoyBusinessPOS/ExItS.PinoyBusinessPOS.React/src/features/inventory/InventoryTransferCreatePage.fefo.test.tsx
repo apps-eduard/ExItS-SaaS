@@ -142,6 +142,18 @@ async function setLineQuantity(
   await user.tab();
 }
 
+async function setChangeLotQuantity(
+  user: ReturnType<typeof userEvent.setup>,
+  lotId: string,
+  quantity: string,
+) {
+  const input = screen.getByTestId(`transfer-change-lot-qty-${lotId}`);
+  await user.click(input);
+  await user.clear(input);
+  await user.type(input, quantity);
+  await user.tab();
+}
+
 describe("InventoryTransferCreatePage FEFO allocation", () => {
   beforeEach(() => {
     vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
@@ -294,13 +306,13 @@ describe("InventoryTransferCreatePage FEFO allocation", () => {
     const qtyA = screen.getByTestId(`transfer-change-lot-qty-${lotA}`);
     const qtyB = screen.getByTestId(`transfer-change-lot-qty-${lotB}`);
     const qtyC = screen.getByTestId(`transfer-change-lot-qty-${lotC}`);
+    expect(qtyA).toBeInTheDocument();
+    expect(qtyB).toBeInTheDocument();
+    expect(qtyC).toBeInTheDocument();
 
-    await user.clear(qtyA);
-    await user.type(qtyA, "0");
-    await user.clear(qtyB);
-    await user.type(qtyB, "20");
-    await user.clear(qtyC);
-    await user.type(qtyC, "40");
+    await setChangeLotQuantity(user, lotA, "0");
+    await setChangeLotQuantity(user, lotB, "20");
+    await setChangeLotQuantity(user, lotC, "40");
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-change-lots-apply")).not.toBeDisabled();
@@ -329,7 +341,7 @@ describe("InventoryTransferCreatePage FEFO allocation", () => {
     });
   });
 
-  it("manual allocation cannot exceed lot stock and must equal requested qty", async () => {
+  it("manual allocation cannot exceed lot stock", async () => {
     const user = userEvent.setup();
     renderCreate();
     await chooseDestination(user, "Iloilo Branch");
@@ -340,15 +352,116 @@ describe("InventoryTransferCreatePage FEFO allocation", () => {
     await user.click(screen.getByTestId(`transfer-change-lots-${appleId}`));
     await waitFor(() => screen.getByTestId("transfer-change-lots"));
 
-    const qtyA = screen.getByTestId(`transfer-change-lot-qty-${lotA}`);
-    await user.clear(qtyA);
-    await user.type(qtyA, "55");
-    expect(screen.getByTestId("transfer-change-lots-apply")).toBeDisabled();
+    await setChangeLotQuantity(user, lotA, "55");
+    await waitFor(() => {
+      expect(
+        Number(screen.getByTestId(`transfer-change-lot-qty-${lotA}`).getAttribute("value") ?? "0"),
+      ).toBeLessThanOrEqual(50);
+    });
+  });
 
-    await user.clear(qtyA);
-    await user.type(qtyA, "40");
-    expect(screen.getByTestId("transfer-change-lots-apply")).toBeDisabled();
-    expect(screen.getByTestId("transfer-change-lots-totals")).toHaveTextContent(/Remaining/i);
+  it("Use max fills full lot on-hand and Apply sets line quantity to lot total", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await chooseDestination(user, "Iloilo Branch");
+    await openProductFinder(user);
+    await user.click(await screen.findByTestId(`transfer-add-${appleId}`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${appleId}`));
+    await setLineQuantity(user, appleId, "10");
+    await user.click(screen.getByTestId(`transfer-change-lots-${appleId}`));
+    await waitFor(() => screen.getByTestId("transfer-change-lots"));
+
+    await setChangeLotQuantity(user, lotA, "5");
+    await setChangeLotQuantity(user, lotB, "10");
+    await setChangeLotQuantity(user, lotC, "10");
+    expect(screen.getByTestId("transfer-change-lots-allocated")).toHaveTextContent(/25/);
+    await user.click(screen.getByTestId("transfer-change-lots-apply"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("transfer-change-lots-dialog")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId(`transfer-line-qty-${appleId}`)).toHaveTextContent("25");
+    expect(screen.getByTestId(`transfer-line-alloc-slice-${appleId}-${lotA}`)).toHaveTextContent(
+      /5 kg/,
+    );
+    expect(screen.getByTestId(`transfer-line-alloc-slice-${appleId}-${lotB}`)).toHaveTextContent(
+      /10 kg/,
+    );
+    expect(screen.getByTestId(`transfer-line-alloc-slice-${appleId}-${lotC}`)).toHaveTextContent(
+      /10 kg/,
+    );
+  });
+
+  it("Use max on all lots including expired allows Apply at physical total", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(inventoryClient, "listProductLots").mockResolvedValue({
+      items: [
+        lot({
+          lotId: lotA,
+          lotNumber: "LOT-A",
+          expirationDate: "2026-09-12",
+          quantityOnHand: 50,
+          expiryStatus: "Expired",
+        }),
+        lot({
+          lotId: lotB,
+          lotNumber: "LOT-B",
+          expirationDate: "2026-09-15",
+          quantityOnHand: 37,
+          expiryStatus: "Expired",
+        }),
+        lot({
+          lotId: lotC,
+          lotNumber: "LOT-C",
+          expirationDate: "2026-09-30",
+          quantityOnHand: 100,
+          expiryStatus: "Ok",
+        }),
+      ],
+      totalCount: 3,
+      page: 1,
+      pageSize: 50,
+    });
+
+    renderCreate();
+    await chooseDestination(user, "Iloilo Branch");
+    await openProductFinder(user);
+    await user.click(await screen.findByTestId(`transfer-add-${appleId}`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${appleId}`));
+    await user.click(screen.getByTestId(`transfer-change-lots-${appleId}`));
+    await waitFor(() => screen.getByTestId("transfer-change-lots"));
+
+    await user.click(screen.getByTestId(`transfer-change-lot-use-max-${lotA}`));
+    await user.click(screen.getByTestId(`transfer-change-lot-use-max-${lotB}`));
+    await user.click(screen.getByTestId(`transfer-change-lot-use-max-${lotC}`));
+    expect(screen.getByTestId("transfer-change-lots-allocated")).toHaveTextContent(/187/);
+    expect(screen.queryByTestId("transfer-change-lots-over-available")).not.toBeInTheDocument();
+    expect(screen.getByTestId("transfer-change-lots-apply")).not.toBeDisabled();
+    await user.click(screen.getByTestId("transfer-change-lots-apply"));
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-line-qty-${appleId}`)).toHaveTextContent("187");
+    });
+  });
+
+  it("Use FEFO redistributes current line quantity", async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await chooseDestination(user, "Iloilo Branch");
+    await openProductFinder(user);
+    await user.click(await screen.findByTestId(`transfer-add-${appleId}`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${appleId}`));
+    await setLineQuantity(user, appleId, "1");
+    await user.click(screen.getByTestId(`transfer-change-lots-${appleId}`));
+    await waitFor(() => screen.getByTestId("transfer-change-lots"));
+
+    await setChangeLotQuantity(user, lotA, "0");
+    await setChangeLotQuantity(user, lotC, "1");
+    await user.click(screen.getByTestId("transfer-change-lots-use-fefo"));
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-change-lot-qty-${lotA}`)).toHaveValue("1");
+    });
+    expect(screen.getByTestId(`transfer-change-lot-qty-${lotC}`)).toHaveValue("0");
+    expect(screen.getByTestId("transfer-change-lots-apply")).not.toBeDisabled();
   });
 
   it("non-expiry product has no allocation UI", async () => {
@@ -413,5 +526,160 @@ describe("InventoryTransferCreatePage FEFO allocation", () => {
     });
     // ProductSelectionView list/table both use the same compact status text.
     expect(within(screen.getByTestId("transfer-product-picker")).queryByRole("combobox")).toBeNull();
+  });
+
+  it("excludes expired lot qty from picker availability and lot count", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(inventoryClient, "listProductLots").mockResolvedValue({
+      items: [
+        lot({
+          lotId: lotA,
+          lotNumber: "LOT-A",
+          expirationDate: "2026-09-12",
+          quantityOnHand: 50,
+          expiryStatus: "Expired",
+        }),
+        lot({
+          lotId: lotB,
+          lotNumber: "LOT-B",
+          expirationDate: "2026-09-25",
+          quantityOnHand: 37,
+          expiryStatus: "Ok",
+        }),
+        lot({
+          lotId: lotC,
+          lotNumber: "LOT-C",
+          expirationDate: "2026-09-30",
+          quantityOnHand: 100,
+          expiryStatus: "Ok",
+        }),
+      ],
+      totalCount: 3,
+      page: 1,
+      pageSize: 50,
+    });
+    vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
+      items: [
+        account({
+          productId: appleId,
+          name: "Apple",
+          onHandQuantity: 187,
+          tracksExpiration: true,
+          unitOfMeasure: "kg",
+        }),
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 40,
+    });
+
+    renderCreate();
+    await openProductFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-picker-available-${appleId}`)).toHaveTextContent(
+        /137\/kg · 2 lots · Tracks expiry/i,
+      );
+    });
+  });
+
+  it("Change lots allows expired lot quantity via stepper and Use FEFO may include it", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(inventoryClient, "listProductLots").mockResolvedValue({
+      items: [
+        lot({
+          lotId: lotA,
+          lotNumber: "LOT-A",
+          expirationDate: "2026-09-12",
+          quantityOnHand: 50,
+          expiryStatus: "Expired",
+        }),
+        lot({
+          lotId: lotB,
+          lotNumber: "LOT-B",
+          expirationDate: "2026-09-25",
+          quantityOnHand: 37,
+          expiryStatus: "Ok",
+        }),
+        lot({
+          lotId: lotC,
+          lotNumber: "LOT-C",
+          expirationDate: "2026-09-30",
+          quantityOnHand: 100,
+          expiryStatus: "Ok",
+        }),
+      ],
+      totalCount: 3,
+      page: 1,
+      pageSize: 50,
+    });
+
+    renderCreate();
+    await chooseDestination(user, "Iloilo Branch");
+    await openProductFinder(user);
+    await user.click(await screen.findByTestId(`transfer-add-${appleId}`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${appleId}`));
+    await setLineQuantity(user, appleId, "60");
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-line-alloc-slice-${appleId}-${lotB}`)).toHaveTextContent(
+        /37 kg/,
+      );
+      expect(screen.getByTestId(`transfer-line-alloc-slice-${appleId}-${lotC}`)).toHaveTextContent(
+        /23 kg/,
+      );
+    });
+
+    await user.click(screen.getByTestId(`transfer-change-lots-${appleId}`));
+    await waitFor(() => screen.getByTestId("transfer-change-lots"));
+    expect(screen.getByTestId(`transfer-change-lot-expired-label-${lotA}`)).toHaveTextContent(
+      /Expired/i,
+    );
+    expect(screen.getByTestId(`transfer-change-lot-qty-${lotA}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`transfer-change-lot-qty-${lotB}`)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("transfer-change-lots-use-fefo"));
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-change-lot-qty-${lotA}`)).toHaveValue("50");
+    });
+    expect(screen.getByTestId(`transfer-change-lot-qty-${lotB}`)).toHaveValue("10");
+  });
+
+  it("all-expired product cannot be added", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(inventoryClient, "listProductLots").mockResolvedValue({
+      items: [
+        lot({
+          lotId: lotA,
+          lotNumber: "LOT-A",
+          expirationDate: "2026-01-01",
+          quantityOnHand: 100,
+          expiryStatus: "Expired",
+        }),
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+    });
+    vi.spyOn(inventoryClient, "listInventory").mockResolvedValue({
+      items: [
+        account({
+          productId: appleId,
+          name: "Apple",
+          onHandQuantity: 100,
+          tracksExpiration: true,
+          unitOfMeasure: "kg",
+        }),
+      ],
+      totalCount: 1,
+      page: 1,
+      pageSize: 40,
+    });
+
+    renderCreate();
+    await openProductFinder(user);
+    await waitFor(() => {
+      expect(screen.getByTestId(`transfer-picker-unavailable-${appleId}`)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId(`transfer-add-${appleId}`)).not.toBeInTheDocument();
   });
 });

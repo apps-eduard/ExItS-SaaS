@@ -169,8 +169,9 @@ public sealed class PosInventoryTransferApiTests(PosPostgreSqlFixture fixture)
             tracksExpiration: true);
         await EnableAsync(client, org, product.ProductId, 0m);
 
-        var early = new DateOnly(2026, 8, 20);
-        var later = new DateOnly(2026, 9, 5);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var early = today.AddDays(30);
+        var later = today.AddDays(60);
         await AdjustInAsync(client, org, product.ProductId, 10m, early, "LOT-A");
         await AdjustInAsync(client, org, product.ProductId, 20m, later, "LOT-B");
 

@@ -7,7 +7,11 @@ import {
   type ProductSelectionColumn,
   type ProductSelectionRow,
 } from "@/components/exits/ProductSelectionView";
-import { selectTransferEligibleLots } from "@/features/inventory/inventory-transfer-fefo-allocate";
+import {
+  resolveTransferableAvailableQuantity,
+  selectTransferEligibleLots,
+  sumTransferExpiredLotQuantity,
+} from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import { cn } from "@/lib/cn";
 
@@ -47,16 +51,30 @@ export function InventoryTransferProductSelection({
     const lots = lotsCache[row.productId];
     const eligibleLotCount =
       lots != null ? selectTransferEligibleLots(lots).length : null;
-    const available = Math.max(0, resolveAvailableQuantity(row));
+    const branchAvailable = Math.max(0, resolveAvailableQuantity(row));
+    const available = resolveTransferableAvailableQuantity({
+      branchAvailable,
+      tracksExpiration,
+      lots,
+    });
+    const expiredQty =
+      tracksExpiration && lots != null ? sumTransferExpiredLotQuantity(lots) : 0;
     const outOfStock = available <= 0;
     const addDisabled = !online || outOfStock;
     const sku = row.sku?.trim() || "";
     const category =
       row.categoryName?.trim() ||
       (row.categoryId?.trim() ? row.categoryId : "—");
-    const availableLabel = outOfStock
+
+    let availableLabel = outOfStock
       ? t("transfer.outOfStock")
       : formatAvailable(available, row.unitOfMeasure);
+
+    if (tracksExpiration && outOfStock && expiredQty > 0 && lots != null) {
+      availableLabel = `${t("transfer.outOfStock")} · ${t("transfer.expiredQtyHint")
+        .replace("{qty}", String(expiredQty))
+        .replace("{uom}", row.unitOfMeasure)}`;
+    }
 
     let availableWithExpiry = availableLabel;
     if (tracksExpiration && !outOfStock) {
@@ -68,6 +86,8 @@ export function InventoryTransferProductSelection({
       }
       parts.push(t("transfer.tracksExpiry"));
       availableWithExpiry = parts.join(" · ");
+    } else if (tracksExpiration && outOfStock) {
+      availableWithExpiry = availableLabel;
     }
 
     const productCell = (

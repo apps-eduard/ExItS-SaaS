@@ -125,6 +125,8 @@ public static class ApplicationErrorCodes
     public const string InventoryTransferAlreadyReceived = "pos.inventory.transfer.already_received";
     public const string InventoryTransferBranchForbidden = "pos.inventory.transfer.branch.forbidden";
     public const string InventoryTransferNoRemainingToFulfill = "pos.inventory.transfer.no_remaining_to_fulfill";
+    /// <summary>Selected source lot(s) expired before dispatch of a normal transfer.</summary>
+    public const string InventoryTransferSourceLotExpired = "pos.inventory.transfer.source_lot_expired";
 
     /// <summary>On-hand stock must be allocated into lots via enable-expiration-tracking.</summary>
     public const string ExpirationInitializationRequired = "pos.inventory.expiration.initialization_required";

@@ -69,7 +69,25 @@ When true:
 
 ## Branch transfers
 
-Transfers preserve lot identity. Lines may repeat the same product with different `SourceLotId`. Unique line constraint is `(transfer_id, line_number)`, not product. Dispatch consumes the source lot; destination receive creates/updates the dest-branch lot with the snapshotted expiry and lot number. Partial receive shortages stay on that line/lot. Expired lots may be transferred (physical move, not a sale). Receive retry uses existing transfer idempotency.
+Transfers preserve lot identity. Lines may repeat the same product with different `SourceLotId`. Unique line constraint is `(transfer_id, line_number)`, not product.
+
+**Normal branch replenishment / transfer**
+
+- Default product-picker availability and auto FEFO prefer **non-expired** lots (`ExpirationDate >= businessToday`; expires-today is eligible).
+- Change lots may allocate **any** positive on-hand lot, including expired, via QuantityStepper — physical moves for disposal / relocation are allowed.
+- Create and dispatch accept an expired `SourceLotId` when the operator selects it intentionally (not a sale).
+- Transferable picker availability remains the lesser of branch available quantity and the sum of non-expired lot quantities (expired stock is not offered as default replenishment capacity).
+
+**In-transit receive**
+
+- Stock already dispatched may still be received if it expires during transit. Destination preserves `LotNumber` / `ExpirationDate` / lot identity; the destination lot is naturally expired / non-sellable.
+
+**Exception / custody / return / disposal**
+
+- Explicit Return-to-Source, discrepancy returns, damage/exception custody, and expired write-off remain physical/exception movements and are not blocked merely because the lot is expired.
+- Branch transfer Change-lots can also move expired stock when the operator chooses those lots.
+
+Receive retry uses existing transfer idempotency. Replacement / remaining fulfillment reallocates from **current** sellable FEFO lots (does not reuse a depleted or expired original `SourceLotId`).
 
 ## Offline / concurrency
 

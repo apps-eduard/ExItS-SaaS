@@ -427,7 +427,7 @@ public sealed class CreateInventoryTransfer
 
         var orgId = PosOrganizationId.From(organizationId);
         var drafts = await InventoryTransferLineFactory
-            .CreateDraftsAsync(_products, _lots, orgId, request.Lines, cancellationToken)
+            .CreateDraftsAsync(_products, _lots, orgId, request.Lines, _clock.UtcNow, cancellationToken)
             .ConfigureAwait(false);
         if (!drafts.IsSuccess)
         {
@@ -503,7 +503,8 @@ public sealed class CreateInventoryTransfer
                 accounts,
                 balances,
                 lotsById,
-                _clock.UtcNow);
+                _clock.UtcNow,
+                forDispatch: false);
             if (stockGuard is not null)
             {
                 return stockGuard;
@@ -531,6 +532,8 @@ public sealed class PrepareInventoryTransferRemaining
     private readonly CreateInventoryTransfer _createTransfer;
     private readonly InventoryTransferQueryService _queries;
     private readonly PrepareStockRequestTransfer _prepareStockRequestTransfer;
+    private readonly ICatalogProductRepository _products;
+    private readonly IInventoryLotRepository _lots;
     private readonly IPosUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
@@ -539,6 +542,8 @@ public sealed class PrepareInventoryTransferRemaining
         CreateInventoryTransfer createTransfer,
         InventoryTransferQueryService queries,
         PrepareStockRequestTransfer prepareStockRequestTransfer,
+        ICatalogProductRepository products,
+        IInventoryLotRepository lots,
         IPosUnitOfWork unitOfWork,
         IClock clock)
     {
@@ -546,6 +551,8 @@ public sealed class PrepareInventoryTransferRemaining
         _createTransfer = createTransfer;
         _queries = queries;
         _prepareStockRequestTransfer = prepareStockRequestTransfer;
+        _products = products;
+        _lots = lots;
         _unitOfWork = unitOfWork;
         _clock = clock;
     }
@@ -678,6 +685,22 @@ public sealed class PrepareInventoryTransferRemaining
                 "No remaining quantity is available to prepare. Outstanding quantity is already covered.");
         }
 
+        var reallocated = await ReallocateRemainingLinesWithCurrentFefoAsync(
+                orgId,
+                root.SourceBranchId,
+                remainingLines,
+                _clock.UtcNow,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!reallocated.IsSuccess)
+        {
+            return ApplicationResult<InventoryTransferDto>.Failure(
+                reallocated.ErrorCode!,
+                reallocated.ErrorMessage!);
+        }
+
+        remainingLines = reallocated.Value!.ToList();
+
         var nextSequence = family
             .Where(t => t.RootTransferId == root.Id || t.Id == root.Id)
             .Select(t => t.ReplacementSequence ?? 0)
@@ -727,24 +750,90 @@ public sealed class PrepareInventoryTransferRemaining
             .GroupBy(l => l.ProductId.Value)
             .ToDictionary(g => g.Key, g => g.Sum(l => l.WaivedQty));
 
-        var lines = new List<InventoryTransferLineRequest>();
-        foreach (var line in root.Lines)
+        // Aggregate remaining qty by product. SourceLotId is intentionally omitted —
+        // PrepareRemaining reallocates with current sellable FEFO lots before create.
+        var remainingByProduct = new Dictionary<Guid, decimal>();
+        foreach (var productGroup in root.Lines.GroupBy(l => l.ProductId.Value))
         {
-            var productId = line.ProductId.Value;
+            var productId = productGroup.Key;
+            var sent = productGroup.Sum(l => l.SentQty);
             var remaining = Math.Max(
                 0m,
-                line.SentQty
+                sent
                 - goodByProduct.GetValueOrDefault(productId)
                 - InventoryTransferCoverageMath.OpenInTransitQtyForProduct(family, productId)
                 - waivedByProduct.GetValueOrDefault(productId));
             if (remaining > 0m)
             {
-                lines.Add(new InventoryTransferLineRequest(productId, remaining, line.SourceLotId?.Value));
+                remainingByProduct[productId] = remaining;
             }
         }
 
-        return lines;
+        return remainingByProduct
+            .Select(kv => new InventoryTransferLineRequest(kv.Key, kv.Value, SourceLotId: null))
+            .ToList();
     }
+
+    private async Task<ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>> ReallocateRemainingLinesWithCurrentFefoAsync(
+        PosOrganizationId organizationId,
+        PosBranchId sourceBranchId,
+        IReadOnlyList<InventoryTransferLineRequest> remainingLines,
+        DateTimeOffset utcNow,
+        CancellationToken cancellationToken)
+    {
+        var today = InventoryLot.BusinessDateOf(utcNow);
+        var productIds = remainingLines.Select(l => CatalogProductId.From(l.ProductId)).Distinct().ToList();
+        var catalog = (await _products.ListByIdsAsync(organizationId, productIds, cancellationToken).ConfigureAwait(false))
+            .ToDictionary(p => p.Id.Value);
+
+        var expanded = new List<InventoryTransferLineRequest>();
+        foreach (var group in remainingLines.GroupBy(l => l.ProductId))
+        {
+            var quantity = group.Sum(l => l.Quantity);
+            if (!(quantity > 0m))
+            {
+                continue;
+            }
+
+            if (!catalog.TryGetValue(group.Key, out var product))
+            {
+                return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Failure(
+                    ApplicationErrorCodes.InventoryProductNotFound,
+                    "Product was not found.");
+            }
+
+            if (!product.TracksExpiration)
+            {
+                expanded.Add(new InventoryTransferLineRequest(group.Key, quantity, SourceLotId: null));
+                continue;
+            }
+
+            var onHand = await _lots
+                .ListOnHandAsync(organizationId, product.Id, sourceBranchId, includeDepleted: false, cancellationToken)
+                .ConfigureAwait(false);
+            try
+            {
+                var allocations = InventoryLotFefo.AllocateSellable(onHand, quantity, today);
+                foreach (var allocation in allocations)
+                {
+                    expanded.Add(new InventoryTransferLineRequest(
+                        group.Key,
+                        allocation.Quantity,
+                        allocation.Lot.Id.Value));
+                }
+            }
+            catch (DomainException ex)
+            {
+                return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Failure(
+                    ex.ErrorCode,
+                    ex.Message);
+            }
+        }
+
+        return ApplicationResult<IReadOnlyList<InventoryTransferLineRequest>>.Success(expanded);
+    }
+
+    // Keep BuildRemainingFamilyLines + Reallocate as instance helpers above Execute paths.
 }
 
 public sealed class DispatchInventoryTransfer
@@ -882,7 +971,8 @@ public sealed class DispatchInventoryTransfer
                 accounts,
                 balances,
                 lotsById,
-                utcNow);
+                utcNow,
+                forDispatch: true);
             if (stockGuard is not null)
             {
                 return stockGuard;
@@ -2311,6 +2401,7 @@ internal static class InventoryTransferLineFactory
         IInventoryLotRepository lots,
         PosOrganizationId organizationId,
         IReadOnlyList<InventoryTransferLineRequest>? lines,
+        DateTimeOffset utcNow,
         CancellationToken cancellationToken)
     {
         if (lines is null || lines.Count == 0)
@@ -2363,6 +2454,9 @@ internal static class InventoryTransferLineFactory
                         $"Lot does not belong to '{product.Name}'.");
                 }
 
+                // Expired lots remain transferable as a physical move (disposal / relocation).
+                // Sale FEFO still excludes them; transfer may move them intentionally.
+
                 sourceLotId = lot.Id;
                 lotNumber = lot.LotNumber;
                 expirationDate = lot.ExpirationDate;
@@ -2400,8 +2494,10 @@ internal static class InventoryTransferStock
         IReadOnlyDictionary<Guid, InventoryAccount> accounts,
         List<InventoryBranchBalance> balances,
         IReadOnlyDictionary<Guid, InventoryLot> lotsById,
-        DateTimeOffset utcNow)
+        DateTimeOffset utcNow,
+        bool forDispatch = false)
     {
+        _ = forDispatch;
         foreach (var productGroup in lines.GroupBy(l => l.ProductId.Value))
         {
             var sample = productGroup.First();
@@ -2421,6 +2517,29 @@ internal static class InventoryTransferStock
                 balances,
                 utcNow);
             var available = Math.Min(sourceBalance.OnHandQuantity, account.OnHandQuantity);
+            // When every line is lot-backed, prefer physical lot on-hand at the source branch
+            // if the branch balance row is behind the lot rows (common drift).
+            if (productGroup.All(l => l.SourceLotId is not null))
+            {
+                decimal lotBackedOnHand = 0m;
+                foreach (var lotId in productGroup.Select(l => l.SourceLotId!.Value).Distinct())
+                {
+                    if (!lotsById.TryGetValue(lotId, out var lot))
+                    {
+                        continue;
+                    }
+
+                    if (lot.BranchId is not null && lot.BranchId != sourceBranchId)
+                    {
+                        continue;
+                    }
+
+                    lotBackedOnHand += lot.QuantityOnHand;
+                }
+
+                available = Math.Min(account.OnHandQuantity, Math.Max(available, lotBackedOnHand));
+            }
+
             var unit = UnitOfMeasures.ToCode(sample.UnitOfMeasure);
             if (available <= 0m)
             {
@@ -2456,6 +2575,8 @@ internal static class InventoryTransferStock
                     DomainErrorCodes.InventoryLotMismatch,
                     $"Lot for '{sample.NameSnapshot}' does not belong to {sourceBranchName}.");
             }
+
+            // Expired source lots may still be dispatched as a physical move.
 
             if (lot.QuantityOnHand < requested)
             {

@@ -217,6 +217,8 @@ public static class DomainErrorCodes
     public const string InvalidInventoryLotNumber = "pos.inventory.lot_number.invalid";
     public const string InventoryExpirationRequired = "pos.inventory.expiration.required";
     public const string InventoryLotMismatch = "pos.inventory.lot.mismatch";
+    /// <summary>Normal branch transfer cannot use an expired source lot.</summary>
+    public const string InventoryLotExpiredForTransfer = "pos.inventory.lot.expired_for_transfer";
     public const string InvalidExpirationWarningDays = "pos.inventory.expiration_warning_days.invalid";
     public const string InvalidStockMovementId = "pos.inventory.movement.id.invalid";
     public const string InvalidInventoryMovementType = "pos.inventory.movement_type.invalid";

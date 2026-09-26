@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   allocateTransferLotsFefo,
+  resolveChangeLotsMaxQuantity,
+  resolveTransferableAvailableQuantity,
   selectTransferEligibleLots,
   sortLotsForTransferFefo,
 } from "@/features/inventory/inventory-transfer-fefo-allocate";
@@ -174,5 +176,148 @@ describe("inventory-transfer-fefo-allocate", () => {
     ];
     const eligibleOnly = selectTransferEligibleLots(lots);
     expect(eligibleOnly.map((l) => l.lotId)).toEqual(["ok"]);
+  });
+
+  it("FEFO skips expired lot (businessToday Sep20 scenario)", () => {
+    const lots = [
+      lot({
+        lotId: "lot-a",
+        lotNumber: "LOT-A",
+        expirationDate: "2026-09-12",
+        quantityOnHand: 50,
+        expiryStatus: "Expired",
+      }),
+      lot({
+        lotId: "lot-b",
+        lotNumber: "LOT-B",
+        expirationDate: "2026-09-25",
+        quantityOnHand: 37,
+        expiryStatus: "Ok",
+      }),
+      lot({
+        lotId: "lot-c",
+        lotNumber: "LOT-C",
+        expirationDate: "2026-09-30",
+        quantityOnHand: 100,
+        expiryStatus: "Ok",
+      }),
+    ];
+    const eligibleOnly = selectTransferEligibleLots(lots);
+    expect(eligibleOnly.map((l) => l.lotId)).toEqual(["lot-b", "lot-c"]);
+    const result = allocateTransferLotsFefo(eligibleOnly, 60);
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.allocations.map((a) => [a.lotId, a.quantity])).toEqual([
+      ["lot-b", 37],
+      ["lot-c", 23],
+    ]);
+  });
+
+  it("treats expires-today as eligible", () => {
+    const lots = [
+      lot({
+        lotId: "today",
+        expirationDate: "2026-09-26",
+        quantityOnHand: 8,
+        expiryStatus: "ExpiresToday",
+      }),
+      lot({
+        lotId: "later",
+        expirationDate: "2026-09-30",
+        quantityOnHand: 20,
+        expiryStatus: "Ok",
+      }),
+    ];
+    const eligibleOnly = selectTransferEligibleLots(lots);
+    expect(eligibleOnly.map((l) => l.lotId)).toEqual(["today", "later"]);
+    const result = allocateTransferLotsFefo(eligibleOnly, 10);
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      return;
+    }
+    expect(result.allocations.map((a) => [a.lotId, a.quantity])).toEqual([
+      ["today", 8],
+      ["later", 2],
+    ]);
+  });
+
+  it("all expired yields insufficient transferable stock", () => {
+    const lots = [
+      lot({
+        lotId: "a",
+        expirationDate: "2026-01-01",
+        quantityOnHand: 50,
+        expiryStatus: "Expired",
+      }),
+      lot({
+        lotId: "b",
+        expirationDate: "2026-02-01",
+        quantityOnHand: 50,
+        expiryStatus: "Expired",
+      }),
+    ];
+    expect(selectTransferEligibleLots(lots)).toEqual([]);
+    expect(allocateTransferLotsFefo(selectTransferEligibleLots(lots), 10)).toEqual({
+      ok: false,
+      reason: "insufficient",
+    });
+  });
+
+  it("caps transferable available by eligible lot qty", () => {
+    const lots = [
+      lot({
+        lotId: "expired",
+        expirationDate: "2026-01-01",
+        quantityOnHand: 50,
+        expiryStatus: "Expired",
+      }),
+      lot({
+        lotId: "ok",
+        expirationDate: "2026-09-30",
+        quantityOnHand: 100,
+        expiryStatus: "Ok",
+      }),
+    ];
+    expect(
+      resolveTransferableAvailableQuantity({
+        branchAvailable: 150,
+        tracksExpiration: true,
+        lots,
+      }),
+    ).toBe(100);
+  });
+
+  it("Change lots max includes expired physical stock", () => {
+    const lots = [
+      lot({
+        lotId: "expired",
+        expirationDate: "2026-01-01",
+        quantityOnHand: 50,
+        expiryStatus: "Expired",
+      }),
+      lot({
+        lotId: "ok",
+        expirationDate: "2026-09-30",
+        quantityOnHand: 100,
+        expiryStatus: "Ok",
+      }),
+    ];
+    // Lot on-hand sum wins even when branch "available" is lower (reservations/holds).
+    expect(
+      resolveChangeLotsMaxQuantity({
+        branchAvailable: 140,
+        tracksExpiration: true,
+        lots,
+      }),
+    ).toBe(150);
+    expect(
+      resolveChangeLotsMaxQuantity({
+        branchAvailable: 200,
+        tracksExpiration: true,
+        lots,
+      }),
+    ).toBe(150);
   });
 });
