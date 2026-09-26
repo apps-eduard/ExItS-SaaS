@@ -32,6 +32,11 @@ import {
   resolveInventoryTransferTransactionId,
 } from "@/features/inventory/inventory-movement-transfer-ref";
 import {
+  directPurchaseDetailPath,
+  isDirectPurchaseMovement,
+} from "@/features/inventory/inventory-movement-direct-purchase-ref";
+import { useDirectPurchaseMovementDisplayRef } from "@/features/inventory/useDirectPurchaseMovementDisplayRef";
+import {
   formatTransferQty,
   inventoryTransferStatusLabelKey,
 } from "@/features/inventory/inventory-transfer-labels";
@@ -88,6 +93,11 @@ export function InventoryMovementTransactionDrawer({
   const transferNumber = movement
     ? extractTransferReferenceNumber(movement)
     : (transferContext?.transferNumber?.trim() || null);
+  const { receiptId: directPurchaseId, label: directPurchaseLabel } =
+    useDirectPurchaseMovementDisplayRef(
+      movement && isDirectPurchaseMovement(movement) ? movement : null,
+      workspace,
+    );
 
   /** When server omitted transactionId, resolve by TR# so the header link still works. */
   const transferIdByNumberQuery = useQuery({
@@ -184,7 +194,8 @@ export function InventoryMovementTransactionDrawer({
   const returnToBranch = transfer
     ? branchLabel(transfer.sourceBranchName, transfer.sourceBranchId)
     : null;
-  const hasContent = movement != null || transferId != null || transferNumber != null;
+  const hasContent =
+    movement != null || transferId != null || transferNumber != null || directPurchaseId != null;
   const attributionActorId = movement?.recordedBy ?? transfer?.createdBy ?? null;
   const attributionAtUtc = movement?.recordedAtUtc ?? transfer?.createdAtUtc ?? null;
   const headerTransferNumber =
@@ -258,6 +269,18 @@ export function InventoryMovementTransactionDrawer({
                       </p>
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+
+              {directPurchaseId && directPurchaseLabel ? (
+                <div data-testid="inventory-movement-transaction-direct-purchase-header">
+                  <AppLinkWithReturn
+                    to={directPurchaseDetailPath(directPurchaseId)}
+                    className="m-0 inline-block text-[length:var(--exits-text-lg)] font-semibold text-primary underline underline-offset-2"
+                    data-testid="inventory-movement-transaction-direct-purchase-number"
+                  >
+                    {directPurchaseLabel}
+                  </AppLinkWithReturn>
                 </div>
               ) : null}
 

@@ -159,6 +159,31 @@ public sealed class DirectPurchaseReceiptRepository : IDirectPurchaseReceiptRepo
         }
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string>> ResolveReceiptNumbersByIdAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> receiptIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (receiptIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var ids = receiptIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var rows = await _db.DirectPurchaseReceipts.AsNoTracking()
+            .Where(r => r.OrganizationId == organizationId.Value && ids.Contains(r.Id))
+            .Select(r => new { r.Id, r.ReceiptNumber })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.ToDictionary(r => r.Id, r => r.ReceiptNumber);
+    }
+
     public async Task<string> AllocateNextNumberAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

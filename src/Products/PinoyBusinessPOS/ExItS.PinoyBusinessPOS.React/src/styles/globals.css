@@ -18780,19 +18780,74 @@ a.exits-chip--primary:hover {
 }
 
 .receive-stock-expiry-field {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 0.25rem;
   min-width: 0;
   max-width: 100%;
 }
 
+.receive-stock-expiry-field__control {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.receive-stock-expiry-field__control .receive-stock-expiry-input {
+  box-sizing: border-box;
+  width: 8.5rem;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+  flex: 0 0 auto;
+}
+
+.receive-stock-expiry-required-hint {
+  width: 100%;
+  max-width: 12rem;
+  line-height: 1.25;
+}
+
+.receive-stock-expiry-required-notice {
+  width: 100%;
+  padding-block: 0.5rem;
+  padding-inline: 0.75rem;
+  font-size: var(--exits-text-sm);
+}
+
+.receive-stock-expiry-required-notice__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: var(--exits-radius-sm);
+  background: transparent;
+  color: var(--exits-text-muted);
+  cursor: pointer;
+}
+
+.receive-stock-expiry-required-notice__close:hover {
+  color: var(--exits-text);
+  background: var(--exits-surface-muted);
+}
+
+.receive-stock-expiry-required-notice__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--exits-field-focus-ring-width) var(--exits-field-focus-ring);
+}
+
 .receive-stock-expiry-field__clear {
   flex: 0 0 auto;
-  width: 1.75rem;
-  height: 1.75rem;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
 }
 
 .receive-stock-receipt-items {
@@ -18884,6 +18939,15 @@ a.exits-chip--primary:hover {
   width: 8.5rem;
   min-width: 8.5rem;
   max-width: 8.5rem;
+}
+
+.receive-stock-receipt-table__expiry-col .receive-stock-expiry-field__control .receive-stock-expiry-input,
+.receive-stock-expiry-field__control .receive-stock-expiry-input {
+  box-sizing: border-box;
+  width: 8.5rem;
+  min-width: 8.5rem;
+  max-width: 8.5rem;
+  flex: 0 0 auto;
 }
 
 .receive-stock-lot-input {
@@ -19467,10 +19531,18 @@ a.exits-chip--primary:hover {
   width: 100%;
 }
 
+.receive-stock-receipt-list .receive-stock-expiry-field__control {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.receive-stock-receipt-list .receive-stock-expiry-field__control .receive-stock-expiry-input,
 .receive-stock-receipt-list .receive-stock-expiry-field .receive-stock-expiry-input {
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
+  max-width: none;
 }
 
 .receive-stock-receipt-list .receive-cost-input,

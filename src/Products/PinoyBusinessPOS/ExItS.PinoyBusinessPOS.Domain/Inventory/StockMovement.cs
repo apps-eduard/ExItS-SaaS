@@ -56,6 +56,39 @@ public sealed class StockMovement
     public const string TransferExceptionRecoveryReasonPrefix = "Transfer exception recovery";
     public const string TransferExceptionWriteOffReasonPrefix = "Transfer exception write-off";
 
+    public static string FormatDirectPurchaseReceiptReason(string receiptNumber)
+    {
+        var normalized = DirectPurchaseReceiptNumbers.Normalize(receiptNumber);
+        return $"{DirectPurchaseReceiptReason} {normalized}";
+    }
+
+    public static string? TryParseDirectPurchaseReceiptNumberFromReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return null;
+        }
+
+        var text = reason.Trim();
+        const string prefix = DirectPurchaseReceiptReason + " ";
+        if (!text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var candidate = text[prefix.Length..].Trim();
+        // Notes may follow the document number.
+        var token = candidate.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[0];
+        try
+        {
+            return DirectPurchaseReceiptNumbers.Normalize(token);
+        }
+        catch (DomainException)
+        {
+            return null;
+        }
+    }
+
     public StockMovementId Id { get; }
     public PosOrganizationId OrganizationId { get; }
     public CatalogProductId ProductId { get; }
@@ -364,7 +397,8 @@ public sealed class StockMovement
         DateTimeOffset utcNow,
         StockMovementId? id = null,
         SellingMode sellingMode = SellingMode.PerItem,
-        decimal? unitCost = null)
+        decimal? unitCost = null,
+        string? receiptNumber = null)
     {
         EnsureUtc(utcNow);
         EnsureActor(actorId);
@@ -377,6 +411,9 @@ public sealed class StockMovement
 
         var absolute = SaleLine.NormalizeQuantity(quantity, unitOfMeasure, sellingMode);
         var normalizedCost = NormalizeAcquisitionUnitCost(unitCost, allowZero: false);
+        var reason = string.IsNullOrWhiteSpace(receiptNumber)
+            ? DirectPurchaseReceiptReason
+            : FormatDirectPurchaseReceiptReason(receiptNumber);
         return new StockMovement(
             id ?? StockMovementId.New(),
             organizationId,
@@ -384,7 +421,7 @@ public sealed class StockMovement
             inventoryAccountId,
             StockMovementType.DirectPurchaseReceipt,
             absolute,
-            DirectPurchaseReceiptReason,
+            reason,
             StockMovementSourceType.DirectPurchase,
             directPurchaseReceiptId,
             utcNow,

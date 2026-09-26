@@ -3844,7 +3844,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movements": "Movement history",
 
-  "inventory.movementCol.when": "When",
+  "inventory.movementCol.when": "When/Who",
 
   "inventory.movementCol.qty": "Qty",
 
@@ -4200,7 +4200,7 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "inventory.movementLot": "Lot",
 
-  "inventory.movementUnitCost": "Unit purchase cost",
+  "inventory.movementUnitCost": "Unit cost",
 
   "inventory.movementStockValue": "Stock value",
 
@@ -4874,7 +4874,7 @@ export const filPH: Record<keyof typeof en, string> = {
   "transfer.tracksExpiry": "Tracks expiry",
 
   "transfer.available": "Available: {qty} {uom}",
-  "transfer.colAvailable": "Available at source",
+  "transfer.colAvailable": "Available",
   "transfer.colNumber": "Transfer #",
   "transfer.colRoute": "Route",
   "transfer.colLines": "Lines",
@@ -9968,6 +9968,22 @@ export const filPH: Record<keyof typeof en, string> = {
 
   "purchasing.expiryEnableTrackingHint":
     "Expiry tracking will be enabled when this receipt is saved.",
+
+  "purchasing.expirySetupTitle": "Set up expiry tracking",
+
+  "purchasing.expirySetupDescription":
+    "{product} already has {qty} {uom} in stock without expiration information. Assign expiration dates to the existing stock before receiving new expiry-tracked stock.",
+
+  "purchasing.expirySetupAddGroup": "Add expiry group",
+
+  "purchasing.expirySetupStockChanged":
+    "Stock quantity changed while you were setting up expiry tracking. Refresh the allocation and try again.",
+
+  "purchasing.expirySetupOffline": "Setting up expiry tracking needs an internet connection.",
+
+  "purchasing.expirySetupLoadFailed": "Could not load current stock for expiry setup.",
+
+  "purchasing.expirySetupUnauthorized": "You do not have permission to set up expiry tracking.",
 
   "purchasing.receiveExpiryHelper": "Expiry is recorded for this received stock.",
 

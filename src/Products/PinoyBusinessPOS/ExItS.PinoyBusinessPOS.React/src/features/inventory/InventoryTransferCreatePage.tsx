@@ -267,7 +267,8 @@ export function InventoryTransferCreatePage() {
   }
 
   function formatAvailable(qty: number, uom: string) {
-    return t("transfer.available").replace("{qty}", String(qty)).replace("{uom}", uom);
+    const unit = uom.trim();
+    return unit ? `${qty}/${unit}` : String(qty);
   }
 
   async function ensureLots(productId: string, tracksExpiration: boolean) {

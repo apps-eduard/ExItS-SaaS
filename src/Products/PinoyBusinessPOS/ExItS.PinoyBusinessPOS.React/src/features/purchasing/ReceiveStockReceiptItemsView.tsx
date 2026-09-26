@@ -56,6 +56,11 @@ type ReceiveStockReceiptItemsViewProps = {
       >
     >,
   ) => void;
+  /**
+   * When set, intercepts non-tracked expiry date selection so the parent can open
+   * in-place existing-stock setup (onHand > 0) before applying the date.
+   */
+  onExpiryDateAttempt?: (productId: string, nextDate: string) => void;
   onRemoveLine: (productId: string) => void;
   t: Translate;
 };
@@ -133,47 +138,85 @@ function ReceiptCostInput({
 function ReceiptExpiryDateInput({
   line,
   onPatchLine,
+  onExpiryDateAttempt,
   t,
 }: {
   line: ReceiveStockReceiptLine;
   onPatchLine: ReceiveStockReceiptItemsViewProps["onPatchLine"];
+  onExpiryDateAttempt?: ReceiveStockReceiptItemsViewProps["onExpiryDateAttempt"];
   t: Translate;
 }) {
   const expiryRequired = line.tracksExpiration;
   const expiryInvalid = expiryRequired && !line.expiryDate.trim();
   const hasValue = Boolean(line.expiryDate.trim());
+
+  function applyExpiry(nextDate: string) {
+    const trimmed = nextDate.trim();
+    const looksComplete = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+    if (onExpiryDateAttempt && !line.tracksExpiration && looksComplete) {
+      onExpiryDateAttempt(line.productId, trimmed);
+      return;
+    }
+    onPatchLine(line.productId, { expiryDate: nextDate });
+  }
+
   return (
     <div className="receive-stock-expiry-field">
-      <input
-        type="date"
-        className="exits-input receive-stock-expiry-input"
-        value={line.expiryDate}
-        onChange={(e) =>
-          onPatchLine(line.productId, {
-            expiryDate: e.target.value,
-          })
-        }
-        aria-invalid={expiryInvalid || undefined}
-        aria-required={expiryRequired || undefined}
-        aria-label={t("purchasing.expiryDate")}
-        data-testid={`direct-line-expiry-${line.productId}`}
-      />
-      {hasValue ? (
-        <Button
-          type="button"
-          intent="warning"
-          appearance="outline"
-          shape="pill"
-          size="icon"
-          className="receive-stock-expiry-field__clear"
-          aria-label={t("purchasing.clearExpiryDate")}
-          data-testid={`direct-line-expiry-clear-${line.productId}`}
-          onClick={() => onPatchLine(line.productId, { expiryDate: "" })}
-        >
-          <X className="size-3.5" aria-hidden strokeWidth={2} />
-        </Button>
-      ) : null}
+      <div className="receive-stock-expiry-field__control">
+        <input
+          type="date"
+          className="exits-input receive-stock-expiry-input"
+          value={line.expiryDate}
+          onChange={(e) => applyExpiry(e.target.value)}
+          aria-invalid={expiryInvalid || undefined}
+          aria-required={expiryRequired || undefined}
+          aria-label={t("purchasing.expiryDate")}
+          data-testid={`direct-line-expiry-${line.productId}`}
+        />
+        {hasValue ? (
+          <Button
+            type="button"
+            intent="danger"
+            appearance="solid"
+            emphasis="soft"
+            shape="pill"
+            size="icon"
+            className="receive-stock-expiry-field__clear"
+            aria-label={t("purchasing.clearExpiryDate")}
+            data-testid={`direct-line-expiry-clear-${line.productId}`}
+            onClick={() => onPatchLine(line.productId, { expiryDate: "" })}
+          >
+            <X className="size-3.5" aria-hidden strokeWidth={2.75} />
+          </Button>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+function ExpiryRequiredNotice({ t }: { t: Translate }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <Notice
+      tone="info"
+      testId="direct-receipt-expiry-required-notice"
+      className="receive-stock-expiry-required-notice"
+      action={
+        <button
+          type="button"
+          className="receive-stock-expiry-required-notice__close"
+          aria-label={t("shell.needsAttention.close")}
+          data-testid="direct-receipt-expiry-required-notice-close"
+          onClick={() => setDismissed(true)}
+        >
+          <X className="size-4" aria-hidden strokeWidth={2} />
+        </button>
+      }
+    >
+      {t("purchasing.expiryRequired")}
+    </Notice>
   );
 }
 
@@ -259,17 +302,24 @@ function ReceiptSellingCell({
 function ReceiptExpiryLotDetails({
   line,
   onPatchLine,
+  onExpiryDateAttempt,
   t,
 }: {
   line: ReceiveStockReceiptLine;
   onPatchLine: ReceiveStockReceiptItemsViewProps["onPatchLine"];
+  onExpiryDateAttempt?: ReceiveStockReceiptItemsViewProps["onExpiryDateAttempt"];
   t: Translate;
 }) {
   return (
     <div className="receive-stock-receipt-card__details">
       <label className="receive-stock-field">
         <span className="receive-stock-field__label">{t("purchasing.expiryDate")}</span>
-        <ReceiptExpiryDateInput line={line} onPatchLine={onPatchLine} t={t} />
+        <ReceiptExpiryDateInput
+          line={line}
+          onPatchLine={onPatchLine}
+          onExpiryDateAttempt={onExpiryDateAttempt}
+          t={t}
+        />
       </label>
       <label className="receive-stock-field">
         <span className="receive-stock-field__label">{t("purchasing.lotNumber")}</span>
@@ -324,11 +374,15 @@ export function ReceiveStockReceiptItemsView({
   lines,
   highlightProductId,
   onPatchLine,
+  onExpiryDateAttempt,
   onRemoveLine,
   t,
 }: ReceiveStockReceiptItemsViewProps) {
   const showExpiryEnableNotice = lines.some(
     (line) => !line.tracksExpiration && Boolean(line.expiryDate.trim()),
+  );
+  const showExpiryRequiredNotice = lines.some(
+    (line) => line.tracksExpiration && !line.expiryDate.trim(),
   );
 
   const tableBody = (
@@ -392,7 +446,12 @@ export function ReceiveStockReceiptItemsView({
                       cellAlign="text"
                       className="receive-stock-receipt-table__expiry-col"
                     >
-                      <ReceiptExpiryDateInput line={line} onPatchLine={onPatchLine} t={t} />
+                      <ReceiptExpiryDateInput
+                        line={line}
+                        onPatchLine={onPatchLine}
+                        onExpiryDateAttempt={onExpiryDateAttempt}
+                        t={t}
+                      />
                     </ExitsTableCell>
                     <ExitsTableCell cellAlign="text">
                       <input
@@ -469,7 +528,12 @@ export function ReceiveStockReceiptItemsView({
                   },
                 ]}
                 details={
-                  <ReceiptExpiryLotDetails line={line} onPatchLine={onPatchLine} t={t} />
+                  <ReceiptExpiryLotDetails
+                    line={line}
+                    onPatchLine={onPatchLine}
+                    onExpiryDateAttempt={onExpiryDateAttempt}
+                    t={t}
+                  />
                 }
               />
             );
@@ -487,6 +551,7 @@ export function ReceiveStockReceiptItemsView({
 
   return (
     <div className="receive-stock-receipt-items">
+      {showExpiryRequiredNotice ? <ExpiryRequiredNotice t={t} /> : null}
       {showExpiryEnableNotice ? (
         <ExpiryEnableTrackingNotice t={t} onClearDates={clearEnableTrackingExpiryDates} />
       ) : null}

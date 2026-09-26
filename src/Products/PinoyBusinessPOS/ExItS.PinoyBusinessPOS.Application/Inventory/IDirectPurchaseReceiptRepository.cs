@@ -26,6 +26,15 @@ public interface IDirectPurchaseReceiptRepository
 
     Task UpdateAsync(DirectPurchaseReceipt receipt, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Batch-resolve receipt numbers for stock-movement transaction links.
+    /// Keyed by direct-purchase receipt id; missing ids are omitted.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string>> ResolveReceiptNumbersByIdAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyCollection<Guid> receiptIds,
+        CancellationToken cancellationToken = default);
+
     Task<string> AllocateNextNumberAsync(
         PosOrganizationId organizationId,
         DateOnly businessDateUtc,

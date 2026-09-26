@@ -43,10 +43,8 @@ export function InventoryTransferProductSelection({
 }: InventoryTransferProductSelectionProps) {
   const columns: ProductSelectionColumn[] = [
     { id: "product", header: t("transfer.product") },
-    { id: "sku", header: t("purchasing.colSku") },
     { id: "category", header: t("purchasing.category") },
     { id: "available", header: t("transfer.colAvailable") },
-    { id: "unit", header: t("purchasing.colUnit") },
   ];
 
   const rows: ProductSelectionRow[] = products.map((row) => {
@@ -59,17 +57,25 @@ export function InventoryTransferProductSelection({
     const lotOut =
       tracksExpiration && selectedLot != null && selectedLot.quantityOnHand <= 0;
     const addDisabled = !online || outOfStock || lotOut;
-    const sku = row.sku?.trim() || "—";
+    const sku = row.sku?.trim() || "";
     const category =
       row.categoryName?.trim() ||
       (row.categoryId?.trim() ? row.categoryId : "—");
-    const unit = row.unitOfMeasure || "—";
     const availableLabel = outOfStock
       ? t("transfer.outOfStock")
       : formatAvailable(available, row.unitOfMeasure);
     const availableWithExpiry = tracksExpiration
       ? `${availableLabel} · ${t("transfer.tracksExpiry")}`
       : availableLabel;
+
+    const productCell = (
+      <>
+        <div className="font-medium leading-snug">{row.name}</div>
+        {sku ? (
+          <div className="text-[length:var(--exits-text-xs)] text-muted">{sku}</div>
+        ) : null}
+      </>
+    );
 
     const primaryAction = outOfStock ? (
       <span
@@ -116,7 +122,7 @@ export function InventoryTransferProductSelection({
       id: row.productId,
       testId: `transfer-picker-row-${row.productId}`,
       title: row.name,
-      subtitle: sku !== "—" ? sku : undefined,
+      subtitle: sku || undefined,
       status: (
         <span
           className={cn(
@@ -129,10 +135,7 @@ export function InventoryTransferProductSelection({
         </span>
       ),
       cells: [
-        <span key="name" className="font-medium leading-snug">
-          {row.name}
-        </span>,
-        sku,
+        productCell,
         category,
         <span
           key="avail"
@@ -141,12 +144,10 @@ export function InventoryTransferProductSelection({
         >
           {availableWithExpiry}
         </span>,
-        unit,
       ],
       fields: [
         { label: t("purchasing.category"), value: category },
         { label: t("transfer.colAvailable"), value: availableWithExpiry },
-        { label: t("purchasing.colUnit"), value: unit },
       ],
       primaryAction,
       details,

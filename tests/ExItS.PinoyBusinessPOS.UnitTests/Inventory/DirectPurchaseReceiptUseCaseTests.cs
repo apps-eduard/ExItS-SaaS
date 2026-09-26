@@ -434,6 +434,105 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         Assert.True(fx.Branches.PrimaryLookupCount <= 1, $"Primary lookups: {fx.Branches.PrimaryLookupCount}");
     }
 
+    [Fact]
+    public async Task Zero_stock_auto_enable_then_second_receipt_without_expiry_is_rejected()
+    {
+        var fx = await SeedAsync(cokeOnHand: 0m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        var expiry = new DateOnly(2027, 1, 1);
+
+        var first = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 5m, 10m, ExpiryDate: expiry)]),
+            Actor,
+            RemoteBranch);
+        Assert.True(first.IsSuccess, first.ErrorMessage);
+        Assert.True(product.TracksExpiration);
+        Assert.Equal(5m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(5m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
+
+        var secondMissing = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 5m, 10m, ExpiryDate: null)]),
+            Actor,
+            RemoteBranch);
+        Assert.Equal(DomainErrorCodes.InventoryExpirationRequired, secondMissing.ErrorCode);
+        Assert.Equal(5m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var secondOk = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 5m, 10m, ExpiryDate: new DateOnly(2027, 6, 30))]),
+            Actor,
+            RemoteBranch);
+        Assert.True(secondOk.IsSuccess, secondOk.ErrorMessage);
+        Assert.Equal(10m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(10m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
+    }
+
+    [Fact]
+    public async Task Existing_stock_enable_then_receipt_requires_expiry_and_keeps_onhand_lot_invariant()
+    {
+        var fx = await SeedAsync(cokeOnHand: 100m);
+        var product = fx.Products.Items.Single(p => p.Id.Value == fx.CokeId);
+        Assert.False(product.TracksExpiration);
+        var movementCountBeforeEnable = fx.Inventory.Movements.Count;
+
+        var enable = await fx.Enable.ExecuteAsync(
+            OrgA,
+            fx.CokeId,
+            Actor,
+            expirationWarningDays: 7,
+            [
+                new ExistingStockLotInput(50m, new DateOnly(2026, 12, 31)),
+                new ExistingStockLotInput(25m, new DateOnly(2027, 1, 31)),
+                new ExistingStockLotInput(25m, new DateOnly(2027, 3, 31)),
+            ],
+            expectedOnHandQuantity: 100m,
+            branchId: RemoteBranch);
+        Assert.True(enable.IsSuccess, enable.ErrorMessage);
+        Assert.True(product.TracksExpiration);
+        Assert.Equal(100m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(100m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
+        Assert.Equal(movementCountBeforeEnable, fx.Inventory.Movements.Count);
+
+        var missingExpiry = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                [new CreateDirectPurchaseReceiptLineRequest(fx.CokeId, 100m, 8m, ExpiryDate: null)]),
+            Actor,
+            RemoteBranch);
+        Assert.Equal(DomainErrorCodes.InventoryExpirationRequired, missingExpiry.ErrorCode);
+        Assert.Equal(100m, fx.Inventory.GetOnHand(fx.CokeId));
+
+        var withExpiry = await fx.Create.ExecuteAsync(
+            OrgA,
+            new CreateDirectPurchaseReceiptRequest(
+                DateOnly.FromDateTime(Utc.UtcDateTime),
+                [new CreateDirectPurchaseReceiptLineRequest(
+                    fx.CokeId,
+                    100m,
+                    8m,
+                    ExpiryDate: new DateOnly(2027, 6, 30))]),
+            Actor,
+            RemoteBranch);
+        Assert.True(withExpiry.IsSuccess, withExpiry.ErrorMessage);
+        Assert.Equal(200m, fx.Inventory.GetOnHand(fx.CokeId));
+        Assert.Equal(200m, fx.Lots.Items.Where(l => l.ProductId.Value == fx.CokeId).Sum(l => l.QuantityOnHand));
+        Assert.NotNull(
+            fx.Inventory.Movements
+                .Single(m =>
+                    m.MovementType == StockMovementType.DirectPurchaseReceipt
+                    && m.QuantityEffect == 100m)
+                .InventoryLotId);
+    }
+
     private static async Task<Fixture> SeedAsync(
         decimal cokeOnHand = 0m,
         decimal spriteOnHand = 0m,
@@ -471,21 +570,30 @@ public sealed class DirectPurchaseReceiptUseCaseTests
         public InMemoryBranchBalances BranchBalances { get; } = new();
         public FixedPrimaryBranches Branches { get; } = new(RemoteBranch);
         public CreateDirectPurchaseReceipt Create { get; }
+        public EnableExpirationTracking Enable { get; }
 
         public Fixture()
         {
+            var lotStock = new InventoryLotStockService(Lots);
             Create = new CreateDirectPurchaseReceipt(
                 Receipts,
                 Products,
                 Suppliers,
                 Inventory,
                 BranchBalances,
-                new InventoryLotStockService(Lots),
+                lotStock,
                 new BranchInventoryMutationService(),
                 UnitOfWork,
                 new CreateSupplierPayableFromReceipt(new NoOpSupplierPayableRepository()),
                 Clock,
                 Branches);
+            Enable = new EnableExpirationTracking(
+                Products,
+                Inventory,
+                Lots,
+                lotStock,
+                UnitOfWork,
+                Clock);
         }
 
         public Task AddProductAsync(
@@ -753,6 +861,17 @@ public sealed class DirectPurchaseReceiptUseCaseTests
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyDictionary<Guid, string>> ResolveReceiptNumbersByIdAsync(
+            PosOrganizationId organizationId,
+            IReadOnlyCollection<Guid> receiptIds,
+            CancellationToken cancellationToken = default)
+        {
+            var map = _items
+                .Where(r => r.OrganizationId == organizationId && receiptIds.Contains(r.Id.Value))
+                .ToDictionary(r => r.Id.Value, r => r.ReceiptNumber);
+            return Task.FromResult<IReadOnlyDictionary<Guid, string>>(map);
         }
 
         public Task<string> AllocateNextNumberAsync(

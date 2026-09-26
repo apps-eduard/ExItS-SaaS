@@ -33,7 +33,15 @@ export type AssignExpirationLotsFormProps = {
   expirationWarningDays?: number | null;
   /** When assigning lots for already-tracked stock (repair), use assign copy. */
   intent?: "enable" | "assign";
+  /** Hide the built-in enable intro when the parent dialog already explains context. */
+  hideIntro?: boolean;
+  /** Override the secondary add-row label (default: inventory.enableExpirationAddRow). */
+  addRowLabel?: string;
   onSuccess: (result: EnableExpirationTrackingResponse) => void;
+  /** Called when the server reports on-hand changed during allocation (concurrency). */
+  onAllocationStockChanged?: () => void;
+  /** Notify parent when the enable/assign request is in flight (e.g. lock modal dismiss). */
+  onSubmittingChange?: (submitting: boolean) => void;
   /** Optional controls rendered on the same row as the primary submit (left-aligned). */
   actionsExtra?: ReactNode;
 };
@@ -46,20 +54,32 @@ export function AssignExpirationLotsForm({
   unitOfMeasure,
   expirationWarningDays,
   intent = "assign",
+  hideIntro = false,
+  addRowLabel,
   onSuccess,
+  onAllocationStockChanged,
+  onSubmittingChange,
   actionsExtra,
 }: AssignExpirationLotsFormProps) {
   const { t } = useI18n();
-  const [rows, setRows] = useState<ExpirationLotDraft[]>([]);
+  const [rows, setRows] = useState<ExpirationLotDraft[]>(() => [
+    createExpirationLotDraft(onHandQuantity > 0 ? String(onHandQuantity) : ""),
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const today = formatLocalDateOnly();
+
+  useEffect(() => {
+    onSubmittingChange?.(submitting);
+  }, [submitting, onSubmittingChange]);
 
   useEffect(() => {
     setError(null);
     setSubmitting(false);
     const defaultQty = onHandQuantity > 0 ? String(onHandQuantity) : "";
     setRows([createExpirationLotDraft(defaultQty)]);
+    // Reset rows when the product changes or authoritative on-hand changes
+    // (concurrency reload). Do not remount/unmount the form for loading flashes.
   }, [onHandQuantity, productId]);
 
   const parsedRows = useMemo(() => parseExpirationLotRows(rows), [rows]);
@@ -120,13 +140,21 @@ export function AssignExpirationLotsForm({
       });
       onSuccess(result);
     } catch (err) {
-      setError(
-        err instanceof PosApiError
-          ? (err.problem.detail ?? err.message)
-          : err instanceof Error
-            ? err.message
-            : t("error.detail"),
-      );
+      const stockChanged =
+        err instanceof PosApiError &&
+        err.errorCode === "pos.inventory.expiration.allocation_stock_changed";
+      if (stockChanged) {
+        setError(t("purchasing.expirySetupStockChanged"));
+        onAllocationStockChanged?.();
+      } else {
+        setError(
+          err instanceof PosApiError
+            ? (err.problem.detail ?? err.message)
+            : err instanceof Error
+              ? err.message
+              : t("error.detail"),
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +167,7 @@ export function AssignExpirationLotsForm({
 
   return (
     <div className="flex flex-col gap-3" data-testid="assign-expiration-lots-form">
-      {intent === "enable" ? (
+      {intent === "enable" && !hideIntro ? (
         <p className="m-0 text-[length:var(--exits-text-sm)] text-muted">
           {t("inventory.enableExpirationCopy")
             .replace("{qty}", String(onHandQuantity))
@@ -232,7 +260,7 @@ export function AssignExpirationLotsForm({
           data-testid="enable-expiration-add-row"
         >
           <Plus className="size-4 shrink-0" aria-hidden />
-          {t("inventory.enableExpirationAddRow")}
+          {addRowLabel ?? t("inventory.enableExpirationAddRow")}
         </Button>
       </div>
       {!canAddRow && remaining <= 0 && !overAllocated ? (

@@ -42,8 +42,12 @@ export type ExitsModalProps = {
    * Desktop (`lg+`) keeps the normal centered dialog height.
    */
   fullHeightOnCompact?: boolean;
-  /** When true, Escape / backdrop do not close. */
+  /** When true, Escape / backdrop / close control do not dismiss. */
   busy?: boolean;
+  /** When false, backdrop click does not dismiss (default true). */
+  closeOnOutsideClick?: boolean;
+  /** When false, Escape does not dismiss (default true). Useful for forms with nested date pickers. */
+  closeOnEscape?: boolean;
   testId?: string;
   closeLabel?: string;
   /** Optional id on the dialog panel (e.g. aria-controls from an opener). */
@@ -67,6 +71,8 @@ export function ExitsModal({
   size = "md",
   fullHeightOnCompact = false,
   busy = false,
+  closeOnOutsideClick = true,
+  closeOnEscape = true,
   testId = "exits-modal",
   closeLabel = "Close",
   id,
@@ -92,8 +98,13 @@ export function ExitsModal({
       if (!panel) {
         return;
       }
-      const focusable = getFocusable(panel);
-      (focusable[0] ?? panel).focus();
+      // Prefer an explicit autofocus target; otherwise focus the panel itself.
+      // Avoid focusing the header Close control (Space/Enter dismisses) and avoid
+      // auto-focusing the first field (races with callers that type into other inputs).
+      const preferred = panel.querySelector<HTMLElement>(
+        "[data-exits-modal-autofocus='true']",
+      );
+      (preferred ?? panel).focus();
     });
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
@@ -112,7 +123,7 @@ export function ExitsModal({
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        if (busy) {
+        if (busy || !closeOnEscape) {
           return;
         }
         event.preventDefault();
@@ -141,7 +152,7 @@ export function ExitsModal({
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, busy, onOpenChange]);
+  }, [open, busy, closeOnEscape, onOpenChange]);
 
   if (!open || typeof document === "undefined") {
     return null;
@@ -202,7 +213,7 @@ export function ExitsModal({
       role="presentation"
       data-testid={`${testId}-backdrop`}
       onClick={() => {
-        if (!busy) {
+        if (!busy && closeOnOutsideClick) {
           onOpenChange(false);
         }
       }}

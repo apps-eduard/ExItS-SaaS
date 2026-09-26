@@ -1139,3 +1139,8 @@ export function useWorkspace(): WorkspaceContextValue {
   }
   return context;
 }
+
+/** Returns null outside WorkspaceProvider (for optional enrichment hooks). */
+export function useOptionalWorkspace(): WorkspaceContextValue | null {
+  return useContext(WorkspaceContext);
+}

@@ -20,6 +20,7 @@ public sealed class InventoryQueryService
     private readonly BranchInventoryReadService _branchReads;
     private readonly BranchInventoryContextResolver _branchContext;
     private readonly IInventoryTransferRepository _transfers;
+    private readonly IDirectPurchaseReceiptRepository _directPurchases;
     private readonly IOrganizationBranchDirectory? _branches;
     private readonly IEffectivePriceResolver? _effectivePrices;
     private readonly InventoryCostResolver? _costs;
@@ -33,6 +34,7 @@ public sealed class InventoryQueryService
         BranchInventoryReadService branchReads,
         BranchInventoryContextResolver branchContext,
         IInventoryTransferRepository transfers,
+        IDirectPurchaseReceiptRepository directPurchases,
         IClock clock,
         IOrganizationBranchDirectory? branches = null,
         IEffectivePriceResolver? effectivePrices = null,
@@ -45,6 +47,7 @@ public sealed class InventoryQueryService
         _branchReads = branchReads;
         _branchContext = branchContext;
         _transfers = transfers;
+        _directPurchases = directPurchases;
         _clock = clock;
         _branches = branches;
         _effectivePrices = effectivePrices;
@@ -301,6 +304,11 @@ public sealed class InventoryQueryService
         var transactionRefs = await _transfers
             .ResolveStockMovementTransactionRefsAsync(orgId, items, cancellationToken)
             .ConfigureAwait(false);
+        var directPurchaseNumbers = await ResolveDirectPurchaseReceiptNumbersAsync(
+                orgId,
+                items,
+                cancellationToken)
+            .ConfigureAwait(false);
         var sellableBalances = await LoadSellableBalancesAsync(
                 orgId,
                 catalogProductId,
@@ -318,7 +326,19 @@ public sealed class InventoryQueryService
                         balance = found;
                     }
 
-                    return MapMovement(m, ResolveMovementLot(m, lotById), trx, balance);
+                    string? directPurchaseNumber = null;
+                    if (m.SourceType == StockMovementSourceType.DirectPurchase
+                        && m.SourceId is Guid receiptId)
+                    {
+                        directPurchaseNumbers.TryGetValue(receiptId, out directPurchaseNumber);
+                    }
+
+                    return MapMovement(
+                        m,
+                        ResolveMovementLot(m, lotById),
+                        trx,
+                        balance,
+                        directPurchaseNumber);
                 })
                 .ToList(),
             total,
@@ -356,6 +376,11 @@ public sealed class InventoryQueryService
             .ResolveStockMovementTransactionRefsAsync(orgId, [movement], cancellationToken)
             .ConfigureAwait(false);
         transactionRefs.TryGetValue(movement.Id.Value, out var trx);
+        var directPurchaseNumbers = await ResolveDirectPurchaseReceiptNumbersAsync(
+                orgId,
+                [movement],
+                cancellationToken)
+            .ConfigureAwait(false);
         var sellableBalances = await LoadSellableBalancesAsync(
                 orgId,
                 movement.ProductId,
@@ -368,7 +393,14 @@ public sealed class InventoryQueryService
             balance = found;
         }
 
-        return MapMovement(movement, lot, trx, balance);
+        string? directPurchaseNumber = null;
+        if (movement.SourceType == StockMovementSourceType.DirectPurchase
+            && movement.SourceId is Guid receiptId)
+        {
+            directPurchaseNumbers.TryGetValue(receiptId, out directPurchaseNumber);
+        }
+
+        return MapMovement(movement, lot, trx, balance, directPurchaseNumber);
     }
 
     /// <summary>
@@ -747,7 +779,8 @@ public sealed class InventoryQueryService
         StockMovement movement,
         InventoryLot? lot = null,
         InventoryTransferTransactionRef? transactionRef = null,
-        StockMovementHistoricalSellable.Balance? sellableBalance = null)
+        StockMovementHistoricalSellable.Balance? sellableBalance = null,
+        string? directPurchaseReceiptNumber = null)
     {
         decimal? stockValue = movement.UnitCost is { } cost
             ? SaleMoney.RoundMoney(cost * movement.QuantityEffect)
@@ -761,6 +794,19 @@ public sealed class InventoryQueryService
             transactionType = StockMovementSourceTypes.ToCode(StockMovementSourceType.InventoryTransfer);
             transactionId = transactionRef.TransferId;
             transactionReference = transactionRef.TransferNumber;
+        }
+        else if (movement.SourceType == StockMovementSourceType.DirectPurchase
+                 && movement.SourceId is Guid receiptId
+                 && receiptId != Guid.Empty)
+        {
+            transactionType = StockMovementSourceTypes.ToCode(StockMovementSourceType.DirectPurchase);
+            transactionId = receiptId;
+            var resolvedNumber = string.IsNullOrWhiteSpace(directPurchaseReceiptNumber)
+                ? StockMovement.TryParseDirectPurchaseReceiptNumberFromReason(movement.Reason)
+                : directPurchaseReceiptNumber.Trim();
+            transactionReference = string.IsNullOrWhiteSpace(resolvedNumber)
+                ? null
+                : resolvedNumber;
         }
 
         decimal? sellableBefore = null;
@@ -795,6 +841,31 @@ public sealed class InventoryQueryService
             sellableBefore,
             sellableDelta,
             sellableAfter);
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, string>> ResolveDirectPurchaseReceiptNumbersAsync(
+        PosOrganizationId organizationId,
+        IReadOnlyList<StockMovement> movements,
+        CancellationToken cancellationToken)
+    {
+        if (movements.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var receiptIds = movements
+            .Where(m => m.SourceType == StockMovementSourceType.DirectPurchase && m.SourceId is Guid)
+            .Select(m => m.SourceId!.Value)
+            .Distinct()
+            .ToList();
+        if (receiptIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        return await _directPurchases
+            .ResolveReceiptNumbersByIdAsync(organizationId, receiptIds, cancellationToken)
+            .ConfigureAwait(false);
     }
 }
 

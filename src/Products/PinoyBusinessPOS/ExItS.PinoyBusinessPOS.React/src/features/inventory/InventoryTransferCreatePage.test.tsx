@@ -210,7 +210,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId(`transfer-picker-available-${soapId}`)).toHaveTextContent(
-        /Available:\s*10\s*Piece/,
+        /10\/Piece/,
       );
     });
     // Out-of-stock products are hidden until the Out of stock category filter is selected.

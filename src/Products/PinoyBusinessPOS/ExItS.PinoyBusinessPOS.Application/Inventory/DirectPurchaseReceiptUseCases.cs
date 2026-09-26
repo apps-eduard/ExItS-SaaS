@@ -316,7 +316,8 @@ public sealed class CreateDirectPurchaseReceipt
                                 actorId,
                                 utcNow,
                                 sellingMode: product.SellingMode,
-                                unitCost: line.UnitCost)
+                                unitCost: line.UnitCost,
+                                receiptNumber: receipt.ReceiptNumber)
                                 .WithBranch(receivingBranch.Value);
 
                             if (product.TracksExpiration)

@@ -135,11 +135,15 @@ public sealed class DirectPurchaseReceiptDomainTests
             UnitOfMeasure.Piece,
             Guid.NewGuid(),
             Actor,
-            Now);
+            Now,
+            receiptNumber: "DP-260926-001");
         Assert.Equal(StockMovementType.DirectPurchaseReceipt, movement.MovementType);
         Assert.Equal(StockMovementSourceType.DirectPurchase, movement.SourceType);
         Assert.Equal(5m, movement.QuantityEffect);
-        Assert.Equal(StockMovement.DirectPurchaseReceiptReason, movement.Reason);
+        Assert.Equal("Direct purchase receipt DP-260926-001", movement.Reason);
+        Assert.Equal(
+            "DP-260926-001",
+            StockMovement.TryParseDirectPurchaseReceiptNumberFromReason(movement.Reason));
     }
 
     [Fact]
