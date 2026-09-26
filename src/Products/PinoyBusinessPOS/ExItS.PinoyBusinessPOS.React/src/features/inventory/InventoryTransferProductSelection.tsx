@@ -7,6 +7,7 @@ import {
   type ProductSelectionColumn,
   type ProductSelectionRow,
 } from "@/components/exits/ProductSelectionView";
+import { selectTransferEligibleLots } from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import { cn } from "@/lib/cn";
 
@@ -15,29 +16,23 @@ type Translate = (key: string) => string;
 export type InventoryTransferProductSelectionProps = {
   layout: ResponsiveDataLayout;
   products: readonly PosInventoryAccountDto[];
-  lotByProduct: Readonly<Record<string, string>>;
   lotsCache: Readonly<Record<string, PosInventoryLotDto[]>>;
   online: boolean;
   formatAvailable: (qty: number, uom: string) => string;
-  onLotChange: (productId: string, lotId: string) => void;
-  onLotFocus: (productId: string) => void;
   onAddProduct: (row: PosInventoryAccountDto) => void;
   t: Translate;
 };
 
 /**
- * Branch Transfer adapter — source availability / lot → ProductSelectionView.
- * Quantity is edited on draft lines after add (default +1 per click).
+ * Branch Transfer find-products adapter — product-only add.
+ * Lot allocation happens on the draft after add (FEFO / Change lots).
  */
 export function InventoryTransferProductSelection({
   layout,
   products,
-  lotByProduct,
   lotsCache,
   online,
   formatAvailable,
-  onLotChange,
-  onLotFocus,
   onAddProduct,
   t,
 }: InventoryTransferProductSelectionProps) {
@@ -49,14 +44,12 @@ export function InventoryTransferProductSelection({
 
   const rows: ProductSelectionRow[] = products.map((row) => {
     const tracksExpiration = row.tracksExpiration === true;
-    const lots = lotsCache[row.productId] ?? [];
+    const lots = lotsCache[row.productId];
+    const eligibleLotCount =
+      lots != null ? selectTransferEligibleLots(lots).length : null;
     const available = Math.max(0, resolveAvailableQuantity(row));
     const outOfStock = available <= 0;
-    const selectedLotId = lotByProduct[row.productId] ?? "";
-    const selectedLot = lots.find((l) => l.lotId === selectedLotId);
-    const lotOut =
-      tracksExpiration && selectedLot != null && selectedLot.quantityOnHand <= 0;
-    const addDisabled = !online || outOfStock || lotOut;
+    const addDisabled = !online || outOfStock;
     const sku = row.sku?.trim() || "";
     const category =
       row.categoryName?.trim() ||
@@ -64,9 +57,18 @@ export function InventoryTransferProductSelection({
     const availableLabel = outOfStock
       ? t("transfer.outOfStock")
       : formatAvailable(available, row.unitOfMeasure);
-    const availableWithExpiry = tracksExpiration
-      ? `${availableLabel} · ${t("transfer.tracksExpiry")}`
-      : availableLabel;
+
+    let availableWithExpiry = availableLabel;
+    if (tracksExpiration && !outOfStock) {
+      const parts = [availableLabel];
+      if (eligibleLotCount != null) {
+        parts.push(
+          t("transfer.lotCount").replace("{count}", String(eligibleLotCount)),
+        );
+      }
+      parts.push(t("transfer.tracksExpiry"));
+      availableWithExpiry = parts.join(" · ");
+    }
 
     const productCell = (
       <>
@@ -97,26 +99,6 @@ export function InventoryTransferProductSelection({
         <Plus className="size-4" aria-hidden />
       </Button>
     );
-
-    const details =
-      tracksExpiration && !outOfStock ? (
-        <select
-          className="exits-select w-full max-w-md"
-          value={lotByProduct[row.productId] ?? ""}
-          onFocus={() => onLotFocus(row.productId)}
-          onChange={(e) => onLotChange(row.productId, e.target.value)}
-          data-testid={`transfer-lot-${row.productId}`}
-        >
-          <option value="">{t("transfer.selectLot")}</option>
-          {lots.map((lot) => (
-            <option key={lot.lotId} value={lot.lotId} disabled={lot.quantityOnHand <= 0}>
-              {(lot.lotNumber ?? t("transfer.lot")) +
-                ` · ${lot.expirationDate ?? "—"} · ${lot.quantityOnHand}`}
-              {lot.quantityOnHand <= 0 ? ` (${t("transfer.outOfStock")})` : ""}
-            </option>
-          ))}
-        </select>
-      ) : undefined;
 
     return {
       id: row.productId,
@@ -150,7 +132,6 @@ export function InventoryTransferProductSelection({
         { label: t("transfer.colAvailable"), value: availableWithExpiry },
       ],
       primaryAction,
-      details,
     };
   });
 

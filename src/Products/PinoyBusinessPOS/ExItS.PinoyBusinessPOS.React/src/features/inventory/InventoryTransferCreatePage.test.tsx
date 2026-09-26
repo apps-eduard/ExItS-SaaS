@@ -219,7 +219,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
 
     await waitFor(() => {
-      expect(screen.getByTestId(`transfer-line-${soapId}:none`)).toBeInTheDocument();
+      expect(screen.getByTestId(`transfer-line-${soapId}`)).toBeInTheDocument();
     });
     // Added products leave the finder table.
     expect(screen.queryByTestId(`transfer-add-${soapId}`)).not.toBeInTheDocument();
@@ -235,7 +235,7 @@ describe("InventoryTransferCreatePage stock guard", () => {
     expect(screen.getByTestId(`transfer-picker-unavailable-${zeroId}`)).toBeInTheDocument();
     expect(screen.queryByTestId(`transfer-add-${zeroId}`)).not.toBeInTheDocument();
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
     expect(screen.getByTestId("transfer-save-draft")).not.toBeDisabled();
   });
 
@@ -247,9 +247,9 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
 
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "11");
+    await setLineQuantity(user, soapId, "11");
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-create-error")).toHaveTextContent(
@@ -266,12 +266,12 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await openProductFinder(user);
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
 
-    const line = screen.getByTestId(`transfer-line-${soapId}:none`);
-    expect(within(line).getByTestId(`transfer-line-available-${soapId}:none`)).toHaveTextContent(
+    const line = screen.getByTestId(`transfer-line-${soapId}`);
+    expect(within(line).getByTestId(`transfer-line-available-${soapId}`)).toHaveTextContent(
       /10\s*Piece/,
     );
     expect(screen.getByTestId("transfer-save-draft")).not.toBeDisabled();
@@ -293,14 +293,14 @@ describe("InventoryTransferCreatePage stock guard", () => {
     await openProductFinder(user);
     await waitFor(() => screen.getByTestId(`transfer-add-${soapId}`));
     await user.click(screen.getByTestId(`transfer-add-${soapId}`));
-    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}:none`));
+    await waitFor(() => screen.getByTestId(`transfer-line-${soapId}`));
 
-    await setLineQuantity(user, `${soapId}:none`, "10");
+    await setLineQuantity(user, soapId, "10");
     await user.click(screen.getByTestId("transfer-save-draft"));
 
     await waitFor(() => {
       expect(screen.getByTestId("transfer-create-error")).toHaveTextContent(/only 6 Piece/i);
     });
-    expect(screen.getByTestId(`transfer-line-${soapId}:none`)).toBeInTheDocument();
+    expect(screen.getByTestId(`transfer-line-${soapId}`)).toBeInTheDocument();
   });
 });

@@ -33,17 +33,23 @@ import { SearchField } from "@/components/exits/SearchField";
 import { useResponsiveDataLayout } from "@/components/exits/useResponsiveDataLayout";
 import { useBrowserOnline } from "@/connectivity/browser-online";
 import { PoDocumentSummary } from "@/features/purchasing/PoDocumentSummary";
+import {
+  allocateTransferLotsFefo,
+  selectTransferEligibleLots,
+  type TransferLotAllocationSlice,
+} from "@/features/inventory/inventory-transfer-fefo-allocate";
 import { parseTransferQuantity } from "@/features/inventory/inventory-transfer-labels";
 import { resolveAvailableQuantity } from "@/features/inventory/inventory-reservation-display";
 import {
   canAddTransferQuantity,
-  evaluateTransferLineStock,
-  lotDemandExcludingLine,
-  productDemandExcludingLine,
+  evaluateTransferDraftProduct,
+  maxTransferableQuantity,
+  type TransferDraftStockProduct,
   type TransferLineStockIssue,
 } from "@/features/inventory/inventory-transfer-stock-guard";
 import { InventoryTransferItemsView } from "@/features/inventory/InventoryTransferItemsView";
 import { InventoryTransferProductSelection } from "@/features/inventory/InventoryTransferProductSelection";
+import { TransferChangeLotsDialog } from "@/features/inventory/TransferChangeLotsDialog";
 import { useI18n } from "@/i18n/I18nProvider";
 import { createSecureMutationId } from "@/lib/secure-mutation-id";
 import { useWorkspace } from "@/workspace/WorkspaceProvider";
@@ -51,23 +57,92 @@ import { useWorkspace } from "@/workspace/WorkspaceProvider";
 /** Synthetic category filter id — not a real catalog category. */
 const OUT_OF_STOCK_FILTER_ID = "__transfer_out_of_stock__";
 
-type DraftLine = {
+type AllocationMode = "auto" | "manual";
+
+type DraftProduct = {
   key: string;
   productId: string;
   name: string;
+  sku: string | null;
   unitOfMeasure: string;
   quantity: number;
+  unitCost: number | null;
   tracksExpiration: boolean;
   isTracked: boolean;
-  sourceLotId: string | null;
-  lotNumber: string | null;
-  expirationDate: string | null;
   availableQuantity: number;
-  lotAvailableQuantity: number | null;
+  eligibleLotQuantity: number | null;
+  allocationMode: AllocationMode;
+  allocations: TransferLotAllocationSlice[];
 };
 
-function lineKeyOf(line: { productId: string; sourceLotId: string | null }) {
-  return `${line.productId}:${line.sourceLotId ?? "none"}`;
+function eligibleLotQtyFromLots(lots: readonly PosInventoryLotDto[]): number {
+  return selectTransferEligibleLots(lots).reduce((sum, lot) => sum + lot.quantityOnHand, 0);
+}
+
+function toStockProduct(draft: DraftProduct): TransferDraftStockProduct {
+  return {
+    key: draft.key,
+    productId: draft.productId,
+    quantity: draft.quantity,
+    availableQuantity: draft.availableQuantity,
+    eligibleLotQuantity: draft.eligibleLotQuantity,
+    tracksExpiration: draft.tracksExpiration,
+    isTracked: draft.isTracked,
+    allocations: draft.allocations.map((row) => ({
+      lotId: row.lotId,
+      quantity: row.quantity,
+      lotAvailableQuantity: row.lotAvailableQuantity,
+    })),
+  };
+}
+
+function expandDraftToRequestLines(drafts: readonly DraftProduct[]) {
+  const lines: { productId: string; quantity: number; sourceLotId: string | null }[] = [];
+  for (const draft of drafts) {
+    if (draft.tracksExpiration) {
+      for (const slice of draft.allocations) {
+        if (!(slice.quantity > 0)) {
+          continue;
+        }
+        lines.push({
+          productId: draft.productId,
+          quantity: slice.quantity,
+          sourceLotId: slice.lotId,
+        });
+      }
+    } else {
+      lines.push({
+        productId: draft.productId,
+        quantity: draft.quantity,
+        sourceLotId: null,
+      });
+    }
+  }
+  return lines;
+}
+
+function allocateAuto(
+  lots: readonly PosInventoryLotDto[],
+  quantity: number,
+): TransferLotAllocationSlice[] | null {
+  const result = allocateTransferLotsFefo(selectTransferEligibleLots(lots), quantity);
+  return result.ok ? result.allocations : null;
+}
+
+function refreshAllocationAvailability(
+  allocations: readonly TransferLotAllocationSlice[],
+  lots: readonly PosInventoryLotDto[],
+): TransferLotAllocationSlice[] {
+  const byId = new Map(lots.map((lot) => [lot.lotId, lot]));
+  return allocations.map((row) => {
+    const lot = byId.get(row.lotId);
+    return {
+      ...row,
+      lotAvailableQuantity: lot ? Math.max(0, lot.quantityOnHand) : 0,
+      lotNumber: lot?.lotNumber ?? row.lotNumber,
+      expirationDate: lot?.expirationDate ?? row.expirationDate,
+    };
+  });
 }
 
 export function InventoryTransferCreatePage() {
@@ -83,12 +158,12 @@ export function InventoryTransferCreatePage() {
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
-  const [lines, setLines] = useState<DraftLine[]>([]);
-  const [lotByProduct, setLotByProduct] = useState<Record<string, string>>({});
+  const [lines, setLines] = useState<DraftProduct[]>([]);
   const [lotsCache, setLotsCache] = useState<Record<string, PosInventoryLotDto[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
+  const [changeLotsProductId, setChangeLotsProductId] = useState<string | null>(null);
   const finderPanelId = "transfer-product-finder-panel";
   const operationIdRef = useRef<string | null>(null);
   const { layout: pickerLayout } = useResponsiveDataLayout({
@@ -261,6 +336,8 @@ export function InventoryTransferCreatePage() {
           .replace("{qty}", String(available))
           .replace("{uom}", uom)
           .replace("{branch}", sourceName);
+      case "allocation_mismatch":
+        return t("transfer.allocationMismatch");
       case "invalid_qty":
         return t("transfer.invalidQuantity");
     }
@@ -285,88 +362,112 @@ export function InventoryTransferCreatePage() {
     }
   }
 
-  async function addLine(row: PosInventoryAccountDto) {
+  // Prefetch lot counts for expiry products visible in the finder.
+  useEffect(() => {
+    if (!finderOpen || !workspace) {
+      return;
+    }
+    for (const row of pickerRows) {
+      if (row.tracksExpiration === true && !lotsCache[row.productId]) {
+        void ensureLots(row.productId, true);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prefetch when finder rows change
+  }, [finderOpen, pickerRows, workspace]);
+
+  async function addProduct(row: PosInventoryAccountDto) {
     const tracksExpiration = row.tracksExpiration === true;
     const availableQuantity = Math.max(0, resolveAvailableQuantity(row));
     const lots = await ensureLots(row.productId, tracksExpiration);
-    let sourceLotId: string | null = null;
-    let lotNumber: string | null = null;
-    let expirationDate: string | null = null;
-    let lotAvailableQuantity: number | null = null;
-    if (tracksExpiration) {
-      const lotId = lotByProduct[row.productId]?.trim() || "";
-      if (!lotId) {
-        setError(t("transfer.lotRequired"));
-        return;
-      }
-      const lot = lots.find((l) => l.lotId === lotId) ?? lotsCache[row.productId]?.find((l) => l.lotId === lotId);
-      if (!lot) {
-        setError(t("transfer.lotRequired"));
-        return;
-      }
-      sourceLotId = lot.lotId;
-      lotNumber = lot.lotNumber ?? null;
-      expirationDate = lot.expirationDate ?? null;
-      lotAvailableQuantity = Math.max(0, lot.quantityOnHand);
-    }
+    const eligibleLotQuantity = tracksExpiration ? eligibleLotQtyFromLots(lots) : null;
+    const maxQty = maxTransferableQuantity({
+      availableQuantity,
+      eligibleLotQuantity,
+      tracksExpiration,
+    });
 
-    if (availableQuantity <= 0 || (tracksExpiration && (lotAvailableQuantity ?? 0) <= 0)) {
+    if (maxQty <= 0) {
       setError(t("transfer.outOfStock"));
       return;
     }
 
-    const key = lineKeyOf({ productId: row.productId, sourceLotId });
-    const existing = lines.find((l) => l.key === key);
-    // Each Add click adds one unit; adjust further on the draft line stepper.
+    const existing = lines.find((l) => l.productId === row.productId);
     const qtyParsed = existing ? existing.quantity + 1 : 1;
-    const existingProductDemand = productDemandExcludingLine(lines, row.productId, key);
-    const existingLotDemand =
-      sourceLotId != null ? lotDemandExcludingLine(lines, sourceLotId, key) : 0;
+
+    let allocations: TransferLotAllocationSlice[] = [];
+    if (tracksExpiration) {
+      const auto = allocateAuto(lots, qtyParsed);
+      if (!auto) {
+        setError(
+          stockIssueMessage(
+            "lot_over_stock",
+            maxQty,
+            row.unitOfMeasure,
+          ),
+        );
+        return;
+      }
+      allocations = auto;
+    }
+
     const issue = canAddTransferQuantity({
       quantity: qtyParsed,
-      availableQuantity,
-      lotAvailableQuantity,
+      availableQuantity: maxQty,
+      lotAvailableQuantity: tracksExpiration ? eligibleLotQuantity : null,
       tracksExpiration,
-      existingProductDemand,
-      existingLotDemand,
+      existingProductDemand: 0,
+      existingLotDemand: 0,
     });
     if (issue) {
-      const cap =
-        tracksExpiration && lotAvailableQuantity != null
-          ? Math.min(availableQuantity, lotAvailableQuantity)
-          : availableQuantity;
-      setError(stockIssueMessage(issue, cap, row.unitOfMeasure));
+      setError(stockIssueMessage(issue, maxQty, row.unitOfMeasure));
       return;
     }
 
+    const unitCost =
+      row.unitCost != null && Number.isFinite(row.unitCost) && row.unitCost > 0
+        ? row.unitCost
+        : null;
+
     setError(null);
     setLines((prev) => {
-      const existingIndex = prev.findIndex((l) => l.key === key);
+      const existingIndex = prev.findIndex((l) => l.productId === row.productId);
       if (existingIndex >= 0) {
+        const current = prev[existingIndex]!;
+        const nextAllocations =
+          tracksExpiration && current.allocationMode === "auto"
+            ? allocations
+            : tracksExpiration
+              ? current.allocations
+              : [];
         const next = [...prev];
         next[existingIndex] = {
-          ...next[existingIndex],
+          ...current,
           quantity: qtyParsed,
           availableQuantity,
-          lotAvailableQuantity,
+          eligibleLotQuantity,
+          unitCost: unitCost ?? current.unitCost,
+          allocations: nextAllocations,
+          allocationMode:
+            tracksExpiration && current.allocationMode === "manual" ? "manual" : "auto",
         };
         return next;
       }
       return [
         ...prev,
         {
-          key,
+          key: row.productId,
           productId: row.productId,
           name: row.name,
+          sku: row.sku?.trim() || null,
           unitOfMeasure: row.unitOfMeasure,
           quantity: qtyParsed,
+          unitCost,
           tracksExpiration,
           isTracked: row.isTracked,
-          sourceLotId,
-          lotNumber,
-          expirationDate,
           availableQuantity,
-          lotAvailableQuantity,
+          eligibleLotQuantity,
+          allocationMode: "auto",
+          allocations,
         },
       ];
     });
@@ -380,7 +481,7 @@ export function InventoryTransferCreatePage() {
     const parsed = parseTransferQuantity(raw);
     if (parsed === "empty" || parsed === "invalid") {
       setLines((prev) =>
-        prev.map((line) => (line.key === key ? { ...line, quantity: 0 } : line)),
+        prev.map((line) => (line.key === key ? { ...line, quantity: 0, allocations: [] } : line)),
       );
       setError(t("transfer.invalidQuantity"));
       return;
@@ -390,19 +491,47 @@ export function InventoryTransferCreatePage() {
       if (!target) {
         return prev;
       }
-      const nextLine = { ...target, quantity: parsed };
-      const issue = evaluateTransferLineStock(nextLine, prev);
+      let nextAllocations = target.allocations;
+      let nextMode = target.allocationMode;
+      if (target.tracksExpiration) {
+        if (target.allocationMode === "auto") {
+          const lots = lotsCache[target.productId] ?? [];
+          const auto = allocateAuto(lots, parsed);
+          nextAllocations = auto ?? [];
+          nextMode = "auto";
+        }
+        // Manual mode: keep existing allocations; validation surfaces mismatch.
+      }
+      const nextLine: DraftProduct = {
+        ...target,
+        quantity: parsed,
+        allocations: nextAllocations,
+        allocationMode: nextMode,
+      };
+      const issue = evaluateTransferDraftProduct(toStockProduct(nextLine));
       if (issue) {
-        const cap =
-          nextLine.lotAvailableQuantity != null
-            ? Math.min(nextLine.availableQuantity, nextLine.lotAvailableQuantity)
-            : nextLine.availableQuantity;
+        const cap = maxTransferableQuantity(nextLine);
         setError(stockIssueMessage(issue, cap, nextLine.unitOfMeasure));
       } else {
         setError(null);
       }
       return prev.map((line) => (line.key === key ? nextLine : line));
     });
+  }
+
+  function applyLotAllocation(
+    productId: string,
+    allocations: TransferLotAllocationSlice[],
+    mode: AllocationMode,
+  ) {
+    setLines((prev) =>
+      prev.map((line) =>
+        line.productId === productId
+          ? { ...line, allocations, allocationMode: mode }
+          : line,
+      ),
+    );
+    setError(null);
   }
 
   function resetForm() {
@@ -415,15 +544,15 @@ export function InventoryTransferCreatePage() {
     setDebounced("");
     setCategoryIds([]);
     setLines([]);
-    setLotByProduct({});
     setError(null);
+    setChangeLotsProductId(null);
     operationIdRef.current = null;
   }
 
   const lineIssues = useMemo(() => {
     const map = new Map<string, TransferLineStockIssue>();
     for (const line of lines) {
-      const issue = evaluateTransferLineStock(line, lines);
+      const issue = evaluateTransferDraftProduct(toStockProduct(line));
       if (issue) {
         map.set(line.key, issue);
       }
@@ -443,10 +572,7 @@ export function InventoryTransferCreatePage() {
       if (!issue) {
         continue;
       }
-      const cap =
-        line.lotAvailableQuantity != null
-          ? Math.min(line.availableQuantity, line.lotAvailableQuantity)
-          : line.availableQuantity;
+      const cap = maxTransferableQuantity(line);
       return stockIssueMessage(issue, cap, line.unitOfMeasure);
     }
     return null;
@@ -457,6 +583,47 @@ export function InventoryTransferCreatePage() {
   async function refreshAvailability() {
     await queryClient.invalidateQueries({ queryKey: ["inventory", "transfer-picker"] });
     setLotsCache({});
+  }
+
+  async function refetchLotsAndRecalcFefo() {
+    if (!workspace) {
+      return;
+    }
+    const nextCache: Record<string, PosInventoryLotDto[]> = {};
+    for (const line of lines) {
+      if (!line.tracksExpiration) {
+        continue;
+      }
+      try {
+        const result = await listProductLots(workspace, line.productId, { pageSize: 50 });
+        nextCache[line.productId] = result.items;
+      } catch {
+        nextCache[line.productId] = [];
+      }
+    }
+    setLotsCache(nextCache);
+    setLines((prev) =>
+      prev.map((line) => {
+        if (!line.tracksExpiration) {
+          return line;
+        }
+        const lots = nextCache[line.productId] ?? [];
+        const eligibleLotQuantity = eligibleLotQtyFromLots(lots);
+        if (line.allocationMode === "auto") {
+          const auto = allocateAuto(lots, line.quantity);
+          return {
+            ...line,
+            eligibleLotQuantity,
+            allocations: auto ?? [],
+          };
+        }
+        return {
+          ...line,
+          eligibleLotQuantity,
+          allocations: refreshAllocationAvailability(line.allocations, lots),
+        };
+      }),
+    );
   }
 
   async function saveDraft() {
@@ -487,11 +654,7 @@ export function InventoryTransferCreatePage() {
         destinationBranchId,
         notes: notes.trim() || null,
         operationId: operationIdRef.current,
-        lines: lines.map((line) => ({
-          productId: line.productId,
-          quantity: line.quantity,
-          sourceLotId: line.sourceLotId,
-        })),
+        lines: expandDraftToRequestLines(lines),
       });
       operationIdRef.current = null;
       navigate(`/inventory/transfers/${created.transferId}`, {
@@ -503,8 +666,16 @@ export function InventoryTransferCreatePage() {
         err instanceof PosApiError
           ? (err.problem.detail ?? t("transfer.saveFailed"))
           : t("transfer.saveFailed");
-      setError(detail);
+      const errorCode =
+        err instanceof PosApiError ? (err.problem.errorCode ?? "").toLowerCase() : "";
+      const looksLikeLotConcurrency =
+        lines.some((l) => l.tracksExpiration) &&
+        (errorCode.includes("lot") ||
+          errorCode.includes("insufficient") ||
+          /lot|expir|insufficient/i.test(detail));
+      setError(looksLikeLotConcurrency ? t("transfer.lotStockChanged") : detail);
       await refreshAvailability();
+      await refetchLotsAndRecalcFefo();
       // Keep entered lines for correction after server rejection.
     } finally {
       setSaving(false);
@@ -528,6 +699,10 @@ export function InventoryTransferCreatePage() {
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
     [lines],
   );
+
+  const changeLotsLine = changeLotsProductId
+    ? lines.find((l) => l.productId === changeLotsProductId) ?? null
+    : null;
 
   if (!workspace) {
     return <LoadingState label={t("session.loading")} />;
@@ -699,15 +874,21 @@ export function InventoryTransferCreatePage() {
             lines={lines.map((line) => ({
               key: line.key,
               name: line.name,
+              sku: line.sku,
               quantity: line.quantity,
               unitOfMeasure: line.unitOfMeasure,
               availableQuantity: line.availableQuantity,
-              lotAvailableQuantity: line.lotAvailableQuantity,
-              lotNumber: line.lotNumber,
-              expirationDate: line.expirationDate,
+              maxQuantity: maxTransferableQuantity(line),
+              unitCost: line.unitCost,
+              tracksExpiration: line.tracksExpiration,
+              allocationMode: line.allocationMode,
+              allocations: line.allocations,
               hasIssue: Boolean(lineIssues.get(line.key)),
               onQtyChange: (next) => updateLineQuantity(line.key, String(next)),
               onRemove: () => removeLine(line.key),
+              onChangeLots: line.tracksExpiration
+                ? () => setChangeLotsProductId(line.productId)
+                : null,
             }))}
             formatAvailable={formatAvailable}
             t={t}
@@ -777,20 +958,35 @@ export function InventoryTransferCreatePage() {
               <InventoryTransferProductSelection
                 layout={pickerLayout}
                 products={pickerRows}
-                lotByProduct={lotByProduct}
                 lotsCache={lotsCache}
                 online={online}
                 formatAvailable={formatAvailable}
-                onLotChange={(productId, lotId) =>
-                  setLotByProduct((prev) => ({ ...prev, [productId]: lotId }))
-                }
-                onLotFocus={(productId) => void ensureLots(productId, true)}
-                onAddProduct={(row) => void addLine(row)}
+                onAddProduct={(row) => void addProduct(row)}
                 t={t}
               />
             ) : null}
           </div>
         </ExitsModal>
+
+        {changeLotsLine ? (
+          <TransferChangeLotsDialog
+            open
+            productName={changeLotsLine.name}
+            unitOfMeasure={changeLotsLine.unitOfMeasure}
+            transferQuantity={changeLotsLine.quantity}
+            lots={lotsCache[changeLotsLine.productId] ?? []}
+            initialAllocations={changeLotsLine.allocations}
+            onOpenChange={(open) => {
+              if (!open) {
+                setChangeLotsProductId(null);
+              }
+            }}
+            onApply={(allocations, mode) =>
+              applyLotAllocation(changeLotsLine.productId, allocations, mode)
+            }
+            t={t}
+          />
+        ) : null}
 
         <div className="receive-stock-actions product-selection-workspace__actions">
           <div className="receive-stock-actions__primary">
@@ -831,4 +1027,3 @@ export function InventoryTransferCreatePage() {
     </div>
   );
 }
-

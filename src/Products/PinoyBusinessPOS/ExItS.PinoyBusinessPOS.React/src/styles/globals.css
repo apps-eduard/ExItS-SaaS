@@ -8830,9 +8830,34 @@ html:has(.admin-shell) #root {
 
 [data-testid="po-order-items"] .po-order-items-table__action-col.exits-table__head,
 [data-testid="po-order-items"] .po-order-items-table__price-col.exits-table__head,
-[data-testid="transfer-order-items"] .po-order-items-table__action-col.exits-table__head {
+[data-testid="transfer-order-items"] .po-order-items-table__action-col.exits-table__head,
+[data-testid="transfer-order-items"] .po-order-items-table__price-col.exits-table__head,
+[data-testid="transfer-order-items"] .transfer-order-items-table__expiry-col.exits-table__head {
   overflow: visible;
   text-overflow: clip;
+}
+
+.transfer-order-items-table__expiry-col {
+  width: 14rem;
+  min-width: 12rem;
+  max-width: 18rem;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.transfer-order-items-table__expiry-mobile {
+  display: none;
+}
+
+/* Narrow: Product | Total | Qty | Action; Available + Expiry under product. */
+@media (max-width: 767px) {
+  .transfer-order-items-table .transfer-order-items-table__expiry-col {
+    display: none;
+  }
+
+  .transfer-order-items-table .transfer-order-items-table__expiry-mobile {
+    display: block;
+  }
 }
 
 /* Narrow: Product | Qty | Amount; Available under product. */
